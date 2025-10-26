@@ -95,17 +95,17 @@
 
             <!-- Step 2: Password -->
             <div v-if="currentStep === 2" :class="slideDirection === 'forward' ? 'animate-slide-in-right' : 'animate-slide-in-left'">
-              <button @click="prevStep" class="mb-4 text-[#718096] hover:text-[#2D3748] transition-all duration-200">
+              <button @click="prevStep" class="mb-4 text-gray-400 hover:text-gray-600 transition-colors">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                 </svg>
               </button>
-              <div class="text-center space-y-2 mb-6">
-                <h1 class="text-2xl font-bold text-[#1A202C] font-['Poppins',sans-serif]">Create your account</h1>
-                <h2 class="text-base font-medium text-[#2D3748]">Choose a password</h2>
-                <p class="text-sm text-[#718096] leading-relaxed">Must be at least 6 characters</p>
+              <div class="text-center space-y-1">
+                <h1 class="text-2xl font-semibold text-gray-900">Create your account</h1>
+                <h2 class="text-lg font-medium text-gray-800">Choose a password</h2>
+                <p class="text-sm text-gray-500">Must be at least 6 characters</p>
               </div>
-              <div class="space-y-4">
+              <div class="space-y-4 mt-6">
                 <input
                   type="password"
                   v-model="formData.password"
@@ -113,21 +113,17 @@
                   @input="validatePassword"
                   autofocus
                   required
-                  aria-label="Password"
-                  class="w-full px-4 py-3 border border-[#E2E8F0] rounded-lg text-gray-900 placeholder-[#A0AEC0] focus:outline-none focus:border-[#4C51BF] focus:border-2 transition-all duration-200"
+                  class="w-full px-3 py-3 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                   placeholder="••••••••"
                 />
-                <p v-if="errors.password" class="text-sm text-red-600">{{ errors.password }}</p>
+                <p v-if="errors.password" class="text-sm text-red-600 text-center">{{ errors.password }}</p>
                 <button
                   @click="handleStepContinue"
                   type="button"
                   :disabled="!formData.password || !!errors.password"
-                  aria-label="Continue to next step"
                   :class="[
-                    'w-full py-3 px-5 text-white font-medium rounded-lg transition-all duration-200',
-                    !formData.password || errors.password
-                      ? 'bg-[#4C51BF] opacity-60 cursor-not-allowed'
-                      : 'bg-[#4C51BF] hover:bg-[#667EEA] hover:scale-105 active:scale-100'
+                    'w-full py-3 text-white font-medium rounded-lg bg-gradient-to-r from-purple-500 to-blue-500 shadow-md transition-all duration-200',
+                    !formData.password || errors.password ? 'opacity-60 cursor-not-allowed' : 'hover:from-purple-600 hover:to-blue-600'
                   ]"
                 >
                   Continue
@@ -137,37 +133,33 @@
 
             <!-- Step 3: Name -->
             <div v-if="currentStep === 3" :class="slideDirection === 'forward' ? 'animate-slide-in-right' : 'animate-slide-in-left'">
-              <button @click="prevStep" class="mb-4 text-[#718096] hover:text-[#2D3748] transition-all duration-200">
+              <button @click="prevStep" class="mb-4 text-gray-400 hover:text-gray-600 transition-colors">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                 </svg>
               </button>
-              <div class="text-center space-y-2 mb-6">
-                <h1 class="text-2xl font-bold text-[#1A202C] font-['Poppins',sans-serif]">Create your account</h1>
-                <h2 class="text-base font-medium text-[#2D3748]">What's your name?</h2>
-                <p class="text-sm text-[#718096] leading-relaxed">This will appear on your profile</p>
+              <div class="text-center space-y-1">
+                <h1 class="text-2xl font-semibold text-gray-900">Create your account</h1>
+                <h2 class="text-lg font-medium text-gray-800">What's your name?</h2>
+                <p class="text-sm text-gray-500">This will appear on your profile</p>
               </div>
-              <div class="space-y-4">
+              <div class="space-y-4 mt-6">
                 <input
                   type="text"
                   v-model="formData.name"
                   @keyup.enter="handleStepContinue"
                   autofocus
                   required
-                  aria-label="Full name"
-                  class="w-full px-4 py-3 border border-[#E2E8F0] rounded-lg text-gray-900 placeholder-[#A0AEC0] focus:outline-none focus:border-[#4C51BF] focus:border-2 transition-all duration-200"
+                  class="w-full px-3 py-3 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                   placeholder="John Doe"
                 />
                 <button
                   @click="handleStepContinue"
                   type="button"
                   :disabled="!formData.name"
-                  aria-label="Continue to next step"
                   :class="[
-                    'w-full py-3 px-5 text-white font-medium rounded-lg transition-all duration-200',
-                    !formData.name
-                      ? 'bg-[#4C51BF] opacity-60 cursor-not-allowed'
-                      : 'bg-[#4C51BF] hover:bg-[#667EEA] hover:scale-105 active:scale-100'
+                    'w-full py-3 text-white font-medium rounded-lg bg-gradient-to-r from-purple-500 to-blue-500 shadow-md transition-all duration-200',
+                    !formData.name ? 'opacity-60 cursor-not-allowed' : 'hover:from-purple-600 hover:to-blue-600'
                   ]"
                 >
                   Continue
@@ -177,24 +169,23 @@
 
             <!-- Step 4: Location -->
             <div v-if="currentStep === 4" :class="slideDirection === 'forward' ? 'animate-slide-in-right' : 'animate-slide-in-left'">
-              <button @click="prevStep" class="mb-4 text-[#718096] hover:text-[#2D3748] transition-all duration-200">
+              <button @click="prevStep" class="mb-4 text-gray-400 hover:text-gray-600 transition-colors">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                 </svg>
               </button>
-              <div class="text-center space-y-2 mb-6">
-                <h1 class="text-2xl font-bold text-[#1A202C] font-['Poppins',sans-serif]">Create your account</h1>
-                <h2 class="text-base font-medium text-[#2D3748]">Where are you located?</h2>
-                <p class="text-sm text-[#718096] leading-relaxed">Select your state in Nigeria</p>
+              <div class="text-center space-y-1">
+                <h1 class="text-2xl font-semibold text-gray-900">Create your account</h1>
+                <h2 class="text-lg font-medium text-gray-800">Where are you located?</h2>
+                <p class="text-sm text-gray-500">Select your state in Nigeria</p>
               </div>
-              <div class="space-y-4">
+              <div class="space-y-4 mt-6">
                 <select
                   v-model="formData.location"
                   autofocus
                   required
-                  aria-label="Location"
-                  class="w-full px-4 py-3 border border-[#E2E8F0] rounded-lg text-gray-900 focus:outline-none focus:border-[#4C51BF] focus:border-2 appearance-none cursor-pointer transition-all duration-200"
-                  style="background-image: url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%234C51BF%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e'); background-repeat: no-repeat; background-position: right 1rem center; background-size: 1.2em 1.2em;"
+                  class="w-full px-3 py-3 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none cursor-pointer"
+                  style="background-image: url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%23666%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e'); background-repeat: no-repeat; background-position: right 1rem center; background-size: 1.2em 1.2em;"
                 >
                   <option value="">Select your state</option>
                   <option v-for="state in nigerianStates" :key="state" :value="state">{{ state }}</option>
@@ -203,12 +194,9 @@
                   @click="handleStepContinue"
                   type="button"
                   :disabled="!formData.location"
-                  aria-label="Continue to next step"
                   :class="[
-                    'w-full py-3 px-5 text-white font-medium rounded-lg transition-all duration-200',
-                    !formData.location
-                      ? 'bg-[#4C51BF] opacity-60 cursor-not-allowed'
-                      : 'bg-[#4C51BF] hover:bg-[#667EEA] hover:scale-105 active:scale-100'
+                    'w-full py-3 text-white font-medium rounded-lg bg-gradient-to-r from-purple-500 to-blue-500 shadow-md transition-all duration-200',
+                    !formData.location ? 'opacity-60 cursor-not-allowed' : 'hover:from-purple-600 hover:to-blue-600'
                   ]"
                 >
                   Continue
@@ -218,32 +206,31 @@
 
             <!-- Step 5: Role Selection -->
             <div v-if="currentStep === 5" :class="slideDirection === 'forward' ? 'animate-slide-in-right' : 'animate-slide-in-left'">
-              <button @click="prevStep" class="mb-4 text-[#718096] hover:text-[#2D3748] transition-all duration-200">
+              <button @click="prevStep" class="mb-4 text-gray-400 hover:text-gray-600 transition-colors">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                 </svg>
               </button>
-              <div class="text-center space-y-2 mb-6">
-                <h1 class="text-2xl font-bold text-[#1A202C] font-['Poppins',sans-serif]">Create your account</h1>
-                <h2 class="text-base font-medium text-[#2D3748]">I am...</h2>
-                <p class="text-sm text-[#718096] leading-relaxed">Select what describes you best</p>
+              <div class="text-center mb-6">
+                <h2 class="text-xl font-semibold text-gray-900 mb-2">I am...</h2>
+                <p class="text-sm text-gray-500">Select what describes you best</p>
               </div>
               <div class="space-y-3">
                 <button
                   @click="selectRole('creator')"
                   type="button"
-                  class="w-full p-5 border-2 border-[#E2E8F0] rounded-lg hover:border-[#4C51BF] hover:bg-[#EBF4FF] transition-all duration-200 text-left group"
+                  class="w-full p-6 border-2 border-gray-200 rounded-xl hover:border-indigo-500 hover:bg-indigo-50 transition-all duration-200 text-left group"
                 >
                   <div class="flex items-start gap-4">
-                    <div class="p-3 bg-[#EBF4FF] rounded-lg group-hover:bg-[#4C51BF] transition-all duration-200">
-                      <svg class="w-6 h-6 text-[#4C51BF] group-hover:text-white transition-all duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="p-3 bg-purple-100 rounded-lg group-hover:bg-purple-200 transition-colors">
+                      <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
                       </svg>
                     </div>
                     <div>
-                      <h3 class="font-semibold text-[#1A202C] mb-1">A Photographer</h3>
-                      <p class="text-sm text-[#718096]">I create visual content and offer my services</p>
+                      <h3 class="font-semibold text-gray-900 mb-1">A Photographer</h3>
+                      <p class="text-sm text-gray-500">I create visual content and offer my services</p>
                     </div>
                   </div>
                 </button>
@@ -251,17 +238,17 @@
                 <button
                   @click="selectRole('creator')"
                   type="button"
-                  class="w-full p-5 border-2 border-[#E2E8F0] rounded-lg hover:border-[#4C51BF] hover:bg-[#EBF4FF] transition-all duration-200 text-left group"
+                  class="w-full p-6 border-2 border-gray-200 rounded-xl hover:border-indigo-500 hover:bg-indigo-50 transition-all duration-200 text-left group"
                 >
                   <div class="flex items-start gap-4">
-                    <div class="p-3 bg-[#EBF4FF] rounded-lg group-hover:bg-[#4C51BF] transition-all duration-200">
-                      <svg class="w-6 h-6 text-[#4C51BF] group-hover:text-white transition-all duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="p-3 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors">
+                      <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/>
                       </svg>
                     </div>
                     <div>
-                      <h3 class="font-semibold text-[#1A202C] mb-1">A Content Creator / Designer</h3>
-                      <p class="text-sm text-[#718096]">I design and create digital content</p>
+                      <h3 class="font-semibold text-gray-900 mb-1">A Content Creator / Designer</h3>
+                      <p class="text-sm text-gray-500">I design and create digital content</p>
                     </div>
                   </div>
                 </button>
@@ -269,17 +256,17 @@
                 <button
                   @click="selectRole('client')"
                   type="button"
-                  class="w-full p-5 border-2 border-[#E2E8F0] rounded-lg hover:border-[#4C51BF] hover:bg-[#EBF4FF] transition-all duration-200 text-left group"
+                  class="w-full p-6 border-2 border-gray-200 rounded-xl hover:border-indigo-500 hover:bg-indigo-50 transition-all duration-200 text-left group"
                 >
                   <div class="flex items-start gap-4">
-                    <div class="p-3 bg-[#EBF4FF] rounded-lg group-hover:bg-[#4C51BF] transition-all duration-200">
-                      <svg class="w-6 h-6 text-[#4C51BF] group-hover:text-white transition-all duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="p-3 bg-green-100 rounded-lg group-hover:bg-green-200 transition-colors">
+                      <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                       </svg>
                     </div>
                     <div>
-                      <h3 class="font-semibold text-[#1A202C] mb-1">Looking for Creators</h3>
-                      <p class="text-sm text-[#718096]">I want to hire photographers or designers</p>
+                      <h3 class="font-semibold text-gray-900 mb-1">Looking for Creators</h3>
+                      <p class="text-sm text-gray-500">I want to hire photographers or designers</p>
                     </div>
                   </div>
                 </button>
@@ -289,13 +276,13 @@
             <!-- Step 6: Final Confirmation -->
             <div v-if="currentStep === 6" class="animate-slide-in-right">
               <div class="text-center mb-8">
-                <div class="w-16 h-16 bg-[#4C51BF] rounded-full flex items-center justify-center mx-auto mb-4">
+                <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
                   <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                   </svg>
                 </div>
-                <h2 class="text-2xl font-bold text-[#1A202C] mb-2 font-['Poppins',sans-serif]">You're all set!</h2>
-                <p class="text-sm text-[#718096]">Ready to join MyArteLab</p>
+                <h2 class="text-2xl font-semibold text-gray-900 mb-2">You're all set!</h2>
+                <p class="text-sm text-gray-500">Ready to join MyArteLab</p>
               </div>
               <div v-if="errors.general" class="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
                 <p class="text-sm text-red-800 text-center">{{ errors.general }}</p>
@@ -303,13 +290,7 @@
               <button
                 @click="handleSignup"
                 :disabled="loading"
-                aria-label="Create account and continue to dashboard"
-                :class="[
-                  'w-full py-4 px-5 text-white font-semibold rounded-lg transition-all duration-200',
-                  loading
-                    ? 'bg-[#4C51BF] opacity-60 cursor-not-allowed'
-                    : 'bg-[#4C51BF] hover:bg-[#667EEA] hover:scale-105 active:scale-100'
-                ]"
+                class="w-full py-4 text-white font-semibold rounded-lg bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {{ loading ? 'Creating your account...' : 'Continue to Dashboard' }}
               </button>
@@ -317,16 +298,16 @@
           </div>
 
           <!-- Sign in link -->
-          <p class="text-xs text-[#4A5568] text-center transition-all duration-200">
-            Already have an account? <router-link to="/login" class="text-[#4C51BF] hover:text-[#667EEA] hover:underline font-medium transition-all duration-200">Sign in</router-link>
+          <p class="text-sm text-gray-500 text-center">
+            Already have an account? <router-link to="/login" class="text-indigo-600 hover:underline font-medium">Sign in</router-link>
           </p>
 
           <!-- Terms -->
-          <p class="text-xs text-[#718096] text-center leading-relaxed">
+          <p class="text-xs text-gray-400 text-center">
             By continuing, you agree to our
-            <a href="#" class="text-[#4C51BF] hover:text-[#667EEA] transition-all duration-200">Terms of Service</a>
+            <a href="#" class="text-indigo-500 hover:underline">Terms of Service</a>
             and
-            <a href="#" class="text-[#4C51BF] hover:text-[#667EEA] transition-all duration-200">Privacy Policy</a>
+            <a href="#" class="text-indigo-500 hover:underline">Privacy Policy</a>
           </p>
         </div>
       </div>
