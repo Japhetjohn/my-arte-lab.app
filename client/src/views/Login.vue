@@ -8,15 +8,12 @@
       </div>
 
       <!-- Form Card -->
-      <div class="w-full max-w-[440px] animate-fade-in">
-        <div class="text-center">
+      <div class="w-full max-w-md animate-fade-in">
+        <div class="bg-white rounded-xl shadow-md p-8 space-y-6">
           <!-- Header -->
-          <h1 class="text-3xl font-semibold text-gray-900 mb-10 tracking-normal font-['Inter',sans-serif]">
+          <h1 class="text-2xl font-semibold text-gray-900 text-center font-['Inter',sans-serif]">
             Welcome back
           </h1>
-          <p class="text-gray-600 mb-10 text-base">
-            Sign in to continue your creative journey.
-          </p>
 
           <!-- Email Verification Warning -->
           <div v-if="showVerificationWarning" class="mb-8 p-4 bg-orange-50 border border-orange-200 rounded-2xl text-left">
@@ -29,11 +26,11 @@
           </div>
 
           <!-- Initial Buttons (shown when form is hidden) -->
-          <div v-if="!showEmailForm" class="flex flex-col gap-4 mb-8">
+          <div v-if="!showEmailForm" class="flex flex-col gap-4">
             <button
               @click="handleGoogleLogin"
               type="button"
-              class="w-full flex items-center justify-center gap-3 px-8 py-4 bg-white border border-gray-200 text-gray-900 font-medium text-base rounded-full hover:shadow-[0px_4px_12px_rgba(0,0,0,0.08)] transition-all duration-300"
+              class="w-full flex items-center justify-center gap-3 h-12 bg-white border border-gray-300 text-gray-900 font-medium text-sm rounded-lg hover:bg-gray-50 transition-all duration-200"
             >
               <svg class="w-5 h-5" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -47,11 +44,8 @@
             <button
               @click="showEmailForm = true"
               type="button"
-              class="w-full flex items-center justify-center gap-3 px-8 py-4 bg-[#9747FF] text-white font-medium text-base rounded-full hover:bg-[#8636ef] transition-all duration-300"
+              class="w-full h-12 bg-gradient-to-r from-purple-500 to-blue-500 text-white font-semibold text-sm rounded-lg hover:from-purple-600 hover:to-blue-600 transition-all duration-200 shadow-[0_2px_8px_rgba(139,92,246,0.4)]"
             >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-              </svg>
               Sign in with Email
             </button>
           </div>
@@ -63,7 +57,7 @@
                 type="email"
                 v-model="formData.email"
                 required
-                class="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-[#9747FF] focus:ring-2 focus:ring-[#9747FF]/20 transition-all"
+                class="w-full px-3 py-3 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 placeholder="Email address"
               />
               <p v-if="errors.email" class="mt-1.5 text-sm text-red-600">{{ errors.email }}</p>
@@ -74,36 +68,36 @@
                 type="password"
                 v-model="formData.password"
                 required
-                class="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-[#9747FF] focus:ring-2 focus:ring-[#9747FF]/20 transition-all"
+                class="w-full px-3 py-3 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 placeholder="Password"
               />
               <p v-if="errors.password" class="mt-1.5 text-sm text-red-600">{{ errors.password }}</p>
             </div>
 
-            <div v-if="errors.general" class="p-4 bg-red-50 border border-red-200 rounded-xl">
+            <div v-if="errors.general" class="p-4 bg-red-50 border border-red-200 rounded-lg">
               <p class="text-sm text-red-800">{{ errors.general }}</p>
             </div>
 
             <button
               type="submit"
               :disabled="loading"
-              class="w-full bg-[#9747FF] hover:bg-[#8636ef] text-white font-bold py-4 px-6 rounded-xl transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-[#9747FF]/30"
+              class="w-full py-3 text-white font-medium rounded-lg bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {{ loading ? 'Signing in...' : 'Sign in with Email' }}
             </button>
           </form>
 
           <!-- Sign up link -->
-          <p class="text-gray-500 text-sm mt-6">
-            Don't have an account? <router-link to="/signup?role=client" class="text-[#9747FF] hover:underline font-medium transition-all">Sign up</router-link>
+          <p class="text-sm text-gray-500 text-center">
+            Don't have an account? <router-link to="/signup?role=client" class="text-indigo-600 hover:underline font-medium">Sign up</router-link>
           </p>
 
           <!-- Terms -->
-          <p class="text-gray-400 text-xs mt-6 leading-relaxed">
+          <p class="text-xs text-gray-400 text-center">
             By continuing, you agree to our
-            <a href="#" class="text-gray-500 hover:text-[#9747FF] transition-colors">Terms of Service</a>
+            <a href="#" class="text-indigo-500 hover:underline">Terms of Service</a>
             and
-            <a href="#" class="text-gray-500 hover:text-[#9747FF] transition-colors">Privacy Policy</a>
+            <a href="#" class="text-indigo-500 hover:underline">Privacy Policy</a>
           </p>
         </div>
       </div>
