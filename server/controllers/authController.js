@@ -1,5 +1,7 @@
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const User = require('../models/User');
+const { sendVerificationEmail, sendWelcomeEmail } = require('../utils/emailService');
 
 // Generate JWT Token
 const generateToken = (id) => {
@@ -36,6 +38,7 @@ const register = async (req, res) => {
       email,
       password,
       role,
+      oauthProvider: 'local',
       profile: {
         name: name || '',
         location: location || ''
@@ -43,12 +46,26 @@ const register = async (req, res) => {
     });
 
     if (user) {
+      // Generate email verification token
+      const verificationToken = user.generateEmailVerificationToken();
+      await user.save();
+
+      // Send verification email
+      try {
+        await sendVerificationEmail(user.email, verificationToken);
+      } catch (emailError) {
+        console.error('Failed to send verification email:', emailError);
+        // Continue with registration even if email fails
+      }
+
       res.status(201).json({
         _id: user._id,
         email: user.email,
         role: user.role,
         profile: user.profile,
-        token: generateToken(user._id)
+        emailVerified: user.emailVerified,
+        token: generateToken(user._id),
+        message: 'Registration successful! Please check your email to verify your account.'
       });
     } else {
       res.status(400).json({ message: 'Invalid user data' });
@@ -81,6 +98,7 @@ const login = async (req, res) => {
         role: user.role,
         profile: user.profile,
         verified: user.verified,
+        emailVerified: user.emailVerified,
         rating: user.rating,
         totalReviews: user.totalReviews,
         token: generateToken(user._id)
@@ -107,8 +125,115 @@ const getMe = async (req, res) => {
   }
 };
 
+// @desc    Verify email
+// @route   GET /api/auth/verify-email/:token
+// @access  Public
+const verifyEmail = async (req, res) => {
+  try {
+    const { token } = req.params;
+
+    // Hash the token to compare with database
+    const hashedToken = crypto
+      .createHash('sha256')
+      .update(token)
+      .digest('hex');
+
+    // Find user with valid token
+    const user = await User.findOne({
+      emailVerificationToken: hashedToken,
+      emailVerificationExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid or expired verification token' });
+    }
+
+    // Update user
+    user.emailVerified = true;
+    user.emailVerificationToken = undefined;
+    user.emailVerificationExpires = undefined;
+    await user.save();
+
+    // Send welcome email
+    try {
+      await sendWelcomeEmail(user.email, user.profile.name);
+    } catch (emailError) {
+      console.error('Failed to send welcome email:', emailError);
+    }
+
+    res.json({
+      success: true,
+      message: 'Email verified successfully!',
+      user: {
+        _id: user._id,
+        email: user.email,
+        emailVerified: user.emailVerified,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+// @desc    Resend verification email
+// @route   POST /api/auth/resend-verification
+// @access  Private
+const resendVerificationEmail = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (user.emailVerified) {
+      return res.status(400).json({ message: 'Email is already verified' });
+    }
+
+    // Generate new verification token
+    const verificationToken = user.generateEmailVerificationToken();
+    await user.save();
+
+    // Send verification email
+    await sendVerificationEmail(user.email, verificationToken);
+
+    res.json({
+      success: true,
+      message: 'Verification email sent! Please check your inbox.'
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+// @desc    Google OAuth callback
+// @route   GET /api/auth/google/callback
+// @access  Public
+const googleAuthCallback = async (req, res) => {
+  try {
+    // User is attached to req by passport
+    const user = req.user;
+
+    // Generate JWT token
+    const token = generateToken(user._id);
+
+    // Redirect to frontend with token
+    const redirectUrl = `${process.env.CLIENT_URL}/auth/callback?token=${token}&role=${user.role}`;
+    res.redirect(redirectUrl);
+  } catch (error) {
+    console.error(error);
+    res.redirect(`${process.env.CLIENT_URL}/login?error=oauth_failed`);
+  }
+};
+
 module.exports = {
   register,
   login,
-  getMe
+  getMe,
+  verifyEmail,
+  resendVerificationEmail,
+  googleAuthCallback
 };

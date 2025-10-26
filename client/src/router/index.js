@@ -8,12 +8,18 @@ import CreatorOnboarding from '../views/CreatorOnboarding.vue'
 import CreatorDashboard from '../views/CreatorDashboard.vue'
 import ClientOnboarding from '../views/ClientOnboarding.vue'
 import ClientDashboard from '../views/ClientDashboard.vue'
+import VerifyEmail from '../views/VerifyEmail.vue'
+import AuthCallback from '../views/AuthCallback.vue'
+import TestPage from '../views/TestPage.vue'
 import { useAuthStore } from '../stores/auth'
 
 const routes = [
   { path: '/', name: 'Landing', component: LandingPage },
+  { path: '/test', name: 'Test', component: TestPage },
   { path: '/login', name: 'Login', component: Login },
   { path: '/signup', name: 'Signup', component: Signup },
+  { path: '/verify-email/:token', name: 'VerifyEmail', component: VerifyEmail },
+  { path: '/auth/callback', name: 'AuthCallback', component: AuthCallback },
   { path: '/discover', name: 'Discover', component: Discover },
   { path: '/creator/:id', name: 'CreatorProfile', component: CreatorProfile },
   {

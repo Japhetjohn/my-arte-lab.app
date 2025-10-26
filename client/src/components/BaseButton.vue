@@ -45,12 +45,12 @@ const props = defineProps({
 defineEmits(['click'])
 
 const buttonClasses = computed(() => {
-  const base = 'font-semibold rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2'
+  const base = 'font-semibold rounded-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 transform hover:scale-[1.02] active:scale-[0.98]'
 
   const variants = {
-    primary: 'bg-indigo-600 hover:bg-indigo-700 text-white focus:ring-indigo-500',
+    primary: 'text-white focus:ring-purple-400 shadow-lg hover:shadow-xl',
     secondary: 'bg-gray-200 hover:bg-gray-300 text-gray-900 focus:ring-gray-500',
-    outline: 'border-2 border-indigo-600 text-indigo-600 hover:bg-indigo-50 focus:ring-indigo-500',
+    outline: 'border-2 text-white hover:bg-white/10 focus:ring-purple-400',
     danger: 'bg-red-600 hover:bg-red-700 text-white focus:ring-red-500'
   }
 
