@@ -3,6 +3,7 @@ import Login from '../views/Login.vue'
 import Signup from '../views/Signup.vue'
 import EmailSignup from '../views/EmailSignup.vue'
 import EmailSignin from '../views/EmailSignin.vue'
+import Questionnaire from '../views/Questionnaire.vue'
 import Discover from '../views/Discover.vue'
 import CreatorProfile from '../views/CreatorProfile.vue'
 import CreatorOnboarding from '../views/CreatorOnboarding.vue'
@@ -21,6 +22,7 @@ const routes = [
   { path: '/login', name: 'Login', component: Login },
   { path: '/email-signup', name: 'EmailSignup', component: EmailSignup },
   { path: '/email-signin', name: 'EmailSignin', component: EmailSignin },
+  { path: '/questionnaire', name: 'Questionnaire', component: Questionnaire, meta: { requiresAuth: true } },
   { path: '/verify-email/:token', name: 'VerifyEmail', component: VerifyEmail },
   { path: '/auth/callback', name: 'AuthCallback', component: AuthCallback },
   { path: '/discover', name: 'Discover', component: Discover },

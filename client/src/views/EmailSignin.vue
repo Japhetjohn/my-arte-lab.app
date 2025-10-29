@@ -1,15 +1,15 @@
 <template>
   <div class="min-h-screen flex overflow-hidden font-['Inter',sans-serif]">
     <!-- Left side - Form Section -->
-    <div class="w-full lg:w-1/2 flex items-center justify-center p-8 lg:p-16 bg-white relative min-h-screen">
+    <div class="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-8 lg:p-16 bg-white relative min-h-screen">
       <!-- Logo in top left -->
-      <div class="absolute top-8 left-8">
-        <img src="/logo.PNG" alt="MyArteLab" class="h-12 w-auto" />
+      <div class="absolute top-4 left-4 sm:top-8 sm:left-8">
+        <img src="/logo.PNG" alt="MyArteLab" class="h-8 sm:h-12 w-auto" />
       </div>
 
       <!-- Form Card -->
-      <div class="w-full max-w-[420px] animate-fade-in" style="margin-top: 48px; margin-bottom: 48px;">
-        <div class="bg-white rounded-[14px] px-8 py-12">
+      <div class="w-full max-w-[420px] animate-fade-in px-2 sm:px-0" style="margin-top: 60px; margin-bottom: 48px;">
+        <div class="bg-white rounded-[14px] px-4 sm:px-8 py-8 sm:py-12">
           <!-- Header -->
           <h1 class="text-2xl font-semibold text-[#111111] mb-8 font-['Inter',sans-serif]">
             Welcome back
