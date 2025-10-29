@@ -9,7 +9,7 @@
 
       <!-- Form Card -->
       <div class="w-full max-w-[420px] animate-fade-in" style="margin-top: 48px; margin-bottom: 48px;">
-        <div class="bg-white rounded-[14px] shadow-[0_8px_30px_rgba(0,0,0,0.08)] px-8 py-12">
+        <div class="bg-white rounded-[14px] px-8 py-12">
           <!-- Header -->
           <h1 class="text-2xl font-semibold text-[#111111] mb-8 font-['Inter',sans-serif]">
             Create your account
@@ -30,7 +30,7 @@
                 @input="validateEmail"
                 placeholder="Email Address"
                 required
-                class="w-full h-[56px] px-5 border-[1.5px] border-[#E4E4E4] rounded-[12px] bg-white placeholder-[#ACACAC] text-[#111111] text-[15px] focus:outline-none focus:border-2 focus:border-[#9747FF] focus:shadow-[0_6px_20px_rgba(151,71,255,0.18)] transition-all duration-200"
+                class="w-full h-[56px] px-5 border-[1.5px] border-[#E8E8E8] rounded-[12px] bg-transparent placeholder-[#ACACAC] text-[#111111] text-[15px] focus:outline-none focus:border-2 focus:border-[#9747FF] focus:shadow-[0_6px_20px_rgba(151,71,255,0.18)] transition-all duration-200"
                 :class="errors.email ? 'border-red-400' : 'border-[#E4E4E4]'"
               />
               <p v-if="errors.email" class="text-xs text-[#E55353] mt-2">{{ errors.email }}</p>
@@ -48,7 +48,7 @@
                 v-model="formData.username"
                 placeholder="Username"
                 required
-                class="w-full h-[56px] px-5 border-[1.5px] border-[#E4E4E4] rounded-[12px] bg-white placeholder-[#ACACAC] text-[#111111] text-[15px] focus:outline-none focus:border-2 focus:border-[#9747FF] focus:shadow-[0_6px_20px_rgba(151,71,255,0.18)] transition-all duration-200"
+                class="w-full h-[56px] px-5 border-[1.5px] border-[#E8E8E8] rounded-[12px] bg-transparent placeholder-[#ACACAC] text-[#111111] text-[15px] focus:outline-none focus:border-2 focus:border-[#9747FF] focus:shadow-[0_6px_20px_rgba(151,71,255,0.18)] transition-all duration-200"
               />
             </div>
 
