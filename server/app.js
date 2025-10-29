@@ -7,6 +7,9 @@ const passport = require('./config/passport');
 
 dotenv.config();
 
+// Fix Mongoose strictQuery deprecation warning
+mongoose.set('strictQuery', false);
+
 const app = express();
 
 // Middleware
