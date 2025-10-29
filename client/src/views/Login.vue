@@ -42,7 +42,7 @@
             </button>
 
             <button
-              @click="showEmailForm = true"
+              @click="$router.push('/email-signin')"
               type="button"
               class="w-full h-12 bg-gradient-to-r from-purple-500 to-blue-500 text-white font-semibold text-sm rounded-lg hover:from-purple-600 hover:to-blue-600 transition-all duration-200 shadow-[0_2px_8px_rgba(139,92,246,0.4)]"
             >

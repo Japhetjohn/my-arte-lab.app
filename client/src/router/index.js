@@ -2,6 +2,8 @@ import { createRouter, createWebHistory } from 'vue-router'
 import LandingPage from '../views/LandingPage.vue'
 import Login from '../views/Login.vue'
 import Signup from '../views/Signup.vue'
+import EmailSignup from '../views/EmailSignup.vue'
+import EmailSignin from '../views/EmailSignin.vue'
 import Discover from '../views/Discover.vue'
 import CreatorProfile from '../views/CreatorProfile.vue'
 import CreatorOnboarding from '../views/CreatorOnboarding.vue'
@@ -18,6 +20,8 @@ const routes = [
   { path: '/test', name: 'Test', component: TestPage },
   { path: '/login', name: 'Login', component: Login },
   { path: '/signup', name: 'Signup', component: Signup },
+  { path: '/email-signup', name: 'EmailSignup', component: EmailSignup },
+  { path: '/email-signin', name: 'EmailSignin', component: EmailSignin },
   { path: '/verify-email/:token', name: 'VerifyEmail', component: VerifyEmail },
   { path: '/auth/callback', name: 'AuthCallback', component: AuthCallback },
   { path: '/discover', name: 'Discover', component: Discover },
