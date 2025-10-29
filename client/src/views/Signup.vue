@@ -9,7 +9,7 @@
 
       <!-- Form Card -->
       <div class="w-full max-w-md animate-fade-in">
-        <div class="bg-white rounded-xl shadow-md p-8 space-y-6">
+        <div class="bg-white rounded-xl p-8 space-y-6">
           <!-- Header -->
           <h1 class="text-2xl font-semibold text-gray-900 text-center font-['Inter',sans-serif]">
             Create your account
