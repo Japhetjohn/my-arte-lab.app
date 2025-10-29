@@ -1,5 +1,4 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import LandingPage from '../views/LandingPage.vue'
 import Login from '../views/Login.vue'
 import Signup from '../views/Signup.vue'
 import EmailSignup from '../views/EmailSignup.vue'
@@ -16,10 +15,10 @@ import TestPage from '../views/TestPage.vue'
 import { useAuthStore } from '../stores/auth'
 
 const routes = [
-  { path: '/', name: 'Landing', component: LandingPage },
+  { path: '/', name: 'Home', component: Signup },
+  { path: '/signup', name: 'Signup', component: Signup },
   { path: '/test', name: 'Test', component: TestPage },
   { path: '/login', name: 'Login', component: Login },
-  { path: '/signup', name: 'Signup', component: Signup },
   { path: '/email-signup', name: 'EmailSignup', component: EmailSignup },
   { path: '/email-signin', name: 'EmailSignin', component: EmailSignin },
   { path: '/verify-email/:token', name: 'VerifyEmail', component: VerifyEmail },
