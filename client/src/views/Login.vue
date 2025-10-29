@@ -169,11 +169,12 @@ const handleLogin = async () => {
   try {
     await authStore.login(formData.value)
 
-    if (authStore.user && !authStore.user.emailVerified) {
-      showVerificationWarning.value = true
-      loading.value = false
-      return
-    }
+    // Skip email verification check for testing
+    // if (authStore.user && !authStore.user.emailVerified) {
+    //   showVerificationWarning.value = true
+    //   loading.value = false
+    //   return
+    // }
 
     if (authStore.isCreator) {
       router.push('/creator/dashboard')

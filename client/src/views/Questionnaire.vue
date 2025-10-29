@@ -1,149 +1,313 @@
 <template>
-  <div class="min-h-screen flex overflow-hidden font-['Inter',sans-serif] bg-white">
-    <!-- Questionnaire Section -->
-    <div class="w-full flex items-center justify-center p-4 sm:p-8 relative">
+  <div class="min-h-screen flex overflow-hidden font-['Inter',sans-serif]">
+    <!-- Left side - Form Section -->
+    <div class="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-8 lg:p-16 bg-white relative min-h-screen">
       <!-- Logo in top left -->
       <div class="absolute top-4 left-4 sm:top-8 sm:left-8">
         <img src="/logo.PNG" alt="MyArteLab" class="h-8 sm:h-12 w-auto" />
       </div>
 
-      <!-- Questionnaire Card -->
-      <div class="w-full max-w-[420px] mt-16 sm:mt-0">
-        <div class="bg-white rounded-[20px] px-6 sm:px-8 py-10 sm:py-12 shadow-[0_12px_40px_rgba(0,0,0,0.08)]">
+      <!-- Form Card -->
+      <div class="w-full max-w-[420px] animate-fade-in px-2 sm:px-0" style="margin-top: 60px; margin-bottom: 48px;">
+        <div class="bg-white rounded-[14px] px-4 sm:px-8 py-8 sm:py-12">
 
           <!-- Progress Indicator -->
-          <div class="flex items-center justify-center gap-3 mb-12">
+          <div class="flex items-center justify-center gap-2 mb-8">
             <div
               class="h-2 w-2 rounded-full transition-all duration-300"
-              :class="currentStep === 1 ? 'bg-[#9747FF] w-12' : 'bg-[#E8E8E8]'"
+              :class="currentStep === 1 ? 'bg-[#9747FF] w-8' : 'bg-[#E8E8E8]'"
             ></div>
             <div
               class="h-2 w-2 rounded-full transition-all duration-300"
-              :class="currentStep === 2 ? 'bg-[#9747FF] w-12' : 'bg-[#E8E8E8]'"
-            ></div>
-            <div
-              class="h-2 w-2 rounded-full transition-all duration-300"
-              :class="currentStep === 3 ? 'bg-[#9747FF] w-12' : 'bg-[#E8E8E8]'"
+              :class="currentStep === 2 ? 'bg-[#9747FF] w-8' : 'bg-[#E8E8E8]'"
             ></div>
           </div>
 
-          <!-- Question Container -->
-          <div class="relative overflow-hidden" style="min-height: 500px;">
-            <!-- Step 1: Role -->
-            <transition name="slide" @before-leave="disablePointer = true" @after-enter="disablePointer = false">
-              <div v-if="currentStep === 1" class="absolute inset-0" :class="{ 'pointer-events-none': disablePointer }">
-                <h2 class="text-2xl font-semibold text-[#111111] mb-3">Are you looking for...</h2>
-                <p class="text-sm text-[#6B6B6B] mb-12">Select what best describes you</p>
+          <!-- Question Container with Slide Transitions -->
+          <div class="relative" style="min-height: 420px; max-height: 520px; overflow-y: auto;">
+            <!-- Step 1: Role Selection -->
+            <transition
+              name="slide"
+              @before-leave="disablePointer = true"
+              @after-enter="disablePointer = false"
+            >
+              <div
+                v-if="currentStep === 1"
+                class="absolute inset-0"
+                :class="{ 'pointer-events-none': disablePointer }"
+              >
+                <h2 class="text-2xl font-semibold text-[#111111] mb-2 font-['Inter',sans-serif]">
+                  What best describes you?
+                </h2>
+                <p class="text-sm text-[#6B6B6B] mb-8">
+                  Select what best describes you
+                </p>
 
-                <!-- Options Box -->
-                <div class="bg-[#F9F9F9] rounded-[16px] p-6 space-y-6">
+                <!-- Role Options -->
+                <div>
+                  <!-- Client -->
                   <button
-                    v-for="(option, index) in roleOptions"
-                    :key="option.value"
-                    @click="selectRole(option.value)"
-                    class="w-full h-[58px] px-6 border-[1.5px] rounded-[14px] bg-white text-[#111111] text-[15px] font-medium flex items-center justify-between transition-all duration-200 hover:border-[#9747FF] hover:bg-[#9747FF]/5"
-                    :class="[selectedRole === option.value ? 'border-[#9747FF] bg-[#9747FF]/10' : 'border-[#E8E8E8]', 'animate-slide-in-option']"
-                    :style="{ 'animation-delay': `${index * 70}ms` }"
+                    @click="selectRole('client')"
+                    type="button"
+                    class="w-full h-[56px] px-5 border-[1.5px] rounded-[12px] bg-transparent text-[#111111] text-[15px] font-medium flex items-center justify-between transition-all duration-200 hover:border-[#9747FF] hover:bg-[#9747FF]/5 animate-slide-in-option"
+                    :class="selectedRole === 'client' ? 'border-[#9747FF] bg-[#9747FF]/10' : 'border-[#E8E8E8]'"
                   >
-                    <span>{{ option.label }}</span>
-                    <div class="w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-200"
-                         :class="selectedRole === option.value ? 'border-[#9747FF] bg-[#9747FF]' : 'border-[#E8E8E8]'">
-                      <div v-if="selectedRole === option.value" class="w-2 h-2 bg-white rounded-full"></div>
-                    </div>
+                    <span>Client</span>
+                    <svg
+                      v-if="selectedRole === 'client'"
+                      class="w-5 h-5 text-[#9747FF]"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fill-rule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                        clip-rule="evenodd"
+                      />
+                    </svg>
+                  </button>
+
+                  <!-- Spacer -->
+                  <div class="h-6"></div>
+
+                  <!-- Photographer -->
+                  <button
+                    @click="selectRole('photographer')"
+                    type="button"
+                    class="w-full h-[56px] px-5 border-[1.5px] rounded-[12px] bg-transparent text-[#111111] text-[15px] font-medium flex items-center justify-between transition-all duration-200 hover:border-[#9747FF] hover:bg-[#9747FF]/5 animate-slide-in-option"
+                    :class="selectedRole === 'photographer' ? 'border-[#9747FF] bg-[#9747FF]/10' : 'border-[#E8E8E8]'"
+                    style="animation-delay: 50ms"
+                  >
+                    <span>Photographer</span>
+                    <svg
+                      v-if="selectedRole === 'photographer'"
+                      class="w-5 h-5 text-[#9747FF]"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fill-rule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                        clip-rule="evenodd"
+                      />
+                    </svg>
+                  </button>
+
+                  <!-- Spacer -->
+                  <div class="h-6"></div>
+
+                  <!-- Creator -->
+                  <button
+                    @click="selectRole('creator')"
+                    type="button"
+                    class="w-full h-[56px] px-5 border-[1.5px] rounded-[12px] bg-transparent text-[#111111] text-[15px] font-medium flex items-center justify-between transition-all duration-200 hover:border-[#9747FF] hover:bg-[#9747FF]/5 animate-slide-in-option"
+                    :class="selectedRole === 'creator' ? 'border-[#9747FF] bg-[#9747FF]/10' : 'border-[#E8E8E8]'"
+                    style="animation-delay: 100ms"
+                  >
+                    <span>Creator</span>
+                    <svg
+                      v-if="selectedRole === 'creator'"
+                      class="w-5 h-5 text-[#9747FF]"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fill-rule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                        clip-rule="evenodd"
+                      />
+                    </svg>
                   </button>
                 </div>
 
-                <div class="h-10"></div>
+                <!-- Spacer -->
+                <div class="h-8"></div>
 
-                <button @click="goToStep2" :disabled="!selectedRole"
-                  class="w-full h-[56px] bg-gradient-to-r from-[#9747FF] to-[#C86FFF] text-white font-semibold text-base rounded-[14px] shadow-[0_10px_28px_rgba(151,71,255,0.34)] hover:shadow-[0_14px_34px_rgba(151,71,255,0.40)] hover:-translate-y-1 active:scale-[0.985] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                <!-- Continue Button -->
+                <button
+                  @click="goToStep2"
+                  :disabled="!selectedRole"
+                  type="button"
+                  class="w-full h-[56px] bg-gradient-to-r from-[#9747FF] to-[#C86FFF] text-white font-semibold text-base rounded-[10px] shadow-[0_10px_28px_rgba(151,71,255,0.34)] hover:shadow-[0_14px_34px_rgba(151,71,255,0.40)] hover:-translate-y-[3px] active:scale-[0.985] active:translate-y-0 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                >
                   Continue
                 </button>
               </div>
             </transition>
 
-            <!-- Step 2: Source -->
-            <transition name="slide" @before-leave="disablePointer = true" @after-enter="disablePointer = false">
-              <div v-if="currentStep === 2" class="absolute inset-0" :class="{ 'pointer-events-none': disablePointer }">
-                <h2 class="text-2xl font-semibold text-[#111111] mb-3">Where did you hear about us?</h2>
-                <p class="text-sm text-[#6B6B6B] mb-12">Help us improve our outreach</p>
+            <!-- Step 2: Source Selection -->
+            <transition
+              name="slide"
+              @before-leave="disablePointer = true"
+              @after-enter="disablePointer = false"
+            >
+              <div
+                v-if="currentStep === 2"
+                class="absolute inset-0"
+                :class="{ 'pointer-events-none': disablePointer }"
+              >
+                <h2 class="text-2xl font-semibold text-[#111111] mb-2 font-['Inter',sans-serif]">
+                  Where did you hear about us?
+                </h2>
+                <p class="text-sm text-[#6B6B6B] mb-8">
+                  Help us improve our outreach
+                </p>
 
-                <div class="bg-[#F9F9F9] rounded-[16px] p-6 space-y-6">
+                <!-- Source Options -->
+                <div>
+                  <!-- Social Media -->
                   <button
-                    v-for="(option, index) in sourceOptions"
-                    :key="option.value"
-                    @click="selectSource(option.value)"
-                    class="w-full h-[58px] px-6 border-[1.5px] rounded-[14px] bg-white text-[#111111] text-[15px] font-medium flex items-center justify-between transition-all duration-200 hover:border-[#9747FF] hover:bg-[#9747FF]/5"
-                    :class="[selectedSource === option.value ? 'border-[#9747FF] bg-[#9747FF]/10' : 'border-[#E8E8E8]', 'animate-slide-in-option']"
-                    :style="{ 'animation-delay': `${index * 70}ms` }"
+                    @click="selectSource('social_media')"
+                    type="button"
+                    class="w-full h-[56px] px-5 border-[1.5px] rounded-[12px] bg-transparent text-[#111111] text-[15px] font-medium flex items-center justify-between transition-all duration-200 hover:border-[#9747FF] hover:bg-[#9747FF]/5 animate-slide-in-option"
+                    :class="selectedSource === 'social_media' ? 'border-[#9747FF] bg-[#9747FF]/10' : 'border-[#E8E8E8]'"
                   >
-                    <span>{{ option.label }}</span>
-                    <div class="w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-200"
-                         :class="selectedSource === option.value ? 'border-[#9747FF] bg-[#9747FF]' : 'border-[#E8E8E8]'">
-                      <div v-if="selectedSource === option.value" class="w-2 h-2 bg-white rounded-full"></div>
-                    </div>
+                    <span>Social Media</span>
+                    <svg
+                      v-if="selectedSource === 'social_media'"
+                      class="w-5 h-5 text-[#9747FF]"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fill-rule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                        clip-rule="evenodd"
+                      />
+                    </svg>
                   </button>
 
+                  <!-- Spacer -->
+                  <div class="h-6"></div>
+
+                  <!-- Friend / Referral -->
+                  <button
+                    @click="selectSource('friend')"
+                    type="button"
+                    class="w-full h-[56px] px-5 border-[1.5px] rounded-[12px] bg-transparent text-[#111111] text-[15px] font-medium flex items-center justify-between transition-all duration-200 hover:border-[#9747FF] hover:bg-[#9747FF]/5 animate-slide-in-option"
+                    :class="selectedSource === 'friend' ? 'border-[#9747FF] bg-[#9747FF]/10' : 'border-[#E8E8E8]'"
+                    style="animation-delay: 50ms"
+                  >
+                    <span>Friend / Referral</span>
+                    <svg
+                      v-if="selectedSource === 'friend'"
+                      class="w-5 h-5 text-[#9747FF]"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fill-rule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                        clip-rule="evenodd"
+                      />
+                    </svg>
+                  </button>
+
+                  <!-- Spacer -->
+                  <div class="h-6"></div>
+
+                  <!-- Search Engine -->
+                  <button
+                    @click="selectSource('search_engine')"
+                    type="button"
+                    class="w-full h-[56px] px-5 border-[1.5px] rounded-[12px] bg-transparent text-[#111111] text-[15px] font-medium flex items-center justify-between transition-all duration-200 hover:border-[#9747FF] hover:bg-[#9747FF]/5 animate-slide-in-option"
+                    :class="selectedSource === 'search_engine' ? 'border-[#9747FF] bg-[#9747FF]/10' : 'border-[#E8E8E8]'"
+                    style="animation-delay: 100ms"
+                  >
+                    <span>Search Engine</span>
+                    <svg
+                      v-if="selectedSource === 'search_engine'"
+                      class="w-5 h-5 text-[#9747FF]"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fill-rule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                        clip-rule="evenodd"
+                      />
+                    </svg>
+                  </button>
+
+                  <!-- Spacer -->
+                  <div class="h-6"></div>
+
+                  <!-- Event / Conference -->
+                  <button
+                    @click="selectSource('event')"
+                    type="button"
+                    class="w-full h-[56px] px-5 border-[1.5px] rounded-[12px] bg-transparent text-[#111111] text-[15px] font-medium flex items-center justify-between transition-all duration-200 hover:border-[#9747FF] hover:bg-[#9747FF]/5 animate-slide-in-option"
+                    :class="selectedSource === 'event' ? 'border-[#9747FF] bg-[#9747FF]/10' : 'border-[#E8E8E8]'"
+                    style="animation-delay: 150ms"
+                  >
+                    <span>Event / Conference</span>
+                    <svg
+                      v-if="selectedSource === 'event'"
+                      class="w-5 h-5 text-[#9747FF]"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fill-rule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                        clip-rule="evenodd"
+                      />
+                    </svg>
+                  </button>
+
+                  <!-- Spacer -->
+                  <div class="h-6"></div>
+
+                  <!-- Other -->
+                  <button
+                    @click="selectSource('other')"
+                    type="button"
+                    class="w-full h-[56px] px-5 border-[1.5px] rounded-[12px] bg-transparent text-[#111111] text-[15px] font-medium flex items-center justify-between transition-all duration-200 hover:border-[#9747FF] hover:bg-[#9747FF]/5 animate-slide-in-option"
+                    :class="selectedSource === 'other' ? 'border-[#9747FF] bg-[#9747FF]/10' : 'border-[#E8E8E8]'"
+                    style="animation-delay: 200ms"
+                  >
+                    <span>Other (please specify)</span>
+                    <svg
+                      v-if="selectedSource === 'other'"
+                      class="w-5 h-5 text-[#9747FF]"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fill-rule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                        clip-rule="evenodd"
+                      />
+                    </svg>
+                  </button>
+
+                  <!-- Other Input Field (appears when "Other" is selected) -->
                   <transition name="fade">
-                    <div v-if="selectedSource === 'other'" class="mt-6">
-                      <input v-model="otherSourceText" type="text" placeholder="Please specify..."
-                        class="w-full h-[56px] px-6 border-[1.5px] border-[#E8E8E8] rounded-[14px] bg-white placeholder-[#ACACAC] text-[#111111] text-[15px] focus:outline-none focus:border-2 focus:border-[#9747FF] focus:shadow-[0_6px_20px_rgba(151,71,255,0.18)] transition-all duration-200" />
+                    <div v-if="selectedSource === 'other'">
+                      <!-- Spacer -->
+                      <div class="h-6"></div>
+
+                      <input
+                        v-model="otherSourceText"
+                        type="text"
+                        placeholder="Please specify..."
+                        class="w-full h-[56px] px-5 border-[1.5px] border-[#E8E8E8] rounded-[12px] bg-transparent placeholder-[#ACACAC] text-[#111111] text-[15px] focus:outline-none focus:border-2 focus:border-[#9747FF] focus:shadow-[0_6px_20px_rgba(151,71,255,0.18)] transition-all duration-200"
+                      />
                     </div>
                   </transition>
                 </div>
 
-                <div class="h-10"></div>
+                <!-- Spacer -->
+                <div class="h-8"></div>
 
+                <!-- Action Buttons -->
                 <div class="space-y-4">
-                  <button @click="goToStep3" :disabled="!selectedSource || (selectedSource === 'other' && !otherSourceText)"
-                    class="w-full h-[56px] bg-gradient-to-r from-[#9747FF] to-[#C86FFF] text-white font-semibold text-base rounded-[14px] shadow-[0_10px_28px_rgba(151,71,255,0.34)] hover:shadow-[0_14px_34px_rgba(151,71,255,0.40)] hover:-translate-y-1 active:scale-[0.985] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
-                    Continue
-                  </button>
-                  <button @click="goBackToStep1" class="w-full text-[14px] text-[#6B6B6B] hover:text-[#9747FF] font-medium transition-colors duration-200">
-                    Back
-                  </button>
-                </div>
-              </div>
-            </transition>
-
-            <!-- Step 3: State -->
-            <transition name="slide" @before-leave="disablePointer = true" @after-enter="disablePointer = false">
-              <div v-if="currentStep === 3" class="absolute inset-0" :class="{ 'pointer-events-none': disablePointer }">
-                <h2 class="text-2xl font-semibold text-[#111111] mb-3">Where are you from?</h2>
-                <p class="text-sm text-[#6B6B6B] mb-10">Select your state in Nigeria</p>
-
-                <!-- Search Box -->
-                <div class="relative mb-6">
-                  <svg class="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-[#9E9E9E]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                  </svg>
-                  <input v-model="stateSearch" type="text" placeholder="Search your state..."
-                    class="w-full h-[56px] pl-14 pr-6 border-[1.5px] border-[#E8E8E8] rounded-[14px] bg-white placeholder-[#ACACAC] text-[#111111] text-[15px] focus:outline-none focus:border-2 focus:border-[#9747FF] focus:shadow-[0_6px_20px_rgba(151,71,255,0.18)] transition-all duration-200" />
-                </div>
-
-                <!-- State List -->
-                <div class="bg-[#F9F9F9] rounded-[16px] p-6 space-y-6 max-h-[340px] overflow-y-auto">
                   <button
-                    v-for="(state, index) in filteredStates"
-                    :key="state"
-                    @click="selectState(state)"
-                    class="w-full h-[58px] px-6 border-[1.5px] rounded-[14px] bg-white text-[#111111] text-[15px] font-medium flex items-center justify-between transition-all duration-200 hover:border-[#9747FF] hover:bg-[#9747FF]/5"
-                    :class="[selectedState === state ? 'border-[#9747FF] bg-[#9747FF]/10' : 'border-[#E8E8E8]', 'animate-slide-in-option']"
-                    :style="{ 'animation-delay': `${index * 40}ms` }"
+                    @click="submitQuestionnaire"
+                    :disabled="!selectedSource || (selectedSource === 'other' && !otherSourceText)"
+                    type="button"
+                    class="w-full h-[56px] bg-gradient-to-r from-[#9747FF] to-[#C86FFF] text-white font-semibold text-base rounded-[10px] shadow-[0_10px_28px_rgba(151,71,255,0.34)] hover:shadow-[0_14px_34px_rgba(151,71,255,0.40)] hover:-translate-y-[3px] active:scale-[0.985] active:translate-y-0 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
                   >
-                    <span>{{ state }}</span>
-                    <div class="w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-200"
-                         :class="selectedState === state ? 'border-[#9747FF] bg-[#9747FF]' : 'border-[#E8E8E8]'">
-                      <div v-if="selectedState === state" class="w-2 h-2 bg-white rounded-full"></div>
-                    </div>
-                  </button>
-                </div>
-
-                <div class="h-10"></div>
-
-                <div class="space-y-4">
-                  <button @click="submitQuestionnaire" :disabled="!selectedState"
-                    class="w-full h-[56px] bg-gradient-to-r from-[#9747FF] to-[#C86FFF] text-white font-semibold text-base rounded-[14px] shadow-[0_10px_28px_rgba(151,71,255,0.34)] hover:shadow-[0_14px_34px_rgba(151,71,255,0.40)] hover:-translate-y-1 active:scale-[0.985] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
                     <span v-if="!loading">Complete Setup</span>
                     <span v-else class="flex items-center justify-center gap-2">
                       <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
@@ -153,8 +317,13 @@
                       Submitting...
                     </span>
                   </button>
-                  <button @click="goBackToStep2" class="w-full text-[14px] text-[#6B6B6B] hover:text-[#9747FF] font-medium transition-colors duration-200">
-                    Back
+
+                  <button
+                    @click="goBackToStep1"
+                    type="button"
+                    class="w-full text-[13px] text-[#6B6B6B] hover:text-[#9747FF] font-medium transition-colors duration-200"
+                  >
+                    ← Back
                   </button>
                 </div>
               </div>
@@ -163,11 +332,36 @@
         </div>
       </div>
     </div>
+
+    <!-- Right side - Visual Section -->
+    <div class="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-white via-purple-50 to-[#9747FF]">
+      <!-- Geometric shapes -->
+      <div class="absolute top-20 right-20 w-96 h-96 bg-[#9747FF]/20 rounded-full blur-3xl animate-pulse"></div>
+      <div class="absolute bottom-40 left-20 w-80 h-80 bg-white/30 rounded-full blur-2xl"></div>
+      <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-gradient-to-br from-[#9747FF]/10 to-transparent rounded-full blur-3xl"></div>
+
+      <!-- Content -->
+      <div class="relative z-10 flex flex-col items-center justify-center w-full p-12">
+        <div class="max-w-lg text-center">
+          <div class="mb-8 flex justify-center">
+            <div class="w-40 h-40 bg-white/20 backdrop-blur-xl rounded-3xl flex items-center justify-center shadow-[0_0_60px_rgba(151,71,255,0.5)] p-6">
+              <img src="/logo.PNG" alt="MyArteLab" class="w-full h-full object-contain" />
+            </div>
+          </div>
+          <h2 class="text-white text-5xl font-bold mb-6 leading-tight drop-shadow-lg">
+            Connect with Africa's best creatives
+          </h2>
+          <p class="text-white/90 text-xl leading-relaxed drop-shadow-md">
+            Join a community of photographers and designers building amazing projects together.
+          </p>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 
@@ -179,8 +373,6 @@ const currentStep = ref(1)
 const selectedRole = ref('')
 const selectedSource = ref('')
 const otherSourceText = ref('')
-const selectedState = ref('')
-const stateSearch = ref('')
 const disablePointer = ref(false)
 const loading = ref(false)
 
@@ -199,51 +391,43 @@ const sourceOptions = [
   { value: 'other', label: 'Other (please specify)' }
 ]
 
-const nigerianStates = [
-  'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 'Borno',
-  'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'FCT', 'Gombe',
-  'Imo', 'Jigawa', 'Kaduna', 'Kano', 'Katsina', 'Kebbi', 'Kogi', 'Kwara',
-  'Lagos', 'Nasarawa', 'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo', 'Plateau',
-  'Rivers', 'Sokoto', 'Taraba', 'Yobe', 'Zamfara'
-]
-
-// Computed
-const filteredStates = computed(() => {
-  if (!stateSearch.value) return nigerianStates
-  return nigerianStates.filter(state =>
-    state.toLowerCase().includes(stateSearch.value.toLowerCase())
-  )
-})
-
 // Methods
-const selectRole = (role) => { selectedRole.value = role }
+const selectRole = (role) => {
+  selectedRole.value = role
+}
+
 const selectSource = (source) => {
   selectedSource.value = source
-  if (source !== 'other') otherSourceText.value = ''
-}
-const selectState = (state) => { selectedState.value = state }
-
-const goToStep2 = () => { if (selectedRole.value) currentStep.value = 2 }
-const goToStep3 = () => {
-  if (selectedSource.value && (selectedSource.value !== 'other' || otherSourceText.value)) {
-    currentStep.value = 3
+  if (source !== 'other') {
+    otherSourceText.value = ''
   }
 }
-const goBackToStep1 = () => { currentStep.value = 1 }
-const goBackToStep2 = () => { currentStep.value = 2 }
+
+const goToStep2 = () => {
+  if (selectedRole.value) {
+    currentStep.value = 2
+  }
+}
+
+const goBackToStep1 = () => {
+  currentStep.value = 1
+}
 
 const submitQuestionnaire = async () => {
-  if (!selectedState.value) return
+  if (!selectedSource.value || (selectedSource.value === 'other' && !otherSourceText.value)) {
+    return
+  }
+
   loading.value = true
 
   try {
     const payload = {
       role: selectedRole.value,
-      source: selectedSource.value === 'other' ? otherSourceText.value : selectedSource.value,
-      state: selectedState.value
+      source: selectedSource.value === 'other' ? otherSourceText.value : selectedSource.value
     }
 
-    const response = await fetch('http://localhost:5001/api/users/questionnaire', {
+    // Submit to backend
+    const response = await fetch('http://localhost:5000/api/users/questionnaire', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -253,20 +437,24 @@ const submitQuestionnaire = async () => {
     })
 
     if (response.ok) {
+      // Update user role in store
       if (authStore.user) {
         authStore.user.role = selectedRole.value
-        authStore.user.state = selectedState.value
       }
-      if (['creator', 'photographer'].includes(selectedRole.value)) {
+
+      // Redirect based on role
+      if (selectedRole.value === 'creator' || selectedRole.value === 'photographer') {
         router.push('/creator/onboarding')
       } else if (selectedRole.value === 'client') {
         router.push('/client/onboarding')
       } else {
         router.push('/discover')
       }
+    } else {
+      console.error('Failed to submit questionnaire')
     }
   } catch (error) {
-    console.error('Error:', error)
+    console.error('Error submitting questionnaire:', error)
   } finally {
     loading.value = false
   }
@@ -274,39 +462,79 @@ const submitQuestionnaire = async () => {
 </script>
 
 <style scoped>
-/* Transitions */
-.slide-enter-active, .slide-leave-active { transition: transform 300ms ease, opacity 300ms ease; }
-.slide-enter-from { transform: translateX(100%); opacity: 0; }
-.slide-leave-to { transform: translateX(-100%); opacity: 0; }
-.slide-enter-to, .slide-leave-from { transform: translateX(0); opacity: 1; }
-
-.fade-enter-active, .fade-leave-active { transition: opacity 200ms ease, transform 200ms ease; }
-.fade-enter-from, .fade-leave-to { opacity: 0; transform: translateY(-10px); }
-
-@keyframes slide-in-option {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+/* Slide transitions */
+.slide-enter-active,
+.slide-leave-active {
+  transition: transform 300ms ease, opacity 300ms ease;
 }
-.animate-slide-in-option { animation: slide-in-option 300ms ease-out both; }
 
-/* Scrollbar */
-.max-h-\[340px\]::-webkit-scrollbar { width: 6px; }
-.max-h-\[340px\]::-webkit-scrollbar-track { background: transparent; }
-.max-h-\[340px\]::-webkit-scrollbar-thumb { background: #D4D4D4; border-radius: 3px; }
-.max-h-\[340px\]::-webkit-scrollbar-thumb:hover { background: #B0B0B0; }
+.slide-enter-from {
+  transform: translateX(100%);
+  opacity: 0;
+}
 
-/* Focus */
-button:focus-visible { outline: 2px solid #9747FF; outline-offset: 2px; }
-input:focus { transform: translateY(-1px); }
+.slide-leave-to {
+  transform: translateX(-100%);
+  opacity: 0;
+}
 
-/* Smooth */
-* { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+.slide-enter-to,
+.slide-leave-from {
+  transform: translateX(0);
+  opacity: 1;
+}
 
-/* Responsive */
-@media (max-width: 640px) {
-  .px-6 { padding-left: 1.25rem; padding-right: 1.25rem; }
-  .py-10 { padding-top: 2.5rem; padding-bottom: 2.5rem; }
-  .space-y-6 > * + * { margin-top: 1.25rem; }
-  .h-10 { height: 2rem; }
+/* Fade transition for other input */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 200ms ease, transform 200ms ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+/* Fade in animation */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 360ms ease-out;
+}
+
+/* Staggered option animation */
+@keyframes slide-in-option {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-in-option {
+  animation: slide-in-option 300ms ease-out both;
+}
+
+/* Focus state */
+button:focus-visible {
+  outline: 2px solid #9747FF;
+  outline-offset: 2px;
+}
+
+input:focus {
+  transform: translateY(-1px);
 }
 </style>
