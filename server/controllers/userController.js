@@ -147,10 +147,47 @@ const withdrawFunds = async (req, res) => {
   }
 };
 
+// @desc    Submit questionnaire (role & source)
+// @route   POST /api/users/questionnaire
+// @access  Private
+const submitQuestionnaire = async (req, res) => {
+  try {
+    const { role, source } = req.body;
+
+    if (!role || !source) {
+      return res.status(400).json({ message: 'Role and source are required' });
+    }
+
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Update user role and referral source
+    user.role = role;
+    user.referralSource = source;
+
+    await user.save();
+
+    res.json({
+      _id: user._id,
+      email: user.email,
+      role: user.role,
+      referralSource: user.referralSource,
+      message: 'Questionnaire submitted successfully'
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
 module.exports = {
   updateProfile,
   getCreatorById,
   getCreators,
   getWallet,
-  withdrawFunds
+  withdrawFunds,
+  submitQuestionnaire
 };

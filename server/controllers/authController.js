@@ -39,6 +39,7 @@ const register = async (req, res) => {
       password,
       role,
       oauthProvider: 'local',
+      emailVerified: true, // Skip verification for testing
       profile: {
         name: name || '',
         location: location || ''
@@ -46,17 +47,15 @@ const register = async (req, res) => {
     });
 
     if (user) {
-      // Generate email verification token
-      const verificationToken = user.generateEmailVerificationToken();
-      await user.save();
-
-      // Send verification email
-      try {
-        await sendVerificationEmail(user.email, verificationToken);
-      } catch (emailError) {
-        console.error('Failed to send verification email:', emailError);
-        // Continue with registration even if email fails
-      }
+      // Skip email verification for testing
+      // const verificationToken = user.generateEmailVerificationToken();
+      // await user.save();
+      //
+      // try {
+      //   await sendVerificationEmail(user.email, verificationToken);
+      // } catch (emailError) {
+      //   console.error('Failed to send verification email:', emailError);
+      // }
 
       res.status(201).json({
         _id: user._id,
@@ -65,7 +64,7 @@ const register = async (req, res) => {
         profile: user.profile,
         emailVerified: user.emailVerified,
         token: generateToken(user._id),
-        message: 'Registration successful! Please check your email to verify your account.'
+        message: 'Registration successful!'
       });
     } else {
       res.status(400).json({ message: 'Invalid user data' });

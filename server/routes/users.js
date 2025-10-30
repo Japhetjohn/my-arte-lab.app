@@ -5,7 +5,8 @@ const {
   getCreatorById,
   getCreators,
   getWallet,
-  withdrawFunds
+  withdrawFunds,
+  submitQuestionnaire
 } = require('../controllers/userController');
 const { protect, creatorOnly } = require('../middleware/auth');
 
@@ -15,6 +16,7 @@ router.get('/creator/:id', getCreatorById);
 
 // Protected routes
 router.put('/profile', protect, updateProfile);
+router.post('/questionnaire', protect, submitQuestionnaire);
 router.get('/wallet', protect, getWallet);
 router.post('/wallet/withdraw', protect, creatorOnly, withdrawFunds);
 

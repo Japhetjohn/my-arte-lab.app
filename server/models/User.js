@@ -5,7 +5,7 @@ const crypto = require('crypto');
 const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String }, // Optional for OAuth users
-  role: { type: String, enum: ['creator', 'client', 'admin'], required: true },
+  role: { type: String, enum: ['creator', 'client', 'photographer', 'admin'], required: true },
 
   // OAuth fields
   oauthProvider: { type: String, enum: ['local', 'google'], default: 'local' },
@@ -15,6 +15,9 @@ const userSchema = new mongoose.Schema({
   emailVerified: { type: Boolean, default: false },
   emailVerificationToken: String,
   emailVerificationExpires: Date,
+
+  // Questionnaire fields
+  referralSource: { type: String },
 
   profile: {
     name: String,
