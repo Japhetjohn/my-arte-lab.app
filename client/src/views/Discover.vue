@@ -1,194 +1,306 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
-    <!-- Header -->
-    <header class="bg-white shadow-sm">
-      <div class="container mx-auto px-6 py-4 flex justify-between items-center">
-        <router-link to="/" class="text-2xl font-bold text-indigo-600">MyArteLab</router-link>
-        <div class="space-x-4">
-          <router-link to="/login">
-            <BaseButton variant="outline">Log In</BaseButton>
-          </router-link>
-          <router-link to="/signup">
-            <BaseButton variant="primary">Sign Up</BaseButton>
-          </router-link>
-        </div>
-      </div>
-    </header>
+  <div class="min-h-screen bg-white font-['Inter',sans-serif]">
+    <!-- Logo -->
+    <div class="absolute top-4 left-4 sm:top-8 sm:left-8">
+      <img src="/logo.PNG" alt="MyArteLab" class="h-8 sm:h-12 w-auto" />
+    </div>
 
-    <div class="container mx-auto px-6 py-12">
-      <div class="text-center mb-12">
-        <h1 class="text-4xl font-bold text-gray-900 mb-4">Discover Verified Creatives</h1>
-        <p class="text-xl text-gray-600">Browse portfolios of talented African photographers and designers</p>
+    <!-- Main Content -->
+    <div class="w-full pt-20 sm:pt-24 pb-12 px-4 sm:px-8">
+      <!-- Header Section -->
+      <div class="text-center mb-8">
+        <h1 class="text-[28px] font-semibold text-[#111111] mb-2 font-['Inter',sans-serif]">
+          Discover Creators
+        </h1>
+        <p class="text-[15px] text-[#6B6B6B]">
+          Browse verified creators and find the perfect match for your project
+        </p>
       </div>
 
-      <!-- Filters -->
-      <div class="bg-white rounded-lg shadow-sm p-6 mb-8">
-        <div class="grid md:grid-cols-4 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Search</label>
+      <div class="h-8"></div>
+
+      <!-- Search Bar -->
+      <div class="flex justify-center mb-6">
+        <div class="w-full max-w-[640px]">
+          <div class="flex gap-3">
             <input
-              v-model="filters.search"
+              v-model="searchQuery"
+              @input="handleSearch"
               type="text"
-              placeholder="Search by name..."
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+              placeholder="Search by name, service type, or location..."
+              class="flex-1 h-[56px] px-5 border-[1.5px] border-[#E8E8E8] rounded-[12px] bg-transparent placeholder-[#ACACAC] text-[#111111] text-[15px] focus:outline-none focus:border-2 focus:border-[#9747FF] focus:shadow-[0_6px_20px_rgba(151,71,255,0.18)] transition-all duration-200"
             />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
-            <select
-              v-model="filters.category"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+            <button
+              @click="handleSearch"
+              class="w-[56px] h-[56px] bg-[#9747FF] rounded-[12px] flex items-center justify-center hover:bg-[#8637EF] transition-all"
             >
-              <option value="">All Categories</option>
-              <option value="photography">Photography</option>
-              <option value="design">Design</option>
-            </select>
+              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </button>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Location</label>
-            <input
-              v-model="filters.location"
-              type="text"
-              placeholder="City, Country..."
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Min Rating</label>
-            <select
-              v-model="filters.minRating"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-            >
-              <option value="">Any Rating</option>
-              <option value="4">4+ Stars</option>
-              <option value="4.5">4.5+ Stars</option>
-              <option value="5">5 Stars</option>
-            </select>
-          </div>
-        </div>
-        <div class="mt-4">
-          <BaseButton @click="applyFilters" variant="primary">Apply Filters</BaseButton>
-          <BaseButton @click="resetFilters" variant="secondary" class="ml-2">Reset</BaseButton>
         </div>
       </div>
+
+      <div class="h-8"></div>
 
       <!-- Loading State -->
-      <div v-if="loading" class="text-center py-12">
-        <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-        <p class="mt-4 text-gray-600">Loading creators...</p>
+      <div v-if="loading" class="flex items-center justify-center py-16">
+        <div class="animate-spin rounded-full h-12 w-12 border-[3px] border-[#E8E8E8] border-t-[#9747FF]"></div>
       </div>
 
-      <!-- Creators Grid -->
-      <div v-else-if="creators.length > 0" class="grid md:grid-cols-3 gap-6">
-        <BaseCard
-          v-for="creator in creators"
-          :key="creator._id"
-          hoverable
-          class="cursor-pointer"
-          @click="viewCreator(creator._id)"
-        >
-          <div class="p-6">
-            <div class="flex items-center mb-4">
-              <div class="w-16 h-16 bg-gradient-to-br from-indigo-400 to-purple-400 rounded-full flex items-center justify-center text-white text-2xl font-bold">
-                {{ creator.profile.name?.charAt(0).toUpperCase() }}
-              </div>
-              <div class="ml-4 flex-1">
-                <h3 class="text-lg font-semibold text-gray-900">{{ creator.profile.name }}</h3>
-                <p class="text-sm text-gray-600">{{ creator.profile.location }}</p>
+      <!-- Creator Cards Grid -->
+      <div v-else-if="filteredCreators.length > 0" class="flex justify-center">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div
+            v-for="creator in filteredCreators"
+            :key="creator._id"
+            class="w-[340px] bg-white border-[1.5px] border-[#E8E8E8] rounded-[14px] p-6 hover:border-[#9747FF] transition-all cursor-pointer"
+            @click="viewProfile(creator._id)"
+          >
+            <!-- Profile Photo -->
+            <div class="flex justify-center mb-4">
+              <div class="w-20 h-20 rounded-full bg-gradient-to-br from-[#9747FF] to-[#C86FFF] flex items-center justify-center text-white text-[24px] font-semibold">
+                {{ creator.name.charAt(0).toUpperCase() }}
               </div>
             </div>
 
-            <div class="flex items-center mb-3">
-              <div class="flex text-yellow-400">
-                <svg v-for="i in 5" :key="i" class="w-4 h-4" :class="i <= Math.round(creator.rating) ? 'fill-current' : 'fill-gray-300'" viewBox="0 0 20 20">
-                  <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
-                </svg>
+            <!-- Name -->
+            <h3 class="text-[18px] font-semibold text-[#111111] text-center mb-2">
+              {{ creator.name }}
+            </h3>
+
+            <!-- Category -->
+            <div class="flex justify-center mb-3">
+              <div class="px-3 py-1 bg-[#F5F5F5] rounded-[6px] text-[12px] text-[#6B6B6B]">
+                {{ creator.category }}
               </div>
-              <span class="ml-2 text-sm text-gray-600">{{ creator.rating.toFixed(1) }} ({{ creator.totalReviews }} reviews)</span>
             </div>
 
-            <p class="text-sm text-gray-700 mb-4 line-clamp-2">{{ creator.profile.bio || 'No bio available' }}</p>
-
-            <div class="flex items-center justify-between">
-              <span class="inline-block bg-indigo-100 text-indigo-800 text-xs px-2 py-1 rounded-full">
-                {{ creator.profile.category }}
-              </span>
-              <span v-if="creator.verified" class="flex items-center text-green-600 text-xs">
-                <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                </svg>
-                Verified
-              </span>
+            <!-- Rating -->
+            <div class="flex items-center justify-center gap-1 mb-4">
+              <svg
+                v-for="star in 5"
+                :key="star"
+                class="w-4 h-4"
+                :class="star <= creator.rating ? 'text-[#FFB800]' : 'text-[#E8E8E8]'"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <span class="text-[13px] text-[#6B6B6B] ml-1">({{ creator.reviews }})</span>
             </div>
+
+            <!-- View Profile Button -->
+            <button class="w-full h-[44px] bg-transparent border-[1.5px] border-[#9747FF] rounded-[12px] text-[#9747FF] text-[15px] font-semibold hover:bg-[#9747FF] hover:text-white transition-all flex items-center justify-center">
+              View Profile
+            </button>
           </div>
-        </BaseCard>
+        </div>
       </div>
 
       <!-- Empty State -->
-      <div v-else class="text-center py-12">
-        <p class="text-gray-600 text-lg">No creators found matching your criteria.</p>
-        <BaseButton @click="resetFilters" variant="primary" class="mt-4">Clear Filters</BaseButton>
+      <div v-else class="flex flex-col items-center justify-center py-16">
+        <div class="w-16 h-16 rounded-full bg-[#F5F5F5] flex items-center justify-center mb-4">
+          <svg class="w-8 h-8 text-[#ACACAC]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+        <p class="text-[15px] text-[#6B6B6B] mb-4">No creators found matching your criteria</p>
+        <button
+          @click="clearSearch"
+          class="h-[44px] px-6 border-[1.5px] border-[#9747FF] rounded-[12px] text-[#9747FF] text-[15px] font-semibold hover:bg-[#9747FF] hover:text-white transition-all flex items-center justify-center"
+        >
+          Clear Search
+        </button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '../api/axios'
-import BaseCard from '../components/BaseCard.vue'
-import BaseButton from '../components/BaseButton.vue'
 
 const router = useRouter()
 
+// State
+const loading = ref(true)
 const creators = ref([])
-const loading = ref(false)
+const searchQuery = ref('')
 
-const filters = ref({
-  search: '',
-  category: '',
-  location: '',
-  minRating: ''
+// Mock data for testing (will be replaced with API call)
+const mockCreators = [
+  {
+    _id: '1',
+    name: 'Adebayo Johnson',
+    category: 'Photographer',
+    rating: 5,
+    reviews: 47,
+    location: 'Lagos'
+  },
+  {
+    _id: '2',
+    name: 'Ama Osei',
+    category: 'Designer',
+    rating: 5,
+    reviews: 32,
+    location: 'Accra'
+  },
+  {
+    _id: '3',
+    name: 'Kwame Mensah',
+    category: 'Photographer',
+    rating: 4,
+    reviews: 28,
+    location: 'Accra'
+  },
+  {
+    _id: '4',
+    name: 'Zuri Mwangi',
+    category: 'Videographer',
+    rating: 5,
+    reviews: 56,
+    location: 'Nairobi'
+  },
+  {
+    _id: '5',
+    name: 'Chioma Nwankwo',
+    category: 'Designer',
+    rating: 4,
+    reviews: 41,
+    location: 'Lagos'
+  },
+  {
+    _id: '6',
+    name: 'Thabo Dlamini',
+    category: 'Photographer',
+    rating: 5,
+    reviews: 63,
+    location: 'Johannesburg'
+  },
+  {
+    _id: '7',
+    name: 'Fatima Hassan',
+    category: 'Designer',
+    rating: 4,
+    reviews: 19,
+    location: 'Cairo'
+  },
+  {
+    _id: '8',
+    name: 'Kofi Asante',
+    category: 'Videographer',
+    rating: 5,
+    reviews: 38,
+    location: 'Accra'
+  },
+  {
+    _id: '9',
+    name: 'Amara Okeke',
+    category: 'Photographer',
+    rating: 5,
+    reviews: 51,
+    location: 'Lagos'
+  },
+  {
+    _id: '10',
+    name: 'Lwazi Khumalo',
+    category: 'Designer',
+    rating: 4,
+    reviews: 24,
+    location: 'Johannesburg'
+  },
+  {
+    _id: '11',
+    name: 'Yara Ibrahim',
+    category: 'Photographer',
+    rating: 5,
+    reviews: 45,
+    location: 'Cairo'
+  },
+  {
+    _id: '12',
+    name: 'Bisi Adeyemi',
+    category: 'Videographer',
+    rating: 4,
+    reviews: 33,
+    location: 'Lagos'
+  }
+]
+
+// Computed
+const filteredCreators = computed(() => {
+  let result = creators.value
+
+  // Search filter
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase()
+    result = result.filter(creator =>
+      creator.name.toLowerCase().includes(query) ||
+      creator.category.toLowerCase().includes(query) ||
+      creator.location.toLowerCase().includes(query)
+    )
+  }
+
+  return result
 })
 
+// Methods
 const fetchCreators = async () => {
   loading.value = true
   try {
-    const params = {}
-    if (filters.value.search) params.search = filters.value.search
-    if (filters.value.category) params.category = filters.value.category
-    if (filters.value.location) params.location = filters.value.location
-    if (filters.value.minRating) params.minRating = filters.value.minRating
+    // TODO: Replace with actual API call
+    // const response = await api.get('/users/creators')
+    // creators.value = response.data
 
-    const response = await api.get('/users/creators', { params })
-    creators.value = response.data
+    // Using mock data for now
+    setTimeout(() => {
+      creators.value = mockCreators
+      loading.value = false
+    }, 600)
   } catch (error) {
     console.error('Error fetching creators:', error)
-  } finally {
     loading.value = false
   }
 }
 
-const applyFilters = () => {
-  fetchCreators()
+const handleSearch = () => {
+  // Trigger search filter
 }
 
-const resetFilters = () => {
-  filters.value = {
-    search: '',
-    category: '',
-    location: '',
-    minRating: ''
-  }
-  fetchCreators()
+const clearSearch = () => {
+  searchQuery.value = ''
 }
 
-const viewCreator = (creatorId) => {
+const viewProfile = (creatorId) => {
   router.push(`/creator/${creatorId}`)
 }
 
+// Lifecycle
 onMounted(() => {
   fetchCreators()
 })
 </script>
+
+<style scoped>
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F5F5F5;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #E8E8E8;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9747FF;
+}
+</style>

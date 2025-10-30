@@ -446,7 +446,7 @@ const submitQuestionnaire = async () => {
       if (selectedRole.value === 'creator' || selectedRole.value === 'photographer') {
         router.push('/creator/onboarding')
       } else if (selectedRole.value === 'client') {
-        router.push('/client/onboarding')
+        router.push('/discover')
       } else {
         router.push('/discover')
       }
