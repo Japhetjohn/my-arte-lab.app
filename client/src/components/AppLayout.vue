@@ -1,7 +1,7 @@
 <template>
-  <div class="min-h-screen bg-white font-['Inter',sans-serif] flex">
+  <div class="min-h-screen bg-white font-['Inter',sans-serif]">
     <!-- Sidebar -->
-    <div class="w-[260px] border-r-[1.5px] border-[#E8E8E8] min-h-screen flex flex-col fixed left-0 top-0 bottom-0 bg-white">
+    <div class="w-[240px] border-r-[1.5px] border-[#E8E8E8] min-h-screen flex flex-col fixed left-0 top-0 bottom-0 bg-white z-40">
       <!-- Logo -->
       <div class="p-6 border-b-[1.5px] border-[#E8E8E8]">
         <img src="/logo.PNG" alt="MyArteLab" class="h-8 w-auto cursor-pointer" @click="router.push('/discover')" />
@@ -68,8 +68,8 @@
       </div>
     </div>
 
-    <!-- Main Content Area (with left margin to account for sidebar) -->
-    <div class="flex-1 ml-[260px] min-h-screen bg-white">
+    <!-- Main Content Area (with left padding to account for sidebar) -->
+    <div class="pl-[240px] min-h-screen bg-white">
       <slot />
     </div>
 

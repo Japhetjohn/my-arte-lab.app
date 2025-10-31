@@ -1,7 +1,7 @@
 <template>
   <AppLayout>
-    <div class="w-full pt-12 pb-12 px-8 sm:px-12">
-      <div class="max-w-[900px] mx-auto">
+    <div class="w-full pt-12 pb-12 px-12 sm:px-16">
+      <div class="max-w-[800px] mx-auto">
 
         <!-- Loading State -->
         <div v-if="loading" class="flex items-center justify-center py-16">

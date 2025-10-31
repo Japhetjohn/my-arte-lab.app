@@ -1,6 +1,6 @@
 <template>
   <AppLayout>
-    <div class="w-full pt-12 pb-12 px-8 sm:px-12">
+    <div class="w-full pt-12 pb-12 px-12 sm:px-16">
       <div class="max-w-[1200px] mx-auto">
         <!-- Header Section -->
         <div class="text-center mb-8">
@@ -45,29 +45,29 @@
       </div>
 
       <!-- Creator Cards Grid -->
-      <div v-else-if="filteredCreators.length > 0" class="flex justify-center px-4 sm:px-8">
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center">
+      <div v-else-if="filteredCreators.length > 0">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
           <div
             v-for="creator in filteredCreators"
             :key="creator._id"
-            class="w-full max-w-[340px] bg-white border-[1.5px] border-[#E8E8E8] rounded-[14px] p-6 hover:border-[#9747FF] transition-all cursor-pointer"
+            class="bg-white border-[1.5px] border-[#E8E8E8] rounded-[14px] p-8 hover:border-[#9747FF] transition-all cursor-pointer"
             @click="viewProfile(creator._id)"
           >
             <!-- Profile Photo -->
-            <div class="flex justify-center mb-4">
-              <div class="w-20 h-20 rounded-full bg-gradient-to-br from-[#9747FF] to-[#C86FFF] flex items-center justify-center text-white text-[24px] font-semibold">
+            <div class="flex justify-center mb-6">
+              <div class="w-24 h-24 rounded-full bg-gradient-to-br from-[#9747FF] to-[#C86FFF] flex items-center justify-center text-white text-[32px] font-semibold">
                 {{ creator.name.charAt(0).toUpperCase() }}
               </div>
             </div>
 
             <!-- Name -->
-            <h3 class="text-[18px] font-semibold text-[#111111] text-center mb-2">
+            <h3 class="text-[20px] font-semibold text-[#111111] text-center mb-2">
               {{ creator.name }}
             </h3>
 
             <!-- Category -->
-            <div class="flex justify-center mb-3">
-              <div class="px-3 py-1 bg-[#F5F5F5] rounded-[6px] text-[12px] text-[#6B6B6B]">
+            <div class="flex justify-center mb-4">
+              <div class="px-4 py-2 bg-[#F5F5F5] rounded-[8px] text-[14px] font-medium text-[#6B6B6B]">
                 {{ creator.category }}
               </div>
             </div>
@@ -88,7 +88,7 @@
             </div>
 
             <!-- View Profile Button -->
-            <button class="w-full h-[44px] bg-transparent border-[1.5px] border-[#9747FF] rounded-[12px] text-[#9747FF] text-[15px] font-semibold hover:bg-[#9747FF] hover:text-white transition-all flex items-center justify-center">
+            <button class="w-full h-[48px] bg-transparent border-[1.5px] border-[#9747FF] rounded-[12px] text-[#9747FF] text-[15px] font-semibold hover:bg-[#9747FF] hover:text-white transition-all flex items-center justify-center">
               View Profile
             </button>
           </div>

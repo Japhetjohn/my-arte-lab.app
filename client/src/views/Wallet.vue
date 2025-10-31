@@ -1,6 +1,6 @@
 <template>
   <AppLayout>
-    <div class="w-full pt-12 pb-12 px-8 sm:px-12">
+    <div class="w-full pt-12 pb-12 px-12 sm:px-16">
       <div class="max-w-[640px] mx-auto">
 
         <!-- Header -->
