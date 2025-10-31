@@ -1,14 +1,9 @@
 <template>
-  <div class="min-h-screen bg-white font-['Inter',sans-serif]">
-    <!-- Logo -->
-    <div class="absolute top-4 left-4 sm:top-8 sm:left-8">
-      <img src="/logo.PNG" alt="MyArteLab" class="h-8 sm:h-12 w-auto" />
-    </div>
-
-    <!-- Main Content -->
-    <div class="w-full pt-20 sm:pt-24 pb-12 px-4 sm:px-8">
-      <!-- Header Section -->
-      <div class="text-center mb-8">
+  <AppLayout>
+    <div class="w-full pt-12 pb-12 px-8 sm:px-12">
+      <div class="max-w-[1200px] mx-auto">
+        <!-- Header Section -->
+        <div class="text-center mb-8">
         <h1 class="text-[28px] font-semibold text-[#111111] mb-2 font-['Inter',sans-serif]">
           Discover Creators
         </h1>
@@ -50,12 +45,12 @@
       </div>
 
       <!-- Creator Cards Grid -->
-      <div v-else-if="filteredCreators.length > 0" class="flex justify-center">
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div v-else-if="filteredCreators.length > 0" class="flex justify-center px-4 sm:px-8">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center">
           <div
             v-for="creator in filteredCreators"
             :key="creator._id"
-            class="w-[340px] bg-white border-[1.5px] border-[#E8E8E8] rounded-[14px] p-6 hover:border-[#9747FF] transition-all cursor-pointer"
+            class="w-full max-w-[340px] bg-white border-[1.5px] border-[#E8E8E8] rounded-[14px] p-6 hover:border-[#9747FF] transition-all cursor-pointer"
             @click="viewProfile(creator._id)"
           >
             <!-- Profile Photo -->
@@ -115,14 +110,16 @@
           Clear Search
         </button>
       </div>
+      </div>
     </div>
-  </div>
+  </AppLayout>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '../api/axios'
+import AppLayout from '../components/AppLayout.vue'
 
 const router = useRouter()
 

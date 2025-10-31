@@ -1,12 +1,6 @@
 <template>
-  <div class="min-h-screen bg-white font-['Inter',sans-serif]">
-    <!-- Logo -->
-    <div class="absolute top-4 left-4 sm:top-8 sm:left-8 z-10">
-      <img src="/logo.PNG" alt="MyArteLab" class="h-8 sm:h-12 w-auto cursor-pointer" @click="router.push('/discover')" />
-    </div>
-
-    <!-- Main Content -->
-    <div class="w-full pt-20 sm:pt-24 pb-12 px-4 sm:px-8">
+  <AppLayout>
+    <div class="w-full pt-12 pb-12 px-8 sm:px-12">
       <div class="max-w-[640px] mx-auto">
 
         <!-- Success State -->
@@ -232,12 +226,13 @@
 
       </div>
     </div>
-  </div>
+  </AppLayout>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import AppLayout from '../components/AppLayout.vue'
 
 const router = useRouter()
 const route = useRoute()

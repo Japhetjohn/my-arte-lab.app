@@ -1,25 +1,6 @@
 <template>
-  <div class="min-h-screen bg-white font-['Inter',sans-serif]">
-    <!-- Logo -->
-    <div class="absolute top-4 left-4 sm:top-8 sm:left-8 z-10">
-      <img src="/logo.PNG" alt="MyArteLab" class="h-8 sm:h-12 w-auto cursor-pointer" @click="router.push('/discover')" />
-    </div>
-
-    <!-- Wallet Balance (Top Right) -->
-    <div class="absolute top-4 right-4 sm:top-8 sm:right-8 z-10">
-      <button
-        @click="router.push('/wallet')"
-        class="h-[44px] px-4 bg-white border-[1.5px] border-[#E8E8E8] rounded-[12px] flex items-center gap-2 hover:border-[#9747FF] transition-all"
-      >
-        <svg class="w-5 h-5 text-[#9747FF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-        </svg>
-        <span class="text-[15px] font-semibold text-[#111111]">${{ walletBalance }}</span>
-      </button>
-    </div>
-
-    <!-- Main Content -->
-    <div class="w-full pt-20 sm:pt-24 pb-12 px-4 sm:px-8">
+  <AppLayout>
+    <div class="w-full pt-12 pb-12 px-8 sm:px-12">
       <div class="max-w-[900px] mx-auto">
 
         <!-- Loading State -->
@@ -29,21 +10,14 @@
 
         <!-- Profile Content -->
         <div v-else>
-          <!-- Cover Photo -->
-          <div class="w-full h-[200px] bg-gradient-to-r from-[#9747FF] to-[#C86FFF] rounded-[14px] mb-[-60px]"></div>
-
-          <div class="h-6"></div>
-
           <!-- Profile Card -->
           <div class="bg-white border-[1.5px] border-[#E8E8E8] rounded-[14px] p-6 sm:p-8">
-            <!-- Profile Photo (Overlapping Cover) -->
-            <div class="flex justify-center mb-[-60px] mt-[-80px]">
-              <div class="w-[120px] h-[120px] rounded-full bg-gradient-to-br from-[#9747FF] to-[#C86FFF] flex items-center justify-center text-white text-[48px] font-semibold border-[4px] border-white">
+            <!-- Profile Photo -->
+            <div class="flex justify-center mb-6">
+              <div class="w-[120px] h-[120px] rounded-full bg-gradient-to-br from-[#9747FF] to-[#C86FFF] flex items-center justify-center text-white text-[48px] font-semibold">
                 {{ creatorData.name?.charAt(0).toUpperCase() }}
               </div>
             </div>
-
-            <div class="h-16"></div>
 
             <!-- Edit Profile Button (if owner) -->
             <div v-if="isOwner" class="flex justify-end mb-4">
@@ -177,10 +151,11 @@
         </div>
       </div>
     </div>
-  </div>
+  </AppLayout>
 </template>
 
 <script setup>
+import AppLayout from '../components/AppLayout.vue'
 import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api from '../api/axios'
@@ -191,7 +166,6 @@ const route = useRoute()
 // State
 const loading = ref(true)
 const creatorData = ref({})
-const walletBalance = ref(1250.00)
 const currentUserId = ref('current-user-id') // TODO: Get from auth store
 
 // Computed
