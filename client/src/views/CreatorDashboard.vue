@@ -1,400 +1,101 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
-    <!-- Header -->
-    <header class="bg-white shadow-sm">
-      <div class="container mx-auto px-6 py-4 flex justify-between items-center">
-        <router-link to="/" class="text-2xl font-bold text-indigo-600">MyArteLab</router-link>
-        <div class="flex items-center space-x-4">
-          <span class="text-gray-700">{{ authStore.user?.profile?.name }}</span>
-          <BaseButton @click="logout" variant="outline" size="sm">Logout</BaseButton>
+  <div class="min-h-screen bg-white font-['Inter',sans-serif]">
+    <!-- Logo -->
+    <div class="absolute top-4 left-4 sm:top-8 sm:left-8 z-10">
+      <img src="/logo.PNG" alt="MyArteLab" class="h-8 sm:h-12 w-auto cursor-pointer" @click="router.push('/discover')" />
+    </div>
+
+    <!-- Wallet Balance (Top Right) -->
+    <div class="absolute top-4 right-4 sm:top-8 sm:right-8 z-10">
+      <button
+        @click="router.push('/wallet')"
+        class="h-[44px] px-4 bg-white border-[1.5px] border-[#E8E8E8] rounded-[12px] flex items-center gap-2 hover:border-[#9747FF] transition-all"
+      >
+        <svg class="w-5 h-5 text-[#9747FF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+        </svg>
+        <span class="text-[15px] font-semibold text-[#111111]">${{ walletBalance }}</span>
+      </button>
+    </div>
+
+    <!-- Main Content -->
+    <div class="w-full pt-20 sm:pt-24 pb-12 px-4 sm:px-8">
+      <div class="max-w-[900px] mx-auto">
+
+        <!-- Welcome Section -->
+        <div class="text-center mb-8">
+          <h1 class="text-[28px] font-semibold text-[#111111] mb-2">
+            Creator Dashboard
+          </h1>
+          <p class="text-[15px] text-[#6B6B6B]">
+            Manage your bookings, portfolio, and profile
+          </p>
         </div>
-      </div>
-    </header>
 
-    <div class="container mx-auto px-6 py-8">
-      <!-- Welcome Section -->
-      <div class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-900">Creator Dashboard</h1>
-        <p class="text-gray-600 mt-2">Manage your bookings, portfolio, and earnings</p>
-      </div>
+        <div class="h-8"></div>
 
-      <!-- Tabs -->
-      <div class="mb-6">
-        <div class="border-b border-gray-200">
-          <nav class="-mb-px flex space-x-8">
+        <!-- Coming Soon Message -->
+        <div class="bg-white border-[1.5px] border-[#E8E8E8] rounded-[14px] p-8 text-center">
+          <div class="flex justify-center mb-4">
+            <div class="w-16 h-16 rounded-full bg-[#F5F5F5] flex items-center justify-center">
+              <svg class="w-8 h-8 text-[#9747FF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+            </div>
+          </div>
+          <h2 class="text-[20px] font-semibold text-[#111111] mb-2">Dashboard Coming Soon</h2>
+          <p class="text-[15px] text-[#6B6B6B] mb-6">
+            We're building an amazing dashboard experience for you. Meanwhile, you can browse creators and manage your profile.
+          </p>
+
+          <div class="flex flex-col sm:flex-row gap-3 justify-center">
             <button
-              v-for="tab in tabs"
-              :key="tab.id"
-              @click="activeTab = tab.id"
-              :class="[
-                'py-4 px-1 border-b-2 font-medium text-sm',
-                activeTab === tab.id
-                  ? 'border-indigo-500 text-indigo-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              ]"
+              @click="router.push('/discover')"
+              class="h-[56px] px-8 bg-[#9747FF] rounded-[12px] text-white text-[15px] font-semibold hover:bg-[#8637EF] transition-all flex items-center justify-center"
             >
-              {{ tab.label }}
+              Browse Creators
             </button>
-          </nav>
-        </div>
-      </div>
-
-      <!-- Tab Content -->
-      <!-- Portfolio Tab -->
-      <div v-if="activeTab === 'portfolio'">
-        <BaseCard>
-          <template #header>
-            <div class="flex justify-between items-center">
-              <h2 class="text-xl font-semibold">My Portfolio</h2>
-              <BaseButton @click="showAddPortfolio = true" variant="primary" size="sm">
-                + Add Work
-              </BaseButton>
-            </div>
-          </template>
-
-          <div class="grid md:grid-cols-3 gap-4">
-            <div
-              v-for="(item, index) in authStore.user?.profile?.portfolio"
-              :key="index"
-              class="relative group"
+            <button
+              @click="router.push(`/creator/${userId}`)"
+              class="h-[56px] px-8 border-[1.5px] border-[#9747FF] rounded-[12px] text-[#9747FF] text-[15px] font-semibold hover:bg-[#9747FF] hover:text-white transition-all flex items-center justify-center"
             >
-              <img
-                :src="item.url"
-                :alt="item.description"
-                class="w-full h-48 object-cover rounded-lg"
-                @error="handleImageError"
-              />
-              <div class="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
-                <p class="text-white text-sm px-4 text-center">{{ item.description }}</p>
-              </div>
-            </div>
+              View My Profile
+            </button>
           </div>
-
-          <div v-if="!authStore.user?.profile?.portfolio?.length" class="text-center py-12 text-gray-500">
-            No portfolio items yet. Add your first work!
-          </div>
-        </BaseCard>
-
-        <!-- Rates/Packages -->
-        <BaseCard class="mt-6">
-          <template #header>
-            <h2 class="text-xl font-semibold">My Packages</h2>
-          </template>
-
-          <div class="space-y-4">
-            <div
-              v-for="(rate, index) in authStore.user?.profile?.rates"
-              :key="index"
-              class="flex justify-between items-center p-4 bg-gray-50 rounded-lg"
-            >
-              <div>
-                <h3 class="font-semibold text-gray-900">{{ rate.name }}</h3>
-              </div>
-              <div class="text-lg font-bold text-indigo-600">${{ rate.price }}</div>
-            </div>
-          </div>
-
-          <div v-if="!authStore.user?.profile?.rates?.length" class="text-center py-12 text-gray-500">
-            No packages set up yet.
-          </div>
-        </BaseCard>
-      </div>
-
-      <!-- Bookings Tab -->
-      <div v-if="activeTab === 'bookings'">
-        <BaseCard>
-          <template #header>
-            <h2 class="text-xl font-semibold">My Bookings</h2>
-          </template>
-
-          <div v-if="loading" class="text-center py-12">
-            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-          </div>
-
-          <div v-else-if="bookings.length > 0" class="space-y-4">
-            <div
-              v-for="booking in bookings"
-              :key="booking._id"
-              class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
-            >
-              <div class="flex justify-between items-start">
-                <div class="flex-1">
-                  <h3 class="font-semibold text-gray-900">{{ booking.package.name }}</h3>
-                  <p class="text-sm text-gray-600 mt-1">
-                    Client: {{ booking.client?.profile?.name || booking.client?.email }}
-                  </p>
-                  <p class="text-sm text-gray-500 mt-1">
-                    {{ new Date(booking.createdAt).toLocaleDateString() }}
-                  </p>
-                </div>
-                <div class="text-right">
-                  <div class="text-lg font-bold text-gray-900">${{ booking.package.price }}</div>
-                  <span
-                    :class="[
-                      'inline-block px-2 py-1 text-xs rounded-full mt-2',
-                      booking.status === 'completed' ? 'bg-green-100 text-green-800' :
-                      booking.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                      booking.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
-                      'bg-gray-100 text-gray-800'
-                    ]"
-                  >
-                    {{ booking.status }}
-                  </span>
-                </div>
-              </div>
-
-              <div class="mt-4 flex gap-2">
-                <BaseButton
-                  v-if="booking.status === 'pending'"
-                  @click="updateBookingStatus(booking._id, 'accepted')"
-                  variant="primary"
-                  size="sm"
-                >
-                  Accept
-                </BaseButton>
-                <BaseButton
-                  v-if="booking.status === 'accepted'"
-                  @click="updateBookingStatus(booking._id, 'in_progress')"
-                  variant="primary"
-                  size="sm"
-                >
-                  Start Work
-                </BaseButton>
-                <BaseButton
-                  v-if="booking.status === 'in_progress'"
-                  @click="updateBookingStatus(booking._id, 'delivered')"
-                  variant="primary"
-                  size="sm"
-                >
-                  Mark as Delivered
-                </BaseButton>
-              </div>
-            </div>
-          </div>
-
-          <div v-else class="text-center py-12 text-gray-500">
-            No bookings yet. Once clients book you, they'll appear here!
-          </div>
-        </BaseCard>
-      </div>
-
-      <!-- Wallet Tab -->
-      <div v-if="activeTab === 'wallet'">
-        <div class="grid md:grid-cols-3 gap-6 mb-6">
-          <BaseCard>
-            <div class="text-center py-6">
-              <p class="text-gray-600 text-sm">Available Balance</p>
-              <p class="text-3xl font-bold text-indigo-600 mt-2">
-                ${{ wallet.balance?.toFixed(2) || '0.00' }}
-              </p>
-            </div>
-          </BaseCard>
-
-          <BaseCard>
-            <div class="text-center py-6">
-              <p class="text-gray-600 text-sm">Total Earnings</p>
-              <p class="text-3xl font-bold text-green-600 mt-2">
-                ${{ totalEarnings.toFixed(2) }}
-              </p>
-            </div>
-          </BaseCard>
-
-          <BaseCard>
-            <div class="text-center py-6">
-              <p class="text-gray-600 text-sm">Completed Jobs</p>
-              <p class="text-3xl font-bold text-gray-900 mt-2">
-                {{ completedBookings }}
-              </p>
-            </div>
-          </BaseCard>
         </div>
 
-        <BaseCard>
-          <template #header>
-            <div class="flex justify-between items-center">
-              <h2 class="text-xl font-semibold">Transaction History</h2>
-              <BaseButton
-                v-if="wallet.balance > 0"
-                @click="showWithdrawModal = true"
-                variant="primary"
-                size="sm"
-              >
-                Withdraw Funds
-              </BaseButton>
-            </div>
-          </template>
-
-          <div v-if="wallet.transactions?.length > 0" class="space-y-3">
-            <div
-              v-for="transaction in wallet.transactions"
-              :key="transaction._id"
-              class="flex justify-between items-center p-3 bg-gray-50 rounded"
-            >
-              <div>
-                <p class="font-medium text-gray-900">Payment Received</p>
-                <p class="text-sm text-gray-600">
-                  {{ new Date(transaction.createdAt).toLocaleString() }}
-                </p>
-              </div>
-              <div class="text-lg font-bold text-green-600">
-                +${{ transaction.creatorPayout?.toFixed(2) }}
-              </div>
-            </div>
-          </div>
-
-          <div v-else class="text-center py-12 text-gray-500">
-            No transactions yet.
-          </div>
-        </BaseCard>
-      </div>
-
-      <!-- Reviews Tab -->
-      <div v-if="activeTab === 'reviews'">
-        <BaseCard>
-          <template #header>
-            <div class="flex justify-between items-center">
-              <h2 class="text-xl font-semibold">Client Reviews</h2>
-              <div class="flex items-center">
-                <div class="flex text-yellow-400 mr-2">
-                  <svg v-for="i in 5" :key="i" class="w-5 h-5" :class="i <= Math.round(authStore.user?.rating || 0) ? 'fill-current' : 'fill-gray-300'" viewBox="0 0 20 20">
-                    <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
-                  </svg>
-                </div>
-                <span class="text-lg font-semibold">
-                  {{ authStore.user?.rating?.toFixed(1) || '0.0' }}
-                </span>
-                <span class="text-gray-600 ml-2">
-                  ({{ authStore.user?.totalReviews || 0 }} reviews)
-                </span>
-              </div>
-            </div>
-          </template>
-
-          <div v-if="reviews.length > 0" class="space-y-4">
-            <div
-              v-for="review in reviews"
-              :key="review._id"
-              class="border-b border-gray-200 pb-4"
-            >
-              <div class="flex justify-between items-start mb-2">
-                <div>
-                  <p class="font-medium text-gray-900">
-                    {{ review.client?.profile?.name || 'Anonymous' }}
-                  </p>
-                  <p class="text-sm text-gray-500">
-                    {{ new Date(review.createdAt).toLocaleDateString() }}
-                  </p>
-                </div>
-                <div class="flex text-yellow-400">
-                  <svg v-for="i in review.rating" :key="i" class="w-4 h-4 fill-current" viewBox="0 0 20 20">
-                    <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
-                  </svg>
-                </div>
-              </div>
-              <p class="text-gray-700">{{ review.comment }}</p>
-              <div v-if="review.response" class="mt-3 pl-4 border-l-2 border-indigo-200">
-                <p class="text-sm text-gray-600">Your response:</p>
-                <p class="text-gray-700 mt-1">{{ review.response.text }}</p>
-              </div>
-            </div>
-          </div>
-
-          <div v-else class="text-center py-12 text-gray-500">
-            No reviews yet. Complete bookings to receive reviews!
-          </div>
-        </BaseCard>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuthStore } from '../stores/auth'
-import api from '../api/axios'
-import BaseCard from '../components/BaseCard.vue'
-import BaseButton from '../components/BaseButton.vue'
 
 const router = useRouter()
-const authStore = useAuthStore()
 
-const activeTab = ref('portfolio')
-const loading = ref(false)
-const bookings = ref([])
-const wallet = ref({ balance: 0, transactions: [] })
-const reviews = ref([])
-const showAddPortfolio = ref(false)
-const showWithdrawModal = ref(false)
-
-const tabs = [
-  { id: 'portfolio', label: 'Portfolio' },
-  { id: 'bookings', label: 'Bookings' },
-  { id: 'wallet', label: 'Wallet' },
-  { id: 'reviews', label: 'Reviews' }
-]
-
-const totalEarnings = computed(() => {
-  return bookings.value
-    .filter(b => b.status === 'completed')
-    .reduce((sum, b) => sum + (b.package?.price || 0) * 0.92, 0)
-})
-
-const completedBookings = computed(() => {
-  return bookings.value.filter(b => b.status === 'completed').length
-})
-
-const fetchBookings = async () => {
-  loading.value = true
-  try {
-    const response = await api.get('/bookings')
-    bookings.value = response.data
-  } catch (error) {
-    console.error('Error fetching bookings:', error)
-  } finally {
-    loading.value = false
-  }
-}
-
-const fetchWallet = async () => {
-  try {
-    const response = await api.get('/users/wallet')
-    wallet.value = response.data
-  } catch (error) {
-    console.error('Error fetching wallet:', error)
-  }
-}
-
-const fetchReviews = async () => {
-  try {
-    const response = await api.get(`/reviews/creator/${authStore.user._id}`)
-    reviews.value = response.data
-  } catch (error) {
-    console.error('Error fetching reviews:', error)
-  }
-}
-
-const updateBookingStatus = async (bookingId, status) => {
-  try {
-    await api.put(`/bookings/${bookingId}/status`, { status })
-    await fetchBookings()
-  } catch (error) {
-    console.error('Error updating booking:', error)
-  }
-}
-
-const handleImageError = (event) => {
-  event.target.src = 'https://via.placeholder.com/400x300?text=Image+Not+Found'
-}
-
-const logout = () => {
-  authStore.logout()
-  router.push('/')
-}
-
-onMounted(async () => {
-  await fetchBookings()
-  await fetchWallet()
-  await fetchReviews()
-})
+// State
+const walletBalance = ref(1250.00)
+const userId = ref('1') // TODO: Get from auth store
 </script>
+
+<style scoped>
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F5F5F5;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #E8E8E8;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9747FF;
+}
+</style>

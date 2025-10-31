@@ -6,6 +6,8 @@ import EmailSignin from '../views/EmailSignin.vue'
 import Questionnaire from '../views/Questionnaire.vue'
 import Discover from '../views/Discover.vue'
 import CreatorProfile from '../views/CreatorProfile.vue'
+import Wallet from '../views/Wallet.vue'
+import BookNow from '../views/BookNow.vue'
 import CreatorOnboarding from '../views/CreatorOnboarding.vue'
 import CreatorDashboard from '../views/CreatorDashboard.vue'
 import ClientOnboarding from '../views/ClientOnboarding.vue'
@@ -27,6 +29,8 @@ const routes = [
   { path: '/auth/callback', name: 'AuthCallback', component: AuthCallback },
   { path: '/discover', name: 'Discover', component: Discover },
   { path: '/creator/:id', name: 'CreatorProfile', component: CreatorProfile },
+  { path: '/wallet', name: 'Wallet', component: Wallet },
+  { path: '/book/:id', name: 'BookNow', component: BookNow },
   {
     path: '/creator/onboarding',
     name: 'CreatorOnboarding',

@@ -1,266 +1,293 @@
 <template>
-  <div class="min-h-screen bg-gray-50 py-12">
-    <div class="container mx-auto px-6 max-w-3xl">
-      <div class="text-center mb-8">
-        <h1 class="text-4xl font-bold text-gray-900 mb-2">Complete Your Creator Profile</h1>
-        <p class="text-gray-600">Let's set up your profile to start receiving bookings</p>
-      </div>
+  <div class="min-h-screen bg-white font-['Inter',sans-serif]">
+    <!-- Logo -->
+    <div class="absolute top-4 left-4 sm:top-8 sm:left-8 z-10">
+      <img src="/logo.PNG" alt="MyArteLab" class="h-8 sm:h-12 w-auto" />
+    </div>
 
-      <!-- Progress Steps -->
-      <div class="mb-8">
-        <div class="flex items-center justify-center space-x-4">
-          <div v-for="(stepItem, index) in steps" :key="index" class="flex items-center">
+    <!-- Main Content -->
+    <div class="w-full pt-20 sm:pt-24 pb-12 px-4 sm:px-8">
+      <div class="max-w-[600px] mx-auto">
+
+        <!-- Header -->
+        <div class="text-center mb-8">
+          <h1 class="text-[28px] font-semibold text-[#111111] mb-2">
+            Complete Your Profile
+          </h1>
+          <p class="text-[15px] text-[#6B6B6B]">
+            Set up your creator profile to start receiving bookings
+          </p>
+        </div>
+
+        <div class="h-6"></div>
+
+        <!-- Progress Steps -->
+        <div class="mb-8">
+          <div class="flex items-center justify-center gap-2">
             <div
-              :class="[
-                'w-10 h-10 rounded-full flex items-center justify-center font-semibold',
-                currentStep > index ? 'bg-green-500 text-white' :
-                currentStep === index ? 'bg-indigo-600 text-white' :
-                'bg-gray-300 text-gray-600'
-              ]"
-            >
-              {{ index + 1 }}
-            </div>
-            <div v-if="index < steps.length - 1" class="w-12 h-1 bg-gray-300 mx-2"></div>
+              v-for="step in totalSteps"
+              :key="step"
+              class="h-2 rounded-full transition-all"
+              :class="step <= currentStep ? 'w-12 bg-[#9747FF]' : 'w-8 bg-[#E8E8E8]'"
+            ></div>
           </div>
+          <p class="text-center text-[13px] text-[#6B6B6B] mt-3">
+            Step {{ currentStep }} of {{ totalSteps }}
+          </p>
         </div>
-        <div class="text-center mt-4 text-sm text-gray-600">
-          Step {{ currentStep + 1 }} of {{ steps.length }}: {{ steps[currentStep] }}
+
+        <div class="h-6"></div>
+
+        <!-- Form Card -->
+        <div class="bg-white border-[1.5px] border-[#E8E8E8] rounded-[14px] p-6 sm:p-8">
+
+          <!-- Step 1: Category & Bio -->
+          <div v-if="currentStep === 1">
+            <h2 class="text-[20px] font-semibold text-[#111111] mb-6">Basic Information</h2>
+
+            <!-- Category -->
+            <div class="mb-6">
+              <label class="block text-[14px] font-medium text-[#111111] mb-2">
+                Category
+              </label>
+              <select
+                v-model="formData.category"
+                class="w-full h-[56px] px-5 border-[1.5px] border-[#E8E8E8] rounded-[12px] bg-transparent text-[#111111] text-[15px] focus:outline-none focus:border-2 focus:border-[#9747FF] focus:shadow-[0_6px_20px_rgba(151,71,255,0.18)] transition-all duration-200"
+              >
+                <option value="">Select category</option>
+                <option value="Photographer">Photographer</option>
+                <option value="Videographer">Videographer</option>
+                <option value="Designer">Designer</option>
+              </select>
+            </div>
+
+            <div class="h-4"></div>
+
+            <!-- Bio -->
+            <div class="mb-6">
+              <label class="block text-[14px] font-medium text-[#111111] mb-2">
+                Short Bio
+              </label>
+              <textarea
+                v-model="formData.bio"
+                rows="4"
+                placeholder="Tell us about yourself and your experience..."
+                class="w-full px-5 py-4 border-[1.5px] border-[#E8E8E8] rounded-[12px] bg-transparent placeholder-[#ACACAC] text-[#111111] text-[15px] focus:outline-none focus:border-2 focus:border-[#9747FF] focus:shadow-[0_6px_20px_rgba(151,71,255,0.18)] transition-all duration-200 resize-none"
+              ></textarea>
+            </div>
+
+            <div class="h-4"></div>
+
+            <!-- Location -->
+            <div class="mb-6">
+              <label class="block text-[14px] font-medium text-[#111111] mb-2">
+                Location
+              </label>
+              <input
+                v-model="formData.location"
+                type="text"
+                placeholder="e.g., Lagos, Nigeria"
+                class="w-full h-[56px] px-5 border-[1.5px] border-[#E8E8E8] rounded-[12px] bg-transparent placeholder-[#ACACAC] text-[#111111] text-[15px] focus:outline-none focus:border-2 focus:border-[#9747FF] focus:shadow-[0_6px_20px_rgba(151,71,255,0.18)] transition-all duration-200"
+              />
+            </div>
+          </div>
+
+          <!-- Step 2: Profile Photo -->
+          <div v-if="currentStep === 2">
+            <h2 class="text-[20px] font-semibold text-[#111111] mb-6">Profile Photo</h2>
+
+            <div class="flex flex-col items-center mb-6">
+              <!-- Profile Photo Preview -->
+              <div class="w-32 h-32 rounded-full bg-gradient-to-br from-[#9747FF] to-[#C86FFF] flex items-center justify-center text-white text-[48px] font-semibold mb-4">
+                {{ formData.name?.charAt(0).toUpperCase() || 'U' }}
+              </div>
+
+              <!-- Upload Button -->
+              <label class="cursor-pointer">
+                <input type="file" accept="image/*" class="hidden" @change="handlePhotoUpload" />
+                <div class="h-[44px] px-6 border-[1.5px] border-[#9747FF] rounded-[12px] text-[#9747FF] text-[15px] font-semibold hover:bg-[#9747FF] hover:text-white transition-all flex items-center justify-center gap-2">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  Upload Photo
+                </div>
+              </label>
+              <p class="text-[13px] text-[#ACACAC] mt-2">JPG, PNG or GIF (max 5MB)</p>
+            </div>
+          </div>
+
+          <!-- Step 3: Portfolio -->
+          <div v-if="currentStep === 3">
+            <h2 class="text-[20px] font-semibold text-[#111111] mb-6">Sample Works</h2>
+            <p class="text-[14px] text-[#6B6B6B] mb-6">Upload 3-5 photos showcasing your best work</p>
+
+            <!-- Portfolio Grid -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
+              <div
+                v-for="(item, index) in portfolioItems"
+                :key="index"
+                class="aspect-square bg-gradient-to-br from-[#F5F5F5] to-[#E8E8E8] rounded-[12px] border-[1.5px] border-[#E8E8E8] hover:border-[#9747FF] transition-all cursor-pointer flex items-center justify-center relative group"
+              >
+                <svg class="w-12 h-12 text-[#ACACAC]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <button
+                  v-if="item"
+                  @click="removePortfolioItem(index)"
+                  class="absolute top-2 right-2 w-6 h-6 bg-red-500 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+
+            <!-- Upload Button -->
+            <label class="cursor-pointer">
+              <input type="file" accept="image/*" multiple class="hidden" @change="handlePortfolioUpload" />
+              <div class="w-full h-[56px] border-[1.5px] border-[#9747FF] rounded-[12px] text-[#9747FF] text-[15px] font-semibold hover:bg-[#9747FF] hover:text-white transition-all flex items-center justify-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Add Photos
+              </div>
+            </label>
+          </div>
+
+          <div class="h-8"></div>
+
+          <!-- Navigation Buttons -->
+          <div class="flex gap-3">
+            <button
+              v-if="currentStep > 1"
+              @click="prevStep"
+              class="flex-1 h-[56px] border-[1.5px] border-[#E8E8E8] rounded-[12px] text-[#6B6B6B] text-[15px] font-semibold hover:border-[#9747FF] hover:text-[#9747FF] transition-all flex items-center justify-center"
+            >
+              Back
+            </button>
+            <button
+              v-if="currentStep < totalSteps"
+              @click="nextStep"
+              class="flex-1 h-[56px] bg-[#9747FF] rounded-[12px] text-white text-[15px] font-semibold hover:bg-[#8637EF] transition-all flex items-center justify-center"
+            >
+              Continue
+            </button>
+            <button
+              v-if="currentStep === totalSteps"
+              @click="completeOnboarding"
+              :disabled="loading"
+              class="flex-1 h-[56px] bg-[#9747FF] rounded-[12px] text-white text-[15px] font-semibold hover:bg-[#8637EF] transition-all flex items-center justify-center disabled:opacity-50"
+            >
+              {{ loading ? 'Saving...' : 'Complete Profile' }}
+            </button>
+          </div>
+
+          <!-- Skip Option -->
+          <div class="text-center mt-4">
+            <button
+              @click="skipOnboarding"
+              class="text-[14px] text-[#ACACAC] hover:text-[#9747FF] transition-all"
+            >
+              Skip for now
+            </button>
+          </div>
+
         </div>
       </div>
-
-      <BaseCard>
-        <div class="p-8">
-          <!-- Step 1: Basic Info -->
-          <form v-if="currentStep === 0" @submit.prevent="nextStep">
-            <h2 class="text-2xl font-bold mb-6">Basic Information</h2>
-            <div class="space-y-4">
-              <BaseInput
-                id="category"
-                label="Category"
-                disabled
-                :model-value="formData.profile.category"
-              />
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">
-                  Bio / About Me <span class="text-red-500">*</span>
-                </label>
-                <textarea
-                  v-model="formData.profile.bio"
-                  rows="4"
-                  class="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="Tell clients about your work, experience, and style..."
-                  required
-                ></textarea>
-                <p class="mt-1 text-sm text-gray-500">{{ formData.profile.bio?.length || 0 }}/500 characters</p>
-              </div>
-
-              <div v-if="errors.general" class="text-red-600 text-sm">{{ errors.general }}</div>
-            </div>
-
-            <div class="mt-6 flex justify-end">
-              <BaseButton type="submit" variant="primary">Next</BaseButton>
-            </div>
-          </form>
-
-          <!-- Step 2: Portfolio -->
-          <div v-if="currentStep === 1">
-            <h2 class="text-2xl font-bold mb-6">Portfolio</h2>
-            <p class="text-gray-600 mb-4">Add your best work (you can add more later)</p>
-
-            <div class="space-y-4 mb-6">
-              <div v-for="(item, index) in formData.profile.portfolio" :key="index" class="flex gap-4 items-start border-b pb-4">
-                <div class="flex-1">
-                  <BaseInput
-                    :id="`portfolio-url-${index}`"
-                    label="Image URL"
-                    v-model="item.url"
-                    placeholder="https://example.com/image.jpg"
-                  />
-                  <BaseInput
-                    :id="`portfolio-desc-${index}`"
-                    label="Description"
-                    v-model="item.description"
-                    placeholder="Description of this work"
-                    class="mt-2"
-                  />
-                </div>
-                <BaseButton
-                  v-if="formData.profile.portfolio.length > 1"
-                  @click="removePortfolioItem(index)"
-                  variant="danger"
-                  size="sm"
-                  class="mt-6"
-                >
-                  Remove
-                </BaseButton>
-              </div>
-            </div>
-
-            <BaseButton @click="addPortfolioItem" variant="outline" class="mb-6">
-              + Add Another Portfolio Item
-            </BaseButton>
-
-            <div class="mt-6 flex justify-between">
-              <BaseButton @click="prevStep" variant="secondary">Back</BaseButton>
-              <BaseButton @click="nextStep" variant="primary">Next</BaseButton>
-            </div>
-          </div>
-
-          <!-- Step 3: Rates/Packages -->
-          <div v-if="currentStep === 2">
-            <h2 class="text-2xl font-bold mb-6">Rates & Packages</h2>
-            <p class="text-gray-600 mb-4">Set your pricing (you can add more packages later)</p>
-
-            <div class="space-y-4 mb-6">
-              <div v-for="(rate, index) in formData.profile.rates" :key="index" class="flex gap-4 items-start border-b pb-4">
-                <div class="flex-1 space-y-2">
-                  <BaseInput
-                    :id="`rate-name-${index}`"
-                    label="Package Name"
-                    v-model="rate.name"
-                    placeholder="e.g., Portrait Session"
-                  />
-                  <BaseInput
-                    :id="`rate-price-${index}`"
-                    label="Price (USD)"
-                    type="number"
-                    v-model.number="rate.price"
-                    placeholder="100"
-                  />
-                </div>
-                <BaseButton
-                  v-if="formData.profile.rates.length > 1"
-                  @click="removeRate(index)"
-                  variant="danger"
-                  size="sm"
-                  class="mt-6"
-                >
-                  Remove
-                </BaseButton>
-              </div>
-            </div>
-
-            <BaseButton @click="addRate" variant="outline" class="mb-6">
-              + Add Another Package
-            </BaseButton>
-
-            <div v-if="errors.general" class="text-red-600 text-sm mb-4">{{ errors.general }}</div>
-
-            <div class="mt-6 flex justify-between">
-              <BaseButton @click="prevStep" variant="secondary">Back</BaseButton>
-              <BaseButton @click="completeOnboarding" variant="primary" :loading="loading">
-                Complete Setup
-              </BaseButton>
-            </div>
-          </div>
-        </div>
-      </BaseCard>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuthStore } from '../stores/auth'
-import api from '../api/axios'
-import BaseCard from '../components/BaseCard.vue'
-import BaseInput from '../components/BaseInput.vue'
-import BaseButton from '../components/BaseButton.vue'
 
 const router = useRouter()
-const authStore = useAuthStore()
 
-const steps = ['Basic Info', 'Portfolio', 'Rates & Packages']
-const currentStep = ref(0)
+// State
+const currentStep = ref(1)
+const totalSteps = 3
 const loading = ref(false)
 
 const formData = ref({
-  profile: {
-    category: '',
-    bio: '',
-    portfolio: [{ url: '', description: '' }],
-    rates: [{ name: '', price: 0 }]
-  }
+  name: 'User',
+  category: '',
+  bio: '',
+  location: '',
+  profilePhoto: null,
+  portfolio: []
 })
 
-const errors = ref({
-  general: ''
-})
+const portfolioItems = ref(Array(6).fill(null))
 
-onMounted(() => {
-  if (authStore.user) {
-    formData.value.profile.category = authStore.user.profile.category || 'photography'
-  }
-})
-
+// Methods
 const nextStep = () => {
-  if (currentStep.value === 0 && !formData.value.profile.bio) {
-    errors.value.general = 'Please add a bio'
-    return
-  }
-  if (currentStep.value < steps.length - 1) {
+  if (currentStep.value < totalSteps) {
     currentStep.value++
-    errors.value.general = ''
   }
 }
 
 const prevStep = () => {
-  if (currentStep.value > 0) {
+  if (currentStep.value > 1) {
     currentStep.value--
-    errors.value.general = ''
   }
 }
 
-const addPortfolioItem = () => {
-  formData.value.profile.portfolio.push({ url: '', description: '' })
+const handlePhotoUpload = (event) => {
+  const file = event.target.files[0]
+  if (file) {
+    formData.value.profilePhoto = file
+    // TODO: Upload to server and show preview
+  }
+}
+
+const handlePortfolioUpload = (event) => {
+  const files = Array.from(event.target.files)
+  files.forEach((file, index) => {
+    const emptyIndex = portfolioItems.value.findIndex(item => item === null)
+    if (emptyIndex !== -1) {
+      portfolioItems.value[emptyIndex] = file
+      formData.value.portfolio.push(file)
+    }
+  })
+  // TODO: Upload to server
 }
 
 const removePortfolioItem = (index) => {
-  formData.value.profile.portfolio.splice(index, 1)
+  portfolioItems.value[index] = null
+  formData.value.portfolio = formData.value.portfolio.filter((_, i) => i !== index)
 }
 
-const addRate = () => {
-  formData.value.profile.rates.push({ name: '', price: 0 })
-}
-
-const removeRate = (index) => {
-  formData.value.profile.rates.splice(index, 1)
-}
-
-const completeOnboarding = async () => {
-  // Validate
-  if (!formData.value.profile.bio) {
-    errors.value.general = 'Please add a bio'
-    return
-  }
-
-  // Filter out empty portfolio items
-  formData.value.profile.portfolio = formData.value.profile.portfolio.filter(
-    item => item.url && item.url.trim() !== ''
-  )
-
-  // Filter out empty rates
-  formData.value.profile.rates = formData.value.profile.rates.filter(
-    rate => rate.name && rate.price > 0
-  )
-
-  if (formData.value.profile.rates.length === 0) {
-    errors.value.general = 'Please add at least one package with a price'
-    return
-  }
-
+const completeOnboarding = () => {
   loading.value = true
 
-  try {
-    await api.put('/users/profile', formData.value)
-    await authStore.fetchUser()
-    router.push('/creator/dashboard')
-  } catch (error) {
-    errors.value.general = error.response?.data?.message || 'Failed to update profile'
-  } finally {
+  // Simulate API call
+  setTimeout(() => {
     loading.value = false
-  }
+    router.push('/discover')
+  }, 1000)
+}
+
+const skipOnboarding = () => {
+  router.push('/discover')
 }
 </script>
+
+<style scoped>
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F5F5F5;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #E8E8E8;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9747FF;
+}
+</style>

@@ -1,115 +1,179 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
-    <header class="bg-white shadow-sm">
-      <div class="container mx-auto px-6 py-4 flex justify-between items-center">
-        <router-link to="/" class="text-2xl font-bold text-indigo-600">MyArteLab</router-link>
-        <router-link to="/discover">
-          <BaseButton variant="outline">← Back to Discover</BaseButton>
-        </router-link>
-      </div>
-    </header>
-
-    <div v-if="loading" class="container mx-auto px-6 py-12 text-center">
-      <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+  <div class="min-h-screen bg-white font-['Inter',sans-serif]">
+    <!-- Logo -->
+    <div class="absolute top-4 left-4 sm:top-8 sm:left-8 z-10">
+      <img src="/logo.PNG" alt="MyArteLab" class="h-8 sm:h-12 w-auto cursor-pointer" @click="router.push('/discover')" />
     </div>
 
-    <div v-else-if="creator" class="container mx-auto px-6 py-12">
-      <!-- Creator Header -->
-      <BaseCard class="mb-8">
-        <div class="p-8">
-          <div class="flex flex-col md:flex-row items-start gap-6">
-            <div class="w-32 h-32 bg-gradient-to-br from-indigo-400 to-purple-400 rounded-full flex items-center justify-center text-white text-5xl font-bold flex-shrink-0">
-              {{ creator.profile.name?.charAt(0).toUpperCase() }}
-            </div>
-            <div class="flex-1">
-              <div class="flex items-center gap-3 mb-2">
-                <h1 class="text-3xl font-bold text-gray-900">{{ creator.profile.name }}</h1>
-                <span v-if="creator.verified" class="flex items-center text-green-600">
-                  <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                  </svg>
-                </span>
+    <!-- Wallet Balance (Top Right) -->
+    <div class="absolute top-4 right-4 sm:top-8 sm:right-8 z-10">
+      <button
+        @click="router.push('/wallet')"
+        class="h-[44px] px-4 bg-white border-[1.5px] border-[#E8E8E8] rounded-[12px] flex items-center gap-2 hover:border-[#9747FF] transition-all"
+      >
+        <svg class="w-5 h-5 text-[#9747FF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+        </svg>
+        <span class="text-[15px] font-semibold text-[#111111]">${{ walletBalance }}</span>
+      </button>
+    </div>
+
+    <!-- Main Content -->
+    <div class="w-full pt-20 sm:pt-24 pb-12 px-4 sm:px-8">
+      <div class="max-w-[900px] mx-auto">
+
+        <!-- Loading State -->
+        <div v-if="loading" class="flex items-center justify-center py-16">
+          <div class="animate-spin rounded-full h-12 w-12 border-[3px] border-[#E8E8E8] border-t-[#9747FF]"></div>
+        </div>
+
+        <!-- Profile Content -->
+        <div v-else>
+          <!-- Cover Photo -->
+          <div class="w-full h-[200px] bg-gradient-to-r from-[#9747FF] to-[#C86FFF] rounded-[14px] mb-[-60px]"></div>
+
+          <div class="h-6"></div>
+
+          <!-- Profile Card -->
+          <div class="bg-white border-[1.5px] border-[#E8E8E8] rounded-[14px] p-6 sm:p-8">
+            <!-- Profile Photo (Overlapping Cover) -->
+            <div class="flex justify-center mb-[-60px] mt-[-80px]">
+              <div class="w-[120px] h-[120px] rounded-full bg-gradient-to-br from-[#9747FF] to-[#C86FFF] flex items-center justify-center text-white text-[48px] font-semibold border-[4px] border-white">
+                {{ creatorData.name?.charAt(0).toUpperCase() }}
               </div>
-              <p class="text-gray-600 mb-3">{{ creator.profile.location }}</p>
-              <div class="flex items-center gap-4 mb-4">
-                <div class="flex text-yellow-400">
-                  <svg v-for="i in 5" :key="i" class="w-5 h-5" :class="i <= Math.round(creator.rating) ? 'fill-current' : 'fill-gray-300'" viewBox="0 0 20 20">
-                    <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
+            </div>
+
+            <div class="h-16"></div>
+
+            <!-- Edit Profile Button (if owner) -->
+            <div v-if="isOwner" class="flex justify-end mb-4">
+              <button class="h-[44px] px-6 border-[1.5px] border-[#9747FF] rounded-[12px] text-[#9747FF] text-[15px] font-semibold hover:bg-[#9747FF] hover:text-white transition-all flex items-center justify-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                Edit Profile
+              </button>
+            </div>
+
+            <!-- Name & Location -->
+            <div class="text-center mb-3">
+              <h1 class="text-[32px] font-semibold text-[#111111] mb-2">
+                {{ creatorData.name }}
+              </h1>
+              <div class="flex items-center justify-center gap-2 text-[15px] text-[#6B6B6B]">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                {{ creatorData.location }}
+              </div>
+            </div>
+
+            <!-- Specialization Badge -->
+            <div class="flex justify-center mb-4">
+              <div class="px-4 py-2 bg-[#F5F5F5] rounded-[8px] text-[15px] font-medium text-[#111111]">
+                {{ creatorData.category }}
+              </div>
+            </div>
+
+            <!-- Rating -->
+            <div class="flex items-center justify-center gap-1 mb-6">
+              <svg
+                v-for="star in 5"
+                :key="star"
+                class="w-5 h-5"
+                :class="star <= creatorData.rating ? 'text-[#FFB800]' : 'text-[#E8E8E8]'"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <span class="text-[15px] text-[#6B6B6B] ml-2">{{ creatorData.rating }} ({{ creatorData.reviews }} reviews)</span>
+            </div>
+
+            <!-- Action Buttons -->
+            <div v-if="!isOwner" class="flex flex-col sm:flex-row gap-3 mb-8">
+              <button
+                @click="bookNow"
+                class="flex-1 h-[56px] bg-[#9747FF] rounded-[12px] text-white text-[15px] font-semibold hover:bg-[#8637EF] transition-all flex items-center justify-center"
+              >
+                Book Now
+              </button>
+              <button class="flex-1 h-[56px] border-[1.5px] border-[#9747FF] rounded-[12px] text-[#9747FF] text-[15px] font-semibold hover:bg-[#9747FF] hover:text-white transition-all flex items-center justify-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+                Message
+              </button>
+            </div>
+
+            <div class="h-8"></div>
+
+            <!-- Bio Section -->
+            <div class="mb-8">
+              <h2 class="text-[20px] font-semibold text-[#111111] mb-3">About</h2>
+              <p class="text-[15px] text-[#6B6B6B] leading-relaxed">
+                {{ creatorData.bio }}
+              </p>
+            </div>
+
+            <div class="h-6"></div>
+
+            <!-- Portfolio Section -->
+            <div class="mb-8">
+              <h2 class="text-[20px] font-semibold text-[#111111] mb-4">Portfolio</h2>
+              <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                <div
+                  v-for="(item, index) in creatorData.portfolio"
+                  :key="index"
+                  class="aspect-square bg-gradient-to-br from-[#F5F5F5] to-[#E8E8E8] rounded-[12px] border-[1.5px] border-[#E8E8E8] hover:border-[#9747FF] transition-all cursor-pointer flex items-center justify-center"
+                >
+                  <svg class="w-12 h-12 text-[#ACACAC]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
                 </div>
-                <span class="text-gray-700 font-medium">{{ creator.rating.toFixed(1) }} ({{ creator.totalReviews }} reviews)</span>
-                <span class="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm">{{ creator.profile.category }}</span>
               </div>
-              <p class="text-gray-700">{{ creator.profile.bio }}</p>
+            </div>
+
+            <div class="h-6"></div>
+
+            <!-- Reviews Section -->
+            <div>
+              <h2 class="text-[20px] font-semibold text-[#111111] mb-4">Reviews</h2>
+              <div class="space-y-4">
+                <div
+                  v-for="review in creatorData.reviewsList"
+                  :key="review.id"
+                  class="border-[1.5px] border-[#E8E8E8] rounded-[12px] p-4"
+                >
+                  <div class="flex items-start gap-3 mb-2">
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-[#9747FF] to-[#C86FFF] flex items-center justify-center text-white text-[14px] font-semibold">
+                      {{ review.clientName.charAt(0).toUpperCase() }}
+                    </div>
+                    <div class="flex-1">
+                      <div class="flex items-center justify-between mb-1">
+                        <h4 class="text-[15px] font-semibold text-[#111111]">{{ review.clientName }}</h4>
+                        <span class="text-[13px] text-[#ACACAC]">{{ review.date }}</span>
+                      </div>
+                      <div class="flex items-center gap-1 mb-2">
+                        <svg
+                          v-for="star in 5"
+                          :key="star"
+                          class="w-3 h-3"
+                          :class="star <= review.rating ? 'text-[#FFB800]' : 'text-[#E8E8E8]'"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                        </svg>
+                      </div>
+                      <p class="text-[14px] text-[#6B6B6B]">{{ review.comment }}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </BaseCard>
-
-      <div class="grid md:grid-cols-3 gap-8">
-        <div class="md:col-span-2">
-          <BaseCard class="mb-8">
-            <template #header>
-              <h2 class="text-2xl font-semibold">Portfolio</h2>
-            </template>
-            <div class="grid md:grid-cols-2 gap-4">
-              <div v-for="(item, index) in creator.profile.portfolio" :key="index" class="relative group">
-                <img :src="item.url" :alt="item.description" class="w-full h-64 object-cover rounded-lg" @error="handleImageError" />
-                <div class="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center p-4">
-                  <p class="text-white text-sm text-center">{{ item.description }}</p>
-                </div>
-              </div>
-            </div>
-          </BaseCard>
-
-          <BaseCard>
-            <template #header>
-              <h2 class="text-2xl font-semibold">Reviews</h2>
-            </template>
-            <div v-if="reviews.length > 0" class="space-y-4">
-              <div v-for="review in reviews" :key="review._id" class="border-b pb-4 last:border-b-0">
-                <div class="flex justify-between items-start mb-2">
-                  <div>
-                    <p class="font-medium">{{ review.client?.profile?.name || 'Anonymous' }}</p>
-                    <p class="text-sm text-gray-500">{{ new Date(review.createdAt).toLocaleDateString() }}</p>
-                  </div>
-                  <div class="flex text-yellow-400">
-                    <svg v-for="i in review.rating" :key="i" class="w-4 h-4 fill-current" viewBox="0 0 20 20">
-                      <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
-                    </svg>
-                  </div>
-                </div>
-                <p class="text-gray-700">{{ review.comment }}</p>
-              </div>
-            </div>
-            <div v-else class="text-center py-8 text-gray-500">No reviews yet</div>
-          </BaseCard>
-        </div>
-
-        <div>
-          <BaseCard class="sticky top-6">
-            <template #header>
-              <h2 class="text-xl font-semibold">Packages</h2>
-            </template>
-            <div class="space-y-4 mb-6">
-              <div v-for="(rate, index) in creator.profile.rates" :key="index" :class="['p-4 rounded-lg border-2 cursor-pointer transition', selectedPackage?._id === rate._id ? 'border-indigo-600 bg-indigo-50' : 'border-gray-200 hover:border-indigo-300']" @click="selectedPackage = rate">
-                <h3 class="font-semibold text-gray-900 mb-1">{{ rate.name }}</h3>
-                <p class="text-2xl font-bold text-indigo-600">${{ rate.price }}</p>
-              </div>
-            </div>
-
-            <div v-if="selectedPackage" class="mb-4">
-              <label class="block text-sm font-medium text-gray-700 mb-2">Project Brief (Optional)</label>
-              <textarea v-model="customBrief" rows="3" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="Describe your project..."></textarea>
-            </div>
-
-            <BaseButton v-if="authStore.isAuthenticated && authStore.isClient" @click="bookNow" variant="primary" fullWidth :disabled="!selectedPackage" :loading="booking">
-              Book Now - ${{ selectedPackage?.price || 0 }}
-            </BaseButton>
-            <router-link v-else to="/signup?role=client">
-              <BaseButton variant="primary" fullWidth>Sign Up to Book</BaseButton>
-            </router-link>
-          </BaseCard>
         </div>
       </div>
     </div>
@@ -117,75 +181,105 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { useAuthStore } from '../stores/auth'
+import { ref, onMounted, computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import api from '../api/axios'
-import BaseCard from '../components/BaseCard.vue'
-import BaseButton from '../components/BaseButton.vue'
 
-const route = useRoute()
 const router = useRouter()
-const authStore = useAuthStore()
+const route = useRoute()
 
-const creator = ref(null)
-const reviews = ref([])
-const loading = ref(false)
-const selectedPackage = ref(null)
-const customBrief = ref('')
-const booking = ref(false)
+// State
+const loading = ref(true)
+const creatorData = ref({})
+const walletBalance = ref(1250.00)
+const currentUserId = ref('current-user-id') // TODO: Get from auth store
 
-const fetchCreator = async () => {
+// Computed
+const isOwner = computed(() => {
+  return creatorData.value._id === currentUserId.value
+})
+
+// Mock data (will be replaced with API call)
+const mockCreator = {
+  _id: '1',
+  name: 'Adebayo Johnson',
+  location: 'Lagos, Nigeria',
+  category: 'Photographer',
+  rating: 5,
+  reviews: 47,
+  bio: 'Professional photographer with 8+ years of experience specializing in portrait, event, and commercial photography. I bring creativity and technical expertise to every project, ensuring stunning results that exceed expectations.',
+  portfolio: Array(6).fill({}),
+  reviewsList: [
+    {
+      id: 1,
+      clientName: 'Sarah Williams',
+      rating: 5,
+      date: '2 days ago',
+      comment: 'Outstanding work! Very professional and captured exactly what we needed. Highly recommend!'
+    },
+    {
+      id: 2,
+      clientName: 'Michael Chen',
+      rating: 5,
+      date: '1 week ago',
+      comment: 'Great experience working with this photographer. Amazing quality and fast delivery.'
+    },
+    {
+      id: 3,
+      clientName: 'Amara Okafor',
+      rating: 4,
+      date: '2 weeks ago',
+      comment: 'Very talented and easy to work with. The photos came out beautifully!'
+    }
+  ]
+}
+
+// Methods
+const fetchCreatorProfile = async () => {
   loading.value = true
   try {
-    const response = await api.get(`/users/creator/${route.params.id}`)
-    creator.value = response.data
-    if (creator.value.profile.rates?.length > 0) {
-      selectedPackage.value = creator.value.profile.rates[0]
-    }
+    const creatorId = route.params.id
+    // TODO: Replace with actual API call
+    // const response = await api.get(`/users/creator/${creatorId}`)
+    // creatorData.value = response.data
+
+    // Using mock data for now
+    setTimeout(() => {
+      creatorData.value = mockCreator
+      loading.value = false
+    }, 600)
   } catch (error) {
-    console.error('Error fetching creator:', error)
-  } finally {
+    console.error('Error fetching creator profile:', error)
     loading.value = false
   }
 }
 
-const fetchReviews = async () => {
-  try {
-    const response = await api.get(`/reviews/creator/${route.params.id}`)
-    reviews.value = response.data
-  } catch (error) {
-    console.error('Error fetching reviews:', error)
-  }
+const bookNow = () => {
+  router.push(`/book/${creatorData.value._id}`)
 }
 
-const bookNow = async () => {
-  booking.value = true
-  try {
-    await api.post('/bookings', {
-      creatorId: creator.value._id,
-      package: {
-        name: selectedPackage.value.name,
-        price: selectedPackage.value.price
-      },
-      customBrief: customBrief.value
-    })
-    alert('Booking created successfully!')
-    router.push('/client/dashboard')
-  } catch (error) {
-    console.error('Error creating booking:', error)
-    alert(error.response?.data?.message || 'Failed to create booking')
-  } finally {
-    booking.value = false
-  }
-}
-
-const handleImageError = (event) => {
-  event.target.src = 'https://via.placeholder.com/400x300?text=Image+Not+Found'
-}
-
-onMounted(async () => {
-  await fetchCreator()
-  await fetchReviews()
+// Lifecycle
+onMounted(() => {
+  fetchCreatorProfile()
 })
 </script>
+
+<style scoped>
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F5F5F5;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #E8E8E8;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9747FF;
+}
+</style>

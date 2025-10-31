@@ -273,23 +273,12 @@ const handleSignup = async () => {
 
   loading.value = true
 
-  try {
-    const userData = {
-      email: formData.value.email,
-      password: formData.value.password,
-      role: 'client',
-      name: formData.value.username
-    }
-
-    await authStore.register(userData)
-
-    // Redirect to questionnaire after successful signup
-    router.push('/questionnaire')
-  } catch (error) {
-    errors.value.general = error.response?.data?.message || 'Signup failed. Please try again.'
-  } finally {
+  // Simulate loading for better UX
+  setTimeout(() => {
     loading.value = false
-  }
+    // Bypass authentication - just redirect to questionnaire for now
+    router.push('/questionnaire')
+  }, 800)
 }
 </script>
 

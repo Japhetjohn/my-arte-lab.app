@@ -179,34 +179,26 @@ const errors = ref({
 const handleLogin = async () => {
   errors.value.general = ''
   showVerificationWarning.value = false
+
+  // Basic validation
+  if (!formData.value.email || !formData.value.password) {
+    errors.value.general = 'Please fill in all fields'
+    return
+  }
+
   loading.value = true
 
-  try {
-    await authStore.login(formData.value)
-
-    // Skip email verification check for testing
-    // if (authStore.user && !authStore.user.emailVerified) {
-    //   showVerificationWarning.value = true
-    //   loading.value = false
-    //   return
-    // }
-
-    if (authStore.isCreator) {
-      router.push('/creator/dashboard')
-    } else if (authStore.isClient) {
-      router.push('/client/dashboard')
-    } else if (authStore.isAdmin) {
-      router.push('/admin')
-    }
-  } catch (error) {
-    errors.value.general = error.response?.data?.message || 'Login failed. Please try again.'
-  } finally {
+  // Simulate loading for better UX
+  setTimeout(() => {
     loading.value = false
-  }
+    // Bypass authentication - just redirect to discover page for now
+    router.push('/discover')
+  }, 800)
 }
 
 const handleGoogleLogin = () => {
-  window.location.href = 'http://localhost:5000/api/auth/google'
+  // Bypass Google authentication - just redirect to discover page for now
+  router.push('/discover')
 }
 
 const resendVerification = async () => {
