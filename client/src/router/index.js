@@ -4,6 +4,7 @@ import Signup from '../views/Signup.vue'
 import EmailSignup from '../views/EmailSignup.vue'
 import EmailSignin from '../views/EmailSignin.vue'
 import Questionnaire from '../views/Questionnaire.vue'
+import Home from '../views/Home.vue'
 import Discover from '../views/Discover.vue'
 import CreatorProfile from '../views/CreatorProfile.vue'
 import Wallet from '../views/Wallet.vue'
@@ -18,7 +19,7 @@ import TestPage from '../views/TestPage.vue'
 import { useAuthStore } from '../stores/auth'
 
 const routes = [
-  { path: '/', name: 'Home', component: Signup },
+  { path: '/', name: 'Landing', component: Signup },
   { path: '/signup', name: 'Signup', component: Signup },
   { path: '/test', name: 'Test', component: TestPage },
   { path: '/login', name: 'Login', component: Login },
@@ -27,9 +28,11 @@ const routes = [
   { path: '/questionnaire', name: 'Questionnaire', component: Questionnaire, meta: { requiresAuth: true } },
   { path: '/verify-email/:token', name: 'VerifyEmail', component: VerifyEmail },
   { path: '/auth/callback', name: 'AuthCallback', component: AuthCallback },
+  { path: '/home', name: 'Home', component: Home },
   { path: '/discover', name: 'Discover', component: Discover },
   { path: '/creator/:id', name: 'CreatorProfile', component: CreatorProfile },
   { path: '/wallet', name: 'Wallet', component: Wallet },
+  { path: '/book', name: 'Book', component: BookNow },
   { path: '/book/:id', name: 'BookNow', component: BookNow },
   {
     path: '/creator/onboarding',

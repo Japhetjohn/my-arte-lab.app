@@ -1,115 +1,127 @@
 <template>
   <AppLayout>
-    <div class="w-full pt-12 pb-12 px-12 sm:px-16">
-      <div class="max-w-[1200px] mx-auto">
-        <!-- Header Section -->
-        <div class="text-center mb-8">
-        <h1 class="text-[28px] font-semibold text-[#111111] mb-2 font-['Inter',sans-serif]">
-          Discover Creators
-        </h1>
-        <p class="text-[15px] text-[#6B6B6B]">
-          Browse verified creators and find the perfect match for your project
-        </p>
-      </div>
+    <div class="w-full px-8 py-8">
+      <!-- Top Bar with Location and Search -->
+      <div class="flex items-center justify-between mb-8">
+        <!-- Location Toggle -->
+        <div class="flex items-center gap-2 text-[#999999] cursor-pointer hover:text-white transition-all">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          <span class="text-[14px]">{{ currentLocation }}</span>
+          <label class="relative inline-block w-12 h-6">
+            <input type="checkbox" v-model="locationEnabled" class="opacity-0 w-0 h-0">
+            <span class="absolute cursor-pointer inset-0 bg-[#333333] rounded-full transition-all"
+                  :class="locationEnabled ? 'bg-[#9747FF]' : ''">
+              <span class="absolute h-4 w-4 left-1 bottom-1 bg-white rounded-full transition-all"
+                    :class="locationEnabled ? 'translate-x-6' : ''"></span>
+            </span>
+          </label>
+        </div>
 
-      <div class="h-8"></div>
-
-      <!-- Search Bar -->
-      <div class="flex justify-center mb-6">
-        <div class="w-full max-w-[640px]">
-          <div class="flex gap-3">
+        <!-- Search Bar -->
+        <div class="w-[320px]">
+          <div class="relative">
             <input
               v-model="searchQuery"
-              @input="handleSearch"
               type="text"
-              placeholder="Search by name, service type, or location..."
-              class="flex-1 h-[56px] px-5 border-[1.5px] border-[#E8E8E8] rounded-[12px] bg-transparent placeholder-[#ACACAC] text-[#111111] text-[15px] focus:outline-none focus:border-2 focus:border-[#9747FF] focus:shadow-[0_6px_20px_rgba(151,71,255,0.18)] transition-all duration-200"
+              placeholder="Search"
+              class="w-full h-[44px] px-4 pl-10 bg-[#1a1a1a] border border-[#333333] rounded-[12px] text-white text-[14px] placeholder-[#666666] focus:outline-none focus:border-[#9747FF] transition-all"
             />
-            <button
-              @click="handleSearch"
-              class="w-[56px] h-[56px] bg-[#9747FF] rounded-[12px] flex items-center justify-center hover:bg-[#8637EF] transition-all"
-            >
-              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </button>
+            <svg class="w-5 h-5 text-[#666666] absolute left-3 top-1/2 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
           </div>
         </div>
       </div>
 
-      <div class="h-8"></div>
+      <!-- Discover Heading -->
+      <h1 class="text-[48px] font-bold text-white mb-12">Discover</h1>
 
       <!-- Loading State -->
       <div v-if="loading" class="flex items-center justify-center py-16">
-        <div class="animate-spin rounded-full h-12 w-12 border-[3px] border-[#E8E8E8] border-t-[#9747FF]"></div>
+        <div class="animate-spin rounded-full h-12 w-12 border-[3px] border-[#333333] border-t-[#9747FF]"></div>
       </div>
 
       <!-- Creator Cards Grid -->
-      <div v-else-if="filteredCreators.length > 0">
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          <div
-            v-for="creator in filteredCreators"
-            :key="creator._id"
-            class="bg-white border-[1.5px] border-[#E8E8E8] rounded-[14px] p-8 hover:border-[#9747FF] transition-all cursor-pointer"
-            @click="viewProfile(creator._id)"
-          >
-            <!-- Profile Photo -->
-            <div class="flex justify-center mb-6">
-              <div class="w-24 h-24 rounded-full bg-gradient-to-br from-[#9747FF] to-[#C86FFF] flex items-center justify-center text-white text-[32px] font-semibold">
-                {{ creator.name.charAt(0).toUpperCase() }}
-              </div>
+      <div v-else-if="filteredCreators.length > 0" class="grid grid-cols-4 gap-8 mb-16">
+        <div
+          v-for="creator in filteredCreators"
+          :key="creator._id"
+          class="flex flex-col items-center cursor-pointer group"
+          @click="viewProfile(creator._id)"
+        >
+          <!-- Circular Profile Photo -->
+          <div class="w-[200px] h-[200px] rounded-full overflow-hidden mb-4 group-hover:ring-4 group-hover:ring-[#9747FF] transition-all">
+            <img
+              v-if="creator.photo"
+              :src="creator.photo"
+              :alt="creator.name"
+              class="w-full h-full object-cover"
+            />
+            <div v-else class="w-full h-full bg-gradient-to-br from-[#9747FF] to-[#D946EF] flex items-center justify-center text-white text-[64px] font-semibold">
+              {{ creator.name.charAt(0).toUpperCase() }}
             </div>
-
-            <!-- Name -->
-            <h3 class="text-[20px] font-semibold text-[#111111] text-center mb-2">
-              {{ creator.name }}
-            </h3>
-
-            <!-- Category -->
-            <div class="flex justify-center mb-4">
-              <div class="px-4 py-2 bg-[#F5F5F5] rounded-[8px] text-[14px] font-medium text-[#6B6B6B]">
-                {{ creator.category }}
-              </div>
-            </div>
-
-            <!-- Rating -->
-            <div class="flex items-center justify-center gap-1 mb-4">
-              <svg
-                v-for="star in 5"
-                :key="star"
-                class="w-4 h-4"
-                :class="star <= creator.rating ? 'text-[#FFB800]' : 'text-[#E8E8E8]'"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-              </svg>
-              <span class="text-[13px] text-[#6B6B6B] ml-1">({{ creator.reviews }})</span>
-            </div>
-
-            <!-- View Profile Button -->
-            <button class="w-full h-[48px] bg-transparent border-[1.5px] border-[#9747FF] rounded-[12px] text-[#9747FF] text-[15px] font-semibold hover:bg-[#9747FF] hover:text-white transition-all flex items-center justify-center">
-              View Profile
-            </button>
           </div>
+
+          <!-- Star Rating -->
+          <div class="flex items-center gap-1 mb-2">
+            <svg
+              v-for="star in 5"
+              :key="star"
+              class="w-4 h-4 text-[#FFD700]"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+            </svg>
+          </div>
+
+          <!-- Status Badge -->
+          <div class="mb-2">
+            <span
+              :class="[
+                'text-[12px] font-bold uppercase tracking-wider',
+                creator.available ? 'text-[#9747FF]' : 'text-[#9747FF]'
+              ]"
+            >
+              {{ creator.available ? 'AVAILABLE' : 'BOOKED' }}
+            </span>
+          </div>
+
+          <!-- Location -->
+          <p class="text-white text-[14px]">{{ creator.location }}</p>
         </div>
       </div>
 
       <!-- Empty State -->
       <div v-else class="flex flex-col items-center justify-center py-16">
-        <div class="w-16 h-16 rounded-full bg-[#F5F5F5] flex items-center justify-center mb-4">
-          <svg class="w-8 h-8 text-[#ACACAC]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="w-16 h-16 rounded-full bg-[#1a1a1a] flex items-center justify-center mb-4">
+          <svg class="w-8 h-8 text-[#666666]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
         </div>
-        <p class="text-[15px] text-[#6B6B6B] mb-4">No creators found matching your criteria</p>
+        <p class="text-[15px] text-[#999999] mb-4">No creators found matching your criteria</p>
         <button
           @click="clearSearch"
-          class="h-[44px] px-6 border-[1.5px] border-[#9747FF] rounded-[12px] text-[#9747FF] text-[15px] font-semibold hover:bg-[#9747FF] hover:text-white transition-all flex items-center justify-center"
+          class="h-[44px] px-6 bg-gradient-to-r from-[#9747FF] to-[#D946EF] rounded-[12px] text-white text-[15px] font-semibold hover:opacity-90 transition-all"
         >
           Clear Search
         </button>
       </div>
+
+      <!-- Floating Book Now Button -->
+      <div class="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-40">
+        <button
+          @click="router.push('/book')"
+          class="flex items-center gap-2 bg-gradient-to-r from-[#9747FF] to-[#D946EF] text-white px-8 py-4 rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          <span class="font-semibold">Book Now</span>
+        </button>
       </div>
     </div>
   </AppLayout>
@@ -118,7 +130,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import api from '../api/axios'
 import AppLayout from '../components/AppLayout.vue'
 
 const router = useRouter()
@@ -127,104 +138,90 @@ const router = useRouter()
 const loading = ref(true)
 const creators = ref([])
 const searchQuery = ref('')
+const locationEnabled = ref(true)
+const currentLocation = ref('Ikeja,Lagos')
 
-// Mock data for testing (will be replaced with API call)
+// Mock data matching Glide screenshots
 const mockCreators = [
   {
     _id: '1',
-    name: 'Adebayo Johnson',
+    name: 'Ikeja',
     category: 'Photographer',
     rating: 5,
     reviews: 47,
-    location: 'Lagos'
+    location: 'Ikeja, Lagos',
+    available: true,
+    photo: null
   },
   {
     _id: '2',
-    name: 'Ama Osei',
-    category: 'Designer',
+    name: 'Yaba',
+    category: 'Photographer',
     rating: 5,
     reviews: 32,
-    location: 'Accra'
+    location: 'Yaba, Lagos',
+    available: false,
+    photo: null
   },
   {
     _id: '3',
-    name: 'Kwame Mensah',
+    name: 'Ota',
     category: 'Photographer',
-    rating: 4,
+    rating: 5,
     reviews: 28,
-    location: 'Accra'
+    location: 'Ota',
+    available: true,
+    photo: null
   },
   {
     _id: '4',
-    name: 'Zuri Mwangi',
-    category: 'Videographer',
+    name: 'Gbagada',
+    category: 'Designer',
     rating: 5,
     reviews: 56,
-    location: 'Nairobi'
+    location: 'Gbagada',
+    available: true,
+    photo: null
   },
   {
     _id: '5',
-    name: 'Chioma Nwankwo',
-    category: 'Designer',
-    rating: 4,
+    name: 'Calabar',
+    category: 'Videographer',
+    rating: 5,
     reviews: 41,
-    location: 'Lagos'
+    location: 'Calabar',
+    available: false,
+    photo: null
   },
   {
     _id: '6',
-    name: 'Thabo Dlamini',
+    name: 'Abuja',
     category: 'Photographer',
     rating: 5,
     reviews: 63,
-    location: 'Johannesburg'
+    location: 'Abuja',
+    available: false,
+    photo: null
   },
   {
     _id: '7',
-    name: 'Fatima Hassan',
+    name: 'Jos',
     category: 'Designer',
-    rating: 4,
+    rating: 5,
     reviews: 19,
-    location: 'Cairo'
+    location: 'Jos',
+    available: true,
+    photo: null
   },
   {
     _id: '8',
-    name: 'Kofi Asante',
+    name: 'Bariga',
     category: 'Videographer',
     rating: 5,
     reviews: 38,
-    location: 'Accra'
-  },
-  {
-    _id: '9',
-    name: 'Amara Okeke',
-    category: 'Photographer',
-    rating: 5,
-    reviews: 51,
-    location: 'Lagos'
-  },
-  {
-    _id: '10',
-    name: 'Lwazi Khumalo',
-    category: 'Designer',
-    rating: 4,
-    reviews: 24,
-    location: 'Johannesburg'
-  },
-  {
-    _id: '11',
-    name: 'Yara Ibrahim',
-    category: 'Photographer',
-    rating: 5,
-    reviews: 45,
-    location: 'Cairo'
-  },
-  {
-    _id: '12',
-    name: 'Bisi Adeyemi',
-    category: 'Videographer',
-    rating: 4,
-    reviews: 33,
-    location: 'Lagos'
+    location: 'Bariga',
+    available: false,
+    photo: null
   }
 ]
 
@@ -249,10 +246,6 @@ const filteredCreators = computed(() => {
 const fetchCreators = async () => {
   loading.value = true
   try {
-    // TODO: Replace with actual API call
-    // const response = await api.get('/users/creators')
-    // creators.value = response.data
-
     // Using mock data for now
     setTimeout(() => {
       creators.value = mockCreators
@@ -262,10 +255,6 @@ const fetchCreators = async () => {
     console.error('Error fetching creators:', error)
     loading.value = false
   }
-}
-
-const handleSearch = () => {
-  // Trigger search filter
 }
 
 const clearSearch = () => {
@@ -281,23 +270,3 @@ onMounted(() => {
   fetchCreators()
 })
 </script>
-
-<style scoped>
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: #F5F5F5;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #E8E8E8;
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #9747FF;
-}
-</style>
