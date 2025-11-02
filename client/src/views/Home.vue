@@ -10,29 +10,31 @@
         <div class="flex items-center gap-4">
           <!-- Search Bar -->
           <div class="w-[280px]">
-            <div class="relative">
-              <input
-                v-model="searchQuery"
-                type="text"
-                placeholder="Search"
-                class="w-full h-[44px] px-4 pl-10 bg-[#1a1a1a] border border-[#333333] rounded-[12px] text-white text-[14px] placeholder-[#666666] focus:outline-none focus:border-[#9747FF] transition-all"
-              />
-              <svg class="w-5 h-5 text-[#666666] absolute left-3 top-1/2 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </div>
+            <Input
+              v-model="searchQuery"
+              type="text"
+              placeholder="Search"
+            >
+              <template #iconLeft>
+                <svg class="w-5 h-5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </template>
+            </Input>
           </div>
 
           <!-- Add Button -->
-          <button
+          <Button
+            variant="primary"
             @click="showAddModal = true"
-            class="px-6 py-2 bg-gradient-to-r from-[#9747FF] to-[#D946EF] text-white text-[14px] font-semibold rounded-[12px] hover:opacity-90 transition-all flex items-center gap-2"
           >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-            </svg>
+            <template #iconLeft>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+            </template>
             Add
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -60,9 +62,9 @@
 
             <!-- Category Badge Overlay (bottom-left) -->
             <div class="absolute bottom-4 left-4 z-10">
-              <span class="inline-block px-3 py-1 bg-[#9747FF] text-white text-[10px] font-bold uppercase tracking-wider rounded-[6px]">
+              <Badge variant="primary" size="sm">
                 {{ item.category }}
-              </span>
+              </Badge>
             </div>
 
             <!-- Overlay on hover -->
@@ -95,19 +97,14 @@
       </div>
 
       <!-- Empty State -->
-      <div v-if="filteredPortfolio.length === 0" class="flex flex-col items-center justify-center py-16">
-        <div class="w-16 h-16 rounded-full bg-[#1a1a1a] flex items-center justify-center mb-4">
-          <svg class="w-8 h-8 text-[#666666]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2.828 0 012.828 0L16 16m-2-2l1.586-1.586a2 2.828 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-        </div>
-        <p class="text-[15px] text-[#999999] mb-4">No portfolio items found</p>
-        <button
-          @click="showAddModal = true"
-          class="h-[44px] px-6 bg-gradient-to-r from-[#9747FF] to-[#D946EF] rounded-[12px] text-white text-[15px] font-semibold hover:opacity-90 transition-all"
-        >
-          Add Your First Item
-        </button>
+      <div v-if="filteredPortfolio.length === 0" class="flex justify-center py-16">
+        <EmptyState
+          icon="image"
+          title="No portfolio items found"
+          description="Start building your portfolio by adding your first item"
+          primary-action="Add Your First Item"
+          @primary-action="showAddModal = true"
+        />
       </div>
     </div>
 
@@ -129,42 +126,27 @@
 
         <!-- Form Fields -->
         <div class="space-y-4">
-          <div>
-            <label class="text-white text-[14px] mb-2 block">Title</label>
-            <input
-              type="text"
-              v-model="addForm.title"
-              placeholder="e.g., Wedding Catalog"
-              class="w-full h-[48px] px-4 bg-[#0a0a0a] border border-[#333333] rounded-[12px] text-white text-[14px] placeholder-[#666666] focus:outline-none focus:border-[#9747FF] transition-all"
-            />
-          </div>
+          <Input
+            v-model="addForm.title"
+            label="Title"
+            placeholder="e.g., Wedding Catalog"
+            required
+          />
 
-          <div>
-            <label class="text-white text-[14px] mb-2 block">Category</label>
-            <select
-              v-model="addForm.category"
-              class="w-full h-[48px] px-4 bg-[#0a0a0a] border border-[#333333] rounded-[12px] text-white text-[14px] focus:outline-none focus:border-[#9747FF] transition-all"
-            >
-              <option value="">Select category</option>
-              <option value="PORTFOLIO">Portfolio</option>
-              <option value="WEDDING CATALOG">Wedding Catalog</option>
-              <option value="LATEST EP DESIGN">Latest EP Design</option>
-              <option value="JAMESON HONS">Jameson Hons</option>
-              <option value="FOOD PHOTOS">Food Photos</option>
-              <option value="GRAPHICS">Graphics</option>
-              <option value="DESIGNS">Designs</option>
-            </select>
-          </div>
+          <Select
+            v-model="addForm.category"
+            label="Category"
+            placeholder="Select category"
+            :options="categoryOptions"
+            required
+          />
 
-          <div>
-            <label class="text-white text-[14px] mb-2 block">Creator Name</label>
-            <input
-              type="text"
-              v-model="addForm.creator"
-              placeholder="Your name or studio name"
-              class="w-full h-[48px] px-4 bg-[#0a0a0a] border border-[#333333] rounded-[12px] text-white text-[14px] placeholder-[#666666] focus:outline-none focus:border-[#9747FF] transition-all"
-            />
-          </div>
+          <Input
+            v-model="addForm.creator"
+            label="Creator Name"
+            placeholder="Your name or studio name"
+            required
+          />
 
           <div>
             <label class="text-white text-[14px] mb-2 block">Image</label>
@@ -176,31 +158,33 @@
             </div>
           </div>
 
-          <div>
-            <label class="text-white text-[14px] mb-2 block">Description (Optional)</label>
-            <textarea
-              v-model="addForm.description"
-              rows="3"
-              placeholder="Brief description of this work..."
-              class="w-full px-4 py-3 bg-[#0a0a0a] border border-[#333333] rounded-[12px] text-white text-[14px] placeholder-[#666666] focus:outline-none focus:border-[#9747FF] transition-all resize-none"
-            ></textarea>
-          </div>
+          <Textarea
+            v-model="addForm.description"
+            label="Description (Optional)"
+            placeholder="Brief description of this work..."
+            :rows="3"
+            :max-length="500"
+          />
         </div>
 
         <!-- Buttons -->
         <div class="flex gap-3 mt-8">
-          <button
+          <Button
+            variant="primary"
+            size="lg"
+            full-width
             @click="handleAddItem"
-            class="flex-1 h-[48px] bg-gradient-to-r from-[#9747FF] to-[#D946EF] text-white text-[15px] font-semibold rounded-[12px] hover:opacity-90 transition-all"
           >
             Add Item
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="secondary"
+            size="lg"
+            full-width
             @click="showAddModal = false"
-            class="flex-1 h-[48px] border border-[#333333] text-[#999999] text-[15px] font-semibold rounded-[12px] hover:border-[#9747FF] hover:text-white transition-all"
           >
             Cancel
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -211,6 +195,12 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import AppLayout from '../components/AppLayout.vue'
+import Button from '../components/design-system/Button.vue'
+import Input from '../components/design-system/Input.vue'
+import Select from '../components/design-system/Select.vue'
+import Textarea from '../components/design-system/Textarea.vue'
+import Badge from '../components/design-system/Badge.vue'
+import EmptyState from '../components/design-system/EmptyState.vue'
 
 const router = useRouter()
 
@@ -224,6 +214,16 @@ const addForm = ref({
   creator: '',
   description: ''
 })
+
+const categoryOptions = [
+  { label: 'Portfolio', value: 'PORTFOLIO' },
+  { label: 'Wedding Catalog', value: 'WEDDING CATALOG' },
+  { label: 'Latest EP Design', value: 'LATEST EP DESIGN' },
+  { label: 'Jameson Hons', value: 'JAMESON HONS' },
+  { label: 'Food Photos', value: 'FOOD PHOTOS' },
+  { label: 'Graphics', value: 'GRAPHICS' },
+  { label: 'Designs', value: 'DESIGNS' }
+]
 
 // Mock portfolio data matching Glide screenshots
 const portfolio = ref([

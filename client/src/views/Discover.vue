@@ -22,26 +22,55 @@
 
         <!-- Search Bar -->
         <div class="w-[320px]">
-          <div class="relative">
-            <input
-              v-model="searchQuery"
-              type="text"
-              placeholder="Search"
-              class="w-full h-[44px] px-4 pl-10 bg-[#1a1a1a] border border-[#333333] rounded-[12px] text-white text-[14px] placeholder-[#666666] focus:outline-none focus:border-[#9747FF] transition-all"
-            />
-            <svg class="w-5 h-5 text-[#666666] absolute left-3 top-1/2 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          </div>
+          <Input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Search creators, locations..."
+          >
+            <template #iconLeft>
+              <svg class="w-5 h-5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </template>
+          </Input>
         </div>
       </div>
 
       <!-- Discover Heading -->
-      <h1 class="text-[48px] font-bold text-white mb-12">Discover</h1>
+      <h1 class="text-[48px] font-bold text-white mb-6">Discover</h1>
+
+      <!-- Filters Section -->
+      <div class="flex items-center gap-4 mb-12">
+        <Select
+          v-model="selectedCategory"
+          placeholder="All Categories"
+          :options="categoryOptions"
+          class="w-[200px]"
+        />
+        <Select
+          v-model="selectedAvailability"
+          placeholder="All Availability"
+          :options="availabilityOptions"
+          class="w-[200px]"
+        />
+        <Button
+          v-if="hasActiveFilters"
+          variant="ghost"
+          size="sm"
+          @click="clearFilters"
+        >
+          <template #iconLeft>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </template>
+          Clear Filters
+        </Button>
+      </div>
 
       <!-- Loading State -->
       <div v-if="loading" class="flex items-center justify-center py-16">
-        <div class="animate-spin rounded-full h-12 w-12 border-[3px] border-[#333333] border-t-[#9747FF]"></div>
+        <Loading variant="spinner" size="lg" text="Loading creators..." />
       </div>
 
       <!-- Creator Cards Grid -->
@@ -53,17 +82,15 @@
           @click="viewProfile(creator._id)"
         >
           <!-- Circular Profile Photo -->
-          <div class="w-[200px] h-[200px] rounded-full overflow-hidden mb-4 group-hover:ring-4 group-hover:ring-[#9747FF] transition-all">
-            <img
-              v-if="creator.photo"
-              :src="creator.photo"
-              :alt="creator.name"
-              class="w-full h-full object-cover"
-            />
-            <div v-else class="w-full h-full bg-gradient-to-br from-[#9747FF] to-[#D946EF] flex items-center justify-center text-white text-[64px] font-semibold">
-              {{ creator.name.charAt(0).toUpperCase() }}
-            </div>
-          </div>
+          <Avatar
+            :src="creator.photo"
+            :alt="creator.name"
+            :initials="creator.name.charAt(0).toUpperCase()"
+            size="2xl"
+            shape="circle"
+            :status="creator.available ? 'online' : 'busy'"
+            class="mb-4 group-hover:ring-4 group-hover:ring-primary transition-all"
+          />
 
           <!-- Star Rating -->
           <div class="flex items-center gap-1 mb-2">
@@ -80,14 +107,12 @@
 
           <!-- Status Badge -->
           <div class="mb-2">
-            <span
-              :class="[
-                'text-[12px] font-bold uppercase tracking-wider',
-                creator.available ? 'text-[#9747FF]' : 'text-[#9747FF]'
-              ]"
+            <Badge
+              :variant="creator.available ? 'success' : 'warning'"
+              size="sm"
             >
               {{ creator.available ? 'AVAILABLE' : 'BOOKED' }}
-            </span>
+            </Badge>
           </div>
 
           <!-- Location -->
@@ -96,32 +121,31 @@
       </div>
 
       <!-- Empty State -->
-      <div v-else class="flex flex-col items-center justify-center py-16">
-        <div class="w-16 h-16 rounded-full bg-[#1a1a1a] flex items-center justify-center mb-4">
-          <svg class="w-8 h-8 text-[#666666]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-        </div>
-        <p class="text-[15px] text-[#999999] mb-4">No creators found matching your criteria</p>
-        <button
-          @click="clearSearch"
-          class="h-[44px] px-6 bg-gradient-to-r from-[#9747FF] to-[#D946EF] rounded-[12px] text-white text-[15px] font-semibold hover:opacity-90 transition-all"
-        >
-          Clear Search
-        </button>
+      <div v-else class="flex justify-center py-16">
+        <EmptyState
+          icon="search"
+          title="No creators found"
+          description="No creators match your search criteria. Try adjusting your filters."
+          primary-action="Clear Search"
+          @primary-action="clearSearch"
+        />
       </div>
 
       <!-- Floating Book Now Button -->
       <div class="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-40">
-        <button
+        <Button
+          variant="primary"
+          size="lg"
           @click="router.push('/book')"
-          class="flex items-center gap-2 bg-gradient-to-r from-[#9747FF] to-[#D946EF] text-white px-8 py-4 rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all"
+          class="shadow-lg hover:shadow-xl hover:scale-105 transition-all rounded-full"
         >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-          <span class="font-semibold">Book Now</span>
-        </button>
+          <template #iconLeft>
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </template>
+          Book Now
+        </Button>
       </div>
     </div>
   </AppLayout>
@@ -131,6 +155,13 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AppLayout from '../components/AppLayout.vue'
+import Button from '../components/design-system/Button.vue'
+import Input from '../components/design-system/Input.vue'
+import Select from '../components/design-system/Select.vue'
+import Badge from '../components/design-system/Badge.vue'
+import Avatar from '../components/design-system/Avatar.vue'
+import Loading from '../components/design-system/Loading.vue'
+import EmptyState from '../components/design-system/EmptyState.vue'
 
 const router = useRouter()
 
@@ -140,6 +171,20 @@ const creators = ref([])
 const searchQuery = ref('')
 const locationEnabled = ref(true)
 const currentLocation = ref('Ikeja,Lagos')
+const selectedCategory = ref('')
+const selectedAvailability = ref('')
+
+// Filter options
+const categoryOptions = [
+  { label: 'Photographer', value: 'Photographer' },
+  { label: 'Videographer', value: 'Videographer' },
+  { label: 'Designer', value: 'Designer' }
+]
+
+const availabilityOptions = [
+  { label: 'Available', value: 'available' },
+  { label: 'Booked', value: 'booked' }
+]
 
 // Mock data matching Glide screenshots
 const mockCreators = [
@@ -239,7 +284,22 @@ const filteredCreators = computed(() => {
     )
   }
 
+  // Category filter
+  if (selectedCategory.value) {
+    result = result.filter(creator => creator.category === selectedCategory.value)
+  }
+
+  // Availability filter
+  if (selectedAvailability.value) {
+    const isAvailable = selectedAvailability.value === 'available'
+    result = result.filter(creator => creator.available === isAvailable)
+  }
+
   return result
+})
+
+const hasActiveFilters = computed(() => {
+  return selectedCategory.value || selectedAvailability.value || searchQuery.value
 })
 
 // Methods
@@ -259,6 +319,12 @@ const fetchCreators = async () => {
 
 const clearSearch = () => {
   searchQuery.value = ''
+}
+
+const clearFilters = () => {
+  searchQuery.value = ''
+  selectedCategory.value = ''
+  selectedAvailability.value = ''
 }
 
 const viewProfile = (creatorId) => {
