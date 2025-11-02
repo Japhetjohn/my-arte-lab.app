@@ -1,13 +1,13 @@
 <template>
   <div class="min-h-screen bg-black font-['Inter',sans-serif]">
     <!-- Top Navigation Bar -->
-    <nav class="fixed top-0 left-0 right-0 bg-gradient-to-r from-[#9747FF] to-[#D946EF] h-[64px] flex items-center justify-between px-6 z-50">
-      <!-- Logo -->
-      <div class="flex items-center gap-2 cursor-pointer" @click="router.push('/home')">
+    <nav class="fixed top-0 left-0 right-0 bg-gradient-to-r from-[#9747FF] to-[#D946EF] h-[64px] flex items-center justify-center px-6 z-50">
+      <!-- Logo - Absolute positioned left -->
+      <div class="absolute left-6 flex items-center gap-2 cursor-pointer" @click="router.push('/home')">
         <img src="/logo.PNG" alt="MyArteLab" class="h-8 w-auto" />
       </div>
 
-      <!-- Navigation Items -->
+      <!-- Navigation Items - Centered -->
       <div class="flex items-center gap-8">
         <button
           @click="router.push('/home')"

@@ -379,11 +379,18 @@
         </div>
       </div>
     </div>
+
+    <!-- Authentication Modal -->
+    <AuthModal
+      v-model="showAuthModal"
+      default-mode="signup"
+      @authenticated="handleAuthenticated"
+    />
   </AppLayout>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import AppLayout from '../components/AppLayout.vue'
 import Button from '../components/design-system/Button.vue'
@@ -394,14 +401,18 @@ import Badge from '../components/design-system/Badge.vue'
 import Card from '../components/design-system/Card.vue'
 import Avatar from '../components/design-system/Avatar.vue'
 import EmptyState from '../components/design-system/EmptyState.vue'
+import AuthModal from '../components/AuthModal.vue'
+import { useAuth } from '../composables/useAuth'
 
 const router = useRouter()
 const route = useRoute()
+const { isAuthenticated, initAuth } = useAuth()
 
 // State
 const searchQuery = ref('')
 const showAddModal = ref(false)
 const showEditModal = ref(false)
+const showAuthModal = ref(false)
 const isOwner = ref(true) // TODO: Check if logged-in user owns this profile
 const activeTab = ref('portfolio')
 
@@ -446,19 +457,19 @@ const portfolioItems = ref([
     id: 1,
     title: 'Wedding Photography',
     category: 'Photography',
-    image: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=800&q=80'
+    image: '/screenshot.png'
   },
   {
     id: 2,
     title: 'Brand Shoot',
     category: 'Photography',
-    image: 'https://images.unsplash.com/photo-1614854262318-831574f15f1f?w=800&q=80'
+    image: '/screenshot.png'
   },
   {
     id: 3,
     title: 'Event Coverage',
     category: 'Videography',
-    image: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&q=80'
+    image: '/screenshot.png'
   }
 ])
 
@@ -482,7 +493,18 @@ const reviews = ref([
 
 // Methods
 const bookCreator = () => {
-  router.push('/book')
+  if (!isAuthenticated.value) {
+    showAuthModal.value = true
+  } else {
+    // Navigate to booking page with creator pre-selected
+    router.push(`/book?creator=${creator.value.id}`)
+  }
+}
+
+const handleAuthenticated = (userData) => {
+  console.log('User authenticated:', userData)
+  // Navigate to booking page with creator pre-selected after authentication
+  router.push(`/book?creator=${creator.value.id}`)
 }
 
 const handleSubmit = () => {
@@ -495,4 +517,9 @@ const viewPortfolioItem = (item) => {
   console.log('Viewing portfolio item:', item)
   // TODO: Open portfolio item modal or navigate to detail page
 }
+
+// Lifecycle
+onMounted(() => {
+  initAuth()
+})
 </script>

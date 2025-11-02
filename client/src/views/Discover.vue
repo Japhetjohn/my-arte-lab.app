@@ -136,7 +136,7 @@
         <Button
           variant="primary"
           size="lg"
-          @click="router.push('/book')"
+          @click="handleBookNow"
           class="shadow-lg hover:shadow-xl hover:scale-105 transition-all rounded-full"
         >
           <template #iconLeft>
@@ -148,6 +148,13 @@
         </Button>
       </div>
     </div>
+
+    <!-- Authentication Modal -->
+    <AuthModal
+      v-model="showAuthModal"
+      default-mode="signup"
+      @authenticated="handleAuthenticated"
+    />
   </AppLayout>
 </template>
 
@@ -162,8 +169,11 @@ import Badge from '../components/design-system/Badge.vue'
 import Avatar from '../components/design-system/Avatar.vue'
 import Loading from '../components/design-system/Loading.vue'
 import EmptyState from '../components/design-system/EmptyState.vue'
+import AuthModal from '../components/AuthModal.vue'
+import { useAuth } from '../composables/useAuth'
 
 const router = useRouter()
+const { isAuthenticated, initAuth } = useAuth()
 
 // State
 const loading = ref(true)
@@ -173,6 +183,7 @@ const locationEnabled = ref(true)
 const currentLocation = ref('Ikeja,Lagos')
 const selectedCategory = ref('')
 const selectedAvailability = ref('')
+const showAuthModal = ref(false)
 
 // Filter options
 const categoryOptions = [
@@ -331,8 +342,23 @@ const viewProfile = (creatorId) => {
   router.push(`/creator/${creatorId}`)
 }
 
+const handleBookNow = () => {
+  if (!isAuthenticated.value) {
+    showAuthModal.value = true
+  } else {
+    router.push('/book')
+  }
+}
+
+const handleAuthenticated = (userData) => {
+  console.log('User authenticated:', userData)
+  // Navigate to booking page after successful authentication
+  router.push('/book')
+}
+
 // Lifecycle
 onMounted(() => {
+  initAuth()
   fetchCreators()
 })
 </script>
