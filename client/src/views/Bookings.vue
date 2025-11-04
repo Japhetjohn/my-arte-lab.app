@@ -1,10 +1,10 @@
 <template>
   <AppLayout>
-    <div class="w-full px-8 py-8">
+    <div class="w-full max-w-7xl mx-auto px-6 py-8">
       <!-- Top Bar with Heading and Role Toggle -->
       <div class="flex items-center justify-between mb-8">
         <div class="flex items-center gap-4">
-          <h1 class="text-[48px] font-bold text-white">Bookings</h1>
+          <h1 class="text-h1-lg font-bold text-neutral-900">Bookings</h1>
           <!-- Role Badge -->
           <Badge :variant="userRole === 'creator' ? 'primary' : 'secondary'" size="md">
             {{ userRole === 'creator' ? 'Creator' : 'Client' }}
@@ -64,29 +64,29 @@
       <!-- Creator View -->
       <div v-else-if="userRole === 'creator'">
         <!-- Stats Cards -->
-        <div class="grid grid-cols-4 gap-4 mb-8">
-          <Card variant="bordered" padding="lg">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <Card variant="elevated" padding="lg">
             <div class="text-center">
-              <p class="text-neutral-400 text-sm mb-2">Pending Requests</p>
-              <p class="text-white text-3xl font-bold">{{ stats.pendingRequests }}</p>
+              <p class="text-neutral-600 text-caption-lg mb-2">Pending Requests</p>
+              <p class="text-neutral-900 text-3xl font-bold">{{ stats.pendingRequests }}</p>
             </div>
           </Card>
-          <Card variant="bordered" padding="lg">
+          <Card variant="elevated" padding="lg">
             <div class="text-center">
-              <p class="text-neutral-400 text-sm mb-2">Upcoming Jobs</p>
-              <p class="text-white text-3xl font-bold">{{ stats.upcomingJobs }}</p>
+              <p class="text-neutral-600 text-caption-lg mb-2">Upcoming Jobs</p>
+              <p class="text-neutral-900 text-3xl font-bold">{{ stats.upcomingJobs }}</p>
             </div>
           </Card>
-          <Card variant="bordered" padding="lg">
+          <Card variant="elevated" padding="lg">
             <div class="text-center">
-              <p class="text-neutral-400 text-sm mb-2">In Progress</p>
-              <p class="text-white text-3xl font-bold">{{ stats.inProgress }}</p>
+              <p class="text-neutral-600 text-caption-lg mb-2">In Progress</p>
+              <p class="text-neutral-900 text-3xl font-bold">{{ stats.inProgress }}</p>
             </div>
           </Card>
-          <Card variant="bordered" padding="lg">
+          <Card variant="elevated" padding="lg">
             <div class="text-center">
-              <p class="text-neutral-400 text-sm mb-2">Pending Approval</p>
-              <p class="text-white text-3xl font-bold">{{ stats.pendingApproval }}</p>
+              <p class="text-neutral-600 text-caption-lg mb-2">Pending Approval</p>
+              <p class="text-neutral-900 text-3xl font-bold">{{ stats.pendingApproval }}</p>
             </div>
           </Card>
         </div>
@@ -113,9 +113,9 @@
               <div class="flex-1">
                 <div class="flex items-start justify-between mb-3">
                   <div>
-                    <h3 class="text-white text-lg font-semibold mb-1">{{ booking.serviceName }}</h3>
-                    <p class="text-neutral-400 text-sm mb-2">Client: {{ booking.clientName }}</p>
-                    <div class="flex items-center gap-3 text-sm text-neutral-400">
+                    <h3 class="text-neutral-900 text-lg font-semibold mb-1">{{ booking.serviceName }}</h3>
+                    <p class="text-neutral-600 text-sm mb-2">Client: {{ booking.clientName }}</p>
+                    <div class="flex items-center gap-3 text-sm text-neutral-600">
                       <div class="flex items-center gap-1">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -136,12 +136,12 @@
                       {{ booking.status }}
                     </Badge>
                     <p class="text-success text-xl font-bold mt-2">${{ booking.earnings.toLocaleString() }}</p>
-                    <p class="text-neutral-400 text-xs">Platform fee: ${{ booking.platformFee }}</p>
+                    <p class="text-neutral-500 text-xs">Platform fee: ${{ booking.platformFee }}</p>
                   </div>
                 </div>
 
                 <!-- Brief/Description -->
-                <p class="text-neutral-300 text-sm mb-4">{{ booking.brief }}</p>
+                <p class="text-neutral-600 text-sm mb-4">{{ booking.brief }}</p>
 
                 <!-- Action Buttons -->
                 <div class="flex items-center gap-3">
@@ -196,13 +196,18 @@
         </div>
 
         <!-- Empty State -->
-        <div v-else class="flex justify-center py-16">
-          <EmptyState
-            icon="calendar"
-            title="No bookings found"
-            description="You don't have any bookings matching the selected filters"
-            size="md"
-          />
+        <div v-else class="py-16">
+          <div class="text-center max-w-md mx-auto">
+            <div class="w-16 h-16 bg-neutral-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg class="w-8 h-8 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <h3 class="text-h3 font-semibold text-neutral-900 mb-2">No bookings found</h3>
+            <p class="text-body text-neutral-600 mb-6">
+              You don't have any bookings matching the selected filters
+            </p>
+          </div>
         </div>
       </div>
 
@@ -213,7 +218,7 @@
           <Card
             v-for="booking in filteredBookings"
             :key="booking.id"
-            variant="bordered"
+            variant="elevated"
             padding="lg"
             hoverable
           >
@@ -231,9 +236,9 @@
               <div class="flex-1">
                 <div class="flex items-start justify-between mb-3">
                   <div>
-                    <h3 class="text-white text-lg font-semibold mb-1">{{ booking.serviceName }}</h3>
-                    <p class="text-neutral-400 text-sm mb-2">Creator: {{ booking.creatorName }}</p>
-                    <div class="flex items-center gap-3 text-sm text-neutral-400">
+                    <h3 class="text-neutral-900 text-lg font-semibold mb-1">{{ booking.serviceName }}</h3>
+                    <p class="text-neutral-600 text-sm mb-2">Creator: {{ booking.creatorName }}</p>
+                    <div class="flex items-center gap-3 text-sm text-neutral-600">
                       <div class="flex items-center gap-1">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -259,13 +264,13 @@
                     <Badge :variant="getStatusVariant(booking.status)" size="md">
                       {{ booking.status }}
                     </Badge>
-                    <p class="text-white text-xl font-bold mt-2">${{ booking.totalPrice.toLocaleString() }}</p>
-                    <p class="text-neutral-400 text-xs">Incl. platform fee</p>
+                    <p class="text-neutral-900 text-xl font-bold mt-2">${{ booking.totalPrice.toLocaleString() }}</p>
+                    <p class="text-neutral-500 text-xs">Incl. platform fee</p>
                   </div>
                 </div>
 
                 <!-- Brief/Description -->
-                <p class="text-neutral-300 text-sm mb-4">{{ booking.brief }}</p>
+                <p class="text-neutral-600 text-sm mb-4">{{ booking.brief }}</p>
 
                 <!-- Action Buttons -->
                 <div class="flex items-center gap-3">
@@ -329,14 +334,21 @@
         </div>
 
         <!-- Empty State -->
-        <div v-else class="flex justify-center py-16">
-          <EmptyState
-            icon="calendar"
-            title="No bookings yet"
-            description="Start booking talented creators to bring your projects to life"
-            primary-action="Browse Creators"
-            @primary-action="router.push('/discover')"
-          />
+        <div v-else class="py-16">
+          <div class="text-center max-w-md mx-auto">
+            <div class="w-16 h-16 bg-neutral-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg class="w-8 h-8 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <h3 class="text-h3 font-semibold text-neutral-900 mb-2">No bookings yet</h3>
+            <p class="text-body text-neutral-600 mb-6">
+              Start booking talented creators to bring your projects to life
+            </p>
+            <Button variant="primary" @click="router.push('/discover')">
+              Browse creators
+            </Button>
+          </div>
         </div>
       </div>
     </div>

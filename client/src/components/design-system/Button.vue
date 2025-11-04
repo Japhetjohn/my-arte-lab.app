@@ -73,18 +73,18 @@ const props = defineProps({
 
 defineEmits(['click'])
 
-const baseClasses = 'inline-flex items-center justify-center font-semibold rounded-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed'
+const baseClasses = 'inline-flex items-center justify-center font-semibold rounded-md transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98]'
 
 const variantClasses = computed(() => {
   switch (props.variant) {
     case 'primary':
-      return 'bg-gradient-to-r from-primary to-[#D946EF] text-white hover:opacity-90 active:opacity-80 shadow-sm'
+      return 'bg-gradient-to-r from-primary to-secondary text-white hover:opacity-90 active:opacity-80 shadow-soft'
     case 'secondary':
       return 'border-2 border-primary text-primary bg-transparent hover:bg-primary/10 active:bg-primary/20'
     case 'ghost':
       return 'text-primary bg-transparent hover:bg-primary/10 active:bg-primary/20'
     case 'danger':
-      return 'bg-error text-white hover:bg-error-dark active:bg-error-dark shadow-sm'
+      return 'bg-error text-white hover:bg-error-dark active:bg-error-dark shadow-soft'
     default:
       return ''
   }

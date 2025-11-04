@@ -107,13 +107,13 @@ defineEmits(['update:modelValue', 'blur', 'focus'])
 
 const inputId = computed(() => `input-${Math.random().toString(36).substr(2, 9)}`)
 
-const baseClasses = 'w-full px-4 py-2.5 text-base rounded-md border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed'
+const baseClasses = 'w-full px-4 py-2.5 text-base rounded-md border transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed'
 
 const stateClasses = computed(() => {
   if (props.error) {
-    return 'border-error text-error focus:border-error focus:ring-error'
+    return 'border-error text-error focus-visible:border-error focus-visible:ring-error'
   }
-  return 'border-neutral-300 text-neutral-900 focus:border-primary focus:ring-primary placeholder-neutral-400'
+  return 'border-neutral-300 text-neutral-900 focus-visible:border-primary focus-visible:ring-primary placeholder-neutral-400'
 })
 
 const iconPaddingClasses = computed(() => {

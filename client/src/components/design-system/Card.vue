@@ -55,7 +55,7 @@ const variantClasses = computed(() => {
     case 'bordered':
       return 'bg-white border-2 border-neutral-300'
     case 'elevated':
-      return 'bg-white shadow-card hover:shadow-card-hover'
+      return 'bg-white shadow-soft hover:shadow-soft-lg'
     case 'flat':
       return 'bg-neutral-50'
     default:
@@ -66,10 +66,10 @@ const variantClasses = computed(() => {
 const interactionClasses = computed(() => {
   const classes = []
   if (props.clickable) {
-    classes.push('cursor-pointer')
+    classes.push('cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2')
   }
   if (props.hoverable || props.clickable) {
-    classes.push('hover:shadow-card-hover')
+    classes.push('hover:shadow-soft-lg hover:-translate-y-1')
   }
   return classes.join(' ')
 })
