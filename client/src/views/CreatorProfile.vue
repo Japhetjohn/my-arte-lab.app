@@ -1,163 +1,153 @@
 <template>
   <AppLayout>
-    <div class="w-full px-8 py-8">
-      <!-- Top Bar with Back Button, Search, and Actions -->
-      <div class="flex items-center justify-between mb-8">
-        <!-- Back Button -->
-        <button
-          @click="router.back()"
-          class="flex items-center gap-2 text-[#999999] hover:text-white transition-all"
-        >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-          </svg>
-          <span class="text-[14px]">Profile /</span>
-        </button>
+    <div class="w-full min-h-screen bg-neutral-50">
+      <div class="max-w-7xl mx-auto px-8 py-8">
+        <!-- Top Bar with Back Button and Actions -->
+        <div class="flex items-center justify-between mb-8">
+          <!-- Back Button -->
+          <button
+            @click="router.back()"
+            class="flex items-center gap-2 text-neutral-600 hover:text-neutral-900 transition-all"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+            <span class="text-sm font-medium">Back to Discover</span>
+          </button>
 
-        <!-- Right Actions -->
-        <div class="flex items-center gap-4">
-          <!-- Search Bar -->
-          <div class="w-[280px]">
-            <Input
-              v-model="searchQuery"
-              type="text"
-              placeholder="Search"
+          <!-- Right Actions -->
+          <div class="flex items-center gap-3">
+            <!-- Edit Button -->
+            <Button
+              v-if="isOwner"
+              variant="secondary"
+              @click="showEditModal = true"
             >
               <template #iconLeft>
-                <svg class="w-5 h-5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
               </template>
-            </Input>
-          </div>
+              Edit Profile
+            </Button>
 
-          <!-- Edit Button -->
-          <Button
-            v-if="isOwner"
-            variant="primary"
-            @click="showEditModal = true"
-          >
-            <template #iconLeft>
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-              </svg>
-            </template>
-            Edit
-          </Button>
-
-          <!-- Add Button -->
-          <Button
-            v-if="isOwner"
-            variant="primary"
-            @click="showAddModal = true"
-          >
-            <template #iconLeft>
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-              </svg>
-            </template>
-            Add
-          </Button>
-        </div>
-      </div>
-
-      <!-- Profile Content -->
-      <div class="flex gap-8">
-        <!-- Featured Work/Portfolio Image -->
-        <div class="w-[400px] h-[500px] rounded-[14px] overflow-hidden relative group cursor-pointer">
-          <img
-            v-if="creatorData.featuredWork"
-            :src="creatorData.featuredWork"
-            alt="Featured Work"
-            class="w-full h-full object-cover"
-          />
-          <div v-else class="w-full h-full bg-gradient-to-br from-[#9747FF] to-[#D946EF] flex items-center justify-center">
-            <span class="text-white text-[80px] font-bold">{{ creatorData.name?.charAt(0).toUpperCase() }}</span>
-          </div>
-
-          <!-- Work Title Overlay -->
-          <div class="absolute top-4 left-4">
-            <p class="text-[#FFD700] text-[28px] font-bold uppercase tracking-wider" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.8);">
-              {{ creatorData.workTitle || 'MEET COLU' }}
-            </p>
-          </div>
-        </div>
-
-        <!-- Profile Info -->
-        <div class="flex-1">
-          <!-- Location Badge -->
-          <div class="mb-4">
-            <Badge variant="primary" size="md">
-              {{ creatorData.location || 'LAGOS' }}
-            </Badge>
-          </div>
-
-          <!-- Name -->
-          <h1 class="text-[48px] font-bold text-white mb-2">
-            {{ creatorData.name || 'Ebuka' }}
-          </h1>
-
-          <!-- Role/Category -->
-          <p class="text-[#999999] text-[20px] mb-8">
-            {{ creatorData.category || 'Creative' }}
-          </p>
-
-          <!-- Bio -->
-          <p class="text-[#CCCCCC] text-[15px] leading-relaxed mb-8">
-            {{ creatorData.bio || 'Passionate creator specializing in bringing visions to life through art and design.' }}
-          </p>
-
-          <!-- Stats -->
-          <div class="flex gap-8 mb-8">
-            <div>
-              <p class="text-[#666666] text-[13px] mb-1">Rating</p>
-              <div class="flex items-center gap-1">
-                <svg
-                  v-for="star in 5"
-                  :key="star"
-                  class="w-5 h-5 text-[#FFD700]"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+            <!-- Add Button -->
+            <Button
+              v-if="isOwner"
+              variant="primary"
+              @click="showAddModal = true"
+            >
+              <template #iconLeft>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>
+              </template>
+              Add Portfolio
+            </Button>
+          </div>
+        </div>
+
+        <!-- Profile Header Card -->
+        <Card variant="elevated" padding="lg" class="mb-8">
+          <div class="flex gap-8">
+            <!-- Featured Work/Portfolio Image -->
+            <div class="w-[320px] h-[400px] rounded-lg overflow-hidden relative group cursor-pointer shadow-soft">
+              <img
+                v-if="creatorData.featuredWork"
+                :src="creatorData.featuredWork"
+                alt="Featured Work"
+                class="w-full h-full object-cover"
+              />
+              <div v-else class="w-full h-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
+                <span class="text-white text-[80px] font-bold">{{ creatorData.name?.charAt(0).toUpperCase() }}</span>
+              </div>
+
+              <!-- Work Title Overlay -->
+              <div class="absolute bottom-4 left-4 right-4">
+                <div class="bg-black/60 backdrop-blur-sm rounded-lg px-4 py-2">
+                  <p class="text-white text-lg font-bold">
+                    {{ creatorData.workTitle || 'Featured Work' }}
+                  </p>
+                </div>
               </div>
             </div>
 
-            <div>
-              <p class="text-[#666666] text-[13px] mb-1">Projects</p>
-              <p class="text-white text-[20px] font-semibold">{{ creatorData.projectCount || 47 }}</p>
-            </div>
+            <!-- Profile Info -->
+            <div class="flex-1">
+              <!-- Location Badge -->
+              <div class="mb-4">
+                <Badge variant="primary" size="md">
+                  {{ creatorData.location || 'LAGOS' }}
+                </Badge>
+              </div>
 
-            <div>
-              <p class="text-[#666666] text-[13px] mb-1">Availability</p>
-              <Badge
-                :variant="creatorData.available ? 'success' : 'warning'"
-                size="sm"
-              >
-                {{ creatorData.available ? 'AVAILABLE' : 'BOOKED' }}
-              </Badge>
+              <!-- Name -->
+              <h1 class="text-h1-lg font-bold text-neutral-900 mb-2">
+                {{ creatorData.name || 'Ebuka' }}
+              </h1>
+
+              <!-- Role/Category -->
+              <p class="text-neutral-600 text-xl mb-6">
+                {{ creatorData.category || 'Creative' }}
+              </p>
+
+              <!-- Bio -->
+              <p class="text-neutral-700 text-body leading-relaxed mb-6">
+                {{ creatorData.bio || 'Passionate creator specializing in bringing visions to life through art and design.' }}
+              </p>
+
+              <!-- Stats -->
+              <div class="flex gap-8 mb-8">
+                <div>
+                  <p class="text-neutral-500 text-sm mb-1">Rating</p>
+                  <div class="flex items-center gap-1">
+                    <svg
+                      v-for="star in 5"
+                      :key="star"
+                      class="w-5 h-5 text-[#FFD700]"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                  </div>
+                </div>
+
+                <div>
+                  <p class="text-neutral-500 text-sm mb-1">Projects</p>
+                  <p class="text-neutral-900 text-xl font-semibold">{{ creatorData.projectCount || 47 }}</p>
+                </div>
+
+                <div>
+                  <p class="text-neutral-500 text-sm mb-1">Availability</p>
+                  <Badge
+                    :variant="creatorData.available ? 'success' : 'warning'"
+                    size="sm"
+                  >
+                    {{ creatorData.available ? 'AVAILABLE' : 'BOOKED' }}
+                  </Badge>
+                </div>
+              </div>
+
+              <!-- Action Buttons -->
+              <div v-if="!isOwner" class="flex gap-3">
+                <Button
+                  variant="primary"
+                  size="lg"
+                  @click="bookCreator"
+                >
+                  Book Now
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="lg"
+                >
+                  Message
+                </Button>
+              </div>
             </div>
           </div>
-
-          <!-- Action Buttons -->
-          <div v-if="!isOwner" class="flex gap-3">
-            <Button
-              variant="primary"
-              size="lg"
-              @click="bookCreator"
-            >
-              Book Now
-            </Button>
-            <Button
-              variant="secondary"
-              size="lg"
-            >
-              Message
-            </Button>
-          </div>
-        </div>
-      </div>
+        </Card>
 
       <!-- Tabs Section -->
       <div class="mt-12">

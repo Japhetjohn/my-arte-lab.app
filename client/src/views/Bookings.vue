@@ -1,105 +1,106 @@
 <template>
   <AppLayout>
-    <div class="w-full px-8 py-8">
-      <!-- Top Bar with Heading and Role Toggle -->
-      <div class="flex items-center justify-between mb-8">
-        <div class="flex items-center gap-4">
-          <h1 class="text-[48px] font-bold text-white">Bookings</h1>
-          <!-- Role Badge -->
-          <Badge :variant="userRole === 'creator' ? 'primary' : 'secondary'" size="md">
-            {{ userRole === 'creator' ? 'Creator' : 'Client' }}
-          </Badge>
+    <div class="w-full min-h-screen bg-neutral-50">
+      <div class="max-w-7xl mx-auto px-8 py-8">
+        <!-- Top Bar with Heading and Role Toggle -->
+        <div class="flex items-center justify-between mb-8">
+          <div class="flex items-center gap-4">
+            <h1 class="text-h1 font-bold text-neutral-900">Bookings</h1>
+            <!-- Role Badge -->
+            <Badge :variant="userRole === 'creator' ? 'primary' : 'secondary'" size="md">
+              {{ userRole === 'creator' ? 'Creator' : 'Client' }}
+            </Badge>
+          </div>
+
+          <!-- Search Bar -->
+          <div class="w-[400px]">
+            <Input
+              v-model="searchQuery"
+              type="text"
+              placeholder="Search bookings..."
+            >
+              <template #iconLeft>
+                <svg class="w-5 h-5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </template>
+            </Input>
+          </div>
         </div>
 
-        <!-- Search Bar -->
-        <div class="w-[320px]">
-          <Input
-            v-model="searchQuery"
-            type="text"
-            placeholder="Search bookings..."
+        <!-- Filters Section -->
+        <div class="flex items-center gap-4 mb-8">
+          <Select
+            v-model="statusFilter"
+            placeholder="All Statuses"
+            :options="statusOptions"
+            class="w-[200px]"
+          />
+          <Select
+            v-model="dateFilter"
+            placeholder="All Time"
+            :options="dateOptions"
+            class="w-[200px]"
+          />
+          <Button
+            v-if="hasActiveFilters"
+            variant="ghost"
+            size="sm"
+            @click="clearFilters"
           >
             <template #iconLeft>
-              <svg class="w-5 h-5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </template>
-          </Input>
-        </div>
-      </div>
-
-      <!-- Filters Section -->
-      <div class="flex items-center gap-4 mb-8">
-        <Select
-          v-model="statusFilter"
-          placeholder="All Statuses"
-          :options="statusOptions"
-          class="w-[200px]"
-        />
-        <Select
-          v-model="dateFilter"
-          placeholder="All Time"
-          :options="dateOptions"
-          class="w-[200px]"
-        />
-        <Button
-          v-if="hasActiveFilters"
-          variant="ghost"
-          size="sm"
-          @click="clearFilters"
-        >
-          <template #iconLeft>
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </template>
-          Clear Filters
-        </Button>
-      </div>
-
-      <!-- Loading State -->
-      <div v-if="loading" class="flex items-center justify-center py-16">
-        <Loading variant="spinner" size="lg" text="Loading bookings..." />
-      </div>
-
-      <!-- Creator View -->
-      <div v-else-if="userRole === 'creator'">
-        <!-- Stats Cards -->
-        <div class="grid grid-cols-4 gap-4 mb-8">
-          <Card variant="bordered" padding="lg">
-            <div class="text-center">
-              <p class="text-neutral-400 text-sm mb-2">Pending Requests</p>
-              <p class="text-white text-3xl font-bold">{{ stats.pendingRequests }}</p>
-            </div>
-          </Card>
-          <Card variant="bordered" padding="lg">
-            <div class="text-center">
-              <p class="text-neutral-400 text-sm mb-2">Upcoming Jobs</p>
-              <p class="text-white text-3xl font-bold">{{ stats.upcomingJobs }}</p>
-            </div>
-          </Card>
-          <Card variant="bordered" padding="lg">
-            <div class="text-center">
-              <p class="text-neutral-400 text-sm mb-2">In Progress</p>
-              <p class="text-white text-3xl font-bold">{{ stats.inProgress }}</p>
-            </div>
-          </Card>
-          <Card variant="bordered" padding="lg">
-            <div class="text-center">
-              <p class="text-neutral-400 text-sm mb-2">Pending Approval</p>
-              <p class="text-white text-3xl font-bold">{{ stats.pendingApproval }}</p>
-            </div>
-          </Card>
+            Clear Filters
+          </Button>
         </div>
 
-        <!-- Bookings List -->
-        <div v-if="filteredBookings.length > 0" class="space-y-4">
-          <Card
-            v-for="booking in filteredBookings"
-            :key="booking.id"
-            variant="bordered"
-            padding="lg"
-            hoverable
-          >
+        <!-- Loading State -->
+        <div v-if="loading" class="flex items-center justify-center py-16">
+          <Loading variant="spinner" size="lg" text="Loading bookings..." />
+        </div>
+
+        <!-- Creator View -->
+        <div v-else-if="userRole === 'creator'">
+          <!-- Stats Cards -->
+          <div class="grid grid-cols-4 gap-4 mb-8">
+            <Card variant="elevated" padding="lg">
+              <div class="text-center">
+                <p class="text-neutral-600 text-sm mb-2">Pending Requests</p>
+                <p class="text-neutral-900 text-3xl font-bold">{{ stats.pendingRequests }}</p>
+              </div>
+            </Card>
+            <Card variant="elevated" padding="lg">
+              <div class="text-center">
+                <p class="text-neutral-600 text-sm mb-2">Upcoming Jobs</p>
+                <p class="text-neutral-900 text-3xl font-bold">{{ stats.upcomingJobs }}</p>
+              </div>
+            </Card>
+            <Card variant="elevated" padding="lg">
+              <div class="text-center">
+                <p class="text-neutral-600 text-sm mb-2">In Progress</p>
+                <p class="text-neutral-900 text-3xl font-bold">{{ stats.inProgress }}</p>
+              </div>
+            </Card>
+            <Card variant="elevated" padding="lg">
+              <div class="text-center">
+                <p class="text-neutral-600 text-sm mb-2">Pending Approval</p>
+                <p class="text-neutral-900 text-3xl font-bold">{{ stats.pendingApproval }}</p>
+              </div>
+            </Card>
+          </div>
+
+          <!-- Bookings List -->
+          <div v-if="filteredBookings.length > 0" class="space-y-4">
+            <Card
+              v-for="booking in filteredBookings"
+              :key="booking.id"
+              variant="elevated"
+              padding="lg"
+              hoverable
+            >
             <div class="flex items-start gap-4">
               <!-- Client Avatar -->
               <Avatar
@@ -208,15 +209,15 @@
 
       <!-- Client View -->
       <div v-else>
-        <!-- Bookings List -->
-        <div v-if="filteredBookings.length > 0" class="space-y-4">
-          <Card
-            v-for="booking in filteredBookings"
-            :key="booking.id"
-            variant="bordered"
-            padding="lg"
-            hoverable
-          >
+          <!-- Bookings List -->
+          <div v-if="filteredBookings.length > 0" class="space-y-4">
+            <Card
+              v-for="booking in filteredBookings"
+              :key="booking.id"
+              variant="elevated"
+              padding="lg"
+              hoverable
+            >
             <div class="flex items-start gap-4">
               <!-- Creator Avatar -->
               <Avatar
@@ -337,6 +338,7 @@
             primary-action="Browse Creators"
             @primary-action="router.push('/discover')"
           />
+          </div>
         </div>
       </div>
     </div>
