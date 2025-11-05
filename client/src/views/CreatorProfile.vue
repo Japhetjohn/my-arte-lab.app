@@ -152,16 +152,16 @@
       <!-- Tabs Section -->
       <div class="mt-12">
         <!-- Tab Navigation -->
-        <div class="flex items-center gap-6 border-b border-[#333333] mb-8">
+        <div class="flex items-center gap-6 border-b border-neutral-200 mb-8">
           <button
             v-for="tab in tabs"
             :key="tab.id"
             @click="activeTab = tab.id"
             :class="[
-              'pb-4 text-[16px] font-medium transition-all relative',
+              'pb-4 text-base font-medium transition-all relative',
               activeTab === tab.id
                 ? 'text-primary'
-                : 'text-neutral-400 hover:text-white'
+                : 'text-neutral-600 hover:text-neutral-900'
             ]"
           >
             {{ tab.label }}
@@ -191,8 +191,8 @@
                 class="w-full h-64 object-cover"
               />
               <div class="p-4">
-                <h3 class="text-white text-[16px] font-semibold mb-2">{{ item.title }}</h3>
-                <p class="text-neutral-400 text-[14px]">{{ item.category }}</p>
+                <h3 class="text-neutral-900 text-base font-semibold mb-2">{{ item.title }}</h3>
+                <p class="text-neutral-600 text-sm">{{ item.category }}</p>
               </div>
             </Card>
             <EmptyState
@@ -210,7 +210,7 @@
             <Card
               v-for="review in reviews"
               :key="review.id"
-              variant="bordered"
+              variant="elevated"
               padding="lg"
             >
               <div class="flex items-start gap-4">
@@ -221,14 +221,14 @@
                 />
                 <div class="flex-1">
                   <div class="flex items-center justify-between mb-2">
-                    <h4 class="text-white font-semibold">{{ review.clientName }}</h4>
-                    <span class="text-neutral-400 text-sm">{{ review.date }}</span>
+                    <h4 class="text-neutral-900 font-semibold">{{ review.clientName }}</h4>
+                    <span class="text-neutral-500 text-sm">{{ review.date }}</span>
                   </div>
                   <div class="flex items-center gap-1 mb-3">
                     <svg
                       v-for="star in 5"
                       :key="star"
-                      :class="star <= review.rating ? 'text-[#FFD700]' : 'text-neutral-600'"
+                      :class="star <= review.rating ? 'text-[#FFD700]' : 'text-neutral-300'"
                       class="w-4 h-4"
                       fill="currentColor"
                       viewBox="0 0 20 20"
@@ -236,7 +236,7 @@
                       <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                     </svg>
                   </div>
-                  <p class="text-neutral-300 text-[15px]">{{ review.comment }}</p>
+                  <p class="text-neutral-700 text-body">{{ review.comment }}</p>
                 </div>
               </div>
             </Card>
@@ -251,16 +251,16 @@
 
           <!-- About Tab -->
           <div v-else-if="activeTab === 'about'">
-            <Card variant="bordered" padding="lg">
+            <Card variant="elevated" padding="lg">
               <div class="space-y-6">
                 <div>
-                  <h3 class="text-white text-[18px] font-semibold mb-3">About Me</h3>
-                  <p class="text-neutral-300 text-[15px] leading-relaxed">
+                  <h3 class="text-neutral-900 text-h3 font-semibold mb-3">About Me</h3>
+                  <p class="text-neutral-700 text-body leading-relaxed">
                     {{ creatorData.bio }}
                   </p>
                 </div>
                 <div>
-                  <h3 class="text-white text-[18px] font-semibold mb-3">Skills</h3>
+                  <h3 class="text-neutral-900 text-h3 font-semibold mb-3">Skills</h3>
                   <div class="flex flex-wrap gap-2">
                     <Badge
                       v-for="skill in creatorData.skills"
@@ -272,16 +272,16 @@
                   </div>
                 </div>
                 <div>
-                  <h3 class="text-white text-[18px] font-semibold mb-3">Contact Information</h3>
+                  <h3 class="text-neutral-900 text-h3 font-semibold mb-3">Contact Information</h3>
                   <div class="space-y-2">
-                    <div class="flex items-center gap-3 text-neutral-300">
-                      <svg class="w-5 h-5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="flex items-center gap-3 text-neutral-700">
+                      <svg class="w-5 h-5 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                       </svg>
                       <span>{{ creatorData.email || 'contact@example.com' }}</span>
                     </div>
-                    <div class="flex items-center gap-3 text-neutral-300">
-                      <svg class="w-5 h-5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="flex items-center gap-3 text-neutral-700">
+                      <svg class="w-5 h-5 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                       </svg>
@@ -294,18 +294,19 @@
           </div>
         </div>
       </div>
+      </div>
     </div>
 
     <!-- Add Item Modal -->
     <div
       v-if="showAddModal"
-      class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
       @click.self="showAddModal = false"
     >
-      <div class="bg-[#1a1a1a] rounded-[14px] p-8 max-w-[500px] w-full border border-[#333333] max-h-[90vh] overflow-y-auto">
+      <div class="bg-white rounded-lg p-8 max-w-[500px] w-full shadow-soft-lg max-h-[90vh] overflow-y-auto">
         <div class="flex items-center justify-between mb-6">
-          <h3 class="text-[24px] font-semibold text-white">Add item</h3>
-          <button @click="showAddModal = false" class="text-[#666666] hover:text-white transition-all">
+          <h3 class="text-h2 font-semibold text-neutral-900">Add Portfolio Item</h3>
+          <button @click="showAddModal = false" class="text-neutral-500 hover:text-neutral-900 transition-all">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -330,8 +331,8 @@
           />
 
           <div>
-            <label class="text-white text-[14px] mb-2 block">Image</label>
-            <div class="w-full h-[48px] px-4 bg-[#0a0a0a] border border-[#333333] rounded-[12px] flex items-center text-[#666666] text-[14px] cursor-pointer hover:border-[#9747FF] transition-all">
+            <label class="text-neutral-900 text-sm font-medium mb-2 block">Image</label>
+            <div class="w-full h-12 px-4 bg-neutral-50 border-2 border-neutral-200 rounded-lg flex items-center text-neutral-600 text-sm cursor-pointer hover:border-primary transition-all">
               <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
