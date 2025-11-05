@@ -29,20 +29,20 @@ const baseClasses = 'inline-flex items-center justify-center font-semibold round
 const variantClasses = computed(() => {
   switch (props.variant) {
     case 'primary':
-      return 'bg-primary text-white'
+      return 'bg-gradient-to-r from-primary to-secondary text-white shadow-sm'
     case 'secondary':
-      return 'bg-secondary text-white'
+      return 'bg-gradient-to-r from-secondary to-primary text-white shadow-sm'
     case 'success':
-      return 'bg-success text-white'
+      return 'bg-success text-white shadow-sm'
     case 'error':
-      return 'bg-error text-white'
+      return 'bg-error text-white shadow-sm'
     case 'warning':
-      return 'bg-yellow-500 text-white'
+      return 'bg-yellow-500 text-white shadow-sm'
     case 'info':
-      return 'bg-blue-500 text-white'
+      return 'bg-blue-500 text-white shadow-sm'
     case 'default':
     default:
-      return 'bg-neutral-100 text-neutral-700'
+      return 'bg-neutral-100 text-neutral-700 border border-neutral-200'
   }
 })
 
