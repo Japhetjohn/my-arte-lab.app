@@ -20,15 +20,15 @@
     </svg>
 
     <!-- Icon (Left) -->
-    <span v-if="$slots.iconLeft && !loading" class="mr-2">
+    <span v-if="$slots.iconLeft && !loading" class="mr-2 transition-transform group-hover:scale-110">
       <slot name="iconLeft" />
     </span>
 
     <!-- Button Text -->
-    <span><slot /></span>
+    <span class="relative z-10"><slot /></span>
 
     <!-- Icon (Right) -->
-    <span v-if="$slots.iconRight && !loading" class="ml-2">
+    <span v-if="$slots.iconRight && !loading" class="ml-2 transition-transform group-hover:translate-x-1">
       <slot name="iconRight" />
     </span>
   </button>
@@ -73,18 +73,18 @@ const props = defineProps({
 
 defineEmits(['click'])
 
-const baseClasses = 'inline-flex items-center justify-center font-semibold rounded-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed'
+const baseClasses = 'group inline-flex items-center justify-center font-semibold rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 active:scale-95'
 
 const variantClasses = computed(() => {
   switch (props.variant) {
     case 'primary':
-      return 'bg-gradient-to-r from-primary to-[#D946EF] text-white hover:opacity-90 active:opacity-80 shadow-sm'
+      return 'bg-gradient-to-r from-primary via-secondary to-[#D946EF] text-white hover:shadow-lg hover:shadow-primary/50 active:shadow-md relative overflow-hidden before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent before:translate-x-[-200%] hover:before:translate-x-[200%] before:transition-transform before:duration-700'
     case 'secondary':
-      return 'border-2 border-primary text-primary bg-transparent hover:bg-primary/10 active:bg-primary/20'
+      return 'border-2 border-primary text-primary bg-white hover:bg-gradient-to-r hover:from-primary/5 hover:to-secondary/5 active:bg-primary/10 hover:shadow-md'
     case 'ghost':
-      return 'text-primary bg-transparent hover:bg-primary/10 active:bg-primary/20'
+      return 'text-primary bg-transparent hover:bg-gradient-to-r hover:from-primary/10 hover:to-secondary/10 active:bg-primary/15'
     case 'danger':
-      return 'bg-error text-white hover:bg-error-dark active:bg-error-dark shadow-sm'
+      return 'bg-error text-white hover:bg-error-dark active:bg-error-dark shadow-sm hover:shadow-lg'
     default:
       return ''
   }

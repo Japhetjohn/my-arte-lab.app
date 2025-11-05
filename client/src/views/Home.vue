@@ -2,20 +2,39 @@
   <AppLayout>
     <div class="w-full min-h-screen bg-neutral-50">
       <!-- Hero Section -->
-      <section class="relative bg-gradient-to-br from-primary/5 via-secondary/5 to-neutral-50 py-20">
-        <div class="max-w-7xl mx-auto px-8">
-          <div class="text-center max-w-3xl mx-auto">
-            <h1 class="text-h1-lg font-bold text-neutral-900 mb-4">
-              Built for creators. Trusted by clients.
+      <section class="relative overflow-hidden bg-gradient-to-br from-primary via-secondary to-primary py-24">
+        <!-- Animated Background Elements -->
+        <div class="absolute inset-0 overflow-hidden">
+          <div class="absolute -top-1/2 -left-1/2 w-full h-full bg-white/5 rounded-full blur-3xl animate-pulse"></div>
+          <div class="absolute -bottom-1/2 -right-1/2 w-full h-full bg-white/5 rounded-full blur-3xl animate-pulse" style="animation-delay: 1s;"></div>
+        </div>
+
+        <div class="relative max-w-7xl mx-auto px-8">
+          <div class="text-center max-w-4xl mx-auto">
+            <div class="inline-block mb-6 px-6 py-2 bg-white/20 backdrop-blur-sm rounded-full text-white text-sm font-semibold animate-fade-in">
+              ✨ Africa's Premier Creative Marketplace
+            </div>
+            <h1 class="text-5xl md:text-6xl font-bold text-white mb-6 leading-tight animate-fade-in-up">
+              Built for creators.<br/>Trusted by clients.
             </h1>
-            <p class="text-lg text-neutral-600 mb-8">
-              Connect with talented photographers, designers, and videographers. Book creative services with confidence.
+            <p class="text-xl text-white/90 mb-10 leading-relaxed animate-fade-in-up" style="animation-delay: 0.2s;">
+              Connect with talented photographers, designers, and videographers.<br/>Book creative services with confidence and bring your vision to life.
             </p>
-            <div class="flex items-center justify-center gap-4">
-              <Button variant="primary" size="lg" @click="router.push('/discover')">
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up" style="animation-delay: 0.4s;">
+              <Button variant="secondary" size="lg" @click="router.push('/discover')" class="bg-white text-primary hover:bg-white/90 border-0">
+                <template #iconLeft>
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </template>
                 Browse Creators
               </Button>
-              <Button variant="secondary" size="lg" @click="handleJoinWaitlist">
+              <Button variant="ghost" size="lg" @click="handleJoinWaitlist" class="text-white border-2 border-white/30 hover:bg-white/10 backdrop-blur-sm">
+                <template #iconLeft>
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                  </svg>
+                </template>
                 Join as Creator
               </Button>
             </div>
@@ -24,40 +43,40 @@
       </section>
 
       <!-- Quick Statistics Ribbon -->
-      <section class="bg-white border-y border-neutral-200 py-8">
+      <section class="bg-white border-y border-neutral-200 py-12">
         <div class="max-w-7xl mx-auto px-8">
           <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div class="flex items-center gap-4">
-              <div class="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                <svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="flex items-center gap-4 group hover:scale-105 transition-transform duration-300">
+              <div class="w-16 h-16 bg-gradient-to-br from-primary to-secondary rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow">
+                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
               </div>
               <div>
-                <p class="text-h2 font-bold text-neutral-900">{{ stats.creatorsOnboarded }}+</p>
-                <p class="text-caption-lg text-neutral-600">Creators Onboarded</p>
+                <p class="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">{{ stats.creatorsOnboarded }}+</p>
+                <p class="text-sm text-neutral-600 font-medium">Creators Onboarded</p>
               </div>
             </div>
-            <div class="flex items-center gap-4">
-              <div class="w-12 h-12 bg-success/10 rounded-lg flex items-center justify-center">
-                <svg class="w-6 h-6 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="flex items-center gap-4 group hover:scale-105 transition-transform duration-300">
+              <div class="w-16 h-16 bg-gradient-to-br from-success to-success-dark rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow">
+                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
               <div>
-                <p class="text-h2 font-bold text-neutral-900">{{ stats.verifiedCreators }}+</p>
-                <p class="text-caption-lg text-neutral-600">Verified Creators</p>
+                <p class="text-3xl font-bold text-success">{{ stats.verifiedCreators }}+</p>
+                <p class="text-sm text-neutral-600 font-medium">Verified Creators</p>
               </div>
             </div>
-            <div class="flex items-center gap-4">
-              <div class="w-12 h-12 bg-secondary/10 rounded-lg flex items-center justify-center">
-                <svg class="w-6 h-6 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="flex items-center gap-4 group hover:scale-105 transition-transform duration-300">
+              <div class="w-16 h-16 bg-gradient-to-br from-secondary to-primary rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow">
+                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
               </div>
               <div>
-                <p class="text-h2 font-bold text-neutral-900">{{ stats.completedBookings }}+</p>
-                <p class="text-caption-lg text-neutral-600">Completed Bookings</p>
+                <p class="text-3xl font-bold bg-gradient-to-r from-secondary to-primary bg-clip-text text-transparent">{{ stats.completedBookings }}+</p>
+                <p class="text-sm text-neutral-600 font-medium">Completed Bookings</p>
               </div>
             </div>
           </div>
@@ -146,8 +165,8 @@
       <section class="py-16 bg-white">
         <div class="max-w-7xl mx-auto px-8">
           <div class="text-center mb-12">
-            <h2 class="text-h1 font-bold text-neutral-900 mb-2">Browse by Category</h2>
-            <p class="text-neutral-600">Find the perfect creative professional for your project</p>
+            <h2 class="text-h1 font-bold text-neutral-900 mb-3">Browse by Category</h2>
+            <p class="text-lg text-neutral-600">Find the perfect creative professional for your project</p>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -155,32 +174,57 @@
               v-for="category in categories"
               :key="category.id"
               @click="router.push(`/discover?category=${category.value}`)"
-              class="bg-gradient-to-br from-neutral-50 to-white border border-neutral-200 rounded-lg p-8 hover:border-primary hover:shadow-soft transition-all group"
+              class="relative overflow-hidden bg-gradient-to-br from-white to-neutral-50 border-2 border-neutral-200 rounded-xl p-8 hover:border-primary hover:shadow-lg transition-all duration-300 group transform hover:-translate-y-2"
             >
-              <div class="w-16 h-16 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4 group-hover:bg-primary group-hover:scale-110 transition-all">
-                <component :is="category.icon" class="w-8 h-8 text-primary group-hover:text-white" />
+              <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary/5 to-secondary/5 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-500"></div>
+              <div class="relative">
+                <div class="w-20 h-20 bg-gradient-to-br from-primary to-secondary rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg">
+                  <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </div>
+                <h3 class="text-xl font-bold text-neutral-900 mb-2 group-hover:text-primary transition-colors">{{ category.label }}</h3>
+                <p class="text-sm text-neutral-600 font-medium">{{ category.count }}+ creators available</p>
               </div>
-              <h3 class="text-lg font-semibold text-neutral-900 mb-2">{{ category.label }}</h3>
-              <p class="text-sm text-neutral-600">{{ category.count }}+ creators available</p>
             </button>
           </div>
         </div>
       </section>
 
       <!-- CTA Strip -->
-      <section class="py-20 bg-gradient-to-br from-primary to-secondary">
-        <div class="max-w-4xl mx-auto px-8 text-center">
-          <h2 class="text-h1-lg font-bold text-white mb-4">
-            Ready to bring your creative vision to life?
+      <section class="relative overflow-hidden py-24 bg-gradient-to-br from-primary via-secondary to-primary">
+        <!-- Animated Background -->
+        <div class="absolute inset-0 overflow-hidden opacity-30">
+          <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+          <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 1.5s;"></div>
+        </div>
+
+        <div class="relative max-w-4xl mx-auto px-8 text-center">
+          <div class="inline-block mb-6 px-6 py-2 bg-white/20 backdrop-blur-sm rounded-full text-white text-sm font-semibold animate-fade-in">
+            🚀 Start Your Creative Journey
+          </div>
+          <h2 class="text-4xl md:text-5xl font-bold text-white mb-6 leading-tight animate-fade-in-up">
+            Ready to bring your<br/>creative vision to life?
           </h2>
-          <p class="text-lg text-white/90 mb-8">
-            Join thousands of clients who have found their perfect creative match on MyArteLab
+          <p class="text-xl text-white/90 mb-10 max-w-2xl mx-auto leading-relaxed animate-fade-in-up" style="animation-delay: 0.2s;">
+            Join thousands of clients who have found their perfect creative match on MyArteLab. Get started in minutes.
           </p>
-          <div class="flex items-center justify-center gap-4">
-            <Button variant="secondary" size="lg" @click="router.push('/discover')" class="bg-white text-primary hover:bg-white/90">
-              Get Started
+          <div class="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up" style="animation-delay: 0.4s;">
+            <Button variant="secondary" size="lg" @click="router.push('/discover')" class="bg-white text-primary hover:bg-white/90 hover:shadow-2xl border-0">
+              <template #iconLeft>
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </template>
+              Get Started Now
             </Button>
-            <Button variant="ghost" size="lg" class="text-white border-2 border-white hover:bg-white/10">
+            <Button variant="ghost" size="lg" class="text-white border-2 border-white/30 hover:bg-white/10 backdrop-blur-sm">
+              <template #iconLeft>
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </template>
               Learn More
             </Button>
           </div>

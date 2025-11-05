@@ -4,10 +4,7 @@
     <nav class="fixed top-0 left-0 right-0 bg-white border-b border-neutral-200 h-[72px] flex items-center justify-between px-8 z-50 shadow-sm">
       <!-- Logo -->
       <div class="flex items-center gap-2 cursor-pointer" @click="router.push('/home')">
-        <div class="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center">
-          <span class="text-white font-bold text-xl">M</span>
-        </div>
-        <span class="text-xl font-bold text-neutral-900">MyArteLab</span>
+        <img src="/logo.PNG" alt="MyArteLab" class="h-10 w-auto" />
       </div>
 
       <!-- Navigation Items - Centered -->

@@ -46,18 +46,18 @@ const props = defineProps({
 
 defineEmits(['click'])
 
-const baseClasses = 'rounded-md transition-all duration-200'
+const baseClasses = 'rounded-lg transition-all duration-300'
 
 const variantClasses = computed(() => {
   switch (props.variant) {
     case 'default':
-      return 'bg-white border border-neutral-200'
+      return 'bg-white border border-neutral-200 hover:border-neutral-300'
     case 'bordered':
-      return 'bg-white border-2 border-neutral-300'
+      return 'bg-white border-2 border-neutral-200 hover:border-primary/30'
     case 'elevated':
-      return 'bg-white shadow-card hover:shadow-card-hover'
+      return 'bg-white shadow-soft hover:shadow-soft-lg transform hover:-translate-y-1'
     case 'flat':
-      return 'bg-neutral-50'
+      return 'bg-neutral-50 hover:bg-neutral-100'
     default:
       return ''
   }
