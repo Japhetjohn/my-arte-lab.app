@@ -3,6 +3,9 @@
     :class="cardClasses"
     @click="clickable ? $emit('click', $event) : null"
   >
+    <!-- Glow effect on hover for premium variant -->
+    <div v-if="variant === 'premium'" class="absolute -inset-[1px] bg-gradient-to-r from-primary-600 to-secondary-600 rounded-2xl opacity-0 group-hover:opacity-50 blur-xl transition-opacity duration-500 -z-10"></div>
+
     <!-- Card Header -->
     <div v-if="$slots.header" :class="headerClasses">
       <slot name="header" />
@@ -27,12 +30,12 @@ const props = defineProps({
   variant: {
     type: String,
     default: 'default',
-    validator: (value) => ['default', 'bordered', 'elevated', 'flat'].includes(value)
+    validator: (value) => ['default', 'bordered', 'elevated', 'flat', 'glass', 'glass-dark', 'premium'].includes(value)
   },
   padding: {
     type: String,
     default: 'md',
-    validator: (value) => ['none', 'sm', 'md', 'lg'].includes(value)
+    validator: (value) => ['none', 'sm', 'md', 'lg', 'xl'].includes(value)
   },
   clickable: {
     type: Boolean,
@@ -46,18 +49,24 @@ const props = defineProps({
 
 defineEmits(['click'])
 
-const baseClasses = 'rounded-md transition-all duration-200'
+const baseClasses = 'group relative rounded-xl transition-all duration-300 overflow-hidden'
 
 const variantClasses = computed(() => {
   switch (props.variant) {
     case 'default':
-      return 'bg-white border border-neutral-200'
+      return 'bg-dark-100 border border-dark-300'
     case 'bordered':
-      return 'bg-white border-2 border-neutral-300'
+      return 'bg-dark-100 border-2 border-primary-500/30'
     case 'elevated':
-      return 'bg-white shadow-card hover:shadow-card-hover'
+      return 'bg-dark-100 shadow-card hover:shadow-card-hover border border-dark-300/50'
     case 'flat':
-      return 'bg-neutral-50'
+      return 'bg-dark-50'
+    case 'glass':
+      return 'glass shadow-glass backdrop-blur-xl'
+    case 'glass-dark':
+      return 'glass-dark shadow-glass backdrop-blur-xl'
+    case 'premium':
+      return 'bg-gradient-to-br from-dark-100 via-dark-50 to-dark-100 border border-primary-500/20 shadow-premium card-premium'
     default:
       return ''
   }
@@ -69,7 +78,7 @@ const interactionClasses = computed(() => {
     classes.push('cursor-pointer')
   }
   if (props.hoverable || props.clickable) {
-    classes.push('hover:shadow-card-hover')
+    classes.push('hover:shadow-card-hover hover:scale-[1.01] hover:border-primary-500/40')
   }
   return classes.join(' ')
 })
@@ -84,6 +93,8 @@ const paddingClasses = computed(() => {
       return 'p-6'
     case 'lg':
       return 'p-8'
+    case 'xl':
+      return 'p-10'
     default:
       return ''
   }
@@ -94,13 +105,13 @@ const cardClasses = computed(() => {
     baseClasses,
     variantClasses.value,
     interactionClasses.value,
-    props.padding === 'none' ? '' : ''
+    paddingClasses.value
   ].join(' ')
 })
 
 const headerClasses = computed(() => {
-  const base = 'border-b border-neutral-200'
-  return props.padding === 'none' ? `${base} px-6 py-4` : `${base} -mx-6 -mt-6 px-6 py-4 mb-6`
+  const base = 'border-b border-dark-300/50 mb-4'
+  return props.padding === 'none' ? `${base} px-6 py-4` : `${base} pb-4`
 })
 
 const bodyClasses = computed(() => {
@@ -108,7 +119,7 @@ const bodyClasses = computed(() => {
 })
 
 const footerClasses = computed(() => {
-  const base = 'border-t border-neutral-200'
-  return props.padding === 'none' ? `${base} px-6 py-4` : `${base} -mx-6 -mb-6 px-6 py-4 mt-6`
+  const base = 'border-t border-dark-300/50 mt-4'
+  return props.padding === 'none' ? `${base} px-6 py-4` : `${base} pt-4`
 })
 </script>

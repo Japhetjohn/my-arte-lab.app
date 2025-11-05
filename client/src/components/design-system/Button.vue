@@ -6,10 +6,15 @@
     :aria-label="ariaLabel"
     @click="$emit('click', $event)"
   >
+    <!-- Shimmer effect for primary buttons -->
+    <span v-if="variant === 'primary' && !disabled" class="absolute inset-0 overflow-hidden rounded-lg">
+      <span class="absolute inset-0 shimmer opacity-0 hover:opacity-100 transition-opacity duration-500"></span>
+    </span>
+
     <!-- Loading Spinner -->
     <svg
       v-if="loading"
-      class="animate-spin h-4 w-4 mr-2"
+      class="animate-spin h-4 w-4 mr-2 relative z-10"
       :class="spinnerColor"
       xmlns="http://www.w3.org/2000/svg"
       fill="none"
@@ -20,15 +25,15 @@
     </svg>
 
     <!-- Icon (Left) -->
-    <span v-if="$slots.iconLeft && !loading" class="mr-2">
+    <span v-if="$slots.iconLeft && !loading" class="mr-2 relative z-10 transition-transform duration-200 group-hover:scale-110">
       <slot name="iconLeft" />
     </span>
 
     <!-- Button Text -->
-    <span><slot /></span>
+    <span class="relative z-10"><slot /></span>
 
     <!-- Icon (Right) -->
-    <span v-if="$slots.iconRight && !loading" class="ml-2">
+    <span v-if="$slots.iconRight && !loading" class="ml-2 relative z-10 transition-transform duration-200 group-hover:scale-110">
       <slot name="iconRight" />
     </span>
   </button>
@@ -41,12 +46,12 @@ const props = defineProps({
   variant: {
     type: String,
     default: 'primary',
-    validator: (value) => ['primary', 'secondary', 'ghost', 'danger'].includes(value)
+    validator: (value) => ['primary', 'secondary', 'ghost', 'danger', 'glass'].includes(value)
   },
   size: {
     type: String,
     default: 'md',
-    validator: (value) => ['sm', 'md', 'lg'].includes(value)
+    validator: (value) => ['xs', 'sm', 'md', 'lg', 'xl'].includes(value)
   },
   type: {
     type: String,
@@ -73,18 +78,20 @@ const props = defineProps({
 
 defineEmits(['click'])
 
-const baseClasses = 'inline-flex items-center justify-center font-semibold rounded-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed'
+const baseClasses = 'group relative inline-flex items-center justify-center font-semibold rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-black disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden'
 
 const variantClasses = computed(() => {
   switch (props.variant) {
     case 'primary':
-      return 'bg-gradient-to-r from-primary to-[#D946EF] text-white hover:opacity-90 active:opacity-80 shadow-sm'
+      return 'bg-gradient-to-r from-primary-600 via-primary-500 to-secondary-600 text-white hover:shadow-glow hover:scale-[1.02] active:scale-[0.98] shadow-lg'
     case 'secondary':
-      return 'border-2 border-primary text-primary bg-transparent hover:bg-primary/10 active:bg-primary/20'
+      return 'border-2 border-primary-500 text-primary-400 bg-transparent hover:bg-primary-500/10 hover:border-primary-400 active:bg-primary-500/20 backdrop-blur-sm'
     case 'ghost':
-      return 'text-primary bg-transparent hover:bg-primary/10 active:bg-primary/20'
+      return 'text-primary-400 bg-transparent hover:bg-primary-500/10 active:bg-primary-500/20'
     case 'danger':
-      return 'bg-error text-white hover:bg-error-dark active:bg-error-dark shadow-sm'
+      return 'bg-gradient-to-r from-error-600 to-error-500 text-white hover:shadow-[0_0_20px_rgba(239,68,68,0.4)] hover:scale-[1.02] active:scale-[0.98] shadow-lg'
+    case 'glass':
+      return 'glass glass-hover text-white shadow-glass'
     default:
       return ''
   }
@@ -92,12 +99,16 @@ const variantClasses = computed(() => {
 
 const sizeClasses = computed(() => {
   switch (props.size) {
+    case 'xs':
+      return 'px-3 py-1.5 text-xs h-8'
     case 'sm':
-      return 'px-3 py-2 text-sm h-9'
+      return 'px-4 py-2 text-sm h-9'
     case 'md':
-      return 'px-4 py-2.5 text-base h-11'
+      return 'px-6 py-3 text-base h-11'
     case 'lg':
-      return 'px-6 py-3 text-lg h-12'
+      return 'px-8 py-3.5 text-lg h-12'
+    case 'xl':
+      return 'px-10 py-4 text-xl h-14'
     default:
       return ''
   }
@@ -111,10 +122,11 @@ const spinnerColor = computed(() => {
   switch (props.variant) {
     case 'primary':
     case 'danger':
+    case 'glass':
       return 'text-white'
     case 'secondary':
     case 'ghost':
-      return 'text-primary'
+      return 'text-primary-400'
     default:
       return 'text-white'
   }
