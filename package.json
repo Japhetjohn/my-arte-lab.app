@@ -2,10 +2,11 @@
   "name": "myartelab",
   "version": "1.0.0",
   "description": "Modern creator marketplace platform connecting creators with clients across Africa",
-  "main": "index.html",
+  "main": "frontend/index.html",
   "scripts": {
-    "dev": "python3 -m http.server 8000",
-    "start": "python3 -m http.server 8000",
+    "dev:frontend": "cd frontend && python3 -m http.server 8000",
+    "dev:backend": "cd backend && npm run dev",
+    "start": "cd frontend && python3 -m http.server 8000",
     "open": "xdg-open http://localhost:8000 || firefox http://localhost:8000"
   },
   "repository": {

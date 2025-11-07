@@ -5,13 +5,13 @@ const nodemailer = require('nodemailer');
  * Supports Gmail and SendGrid
  */
 
-let transporter;
+let transporter = null;
 
 const createTransporter = () => {
   const emailService = process.env.EMAIL_SERVICE || 'gmail';
 
   if (emailService === 'gmail') {
-    transporter = nodemailer.createTransporter({
+    return nodemailer.createTransport({
       service: 'gmail',
       auth: {
         user: process.env.EMAIL_USER,
@@ -19,7 +19,7 @@ const createTransporter = () => {
       },
     });
   } else if (emailService === 'sendgrid') {
-    transporter = nodemailer.createTransporter({
+    return nodemailer.createTransport({
       host: 'smtp.sendgrid.net',
       port: 587,
       secure: false,
@@ -31,8 +31,6 @@ const createTransporter = () => {
   } else {
     throw new Error(`Unsupported email service: ${emailService}`);
   }
-
-  return transporter;
 };
 
 const emailConfig = {

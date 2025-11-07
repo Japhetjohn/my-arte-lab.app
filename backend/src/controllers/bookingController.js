@@ -61,12 +61,12 @@ exports.createBooking = catchAsync(async (req, res, next) => {
       bookingId: booking.bookingId,
       amount,
       currency: currency || 'USDT',
-      clientId: req.user._id,
-      creatorId,
-      serviceTitle
+      clientEmail: req.user.email,
+      creatorEmail: creator.email
     });
 
     booking.escrowWallet.address = escrowWallet.address;
+    booking.escrowWallet.escrowId = escrowWallet.escrowId;
     await booking.save();
 
   } catch (error) {
@@ -226,6 +226,7 @@ exports.releaseFunds = catchAsync(async (req, res, next) => {
   // Release funds via Tsara (90% to creator, 10% to platform)
   try {
     const releaseResult = await tsaraService.releaseEscrowFunds({
+      escrowId: booking.escrowWallet.escrowId,
       escrowAddress: booking.escrowWallet.address,
       creatorAddress: booking.creator.wallet.address,
       platformAddress: tsaraConfig.platformWallet,

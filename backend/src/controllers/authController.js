@@ -20,7 +20,7 @@ exports.register = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Email already registered', 400));
   }
 
-  // Generate Tsara wallet for the user
+  // Generate Tsara Solana stablecoin wallet
   let wallet;
   try {
     wallet = await tsaraService.generateWallet({
@@ -30,11 +30,11 @@ exports.register = catchAsync(async (req, res, next) => {
       role: role || 'client'
     });
   } catch (error) {
-    console.error('Wallet generation failed:', error);
-    return next(new ErrorHandler('Failed to create wallet. Please try again', 500));
+    console.error('Wallet creation failed:', error);
+    return next(new ErrorHandler('Failed to create stablecoin wallet. Please try again', 500));
   }
 
-  // Create user with wallet
+  // Create user with Solana wallet
   const user = await User.create({
     name,
     email,
@@ -46,7 +46,8 @@ exports.register = catchAsync(async (req, res, next) => {
       currency: wallet.currency,
       balance: 0,
       pendingBalance: 0,
-      totalEarnings: 0
+      totalEarnings: 0,
+      network: wallet.network
     }
   });
 
@@ -54,14 +55,33 @@ exports.register = catchAsync(async (req, res, next) => {
   const token = generateToken(user._id);
   const refreshToken = generateRefreshToken(user._id);
 
-  // Send welcome email (non-blocking)
+  // Generate email verification token
+  const verificationToken = crypto.randomBytes(32).toString('hex');
+  const hashedToken = crypto.createHash('sha256').update(verificationToken).digest('hex');
+
+  user.emailVerificationToken = hashedToken;
+  user.emailVerificationExpire = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+  await user.save({ validateBeforeSave: false });
+
+  // Create verification URL
+  const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
+
+  // Send welcome email with verification link (non-blocking)
   emailConfig.sendEmail({
     to: user.email,
-    subject: 'Welcome to MyArteLab! 🎨',
+    subject: 'Welcome to MyArteLab! Verify Your Email',
     html: `
       <h1>Welcome ${user.name}!</h1>
-      <p>Your account has been created successfully.</p>
-      <p><strong>Your Wallet Address:</strong> ${wallet.address}</p>
+      <p>Your account has been created successfully with Solana stablecoin payment support.</p>
+      <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+        <p><strong>Payment Wallet:</strong> Solana Stablecoin (${wallet.currency})</p>
+        <p><strong>Wallet Address:</strong> ${wallet.address}</p>
+        <p><strong>Network:</strong> ${wallet.network}</p>
+        <p>You can receive payments in stablecoins (USDT, USDC, DAI) from anywhere in the world!</p>
+      </div>
+      <p>Please verify your email address to unlock all features:</p>
+      <a href="${verificationUrl}" style="display: inline-block; padding: 10px 20px; background: #FF6B35; color: white; text-decoration: none; border-radius: 5px;">Verify Email</a>
+      <p>This link is valid for 24 hours.</p>
       <p>You can now start ${user.role === 'creator' ? 'offering your services' : 'booking creative services'}!</p>
       <p>Best regards,<br/>MyArteLab Team</p>
     `
@@ -335,4 +355,105 @@ exports.deleteAccount = catchAsync(async (req, res, next) => {
   // await user.remove();
 
   successResponse(res, 200, 'Account deleted successfully');
+});
+
+/**
+ * @route   POST /api/auth/verify-email
+ * @desc    Verify email with token
+ * @access  Public
+ */
+exports.verifyEmail = catchAsync(async (req, res, next) => {
+  const { token } = req.body;
+
+  if (!token) {
+    return next(new ErrorHandler('Please provide verification token', 400));
+  }
+
+  // Hash token
+  const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+  // Find user with valid token
+  const user = await User.findOne({
+    emailVerificationToken: hashedToken,
+    emailVerificationExpire: { $gt: Date.now() }
+  });
+
+  if (!user) {
+    return next(new ErrorHandler('Invalid or expired verification token', 400));
+  }
+
+  // Mark email as verified
+  user.isEmailVerified = true;
+  user.emailVerificationToken = undefined;
+  user.emailVerificationExpire = undefined;
+  await user.save({ validateBeforeSave: false });
+
+  // Send confirmation email
+  emailConfig.sendEmail({
+    to: user.email,
+    subject: 'Email Verified Successfully!',
+    html: `
+      <h1>Email Verified!</h1>
+      <p>Hi ${user.name},</p>
+      <p>Your email has been verified successfully. You now have full access to all MyArteLab features!</p>
+      <p>Best regards,<br/>MyArteLab Team</p>
+    `
+  }).catch(err => console.error('Verification confirmation email failed:', err));
+
+  successResponse(res, 200, 'Email verified successfully', {
+    user: user.getPublicProfile()
+  });
+});
+
+/**
+ * @route   POST /api/auth/resend-verification
+ * @desc    Resend email verification link
+ * @access  Private
+ */
+exports.resendVerification = catchAsync(async (req, res, next) => {
+  const user = await User.findById(req.user._id);
+
+  if (!user) {
+    return next(new ErrorHandler('User not found', 404));
+  }
+
+  if (user.isEmailVerified) {
+    return next(new ErrorHandler('Email is already verified', 400));
+  }
+
+  // Generate new verification token
+  const verificationToken = crypto.randomBytes(32).toString('hex');
+  const hashedToken = crypto.createHash('sha256').update(verificationToken).digest('hex');
+
+  user.emailVerificationToken = hashedToken;
+  user.emailVerificationExpire = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+  await user.save({ validateBeforeSave: false });
+
+  // Create verification URL
+  const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
+
+  // Send verification email
+  try {
+    await emailConfig.sendEmail({
+      to: user.email,
+      subject: 'Verify Your Email - MyArteLab',
+      html: `
+        <h1>Verify Your Email</h1>
+        <p>Hi ${user.name},</p>
+        <p>Please verify your email address by clicking the link below:</p>
+        <a href="${verificationUrl}" style="display: inline-block; padding: 10px 20px; background: #FF6B35; color: white; text-decoration: none; border-radius: 5px;">Verify Email</a>
+        <p>This link is valid for 24 hours.</p>
+        <p>If you didn't request this, please ignore this email.</p>
+        <p>Best regards,<br/>MyArteLab Team</p>
+      `
+    });
+
+    successResponse(res, 200, 'Verification email sent successfully');
+  } catch (error) {
+    user.emailVerificationToken = undefined;
+    user.emailVerificationExpire = undefined;
+    await user.save({ validateBeforeSave: false });
+
+    return next(new ErrorHandler('Failed to send verification email', 500));
+  }
 });

@@ -3,9 +3,10 @@ const crypto = require('crypto');
 const tsaraConfig = require('../config/tsara');
 
 /**
- * Tsara Payment Service
- * Handles all interactions with Tsara payment gateway
- * Documentation: https://github.com/usetsara/tsara-examples
+ * Tsara Stablecoin Payment Service
+ * Solana-based stablecoin payments (USDT, USDC, DAI)
+ *
+ * Documentation: https://docs.tsara.ng/stablecoin
  */
 
 class TsaraService {
@@ -15,7 +16,7 @@ class TsaraService {
     this.secretKey = tsaraConfig.secretKey;
     this.webhookSecret = tsaraConfig.webhookSecret;
 
-    // Initialize axios instance with default config
+    // Crypto API instance (JSON requests, secret key auth)
     this.api = axios.create({
       baseURL: this.apiUrl,
       headers: {
@@ -25,16 +26,18 @@ class TsaraService {
       },
       timeout: 30000
     });
+
+    console.log(`💳 Tsara Stablecoin Service - Solana Network`);
   }
 
   /**
-   * Generate a new wallet address for a user
+   * Generate crypto wallet for stablecoin payments
    * @param {Object} userData - User information
-   * @returns {Promise<Object>} Wallet details {address, currency}
+   * @returns {Promise<Object>} Crypto wallet details
    */
   async generateWallet(userData) {
     try {
-      console.log(`🔐 Generating Tsara wallet for user: ${userData.email}`);
+      console.log(`🔐 Generating wallet for: ${userData.email}`);
 
       const response = await this.api.post('/wallets/generate', {
         user_id: userData.userId,
@@ -52,116 +55,129 @@ class TsaraService {
         return {
           address: response.data.wallet.address,
           currency: response.data.wallet.currency || 'USDT',
-          balance: 0
+          balance: 0,
+          network: response.data.wallet.network || 'Solana',
+          type: 'crypto'
         };
       }
 
       throw new Error('Invalid response from Tsara API');
 
     } catch (error) {
-      console.error('❌ Wallet generation failed:', error.message);
-
-      // Fallback: Generate a temporary mock wallet for development
-      if (process.env.NODE_ENV === 'development') {
-        console.warn('⚠️ Using mock wallet address for development');
-        const mockAddress = `0x${crypto.randomBytes(20).toString('hex')}`;
-        return {
-          address: mockAddress,
-          currency: 'USDT',
-          balance: 0
-        };
-      }
-
-      throw error;
+      console.error('❌ Wallet generation failed:', error.response ? error.response.data : error.message);
+      throw new Error(`Wallet generation failed: ${error.response?.data?.message || error.message}`);
     }
   }
 
   /**
-   * Generate escrow wallet address for a booking
+   * Generate crypto escrow wallet for booking payments
    * @param {Object} bookingData - Booking information
-   * @returns {Promise<Object>} Escrow wallet details
+   * @returns {Promise<Object>} Crypto escrow wallet details
    */
   async generateEscrowWallet(bookingData) {
     try {
       console.log(`🔐 Generating escrow wallet for booking: ${bookingData.bookingId}`);
 
-      const response = await this.api.post('/wallets/escrow/generate', {
+      const response = await this.api.post('/escrow/create', {
         booking_id: bookingData.bookingId,
         amount: bookingData.amount,
         currency: bookingData.currency || 'USDT',
-        client_id: bookingData.clientId,
-        creator_id: bookingData.creatorId,
+        client_email: bookingData.clientEmail,
+        creator_email: bookingData.creatorEmail,
         metadata: {
           platform: 'myartelab',
-          service: bookingData.serviceTitle
+          booking_id: bookingData.bookingId
         }
       });
 
       if (response.data && response.data.escrow) {
-        console.log(`✅ Escrow wallet generated: ${response.data.escrow.address}`);
+        console.log(`✅ Escrow wallet created: ${response.data.escrow.address}`);
         return {
           address: response.data.escrow.address,
+          amount: response.data.escrow.amount,
           currency: response.data.escrow.currency || 'USDT',
-          balance: 0
+          escrowId: response.data.escrow.id,
+          status: response.data.escrow.status || 'pending',
+          network: response.data.escrow.network || 'Solana',
+          reference: bookingData.bookingId,
+          type: 'crypto'
         };
       }
 
       throw new Error('Invalid response from Tsara API');
 
     } catch (error) {
-      console.error('❌ Escrow wallet generation failed:', error.message);
-
-      // Fallback: Generate mock escrow wallet for development
-      if (process.env.NODE_ENV === 'development') {
-        console.warn('⚠️ Using mock escrow address for development');
-        const mockAddress = `0xESCROW${crypto.randomBytes(18).toString('hex')}`;
-        return {
-          address: mockAddress,
-          currency: bookingData.currency || 'USDT',
-          balance: 0
-        };
-      }
-
-      throw error;
+      console.error('❌ Escrow generation failed:', error.response ? error.response.data : error.message);
+      throw new Error(`Escrow generation failed: ${error.response?.data?.message || error.message}`);
     }
   }
 
   /**
-   * Check payment status for an escrow wallet
-   * @param {String} escrowAddress - Escrow wallet address
-   * @returns {Promise<Object>} Payment status details
+   * Check crypto escrow payment status
+   * @param {String} escrowId - Escrow wallet ID
+   * @returns {Promise<Object>} Payment status
    */
-  async checkEscrowPayment(escrowAddress) {
+  async checkEscrowPayment(escrowId) {
     try {
-      const response = await this.api.get(`/wallets/escrow/${escrowAddress}/status`);
+      const response = await this.api.get(`/escrow/${escrowId}/status`);
 
-      if (response.data) {
+      if (response.data && response.data.escrow) {
+        const escrowData = response.data.escrow;
+
         return {
-          isPaid: response.data.status === 'paid',
-          balance: response.data.balance || 0,
-          currency: response.data.currency,
-          transactionHash: response.data.transaction_hash,
-          paidAt: response.data.paid_at,
-          confirmations: response.data.confirmations || 0
+          isPaid: escrowData.status === 'paid',
+          status: escrowData.status,
+          amount: escrowData.amount,
+          paidAmount: escrowData.paid_amount || 0,
+          currency: escrowData.currency || 'USDT',
+          address: escrowData.address,
+          txHash: escrowData.transaction_hash
         };
       }
 
       throw new Error('Invalid response from Tsara API');
 
     } catch (error) {
-      console.error('❌ Failed to check escrow payment:', error.message);
+      console.error('❌ Escrow status check failed:', error.response ? error.response.data : error.message);
       throw error;
     }
   }
 
   /**
-   * Release escrow funds (split between creator and platform)
+   * Get crypto wallet balance
+   * @param {String} address - Wallet address
+   * @returns {Promise<Object>} Wallet balance
+   */
+  async getWalletBalance(address) {
+    try {
+      const response = await this.api.get(`/wallets/${address}/balance`);
+
+      if (response.data && response.data.wallet) {
+        return {
+          balance: response.data.wallet.balance || 0,
+          currency: response.data.wallet.currency || 'USDT',
+          network: 'Solana',
+          type: 'crypto'
+        };
+      }
+
+      throw new Error('Invalid response from Tsara API');
+
+    } catch (error) {
+      console.error('❌ Balance check failed:', error.response ? error.response.data : error.message);
+      return { balance: 0, currency: 'USDT', network: 'Solana', type: 'crypto' };
+    }
+  }
+
+  /**
+   * Release escrow funds to creator and platform
    * @param {Object} releaseData - Release information
-   * @returns {Promise<Object>} Release transaction details
+   * @returns {Promise<Object>} Release result
    */
   async releaseEscrowFunds(releaseData) {
     try {
       const {
+        escrowId,
         escrowAddress,
         creatorAddress,
         platformAddress,
@@ -172,162 +188,105 @@ class TsaraService {
       } = releaseData;
 
       console.log(`💸 Releasing escrow funds for booking: ${bookingId}`);
-      console.log(`   - Creator: ${creatorAmount} ${currency} → ${creatorAddress}`);
-      console.log(`   - Platform: ${platformFee} ${currency} → ${platformAddress}`);
 
-      const response = await this.api.post('/wallets/escrow/release', {
-        escrow_address: escrowAddress,
-        distributions: [
-          {
-            address: creatorAddress,
-            amount: creatorAmount,
-            currency,
-            type: 'creator_payment'
-          },
-          {
-            address: platformAddress,
-            amount: platformFee,
-            currency,
-            type: 'platform_fee'
-          }
-        ],
-        booking_id: bookingId,
+      // Release to creator
+      const creatorRelease = await this.api.post('/escrow/release', {
+        escrow_id: escrowId || escrowAddress,
+        recipient_address: creatorAddress,
+        amount: creatorAmount,
+        currency: currency || 'USDT',
         metadata: {
-          platform: 'myartelab'
+          platform: 'myartelab',
+          booking_id: bookingId,
+          recipient_type: 'creator'
         }
       });
 
-      if (response.data && response.data.transactions) {
-        console.log('✅ Escrow funds released successfully');
-        return {
-          success: true,
-          creatorTransaction: response.data.transactions.find(tx => tx.type === 'creator_payment'),
-          platformTransaction: response.data.transactions.find(tx => tx.type === 'platform_fee')
-        };
-      }
+      // Release platform fee
+      const platformRelease = await this.api.post('/escrow/release', {
+        escrow_id: escrowId || escrowAddress,
+        recipient_address: platformAddress,
+        amount: platformFee,
+        currency: currency || 'USDT',
+        metadata: {
+          platform: 'myartelab',
+          booking_id: bookingId,
+          recipient_type: 'platform'
+        }
+      });
 
-      throw new Error('Invalid response from Tsara API');
+      console.log('✅ Escrow funds released successfully');
+
+      return {
+        success: true,
+        creatorTransaction: {
+          hash: creatorRelease.data?.transaction_hash,
+          amount: creatorAmount,
+          status: creatorRelease.data?.status
+        },
+        platformTransaction: {
+          hash: platformRelease.data?.transaction_hash,
+          amount: platformFee,
+          status: platformRelease.data?.status
+        }
+      };
 
     } catch (error) {
-      console.error('❌ Failed to release escrow funds:', error.message);
-      throw error;
+      console.error('❌ Escrow release failed:', error.response ? error.response.data : error.message);
+      throw new Error(`Escrow release failed: ${error.response?.data?.message || error.message}`);
     }
   }
 
   /**
-   * Process withdrawal request for a creator
+   * Process withdrawal to external crypto wallet
    * @param {Object} withdrawalData - Withdrawal information
-   * @returns {Promise<Object>} Withdrawal transaction details
+   * @returns {Promise<Object>} Withdrawal result
    */
   async processWithdrawal(withdrawalData) {
     try {
       const {
-        userWalletAddress,
-        externalAddress,
+        fromAddress,
+        toAddress,
         amount,
         currency,
-        userId
+        memo
       } = withdrawalData;
 
       console.log(`💰 Processing withdrawal: ${amount} ${currency}`);
 
       const response = await this.api.post('/withdrawals/create', {
-        from_address: userWalletAddress,
-        to_address: externalAddress,
-        amount,
-        currency,
-        user_id: userId,
+        from_address: fromAddress,
+        to_address: toAddress,
+        amount: amount,
+        currency: currency || 'USDT',
+        memo: memo || 'Withdrawal',
         metadata: {
-          platform: 'myartelab',
-          type: 'creator_withdrawal'
+          platform: 'myartelab'
         }
       });
 
       if (response.data && response.data.withdrawal) {
-        console.log('✅ Withdrawal initiated successfully');
+        console.log('✅ Withdrawal initiated');
+
         return {
           success: true,
           withdrawalId: response.data.withdrawal.id,
+          txHash: response.data.withdrawal.transaction_hash,
           status: response.data.withdrawal.status,
-          transactionHash: response.data.withdrawal.transaction_hash,
-          estimatedTime: response.data.withdrawal.estimated_time
+          message: 'Withdrawal initiated successfully'
         };
       }
 
       throw new Error('Invalid response from Tsara API');
 
     } catch (error) {
-      console.error('❌ Withdrawal processing failed:', error.message);
-      throw error;
+      console.error('❌ Withdrawal failed:', error.response ? error.response.data : error.message);
+      throw new Error(`Withdrawal failed: ${error.response?.data?.message || error.message}`);
     }
   }
 
   /**
-   * Get wallet balance
-   * @param {String} walletAddress - Wallet address
-   * @returns {Promise<Object>} Balance details
-   */
-  async getWalletBalance(walletAddress) {
-    try {
-      const response = await this.api.get(`/wallets/${walletAddress}/balance`);
-
-      if (response.data) {
-        return {
-          balance: response.data.balance || 0,
-          currency: response.data.currency,
-          lastUpdated: response.data.last_updated
-        };
-      }
-
-      throw new Error('Invalid response from Tsara API');
-
-    } catch (error) {
-      console.error('❌ Failed to get wallet balance:', error.message);
-      // Return 0 balance on error
-      return { balance: 0, currency: 'USDT' };
-    }
-  }
-
-  /**
-   * Get transaction details
-   * @param {String} transactionHash - Transaction hash
-   * @returns {Promise<Object>} Transaction details
-   */
-  async getTransaction(transactionHash) {
-    try {
-      const response = await this.api.get(`/transactions/${transactionHash}`);
-      return response.data;
-    } catch (error) {
-      console.error('❌ Failed to get transaction:', error.message);
-      throw error;
-    }
-  }
-
-  /**
-   * Verify webhook signature
-   * @param {String} payload - Webhook payload (raw body)
-   * @param {String} signature - Signature from header
-   * @returns {Boolean} Is signature valid
-   */
-  verifyWebhookSignature(payload, signature) {
-    try {
-      const expectedSignature = crypto
-        .createHmac('sha256', this.webhookSecret)
-        .update(payload)
-        .digest('hex');
-
-      return crypto.timingSafeEqual(
-        Buffer.from(signature),
-        Buffer.from(expectedSignature)
-      );
-    } catch (error) {
-      console.error('❌ Webhook signature verification failed:', error.message);
-      return false;
-    }
-  }
-
-  /**
-   * Handle webhook event
+   * Handle webhook event from Tsara
    * @param {Object} event - Webhook event data
    * @returns {Promise<Object>} Processing result
    */
@@ -336,22 +295,29 @@ class TsaraService {
 
     console.log(`🔔 Processing webhook event: ${type}`);
 
-    switch (type) {
-      case tsaraConfig.events.PAYMENT_SUCCESS:
-        return await this.handlePaymentSuccess(data);
+    try {
+      switch (type) {
+        case 'payment.success':
+        case 'escrow.paid':
+          return await this.handlePaymentSuccess(data);
 
-      case tsaraConfig.events.PAYMENT_FAILED:
-        return await this.handlePaymentFailed(data);
+        case 'payment.failed':
+        case 'escrow.failed':
+          return await this.handlePaymentFailed(data);
 
-      case tsaraConfig.events.WITHDRAWAL_COMPLETED:
-        return await this.handleWithdrawalCompleted(data);
+        case 'withdrawal.completed':
+          return await this.handleWithdrawalCompleted(data);
 
-      case tsaraConfig.events.WITHDRAWAL_FAILED:
-        return await this.handleWithdrawalFailed(data);
+        case 'withdrawal.failed':
+          return await this.handleWithdrawalFailed(data);
 
-      default:
-        console.warn(`⚠️ Unknown webhook event type: ${type}`);
-        return { success: true, message: 'Event type not handled' };
+        default:
+          console.warn(`⚠️ Unknown webhook event type: ${type}`);
+          return { success: true, message: 'Event type not handled' };
+      }
+    } catch (error) {
+      console.error('❌ Webhook processing failed:', error);
+      throw error;
     }
   }
 
@@ -364,23 +330,21 @@ class TsaraService {
     const Transaction = require('../models/Transaction');
 
     try {
-      // Find booking by escrow address
       const booking = await Booking.findOne({
-        'escrowWallet.address': data.wallet_address
+        'escrowWallet.reference': data.booking_id || data.reference
       });
 
       if (!booking) {
-        console.warn(`⚠️ Booking not found for wallet: ${data.wallet_address}`);
+        console.warn(`⚠️ Booking not found for reference: ${data.booking_id || data.reference}`);
         return { success: false, message: 'Booking not found' };
       }
 
-      // Update booking payment status
-      booking.escrowWallet.isPaid = true;
-      booking.escrowWallet.paidAt = new Date();
-      booking.escrowWallet.balance = data.amount;
-      booking.escrowWallet.transactionHash = data.transaction_hash;
+      // Update booking
       booking.paymentStatus = 'paid';
       booking.status = 'confirmed';
+      booking.escrowWallet.isPaid = true;
+      booking.escrowWallet.paidAt = new Date();
+      booking.escrowWallet.txHash = data.transaction_hash;
       await booking.save();
 
       // Create transaction record
@@ -388,13 +352,12 @@ class TsaraService {
         user: booking.client,
         type: 'payment',
         amount: data.amount,
-        currency: data.currency,
+        currency: data.currency || 'USDT',
         status: 'completed',
         booking: booking._id,
-        toAddress: data.wallet_address,
-        transactionHash: data.transaction_hash,
-        description: `Payment for booking ${booking.bookingId}`,
-        tsaraPaymentId: data.payment_id,
+        description: `Stablecoin payment for booking ${booking.bookingId}`,
+        tsaraPaymentId: data.id || data.escrow_id,
+        txHash: data.transaction_hash,
         completedAt: new Date()
       });
 
@@ -402,7 +365,7 @@ class TsaraService {
 
       return { success: true, bookingId: booking.bookingId };
     } catch (error) {
-      console.error('❌ Failed to handle payment success:', error.message);
+      console.error('❌ Failed to handle payment:', error);
       throw error;
     }
   }
@@ -412,24 +375,26 @@ class TsaraService {
    * @private
    */
   async handlePaymentFailed(data) {
+    console.log(`⚠️ Payment failed:`, data.booking_id || data.reference);
+
     const Booking = require('../models/Booking');
 
     try {
       const booking = await Booking.findOne({
-        'escrowWallet.address': data.wallet_address
+        'escrowWallet.reference': data.booking_id || data.reference
       });
 
       if (booking) {
         booking.paymentStatus = 'failed';
+        booking.escrowWallet.failedAt = new Date();
+        booking.escrowWallet.failureReason = data.reason || 'Payment failed';
         await booking.save();
-        console.log(`⚠️ Payment failed for booking: ${booking.bookingId}`);
       }
-
-      return { success: true };
     } catch (error) {
-      console.error('❌ Failed to handle payment failure:', error.message);
-      throw error;
+      console.error('❌ Failed to update booking:', error);
     }
+
+    return { success: true };
   }
 
   /**
@@ -437,32 +402,26 @@ class TsaraService {
    * @private
    */
   async handleWithdrawalCompleted(data) {
+    console.log(`✅ Withdrawal completed:`, data.withdrawal_id);
+
     const Transaction = require('../models/Transaction');
-    const User = require('../models/User');
 
     try {
-      // Find transaction by Tsara payment ID
       const transaction = await Transaction.findOne({
         tsaraPaymentId: data.withdrawal_id
       });
 
       if (transaction) {
-        await transaction.markCompleted(data.transaction_hash);
-
-        // Update user wallet balance
-        const user = await User.findById(transaction.user);
-        if (user) {
-          await user.updateWalletBalance(transaction.amount, 'subtract');
-        }
-
-        console.log(`✅ Withdrawal completed: ${transaction.transactionId}`);
+        transaction.status = 'completed';
+        transaction.txHash = data.transaction_hash;
+        transaction.completedAt = new Date();
+        await transaction.save();
       }
-
-      return { success: true };
     } catch (error) {
-      console.error('❌ Failed to handle withdrawal completion:', error.message);
-      throw error;
+      console.error('❌ Failed to update transaction:', error);
     }
+
+    return { success: true };
   }
 
   /**
@@ -470,6 +429,8 @@ class TsaraService {
    * @private
    */
   async handleWithdrawalFailed(data) {
+    console.log(`⚠️ Withdrawal failed:`, data.withdrawal_id);
+
     const Transaction = require('../models/Transaction');
 
     try {
@@ -478,15 +439,15 @@ class TsaraService {
       });
 
       if (transaction) {
-        await transaction.markFailed(data.error_message, data.error_code);
-        console.log(`⚠️ Withdrawal failed: ${transaction.transactionId}`);
+        transaction.status = 'failed';
+        transaction.failureReason = data.reason || 'Withdrawal failed';
+        await transaction.save();
       }
-
-      return { success: true };
     } catch (error) {
-      console.error('❌ Failed to handle withdrawal failure:', error.message);
-      throw error;
+      console.error('❌ Failed to update transaction:', error);
     }
+
+    return { success: true };
   }
 }
 

@@ -67,12 +67,15 @@ const bookingSchema = new mongoose.Schema({
     required: true
   },
 
-  // Escrow Wallet (Unique address per booking)
+  // Escrow Wallet (Unique Solana address per booking)
   escrowWallet: {
     address: {
       type: String,
       required: true,
       unique: true
+    },
+    escrowId: {
+      type: String
     },
     balance: {
       type: Number,
@@ -83,7 +86,11 @@ const bookingSchema = new mongoose.Schema({
       default: false
     },
     paidAt: Date,
-    transactionHash: String
+    txHash: String,
+    network: {
+      type: String,
+      default: 'Solana'
+    }
   },
 
   // Payment Status

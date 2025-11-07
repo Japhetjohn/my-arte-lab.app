@@ -85,7 +85,7 @@ const userSchema = new mongoose.Schema({
     count: { type: Number, default: 0 }
   },
 
-  // Tsara Wallet Integration
+  // Tsara Solana Stablecoin Wallet
   wallet: {
     address: {
       type: String,
@@ -109,7 +109,12 @@ const userSchema = new mongoose.Schema({
     },
     currency: {
       type: String,
+      enum: ['USDT', 'USDC', 'DAI'],
       default: 'USDT'
+    },
+    network: {
+      type: String,
+      default: 'Solana'
     },
     lastUpdated: {
       type: Date,

@@ -101,11 +101,11 @@ exports.requestWithdrawal = catchAsync(async (req, res, next) => {
   // Process withdrawal via Tsara
   try {
     const withdrawalResult = await tsaraService.processWithdrawal({
-      userWalletAddress: user.wallet.address,
-      externalAddress,
+      fromAddress: user.wallet.address,
+      toAddress: externalAddress,
       amount,
       currency: currency || user.wallet.currency,
-      userId: user._id
+      memo: `Withdrawal for user ${user.name}`
     });
 
     // Update transaction

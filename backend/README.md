@@ -63,8 +63,9 @@
 backend/
 ├── src/
 │   ├── config/           # Configuration files
+│   │   ├── constants.js  # Application constants
 │   │   ├── database.js   # MongoDB connection
-│   │   ├── tsara.js      # Tsara payment config
+│   │   ├── tsara.js      # Tsara payment config (Solana stablecoins)
 │   │   └── email.js      # Email service config
 │   ├── controllers/      # Request handlers
 │   │   ├── authController.js
@@ -73,6 +74,10 @@ backend/
 │   │   ├── creatorController.js
 │   │   ├── reviewController.js
 │   │   └── webhookController.js
+│   ├── helpers/          # Helper functions
+│   │   ├── cryptoHelper.js      # Crypto utilities
+│   │   ├── dateHelper.js        # Date utilities
+│   │   └── paginationHelper.js  # Pagination utilities
 │   ├── middleware/       # Custom middleware
 │   │   ├── auth.js       # Authentication & authorization
 │   │   └── validation.js # Input validation
@@ -89,17 +94,21 @@ backend/
 │   │   ├── reviewRoutes.js
 │   │   └── webhookRoutes.js
 │   ├── services/         # Business logic
-│   │   └── tsaraService.js # Tsara API integration
-│   ├── utils/            # Helper functions
+│   │   ├── emailService.js  # Email operations
+│   │   └── tsaraService.js  # Tsara API integration (Solana)
+│   ├── utils/            # Utility functions
 │   │   ├── jwtUtils.js
 │   │   ├── errorHandler.js
 │   │   └── apiResponse.js
+│   ├── validators/       # Input validators
+│   │   └── userValidator.js
 │   └── server.js         # Main server file
 ├── tests/                # Unit & integration tests
+├── .env                  # Environment variables (gitignored)
 ├── .env.example          # Environment variables template
 ├── package.json
 ├── API_DOCUMENTATION.md  # Complete API docs
-└── README.md            # This file
+└── README.md             # This file
 ```
 
 ---
@@ -246,11 +255,13 @@ Creator requests withdrawal → Tsara processes → Funds sent to external walle
 
 ---
 
-## Tsara Integration
+## Tsara Stablecoin Integration (Solana)
+
+MyArteLab uses Tsara for Solana-based stablecoin payments with USDT, USDC, and DAI.
 
 ### Wallet Generation
 
-Every user gets a Tsara wallet on registration:
+Every user gets a Solana stablecoin wallet on registration:
 
 ```javascript
 // Automatic on signup
@@ -260,20 +271,22 @@ const wallet = await tsaraService.generateWallet({
   name: user.name,
   role: user.role
 });
+// Returns: { address: 'Sol...', currency: 'USDT', network: 'Solana' }
 ```
 
 ### Escrow Wallet Generation
 
-Each booking gets a unique escrow address:
+Each booking gets a unique Solana escrow address:
 
 ```javascript
 const escrowWallet = await tsaraService.generateEscrowWallet({
   bookingId: booking.bookingId,
   amount: booking.amount,
   currency: 'USDT',
-  clientId: client._id,
-  creatorId: creator._id
+  clientEmail: client.email,
+  creatorEmail: creator.email
 });
+// Returns: { address: 'Sol...', escrowId: '...', network: 'Solana' }
 ```
 
 ### Fund Release (90/10 Split)
