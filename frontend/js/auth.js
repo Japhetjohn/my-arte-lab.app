@@ -132,10 +132,30 @@ export async function handleAuth(event, type) {
                 };
             }
 
+            console.log('📝 REGISTRATION ATTEMPT - Form Data:', {
+                name: userData.name,
+                email: userData.email,
+                role: userData.role,
+                hasPassword: !!userData.password,
+                passwordLength: userData.password?.length
+            });
+
             const response = await api.register(userData);
 
+            console.log('📨 REGISTRATION RESPONSE:', response);
+            console.log('✅ Response Success:', response.success);
+            console.log('👤 User Data in Response:', response.data?.user);
+
             if (response.success) {
+                console.log('🎉 REGISTRATION SUCCESSFUL! Setting user in appState...');
+                console.log('User object being set:', response.data.user);
+
                 setUser(response.data.user);
+
+                console.log('📱 Current appState.user after setUser:', appState.user);
+                console.log('📱 User name:', appState.user?.name);
+                console.log('📱 User email:', appState.user?.email);
+
                 updateUserMenu();
                 closeModal();
                 showToast('Account created successfully! Please check your email to verify your account.', 'success');
@@ -147,6 +167,9 @@ export async function handleAuth(event, type) {
                 } else {
                     navigateToPage('discover');
                 }
+            } else {
+                console.error('❌ REGISTRATION FAILED:', response);
+                showToast(response.message || 'Registration failed. Please try again.', 'error');
             }
         } else {
             const credentials = {
@@ -213,10 +236,21 @@ export async function initAuth() {
 }
 
 export function updateUserMenu() {
+    console.log('🔄 updateUserMenu() called');
+    console.log('📱 Current appState.user:', appState.user);
+
     const userMenuContainer = document.getElementById('userMenuContainer');
-    if (!userMenuContainer) return;
+    if (!userMenuContainer) {
+        console.warn('⚠️ userMenuContainer not found in DOM!');
+        return;
+    }
 
     if (appState.user) {
+        console.log('✅ User is logged in, rendering user menu');
+        console.log('👤 User name to display:', appState.user.name);
+        console.log('📧 User email to display:', appState.user.email);
+        console.log('🖼️ User avatar:', appState.user.avatar);
+
         // Show user avatar dropdown
         userMenuContainer.innerHTML = `
             <button class="user-avatar-btn" id="userAvatarBtn">

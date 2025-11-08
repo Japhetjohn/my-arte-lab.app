@@ -20,8 +20,10 @@ exports.register = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Email already registered', 400));
   }
 
-  // Generate Tsara Solana stablecoin wallet
-  let wallet;
+  // Generate Tsara Solana stablecoin wallet (optional - can be created later if fails)
+  let wallet = null;
+  let walletCreationFailed = false;
+
   try {
     wallet = await tsaraService.generateWallet({
       userId: email, // Use email as temporary ID before user is created
@@ -29,9 +31,19 @@ exports.register = catchAsync(async (req, res, next) => {
       name,
       role: role || 'client'
     });
+    console.log('✅ Wallet created successfully for:', email);
   } catch (error) {
-    console.error('Wallet creation failed:', error);
-    return next(new ErrorHandler('Failed to create stablecoin wallet. Please try again', 500));
+    console.error('⚠️ Wallet creation failed (will retry later):', error.message);
+    walletCreationFailed = true;
+    // Don't fail registration - wallet can be created later
+    // Generate a temporary placeholder wallet address
+    const tempWalletId = crypto.randomBytes(16).toString('hex');
+    wallet = {
+      address: `pending_${tempWalletId}`,
+      currency: 'USDT',
+      balance: 0,
+      network: 'Solana'
+    };
   }
 
   // Create user with Solana wallet
@@ -67,18 +79,27 @@ exports.register = catchAsync(async (req, res, next) => {
   const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
 
   // Send welcome email with verification link (non-blocking)
+  const walletInfo = !walletCreationFailed ? `
+    <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+      <p><strong>Payment Wallet:</strong> Solana Stablecoin (${wallet.currency})</p>
+      <p><strong>Wallet Address:</strong> ${wallet.address}</p>
+      <p><strong>Network:</strong> ${wallet.network}</p>
+      <p>You can receive payments in stablecoins (USDT, USDC, DAI) from anywhere in the world!</p>
+    </div>
+  ` : `
+    <div style="background: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #ffc107;">
+      <p><strong>Note:</strong> Your payment wallet is being set up and will be ready shortly.</p>
+      <p>You can start exploring the platform now, and your wallet will be activated automatically.</p>
+    </div>
+  `;
+
   emailConfig.sendEmail({
     to: user.email,
     subject: 'Welcome to MyArteLab! Verify Your Email',
     html: `
       <h1>Welcome ${user.name}!</h1>
-      <p>Your account has been created successfully with Solana stablecoin payment support.</p>
-      <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
-        <p><strong>Payment Wallet:</strong> Solana Stablecoin (${wallet.currency})</p>
-        <p><strong>Wallet Address:</strong> ${wallet.address}</p>
-        <p><strong>Network:</strong> ${wallet.network}</p>
-        <p>You can receive payments in stablecoins (USDT, USDC, DAI) from anywhere in the world!</p>
-      </div>
+      <p>Your account has been created successfully${!walletCreationFailed ? ' with Solana stablecoin payment support' : ''}.</p>
+      ${walletInfo}
       <p>Please verify your email address to unlock all features:</p>
       <a href="${verificationUrl}" style="display: inline-block; padding: 10px 20px; background: #FF6B35; color: white; text-decoration: none; border-radius: 5px;">Verify Email</a>
       <p>This link is valid for 24 hours.</p>
