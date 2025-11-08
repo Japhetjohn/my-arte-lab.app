@@ -27,6 +27,9 @@ logs/
 .env
 .env.local
 .env.*.local
+.env.example
+**/.env
+**/.env.*
 
 # Build outputs
 dist/
