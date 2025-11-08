@@ -31,33 +31,31 @@ class TsaraService {
   }
 
   /**
-   * Generate crypto wallet for stablecoin payments
+   * Generate crypto wallet for stablecoin payments (Solana)
+   * Uses Tsara's create-new-wallet endpoint (GET request)
    * @param {Object} userData - User information
    * @returns {Promise<Object>} Crypto wallet details
    */
   async generateWallet(userData) {
     try {
-      console.log(`🔐 Generating wallet for: ${userData.email}`);
+      console.log(`🔐 Generating Solana wallet for: ${userData.email}`);
 
-      const response = await this.api.post('/wallets/generate', {
-        user_id: userData.userId,
-        email: userData.email,
-        name: userData.name,
-        currency: 'USDT', // Default to USDT
-        metadata: {
-          platform: 'myartelab',
-          role: userData.role
-        }
-      });
+      // Use the correct endpoint from Tsara API
+      const response = await this.api.get('/create-new-wallet');
 
-      if (response.data && response.data.wallet) {
-        console.log(`✅ Wallet generated: ${response.data.wallet.address}`);
+      if (response.data && response.data.data) {
+        const walletData = response.data.data;
+        console.log(`✅ Solana wallet created: ${walletData.publicKey}`);
+
         return {
-          address: response.data.wallet.address,
-          currency: response.data.wallet.currency || 'USDT',
+          address: walletData.publicKey,
+          currency: 'USDT', // Supports USDT/USDC on Solana
           balance: 0,
-          network: response.data.wallet.network || 'Solana',
-          type: 'crypto'
+          network: 'Solana',
+          type: 'crypto',
+          // Store these securely if needed for user recovery (encrypted)
+          mnemonic: walletData.mnemonic,
+          secretKey: walletData.secretKey
         };
       }
 
@@ -70,92 +68,101 @@ class TsaraService {
   }
 
   /**
-   * Generate crypto escrow wallet for booking payments
+   * Generate crypto escrow wallet for booking payments using Tsara Business Checkout
    * @param {Object} bookingData - Booking information
    * @returns {Promise<Object>} Crypto escrow wallet details
    */
   async generateEscrowWallet(bookingData) {
     try {
-      console.log(`🔐 Generating escrow wallet for booking: ${bookingData.bookingId}`);
+      console.log(`🔐 Generating checkout session for booking: ${bookingData.bookingId}`);
 
-      const response = await this.api.post('/escrow/create', {
-        booking_id: bookingData.bookingId,
+      // Platform wallet address from environment
+      const platformAddress = process.env.PLATFORM_WALLET_ADDRESS;
+      const platformCommission = parseInt(process.env.PLATFORM_COMMISSION) || 10; // 10% default
+
+      const response = await this.api.post('/business/checkout/create', {
+        businessCollectionAddress: platformAddress,
+        feeAddress: platformAddress,
         amount: bookingData.amount,
-        currency: bookingData.currency || 'USDT',
-        client_email: bookingData.clientEmail,
-        creator_email: bookingData.creatorEmail,
-        metadata: {
-          platform: 'myartelab',
-          booking_id: bookingData.bookingId
-        }
+        tokenType: bookingData.currency || 'USDT',
+        feeBps: platformCommission * 100, // Convert percentage to basis points (10% = 1000 bps)
+        feeFlatAmount: 0
       });
 
-      if (response.data && response.data.escrow) {
-        console.log(`✅ Escrow wallet created: ${response.data.escrow.address}`);
+      if (response.data && response.data.data) {
+        const checkout = response.data.data;
+        console.log(`✅ Checkout session created: ${checkout.depositAddress}`);
+
         return {
-          address: response.data.escrow.address,
-          amount: response.data.escrow.amount,
-          currency: response.data.escrow.currency || 'USDT',
-          escrowId: response.data.escrow.id,
-          status: response.data.escrow.status || 'pending',
-          network: response.data.escrow.network || 'Solana',
+          address: checkout.depositAddress,
+          amount: bookingData.amount,
+          currency: bookingData.currency || 'USDT',
+          escrowId: checkout.checkoutId,
+          checkoutId: checkout.checkoutId,
+          status: 'pending',
+          network: 'Solana',
           reference: bookingData.bookingId,
-          type: 'crypto'
+          type: 'crypto',
+          expiresAt: checkout.expiresAt
         };
       }
 
       throw new Error('Invalid response from Tsara API');
 
     } catch (error) {
-      console.error('❌ Escrow generation failed:', error.response ? error.response.data : error.message);
-      throw new Error(`Escrow generation failed: ${error.response?.data?.message || error.message}`);
+      console.error('❌ Checkout session creation failed:', error.response ? error.response.data : error.message);
+      throw new Error(`Checkout creation failed: ${error.response?.data?.message || error.message}`);
     }
   }
 
   /**
-   * Check crypto escrow payment status
-   * @param {String} escrowId - Escrow wallet ID
+   * Check checkout session payment status
+   * @param {String} checkoutId - Checkout session ID
    * @returns {Promise<Object>} Payment status
    */
-  async checkEscrowPayment(escrowId) {
+  async checkEscrowPayment(checkoutId) {
     try {
-      const response = await this.api.get(`/escrow/${escrowId}/status`);
+      const response = await this.api.get(`/business/checkout/${checkoutId}/status`);
 
-      if (response.data && response.data.escrow) {
-        const escrowData = response.data.escrow;
+      if (response.data && response.data.data) {
+        const checkoutData = response.data.data;
 
         return {
-          isPaid: escrowData.status === 'paid',
-          status: escrowData.status,
-          amount: escrowData.amount,
-          paidAmount: escrowData.paid_amount || 0,
-          currency: escrowData.currency || 'USDT',
-          address: escrowData.address,
-          txHash: escrowData.transaction_hash
+          isPaid: checkoutData.status === 'completed' || checkoutData.status === 'paid',
+          status: checkoutData.status,
+          amount: checkoutData.amount,
+          paidAmount: checkoutData.amount,
+          currency: checkoutData.tokenType || 'USDT',
+          address: checkoutData.depositAddress,
+          checkoutId: checkoutData.checkoutId,
+          createdAt: checkoutData.createdAt,
+          completedAt: checkoutData.completedAt
         };
       }
 
       throw new Error('Invalid response from Tsara API');
 
     } catch (error) {
-      console.error('❌ Escrow status check failed:', error.response ? error.response.data : error.message);
+      console.error('❌ Checkout status check failed:', error.response ? error.response.data : error.message);
       throw error;
     }
   }
 
   /**
-   * Get crypto wallet balance
-   * @param {String} address - Wallet address
+   * Get USDT wallet balance on Solana
+   * @param {String} address - Wallet address (Solana public key)
    * @returns {Promise<Object>} Wallet balance
    */
   async getWalletBalance(address) {
     try {
-      const response = await this.api.get(`/wallets/${address}/balance`);
+      const response = await this.api.post('/usdt-balance', {
+        address: address
+      });
 
-      if (response.data && response.data.wallet) {
+      if (response.data && response.data.data) {
         return {
-          balance: response.data.wallet.balance || 0,
-          currency: response.data.wallet.currency || 'USDT',
+          balance: response.data.data.balance || 0,
+          currency: 'USDT',
           network: 'Solana',
           type: 'crypto'
         };
