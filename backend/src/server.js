@@ -4,6 +4,8 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
+const session = require('express-session');
+const passport = require('./config/passport');
 
 const connectDatabase = require('./config/database');
 const tsaraConfig = require('./config/tsara');
@@ -12,6 +14,7 @@ const { errorMiddleware } = require('./utils/errorHandler');
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
+const googleAuthRoutes = require('./routes/googleAuthRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
 const walletRoutes = require('./routes/walletRoutes');
 const creatorRoutes = require('./routes/creatorRoutes');
@@ -50,6 +53,22 @@ app.use((req, res, next) => {
 
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Session configuration for Google OAuth
+app.use(session({
+  secret: process.env.JWT_SECRET || 'myartelab_session_secret_2025',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
+
+// Initialize Passport
+app.use(passport.initialize());
+app.use(passport.session());
+
 // Rate limiting
 const limiter = rateLimit({
   windowMs: (parseInt(process.env.RATE_LIMIT_WINDOW) || 15) * 60 * 1000,
@@ -73,6 +92,7 @@ app.get('/health', (req, res) => {
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/auth', googleAuthRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/wallet', walletRoutes);
 app.use('/api/creators', creatorRoutes);

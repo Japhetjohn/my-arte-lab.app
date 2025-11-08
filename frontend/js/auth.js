@@ -69,7 +69,7 @@ export function showAuthModal(type = 'signin', userType = 'client') {
                 </form>
 
                 <div style="margin-top: 16px; text-align: center; padding-top: 16px; border-top: 1px solid var(--border);">
-                    <button class="btn-secondary" style="width: 100%;">
+                    <button class="btn-secondary" style="width: 100%;" onclick="handleGoogleSignIn()">
                         <svg width="18" height="18" viewBox="0 0 18 18" style="margin-right: 8px; vertical-align: middle;">
                             <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/>
                             <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/>
@@ -289,3 +289,15 @@ export function updateUserMenu() {
         document.getElementById('authBtn')?.addEventListener('click', () => showAuthModal('signin'));
     }
 }
+
+/**
+ * Handle Google Sign-In
+ * Redirects to backend Google OAuth endpoint
+ */
+export function handleGoogleSignIn() {
+    const API_URL = 'http://localhost:5000';
+    window.location.href = `${API_URL}/api/auth/google`;
+}
+
+// Make handleGoogleSignIn globally available for onclick handlers
+window.handleGoogleSignIn = handleGoogleSignIn;

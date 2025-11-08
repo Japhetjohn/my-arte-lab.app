@@ -26,6 +26,13 @@ const userSchema = new mongoose.Schema({
     select: false // Don't return password in queries by default
   },
 
+  // Google OAuth
+  googleId: {
+    type: String,
+    unique: true,
+    sparse: true // Allows null values while maintaining uniqueness for non-null values
+  },
+
   // User Type
   role: {
     type: String,
