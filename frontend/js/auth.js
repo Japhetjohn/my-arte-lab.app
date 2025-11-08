@@ -22,12 +22,12 @@ export function showAuthModal(type = 'signin', userType = 'client') {
                     ${isSignUp ? `
                         <div class="form-group">
                             <label class="form-label">Full name</label>
-                            <input type="text" class="form-input" required>
+                            <input type="text" name="name" class="form-input" required>
                         </div>
 
                         <div class="form-group">
                             <label class="form-label">I am a</label>
-                            <select class="form-select" id="userTypeSelect">
+                            <select name="role" class="form-select" id="userTypeSelect">
                                 <option value="client" ${userType === 'client' ? 'selected' : ''}>Client</option>
                                 <option value="creator" ${userType === 'creator' ? 'selected' : ''}>Creator</option>
                             </select>
@@ -36,18 +36,18 @@ export function showAuthModal(type = 'signin', userType = 'client') {
 
                     <div class="form-group">
                         <label class="form-label">Email</label>
-                        <input type="email" class="form-input" required>
+                        <input type="email" name="email" class="form-input" required>
                     </div>
 
                     <div class="form-group">
                         <label class="form-label">Password</label>
-                        <input type="password" class="form-input" required>
+                        <input type="password" name="password" class="form-input" required minlength="8">
                     </div>
 
                     ${isSignUp ? `
                         <div class="form-group">
                             <label class="form-label">Country</label>
-                            <select class="form-select">
+                            <select name="country" class="form-select">
                                 <option>Nigeria</option>
                                 <option>Ghana</option>
                                 <option>Kenya</option>
@@ -115,18 +115,22 @@ export async function handleAuth(event, type) {
 
     try {
         const formData = new FormData(form);
-        const inputs = form.querySelectorAll('input.form-input, select.form-select');
 
         if (type === 'signup') {
             const userData = {
-                name: inputs[0].value,
-                role: document.getElementById('userTypeSelect')?.value || 'client',
-                email: inputs[1].value,
-                password: inputs[2].value,
-                location: {
-                    country: inputs[3].value
-                }
+                name: formData.get('name'),
+                role: formData.get('role') || 'client',
+                email: formData.get('email'),
+                password: formData.get('password')
             };
+
+            // Add location if country is provided
+            const country = formData.get('country');
+            if (country) {
+                userData.location = {
+                    country: country
+                };
+            }
 
             const response = await api.register(userData);
 
@@ -146,8 +150,8 @@ export async function handleAuth(event, type) {
             }
         } else {
             const credentials = {
-                email: inputs[0].value,
-                password: inputs[1].value
+                email: formData.get('email'),
+                password: formData.get('password')
             };
 
             const response = await api.login(credentials);
