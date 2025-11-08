@@ -1,55 +1,200 @@
 // Discover Page Module
 import { appState } from '../state.js';
 import { renderCreatorCards, setupCreatorCardListeners } from '../components/creators.js';
+import api from '../services/api.js';
 
-export function renderDiscoverPage() {
+let creators = [];
+let currentFilters = {
+    search: '',
+    category: '',
+    location: '',
+    verified: false,
+    sort: 'relevance'
+};
+
+export async function renderDiscoverPage() {
     const mainContent = document.getElementById('mainContent');
+
+    // Show loading state
     mainContent.innerHTML = `
         <div class="discover-header">
             <div class="container">
                 <div class="search-bar">
                     <input type="text" class="search-input" placeholder="Search by service, city, style, e.g. wedding photographer Lagos" id="discoverSearch">
-                    <button class="btn-primary">Search</button>
+                    <button class="btn-primary" id="searchBtn">Search</button>
                 </div>
                 <div class="filters-row">
-                    <button class="filter-chip active">All</button>
-                    <button class="filter-chip">Photographers</button>
-                    <button class="filter-chip">Designers</button>
-                    <button class="filter-chip">Lagos</button>
-                    <button class="filter-chip">Accra</button>
-                    <button class="filter-chip">Nairobi</button>
-                    <button class="filter-chip">Verified only</button>
-                    <button class="filter-chip">Available now</button>
+                    <button class="filter-chip active" data-filter="all">All</button>
+                    <button class="filter-chip" data-filter="photographer">Photographers</button>
+                    <button class="filter-chip" data-filter="designer">Designers</button>
+                    <button class="filter-chip" data-filter="videographer">Videographers</button>
+                    <button class="filter-chip" data-filter="illustrator">Illustrators</button>
+                    <button class="filter-chip" data-filter="verified">Verified only</button>
                 </div>
             </div>
         </div>
 
         <div class="section">
             <div class="container">
-                <div class="section-header">
-                    <h3>${appState.creators.length} creators found</h3>
-                    <select class="form-select" style="width: auto;">
-                        <option>Sort by relevance</option>
-                        <option>Highest rated</option>
-                        <option>Newest</option>
-                        <option>Cheapest</option>
-                    </select>
+                <div class="text-center" style="padding: 60px 20px;">
+                    <div style="font-size: 48px; margin-bottom: 16px;">🎨</div>
+                    <p class="text-secondary">Loading creators...</p>
                 </div>
-                <div class="creators-grid" id="discoverGrid">
-                    ${renderCreatorCards(appState.creators)}
+            </div>
+        </div>
+    `;
+
+    // Load creators from API
+    await loadCreators();
+}
+
+async function loadCreators() {
+    try {
+        const filters = {};
+
+        if (currentFilters.category) {
+            filters.category = currentFilters.category;
+        }
+        if (currentFilters.search) {
+            filters.search = currentFilters.search;
+        }
+        if (currentFilters.verified) {
+            filters.verified = true;
+        }
+
+        const response = await api.getCreators(filters);
+
+        if (response.success) {
+            creators = response.data.creators || [];
+            renderCreatorsList();
+        }
+    } catch (error) {
+        console.error('Failed to load creators:', error);
+        const mainContent = document.getElementById('mainContent');
+        mainContent.innerHTML = `
+            <div class="section">
+                <div class="container">
+                    <div class="empty-state">
+                        <div class="empty-icon">❌</div>
+                        <h3>Failed to load creators</h3>
+                        <p>${error.message}</p>
+                        <button class="btn-primary" onclick="window.location.reload()">Try again</button>
+                    </div>
                 </div>
+            </div>
+        `;
+    }
+}
+
+function renderCreatorsList() {
+    const mainContent = document.getElementById('mainContent');
+
+    mainContent.innerHTML = `
+        <div class="discover-header">
+            <div class="container">
+                <div class="search-bar">
+                    <input type="text" class="search-input" placeholder="Search by service, city, style, e.g. wedding photographer Lagos" id="discoverSearch" value="${currentFilters.search}">
+                    <button class="btn-primary" id="searchBtn">Search</button>
+                </div>
+                <div class="filters-row">
+                    <button class="filter-chip ${!currentFilters.category ? 'active' : ''}" data-filter="all">All</button>
+                    <button class="filter-chip ${currentFilters.category === 'photographer' ? 'active' : ''}" data-filter="photographer">Photographers</button>
+                    <button class="filter-chip ${currentFilters.category === 'designer' ? 'active' : ''}" data-filter="designer">Designers</button>
+                    <button class="filter-chip ${currentFilters.category === 'videographer' ? 'active' : ''}" data-filter="videographer">Videographers</button>
+                    <button class="filter-chip ${currentFilters.category === 'illustrator' ? 'active' : ''}" data-filter="illustrator">Illustrators</button>
+                    <button class="filter-chip ${currentFilters.verified ? 'active' : ''}" data-filter="verified">Verified only</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="container">
+                ${creators.length > 0 ? `
+                    <div class="section-header">
+                        <h3>${creators.length} creator${creators.length !== 1 ? 's' : ''} found</h3>
+                        <select class="form-select" style="width: auto;" id="sortSelect">
+                            <option value="relevance">Sort by relevance</option>
+                            <option value="rating">Highest rated</option>
+                            <option value="newest">Newest</option>
+                        </select>
+                    </div>
+                    <div class="creators-grid" id="discoverGrid">
+                        ${renderCreatorCards(creators)}
+                    </div>
+                ` : `
+                    <div class="empty-state" style="padding: 60px 20px;">
+                        <div style="font-size: 64px; margin-bottom: 16px;">🔍</div>
+                        <h3>No creators found</h3>
+                        <p class="text-secondary">Try adjusting your filters or search terms</p>
+                        <button class="btn-primary" onclick="window.location.reload()" style="margin-top: 16px;">Clear filters</button>
+                    </div>
+                `}
             </div>
         </div>
     `;
 
     setupCreatorCardListeners();
     setupFilterListeners();
+    setupSearchListener();
+    setupSortListener();
 }
 
 function setupFilterListeners() {
     document.querySelectorAll('.filter-chip').forEach(chip => {
-        chip.addEventListener('click', (e) => {
-            e.currentTarget.classList.toggle('active');
+        chip.addEventListener('click', async (e) => {
+            const filter = e.currentTarget.dataset.filter;
+
+            if (filter === 'all') {
+                currentFilters.category = '';
+                await loadCreators();
+            } else if (filter === 'verified') {
+                currentFilters.verified = !currentFilters.verified;
+                await loadCreators();
+            } else {
+                currentFilters.category = filter;
+                await loadCreators();
+            }
         });
     });
+}
+
+function setupSearchListener() {
+    const searchInput = document.getElementById('discoverSearch');
+    const searchBtn = document.getElementById('searchBtn');
+
+    const performSearch = async () => {
+        currentFilters.search = searchInput?.value || '';
+        await loadCreators();
+    };
+
+    searchBtn?.addEventListener('click', performSearch);
+    searchInput?.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            performSearch();
+        }
+    });
+}
+
+function setupSortListener() {
+    const sortSelect = document.getElementById('sortSelect');
+    sortSelect?.addEventListener('change', (e) => {
+        currentFilters.sort = e.target.value;
+        // Sort creators locally
+        sortCreators();
+        renderCreatorsList();
+    });
+}
+
+function sortCreators() {
+    switch (currentFilters.sort) {
+        case 'rating':
+            creators.sort((a, b) => (b.rating?.average || 0) - (a.rating?.average || 0));
+            break;
+        case 'newest':
+            creators.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            break;
+        default:
+            // relevance - keep as is
+            break;
+    }
 }

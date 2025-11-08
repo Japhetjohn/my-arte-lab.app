@@ -3,6 +3,7 @@ import { appState, setUser } from '../state.js';
 import { showToast, closeModal, openModal } from '../utils.js';
 import { updateUserMenu } from '../auth.js';
 import { navigateToPage } from '../navigation.js';
+import api from '../services/api.js';
 
 // Booking Modal
 export function showBookingModal(creatorId, serviceIndex = 0) {
@@ -124,22 +125,51 @@ export function openLightbox(creatorId, imageIndex) {
 }
 
 // Settings/Profile Handlers
-export function handleProfileUpdate(event) {
+export async function handleProfileUpdate(event) {
     event.preventDefault();
 
-    appState.user.name = document.getElementById('profileName').value;
-    appState.user.email = document.getElementById('profileEmail').value;
-    appState.user.bio = document.getElementById('profileBio').value;
-    appState.user.location = document.getElementById('profileLocation').value;
-    appState.user.phone = document.getElementById('profilePhone').value;
+    const form = event.target;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
 
-    if (appState.user.type === 'creator') {
-        appState.user.role = document.getElementById('profileRole').value;
-        appState.user.skills = document.getElementById('profileSkills').value;
+    try {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Saving...';
+
+        const profileData = {
+            name: document.getElementById('profileName').value,
+            email: document.getElementById('profileEmail').value,
+            bio: document.getElementById('profileBio').value,
+            location: {
+                city: document.getElementById('profileLocation')?.value
+            }
+        };
+
+        // Add creator-specific fields
+        if (appState.user.role === 'creator') {
+            const skills = document.getElementById('profileSkills')?.value;
+            if (skills) {
+                profileData.skills = skills.split(',').map(s => s.trim());
+            }
+            if (document.getElementById('profileCategory')) {
+                profileData.category = document.getElementById('profileCategory').value;
+            }
+        }
+
+        const response = await api.updateProfile(profileData);
+
+        if (response.success) {
+            setUser(response.data.user);
+            updateUserMenu();
+            showToast('Profile updated successfully!', 'success');
+        }
+    } catch (error) {
+        console.error('Profile update failed:', error);
+        showToast(error.message || 'Failed to update profile', 'error');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
     }
-
-    updateUserMenu();
-    showToast('Profile updated successfully!', 'success');
 }
 
 export function handleAvatarUpload() {
@@ -151,8 +181,82 @@ export function handleCoverUpload() {
 }
 
 export function showChangePasswordModal() {
-    showToast('Change password feature coming soon!', 'success');
+    const modalContent = `
+        <div class="modal" onclick="closeModalOnBackdrop(event)">
+            <div class="modal-content" style="max-width: 500px;">
+                <div class="modal-header">
+                    <h2>Change Password</h2>
+                    <button class="icon-btn" onclick="closeModal()">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <form onsubmit="handlePasswordChange(event)" style="padding: 20px;">
+                    <div class="form-group">
+                        <label class="form-label">Current Password</label>
+                        <input type="password" id="currentPassword" class="form-input" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">New Password</label>
+                        <input type="password" id="newPassword" class="form-input" required minlength="8">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Confirm New Password</label>
+                        <input type="password" id="confirmPassword" class="form-input" required minlength="8">
+                    </div>
+
+                    <button type="submit" class="btn-primary" style="width: 100%; margin-top: 16px;">
+                        Change Password
+                    </button>
+                </form>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('modalsContainer').innerHTML = modalContent;
+    openModal();
 }
+
+window.handlePasswordChange = async function(event) {
+    event.preventDefault();
+
+    const currentPassword = document.getElementById('currentPassword').value;
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+
+    if (newPassword !== confirmPassword) {
+        showToast('Passwords do not match', 'error');
+        return;
+    }
+
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+
+    try {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Changing...';
+
+        const response = await api.updatePassword({
+            currentPassword,
+            newPassword
+        });
+
+        if (response.success) {
+            closeModal();
+            showToast('Password changed successfully!', 'success');
+        }
+    } catch (error) {
+        console.error('Password change failed:', error);
+        showToast(error.message || 'Failed to change password', 'error');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+    }
+};
 
 export function showTwoFactorModal() {
     showToast('Two-factor authentication setup coming soon!', 'success');
@@ -164,8 +268,94 @@ export function showDeleteAccountModal() {
 
 // Wallet Handlers
 export function showWithdrawModal() {
-    showToast('Withdraw feature coming soon!', 'success');
+    const modalContent = `
+        <div class="modal" onclick="closeModalOnBackdrop(event)">
+            <div class="modal-content" style="max-width: 500px;">
+                <div class="modal-header">
+                    <h2>Withdraw Funds</h2>
+                    <button class="icon-btn" onclick="closeModal()">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <form onsubmit="handleWithdrawal(event)" style="padding: 20px;">
+                    <div class="form-group">
+                        <label class="form-label">Amount (USDT)</label>
+                        <input type="number" id="withdrawAmount" class="form-input" required min="20" step="0.01" placeholder="Minimum: 20 USDT">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Wallet Address (Solana)</label>
+                        <input type="text" id="withdrawAddress" class="form-input" required placeholder="Enter your Solana wallet address">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Currency</label>
+                        <select id="withdrawCurrency" class="form-select">
+                            <option value="USDT">USDT</option>
+                            <option value="USDC">USDC</option>
+                            <option value="DAI">DAI</option>
+                        </select>
+                    </div>
+
+                    <div class="caption" style="color: var(--text-secondary); margin-bottom: 16px;">
+                        💡 Minimum withdrawal: 20 USDT. Funds will be sent to your Solana wallet within 24-48 hours.
+                    </div>
+
+                    <button type="submit" class="btn-primary" style="width: 100%;">
+                        Request Withdrawal
+                    </button>
+                </form>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('modalsContainer').innerHTML = modalContent;
+    openModal();
 }
+
+window.handleWithdrawal = async function(event) {
+    event.preventDefault();
+
+    const amount = parseFloat(document.getElementById('withdrawAmount').value);
+    const address = document.getElementById('withdrawAddress').value;
+    const currency = document.getElementById('withdrawCurrency').value;
+
+    if (amount < 20) {
+        showToast('Minimum withdrawal amount is 20 USDT', 'error');
+        return;
+    }
+
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+
+    try {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Processing...';
+
+        const response = await api.requestWithdrawal({
+            amount,
+            externalAddress: address,
+            currency
+        });
+
+        if (response.success) {
+            closeModal();
+            showToast('Withdrawal request submitted successfully!', 'success');
+
+            // Reload wallet page to show updated balance
+            setTimeout(() => window.location.reload(), 1500);
+        }
+    } catch (error) {
+        console.error('Withdrawal failed:', error);
+        showToast(error.message || 'Failed to process withdrawal', 'error');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+    }
+};
 
 export function showAddFundsModal() {
     showToast('Add funds feature coming soon!', 'success');
