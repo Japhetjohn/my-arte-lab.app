@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Registration Flow</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #0f0;
+        }
+        .log {
+            margin: 5px 0;
+            padding: 5px;
+            background: #000;
+            border-left: 3px solid #0f0;
+        }
+        button {
+            padding: 10px 20px;
+            background: #0f0;
+            color: #000;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        input {
+            padding: 8px;
+            margin: 5px 0;
+            width: 300px;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Registration Flow Debugger</h1>
+
+    <div>
+        <input type="text" id="name" placeholder="Full Name" value="Test Debug User">
+        <input type="email" id="email" placeholder="Email" value="">
+        <input type="password" id="password" placeholder="Password" value="TestPass123">
+        <button onclick="testRegistration()">Test Registration</button>
+        <button onclick="clearLogs()">Clear Logs</button>
+    </div>
+
+    <div id="logs"></div>
+
+    <script>
+        function log(message, data = null) {
+            const logs = document.getElementById('logs');
+            const logDiv = document.createElement('div');
+            logDiv.className = 'log';
+            logDiv.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong> - ${message}`;
+            if (data) {
+                logDiv.innerHTML += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+            }
+            logs.appendChild(logDiv);
+            logs.scrollTop = logs.scrollHeight;
+        }
+
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = '';
+        }
+
+        async function testRegistration() {
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value + Date.now() + '@test.com';
+            const password = document.getElementById('password').value;
+
+            log('🚀 STARTING REGISTRATION TEST');
+            log('Input Data:', { name, email, password: '***' });
+
+            try {
+                // Test registration
+                log('📝 Sending POST request to /api/auth/register...');
+
+                const response = await fetch('http://localhost:5000/api/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name,
+                        email,
+                        password,
+                        role: 'client'
+                    })
+                });
+
+                log(`📨 Response Status: ${response.status} ${response.statusText}`);
+
+                const data = await response.json();
+                log('📦 Response Data:', data);
+
+                if (data.success) {
+                    log('✅ REGISTRATION SUCCESSFUL!');
+                    log('👤 User Data Received:', data.data.user);
+                    log('🔑 Token Received:', data.data.token ? 'Yes (length: ' + data.data.token.length + ')' : 'No');
+
+                    // Test what would happen in the app
+                    log('💾 Storing token in localStorage...');
+                    localStorage.setItem('token', data.data.token);
+
+                    log('📱 Simulating setUser() call...');
+                    window.testUser = data.data.user;
+                    log('Current window.testUser:', window.testUser);
+                    log('User name:', window.testUser.name);
+                    log('User email:', window.testUser.email);
+
+                    // Test getMe endpoint
+                    log('🔄 Testing GET /api/auth/me endpoint...');
+                    const meResponse = await fetch('http://localhost:5000/api/auth/me', {
+                        headers: {
+                            'Authorization': `Bearer ${data.data.token}`
+                        }
+                    });
+
+                    const meData = await meResponse.json();
+                    log('👤 /me Response:', meData);
+
+                    if (meData.success) {
+                        log('✅ GET /me WORKS! User data:', meData.data.user);
+                        log('Name from /me:', meData.data.user.name);
+                        log('Email from /me:', meData.data.user.email);
+                    }
+
+                } else {
+                    log('❌ REGISTRATION FAILED:', data);
+                }
+
+            } catch (error) {
+                log('💥 ERROR:', { message: error.message, stack: error.stack });
+            }
+        }
+
+        log('✅ Test page loaded. Backend should be running on http://localhost:5000');
+        log('Fill in the form and click "Test Registration" to start.');
+    </script>
+</body>
+</html>
