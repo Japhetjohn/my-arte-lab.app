@@ -1,9 +1,9 @@
 // MyArteLab - Main Application Entry Point
 import { appState, setUser } from './state.js';
-import { mockCreators, mockWalletData, mockBookingsData } from './config.js';
 import { navigateToPage, goBack, updateBackButton, openSearchOverlay, closeSearchOverlay, closeUserDropdown } from './navigation.js';
 import { showAuthModal, handleAuth, handleLogout, updateUserMenu, initAuth } from './auth.js';
 import { showToast, closeModal, closeModalOnBackdrop, toggleSwitch } from './utils.js';
+import { checkAndClearCache } from './utils/clearCache.js';
 import { renderCreatorProfile } from './components/creators.js';
 import {
     showBookingModal,
@@ -60,13 +60,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function initializeApp() {
-    // Initialize authentication and restore user session
+    // Clear old mock data from localStorage (if any)
+    checkAndClearCache();
+
+    // Initialize authentication and restore user session from backend
     await initAuth();
 
-    // Load mock data (will be replaced when API integration is complete)
-    appState.creators = mockCreators;
-    appState.wallet = mockWalletData;
-    appState.bookings = mockBookingsData;
+    // All data is now loaded from the backend API when pages are rendered
+    // No more mock data - everything is LIVE!
 }
 
 function setupEventListeners() {
