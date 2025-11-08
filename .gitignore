@@ -40,3 +40,6 @@ build/
 tmp/
 temp/
 backend/.env
+
+# Git repositories
+*.git/
