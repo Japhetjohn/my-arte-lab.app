@@ -1,4 +1,46 @@
-// Application Configuration and Mock Data
+// Application Configuration
+
+// API Configuration
+export const API_BASE_URL = window.location.hostname === 'localhost'
+    ? 'http://localhost:5000/api'
+    : 'https://api.myartelab.com/api'; // Update with your production URL
+
+export const API_ENDPOINTS = {
+    // Auth
+    register: '/auth/register',
+    login: '/auth/login',
+    logout: '/auth/logout',
+    verifyEmail: '/auth/verify-email',
+    me: '/auth/me',
+
+    // Creators
+    creators: '/creators',
+    creatorProfile: (id) => `/creators/${id}`,
+
+    // Bookings
+    bookings: '/bookings',
+    createBooking: '/bookings',
+    bookingDetails: (id) => `/bookings/${id}`,
+    completeBooking: (id) => `/bookings/${id}/complete`,
+    cancelBooking: (id) => `/bookings/${id}/cancel`,
+    releasePayment: (id) => `/bookings/${id}/release-payment`,
+
+    // Wallet
+    wallet: '/wallet',
+    transactions: '/wallet/transactions',
+    withdraw: '/wallet/withdraw',
+    balanceSummary: '/wallet/balance-summary',
+
+    // Reviews
+    reviews: '/reviews',
+    createReview: '/reviews',
+
+    // Profile
+    updateProfile: '/auth/profile',
+    updatePassword: '/auth/update-password'
+};
+
+// Mock Data for development/fallback
 
 export const mockCreators = [
     {

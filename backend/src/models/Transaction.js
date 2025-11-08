@@ -107,8 +107,7 @@ const transactionSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Indexes
-transactionSchema.index({ transactionId: 1 });
+// Indexes (transactionId already indexed via unique: true)
 transactionSchema.index({ user: 1, createdAt: -1 });
 transactionSchema.index({ type: 1, status: 1 });
 transactionSchema.index({ status: 1 });

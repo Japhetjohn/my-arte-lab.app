@@ -186,11 +186,9 @@ const bookingSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Indexes
-bookingSchema.index({ bookingId: 1 });
+// Indexes (bookingId and escrowWallet.address already indexed via unique: true)
 bookingSchema.index({ client: 1, status: 1 });
 bookingSchema.index({ creator: 1, status: 1 });
-bookingSchema.index({ 'escrowWallet.address': 1 });
 bookingSchema.index({ paymentStatus: 1 });
 bookingSchema.index({ status: 1 });
 bookingSchema.index({ createdAt: -1 });

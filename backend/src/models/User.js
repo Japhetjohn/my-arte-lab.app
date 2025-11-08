@@ -163,11 +163,9 @@ const userSchema = new mongoose.Schema({
   timestamps: true // Adds createdAt and updatedAt
 });
 
-// Indexes for performance
-userSchema.index({ email: 1 });
+// Indexes for performance (email and wallet.address already indexed via unique: true)
 userSchema.index({ role: 1 });
 userSchema.index({ category: 1 });
-userSchema.index({ 'wallet.address': 1 });
 userSchema.index({ 'rating.average': -1 });
 
 // Hash password before saving

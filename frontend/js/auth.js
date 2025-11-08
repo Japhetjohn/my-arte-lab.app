@@ -2,6 +2,7 @@
 import { appState, setUser, clearUser } from './state.js';
 import { navigateToPage } from './navigation.js';
 import { showToast, closeModal, openModal } from './utils.js';
+import api from './services/api.js';
 
 export function showAuthModal(type = 'signin', userType = 'client') {
     const isSignUp = type === 'signup';
@@ -101,34 +102,110 @@ export function showAuthModal(type = 'signin', userType = 'client') {
     openModal();
 }
 
-export function handleAuth(event, type) {
+export async function handleAuth(event, type) {
     event.preventDefault();
 
-    // Simulate authentication
-    const user = {
-        name: 'John Doe',
-        email: 'john@example.com',
-        type: type === 'signup' ? document.getElementById('userTypeSelect')?.value || 'client' : 'client',
-        avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop',
-        cover: 'https://images.unsplash.com/photo-1557683316-973673baf926?w=1200&h=400&fit=crop',
-        bio: 'Passionate about creating amazing work and connecting with clients.',
-        location: 'Lagos, Nigeria',
-        phone: '+234 800 000 0000'
-    };
+    const form = event.target;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalBtnText = submitBtn.textContent;
 
-    setUser(user);
-    updateUserMenu();
-    closeModal();
+    // Disable button and show loading state
+    submitBtn.disabled = true;
+    submitBtn.textContent = type === 'signup' ? 'Creating account...' : 'Signing in...';
 
-    // Show success message
-    showToast(type === 'signup' ? 'Account created successfully!' : 'Welcome back!', 'success');
+    try {
+        const formData = new FormData(form);
+        const inputs = form.querySelectorAll('input.form-input, select.form-select');
+
+        if (type === 'signup') {
+            const userData = {
+                name: inputs[0].value,
+                role: document.getElementById('userTypeSelect')?.value || 'client',
+                email: inputs[1].value,
+                password: inputs[2].value,
+                location: {
+                    country: inputs[3].value
+                }
+            };
+
+            const response = await api.register(userData);
+
+            if (response.success) {
+                setUser(response.data.user);
+                updateUserMenu();
+                closeModal();
+                showToast('Account created successfully! Please check your email to verify your account.', 'success');
+
+                // Navigate based on role
+                if (userData.role === 'creator') {
+                    navigateToPage('settings');
+                    showToast('Complete your profile to start receiving bookings', 'info');
+                } else {
+                    navigateToPage('discover');
+                }
+            }
+        } else {
+            const credentials = {
+                email: inputs[0].value,
+                password: inputs[1].value
+            };
+
+            const response = await api.login(credentials);
+
+            if (response.success) {
+                setUser(response.data.user);
+                updateUserMenu();
+                closeModal();
+                showToast('Welcome back!', 'success');
+                navigateToPage('discover');
+            }
+        }
+    } catch (error) {
+        console.error('Authentication error:', error);
+        showToast(error.message || 'Authentication failed. Please try again.', 'error');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalBtnText;
+    }
 }
 
-export function handleLogout() {
-    clearUser();
+export async function handleLogout() {
+    try {
+        await api.logout();
+    } catch (error) {
+        console.error('Logout error:', error);
+    } finally {
+        clearUser();
+        updateUserMenu();
+        navigateToPage('home');
+        showToast('You have been logged out successfully', 'success');
+    }
+}
+
+/**
+ * Initialize authentication - check if user is logged in
+ */
+export async function initAuth() {
+    const token = api.getToken();
+
+    if (token) {
+        try {
+            const response = await api.getMe();
+
+            if (response.success && response.data.user) {
+                setUser(response.data.user);
+                updateUserMenu();
+                return response.data.user;
+            }
+        } catch (error) {
+            console.error('Failed to restore session:', error);
+            api.setToken(null);
+            clearUser();
+        }
+    }
+
     updateUserMenu();
-    navigateToPage('home');
-    showToast('You have been logged out successfully', 'success');
+    return null;
 }
 
 export function updateUserMenu() {

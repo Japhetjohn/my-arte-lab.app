@@ -2,7 +2,7 @@
 import { appState, setUser } from './state.js';
 import { mockCreators, mockWalletData, mockBookingsData } from './config.js';
 import { navigateToPage, goBack, updateBackButton, openSearchOverlay, closeSearchOverlay, closeUserDropdown } from './navigation.js';
-import { showAuthModal, handleAuth, handleLogout, updateUserMenu } from './auth.js';
+import { showAuthModal, handleAuth, handleLogout, updateUserMenu, initAuth } from './auth.js';
 import { showToast, closeModal, closeModalOnBackdrop, toggleSwitch } from './utils.js';
 import { renderCreatorProfile } from './components/creators.js';
 import {
@@ -52,15 +52,18 @@ window.showTransactionHistory = showTransactionHistory;
 window.showEarningsReport = showEarningsReport;
 
 // Initialize App
-document.addEventListener('DOMContentLoaded', () => {
-    initializeApp();
+document.addEventListener('DOMContentLoaded', async () => {
+    await initializeApp();
     setupEventListeners();
     navigateToPage('home', false);
     updateBackButton();
 });
 
-function initializeApp() {
-    // Load mock data
+async function initializeApp() {
+    // Initialize authentication and restore user session
+    await initAuth();
+
+    // Load mock data (will be replaced when API integration is complete)
     appState.creators = mockCreators;
     appState.wallet = mockWalletData;
     appState.bookings = mockBookingsData;
