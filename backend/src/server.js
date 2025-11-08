@@ -17,6 +17,7 @@ const walletRoutes = require('./routes/walletRoutes');
 const creatorRoutes = require('./routes/creatorRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
 const webhookRoutes = require('./routes/webhookRoutes');
+const uploadRoutes = require('./routes/uploadRoutes');
 
 // Initialize app
 const app = express();
@@ -77,6 +78,7 @@ app.use('/api/wallet', walletRoutes);
 app.use('/api/creators', creatorRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/webhooks', webhookRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // API Documentation (simple endpoint)
 app.get('/api', (req, res) => {

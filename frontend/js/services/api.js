@@ -235,6 +235,99 @@ class ApiService {
     async createReview(reviewData) {
         return this.post(API_ENDPOINTS.createReview, reviewData);
     }
+
+    // ==================== Upload Endpoints ====================
+
+    /**
+     * Upload file (generic method for FormData)
+     */
+    async uploadFile(endpoint, file, additionalData = {}) {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        // Add any additional data
+        Object.keys(additionalData).forEach(key => {
+            formData.append(key, additionalData[key]);
+        });
+
+        const url = `${this.baseUrl}${endpoint}`;
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${this.getToken()}`
+                // Don't set Content-Type - browser will set it with boundary
+            },
+            body: formData
+        });
+
+        return await this.handleResponse(response);
+    }
+
+    /**
+     * Upload avatar
+     */
+    async uploadAvatar(file) {
+        const formData = new FormData();
+        formData.append('avatar', file);
+
+        const url = `${this.baseUrl}/upload/avatar`;
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${this.getToken()}`
+            },
+            body: formData
+        });
+
+        return await this.handleResponse(response);
+    }
+
+    /**
+     * Upload cover image
+     */
+    async uploadCover(file) {
+        const formData = new FormData();
+        formData.append('cover', file);
+
+        const url = `${this.baseUrl}/upload/cover`;
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${this.getToken()}`
+            },
+            body: formData
+        });
+
+        return await this.handleResponse(response);
+    }
+
+    /**
+     * Upload portfolio image
+     */
+    async uploadPortfolio(file, title, description) {
+        const formData = new FormData();
+        formData.append('portfolio', file);
+        if (title) formData.append('title', title);
+        if (description) formData.append('description', description);
+
+        const url = `${this.baseUrl}/upload/portfolio`;
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${this.getToken()}`
+            },
+            body: formData
+        });
+
+        return await this.handleResponse(response);
+    }
+
+    /**
+     * Delete portfolio image
+     */
+    async deletePortfolioImage(index) {
+        return this.delete(`/upload/portfolio/${index}`);
+    }
 }
 
 // Export singleton instance

@@ -173,11 +173,84 @@ export async function handleProfileUpdate(event) {
 }
 
 export function handleAvatarUpload() {
-    showToast('Avatar upload feature coming soon!', 'success');
+    // Create file input
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+
+    input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Validate file size (5MB max)
+        if (file.size > 5 * 1024 * 1024) {
+            showToast('Image must be less than 5MB', 'error');
+            return;
+        }
+
+        try {
+            showToast('Uploading avatar...', 'info');
+
+            const response = await api.uploadAvatar(file);
+
+            if (response.success) {
+                // Update user state
+                appState.user.avatar = response.data.avatar;
+                setUser(appState.user);
+                updateUserMenu();
+
+                showToast('Avatar updated successfully!', 'success');
+
+                // Refresh the settings page if we're on it
+                setTimeout(() => window.location.reload(), 1000);
+            }
+        } catch (error) {
+            console.error('Avatar upload failed:', error);
+            showToast(error.message || 'Failed to upload avatar', 'error');
+        }
+    };
+
+    input.click();
 }
 
 export function handleCoverUpload() {
-    showToast('Cover image upload feature coming soon!', 'success');
+    // Create file input
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+
+    input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Validate file size (5MB max)
+        if (file.size > 5 * 1024 * 1024) {
+            showToast('Image must be less than 5MB', 'error');
+            return;
+        }
+
+        try {
+            showToast('Uploading cover image...', 'info');
+
+            const response = await api.uploadCover(file);
+
+            if (response.success) {
+                // Update user state
+                appState.user.coverImage = response.data.coverImage;
+                setUser(appState.user);
+
+                showToast('Cover image updated successfully!', 'success');
+
+                // Refresh the page to show new cover
+                setTimeout(() => window.location.reload(), 1000);
+            }
+        } catch (error) {
+            console.error('Cover upload failed:', error);
+            showToast(error.message || 'Failed to upload cover image', 'error');
+        }
+    };
+
+    input.click();
 }
 
 export function showChangePasswordModal() {
