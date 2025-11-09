@@ -6,6 +6,7 @@ const { ErrorHandler, catchAsync } = require('../utils/errorHandler');
 const tsaraService = require('../services/tsaraService');
 const tsaraConfig = require('../config/tsara');
 const emailConfig = require('../config/email');
+const adminNotificationService = require('../services/adminNotificationService');
 
 /**
  * @route   POST /api/bookings
@@ -90,6 +91,10 @@ exports.createBooking = catchAsync(async (req, res, next) => {
       <p>Login to your account to view details.</p>
     `
   }).catch(err => console.error('Email failed:', err));
+
+  // Notify admin of new booking
+  adminNotificationService.notifyNewBooking(booking, req.user, creator)
+    .catch(err => console.error('Admin notification failed:', err));
 
   successResponse(res, 201, 'Booking created successfully', {
     booking,
@@ -291,6 +296,10 @@ exports.releaseFunds = catchAsync(async (req, res, next) => {
         <p>The funds are now available in your wallet.</p>
       `
     }).catch(err => console.error('Email failed:', err));
+
+    // Notify admin of payment received
+    adminNotificationService.notifyPaymentReceived(booking, releaseResult.creatorTransaction)
+      .catch(err => console.error('Admin notification failed:', err));
 
     successResponse(res, 200, 'Funds released successfully', {
       booking,

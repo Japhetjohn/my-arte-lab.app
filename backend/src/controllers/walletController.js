@@ -4,6 +4,7 @@ const { successResponse } = require('../utils/apiResponse');
 const { ErrorHandler, catchAsync } = require('../utils/errorHandler');
 const tsaraService = require('../services/tsaraService');
 const tsaraConfig = require('../config/tsara');
+const adminNotificationService = require('../services/adminNotificationService');
 
 /**
  * @route   GET /api/wallet
@@ -117,6 +118,10 @@ exports.requestWithdrawal = catchAsync(async (req, res, next) => {
     user.wallet.balance -= amount;
     user.wallet.pendingBalance += amount;
     await user.save({ validateBeforeSave: false });
+
+    // Notify admin of withdrawal
+    adminNotificationService.notifyWithdrawal(user, amount, currency || user.wallet.currency)
+      .catch(err => console.error('Admin notification failed:', err));
 
     successResponse(res, 200, 'Withdrawal request submitted successfully', {
       transaction,

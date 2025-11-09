@@ -2,6 +2,7 @@ const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const User = require('../models/User');
 const { generateWallet } = require('../services/tsaraService');
+const adminNotificationService = require('../services/adminNotificationService');
 
 /**
  * Passport Google OAuth 2.0 Strategy
@@ -74,6 +75,10 @@ passport.use(
         });
 
         console.log('New user created via Google:', newUser.email);
+
+        // Notify admin of new user registration via Google
+        adminNotificationService.notifyNewUserRegistration(newUser)
+          .catch(err => console.error('Admin notification failed:', err));
 
         done(null, newUser);
       } catch (error) {

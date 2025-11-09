@@ -4,6 +4,7 @@ const { successResponse, errorResponse } = require('../utils/apiResponse');
 const { ErrorHandler, catchAsync } = require('../utils/errorHandler');
 const tsaraService = require('../services/tsaraService');
 const emailConfig = require('../config/email');
+const adminNotificationService = require('../services/adminNotificationService');
 const crypto = require('crypto');
 
 /**
@@ -107,6 +108,12 @@ exports.register = catchAsync(async (req, res, next) => {
       <p>Best regards,<br/>MyArteLab Team</p>
     `
   }).catch(err => console.error('Welcome email failed:', err));
+
+  // Notify admin of new user registration
+  adminNotificationService.notifyNewUserRegistration(user)
+    .catch(err => console.error('Admin notification failed:', err));
+
+  console.log(`✅ User created via ${user.googleId ? 'Google OAuth' : 'registration'}`);
 
   // Response
   successResponse(res, 201, 'Registration successful', {
