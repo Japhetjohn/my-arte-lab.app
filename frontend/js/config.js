@@ -1,13 +1,25 @@
 // Application Configuration
 // Last Updated: 2025-11-09 - Fixed localhost API detection
 
-// API Configuration
-export const API_BASE_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.startsWith('192.168'))
+// Debug: Check hostname detection
+console.log('🌐 window.location.hostname:', window.location.hostname);
+console.log('🔍 Is localhost?', window.location.hostname === 'localhost');
+console.log('🔍 Is 127.0.0.1?', window.location.hostname === '127.0.0.1');
+console.log('🔍 Starts with 192.168?', window.location.hostname.startsWith('192.168'));
+
+// API Configuration - FORCE localhost for development
+const isDevelopment = window.location.hostname === 'localhost' ||
+                      window.location.hostname === '127.0.0.1' ||
+                      window.location.hostname.startsWith('192.168') ||
+                      window.location.hostname === '0.0.0.0';
+
+export const API_BASE_URL = isDevelopment
     ? 'http://localhost:5000/api'
-    : 'https://api.myartelab.com/api'; // Update with your production URL
+    : 'https://api.myartelab.com/api';
 
 // Debug: Log API URL on load
 console.log('🔗 API Base URL:', API_BASE_URL);
+console.log('🔗 Backend should be at:', 'http://localhost:5000');
 
 export const API_ENDPOINTS = {
     // Auth
