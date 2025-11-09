@@ -34,7 +34,7 @@ passport.use(
           return done(null, user);
         }
 
-        const requestedRole = req.session?.oauthRole || 'client';
+        const requestedRole = 'client';
         console.log('Creating new user via Google OAuth:', profile.emails[0].value, 'Role:', requestedRole);
 
         let wallet;
