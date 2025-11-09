@@ -37,8 +37,10 @@ router.get('/google/callback',
       const oauthData = pendingOAuthRequests.get(stateToken);
       req.oauthMode = oauthData.mode;
       req.oauthRole = oauthData.role;
+      console.log(`Google OAuth callback: mode=${oauthData.mode}, role=${oauthData.role}`);
       pendingOAuthRequests.delete(stateToken);
     } else {
+      console.log('Google OAuth callback: No state found, defaulting to signin');
       req.oauthMode = 'signin';
       req.oauthRole = 'client';
     }
