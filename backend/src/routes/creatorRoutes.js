@@ -8,7 +8,6 @@ const {
   handleValidationErrors
 } = require('../middleware/validation');
 
-// Public routes (with optional auth)
 router.get('/', optionalAuth, validatePagination, handleValidationErrors, creatorController.getAllCreators);
 router.get('/featured', optionalAuth, creatorController.getFeaturedCreators);
 router.get('/stats', optionalAuth, creatorController.getCreatorStats);

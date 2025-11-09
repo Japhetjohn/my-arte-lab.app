@@ -1,14 +1,5 @@
 const jwt = require('jsonwebtoken');
 
-/**
- * JWT Token Utilities
- */
-
-/**
- * Generate JWT access token
- * @param {String} userId - User ID
- * @returns {String} JWT token
- */
 const generateToken = (userId) => {
   return jwt.sign(
     { id: userId },
@@ -17,11 +8,6 @@ const generateToken = (userId) => {
   );
 };
 
-/**
- * Generate refresh token
- * @param {String} userId - User ID
- * @returns {String} Refresh token
- */
 const generateRefreshToken = (userId) => {
   return jwt.sign(
     { id: userId, type: 'refresh' },
@@ -30,11 +16,6 @@ const generateRefreshToken = (userId) => {
   );
 };
 
-/**
- * Verify JWT token
- * @param {String} token - JWT token
- * @returns {Object} Decoded token payload
- */
 const verifyToken = (token) => {
   try {
     return jwt.verify(token, process.env.JWT_SECRET);
@@ -43,11 +24,6 @@ const verifyToken = (token) => {
   }
 };
 
-/**
- * Decode token without verification (for debugging)
- * @param {String} token - JWT token
- * @returns {Object} Decoded token
- */
 const decodeToken = (token) => {
   return jwt.decode(token);
 };

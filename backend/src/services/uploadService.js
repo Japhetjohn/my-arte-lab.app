@@ -1,21 +1,15 @@
-/**
- * Upload Service - Cloudinary Integration
- * Handles all image uploads for the platform
- */
 
 const cloudinary = require('../config/cloudinary');
 const multer = require('multer');
 
-// Configure multer for memory storage (we'll upload to Cloudinary directly)
 const storage = multer.memoryStorage();
 
 const upload = multer({
   storage,
   limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB max file size
+    fileSize: 5 * 1024 * 1024
   },
   fileFilter: (req, file, cb) => {
-    // Accept images only
     if (!file.mimetype.startsWith('image/')) {
       return cb(new Error('Only image files are allowed'), false);
     }
@@ -23,12 +17,6 @@ const upload = multer({
   }
 });
 
-/**
- * Upload image to Cloudinary with timeout
- * @param {Buffer} fileBuffer - Image file buffer
- * @param {Object} options - Upload options
- * @returns {Promise<Object>} - Cloudinary upload result
- */
 const uploadToCloudinary = (fileBuffer, options = {}) => {
   return new Promise((resolve, reject) => {
     const uploadOptions = {
@@ -39,14 +27,13 @@ const uploadToCloudinary = (fileBuffer, options = {}) => {
         { quality: 'auto' },
         { fetch_format: 'auto' }
       ],
-      timeout: 60000, // 60 seconds timeout
+      timeout: 60000,
       ...options
     };
 
-    // Set timeout for upload
     const timeoutId = setTimeout(() => {
       reject(new Error('Upload timeout - please try with a smaller image'));
-    }, 65000); // 65 seconds (slightly longer than Cloudinary timeout)
+    }, 65000);
 
     cloudinary.uploader.upload_stream(
       uploadOptions,
@@ -63,9 +50,6 @@ const uploadToCloudinary = (fileBuffer, options = {}) => {
   });
 };
 
-/**
- * Upload avatar image
- */
 const uploadAvatar = async (fileBuffer) => {
   return uploadToCloudinary(fileBuffer, {
     folder: 'myartelab/avatars',
@@ -77,9 +61,6 @@ const uploadAvatar = async (fileBuffer) => {
   });
 };
 
-/**
- * Upload cover image
- */
 const uploadCover = async (fileBuffer) => {
   return uploadToCloudinary(fileBuffer, {
     folder: 'myartelab/covers',
@@ -91,9 +72,6 @@ const uploadCover = async (fileBuffer) => {
   });
 };
 
-/**
- * Upload portfolio image
- */
 const uploadPortfolio = async (fileBuffer) => {
   return uploadToCloudinary(fileBuffer, {
     folder: 'myartelab/portfolio',
@@ -105,9 +83,6 @@ const uploadPortfolio = async (fileBuffer) => {
   });
 };
 
-/**
- * Delete image from Cloudinary
- */
 const deleteImage = async (publicId) => {
   try {
     const result = await cloudinary.uploader.destroy(publicId);

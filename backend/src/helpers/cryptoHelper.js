@@ -1,26 +1,13 @@
 const crypto = require('crypto');
 
-/**
- * Crypto Helper Functions
- */
-
-/**
- * Generate random token
- */
 const generateToken = (length = 32) => {
   return crypto.randomBytes(length).toString('hex');
 };
 
-/**
- * Hash data using SHA256
- */
 const hashData = (data) => {
   return crypto.createHash('sha256').update(data).digest('hex');
 };
 
-/**
- * Verify webhook signature
- */
 const verifyWebhookSignature = (payload, signature, secret) => {
   const expectedSignature = crypto
     .createHmac('sha256', secret)
@@ -33,18 +20,12 @@ const verifyWebhookSignature = (payload, signature, secret) => {
   );
 };
 
-/**
- * Generate reference ID
- */
 const generateReferenceId = (prefix = 'REF') => {
   const timestamp = Date.now();
   const random = crypto.randomBytes(4).toString('hex');
   return `${prefix}-${timestamp}-${random}`;
 };
 
-/**
- * Encrypt sensitive data
- */
 const encryptData = (data, key) => {
   const iv = crypto.randomBytes(16);
   const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(key), iv);
@@ -56,9 +37,6 @@ const encryptData = (data, key) => {
   };
 };
 
-/**
- * Decrypt sensitive data
- */
 const decryptData = (encryptedData, iv, key) => {
   const decipher = crypto.createDecipheriv(
     'aes-256-cbc',

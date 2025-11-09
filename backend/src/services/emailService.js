@@ -1,13 +1,6 @@
 const emailConfig = require('../config/email');
 
-/**
- * Email Service - Handle all email operations
- */
-
 class EmailService {
-  /**
-   * Send welcome email to new user
-   */
   async sendWelcomeEmail(user) {
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -35,9 +28,6 @@ class EmailService {
     });
   }
 
-  /**
-   * Send booking confirmation email
-   */
   async sendBookingConfirmation(booking, client, creator) {
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -65,9 +55,6 @@ class EmailService {
     });
   }
 
-  /**
-   * Send payment received notification
-   */
   async sendPaymentReceived(booking, creator) {
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -93,9 +80,6 @@ class EmailService {
     });
   }
 
-  /**
-   * Send withdrawal notification
-   */
   async sendWithdrawalNotification(user, withdrawal) {
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -121,9 +105,6 @@ class EmailService {
     });
   }
 
-  /**
-   * Send withdrawal completed notification
-   */
   async sendWithdrawalCompleted(user, withdrawal) {
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -148,9 +129,6 @@ class EmailService {
     });
   }
 
-  /**
-   * Send password reset email
-   */
   async sendPasswordReset(user, resetToken) {
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
 
@@ -178,16 +156,10 @@ class EmailService {
     });
   }
 
-  /**
-   * Send custom email
-   */
   async sendCustomEmail({ to, subject, html, text }) {
     return await emailConfig.sendEmail({ to, subject, html, text });
   }
 
-  /**
-   * Verify email service connection
-   */
   async verifyConnection() {
     return await emailConfig.verifyConnection();
   }

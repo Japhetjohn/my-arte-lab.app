@@ -1,37 +1,33 @@
 const mongoose = require('mongoose');
 
 const transactionSchema = new mongoose.Schema({
-  // Transaction Reference
   transactionId: {
     type: String,
     required: true,
     unique: true
   },
 
-  // User
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
   },
 
-  // Transaction Type
   type: {
     type: String,
     enum: [
-      'deposit',           // Client adds funds
-      'payment',           // Payment for booking
-      'earning',           // Creator receives payment
-      'withdrawal',        // Creator withdraws funds
-      'refund',           // Refund to client
-      'platform_fee',     // Platform commission collection
-      'bonus',            // Promotional bonus
-      'reversal'          // Transaction reversal
+      'deposit',
+      'payment',
+      'earning',
+      'withdrawal',
+      'refund',
+      'platform_fee',
+      'bonus',
+      'reversal'
     ],
     required: true
   },
 
-  // Amount
   amount: {
     type: Number,
     required: true
@@ -44,14 +40,12 @@ const transactionSchema = new mongoose.Schema({
     default: 'USDT'
   },
 
-  // Status
   status: {
     type: String,
     enum: ['pending', 'processing', 'completed', 'failed', 'cancelled'],
     default: 'pending'
   },
 
-  // Blockchain Details
   fromAddress: String,
   toAddress: String,
   transactionHash: String,
@@ -61,16 +55,13 @@ const transactionSchema = new mongoose.Schema({
     default: 0
   },
 
-  // Related Booking (if applicable)
   booking: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Booking'
   },
 
-  // Description
   description: String,
 
-  // Fees
   gasFee: {
     type: Number,
     default: 0
@@ -81,25 +72,21 @@ const transactionSchema = new mongoose.Schema({
     default: 0
   },
 
-  netAmount: Number, // Amount after fees
+  netAmount: Number,
 
-  // Tsara Payment Gateway Reference
   tsaraPaymentId: String,
   tsaraPaymentStatus: String,
 
-  // Metadata
   metadata: {
     ipAddress: String,
     userAgent: String,
     notes: String
   },
 
-  // Timestamps
   processedAt: Date,
   completedAt: Date,
   failedAt: Date,
 
-  // Error tracking
   errorMessage: String,
   errorCode: String
 
@@ -107,7 +94,6 @@ const transactionSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Indexes (transactionId already indexed via unique: true)
 transactionSchema.index({ user: 1, createdAt: -1 });
 transactionSchema.index({ type: 1, status: 1 });
 transactionSchema.index({ status: 1 });
@@ -115,7 +101,6 @@ transactionSchema.index({ booking: 1 });
 transactionSchema.index({ transactionHash: 1 });
 transactionSchema.index({ tsaraPaymentId: 1 });
 
-// Generate unique transaction ID before saving
 transactionSchema.pre('save', async function(next) {
   if (!this.transactionId) {
     const timestamp = Date.now().toString(36).toUpperCase();
@@ -123,7 +108,6 @@ transactionSchema.pre('save', async function(next) {
     this.transactionId = `TXN-${timestamp}-${random}`;
   }
 
-  // Calculate net amount
   if (!this.netAmount) {
     this.netAmount = this.amount - (this.gasFee || 0) - (this.platformFee || 0);
   }
@@ -131,9 +115,6 @@ transactionSchema.pre('save', async function(next) {
   next();
 });
 
-// Methods
-
-// Mark as completed
 transactionSchema.methods.markCompleted = async function(transactionHash) {
   this.status = 'completed';
   this.completedAt = new Date();
@@ -143,7 +124,6 @@ transactionSchema.methods.markCompleted = async function(transactionHash) {
   return await this.save();
 };
 
-// Mark as failed
 transactionSchema.methods.markFailed = async function(errorMessage, errorCode) {
   this.status = 'failed';
   this.failedAt = new Date();
@@ -152,16 +132,12 @@ transactionSchema.methods.markFailed = async function(errorMessage, errorCode) {
   return await this.save();
 };
 
-// Mark as processing
 transactionSchema.methods.markProcessing = async function() {
   this.status = 'processing';
   this.processedAt = new Date();
   return await this.save();
 };
 
-// Statics
-
-// Get user transaction history
 transactionSchema.statics.getUserTransactions = async function(userId, limit = 20, skip = 0) {
   return await this.find({ user: userId })
     .sort({ createdAt: -1 })
@@ -171,7 +147,6 @@ transactionSchema.statics.getUserTransactions = async function(userId, limit = 2
     .lean();
 };
 
-// Get user balance summary
 transactionSchema.statics.getUserBalanceSummary = async function(userId) {
   const result = await this.aggregate([
     {
@@ -205,7 +180,6 @@ transactionSchema.statics.getUserBalanceSummary = async function(userId) {
   return result;
 };
 
-// Get platform earnings
 transactionSchema.statics.getPlatformEarnings = async function(startDate, endDate) {
   const match = {
     type: 'platform_fee',

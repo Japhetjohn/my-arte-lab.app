@@ -2,7 +2,6 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
-  // Basic Information
   name: {
     type: String,
     required: [true, 'Please provide your name'],
@@ -23,24 +22,21 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Please provide a password'],
     minlength: [8, 'Password must be at least 8 characters'],
-    select: false // Don't return password in queries by default
+    select: false
   },
 
-  // Google OAuth
   googleId: {
     type: String,
     unique: true,
-    sparse: true // Allows null values while maintaining uniqueness for non-null values
+    sparse: true
   },
 
-  // User Type
   role: {
     type: String,
     enum: ['client', 'creator', 'admin'],
     default: 'client'
   },
 
-  // Profile
   bio: {
     type: String,
     maxlength: [500, 'Bio cannot exceed 500 characters']
@@ -61,7 +57,6 @@ const userSchema = new mongoose.Schema({
     country: String
   },
 
-  // Creator-specific fields
   category: {
     type: String,
     enum: ['photographer', 'designer', 'videographer', 'illustrator', 'other'],
@@ -84,7 +79,7 @@ const userSchema = new mongoose.Schema({
     description: String,
     price: Number,
     currency: { type: String, default: 'USDT' },
-    deliveryTime: Number // in days
+    deliveryTime: Number
   }],
 
   rating: {
@@ -92,7 +87,6 @@ const userSchema = new mongoose.Schema({
     count: { type: Number, default: 0 }
   },
 
-  // Tsara Solana Stablecoin Wallet
   wallet: {
     address: {
       type: String,
@@ -129,7 +123,6 @@ const userSchema = new mongoose.Schema({
     }
   },
 
-  // Account Status
   isEmailVerified: {
     type: Boolean,
     default: false
@@ -142,10 +135,9 @@ const userSchema = new mongoose.Schema({
 
   isVerified: {
     type: Boolean,
-    default: false // For creator verification
+    default: false
   },
 
-  // Security
   emailVerificationToken: String,
   emailVerificationExpire: Date,
   resetPasswordToken: String,
@@ -153,7 +145,6 @@ const userSchema = new mongoose.Schema({
   loginAttempts: { type: Number, default: 0 },
   lockUntil: Date,
 
-  // Metadata
   lastLogin: Date,
 
   completedBookings: {
@@ -162,20 +153,18 @@ const userSchema = new mongoose.Schema({
   },
 
   responseTime: {
-    type: Number, // in hours
+    type: Number,
     default: null
   }
 
 }, {
-  timestamps: true // Adds createdAt and updatedAt
+  timestamps: true
 });
 
-// Indexes for performance (email and wallet.address already indexed via unique: true)
 userSchema.index({ role: 1 });
 userSchema.index({ category: 1 });
 userSchema.index({ 'rating.average': -1 });
 
-// Hash password before saving
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) {
     return next();
@@ -190,7 +179,6 @@ userSchema.pre('save', async function(next) {
   }
 });
 
-// Compare password method
 userSchema.methods.comparePassword = async function(candidatePassword) {
   try {
     return await bcrypt.compare(candidatePassword, this.password);
@@ -199,14 +187,11 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
   }
 };
 
-// Check if account is locked
 userSchema.methods.isLocked = function() {
   return !!(this.lockUntil && this.lockUntil > Date.now());
 };
 
-// Increment login attempts
 userSchema.methods.incLoginAttempts = async function() {
-  // Reset attempts if lock has expired
   if (this.lockUntil && this.lockUntil < Date.now()) {
     return await this.updateOne({
       $set: { loginAttempts: 1 },
@@ -217,16 +202,14 @@ userSchema.methods.incLoginAttempts = async function() {
   const updates = { $inc: { loginAttempts: 1 } };
   const maxAttempts = parseInt(process.env.MAX_LOGIN_ATTEMPTS) || 5;
 
-  // Lock account after max attempts
   if (this.loginAttempts + 1 >= maxAttempts && !this.isLocked()) {
-    const lockoutDuration = parseInt(process.env.LOCKOUT_DURATION) || 15; // minutes
+    const lockoutDuration = parseInt(process.env.LOCKOUT_DURATION) || 15;
     updates.$set = { lockUntil: Date.now() + (lockoutDuration * 60 * 1000) };
   }
 
   return await this.updateOne(updates);
 };
 
-// Reset login attempts
 userSchema.methods.resetLoginAttempts = async function() {
   return await this.updateOne({
     $set: { loginAttempts: 0 },
@@ -234,7 +217,6 @@ userSchema.methods.resetLoginAttempts = async function() {
   });
 };
 
-// Update wallet balance
 userSchema.methods.updateWalletBalance = async function(amount, type = 'add') {
   const update = type === 'add'
     ? { $inc: { 'wallet.balance': amount } }
@@ -245,7 +227,6 @@ userSchema.methods.updateWalletBalance = async function(amount, type = 'add') {
   return await this.updateOne(update);
 };
 
-// Get public profile (exclude sensitive fields)
 userSchema.methods.getPublicProfile = function() {
   const obj = this.toObject();
 

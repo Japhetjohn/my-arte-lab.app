@@ -9,7 +9,6 @@ const {
   handleValidationErrors
 } = require('../middleware/validation');
 
-// Public route
 router.get(
   '/creator/:creatorId',
   optionalAuth,
@@ -19,7 +18,6 @@ router.get(
   reviewController.getCreatorReviews
 );
 
-// Protected routes
 router.use(protect);
 
 router.post('/', validateReview, handleValidationErrors, reviewController.createReview);
@@ -31,7 +29,6 @@ router.put(
   reviewController.respondToReview
 );
 
-// Public can vote (optional auth)
 router.post('/:id/helpful', optionalAuth, validateObjectId('id'), handleValidationErrors, reviewController.markHelpful);
 
 module.exports = router;

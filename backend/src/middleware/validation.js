@@ -1,9 +1,6 @@
 const { body, param, query, validationResult } = require('express-validator');
 const { errorResponse } = require('../utils/apiResponse');
 
-/**
- * Handle validation errors
- */
 exports.handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);
 
@@ -19,9 +16,6 @@ exports.handleValidationErrors = (req, res, next) => {
   next();
 };
 
-/**
- * User registration validation
- */
 exports.validateRegister = [
   body('name')
     .trim()
@@ -49,9 +43,6 @@ exports.validateRegister = [
     .isIn(['photographer', 'designer', 'videographer', 'illustrator', 'other']).withMessage('Invalid category')
 ];
 
-/**
- * User login validation
- */
 exports.validateLogin = [
   body('email')
     .trim()
@@ -63,9 +54,6 @@ exports.validateLogin = [
     .notEmpty().withMessage('Password is required')
 ];
 
-/**
- * Booking creation validation
- */
 exports.validateBooking = [
   body('creatorId')
     .notEmpty().withMessage('Creator ID is required')
@@ -107,9 +95,6 @@ exports.validateBooking = [
     })
 ];
 
-/**
- * Review validation
- */
 exports.validateReview = [
   body('rating')
     .notEmpty().withMessage('Rating is required')
@@ -137,9 +122,6 @@ exports.validateReview = [
     .isInt({ min: 1, max: 5 }).withMessage('Professionalism rating must be between 1 and 5')
 ];
 
-/**
- * Withdrawal validation
- */
 exports.validateWithdrawal = [
   body('amount')
     .notEmpty().withMessage('Amount is required')
@@ -155,9 +137,6 @@ exports.validateWithdrawal = [
     .isIn(['USDT', 'USDC', 'DAI']).withMessage('Invalid currency')
 ];
 
-/**
- * Profile update validation
- */
 exports.validateProfileUpdate = [
   body('name')
     .optional()
@@ -189,17 +168,11 @@ exports.validateProfileUpdate = [
     .isLength({ max: 50 }).withMessage('Each skill cannot exceed 50 characters')
 ];
 
-/**
- * MongoDB ObjectId validation
- */
 exports.validateObjectId = (paramName = 'id') => [
   param(paramName)
     .isMongoId().withMessage(`Invalid ${paramName}`)
 ];
 
-/**
- * Pagination validation
- */
 exports.validatePagination = [
   query('page')
     .optional()

@@ -1,28 +1,24 @@
 const mongoose = require('mongoose');
 
 const reviewSchema = new mongoose.Schema({
-  // Booking reference
   booking: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Booking',
     required: true
   },
 
-  // Reviewer (client)
   reviewer: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
   },
 
-  // Reviewed creator
   creator: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
   },
 
-  // Rating (1-5 stars)
   rating: {
     type: Number,
     required: true,
@@ -30,13 +26,11 @@ const reviewSchema = new mongoose.Schema({
     max: 5
   },
 
-  // Review text
   comment: {
     type: String,
     maxlength: [1000, 'Review cannot exceed 1000 characters']
   },
 
-  // Detailed ratings
   ratings: {
     communication: { type: Number, min: 1, max: 5 },
     quality: { type: Number, min: 1, max: 5 },
@@ -44,19 +38,16 @@ const reviewSchema = new mongoose.Schema({
     professionalism: { type: Number, min: 1, max: 5 }
   },
 
-  // Review status
   isPublished: {
     type: Boolean,
     default: true
   },
 
-  // Creator response
   response: {
     message: String,
     respondedAt: Date
   },
 
-  // Moderation
   isFlagged: {
     type: Boolean,
     default: false
@@ -64,7 +55,6 @@ const reviewSchema = new mongoose.Schema({
 
   flagReason: String,
 
-  // Helpfulness
   helpfulVotes: {
     type: Number,
     default: 0
@@ -79,15 +69,11 @@ const reviewSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Indexes
-reviewSchema.index({ booking: 1 }, { unique: true }); // One review per booking
+reviewSchema.index({ booking: 1 }, { unique: true });
 reviewSchema.index({ creator: 1, isPublished: 1 });
 reviewSchema.index({ rating: -1 });
 reviewSchema.index({ createdAt: -1 });
 
-// Statics
-
-// Get creator average rating
 reviewSchema.statics.getCreatorAverageRating = async function(creatorId) {
   const result = await this.aggregate([
     {
@@ -115,7 +101,6 @@ reviewSchema.statics.getCreatorAverageRating = async function(creatorId) {
   };
 };
 
-// Update creator rating
 reviewSchema.post('save', async function() {
   const User = mongoose.model('User');
   const stats = await this.constructor.getCreatorAverageRating(this.creator);
@@ -126,7 +111,6 @@ reviewSchema.post('save', async function() {
   });
 });
 
-// Update creator rating on delete
 reviewSchema.post('remove', async function() {
   const User = mongoose.model('User');
   const stats = await this.constructor.getCreatorAverageRating(this.creator);

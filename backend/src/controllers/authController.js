@@ -7,37 +7,28 @@ const emailConfig = require('../config/email');
 const adminNotificationService = require('../services/adminNotificationService');
 const crypto = require('crypto');
 
-/**
- * @route   POST /api/auth/register
- * @desc    Register new user with Tsara wallet
- * @access  Public
- */
 exports.register = catchAsync(async (req, res, next) => {
   const { name, email, password, role, category } = req.body;
 
-  // Check if user already exists
   const existingUser = await User.findOne({ email });
   if (existingUser) {
     return next(new ErrorHandler('Email already registered', 400));
   }
 
-  // Generate Tsara Solana stablecoin wallet (optional - can be created later if fails)
   let wallet = null;
   let walletCreationFailed = false;
 
   try {
     wallet = await tsaraService.generateWallet({
-      userId: email, // Use email as temporary ID before user is created
+      userId: email,
       email,
       name,
       role: role || 'client'
     });
-    console.log('✅ Wallet created successfully for:', email);
+    console.log(' Wallet created successfully for:', email);
   } catch (error) {
-    console.error('⚠️ Wallet creation failed (will retry later):', error.message);
+    console.error(' Wallet creation failed (will retry later):', error.message);
     walletCreationFailed = true;
-    // Don't fail registration - wallet can be created later
-    // Generate a temporary placeholder wallet address
     const tempWalletId = crypto.randomBytes(16).toString('hex');
     wallet = {
       address: `pending_${tempWalletId}`,
@@ -47,7 +38,6 @@ exports.register = catchAsync(async (req, res, next) => {
     };
   }
 
-  // Create user with Solana wallet
   const user = await User.create({
     name,
     email,
@@ -64,22 +54,18 @@ exports.register = catchAsync(async (req, res, next) => {
     }
   });
 
-  // Generate tokens
   const token = generateToken(user._id);
   const refreshToken = generateRefreshToken(user._id);
 
-  // Generate email verification token
   const verificationToken = crypto.randomBytes(32).toString('hex');
   const hashedToken = crypto.createHash('sha256').update(verificationToken).digest('hex');
 
   user.emailVerificationToken = hashedToken;
-  user.emailVerificationExpire = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+  user.emailVerificationExpire = Date.now() + 24 * 60 * 60 * 1000;
   await user.save({ validateBeforeSave: false });
 
-  // Create verification URL
   const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
 
-  // Send welcome email with verification link (non-blocking)
   const walletInfo = !walletCreationFailed ? `
     <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
       <p><strong>Payment Wallet:</strong> Solana Stablecoin (${wallet.currency})</p>
@@ -109,13 +95,11 @@ exports.register = catchAsync(async (req, res, next) => {
     `
   }).catch(err => console.error('Welcome email failed:', err));
 
-  // Notify admin of new user registration
   adminNotificationService.notifyNewUserRegistration(user)
     .catch(err => console.error('Admin notification failed:', err));
 
-  console.log(`✅ User created via ${user.googleId ? 'Google OAuth' : 'registration'}`);
+  console.log(` User created via ${user.googleId ? 'Google OAuth' : 'registration'}`);
 
-  // Response
   successResponse(res, 201, 'Registration successful', {
     user: user.getPublicProfile(),
     token,
@@ -123,27 +107,19 @@ exports.register = catchAsync(async (req, res, next) => {
   });
 });
 
-/**
- * @route   POST /api/auth/login
- * @desc    Login user
- * @access  Public
- */
 exports.login = catchAsync(async (req, res, next) => {
   const { email, password } = req.body;
 
-  // Find user and include password
   const user = await User.findOne({ email }).select('+password');
 
   if (!user) {
     return next(new ErrorHandler('Invalid email or password', 401));
   }
 
-  // Check if account is locked
   if (user.isLocked()) {
     return next(new ErrorHandler('Account is locked due to multiple failed login attempts. Please try again later', 423));
   }
 
-  // Check password
   const isPasswordCorrect = await user.comparePassword(password);
 
   if (!isPasswordCorrect) {
@@ -151,20 +127,16 @@ exports.login = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Invalid email or password', 401));
   }
 
-  // Reset login attempts on successful login
   if (user.loginAttempts > 0) {
     await user.resetLoginAttempts();
   }
 
-  // Update last login
   user.lastLogin = new Date();
   await user.save({ validateBeforeSave: false });
 
-  // Generate tokens
   const token = generateToken(user._id);
   const refreshToken = generateRefreshToken(user._id);
 
-  // Get fresh user data without password
   const userData = await User.findById(user._id);
 
   successResponse(res, 200, 'Login successful', {
@@ -174,13 +146,7 @@ exports.login = catchAsync(async (req, res, next) => {
   });
 });
 
-/**
- * @route   GET /api/auth/me
- * @desc    Get current logged in user
- * @access  Private
- */
 exports.getMe = catchAsync(async (req, res, next) => {
-  // req.user is set by protect middleware
   const user = await User.findById(req.user._id);
 
   if (!user) {
@@ -192,23 +158,11 @@ exports.getMe = catchAsync(async (req, res, next) => {
   });
 });
 
-/**
- * @route   POST /api/auth/logout
- * @desc    Logout user
- * @access  Private
- */
 exports.logout = catchAsync(async (req, res, next) => {
-  // In a stateless JWT system, logout is handled client-side by removing the token
-  // You could implement token blacklisting here if needed
 
   successResponse(res, 200, 'Logout successful');
 });
 
-/**
- * @route   PUT /api/auth/update-password
- * @desc    Update password
- * @access  Private
- */
 exports.updatePassword = catchAsync(async (req, res, next) => {
   const { currentPassword, newPassword } = req.body;
 
@@ -216,30 +170,21 @@ exports.updatePassword = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Please provide current and new password', 400));
   }
 
-  // Get user with password
   const user = await User.findById(req.user._id).select('+password');
 
-  // Check current password
   const isCorrect = await user.comparePassword(currentPassword);
   if (!isCorrect) {
     return next(new ErrorHandler('Current password is incorrect', 401));
   }
 
-  // Update password
   user.password = newPassword;
   await user.save();
 
-  // Generate new token
   const token = generateToken(user._id);
 
   successResponse(res, 200, 'Password updated successfully', { token });
 });
 
-/**
- * @route   POST /api/auth/forgot-password
- * @desc    Send password reset email
- * @access  Public
- */
 exports.forgotPassword = catchAsync(async (req, res, next) => {
   const { email } = req.body;
 
@@ -250,22 +195,18 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
   const user = await User.findOne({ email });
 
   if (!user) {
-    // Don't reveal if user exists
     return successResponse(res, 200, 'If an account with that email exists, a reset link has been sent');
   }
 
-  // Generate reset token
   const resetToken = crypto.randomBytes(32).toString('hex');
   const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
 
   user.resetPasswordToken = hashedToken;
-  user.resetPasswordExpire = Date.now() + 30 * 60 * 1000; // 30 minutes
+  user.resetPasswordExpire = Date.now() + 30 * 60 * 1000;
   await user.save({ validateBeforeSave: false });
 
-  // Create reset URL
   const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
 
-  // Send email
   try {
     await emailConfig.sendEmail({
       to: user.email,
@@ -290,11 +231,6 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
   }
 });
 
-/**
- * @route   POST /api/auth/reset-password
- * @desc    Reset password with token
- * @access  Public
- */
 exports.resetPassword = catchAsync(async (req, res, next) => {
   const { token, newPassword } = req.body;
 
@@ -302,10 +238,8 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Please provide token and new password', 400));
   }
 
-  // Hash token
   const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
 
-  // Find user with valid token
   const user = await User.findOne({
     resetPasswordToken: hashedToken,
     resetPasswordExpire: { $gt: Date.now() }
@@ -315,28 +249,20 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Invalid or expired reset token', 400));
   }
 
-  // Set new password
   user.password = newPassword;
   user.resetPasswordToken = undefined;
   user.resetPasswordExpire = undefined;
   await user.save();
 
-  // Generate new token
   const jwtToken = generateToken(user._id);
 
   successResponse(res, 200, 'Password reset successful', { token: jwtToken });
 });
 
-/**
- * @route   PUT /api/auth/update-profile
- * @desc    Update user profile
- * @access  Private
- */
 exports.updateProfile = catchAsync(async (req, res, next) => {
   const allowedFields = ['name', 'bio', 'location', 'skills', 'avatar', 'coverImage'];
   const updates = {};
 
-  // Filter allowed fields
   Object.keys(req.body).forEach(key => {
     if (allowedFields.includes(key)) {
       updates[key] = req.body[key];
@@ -354,11 +280,6 @@ exports.updateProfile = catchAsync(async (req, res, next) => {
   });
 });
 
-/**
- * @route   DELETE /api/auth/delete-account
- * @desc    Delete user account
- * @access  Private
- */
 exports.deleteAccount = catchAsync(async (req, res, next) => {
   const { password } = req.body;
 
@@ -366,30 +287,19 @@ exports.deleteAccount = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Please provide your password to confirm account deletion', 400));
   }
 
-  // Get user with password
   const user = await User.findById(req.user._id).select('+password');
 
-  // Verify password
   const isCorrect = await user.comparePassword(password);
   if (!isCorrect) {
     return next(new ErrorHandler('Incorrect password', 401));
   }
 
-  // Soft delete - deactivate account
   user.isActive = false;
   await user.save({ validateBeforeSave: false });
-
-  // Or hard delete (uncomment if needed)
-  // await user.remove();
 
   successResponse(res, 200, 'Account deleted successfully');
 });
 
-/**
- * @route   POST /api/auth/verify-email
- * @desc    Verify email with token
- * @access  Public
- */
 exports.verifyEmail = catchAsync(async (req, res, next) => {
   const { token } = req.body;
 
@@ -397,10 +307,8 @@ exports.verifyEmail = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Please provide verification token', 400));
   }
 
-  // Hash token
   const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
 
-  // Find user with valid token
   const user = await User.findOne({
     emailVerificationToken: hashedToken,
     emailVerificationExpire: { $gt: Date.now() }
@@ -410,13 +318,11 @@ exports.verifyEmail = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Invalid or expired verification token', 400));
   }
 
-  // Mark email as verified
   user.isEmailVerified = true;
   user.emailVerificationToken = undefined;
   user.emailVerificationExpire = undefined;
   await user.save({ validateBeforeSave: false });
 
-  // Send confirmation email
   emailConfig.sendEmail({
     to: user.email,
     subject: 'Email Verified Successfully!',
@@ -433,11 +339,6 @@ exports.verifyEmail = catchAsync(async (req, res, next) => {
   });
 });
 
-/**
- * @route   POST /api/auth/resend-verification
- * @desc    Resend email verification link
- * @access  Private
- */
 exports.resendVerification = catchAsync(async (req, res, next) => {
   const user = await User.findById(req.user._id);
 
@@ -449,18 +350,15 @@ exports.resendVerification = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Email is already verified', 400));
   }
 
-  // Generate new verification token
   const verificationToken = crypto.randomBytes(32).toString('hex');
   const hashedToken = crypto.createHash('sha256').update(verificationToken).digest('hex');
 
   user.emailVerificationToken = hashedToken;
-  user.emailVerificationExpire = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+  user.emailVerificationExpire = Date.now() + 24 * 60 * 60 * 1000;
   await user.save({ validateBeforeSave: false });
 
-  // Create verification URL
   const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
 
-  // Send verification email
   try {
     await emailConfig.sendEmail({
       to: user.email,

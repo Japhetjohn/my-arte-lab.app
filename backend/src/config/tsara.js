@@ -1,8 +1,3 @@
-/**
- * Tsara Stablecoin Payment Configuration
- * Solana Network - USDT, USDC, DAI
- * Documentation: https://docs.tsara.ng/stablecoin
- */
 
 const tsaraConfig = {
   publicKey: process.env.TSARA_PUBLIC_KEY,
@@ -11,22 +6,16 @@ const tsaraConfig = {
   apiUrl: process.env.TSARA_API_URL || 'https://api.tsara.ng',
   environment: process.env.TSARA_ENVIRONMENT || 'live',
 
-  // Platform Solana wallet for receiving commission fees
   platformWallet: process.env.PLATFORM_WALLET_ADDRESS,
 
-  // Platform commission percentage
   commission: parseFloat(process.env.PLATFORM_COMMISSION) || 10,
 
-  // Supported stablecoins on Solana
   supportedCoins: (process.env.SUPPORTED_STABLECOINS || 'USDT,USDC,DAI').split(','),
 
-  // Default stablecoin
   defaultCoin: process.env.DEFAULT_STABLECOIN || 'USDT',
 
-  // Blockchain network
   network: 'Solana',
 
-  // Webhook events
   events: {
     PAYMENT_SUCCESS: 'payment.success',
     PAYMENT_FAILED: 'payment.failed',
@@ -37,7 +26,6 @@ const tsaraConfig = {
     WITHDRAWAL_FAILED: 'withdrawal.failed',
   },
 
-  // Validate configuration
   validate() {
     const required = ['secretKey', 'platformWallet'];
     const missing = required.filter(key => !this[key]);

@@ -9,15 +9,13 @@ const {
   handleValidationErrors
 } = require('../middleware/validation');
 
-// Public routes
 router.post('/register', validateRegister, handleValidationErrors, authController.register);
 router.post('/login', validateLogin, handleValidationErrors, authController.login);
 router.post('/forgot-password', authController.forgotPassword);
 router.post('/reset-password', authController.resetPassword);
 router.post('/verify-email', authController.verifyEmail);
 
-// Protected routes
-router.use(protect); // All routes below require authentication
+router.use(protect);
 
 router.get('/me', authController.getMe);
 router.post('/logout', authController.logout);

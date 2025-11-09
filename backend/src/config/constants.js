@@ -1,16 +1,11 @@
-/**
- * Application-wide Constants
- */
 
 module.exports = {
-  // User Roles
   USER_ROLES: {
     CLIENT: 'client',
     CREATOR: 'creator',
     ADMIN: 'admin'
   },
 
-  // Booking Statuses
   BOOKING_STATUS: {
     PENDING: 'pending',
     CONFIRMED: 'confirmed',
@@ -20,7 +15,6 @@ module.exports = {
     DISPUTED: 'disputed'
   },
 
-  // Payment Statuses
   PAYMENT_STATUS: {
     PENDING: 'pending',
     PAID: 'paid',
@@ -29,7 +23,6 @@ module.exports = {
     CANCELLED: 'cancelled'
   },
 
-  // Transaction Types
   TRANSACTION_TYPES: {
     PAYMENT: 'payment',
     WITHDRAWAL: 'withdrawal',
@@ -38,7 +31,6 @@ module.exports = {
     ESCROW_RELEASE: 'escrow_release'
   },
 
-  // Transaction Statuses
   TRANSACTION_STATUS: {
     PENDING: 'pending',
     PROCESSING: 'processing',
@@ -47,19 +39,16 @@ module.exports = {
     CANCELLED: 'cancelled'
   },
 
-  // Stablecoins
   STABLECOINS: {
     USDT: 'USDT',
     USDC: 'USDC',
     DAI: 'DAI'
   },
 
-  // Blockchain Network
   NETWORK: {
     SOLANA: 'Solana'
   },
 
-  // Withdrawal Status
   WITHDRAWAL_STATUS: {
     PENDING: 'pending',
     APPROVED: 'approved',
@@ -69,14 +58,12 @@ module.exports = {
     FAILED: 'failed'
   },
 
-  // Review Status
   REVIEW_STATUS: {
     PENDING: 'pending',
     APPROVED: 'approved',
     REJECTED: 'rejected'
   },
 
-  // Response Messages
   MESSAGES: {
     SUCCESS: {
       REGISTRATION: 'Registration successful',
@@ -104,7 +91,6 @@ module.exports = {
     }
   },
 
-  // HTTP Status Codes
   HTTP_STATUS: {
     OK: 200,
     CREATED: 201,
@@ -116,23 +102,20 @@ module.exports = {
     INTERNAL_SERVER_ERROR: 500
   },
 
-  // File Upload
   FILE_UPLOAD: {
-    MAX_SIZE: 5 * 1024 * 1024, // 5MB
+    MAX_SIZE: 5 * 1024 * 1024,
     ALLOWED_TYPES: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
     ALLOWED_EXTENSIONS: ['.jpg', '.jpeg', '.png', '.gif', '.webp']
   },
 
-  // Pagination
   PAGINATION: {
     DEFAULT_PAGE: 1,
     DEFAULT_LIMIT: 20,
     MAX_LIMIT: 100
   },
 
-  // Rate Limiting
   RATE_LIMIT: {
-    WINDOW_MS: 15 * 60 * 1000, // 15 minutes
+    WINDOW_MS: 15 * 60 * 1000,
     MAX_REQUESTS: 100
   }
 };

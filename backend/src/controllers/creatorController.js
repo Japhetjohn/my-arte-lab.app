@@ -3,11 +3,6 @@ const Review = require('../models/Review');
 const { successResponse, paginatedResponse } = require('../utils/apiResponse');
 const { ErrorHandler, catchAsync } = require('../utils/errorHandler');
 
-/**
- * @route   GET /api/creators
- * @desc    Get all creators with filters and search
- * @access  Public
- */
 exports.getAllCreators = catchAsync(async (req, res, next) => {
   const {
     category,
@@ -19,15 +14,12 @@ exports.getAllCreators = catchAsync(async (req, res, next) => {
     limit = 12
   } = req.query;
 
-  // Build query
   const query = { role: 'creator', isActive: true };
 
-  // Filter by category
   if (category && category !== 'all') {
     query.category = category;
   }
 
-  // Search by name or skills
   if (search) {
     query.$or = [
       { name: { $regex: search, $options: 'i' } },
@@ -36,17 +28,14 @@ exports.getAllCreators = catchAsync(async (req, res, next) => {
     ];
   }
 
-  // Filter by rating
   if (minRating) {
     query['rating.average'] = { $gte: parseFloat(minRating) };
   }
 
-  // Filter by location
   if (location) {
     query['location.country'] = { $regex: location, $options: 'i' };
   }
 
-  // Sorting
   let sort = {};
   switch (sortBy) {
     case 'rating':
@@ -62,7 +51,6 @@ exports.getAllCreators = catchAsync(async (req, res, next) => {
       sort = { 'rating.average': -1 };
   }
 
-  // Execute query with pagination
   const skip = (parseInt(page) - 1) * parseInt(limit);
 
   const creators = await User.find(query)
@@ -81,11 +69,6 @@ exports.getAllCreators = catchAsync(async (req, res, next) => {
   });
 });
 
-/**
- * @route   GET /api/creators/:id
- * @desc    Get creator profile by ID
- * @access  Public
- */
 exports.getCreatorProfile = catchAsync(async (req, res, next) => {
   const creator = await User.findOne({
     _id: req.params.id,
@@ -97,7 +80,6 @@ exports.getCreatorProfile = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Creator not found', 404));
   }
 
-  // Get reviews
   const reviews = await Review.find({
     creator: creator._id,
     isPublished: true
@@ -113,11 +95,6 @@ exports.getCreatorProfile = catchAsync(async (req, res, next) => {
   });
 });
 
-/**
- * @route   GET /api/creators/featured
- * @desc    Get featured creators
- * @access  Public
- */
 exports.getFeaturedCreators = catchAsync(async (req, res, next) => {
   const { limit = 6 } = req.query;
 
@@ -136,11 +113,6 @@ exports.getFeaturedCreators = catchAsync(async (req, res, next) => {
   successResponse(res, 200, 'Featured creators retrieved successfully', { creators });
 });
 
-/**
- * @route   GET /api/creators/stats
- * @desc    Get platform creator statistics
- * @access  Public
- */
 exports.getCreatorStats = catchAsync(async (req, res, next) => {
   const stats = await User.aggregate([
     { $match: { role: 'creator', isActive: true } },

@@ -1,10 +1,5 @@
 const nodemailer = require('nodemailer');
 
-/**
- * Email Service Configuration
- * Supports Gmail and SendGrid
- */
-
 let transporter = null;
 
 const createTransporter = () => {
@@ -47,14 +42,14 @@ const emailConfig = {
         to,
         subject,
         html,
-        text: text || html.replace(/<[^>]*>?/gm, ''), // Strip HTML for text version
+        text: text || html.replace(/<[^>]*>?/gm, ''),
       };
 
       const info = await transporter.sendMail(mailOptions);
-      console.log(`✅ Email sent to ${to}: ${info.messageId}`);
+      console.log(` Email sent to ${to}: ${info.messageId}`);
       return info;
     } catch (error) {
-      console.error(`❌ Email sending failed:`, error.message);
+      console.error(` Email sending failed:`, error.message);
       throw error;
     }
   },
@@ -65,10 +60,10 @@ const emailConfig = {
         transporter = createTransporter();
       }
       await transporter.verify();
-      console.log('✅ Email service connected and ready');
+      console.log(' Email service connected and ready');
       return true;
     } catch (error) {
-      console.error('❌ Email service connection failed:', error.message);
+      console.error(' Email service connection failed:', error.message);
       return false;
     }
   }

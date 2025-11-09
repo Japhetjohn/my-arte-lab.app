@@ -1,12 +1,5 @@
 const { PAGINATION } = require('../config/constants');
 
-/**
- * Pagination Helper Functions
- */
-
-/**
- * Get pagination parameters
- */
 const getPaginationParams = (query) => {
   const page = parseInt(query.page) || PAGINATION.DEFAULT_PAGE;
   const limit = Math.min(
@@ -18,9 +11,6 @@ const getPaginationParams = (query) => {
   return { page, limit, skip };
 };
 
-/**
- * Build pagination response
- */
 const buildPaginationResponse = (data, total, page, limit) => {
   const totalPages = Math.ceil(total / limit);
   const hasNextPage = page < totalPages;
@@ -41,9 +31,6 @@ const buildPaginationResponse = (data, total, page, limit) => {
   };
 };
 
-/**
- * Get sort parameters
- */
 const getSortParams = (query) => {
   const sortBy = query.sortBy || 'createdAt';
   const sortOrder = query.sortOrder === 'asc' ? 1 : -1;

@@ -12,7 +12,6 @@ const tsaraConfig = require('./config/tsara');
 const emailConfig = require('./config/email');
 const { errorMiddleware } = require('./utils/errorHandler');
 
-// Import routes
 const authRoutes = require('./routes/authRoutes');
 const googleAuthRoutes = require('./routes/googleAuthRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
@@ -22,16 +21,12 @@ const reviewRoutes = require('./routes/reviewRoutes');
 const webhookRoutes = require('./routes/webhookRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
 
-// Initialize app
 const app = express();
 
-// Connect to database
 connectDatabase();
 
-// Middleware
-app.use(helmet()); // Security headers
+app.use(helmet());
 
-// CORS configuration - allow multiple local development URLs
 const allowedOrigins = [
   'http://localhost:8000',
   'http://127.0.0.1:8000',
@@ -41,27 +36,24 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps or curl)
     if (!origin) return callback(null, true);
 
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      console.warn(`⚠️  CORS blocked origin: ${origin}`);
+      console.warn(`CORS blocked origin: ${origin}`);
       callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true
 }));
 
-// Logging
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 } else {
   app.use(morgan('combined'));
 }
 
-// Body parser (except for webhooks - they need raw body)
 app.use((req, res, next) => {
   if (req.path === '/api/webhooks/tsara') {
     next();
@@ -72,7 +64,6 @@ app.use((req, res, next) => {
 
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Session configuration for Google OAuth
 app.use(session({
   secret: process.env.JWT_SECRET || 'myartelab_session_secret_2025',
   resave: false,
@@ -80,15 +71,13 @@ app.use(session({
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    maxAge: 24 * 60 * 60 * 1000
   }
 }));
 
-// Initialize Passport
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Rate limiting
 const limiter = rateLimit({
   windowMs: (parseInt(process.env.RATE_LIMIT_WINDOW) || 15) * 60 * 1000,
   max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
@@ -99,7 +88,6 @@ const limiter = rateLimit({
 
 app.use('/api/', limiter);
 
-// Health check
 app.get('/health', (req, res) => {
   res.status(200).json({
     success: true,
@@ -109,9 +97,8 @@ app.get('/health', (req, res) => {
   });
 });
 
-// API Routes
-app.use('/api/auth', authRoutes);
 app.use('/api/auth', googleAuthRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/wallet', walletRoutes);
 app.use('/api/creators', creatorRoutes);
@@ -119,7 +106,6 @@ app.use('/api/reviews', reviewRoutes);
 app.use('/api/webhooks', webhookRoutes);
 app.use('/api/upload', uploadRoutes);
 
-// API Documentation (simple endpoint)
 app.get('/api', (req, res) => {
   res.json({
     success: true,
@@ -136,7 +122,6 @@ app.get('/api', (req, res) => {
   });
 });
 
-// 404 handler
 app.use((req, res) => {
   res.status(404).json({
     success: false,
@@ -144,55 +129,48 @@ app.use((req, res) => {
   });
 });
 
-// Global error handler
 app.use(errorMiddleware);
 
-// Validate Tsara configuration
 try {
   tsaraConfig.validate();
-  console.log('✅ Tsara configuration validated');
+  console.log('Tsara configuration validated');
 } catch (error) {
-  console.error('❌ Tsara configuration error:', error.message);
+  console.error('Tsara configuration error:', error.message);
   if (process.env.NODE_ENV === 'production') {
     process.exit(1);
   }
 }
 
-// Verify email service
 emailConfig.verifyConnection().catch(err => {
-  console.warn('⚠️ Email service not configured properly');
+  console.warn('Email service not configured properly');
 });
 
-// Start server
 const PORT = process.env.PORT || 5000;
 
 const server = app.listen(PORT, () => {
   console.log('\n╔════════════════════════════════════════════════════════╗');
-  console.log(`║  🚀 MyArteLab Backend Server`);
-  console.log(`║  📡 Port: ${PORT}`);
-  console.log(`║  🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`║  🔗 API: http://localhost:${PORT}/api`);
-  console.log(`║  💳 Payment Gateway: Tsara (${tsaraConfig.environment})`);
+  console.log(`║  MyArteLab Backend Server`);
+  console.log(`║  Port: ${PORT}`);
+  console.log(`║  Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`║  API: http://localhost:${PORT}/api`);
+  console.log(`║  Payment Gateway: Tsara (${tsaraConfig.environment})`);
   console.log('╚════════════════════════════════════════════════════════╝\n');
 });
 
-// Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {
-  console.error('❌ Unhandled Promise Rejection:', err);
+  console.error('Unhandled Promise Rejection:', err);
   server.close(() => process.exit(1));
 });
 
-// Handle uncaught exceptions
 process.on('uncaughtException', (err) => {
-  console.error('❌ Uncaught Exception:', err);
+  console.error('Uncaught Exception:', err);
   process.exit(1);
 });
 
-// Graceful shutdown
 process.on('SIGTERM', () => {
-  console.log('👋 SIGTERM received, shutting down gracefully...');
+  console.log('SIGTERM received, shutting down gracefully...');
   server.close(() => {
-    console.log('✅ Server closed');
+    console.log('Server closed');
     process.exit(0);
   });
 });

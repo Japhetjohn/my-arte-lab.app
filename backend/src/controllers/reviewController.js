@@ -5,38 +5,28 @@ const { successResponse } = require('../utils/apiResponse');
 const { ErrorHandler, catchAsync } = require('../utils/errorHandler');
 const emailConfig = require('../config/email');
 
-/**
- * @route   POST /api/reviews
- * @desc    Create review for a completed booking
- * @access  Private (Client only)
- */
 exports.createReview = catchAsync(async (req, res, next) => {
   const { bookingId, rating, comment, ratings } = req.body;
 
-  // Find booking
   const booking = await Booking.findById(bookingId).populate('creator', 'name email');
 
   if (!booking) {
     return next(new ErrorHandler('Booking not found', 404));
   }
 
-  // Check authorization (only client can review)
   if (booking.client.toString() !== req.user._id.toString()) {
     return next(new ErrorHandler('Only the client can review this booking', 403));
   }
 
-  // Check if booking is completed
   if (booking.status !== 'completed') {
     return next(new ErrorHandler('You can only review completed bookings', 400));
   }
 
-  // Check if already reviewed
   const existingReview = await Review.findOne({ booking: bookingId });
   if (existingReview) {
     return next(new ErrorHandler('You have already reviewed this booking', 400));
   }
 
-  // Create review
   const review = await Review.create({
     booking: bookingId,
     reviewer: req.user._id,
@@ -46,7 +36,6 @@ exports.createReview = catchAsync(async (req, res, next) => {
     ratings
   });
 
-  // Update booking with review
   booking.review = {
     rating,
     comment,
@@ -54,10 +43,9 @@ exports.createReview = catchAsync(async (req, res, next) => {
   };
   await booking.save();
 
-  // Notify creator
   emailConfig.sendEmail({
     to: booking.creator.email,
-    subject: 'New Review Received! ⭐',
+    subject: 'New Review Received! ',
     html: `
       <h1>New Review!</h1>
       <p>Hi ${booking.creator.name},</p>
@@ -70,11 +58,6 @@ exports.createReview = catchAsync(async (req, res, next) => {
   successResponse(res, 201, 'Review submitted successfully', { review });
 });
 
-/**
- * @route   GET /api/reviews/creator/:creatorId
- * @desc    Get reviews for a creator
- * @access  Public
- */
 exports.getCreatorReviews = catchAsync(async (req, res, next) => {
   const { page = 1, limit = 10 } = req.query;
   const skip = (parseInt(page) - 1) * parseInt(limit);
@@ -95,7 +78,6 @@ exports.getCreatorReviews = catchAsync(async (req, res, next) => {
     isPublished: true
   });
 
-  // Get rating breakdown
   const ratingStats = await Review.getCreatorAverageRating(req.params.creatorId);
 
   successResponse(res, 200, 'Reviews retrieved successfully', {
@@ -110,11 +92,6 @@ exports.getCreatorReviews = catchAsync(async (req, res, next) => {
   });
 });
 
-/**
- * @route   PUT /api/reviews/:id/response
- * @desc    Creator responds to review
- * @access  Private (Creator only)
- */
 exports.respondToReview = catchAsync(async (req, res, next) => {
   const { message } = req.body;
 
@@ -124,12 +101,10 @@ exports.respondToReview = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Review not found', 404));
   }
 
-  // Only creator can respond
   if (review.creator.toString() !== req.user._id.toString()) {
     return next(new ErrorHandler('You can only respond to your own reviews', 403));
   }
 
-  // Add response
   review.response = {
     message,
     respondedAt: new Date()
@@ -139,13 +114,8 @@ exports.respondToReview = catchAsync(async (req, res, next) => {
   successResponse(res, 200, 'Response added successfully', { review });
 });
 
-/**
- * @route   POST /api/reviews/:id/helpful
- * @desc    Mark review as helpful
- * @access  Public
- */
 exports.markHelpful = catchAsync(async (req, res, next) => {
-  const { helpful } = req.body; // true or false
+  const { helpful } = req.body;
 
   const review = await Review.findById(req.params.id);
 

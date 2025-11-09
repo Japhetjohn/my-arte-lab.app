@@ -1,14 +1,12 @@
 const mongoose = require('mongoose');
 
 const bookingSchema = new mongoose.Schema({
-  // Booking Reference
   bookingId: {
     type: String,
     required: true,
     unique: true
   },
 
-  // Parties Involved
   client: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -21,7 +19,6 @@ const bookingSchema = new mongoose.Schema({
     required: true
   },
 
-  // Service Details
   serviceTitle: {
     type: String,
     required: true
@@ -37,7 +34,6 @@ const bookingSchema = new mongoose.Schema({
     required: true
   },
 
-  // Payment Details
   amount: {
     type: Number,
     required: true,
@@ -54,7 +50,7 @@ const bookingSchema = new mongoose.Schema({
   platformCommission: {
     type: Number,
     required: true,
-    default: 10 // percentage
+    default: 10
   },
 
   platformFee: {
@@ -67,7 +63,6 @@ const bookingSchema = new mongoose.Schema({
     required: true
   },
 
-  // Escrow Wallet (Unique Solana address per booking)
   escrowWallet: {
     address: {
       type: String,
@@ -93,21 +88,18 @@ const bookingSchema = new mongoose.Schema({
     }
   },
 
-  // Payment Status
   paymentStatus: {
     type: String,
     enum: ['pending', 'paid', 'released', 'refunded', 'failed'],
     default: 'pending'
   },
 
-  // Booking Status
   status: {
     type: String,
     enum: ['pending', 'confirmed', 'in_progress', 'completed', 'cancelled', 'disputed'],
     default: 'pending'
   },
 
-  // Timeline
   startDate: {
     type: Date,
     required: true
@@ -121,7 +113,6 @@ const bookingSchema = new mongoose.Schema({
   completedAt: Date,
   cancelledAt: Date,
 
-  // Deliverables
   deliverables: [{
     title: String,
     description: String,
@@ -129,7 +120,6 @@ const bookingSchema = new mongoose.Schema({
     uploadedAt: Date
   }],
 
-  // Communication
   messages: [{
     sender: {
       type: mongoose.Schema.Types.ObjectId,
@@ -142,7 +132,6 @@ const bookingSchema = new mongoose.Schema({
     }
   }],
 
-  // Review
   review: {
     rating: {
       type: Number,
@@ -153,12 +142,10 @@ const bookingSchema = new mongoose.Schema({
     createdAt: Date
   },
 
-  // Cancellation/Dispute
   cancellationReason: String,
   disputeReason: String,
   disputeResolution: String,
 
-  // Fund Release
   fundsReleased: {
     type: Boolean,
     default: false
@@ -166,7 +153,6 @@ const bookingSchema = new mongoose.Schema({
 
   fundsReleasedAt: Date,
 
-  // Platform fee collection
   platformFeePaid: {
     type: Boolean,
     default: false
@@ -175,7 +161,6 @@ const bookingSchema = new mongoose.Schema({
   platformFeePaidAt: Date,
   platformFeeTransactionHash: String,
 
-  // Metadata
   metadata: {
     clientIP: String,
     userAgent: String,
@@ -186,14 +171,12 @@ const bookingSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Indexes (bookingId and escrowWallet.address already indexed via unique: true)
 bookingSchema.index({ client: 1, status: 1 });
 bookingSchema.index({ creator: 1, status: 1 });
 bookingSchema.index({ paymentStatus: 1 });
 bookingSchema.index({ status: 1 });
 bookingSchema.index({ createdAt: -1 });
 
-// Generate unique booking ID before saving
 bookingSchema.pre('save', async function(next) {
   if (!this.bookingId) {
     const timestamp = Date.now().toString(36).toUpperCase();
@@ -201,7 +184,6 @@ bookingSchema.pre('save', async function(next) {
     this.bookingId = `BKG-${timestamp}-${random}`;
   }
 
-  // Calculate commission and amounts if not set
   if (!this.platformFee) {
     this.platformFee = (this.amount * this.platformCommission) / 100;
     this.creatorAmount = this.amount - this.platformFee;
@@ -210,14 +192,10 @@ bookingSchema.pre('save', async function(next) {
   next();
 });
 
-// Methods
-
-// Check if booking can be cancelled
 bookingSchema.methods.canBeCancelled = function() {
   return ['pending', 'confirmed'].includes(this.status);
 };
 
-// Check if funds can be released
 bookingSchema.methods.canReleaseFunds = function() {
   return (
     this.status === 'completed' &&
@@ -226,14 +204,12 @@ bookingSchema.methods.canReleaseFunds = function() {
   );
 };
 
-// Mark as completed
 bookingSchema.methods.markCompleted = async function() {
   this.status = 'completed';
   this.completedAt = new Date();
   return await this.save();
 };
 
-// Release funds to creator and platform
 bookingSchema.methods.releaseFunds = async function() {
   if (!this.canReleaseFunds()) {
     throw new Error('Funds cannot be released for this booking');
@@ -246,7 +222,6 @@ bookingSchema.methods.releaseFunds = async function() {
   return await this.save();
 };
 
-// Add message
 bookingSchema.methods.addMessage = async function(senderId, message) {
   this.messages.push({
     sender: senderId,
@@ -256,7 +231,6 @@ bookingSchema.methods.addMessage = async function(senderId, message) {
   return await this.save();
 };
 
-// Add deliverable
 bookingSchema.methods.addDeliverable = async function(deliverable) {
   this.deliverables.push({
     ...deliverable,

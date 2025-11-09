@@ -6,15 +6,9 @@ const tsaraService = require('../services/tsaraService');
 const tsaraConfig = require('../config/tsara');
 const adminNotificationService = require('../services/adminNotificationService');
 
-/**
- * @route   GET /api/wallet
- * @desc    Get wallet balance and info
- * @access  Private
- */
 exports.getWallet = catchAsync(async (req, res, next) => {
   const user = await User.findById(req.user._id);
 
-  // Optionally sync with Tsara
   try {
     const balance = await tsaraService.getWalletBalance(user.wallet.address);
     if (balance.balance !== user.wallet.balance) {
@@ -31,11 +25,6 @@ exports.getWallet = catchAsync(async (req, res, next) => {
   });
 });
 
-/**
- * @route   GET /api/wallet/transactions
- * @desc    Get wallet transaction history
- * @access  Private
- */
 exports.getTransactions = catchAsync(async (req, res, next) => {
   const { page = 1, limit = 20 } = req.query;
 
@@ -58,33 +47,24 @@ exports.getTransactions = catchAsync(async (req, res, next) => {
   });
 });
 
-/**
- * @route   POST /api/wallet/withdraw
- * @desc    Request withdrawal (creators only)
- * @access  Private
- */
 exports.requestWithdrawal = catchAsync(async (req, res, next) => {
   const { amount, externalAddress, currency } = req.body;
 
   const user = await User.findById(req.user._id);
 
-  // Only creators can withdraw
   if (user.role !== 'creator') {
     return next(new ErrorHandler('Only creators can withdraw funds', 403));
   }
 
-  // Check minimum withdrawal
   const minWithdrawal = parseFloat(process.env.MINIMUM_WITHDRAWAL) || 20;
   if (amount < minWithdrawal) {
     return next(new ErrorHandler(`Minimum withdrawal amount is ${minWithdrawal}`, 400));
   }
 
-  // Check sufficient balance
   if (user.wallet.balance < amount) {
     return next(new ErrorHandler('Insufficient balance', 400));
   }
 
-  // Create withdrawal transaction
   const transaction = await Transaction.create({
     user: user._id,
     type: 'withdrawal',
@@ -99,7 +79,6 @@ exports.requestWithdrawal = catchAsync(async (req, res, next) => {
     }
   });
 
-  // Process withdrawal via Tsara
   try {
     const withdrawalResult = await tsaraService.processWithdrawal({
       fromAddress: user.wallet.address,
@@ -109,17 +88,14 @@ exports.requestWithdrawal = catchAsync(async (req, res, next) => {
       memo: `Withdrawal for user ${user.name}`
     });
 
-    // Update transaction
     transaction.tsaraPaymentId = withdrawalResult.withdrawalId;
     transaction.status = withdrawalResult.status || 'processing';
     await transaction.save();
 
-    // Update user wallet (pending)
     user.wallet.balance -= amount;
     user.wallet.pendingBalance += amount;
     await user.save({ validateBeforeSave: false });
 
-    // Notify admin of withdrawal
     adminNotificationService.notifyWithdrawal(user, amount, currency || user.wallet.currency)
       .catch(err => console.error('Admin notification failed:', err));
 
@@ -129,7 +105,6 @@ exports.requestWithdrawal = catchAsync(async (req, res, next) => {
     });
 
   } catch (error) {
-    // Mark transaction as failed
     transaction.status = 'failed';
     transaction.errorMessage = error.message;
     await transaction.save();
@@ -138,11 +113,6 @@ exports.requestWithdrawal = catchAsync(async (req, res, next) => {
   }
 });
 
-/**
- * @route   GET /api/wallet/balance-summary
- * @desc    Get detailed balance summary
- * @access  Private
- */
 exports.getBalanceSummary = catchAsync(async (req, res, next) => {
   const user = await User.findById(req.user._id);
 

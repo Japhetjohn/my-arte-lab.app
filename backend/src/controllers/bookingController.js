@@ -8,11 +8,6 @@ const tsaraConfig = require('../config/tsara');
 const emailConfig = require('../config/email');
 const adminNotificationService = require('../services/adminNotificationService');
 
-/**
- * @route   POST /api/bookings
- * @desc    Create new booking with escrow wallet
- * @access  Private
- */
 exports.createBooking = catchAsync(async (req, res, next) => {
   const {
     creatorId,
@@ -25,18 +20,15 @@ exports.createBooking = catchAsync(async (req, res, next) => {
     endDate
   } = req.body;
 
-  // Validate creator exists
   const creator = await User.findById(creatorId);
   if (!creator || creator.role !== 'creator') {
     return next(new ErrorHandler('Creator not found', 404));
   }
 
-  // Calculate fees
-  const platformCommission = tsaraConfig.commission; // 10%
+  const platformCommission = tsaraConfig.commission;
   const platformFee = (amount * platformCommission) / 100;
   const creatorAmount = amount - platformFee;
 
-  // Create booking first
   const booking = await Booking.create({
     client: req.user._id,
     creator: creatorId,
@@ -51,12 +43,11 @@ exports.createBooking = catchAsync(async (req, res, next) => {
     startDate,
     endDate,
     escrowWallet: {
-      address: 'pending', // Will be updated
+      address: 'pending',
       balance: 0
     }
   });
 
-  // Generate unique escrow wallet for this booking
   try {
     const escrowWallet = await tsaraService.generateEscrowWallet({
       bookingId: booking.bookingId,
@@ -72,15 +63,13 @@ exports.createBooking = catchAsync(async (req, res, next) => {
 
   } catch (error) {
     console.error('Escrow wallet generation failed:', error);
-    // Delete booking if wallet creation fails
     await Booking.findByIdAndDelete(booking._id);
     return next(new ErrorHandler('Failed to create escrow wallet. Please try again', 500));
   }
 
-  // Send notifications
   emailConfig.sendEmail({
     to: creator.email,
-    subject: 'New Booking Request! 🎉',
+    subject: 'New Booking Request! ',
     html: `
       <h1>New Booking!</h1>
       <p>Hi ${creator.name},</p>
@@ -92,7 +81,6 @@ exports.createBooking = catchAsync(async (req, res, next) => {
     `
   }).catch(err => console.error('Email failed:', err));
 
-  // Notify admin of new booking
   adminNotificationService.notifyNewBooking(booking, req.user, creator)
     .catch(err => console.error('Admin notification failed:', err));
 
@@ -108,24 +96,17 @@ exports.createBooking = catchAsync(async (req, res, next) => {
   });
 });
 
-/**
- * @route   GET /api/bookings
- * @desc    Get user bookings (client or creator)
- * @access  Private
- */
 exports.getMyBookings = catchAsync(async (req, res, next) => {
   const { status, type } = req.query;
 
   const query = {};
 
-  // Filter by user type
   if (type === 'client' || !type) {
     query.client = req.user._id;
   } else if (type === 'creator') {
     query.creator = req.user._id;
   }
 
-  // Filter by status
   if (status) {
     query.status = status;
   }
@@ -138,11 +119,6 @@ exports.getMyBookings = catchAsync(async (req, res, next) => {
   successResponse(res, 200, 'Bookings retrieved successfully', { bookings });
 });
 
-/**
- * @route   GET /api/bookings/:id
- * @desc    Get single booking details
- * @access  Private
- */
 exports.getBooking = catchAsync(async (req, res, next) => {
   const booking = await Booking.findById(req.params.id)
     .populate('client', 'name avatar email')
@@ -152,7 +128,6 @@ exports.getBooking = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Booking not found', 404));
   }
 
-  // Check authorization
   const isAuthorized =
     booking.client._id.toString() === req.user._id.toString() ||
     booking.creator._id.toString() === req.user._id.toString();
@@ -164,11 +139,6 @@ exports.getBooking = catchAsync(async (req, res, next) => {
   successResponse(res, 200, 'Booking retrieved successfully', { booking });
 });
 
-/**
- * @route   POST /api/bookings/:id/complete
- * @desc    Mark booking as completed (creator only)
- * @access  Private
- */
 exports.completeBooking = catchAsync(async (req, res, next) => {
   const booking = await Booking.findById(req.params.id);
 
@@ -176,7 +146,6 @@ exports.completeBooking = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Booking not found', 404));
   }
 
-  // Only creator can mark as completed
   if (booking.creator.toString() !== req.user._id.toString()) {
     return next(new ErrorHandler('Only the creator can mark the booking as completed', 403));
   }
@@ -187,11 +156,10 @@ exports.completeBooking = catchAsync(async (req, res, next) => {
 
   await booking.markCompleted();
 
-  // Notify client
   const client = await User.findById(booking.client);
   emailConfig.sendEmail({
     to: client.email,
-    subject: 'Booking Completed! ✅',
+    subject: 'Booking Completed! ',
     html: `
       <h1>Work Completed!</h1>
       <p>Hi ${client.name},</p>
@@ -204,11 +172,6 @@ exports.completeBooking = catchAsync(async (req, res, next) => {
   successResponse(res, 200, 'Booking marked as completed', { booking });
 });
 
-/**
- * @route   POST /api/bookings/:id/release-funds
- * @desc    Release escrow funds to creator and platform (client only)
- * @access  Private
- */
 exports.releaseFunds = catchAsync(async (req, res, next) => {
   const booking = await Booking.findById(req.params.id)
     .populate('creator', 'wallet.address name email')
@@ -218,17 +181,14 @@ exports.releaseFunds = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Booking not found', 404));
   }
 
-  // Only client can release funds
   if (booking.client._id.toString() !== req.user._id.toString()) {
     return next(new ErrorHandler('Only the client can release funds', 403));
   }
 
-  // Check if funds can be released
   if (!booking.canReleaseFunds()) {
     return next(new ErrorHandler('Funds cannot be released for this booking', 400));
   }
 
-  // Release funds via Tsara (90% to creator, 10% to platform)
   try {
     const releaseResult = await tsaraService.releaseEscrowFunds({
       escrowId: booking.escrowWallet.escrowId,
@@ -241,14 +201,12 @@ exports.releaseFunds = catchAsync(async (req, res, next) => {
       bookingId: booking.bookingId
     });
 
-    // Update booking
     await booking.releaseFunds();
     booking.platformFeePaid = true;
     booking.platformFeePaidAt = new Date();
     booking.platformFeeTransactionHash = releaseResult.platformTransaction?.hash;
     await booking.save();
 
-    // Create transaction records
     await Transaction.create([
       {
         user: booking.creator._id,
@@ -276,17 +234,15 @@ exports.releaseFunds = catchAsync(async (req, res, next) => {
       }
     ]);
 
-    // Update creator wallet and stats
     const creator = await User.findById(booking.creator._id);
     await creator.updateWalletBalance(booking.creatorAmount, 'add');
     creator.wallet.totalEarnings += booking.creatorAmount;
     creator.completedBookings += 1;
     await creator.save();
 
-    // Send notifications
     emailConfig.sendEmail({
       to: booking.creator.email,
-      subject: 'Payment Received! 💰',
+      subject: 'Payment Received! ',
       html: `
         <h1>Payment Received!</h1>
         <p>Hi ${booking.creator.name},</p>
@@ -297,7 +253,6 @@ exports.releaseFunds = catchAsync(async (req, res, next) => {
       `
     }).catch(err => console.error('Email failed:', err));
 
-    // Notify admin of payment received
     adminNotificationService.notifyPaymentReceived(booking, releaseResult.creatorTransaction)
       .catch(err => console.error('Admin notification failed:', err));
 
@@ -312,11 +267,6 @@ exports.releaseFunds = catchAsync(async (req, res, next) => {
   }
 });
 
-/**
- * @route   POST /api/bookings/:id/cancel
- * @desc    Cancel booking
- * @access  Private
- */
 exports.cancelBooking = catchAsync(async (req, res, next) => {
   const { reason } = req.body;
   const booking = await Booking.findById(req.params.id);
@@ -325,7 +275,6 @@ exports.cancelBooking = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Booking not found', 404));
   }
 
-  // Check authorization
   const isAuthorized =
     booking.client.toString() === req.user._id.toString() ||
     booking.creator.toString() === req.user._id.toString();
@@ -346,11 +295,6 @@ exports.cancelBooking = catchAsync(async (req, res, next) => {
   successResponse(res, 200, 'Booking cancelled successfully', { booking });
 });
 
-/**
- * @route   POST /api/bookings/:id/messages
- * @desc    Add message to booking
- * @access  Private
- */
 exports.addMessage = catchAsync(async (req, res, next) => {
   const { message } = req.body;
   const booking = await Booking.findById(req.params.id);
@@ -359,7 +303,6 @@ exports.addMessage = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Booking not found', 404));
   }
 
-  // Check authorization
   const isAuthorized =
     booking.client.toString() === req.user._id.toString() ||
     booking.creator.toString() === req.user._id.toString();

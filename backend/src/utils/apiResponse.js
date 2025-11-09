@@ -1,14 +1,4 @@
-/**
- * Standardized API Response Utilities
- */
 
-/**
- * Success response
- * @param {Object} res - Express response object
- * @param {Number} statusCode - HTTP status code
- * @param {String} message - Success message
- * @param {Object} data - Response data
- */
 const successResponse = (res, statusCode, message, data = null) => {
   const response = {
     success: true,
@@ -22,13 +12,6 @@ const successResponse = (res, statusCode, message, data = null) => {
   res.status(statusCode).json(response);
 };
 
-/**
- * Error response
- * @param {Object} res - Express response object
- * @param {Number} statusCode - HTTP status code
- * @param {String} message - Error message
- * @param {Object} errors - Validation errors (optional)
- */
 const errorResponse = (res, statusCode, message, errors = null) => {
   const response = {
     success: false,
@@ -42,14 +25,6 @@ const errorResponse = (res, statusCode, message, errors = null) => {
   res.status(statusCode).json(response);
 };
 
-/**
- * Paginated response
- * @param {Object} res - Express response object
- * @param {Number} statusCode - HTTP status code
- * @param {String} message - Success message
- * @param {Array} data - Response data
- * @param {Object} pagination - Pagination info {page, limit, total, pages}
- */
 const paginatedResponse = (res, statusCode, message, data, pagination) => {
   res.status(statusCode).json({
     success: true,
