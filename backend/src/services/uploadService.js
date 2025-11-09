@@ -24,7 +24,7 @@ const upload = multer({
 });
 
 /**
- * Upload image to Cloudinary
+ * Upload image to Cloudinary with timeout
  * @param {Buffer} fileBuffer - Image file buffer
  * @param {Object} options - Upload options
  * @returns {Promise<Object>} - Cloudinary upload result
@@ -39,15 +39,23 @@ const uploadToCloudinary = (fileBuffer, options = {}) => {
         { quality: 'auto' },
         { fetch_format: 'auto' }
       ],
+      timeout: 60000, // 60 seconds timeout
       ...options
     };
+
+    // Set timeout for upload
+    const timeoutId = setTimeout(() => {
+      reject(new Error('Upload timeout - please try with a smaller image'));
+    }, 65000); // 65 seconds (slightly longer than Cloudinary timeout)
 
     cloudinary.uploader.upload_stream(
       uploadOptions,
       (error, result) => {
+        clearTimeout(timeoutId);
+
         if (error) {
           console.error('Cloudinary upload error:', error);
-          return reject(error);
+          return reject(new Error(error.message || 'Upload failed'));
         }
         resolve(result);
       }

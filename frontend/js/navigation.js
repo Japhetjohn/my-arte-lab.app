@@ -14,6 +14,10 @@ export function navigateToPage(page, addToHistoryFlag = true) {
     }
 
     setCurrentPage(page);
+
+    // Save current page to localStorage for persistence after refresh
+    localStorage.setItem('currentPage', page);
+
     closeUserDropdown();
 
     // Update back button visibility

@@ -55,7 +55,10 @@ window.showEarningsReport = showEarningsReport;
 document.addEventListener('DOMContentLoaded', async () => {
     await initializeApp();
     setupEventListeners();
-    navigateToPage('home', false);
+
+    // Restore last page from localStorage or default to 'home'
+    const lastPage = localStorage.getItem('currentPage') || 'home';
+    navigateToPage(lastPage, false);
     updateBackButton();
 });
 

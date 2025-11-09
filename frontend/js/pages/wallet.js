@@ -80,19 +80,28 @@ function renderWalletContent() {
                 <!-- Wallet Address Card -->
                 <div style="background: var(--surface); border-radius: 16px; padding: 20px; margin-bottom: 24px; border: 1px solid var(--border);">
                     <div class="caption" style="margin-bottom: 8px; color: var(--text-secondary);">Your Solana Wallet Address (${walletData.currency || 'USDT'})</div>
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <code id="walletAddress" style="flex: 1; background: var(--background); padding: 12px; border-radius: 8px; font-size: 14px; overflow-x: auto; white-space: nowrap;">${walletData.address}</code>
-                        <button class="btn-secondary" onclick="window.copyWalletAddress()" style="padding: 10px 16px; white-space: nowrap;">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="margin-right: 6px; vertical-align: middle;">
-                                <rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" stroke-width="2"/>
-                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke="currentColor" stroke-width="2"/>
-                            </svg>
-                            Copy
-                        </button>
-                    </div>
-                    <div class="caption" style="margin-top: 8px; color: var(--text-secondary);">
-                        Network: ${walletData.network || 'Solana'} • Send ${walletData.currency || 'USDT'} to this address to fund your wallet
-                    </div>
+                    ${walletData.address && !walletData.address.startsWith('pending_') ? `
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <code id="walletAddress" style="flex: 1; background: var(--background); padding: 12px; border-radius: 8px; font-size: 14px; overflow-x: auto; white-space: nowrap;">${walletData.address}</code>
+                            <button class="btn-secondary" onclick="window.copyWalletAddress()" style="padding: 10px 16px; white-space: nowrap;">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="margin-right: 6px; vertical-align: middle;">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" stroke-width="2"/>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+                                Copy
+                            </button>
+                        </div>
+                        <div class="caption" style="margin-top: 8px; color: var(--text-secondary);">
+                            Network: ${walletData.network || 'Solana'} • Send ${walletData.currency || 'USDT'} to this address to fund your wallet
+                        </div>
+                    ` : `
+                        <div style="background: #FEF3C7; padding: 16px; border-radius: 8px; border-left: 4px solid #F59E0B;">
+                            <div style="color: #92400E; font-weight: 600; margin-bottom: 4px;">Wallet Being Created</div>
+                            <div style="color: #78350F; font-size: 14px;">
+                                Your Solana wallet is being set up. This usually takes a few moments. Please refresh the page in a minute.
+                            </div>
+                        </div>
+                    `}
                 </div>
 
                 <div class="balance-card">
