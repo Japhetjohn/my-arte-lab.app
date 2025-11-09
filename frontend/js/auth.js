@@ -3,6 +3,7 @@ import { appState, setUser, clearUser } from './state.js';
 import { navigateToPage } from './navigation.js';
 import { showToast, closeModal, openModal } from './utils.js';
 import api from './services/api.js';
+import { getAvatarUrl } from './utils/avatar.js';
 
 export function showAuthModal(type = 'signin', userType = 'client') {
     const isSignUp = type === 'signup';
@@ -252,10 +253,11 @@ export function updateUserMenu() {
         console.log('📧 User email to display:', appState.user.email);
         console.log('🖼️ User avatar:', appState.user.avatar);
 
-        // Show user avatar dropdown
+        // Show user avatar dropdown with professional fallback
+        const avatarUrl = getAvatarUrl(appState.user);
         userMenuContainer.innerHTML = `
             <button class="user-avatar-btn" id="userAvatarBtn">
-                <img src="${appState.user.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop'}" alt="${appState.user.name}">
+                <img src="${avatarUrl}" alt="${appState.user.name}" class="avatar avatar-medium">
                 <span>${appState.user.name.split(' ')[0]}</span>
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                     <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
