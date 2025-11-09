@@ -9,9 +9,10 @@ passport.use(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: process.env.GOOGLE_CALLBACK_URL || 'http://localhost:5000/api/auth/google/callback'
+      callbackURL: process.env.GOOGLE_CALLBACK_URL || 'http://localhost:5000/api/auth/google/callback',
+      passReqToCallback: true
     },
-    async (accessToken, refreshToken, profile, done) => {
+    async (req, accessToken, refreshToken, profile, done) => {
       try {
         let user = await User.findOne({ googleId: profile.id });
 
@@ -33,7 +34,8 @@ passport.use(
           return done(null, user);
         }
 
-        console.log('Creating new user via Google OAuth:', profile.emails[0].value);
+        const requestedRole = req.session?.oauthRole || 'client';
+        console.log('Creating new user via Google OAuth:', profile.emails[0].value, 'Role:', requestedRole);
 
         let wallet;
         try {
@@ -51,7 +53,7 @@ passport.use(
           email: profile.emails[0].value,
           googleId: profile.id,
           avatar: profile.photos && profile.photos.length > 0 ? profile.photos[0].value : undefined,
-          role: 'client',
+          role: requestedRole,
           isEmailVerified: true,
           wallet: wallet ? {
             address: wallet.address,

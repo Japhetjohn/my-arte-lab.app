@@ -71,14 +71,14 @@ export function showAuthModal(type = 'signin', userType = 'client') {
                 </form>
 
                 <div style="margin-top: 16px; text-align: center; padding-top: 16px; border-top: 1px solid var(--border);">
-                    <button class="btn-secondary" style="width: 100%;" onclick="handleGoogleSignIn()">
+                    <button class="btn-secondary" style="width: 100%;" onclick="${isSignUp ? 'handleGoogleSignUp()' : 'handleGoogleSignIn()'}">
                         <svg width="18" height="18" viewBox="0 0 18 18" style="margin-right: 8px; vertical-align: middle;">
                             <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/>
                             <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/>
                             <path fill="#FBBC05" d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957C.347 6.175 0 7.55 0 9s.348 2.825.957 4.039l3.007-2.332z"/>
                             <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 7.293C4.672 5.163 6.656 3.58 9 3.58z"/>
                         </svg>
-                        Continue with Google
+                        ${isSignUp ? 'Sign up' : 'Continue'} with Google
                     </button>
                 </div>
 
@@ -328,7 +328,69 @@ export function updateUserMenu() {
 }
 
 /**
- * Handle Google Sign-In
+ * Handle Google Sign-Up (with role selection)
+ */
+export function handleGoogleSignUp() {
+    const modalContent = `
+        <div class="modal" onclick="closeModalOnBackdrop(event)">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Sign up with Google</h2>
+                    <button class="icon-btn" onclick="closeModal()">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <p style="margin-bottom: 24px; color: var(--text-secondary);">
+                    Choose how you want to use MyArteLab
+                </p>
+
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <button class="btn-primary" onclick="proceedWithGoogleOAuth('client')" style="padding: 16px; text-align: left; display: flex; align-items: center; gap: 12px;">
+                        <div style="font-size: 24px;">👤</div>
+                        <div>
+                            <div style="font-weight: 600; font-size: 16px;">Continue as Client</div>
+                            <div style="font-size: 13px; opacity: 0.8; margin-top: 2px;">Book and hire creative professionals</div>
+                        </div>
+                    </button>
+
+                    <button class="btn-secondary" onclick="proceedWithGoogleOAuth('creator')" style="padding: 16px; text-align: left; display: flex; align-items: center; gap: 12px;">
+                        <div style="font-size: 24px;">🎨</div>
+                        <div>
+                            <div style="font-weight: 600; font-size: 16px;">Continue as Creator</div>
+                            <div style="font-size: 13px; opacity: 0.8; margin-top: 2px;">Offer your services and get booked</div>
+                        </div>
+                    </button>
+                </div>
+
+                <div style="margin-top: 16px; text-align: center;">
+                    <p class="text-secondary" style="font-size: 14px;">
+                        Already have an account?
+                        <a href="#" onclick="showAuthModal('signin'); return false;" style="color: var(--primary); text-decoration: none; font-weight: 500;">
+                            Sign in
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('modalsContainer').innerHTML = modalContent;
+    openModal();
+}
+
+/**
+ * Proceed with Google OAuth after role selection
+ */
+function proceedWithGoogleOAuth(role) {
+    const API_URL = 'http://localhost:5000';
+    window.location.href = `${API_URL}/api/auth/google?role=${role}`;
+}
+
+/**
+ * Handle Google Sign-In (existing users)
  * Redirects to backend Google OAuth endpoint
  */
 export function handleGoogleSignIn() {
@@ -336,5 +398,7 @@ export function handleGoogleSignIn() {
     window.location.href = `${API_URL}/api/auth/google`;
 }
 
-// Make handleGoogleSignIn globally available for onclick handlers
+// Make functions globally available for onclick handlers
 window.handleGoogleSignIn = handleGoogleSignIn;
+window.handleGoogleSignUp = handleGoogleSignUp;
+window.proceedWithGoogleOAuth = proceedWithGoogleOAuth;

@@ -5,6 +5,11 @@ const jwt = require('jsonwebtoken');
 const { successResponse } = require('../utils/apiResponse');
 
 router.get('/google',
+  (req, res, next) => {
+    const role = req.query.role || 'client';
+    req.session.oauthRole = role;
+    next();
+  },
   passport.authenticate('google', {
     scope: ['profile', 'email'],
     session: false

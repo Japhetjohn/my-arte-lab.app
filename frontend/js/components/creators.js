@@ -39,9 +39,15 @@ export function renderCreatorProfile(creator) {
     // Track that we're viewing a profile (not a main page)
     setCurrentPage('creator-profile');
 
+    if (!creator) {
+        console.error('No creator data provided to renderCreatorProfile');
+        return;
+    }
+
     const mainContent = document.getElementById('mainContent');
+    const coverImage = creator.cover || creator.avatar || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200';
     mainContent.innerHTML = `
-        <div class="profile-cover" style="background-image: url('${creator.cover}'); background-size: cover; background-position: center;"></div>
+        <div class="profile-cover" style="background-image: url('${coverImage}'); background-size: cover; background-position: center;"></div>
 
         <div class="profile-header">
             <img src="${creator.avatar}" alt="${creator.name}" class="profile-avatar">
@@ -74,21 +80,22 @@ export function renderCreatorProfile(creator) {
 
                 <div class="mt-lg">
                     <h3 class="mb-sm">About</h3>
-                    <p>${creator.bio}</p>
+                    <p>${creator.bio || 'No bio available'}</p>
                     <div class="mt-md" style="display: flex; gap: 24px; flex-wrap: wrap;">
                         <div>
                             <div class="small-text">Response time</div>
-                            <div style="font-weight: 600;">${creator.responseTime}</div>
+                            <div style="font-weight: 600;">${creator.responseTime || 'N/A'}</div>
                         </div>
                         <div>
                             <div class="small-text">Completed jobs</div>
-                            <div style="font-weight: 600;">${creator.completedJobs}</div>
+                            <div style="font-weight: 600;">${creator.completedJobs || 0}</div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
+        ${creator.portfolio && creator.portfolio.length > 0 ? `
         <div class="section">
             <div class="container">
                 <h2 class="mb-md">Portfolio</h2>
@@ -104,7 +111,9 @@ export function renderCreatorProfile(creator) {
                 </div>
             </div>
         </div>
+        ` : ''}
 
+        ${creator.services && creator.services.length > 0 ? `
         <div class="section">
             <div class="container">
                 <h2 class="mb-md">Services & Pricing</h2>
@@ -114,12 +123,12 @@ export function renderCreatorProfile(creator) {
                             <div class="service-header">
                                 <div>
                                     <div class="service-title">${service.title}</div>
-                                    <div class="service-duration">${service.duration}</div>
+                                    <div class="service-duration">${service.duration || 'Contact for details'}</div>
                                 </div>
-                                <div class="service-price">${service.price}</div>
+                                <div class="service-price">${service.price || 'Contact for pricing'}</div>
                             </div>
                             <ul class="service-deliverables">
-                                ${service.deliverables.map(item => `<li>${item}</li>`).join('')}
+                                ${service.deliverables ? service.deliverables.map(item => `<li>${item}</li>`).join('') : ''}
                             </ul>
                             <button class="btn-primary" onclick="showBookingModal(${creator.id}, ${index})">Book this service</button>
                         </div>
@@ -127,6 +136,7 @@ export function renderCreatorProfile(creator) {
                 </div>
             </div>
         </div>
+        ` : ''}
 
         <div class="section">
             <div class="container">
