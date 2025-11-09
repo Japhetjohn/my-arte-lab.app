@@ -386,7 +386,7 @@ export function handleGoogleSignUp() {
  */
 function proceedWithGoogleOAuth(role) {
     const API_URL = 'http://localhost:5000';
-    window.location.href = `${API_URL}/api/auth/google?role=${role}`;
+    window.location.href = `${API_URL}/api/auth/google?mode=signup&role=${role}`;
 }
 
 /**
@@ -395,7 +395,7 @@ function proceedWithGoogleOAuth(role) {
  */
 export function handleGoogleSignIn() {
     const API_URL = 'http://localhost:5000';
-    window.location.href = `${API_URL}/api/auth/google`;
+    window.location.href = `${API_URL}/api/auth/google?mode=signin`;
 }
 
 // Make functions globally available for onclick handlers

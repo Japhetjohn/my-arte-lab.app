@@ -14,15 +14,25 @@ passport.use(
     },
     async (req, accessToken, refreshToken, profile, done) => {
       try {
+        const mode = req.oauthMode || 'signin';
+        const requestedRole = req.oauthRole || 'client';
+
         let user = await User.findOne({ googleId: profile.id });
 
         if (user) {
+          if (mode === 'signup') {
+            return done(new Error('Account already exists. Please sign in instead.'), null);
+          }
           return done(null, user);
         }
 
         user = await User.findOne({ email: profile.emails[0].value });
 
         if (user) {
+          if (mode === 'signup') {
+            return done(new Error('An account with this email already exists. Please sign in instead.'), null);
+          }
+
           user.googleId = profile.id;
           user.isEmailVerified = true;
 
@@ -34,7 +44,10 @@ passport.use(
           return done(null, user);
         }
 
-        const requestedRole = 'client';
+        if (mode === 'signin') {
+          return done(new Error('No account found. Please sign up first.'), null);
+        }
+
         console.log('Creating new user via Google OAuth:', profile.emails[0].value, 'Role:', requestedRole);
 
         let wallet;
