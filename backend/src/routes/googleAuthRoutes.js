@@ -3,33 +3,44 @@ const router = express.Router();
 const passport = require('../config/passport');
 const jwt = require('jsonwebtoken');
 const { successResponse } = require('../utils/apiResponse');
+const crypto = require('crypto');
+
+const pendingOAuthRequests = new Map();
 
 router.get('/google',
   (req, res, next) => {
     const mode = req.query.mode || 'signin';
     const role = req.query.role || 'client';
 
-    const state = Buffer.from(JSON.stringify({ mode, role })).toString('base64');
+    const stateToken = crypto.randomBytes(32).toString('hex');
+
+    pendingOAuthRequests.set(stateToken, {
+      mode,
+      role,
+      timestamp: Date.now()
+    });
+
+    setTimeout(() => pendingOAuthRequests.delete(stateToken), 10 * 60 * 1000);
 
     passport.authenticate('google', {
       scope: ['profile', 'email'],
       session: false,
-      state: state
+      state: stateToken
     })(req, res, next);
   }
 );
 
 router.get('/google/callback',
   (req, res, next) => {
-    try {
-      const stateParam = req.query.state;
-      if (stateParam) {
-        const decoded = JSON.parse(Buffer.from(stateParam, 'base64').toString());
-        req.oauthMode = decoded.mode;
-        req.oauthRole = decoded.role;
-      }
-    } catch (err) {
-      console.error('Failed to decode OAuth state:', err);
+    const stateToken = req.query.state;
+    if (stateToken && pendingOAuthRequests.has(stateToken)) {
+      const oauthData = pendingOAuthRequests.get(stateToken);
+      req.oauthMode = oauthData.mode;
+      req.oauthRole = oauthData.role;
+      pendingOAuthRequests.delete(stateToken);
+    } else {
+      req.oauthMode = 'signin';
+      req.oauthRole = 'client';
     }
     next();
   },
