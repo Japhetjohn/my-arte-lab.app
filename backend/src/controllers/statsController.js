@@ -82,7 +82,8 @@ exports.getFeaturedCreators = async (req, res, next) => {
       return {
         id: creator._id.toString(),
         name: creator.name || 'Unknown Creator',
-        avatar: creator.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name || 'User')}&background=9747FF&color=fff&bold=true`,
+        // Always use default avatar with initials for consistency
+        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name || 'User')}&background=9747FF&color=fff&bold=true`,
         role: creator.category ? creator.category.charAt(0).toUpperCase() + creator.category.slice(1) : 'Creator',
         location: locationStr,
         rating: creator.rating?.average?.toFixed(1) || '0.0',

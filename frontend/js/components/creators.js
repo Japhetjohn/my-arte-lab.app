@@ -45,12 +45,14 @@ export function renderCreatorProfile(creator) {
     }
 
     const mainContent = document.getElementById('mainContent');
-    const coverImage = creator.cover || creator.avatar || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200';
+    // Always use default avatar with initials for consistency
+    const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name || 'User')}&background=9747FF&color=fff&bold=true`;
+    const coverImage = creator.cover || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200';
     mainContent.innerHTML = `
         <div class="profile-cover" style="background-image: url('${coverImage}'); background-size: cover; background-position: center;"></div>
 
         <div class="profile-header">
-            <img src="${creator.avatar}" alt="${creator.name}" class="profile-avatar">
+            <img src="${defaultAvatar}" alt="${creator.name}" class="profile-avatar">
 
             <div class="profile-info">
                 <div class="profile-name-row">
