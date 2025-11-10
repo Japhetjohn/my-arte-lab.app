@@ -66,23 +66,37 @@ exports.getFeaturedCreators = async (req, res, next) => {
       .lean();
 
     // Transform to match frontend format
-    const featuredCreators = creators.map(creator => ({
-      id: creator._id.toString(),
-      name: creator.name || 'Unknown Creator',
-      avatar: creator.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name || 'User')}&background=9747FF&color=fff&bold=true`,
-      role: creator.category ? creator.category.charAt(0).toUpperCase() + creator.category.slice(1) : 'Creator',
-      location: creator.location || 'Nigeria',
-      rating: creator.rating?.average?.toFixed(1) || '0.0',
-      reviewCount: creator.rating?.count || 0,
-      verified: creator.isVerified || false,
-      price: creator.hourlyRate ? `From $${creator.hourlyRate}/hr` : 'Contact for pricing',
-      bio: creator.bio || 'No bio yet',
-      cover: creator.coverImage,
-      portfolio: creator.portfolio || [],
-      services: creator.services || [],
-      responseTime: creator.responseTime || 'Within a day',
-      completedJobs: creator.completedJobs || 0
-    }));
+    const featuredCreators = creators.map(creator => {
+      // Format location
+      let locationStr = 'Nigeria';
+      if (creator.location) {
+        if (creator.location.city && creator.location.country) {
+          locationStr = `${creator.location.city}, ${creator.location.country}`;
+        } else if (creator.location.city) {
+          locationStr = creator.location.city;
+        } else if (creator.location.country) {
+          locationStr = creator.location.country;
+        }
+      }
+
+      return {
+        id: creator._id.toString(),
+        name: creator.name || 'Unknown Creator',
+        avatar: creator.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name || 'User')}&background=9747FF&color=fff&bold=true`,
+        role: creator.category ? creator.category.charAt(0).toUpperCase() + creator.category.slice(1) : 'Creator',
+        location: locationStr,
+        rating: creator.rating?.average?.toFixed(1) || '0.0',
+        reviewCount: creator.rating?.count || 0,
+        verified: creator.isVerified || false,
+        price: creator.hourlyRate ? `From $${creator.hourlyRate}/hr` : 'Contact for pricing',
+        bio: creator.bio || 'No bio yet',
+        cover: creator.coverImage,
+        portfolio: creator.portfolio || [],
+        services: creator.services || [],
+        responseTime: creator.responseTime || 'Within a day',
+        completedJobs: creator.completedJobs || 0
+      };
+    });
 
     successResponse(res, 200, 'Featured creators retrieved successfully', featuredCreators);
   } catch (error) {
