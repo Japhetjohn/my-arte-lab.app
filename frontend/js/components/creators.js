@@ -27,8 +27,8 @@ export function renderCreatorCards(creators) {
                 </div>
                 <div class="creator-price">${creator.price}</div>
                 <div class="creator-actions">
-                    <button class="btn-secondary" onclick="event.stopPropagation(); renderCreatorProfile(${JSON.stringify(creator).replace(/"/g, '&quot;')})">View profile</button>
-                    <button class="btn-primary" onclick="event.stopPropagation(); handleBookNow(${creator.id})">Book now</button>
+                    <button class="btn-secondary view-profile-btn" data-creator-id="${creator.id}">View profile</button>
+                    <button class="btn-primary book-now-btn" data-creator-id="${creator.id}">Book now</button>
                 </div>
             </div>
         </div>
@@ -160,10 +160,40 @@ export function renderCreatorProfile(creator) {
 }
 
 export function setupCreatorCardListeners() {
+    // Handle View Profile buttons
+    document.querySelectorAll('.view-profile-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const creatorId = btn.dataset.creatorId;
+            const creator = appState.creators.find(c => c.id === creatorId);
+            if (creator) {
+                // Add current page to history before navigating to profile
+                if (appState.currentPage !== 'creator-profile') {
+                    addToHistory(appState.currentPage);
+                }
+                renderCreatorProfile(creator);
+            }
+        });
+    });
+
+    // Handle Book Now buttons
+    document.querySelectorAll('.book-now-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const creatorId = btn.dataset.creatorId;
+            if (!appState.user) {
+                window.showAuthModal('signin');
+            } else {
+                window.showBookingModal(creatorId);
+            }
+        });
+    });
+
+    // Handle card clicks (anywhere except buttons)
     document.querySelectorAll('.creator-card').forEach(card => {
         card.addEventListener('click', (e) => {
-            if (e.target.tagName !== 'BUTTON') {
-                const creatorId = parseInt(card.dataset.creatorId);
+            if (!e.target.closest('button')) {
+                const creatorId = card.dataset.creatorId;
                 const creator = appState.creators.find(c => c.id === creatorId);
                 if (creator) {
                     // Add current page to history before navigating to profile
