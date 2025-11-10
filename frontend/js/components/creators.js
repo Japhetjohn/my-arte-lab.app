@@ -177,6 +177,9 @@ export function setupCreatorCardListeners() {
     });
 }
 
+// Make function available globally for inline onclick handlers
+window.renderCreatorProfile = renderCreatorProfile;
+
 export function renderCategories(categoryCounts = {}) {
     // Map category types to display info
     const categoryMap = {

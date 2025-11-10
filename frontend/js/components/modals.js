@@ -124,6 +124,12 @@ export function openLightbox(creatorId, imageIndex) {
     openModal();
 }
 
+// Make functions available globally for inline onclick handlers
+window.handleBookNow = handleBookNow;
+window.handleBookingSubmit = handleBookingSubmit;
+window.openLightbox = openLightbox;
+window.showBookingModal = showBookingModal;
+
 // Settings/Profile Handlers
 export async function handleProfileUpdate(event) {
     event.preventDefault();
