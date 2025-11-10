@@ -13,9 +13,13 @@ export function showBookingModal(creatorId, serviceIndex = 0) {
         return;
     }
 
-    // Check if creator has services
+    // Check if creator has services - if not, scroll to services section
     if (!creator.services || creator.services.length === 0) {
-        showToast('This creator has not set up their services yet', 'info');
+        // Scroll to services section instead of showing toast
+        const servicesSection = document.querySelector('.section h2');
+        if (servicesSection && servicesSection.textContent.includes('Services')) {
+            servicesSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
         return;
     }
 

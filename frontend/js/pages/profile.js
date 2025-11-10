@@ -8,7 +8,10 @@ export function renderProfilePage() {
     if (!appState.user) {
         mainContent.innerHTML = `
             <div class="empty-state">
-                <div class="empty-icon">👤</div>
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" style="opacity: 0.4; margin-bottom: 16px;">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
+                </svg>
                 <h3>Sign in to view your profile</h3>
                 <p>Create your creator profile and start getting bookings</p>
                 <button class="btn-primary" onclick="showAuthModal('signin')">Sign in</button>
@@ -77,7 +80,10 @@ export function renderProfilePage() {
             <div class="container">
                 <h2 class="mb-md">Portfolio</h2>
                 <div class="card" style="text-align: center; padding: 40px;">
-                    <div style="font-size: 48px; margin-bottom: 16px;">🎨</div>
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" style="opacity: 0.3; margin: 0 auto 16px;">
+                        <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
+                        <path d="M3 9h18M9 21V9" stroke="currentColor" stroke-width="2"/>
+                    </svg>
                     <p class="text-secondary">Add your portfolio images to showcase your work</p>
                     <button class="btn-primary mt-md" onclick="navigateToPage('settings')">Add Portfolio</button>
                 </div>
@@ -88,7 +94,10 @@ export function renderProfilePage() {
             <div class="container">
                 <h2 class="mb-md">Services & Pricing</h2>
                 <div class="card" style="text-align: center; padding: 40px;">
-                    <div style="font-size: 48px; margin-bottom: 16px;">💼</div>
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" style="opacity: 0.3; margin: 0 auto 16px;">
+                        <rect x="3" y="6" width="18" height="12" rx="2" stroke="currentColor" stroke-width="2"/>
+                        <path d="M7 10h10M7 14h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
                     <p class="text-secondary">Set up your services and pricing to start receiving bookings</p>
                     <button class="btn-primary mt-md" onclick="navigateToPage('settings')">Add Services</button>
                 </div>

@@ -101,7 +101,10 @@ async function loadCreators() {
             <div class="section">
                 <div class="container">
                     <div class="empty-state">
-                        <div class="empty-icon">❌</div>
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" style="opacity: 0.4; margin-bottom: 16px;">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                            <path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
                         <h3>Failed to load creators</h3>
                         <p>${error.message}</p>
                         <button class="btn-primary" onclick="window.location.reload()">Try again</button>

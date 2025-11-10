@@ -7,7 +7,10 @@ export function renderSettingsPage() {
     if (!appState.user) {
         mainContent.innerHTML = `
             <div class="empty-state">
-                <div class="empty-icon">👤</div>
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" style="opacity: 0.4; margin-bottom: 16px;">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
+                </svg>
                 <h3>Sign in to view your profile</h3>
                 <p>Create your account to manage your profile and settings</p>
                 <button class="btn-primary" onclick="showAuthModal('signin')">Sign in</button>

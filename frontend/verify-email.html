@@ -80,14 +80,24 @@
         </div>
 
         <div id="success-state" style="display: none;">
-            <div class="success-icon">✓</div>
+            <div class="success-icon">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" fill="rgba(16, 185, 129, 0.2)" stroke="#10B981" stroke-width="2"/>
+                    <path d="M9 12l2 2 4-4" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
             <h1>Email Verified!</h1>
             <p class="message">Your email has been successfully verified. You can now access all features of MyArteLab.</p>
             <a href="index.html" class="btn-primary">Go to Dashboard</a>
         </div>
 
         <div id="error-state" style="display: none;">
-            <div class="error-icon">✗</div>
+            <div class="error-icon">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="#EF4444" stroke-width="2"/>
+                    <path d="M15 9l-6 6M9 9l6 6" stroke="#EF4444" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+            </div>
             <h1>Verification Failed</h1>
             <p class="message" id="error-message">The verification link is invalid or has expired.</p>
             <a href="index.html" class="btn-primary">Back to Home</a>

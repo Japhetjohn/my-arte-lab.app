@@ -56,7 +56,10 @@ export async function renderCreatorProfile(creatorIdOrObject) {
                 <div class="section">
                     <div class="container">
                         <div class="text-center" style="padding: 60px 20px;">
-                            <div style="font-size: 48px; margin-bottom: 16px;">👤</div>
+                            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" style="opacity: 0.4; margin-bottom: 16px;">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                                <path d="M12 12l3-3M12 12V8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
                             <p class="text-secondary">Loading profile...</p>
                         </div>
                     </div>
@@ -186,30 +189,39 @@ export async function renderCreatorProfile(creatorIdOrObject) {
         </div>
         ` : ''}
 
-        ${creator.services && creator.services.length > 0 ? `
         <div class="section">
             <div class="container">
                 <h2 class="mb-md">Services & Pricing</h2>
-                <div class="services-list">
-                    ${creator.services.map((service, index) => `
-                        <div class="service-card">
-                            <div class="service-header">
-                                <div>
-                                    <div class="service-title">${service.title}</div>
-                                    <div class="service-duration">${service.duration || 'Contact for details'}</div>
+                ${creator.services && creator.services.length > 0 ? `
+                    <div class="services-list">
+                        ${creator.services.map((service, index) => `
+                            <div class="service-card">
+                                <div class="service-header">
+                                    <div>
+                                        <div class="service-title">${service.title}</div>
+                                        <div class="service-duration">${service.duration || 'Contact for details'}</div>
+                                    </div>
+                                    <div class="service-price">${service.price || 'Contact for pricing'}</div>
                                 </div>
-                                <div class="service-price">${service.price || 'Contact for pricing'}</div>
+                                <ul class="service-deliverables">
+                                    ${service.deliverables ? service.deliverables.map(item => `<li>${item}</li>`).join('') : ''}
+                                </ul>
+                                <button class="btn-primary service-book-btn" data-creator-id="${creator.id}" data-service-index="${index}">Book this service</button>
                             </div>
-                            <ul class="service-deliverables">
-                                ${service.deliverables ? service.deliverables.map(item => `<li>${item}</li>`).join('') : ''}
-                            </ul>
-                            <button class="btn-primary service-book-btn" data-creator-id="${creator.id}" data-service-index="${index}">Book this service</button>
-                        </div>
-                    `).join('')}
-                </div>
+                        `).join('')}
+                    </div>
+                ` : `
+                    <div class="card" style="text-align: center; padding: 40px;">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" style="opacity: 0.3; margin: 0 auto 16px;">
+                            <rect x="3" y="6" width="18" height="12" rx="2" stroke="currentColor" stroke-width="2"/>
+                            <path d="M7 10h10M7 14h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                        <h3 style="margin-bottom: 8px;">No Services Yet</h3>
+                        <p class="text-secondary">This creator hasn't set up their services and pricing yet.</p>
+                    </div>
+                `}
             </div>
         </div>
-        ` : ''}
 
         <div class="section">
             <div class="container">
@@ -323,11 +335,11 @@ window.renderCreatorProfile = renderCreatorProfile;
 export function renderCategories(categoryCounts = {}) {
     // Map category types to display info
     const categoryMap = {
-        photographer: { name: 'Photographers', icon: '📷' },
-        designer: { name: 'Designers', icon: '🎨' },
-        videographer: { name: 'Videographers', icon: '🎥' },
-        illustrator: { name: 'Illustrators', icon: '✏️' },
-        other: { name: 'Other', icon: '🎭' }
+        photographer: { name: 'Photographers', icon: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="2" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/><path d="M7 4V2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>' },
+        designer: { name: 'Designers', icon: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M12 2l3 7h7l-5.5 4 2 7-6.5-5-6.5 5 2-7L2 9h7l3-7z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>' },
+        videographer: { name: 'Videographers', icon: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none"><rect x="2" y="6" width="14" height="12" rx="2" stroke="currentColor" stroke-width="2"/><path d="M16 10l6-4v12l-6-4" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>' },
+        illustrator: { name: 'Illustrators', icon: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M12 19l7-7 3 3-7 7-3-3z" stroke="currentColor" stroke-width="2"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" stroke="currentColor" stroke-width="2"/><path d="M2 2l7.586 7.586" stroke="currentColor" stroke-width="2"/><circle cx="11" cy="11" r="2" stroke="currentColor" stroke-width="2"/></svg>' },
+        other: { name: 'Other', icon: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8z" stroke="currentColor" stroke-width="2"/></svg>' }
     };
 
     const categories = [];
