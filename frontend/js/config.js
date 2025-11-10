@@ -52,7 +52,7 @@ export const API_ENDPOINTS = {
     createReview: '/reviews',
 
     // Profile
-    updateProfile: '/auth/profile',
+    updateProfile: '/auth/update-profile',
     updatePassword: '/auth/update-password'
 };
 

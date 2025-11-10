@@ -1,6 +1,7 @@
 // Creators Component Module
 import { appState, addToHistory, setCurrentPage } from '../state.js';
 import { updateBackButton } from '../navigation.js';
+import api from '../services/api.js';
 
 export function renderCreatorCards(creators) {
     return creators.map(creator => `
@@ -35,16 +36,85 @@ export function renderCreatorCards(creators) {
     `).join('');
 }
 
-export function renderCreatorProfile(creator) {
+export async function renderCreatorProfile(creatorIdOrObject) {
     // Track that we're viewing a profile (not a main page)
     setCurrentPage('creator-profile');
 
-    if (!creator) {
+    if (!creatorIdOrObject) {
         console.error('No creator data provided to renderCreatorProfile');
         return;
     }
 
     const mainContent = document.getElementById('mainContent');
+    let creator;
+
+    // If passed an object with id, fetch fresh data from API
+    if (typeof creatorIdOrObject === 'object' && creatorIdOrObject.id) {
+        try {
+            // Show loading state
+            mainContent.innerHTML = `
+                <div class="section">
+                    <div class="container">
+                        <div class="text-center" style="padding: 60px 20px;">
+                            <div style="font-size: 48px; margin-bottom: 16px;">👤</div>
+                            <p class="text-secondary">Loading profile...</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            console.log('🔄 Fetching fresh creator profile from API:', creatorIdOrObject.id);
+            const response = await api.getCreatorProfile(creatorIdOrObject.id);
+            console.log('✅ Creator profile API response:', response);
+
+            if (response.success) {
+                // Transform API data to match frontend format
+                const apiCreator = response.data.creator;
+                creator = {
+                    id: apiCreator._id || apiCreator.id,
+                    name: apiCreator.name || 'Unknown Creator',
+                    avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(apiCreator.name || 'User')}&background=9747FF&color=fff&bold=true`,
+                    role: apiCreator.category ? apiCreator.category.charAt(0).toUpperCase() + apiCreator.category.slice(1) : 'Creator',
+                    location: apiCreator.location ?
+                        (typeof apiCreator.location === 'object' ?
+                            `${apiCreator.location.city || ''}${apiCreator.location.city && apiCreator.location.country ? ', ' : ''}${apiCreator.location.country || ''}`.trim()
+                            : apiCreator.location)
+                        : 'Nigeria',
+                    rating: apiCreator.rating?.average?.toFixed(1) || '0.0',
+                    reviewCount: apiCreator.rating?.count || 0,
+                    verified: apiCreator.isVerified || false,
+                    price: apiCreator.hourlyRate ? `From $${apiCreator.hourlyRate}/hr` : 'Contact for pricing',
+                    bio: apiCreator.bio || 'No bio yet',
+                    cover: apiCreator.coverImage,
+                    portfolio: apiCreator.portfolio || [],
+                    services: apiCreator.services || [],
+                    responseTime: apiCreator.responseTime || 'Within a day',
+                    completedJobs: apiCreator.completedJobs || 0
+                };
+                console.log('✅ Transformed creator:', creator);
+            } else {
+                throw new Error('Failed to load creator profile');
+            }
+        } catch (error) {
+            console.error('❌ Failed to load creator profile:', error);
+            mainContent.innerHTML = `
+                <div class="section">
+                    <div class="container">
+                        <div class="empty-state">
+                            <div class="empty-icon">❌</div>
+                            <h3>Failed to load profile</h3>
+                            <p>${error.message}</p>
+                            <button class="btn-primary" onclick="window.history.back()">Go back</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+    } else {
+        // If passed a full creator object, use it directly (for backward compatibility)
+        creator = creatorIdOrObject;
+    }
     // Always use default avatar with initials for consistency
     const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name || 'User')}&background=9747FF&color=fff&bold=true`;
     const coverImage = creator.cover || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200';
