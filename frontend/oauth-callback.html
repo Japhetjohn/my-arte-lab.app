@@ -107,7 +107,12 @@
             const container = document.getElementById('container');
             container.className = 'container error';
             container.innerHTML = `
-                <div class="error-icon">⚠️</div>
+                <div class="error-icon">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" style="display: inline-block;">
+                        <circle cx="12" cy="12" r="10" stroke="#fecaca" stroke-width="2"/>
+                        <path d="M12 8v4M12 16h.01" stroke="#fecaca" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </div>
                 <h1>Authentication Failed</h1>
                 <p>There was a problem signing you in with Google.</p>
                 <p style="margin-top: 10px; font-size: 14px;">Error: ${error.replace(/_/g, ' ')}</p>
@@ -126,7 +131,12 @@
             // Show success message briefly
             const container = document.getElementById('container');
             container.innerHTML = `
-                <div style="font-size: 48px; margin-bottom: 20px;">✅</div>
+                <div style="margin-bottom: 20px;">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" style="display: inline-block;">
+                        <circle cx="12" cy="12" r="10" fill="rgba(16, 185, 129, 0.2)" stroke="#10B981" stroke-width="2"/>
+                        <path d="M9 12l2 2 4-4" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
                 <h1>Sign-In Successful!</h1>
                 <p>Redirecting you to MyArteLab...</p>
             `;
@@ -140,7 +150,12 @@
             const container = document.getElementById('container');
             container.className = 'container error';
             container.innerHTML = `
-                <div class="error-icon">⚠️</div>
+                <div class="error-icon">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" style="display: inline-block;">
+                        <circle cx="12" cy="12" r="10" stroke="#fecaca" stroke-width="2"/>
+                        <path d="M12 8v4M12 16h.01" stroke="#fecaca" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </div>
                 <h1>Authentication Error</h1>
                 <p>No authentication token received.</p>
                 <a href="/" class="btn">Back to Home</a>
