@@ -16,8 +16,8 @@ export function renderSettingsPage() {
         return;
     }
 
-    // Always use default avatar with initials for consistency
-    const userAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(appState.user.name || 'User')}&background=9747FF&color=fff&bold=true&size=200`;
+    // Use uploaded avatar if available, otherwise use default with initials
+    const userAvatar = appState.user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(appState.user.name || 'User')}&background=9747FF&color=fff&bold=true&size=200`;
     const userCover = appState.user.coverImage || 'https://images.unsplash.com/photo-1557683316-973673baf926?w=1200&h=400&fit=crop';
 
     // Format location for display
@@ -119,16 +119,6 @@ export function renderSettingsPage() {
                             <div class="settings-item-description">Receive updates about your bookings and messages</div>
                         </div>
                         <div class="toggle-switch active" onclick="toggleSwitch(this)">
-                            <div class="toggle-switch-slider"></div>
-                        </div>
-                    </div>
-
-                    <div class="settings-item">
-                        <div class="settings-item-info">
-                            <div class="settings-item-label">SMS notifications</div>
-                            <div class="settings-item-description">Get text messages for important updates</div>
-                        </div>
-                        <div class="toggle-switch" onclick="toggleSwitch(this)">
                             <div class="toggle-switch-slider"></div>
                         </div>
                     </div>

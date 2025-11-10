@@ -21,8 +21,8 @@ export function showBookingModal(creatorId, serviceIndex = 0) {
 
     const service = creator.services[serviceIndex];
 
-    // Always use default avatar with initials for consistency
-    const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name || 'User')}&background=9747FF&color=fff&bold=true`;
+    // Use uploaded avatar if available, otherwise use default with initials
+    const avatarUrl = creator.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name || 'User')}&background=9747FF&color=fff&bold=true`;
 
     const modalContent = `
         <div class="modal" onclick="closeModalOnBackdrop(event)">
@@ -53,7 +53,7 @@ export function showBookingModal(creatorId, serviceIndex = 0) {
 
                 <div style="background: var(--background-alt); padding: 16px; border-radius: var(--radius); margin-bottom: 24px;">
                     <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 8px;">
-                        <img src="${defaultAvatar}" style="width: 40px; height: 40px; border-radius: 50%;" alt="${creator.name}">
+                        <img src="${avatarUrl}" style="width: 40px; height: 40px; border-radius: 50%;" alt="${creator.name}">
                         <div>
                             <div style="font-weight: 600;">${creator.name}</div>
                             <div class="caption">${service.title}</div>

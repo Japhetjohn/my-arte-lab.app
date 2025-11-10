@@ -73,7 +73,8 @@ export async function renderCreatorProfile(creatorIdOrObject) {
                 creator = {
                     id: apiCreator._id || apiCreator.id,
                     name: apiCreator.name || 'Unknown Creator',
-                    avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(apiCreator.name || 'User')}&background=9747FF&color=fff&bold=true`,
+                    // Use uploaded avatar if available, otherwise use default with initials
+                    avatar: apiCreator.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(apiCreator.name || 'User')}&background=9747FF&color=fff&bold=true`,
                     role: apiCreator.category ? apiCreator.category.charAt(0).toUpperCase() + apiCreator.category.slice(1) : 'Creator',
                     location: apiCreator.location ?
                         (typeof apiCreator.location === 'object' ?
@@ -115,14 +116,14 @@ export async function renderCreatorProfile(creatorIdOrObject) {
         // If passed a full creator object, use it directly (for backward compatibility)
         creator = creatorIdOrObject;
     }
-    // Always use default avatar with initials for consistency
-    const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name || 'User')}&background=9747FF&color=fff&bold=true`;
+    // Use uploaded avatar if available, otherwise use default with initials
+    const avatarUrl = creator.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name || 'User')}&background=9747FF&color=fff&bold=true`;
     const coverImage = creator.cover || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200';
     mainContent.innerHTML = `
         <div class="profile-cover" style="background-image: url('${coverImage}'); background-size: cover; background-position: center;"></div>
 
         <div class="profile-header">
-            <img src="${defaultAvatar}" alt="${creator.name}" class="profile-avatar">
+            <img src="${avatarUrl}" alt="${creator.name}" class="profile-avatar">
 
             <div class="profile-info">
                 <div class="profile-name-row">
