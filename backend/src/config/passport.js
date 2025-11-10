@@ -61,7 +61,7 @@ passport.use(
           wallet = null;
         }
 
-        const newUser = await User.create({
+        const userData = {
           name: profile.displayName,
           email: profile.emails[0].value,
           googleId: profile.id,
@@ -74,7 +74,13 @@ passport.use(
             currency: 'USDT'
           } : undefined,
           password: Math.random().toString(36).slice(-16)
-        });
+        };
+
+        if (requestedRole === 'creator') {
+          userData.category = 'other';
+        }
+
+        const newUser = await User.create(userData);
 
         console.log('New user created via Google:', newUser.email);
 
