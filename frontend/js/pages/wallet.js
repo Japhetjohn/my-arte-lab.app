@@ -12,7 +12,10 @@ export async function renderWalletPage() {
     if (!appState.user) {
         mainContent.innerHTML = `
             <div class="empty-state">
-                <div class="empty-icon">💰</div>
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" style="opacity: 0.4; margin-bottom: 16px;">
+                    <path d="M21 12V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5z" stroke="currentColor" stroke-width="2"/>
+                    <path d="M18 12h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
                 <h3>Sign in to view your wallet</h3>
                 <p>Manage your earnings and payouts</p>
                 <button class="btn-primary" onclick="showAuthModal('signin')">Sign in</button>
@@ -27,7 +30,10 @@ export async function renderWalletPage() {
             <div class="container">
                 <h1 class="mb-lg">Wallet</h1>
                 <div class="text-center" style="padding: 60px 20px;">
-                    <div style="font-size: 48px; margin-bottom: 16px;">💰</div>
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" style="opacity: 0.4; margin-bottom: 16px;">
+                        <path d="M21 12V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5z" stroke="currentColor" stroke-width="2"/>
+                        <path d="M18 12h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
                     <p class="text-secondary">Loading wallet data...</p>
                 </div>
             </div>
@@ -130,7 +136,9 @@ function renderWalletContent() {
                 <div class="wallet-cards-grid mt-lg">
                     <div class="wallet-card-item">
                         <div class="wallet-card-icon" style="background: rgba(151, 71, 255, 0.1);">
-                            💰
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" stroke="#9747FF" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
                         </div>
                         <div class="wallet-card-label">Total earnings</div>
                         <div class="wallet-card-value">${walletData.currency || 'USDT'} ${totalEarnings.toFixed(2)}</div>
@@ -138,7 +146,10 @@ function renderWalletContent() {
 
                     <div class="wallet-card-item">
                         <div class="wallet-card-icon" style="background: rgba(255, 165, 0, 0.1);">
-                            ⏳
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                <circle cx="12" cy="12" r="10" stroke="#FFA500" stroke-width="2"/>
+                                <path d="M12 6v6l4 2" stroke="#FFA500" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
                         </div>
                         <div class="wallet-card-label">Pending</div>
                         <div class="wallet-card-value" style="color: #FFA500;">${walletData.currency || 'USDT'} ${pendingBalance.toFixed(2)}</div>
@@ -146,7 +157,9 @@ function renderWalletContent() {
 
                     <div class="wallet-card-item">
                         <div class="wallet-card-icon" style="background: rgba(16, 185, 129, 0.1);">
-                            ✓
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                <path d="M20 6L9 17l-5-5" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
                         </div>
                         <div class="wallet-card-label">Withdrawn</div>
                         <div class="wallet-card-value" style="color: var(--success);">${walletData.currency || 'USDT'} ${withdrawn.toFixed(2)}</div>
@@ -158,19 +171,38 @@ function renderWalletContent() {
                     <h3 class="mb-md">Quick actions</h3>
                     <div class="quick-actions-grid">
                         <button class="quick-action-btn" onclick="showWithdrawModal()">
-                            <div class="quick-action-icon">💸</div>
+                            <div class="quick-action-icon">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                    <path d="M12 2l4 4m-4-4L8 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                </svg>
+                            </div>
                             <div class="quick-action-label">Withdraw</div>
                         </button>
                         <button class="quick-action-btn" onclick="showTransactionHistory()">
-                            <div class="quick-action-icon">📊</div>
+                            <div class="quick-action-icon">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                    <path d="M3 3v18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                    <path d="M18 17l-5-5-3 3-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
                             <div class="quick-action-label">History</div>
                         </button>
                         <button class="quick-action-btn" onclick="window.location.reload()">
-                            <div class="quick-action-icon">🔄</div>
+                            <div class="quick-action-icon">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                    <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
                             <div class="quick-action-label">Refresh</div>
                         </button>
                         <button class="quick-action-btn" onclick="window.copyWalletAddress()">
-                            <div class="quick-action-icon">📋</div>
+                            <div class="quick-action-icon">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" stroke-width="2"/>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+                            </div>
                             <div class="quick-action-label">Copy Address</div>
                         </button>
                     </div>
@@ -212,7 +244,10 @@ function renderWalletContent() {
                     </div>
                 ` : `
                     <div class="empty-state" style="padding: 40px 20px;">
-                        <div style="font-size: 48px; margin-bottom: 12px;">📝</div>
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" style="opacity: 0.3; margin-bottom: 16px;">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="2"/>
+                            <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
                         <p class="text-secondary">No transactions yet</p>
                     </div>
                 `}

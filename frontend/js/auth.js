@@ -349,7 +349,10 @@ export function handleGoogleSignUp() {
 
                 <div style="display: flex; flex-direction: column; gap: 12px;">
                     <button class="btn-primary" onclick="proceedWithGoogleOAuth('client')" style="padding: 16px; text-align: left; display: flex; align-items: center; gap: 12px;">
-                        <div style="font-size: 24px;">👤</div>
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" style="flex-shrink: 0;">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                            <circle cx="12" cy="7" r="4" stroke="white" stroke-width="2"/>
+                        </svg>
                         <div>
                             <div style="font-weight: 600; font-size: 16px;">Continue as Client</div>
                             <div style="font-size: 13px; opacity: 0.8; margin-top: 2px;">Book and hire creative professionals</div>
@@ -357,7 +360,10 @@ export function handleGoogleSignUp() {
                     </button>
 
                     <button class="btn-secondary" onclick="proceedWithGoogleOAuth('creator')" style="padding: 16px; text-align: left; display: flex; align-items: center; gap: 12px;">
-                        <div style="font-size: 24px;">🎨</div>
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" style="flex-shrink: 0;">
+                            <path d="M12 2L2 7l10 5 10-5-10-5z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
                         <div>
                             <div style="font-weight: 600; font-size: 16px;">Continue as Creator</div>
                             <div style="font-size: 13px; opacity: 0.8; margin-top: 2px;">Offer your services and get booked</div>
