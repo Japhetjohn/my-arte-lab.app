@@ -63,9 +63,30 @@ async function loadCreators() {
         }
 
         const response = await api.getCreators(filters);
+        console.log('🔍 Discover page - API response:', response);
+        console.log('📊 Creators array:', response.data);
+        console.log('📈 Creators count:', response.data?.length);
 
         if (response.success) {
-            creators = response.data || [];
+            // Transform API data to match frontend format
+            creators = (response.data || []).map(creator => ({
+                id: creator._id,
+                name: creator.name || 'Unknown Creator',
+                avatar: creator.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name || 'User')}&background=9747FF&color=fff&bold=true`,
+                role: creator.category ? creator.category.charAt(0).toUpperCase() + creator.category.slice(1) : 'Creator',
+                location: creator.location || 'Nigeria',
+                rating: creator.rating?.average?.toFixed(1) || '0.0',
+                reviewCount: creator.rating?.count || 0,
+                verified: creator.isVerified || false,
+                price: creator.hourlyRate ? `From $${creator.hourlyRate}/hr` : 'Contact for pricing',
+                bio: creator.bio || 'No bio yet',
+                cover: creator.coverImage,
+                portfolio: creator.portfolio || [],
+                services: creator.services || [],
+                responseTime: creator.responseTime || 'Within a day',
+                completedJobs: creator.completedJobs || 0
+            }));
+            console.log('✅ Transformed creators:', creators);
             renderCreatorsList();
         }
     } catch (error) {
