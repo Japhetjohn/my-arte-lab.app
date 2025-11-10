@@ -328,6 +328,16 @@ class ApiService {
     async deletePortfolioImage(index) {
         return this.delete(`/upload/portfolio/${index}`);
     }
+
+    // ==================== Stats Endpoints ====================
+
+    async getPlatformStats() {
+        return this.get('/stats/platform', { auth: false });
+    }
+
+    async getFeaturedCreators(limit = 8) {
+        return this.get(`/stats/featured-creators?limit=${limit}`, { auth: false });
+    }
 }
 
 // Export singleton instance

@@ -20,6 +20,7 @@ const creatorRoutes = require('./routes/creatorRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
 const webhookRoutes = require('./routes/webhookRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
+const statsRoutes = require('./routes/statsRoutes');
 
 const app = express();
 
@@ -105,6 +106,7 @@ app.use('/api/creators', creatorRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/webhooks', webhookRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/stats', statsRoutes);
 
 app.get('/api', (req, res) => {
   res.json({
@@ -117,7 +119,8 @@ app.get('/api', (req, res) => {
       wallet: '/api/wallet',
       creators: '/api/creators',
       reviews: '/api/reviews',
-      webhooks: '/api/webhooks'
+      webhooks: '/api/webhooks',
+      stats: '/api/stats'
     }
   });
 });

@@ -175,21 +175,44 @@ export function setupCreatorCardListeners() {
     });
 }
 
-export function renderCategories() {
-    const categories = [
-        { name: 'Photographers', icon: '📷', count: 1250 },
-        { name: 'Designers', icon: '🎨', count: 980 },
-        { name: 'Videographers', icon: '🎥', count: 'Coming soon' },
-        { name: 'Lagos', icon: '📍', count: 850 },
-        { name: 'Accra', icon: '📍', count: 420 },
-        { name: 'Nairobi', icon: '📍', count: 380 }
-    ];
+export function renderCategories(categoryCounts = {}) {
+    // Map category types to display info
+    const categoryMap = {
+        photographer: { name: 'Photographers', icon: '📷' },
+        designer: { name: 'Designers', icon: '🎨' },
+        videographer: { name: 'Videographers', icon: '🎥' },
+        illustrator: { name: 'Illustrators', icon: '✏️' },
+        other: { name: 'Other', icon: '🎭' }
+    };
+
+    const categories = [];
+
+    // Add categories from API data
+    Object.keys(categoryMap).forEach(key => {
+        const count = categoryCounts[key] || 0;
+        if (count > 0 || key === 'photographer' || key === 'designer') {
+            categories.push({
+                name: categoryMap[key].name,
+                icon: categoryMap[key].icon,
+                count: count
+            });
+        }
+    });
+
+    // If no categories have counts, show placeholders
+    if (categories.length === 0) {
+        categories.push(
+            { name: 'Photographers', icon: '📷', count: 0 },
+            { name: 'Designers', icon: '🎨', count: 0 },
+            { name: 'Videographers', icon: '🎥', count: 0 }
+        );
+    }
 
     return categories.map(category => `
         <div class="category-card">
             <div class="category-icon">${category.icon}</div>
             <div class="category-name">${category.name}</div>
-            <div class="category-count">${category.count} creators</div>
+            <div class="category-count">${category.count > 0 ? category.count.toLocaleString() : 'Coming soon'} ${category.count > 0 ? 'creators' : ''}</div>
         </div>
     `).join('');
 }
