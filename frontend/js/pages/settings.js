@@ -16,8 +16,16 @@ export function renderSettingsPage() {
         return;
     }
 
-    const userAvatar = appState.user.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop';
-    const userCover = appState.user.cover || 'https://images.unsplash.com/photo-1557683316-973673baf926?w=1200&h=400&fit=crop';
+    // Always use default avatar with initials for consistency
+    const userAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(appState.user.name || 'User')}&background=9747FF&color=fff&bold=true&size=200`;
+    const userCover = appState.user.coverImage || 'https://images.unsplash.com/photo-1557683316-973673baf926?w=1200&h=400&fit=crop';
+
+    // Format location for display
+    const userLocation = appState.user.location ?
+        (typeof appState.user.location === 'object' ?
+            `${appState.user.location.city || ''}${appState.user.location.city && appState.user.location.country ? ', ' : ''}${appState.user.location.country || ''}`.trim()
+            : appState.user.location)
+        : '';
 
     mainContent.innerHTML = `
         <div class="section">
@@ -73,7 +81,7 @@ export function renderSettingsPage() {
 
                         <div class="form-group">
                             <label class="form-label">Location</label>
-                            <input type="text" class="form-input" value="${appState.user.location || ''}" id="profileLocation" placeholder="City, Country">
+                            <input type="text" class="form-input" value="${userLocation}" id="profileLocation" placeholder="City, Country">
                         </div>
 
                         ${appState.user.type === 'creator' ? `

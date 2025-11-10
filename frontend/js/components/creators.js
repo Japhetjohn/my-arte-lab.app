@@ -75,7 +75,7 @@ export function renderCreatorProfile(creator) {
                 </div>
 
                 <div class="profile-actions">
-                    <button class="btn-primary" onclick="showBookingModal(${creator.id})">Book now</button>
+                    <button class="btn-primary profile-book-now-btn" data-creator-id="${creator.id}">Book now</button>
                     <button class="btn-secondary">Message</button>
                     <button class="btn-ghost">Save</button>
                 </div>
@@ -103,7 +103,7 @@ export function renderCreatorProfile(creator) {
                 <h2 class="mb-md">Portfolio</h2>
                 <div class="portfolio-grid">
                     ${creator.portfolio.map((image, index) => `
-                        <div class="portfolio-item" onclick="openLightbox(${creator.id}, ${index})">
+                        <div class="portfolio-item" data-creator-id="${creator.id}" data-image-index="${index}">
                             <img src="${image}" alt="Portfolio ${index + 1}">
                             <div class="portfolio-overlay">
                                 <div>Project ${index + 1}</div>
@@ -132,7 +132,7 @@ export function renderCreatorProfile(creator) {
                             <ul class="service-deliverables">
                                 ${service.deliverables ? service.deliverables.map(item => `<li>${item}</li>`).join('') : ''}
                             </ul>
-                            <button class="btn-primary" onclick="showBookingModal(${creator.id}, ${index})">Book this service</button>
+                            <button class="btn-primary service-book-btn" data-creator-id="${creator.id}" data-service-index="${index}">Book this service</button>
                         </div>
                     `).join('')}
                 </div>
@@ -157,6 +157,45 @@ export function renderCreatorProfile(creator) {
 
     // Update back button visibility
     updateBackButton();
+
+    // Setup profile page button listeners
+    setupProfileButtonListeners(creator);
+}
+
+function setupProfileButtonListeners(creator) {
+    // Handle Book Now button in profile header
+    const profileBookBtn = document.querySelector('.profile-book-now-btn');
+    if (profileBookBtn) {
+        profileBookBtn.addEventListener('click', () => {
+            if (!appState.user) {
+                window.showAuthModal('signin');
+            } else {
+                window.showBookingModal(creator.id);
+            }
+        });
+    }
+
+    // Handle Portfolio lightbox items
+    document.querySelectorAll('.portfolio-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const creatorId = item.dataset.creatorId;
+            const imageIndex = parseInt(item.dataset.imageIndex);
+            window.openLightbox(creatorId, imageIndex);
+        });
+    });
+
+    // Handle Service booking buttons
+    document.querySelectorAll('.service-book-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const creatorId = btn.dataset.creatorId;
+            const serviceIndex = parseInt(btn.dataset.serviceIndex);
+            if (!appState.user) {
+                window.showAuthModal('signin');
+            } else {
+                window.showBookingModal(creatorId, serviceIndex);
+            }
+        });
+    });
 }
 
 export function setupCreatorCardListeners() {
