@@ -65,7 +65,7 @@ async function loadCreators() {
         const response = await api.getCreators(filters);
 
         if (response.success) {
-            creators = response.data.creators || [];
+            creators = response.data || [];
             renderCreatorsList();
         }
     } catch (error) {
