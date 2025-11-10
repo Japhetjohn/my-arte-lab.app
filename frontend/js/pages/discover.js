@@ -72,7 +72,8 @@ async function loadCreators() {
             creators = (response.data || []).map(creator => ({
                 id: creator._id,
                 name: creator.name || 'Unknown Creator',
-                avatar: creator.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name || 'User')}&background=9747FF&color=fff&bold=true`,
+                // Always use default avatar with initials for consistency
+                avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name || 'User')}&background=9747FF&color=fff&bold=true`,
                 role: creator.category ? creator.category.charAt(0).toUpperCase() + creator.category.slice(1) : 'Creator',
                 location: creator.location || 'Nigeria',
                 rating: creator.rating?.average?.toFixed(1) || '0.0',
