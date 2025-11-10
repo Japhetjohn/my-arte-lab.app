@@ -8,7 +8,16 @@ import api from '../services/api.js';
 // Booking Modal
 export function showBookingModal(creatorId, serviceIndex = 0) {
     const creator = appState.creators.find(c => c.id === creatorId);
-    if (!creator) return;
+    if (!creator) {
+        console.error('Creator not found:', creatorId);
+        return;
+    }
+
+    // Check if creator has services
+    if (!creator.services || creator.services.length === 0) {
+        showToast('This creator has not set up their services yet', 'info');
+        return;
+    }
 
     const service = creator.services[serviceIndex];
 

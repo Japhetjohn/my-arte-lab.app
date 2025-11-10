@@ -87,6 +87,10 @@ async function loadCreators() {
                 responseTime: creator.responseTime || 'Within a day',
                 completedJobs: creator.completedJobs || 0
             }));
+
+            // Store in appState so event listeners can access them
+            appState.creators = creators;
+
             console.log('✅ Transformed creators:', creators);
             renderCreatorsList();
         }
