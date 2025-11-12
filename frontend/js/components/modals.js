@@ -529,7 +529,6 @@ export function showWithdrawModal() {
                         <label class="form-label">Currency</label>
                         <select id="withdrawCurrency" class="form-select">
                             <option value="USDC" selected>USDC</option>
-                            <option value="USDT">USDT</option>
                             <option value="DAI">DAI</option>
                         </select>
                     </div>
