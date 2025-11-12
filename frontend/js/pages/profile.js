@@ -2,8 +2,9 @@
 import { appState } from '../state.js';
 import { getAvatarUrl } from '../utils/avatar.js';
 import { renderProfileCompletionWidget } from '../utils/profileCompletion.js';
+import api from '../services/api.js';
 
-export function renderProfilePage() {
+export async function renderProfilePage() {
     const mainContent = document.getElementById('mainContent');
 
     if (!appState.user) {
@@ -24,6 +25,19 @@ export function renderProfilePage() {
     const user = appState.user;
     const avatarUrl = getAvatarUrl(user);
     const isCreator = user.role === 'creator';
+
+    // Load services if creator
+    let services = [];
+    if (isCreator) {
+        try {
+            const response = await api.getMyServices();
+            if (response.success) {
+                services = response.data.services || [];
+            }
+        } catch (error) {
+            console.error('Failed to load services:', error);
+        }
+    }
 
     mainContent.innerHTML = `
         <div class="profile-cover" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); height: 200px;"></div>
@@ -99,15 +113,56 @@ export function renderProfilePage() {
 
         <div class="section">
             <div class="container">
-                <h2 class="mb-md">Services & Pricing</h2>
-                <div class="card" style="text-align: center; padding: 40px;">
-                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" style="opacity: 0.3; margin: 0 auto 16px;">
-                        <rect x="3" y="6" width="18" height="12" rx="2" stroke="currentColor" stroke-width="2"/>
-                        <path d="M7 10h10M7 14h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                    </svg>
-                    <p class="text-secondary">Set up your services and pricing to start receiving bookings</p>
-                    <button class="btn-primary mt-md" onclick="navigateToPage('settings')">Add Services</button>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                    <h2>My Services</h2>
+                    <button class="btn-primary" onclick="window.showAddServiceModal()" style="display: flex; align-items: center; gap: 8px;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                            <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                        Add Service
+                    </button>
                 </div>
+                ${services.length > 0 ? `
+                    <div style="display: grid; gap: 16px;">
+                        ${services.map(service => `
+                            <div class="card" style="padding: 20px;">
+                                ${service.images && service.images.length > 0 ? `
+                                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; margin-bottom: 16px;">
+                                        ${service.images.map(img => `
+                                            <img src="${img}" alt="${service.title}" style="width: 100%; height: 80px; object-fit: cover; border-radius: 8px; cursor: pointer;" onclick="window.open('${img}', '_blank')">
+                                        `).join('')}
+                                    </div>
+                                ` : ''}
+                                <h3 style="font-size: 18px; margin-bottom: 8px;">${service.title}</h3>
+                                <p style="color: var(--text-secondary); margin-bottom: 12px; line-height: 1.6;">${service.description}</p>
+                                ${service.directLink ? `
+                                    <div style="margin-bottom: 12px;">
+                                        <a href="${service.directLink}" target="_blank" rel="noopener noreferrer" style="color: var(--primary); text-decoration: none; font-size: 14px; display: inline-flex; align-items: center; gap: 4px;">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                            </svg>
+                                            ${service.directLink}
+                                        </a>
+                                    </div>
+                                ` : ''}
+                                <div style="display: flex; gap: 8px;">
+                                    <button class="btn-secondary" onclick="window.editService('${service._id}')" style="flex: 1;">Edit</button>
+                                    <button class="btn-ghost" onclick="window.deleteService('${service._id}')" style="flex: 1; color: var(--error); border-color: var(--error);">Delete</button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : `
+                    <div class="card" style="text-align: center; padding: 40px;">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" style="opacity: 0.3; margin: 0 auto 16px;">
+                            <rect x="3" y="6" width="18" height="12" rx="2" stroke="currentColor" stroke-width="2"/>
+                            <path d="M7 10h10M7 14h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                        <h3 style="margin-bottom: 8px;">No Services Yet</h3>
+                        <p class="text-secondary">Add your first service to start receiving bookings</p>
+                        <button class="btn-primary mt-md" onclick="window.showAddServiceModal()">Add Your First Service</button>
+                    </div>
+                `}
             </div>
         </div>
         ` : ''}

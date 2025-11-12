@@ -6,20 +6,49 @@ import { navigateToPage } from '../navigation.js';
 import api from '../services/api.js';
 
 // Booking Modal
-export function showBookingModal(creatorId, serviceIndex = 0) {
-    const creator = appState.creators.find(c => c.id === creatorId);
+export async function showBookingModal(creatorId, serviceIndex = 0) {
+    // Try to find creator in appState first
+    let creator = appState.creators?.find(c => c.id === creatorId);
+
+    // If not found, fetch from API
+    if (!creator) {
+        try {
+            const response = await api.getCreatorProfile(creatorId);
+            if (response.success) {
+                const apiCreator = response.data.creator;
+                creator = {
+                    id: apiCreator._id || apiCreator.id,
+                    name: apiCreator.name || 'Unknown Creator',
+                    avatar: apiCreator.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(apiCreator.name || 'User')}&background=9747FF&color=fff&bold=true`,
+                    role: apiCreator.category ? apiCreator.category.charAt(0).toUpperCase() + apiCreator.category.slice(1) : 'Creator',
+                    location: apiCreator.location ?
+                        (typeof apiCreator.location === 'object' ?
+                            `${apiCreator.location.city || ''}${apiCreator.location.city && apiCreator.location.country ? ', ' : ''}${apiCreator.location.country || ''}`.trim()
+                            : apiCreator.location)
+                        : 'Nigeria',
+                    rating: apiCreator.rating?.average?.toFixed(1) || '0.0',
+                    reviewCount: apiCreator.rating?.count || 0,
+                    verified: apiCreator.isVerified || false,
+                    services: apiCreator.services || [],
+                    portfolio: apiCreator.portfolio || []
+                };
+            }
+        } catch (error) {
+            console.error('Failed to load creator:', error);
+            showToast('Failed to load creator details', 'error');
+            return;
+        }
+    }
+
     if (!creator) {
         console.error('Creator not found:', creatorId);
+        showToast('Creator not found', 'error');
         return;
     }
 
-    // Check if creator has services - if not, scroll to services section
+    // Check if creator has services
     if (!creator.services || creator.services.length === 0) {
-        // Scroll to services section instead of showing toast
-        const servicesSection = document.querySelector('.section h2');
-        if (servicesSection && servicesSection.textContent.includes('Services')) {
-            servicesSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
+        showToast('This creator has not set up any services yet', 'info');
         return;
     }
 

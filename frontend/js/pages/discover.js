@@ -15,6 +15,13 @@ let currentFilters = {
 export async function renderDiscoverPage() {
     const mainContent = document.getElementById('mainContent');
 
+    // Check if there's a category filter from home page
+    const filterFromHome = localStorage.getItem('discoverFilter');
+    if (filterFromHome) {
+        currentFilters.category = filterFromHome;
+        localStorage.removeItem('discoverFilter'); // Clear it after using
+    }
+
     // Show loading state
     mainContent.innerHTML = `
         <div class="discover-header">

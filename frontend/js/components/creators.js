@@ -561,11 +561,23 @@ export function renderCategories(categoryCounts = {}) {
         );
     }
 
-    return categories.map(category => `
-        <div class="category-card">
+    return categories.map(category => {
+        const categoryKey = Object.keys(categoryMap).find(key => categoryMap[key].name === category.name);
+        const isClickable = category.count > 0;
+
+        return `
+        <div class="category-card ${isClickable ? 'category-card-clickable' : ''}" ${isClickable ? `onclick="window.filterByCategory('${categoryKey}')" style="cursor: pointer;"` : ''}>
             <div class="category-icon">${category.icon}</div>
             <div class="category-name">${category.name}</div>
-            <div class="category-count">${category.count > 0 ? category.count.toLocaleString() : 'Coming soon'} ${category.count > 0 ? 'creators' : ''}</div>
+            <div class="category-count">${category.count > 0 ? `${category.count.toLocaleString()} creator${category.count !== 1 ? 's' : ''}` : 'Coming soon'}</div>
         </div>
-    `).join('');
+        `;
+    }).join('');
 }
+
+// Filter by category function
+window.filterByCategory = function(category) {
+    // Navigate to discover page with category filter
+    localStorage.setItem('discoverFilter', category);
+    window.navigateToPage('discover');
+};
