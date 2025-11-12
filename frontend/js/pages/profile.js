@@ -223,11 +223,30 @@ export async function renderProfilePage() {
                             <div class="card" style="padding: 24px; border: 1px solid var(--border);">
                                 ${service.images && service.images.length > 0 ? `
                                     <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-bottom: 16px;">
-                                        ${service.images.slice(0, 5).map(img => `
-                                            <img src="${img}" alt="${service.title}" style="width: 100%; height: 120px; object-fit: cover; border-radius: 8px; cursor: pointer;" onclick="window.open('${img}', '_blank')">
+                                        ${service.images.slice(0, 5).map((img, idx) => `
+                                            <div style="position: relative;">
+                                                <img src="${img}" alt="${service.title}" style="width: 100%; height: 120px; object-fit: cover; border-radius: 8px; cursor: pointer;" onclick="window.open('${img}', '_blank')">
+                                                <button onclick="event.stopPropagation(); window.deleteServiceImage('${service._id}', ${idx})" style="position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,0.7); color: white; border: none; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px;">×</button>
+                                            </div>
                                         `).join('')}
+                                        ${service.images.length < 5 ? `
+                                            <button onclick="window.uploadServiceImage('${service._id}')" style="width: 100%; height: 120px; border: 2px dashed var(--border); border-radius: 8px; background: var(--surface); cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--primary);">
+                                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                                                    <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                                </svg>
+                                            </button>
+                                        ` : ''}
                                     </div>
-                                ` : ''}
+                                ` : `
+                                    <button onclick="window.uploadServiceImage('${service._id}')" style="width: 100%; padding: 40px; border: 2px dashed var(--border); border-radius: 8px; background: var(--surface); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--primary); margin-bottom: 16px;">
+                                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" style="margin-bottom: 8px;">
+                                            <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
+                                            <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/>
+                                            <path d="M21 15l-5-5L5 21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                        </svg>
+                                        <span>Add Images (max 5)</span>
+                                    </button>
+                                `}
                                 <div style="margin-bottom: 16px;">
                                     <h3 style="font-size: 20px; font-weight: 600; margin-bottom: 8px;">${service.title}</h3>
                                     <p style="color: var(--text-secondary); line-height: 1.6;">${service.description}</p>

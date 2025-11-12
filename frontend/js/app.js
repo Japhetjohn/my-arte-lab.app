@@ -5,6 +5,7 @@ import { showAuthModal, handleAuth, handleLogout, updateUserMenu, initAuth } fro
 import { showToast, closeModal, closeModalOnBackdrop, toggleSwitch } from './utils.js';
 import { checkAndClearCache } from './utils/clearCache.js';
 import { renderCreatorProfile } from './components/creators.js';
+import './utils/serviceManagement.js';
 import {
     showBookingModal,
     handleBookingSubmit,
