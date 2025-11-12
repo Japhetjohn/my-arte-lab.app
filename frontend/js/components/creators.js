@@ -191,22 +191,42 @@ export async function renderCreatorProfile(creatorIdOrObject) {
 
         <div class="section">
             <div class="container">
-                <h2 class="mb-md">Services & Pricing</h2>
+                <h2 class="mb-md">Services</h2>
                 ${creator.services && creator.services.length > 0 ? `
-                    <div class="services-list">
+                    <div class="services-list" style="display: grid; gap: 24px;">
                         ${creator.services.map((service, index) => `
-                            <div class="service-card">
-                                <div class="service-header">
-                                    <div>
-                                        <div class="service-title">${service.title}</div>
-                                        <div class="service-duration">${service.duration || 'Contact for details'}</div>
+                            <div class="service-card" style="border: 1px solid var(--border); border-radius: 12px; padding: 24px; background: var(--surface);">
+                                ${service.images && service.images.length > 0 ? `
+                                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-bottom: 16px;">
+                                        ${service.images.slice(0, 5).map(img => `
+                                            <img src="${img}" alt="${service.title}" style="width: 100%; height: 120px; object-fit: cover; border-radius: 8px; cursor: pointer;" onclick="window.open('${img}', '_blank')">
+                                        `).join('')}
                                     </div>
-                                    <div class="service-price">${service.price || 'Contact for pricing'}</div>
+                                ` : ''}
+                                <div style="margin-bottom: 16px;">
+                                    <h3 style="font-size: 20px; font-weight: 600; margin-bottom: 8px;">${service.title}</h3>
+                                    <p style="color: var(--text-secondary); line-height: 1.6;">${service.description}</p>
                                 </div>
-                                <ul class="service-deliverables">
-                                    ${service.deliverables ? service.deliverables.map(item => `<li>${item}</li>`).join('') : ''}
-                                </ul>
-                                <button class="btn-primary service-book-btn" data-creator-id="${creator.id}" data-service-index="${index}">Book this service</button>
+                                ${service.directLink ? `
+                                    <div style="margin-bottom: 16px;">
+                                        <a href="${service.directLink}" target="_blank" rel="noopener noreferrer" style="color: var(--primary); text-decoration: none; font-size: 14px; display: inline-flex; align-items: center; gap: 4px;">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                            </svg>
+                                            View More Details
+                                        </a>
+                                    </div>
+                                ` : ''}
+                                <div style="background: #EFF6FF; padding: 12px; border-radius: 8px; margin-bottom: 16px;">
+                                    <div style="color: #1E40AF; font-size: 14px; font-weight: 500;">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="display: inline; margin-right: 4px; vertical-align: middle;">
+                                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                                            <path d="M12 16v-4M12 8h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                        </svg>
+                                        Client-Proposed Pricing: You set your budget when booking
+                                    </div>
+                                </div>
+                                <button class="btn-primary service-book-btn" data-creator-id="${creator.id}" data-service-index="${index}" style="width: 100%;">Request This Service</button>
                             </div>
                         `).join('')}
                     </div>
@@ -217,7 +237,7 @@ export async function renderCreatorProfile(creatorIdOrObject) {
                             <path d="M7 10h10M7 14h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                         </svg>
                         <h3 style="margin-bottom: 8px;">No Services Yet</h3>
-                        <p class="text-secondary">This creator hasn't set up their services and pricing yet.</p>
+                        <p class="text-secondary">This creator hasn't set up their services yet. Check back later!</p>
                     </div>
                 `}
             </div>

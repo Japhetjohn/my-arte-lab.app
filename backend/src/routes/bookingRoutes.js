@@ -21,4 +21,9 @@ router.post('/:id/release-funds', validateObjectId('id'), handleValidationErrors
 router.post('/:id/cancel', validateObjectId('id'), handleValidationErrors, bookingController.cancelBooking);
 router.post('/:id/messages', validateObjectId('id'), handleValidationErrors, bookingController.addMessage);
 
+// Booking proposal actions (creator only)
+router.post('/:id/accept', validateObjectId('id'), handleValidationErrors, bookingController.acceptBooking);
+router.post('/:id/reject', validateObjectId('id'), handleValidationErrors, bookingController.rejectBooking);
+router.post('/:id/counter-proposal', validateObjectId('id'), handleValidationErrors, bookingController.counterProposal);
+
 module.exports = router;

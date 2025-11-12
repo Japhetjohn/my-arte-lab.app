@@ -315,3 +315,133 @@ exports.addMessage = catchAsync(async (req, res, next) => {
 
   successResponse(res, 200, 'Message added successfully', { booking });
 });
+
+exports.acceptBooking = catchAsync(async (req, res, next) => {
+  const booking = await Booking.findById(req.params.id).populate('client creator');
+
+  if (!booking) {
+    return next(new ErrorHandler('Booking not found', 404));
+  }
+
+  // Only creator can accept
+  if (booking.creator._id.toString() !== req.user._id.toString()) {
+    return next(new ErrorHandler('Only the creator can accept this booking', 403));
+  }
+
+  if (booking.status !== 'pending') {
+    return next(new ErrorHandler('Booking can only be accepted when pending', 400));
+  }
+
+  booking.status = 'confirmed';
+  await booking.save();
+
+  // Send email notification to client
+  emailConfig.sendEmail({
+    to: booking.client.email,
+    subject: 'Booking Accepted!',
+    html: `
+      <h1>Booking Accepted!</h1>
+      <p>Hi ${booking.client.name},</p>
+      <p>${booking.creator.name} has accepted your booking request for "${booking.serviceTitle}".</p>
+      <p><strong>Amount:</strong> ${booking.amount} ${booking.currency}</p>
+      <p>Please send payment to the escrow address to proceed:</p>
+      <p style="background: #f5f5f5; padding: 12px; border-radius: 8px; font-family: monospace;">${booking.escrowWallet.address}</p>
+      <p>Best regards,<br/>MyArteLab Team</p>
+    `
+  }).catch(err => console.error('Email failed:', err));
+
+  successResponse(res, 200, 'Booking accepted successfully', { booking });
+});
+
+exports.rejectBooking = catchAsync(async (req, res, next) => {
+  const { reason } = req.body;
+  const booking = await Booking.findById(req.params.id).populate('client creator');
+
+  if (!booking) {
+    return next(new ErrorHandler('Booking not found', 404));
+  }
+
+  // Only creator can reject
+  if (booking.creator._id.toString() !== req.user._id.toString()) {
+    return next(new ErrorHandler('Only the creator can reject this booking', 403));
+  }
+
+  if (booking.status !== 'pending') {
+    return next(new ErrorHandler('Booking can only be rejected when pending', 400));
+  }
+
+  booking.status = 'cancelled';
+  booking.cancelledAt = new Date();
+  booking.cancellationReason = reason || 'Rejected by creator';
+  await booking.save();
+
+  // Send email notification to client
+  emailConfig.sendEmail({
+    to: booking.client.email,
+    subject: 'Booking Request Declined',
+    html: `
+      <h1>Booking Request Declined</h1>
+      <p>Hi ${booking.client.name},</p>
+      <p>Unfortunately, ${booking.creator.name} is unable to accept your booking request for "${booking.serviceTitle}".</p>
+      ${reason ? `<p><strong>Reason:</strong> ${reason}</p>` : ''}
+      <p>You can browse other creators or modify your request and try again.</p>
+      <p>Best regards,<br/>MyArteLab Team</p>
+    `
+  }).catch(err => console.error('Email failed:', err));
+
+  successResponse(res, 200, 'Booking rejected successfully', { booking });
+});
+
+exports.counterProposal = catchAsync(async (req, res, next) => {
+  const { amount } = req.body;
+  const booking = await Booking.findById(req.params.id).populate('client creator');
+
+  if (!booking) {
+    return next(new ErrorHandler('Booking not found', 404));
+  }
+
+  // Only creator can make counter proposal
+  if (booking.creator._id.toString() !== req.user._id.toString()) {
+    return next(new ErrorHandler('Only the creator can make a counter proposal', 403));
+  }
+
+  if (booking.status !== 'pending') {
+    return next(new ErrorHandler('Counter proposal can only be made when booking is pending', 400));
+  }
+
+  if (!amount || amount <= 0) {
+    return next(new ErrorHandler('Please provide a valid counter proposal amount', 400));
+  }
+
+  const platformCommission = tsaraConfig.commission;
+  const platformFee = (amount * platformCommission) / 100;
+  const creatorAmount = amount - platformFee;
+
+  // Store counter proposal in metadata or add a message
+  booking.counterProposal = {
+    amount,
+    creatorAmount,
+    platformFee,
+    proposedAt: new Date()
+  };
+
+  await booking.addMessage(req.user._id, `Counter proposal: ${booking.currency} ${amount.toFixed(2)}`);
+  await booking.save();
+
+  // Send email notification to client
+  emailConfig.sendEmail({
+    to: booking.client.email,
+    subject: 'Counter Proposal Received',
+    html: `
+      <h1>Counter Proposal</h1>
+      <p>Hi ${booking.client.name},</p>
+      <p>${booking.creator.name} has made a counter proposal for "${booking.serviceTitle}".</p>
+      <p><strong>Your Proposed Amount:</strong> ${booking.currency} ${booking.amount.toFixed(2)}</p>
+      <p><strong>Counter Proposal:</strong> ${booking.currency} ${amount.toFixed(2)}</p>
+      <p>Login to your account to review and respond to this proposal.</p>
+      <p>Best regards,<br/>MyArteLab Team</p>
+    `
+  }).catch(err => console.error('Email failed:', err));
+
+  successResponse(res, 200, 'Counter proposal sent successfully', { booking });
+});

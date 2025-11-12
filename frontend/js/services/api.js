@@ -329,6 +329,62 @@ class ApiService {
         return this.delete(`/upload/portfolio/${index}`);
     }
 
+    // ==================== Services Endpoints ====================
+
+    async getMyServices() {
+        return this.get('/services');
+    }
+
+    async addService(serviceData) {
+        return this.post('/services', serviceData);
+    }
+
+    async updateService(serviceId, serviceData) {
+        return this.put(`/services/${serviceId}`, serviceData);
+    }
+
+    async deleteService(serviceId) {
+        return this.delete(`/services/${serviceId}`);
+    }
+
+    async uploadServiceImage(serviceId, file) {
+        const formData = new FormData();
+        formData.append('image', file);
+
+        const url = `${this.baseUrl}/services/${serviceId}/images`;
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${this.getToken()}`
+            },
+            body: formData
+        });
+
+        return await this.handleResponse(response);
+    }
+
+    async deleteServiceImage(serviceId, imageIndex) {
+        return this.delete(`/services/${serviceId}/images/${imageIndex}`);
+    }
+
+    // ==================== Booking Messages Endpoints ====================
+
+    async addBookingMessage(bookingId, message) {
+        return this.post(`/bookings/${bookingId}/messages`, { message });
+    }
+
+    async acceptBooking(bookingId) {
+        return this.post(`/bookings/${bookingId}/accept`);
+    }
+
+    async rejectBooking(bookingId, reason) {
+        return this.post(`/bookings/${bookingId}/reject`, { reason });
+    }
+
+    async counterProposal(bookingId, amount) {
+        return this.post(`/bookings/${bookingId}/counter-proposal`, { amount });
+    }
+
     // ==================== Stats Endpoints ====================
 
     async getPlatformStats() {
