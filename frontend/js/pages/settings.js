@@ -1,5 +1,6 @@
 // Settings Page Module
 import { appState } from '../state.js';
+import api from '../services/api.js';
 
 export function renderSettingsPage() {
     const mainContent = document.getElementById('mainContent');
@@ -213,7 +214,7 @@ export function renderSettingsPage() {
 // Services Management Functions
 async function loadServices() {
     try {
-        const response = await window.api.getMyServices();
+        const response = await api.getMyServices();
         if (response.success) {
             renderServicesList(response.data.services || []);
         }
@@ -344,7 +345,7 @@ window.handleAddService = async function(event) {
     submitBtn.textContent = 'Adding...';
 
     try {
-        const response = await window.api.addService({
+        const response = await api.addService({
             title: document.getElementById('serviceTitle').value,
             description: document.getElementById('serviceDescription').value,
             directLink: document.getElementById('serviceLink').value || undefined
@@ -366,7 +367,7 @@ window.handleAddService = async function(event) {
 // Edit service
 window.editService = async function(serviceId) {
     try {
-        const response = await window.api.getMyServices();
+        const response = await api.getMyServices();
         const service = response.data.services.find(s => s._id === serviceId);
         if (!service) return;
 
@@ -418,7 +419,7 @@ window.handleEditService = async function(event, serviceId) {
     submitBtn.textContent = 'Saving...';
 
     try {
-        const response = await window.api.updateService(serviceId, {
+        const response = await api.updateService(serviceId, {
             title: document.getElementById('serviceTitle').value,
             description: document.getElementById('serviceDescription').value,
             directLink: document.getElementById('serviceLink').value || undefined
@@ -442,7 +443,7 @@ window.deleteService = async function(serviceId) {
     if (!confirm('Are you sure you want to delete this service?')) return;
 
     try {
-        const response = await window.api.deleteService(serviceId);
+        const response = await api.deleteService(serviceId);
         if (response.success) {
             window.showToast('Service deleted successfully!', 'success');
             loadServices();
@@ -469,7 +470,7 @@ window.uploadServiceImage = function(serviceId) {
 
         try {
             window.showToast('Uploading image...', 'info');
-            const response = await window.api.uploadServiceImage(serviceId, file);
+            const response = await api.uploadServiceImage(serviceId, file);
             if (response.success) {
                 window.showToast('Image uploaded successfully!', 'success');
                 loadServices();
@@ -487,7 +488,7 @@ window.deleteServiceImage = async function(serviceId, imageIndex) {
     if (!confirm('Delete this image?')) return;
 
     try {
-        const response = await window.api.deleteServiceImage(serviceId, imageIndex);
+        const response = await api.deleteServiceImage(serviceId, imageIndex);
         if (response.success) {
             window.showToast('Image deleted successfully!', 'success');
             loadServices();
