@@ -66,7 +66,7 @@ export function renderProfilePage() {
                             <h4 style="margin: 0;">Wallet</h4>
                         </div>
                         <div class="small-text">Balance</div>
-                        <div style="font-weight: 600; font-size: 20px; margin-top: 4px;">${user.wallet.currency || 'USDT'} ${(user.wallet.balance || 0).toFixed(2)}</div>
+                        <div style="font-weight: 600; font-size: 20px; margin-top: 4px;">${user.wallet.currency || 'USDC'} ${(user.wallet.balance || 0).toFixed(2)}</div>
                         <div class="small-text mt-sm">Network: ${user.wallet.network || 'Solana'}</div>
                         <button class="btn-secondary mt-md" onclick="navigateToPage('wallet')" style="width: 100%;">Manage Wallet</button>
                     </div>

@@ -32,7 +32,7 @@ exports.register = catchAsync(async (req, res, next) => {
     const tempWalletId = crypto.randomBytes(16).toString('hex');
     wallet = {
       address: `pending_${tempWalletId}`,
-      currency: 'USDT',
+      currency: 'USDC',
       balance: 0,
       network: 'Solana'
     };

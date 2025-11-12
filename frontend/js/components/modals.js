@@ -56,30 +56,41 @@ export function showBookingModal(creatorId, serviceIndex = 0) {
                 </div>
 
                 <div style="background: var(--background-alt); padding: 16px; border-radius: var(--radius); margin-bottom: 24px;">
-                    <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 8px;">
+                    <div style="display: flex; gap: 12px; align-items: center;">
                         <img src="${avatarUrl}" style="width: 40px; height: 40px; border-radius: 50%;" alt="${creator.name}">
                         <div>
                             <div style="font-weight: 600;">${creator.name}</div>
                             <div class="caption">${service.title}</div>
                         </div>
                     </div>
-                    <div style="font-size: 24px; font-weight: 700; color: var(--primary);">${service.price}</div>
+                </div>
+
+                <div style="background: #EFF6FF; padding: 12px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #3B82F6;">
+                    <div style="color: #1E40AF; font-size: 14px;">
+                        <strong>Client-Proposed Pricing:</strong> You set your budget and the creator will review your request. If they accept, you'll receive a payment link to proceed.
+                    </div>
                 </div>
 
                 <form onsubmit="handleBookingSubmit(event, ${creatorId}, ${serviceIndex})">
                     <div class="form-group">
+                        <label class="form-label">Your Budget (USDC)</label>
+                        <input type="number" id="proposedPrice" name="proposedPrice" class="form-input" required min="1" step="0.01" placeholder="e.g., 500">
+                        <div class="caption mt-sm">Enter the amount you're willing to pay for this service</div>
+                    </div>
+
+                    <div class="form-group">
                         <label class="form-label">Select date</label>
-                        <input type="date" class="form-input" required min="${new Date().toISOString().split('T')[0]}">
+                        <input type="date" id="bookingDate" name="bookingDate" class="form-input" required min="${new Date().toISOString().split('T')[0]}">
                     </div>
 
                     <div class="form-group">
                         <label class="form-label">Preferred time</label>
-                        <input type="time" class="form-input" required>
+                        <input type="time" id="bookingTime" name="bookingTime" class="form-input" required>
                     </div>
 
                     <div class="form-group">
                         <label class="form-label">Project brief (300 characters)</label>
-                        <textarea class="form-textarea" maxlength="300" placeholder="Tell us about your project..." required></textarea>
+                        <textarea id="projectBrief" name="projectBrief" class="form-textarea" maxlength="300" placeholder="Tell us about your project..." required></textarea>
                     </div>
 
                     <div class="form-group">
@@ -104,11 +115,48 @@ export function showBookingModal(creatorId, serviceIndex = 0) {
     openModal();
 }
 
-export function handleBookingSubmit(event, creatorId, serviceIndex) {
+export async function handleBookingSubmit(event, creatorId, serviceIndex) {
     event.preventDefault();
-    closeModal();
-    showToast('Booking request sent successfully!', 'success');
-    setTimeout(() => navigateToPage('bookings'), 1500);
+
+    const form = event.target;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+
+    try {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Creating booking...';
+
+        const creator = appState.creators.find(c => c.id === creatorId);
+        const service = creator.services[serviceIndex];
+
+        const bookingData = {
+            creatorId: creator._id || creator.id,
+            serviceTitle: service.title,
+            serviceDescription: service.description || '',
+            category: creator.category || 'other',
+            amount: parseFloat(document.getElementById('proposedPrice').value),
+            currency: 'USDC',
+            startDate: document.getElementById('bookingDate').value,
+            preferredTime: document.getElementById('bookingTime').value,
+            projectBrief: document.getElementById('projectBrief').value
+        };
+
+        const response = await api.createBooking(bookingData);
+
+        if (response.success) {
+            closeModal();
+            showToast('Booking request sent! The creator will review your proposed budget.', 'success');
+            setTimeout(() => navigateToPage('bookings'), 1500);
+        } else {
+            showToast(response.message || 'Failed to create booking', 'error');
+        }
+    } catch (error) {
+        console.error('Booking submission failed:', error);
+        showToast(error.message || 'Failed to create booking request', 'error');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+    }
 }
 
 export function handleBookNow(creatorId) {
@@ -216,10 +264,12 @@ export function handleAvatarUpload() {
             const response = await api.uploadAvatar(file);
 
             if (response.success) {
-                // Update user state
-                appState.user.avatar = response.data.avatar;
-                setUser(appState.user);
-                updateUserMenu();
+                // Fetch fresh user data from the API to ensure we have the latest
+                const freshUserData = await api.getMe();
+                if (freshUserData.success) {
+                    setUser(freshUserData.data.user);
+                    updateUserMenu();
+                }
 
                 showToast('Avatar updated successfully!', 'success');
 
@@ -257,9 +307,12 @@ export function handleCoverUpload() {
             const response = await api.uploadCover(file);
 
             if (response.success) {
-                // Update user state
-                appState.user.coverImage = response.data.coverImage;
-                setUser(appState.user);
+                // Fetch fresh user data from the API to ensure we have the latest
+                const freshUserData = await api.getMe();
+                if (freshUserData.success) {
+                    setUser(freshUserData.data.user);
+                    updateUserMenu();
+                }
 
                 showToast('Cover image updated successfully!', 'success');
 

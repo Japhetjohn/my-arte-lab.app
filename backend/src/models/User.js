@@ -75,11 +75,35 @@ const userSchema = new mongoose.Schema({
   }],
 
   services: [{
-    title: String,
-    description: String,
-    price: Number,
-    currency: { type: String, default: 'USDT' },
-    deliveryTime: Number
+    title: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: [100, 'Service title cannot exceed 100 characters']
+    },
+    description: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    images: [{
+      type: String,
+      validate: {
+        validator: function(v) {
+          return this.images.length <= 5;
+        },
+        message: 'Maximum 5 images allowed per service'
+      }
+    }],
+    directLink: {
+      type: String,
+      trim: true,
+      match: [/^https?:\/\/.+/, 'Please provide a valid URL']
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now
+    }
   }],
 
   rating: {
@@ -111,7 +135,7 @@ const userSchema = new mongoose.Schema({
     currency: {
       type: String,
       enum: ['USDT', 'USDC', 'DAI'],
-      default: 'USDT'
+      default: 'USDC'
     },
     network: {
       type: String,

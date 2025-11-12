@@ -83,6 +83,17 @@ const uploadPortfolio = async (fileBuffer) => {
   });
 };
 
+const uploadServiceImage = async (fileBuffer) => {
+  return uploadToCloudinary(fileBuffer, {
+    folder: 'myartelab/services',
+    transformation: [
+      { width: 800, height: 600, crop: 'limit' },
+      { quality: 'auto' },
+      { fetch_format: 'auto' }
+    ]
+  });
+};
+
 const deleteImage = async (publicId) => {
   try {
     const result = await cloudinary.uploader.destroy(publicId);
@@ -99,5 +110,6 @@ module.exports = {
   uploadAvatar,
   uploadCover,
   uploadPortfolio,
+  uploadServiceImage,
   deleteImage
 };
