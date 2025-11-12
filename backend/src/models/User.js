@@ -160,7 +160,7 @@ const userSchema = new mongoose.Schema({
     },
     currency: {
       type: String,
-      enum: ['USDT', 'USDC', 'DAI'],
+      enum: ['USDC', 'DAI'],
       default: 'USDC'
     },
     network: {

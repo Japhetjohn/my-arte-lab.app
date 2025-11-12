@@ -40,7 +40,6 @@ module.exports = {
   },
 
   STABLECOINS: {
-    USDT: 'USDT',
     USDC: 'USDC',
     DAI: 'DAI'
   },
