@@ -30,8 +30,16 @@ export async function showBookingModal(creatorId, serviceIndex = 0) {
                     reviewCount: apiCreator.rating?.count || 0,
                     verified: apiCreator.isVerified || false,
                     services: apiCreator.services || [],
-                    portfolio: apiCreator.portfolio || []
+                    portfolio: apiCreator.portfolio || [],
+                    _id: apiCreator._id,
+                    category: apiCreator.category
                 };
+
+                // Add to appState so handleBookingSubmit can find it
+                if (!appState.creators) {
+                    appState.creators = [];
+                }
+                appState.creators.push(creator);
             }
         } catch (error) {
             console.error('Failed to load creator:', error);
@@ -146,6 +154,7 @@ export async function showBookingModal(creatorId, serviceIndex = 0) {
 
 export async function handleBookingSubmit(event, creatorId, serviceIndex) {
     event.preventDefault();
+    event.stopPropagation();
 
     const form = event.target;
     const submitBtn = form.querySelector('button[type="submit"]');
@@ -155,7 +164,17 @@ export async function handleBookingSubmit(event, creatorId, serviceIndex) {
         submitBtn.disabled = true;
         submitBtn.textContent = 'Creating booking...';
 
-        const creator = appState.creators.find(c => c.id === creatorId);
+        // Find creator in appState
+        const creator = appState.creators?.find(c => c.id === creatorId);
+
+        if (!creator) {
+            throw new Error('Creator not found. Please try again.');
+        }
+
+        if (!creator.services || !creator.services[serviceIndex]) {
+            throw new Error('Service not found. Please try again.');
+        }
+
         const service = creator.services[serviceIndex];
 
         const bookingData = {
@@ -170,21 +189,27 @@ export async function handleBookingSubmit(event, creatorId, serviceIndex) {
             projectBrief: document.getElementById('projectBrief').value
         };
 
+        console.log('📤 Submitting booking:', bookingData);
+
         const response = await api.createBooking(bookingData);
+
+        console.log('📥 Booking response:', response);
 
         if (response.success) {
             closeModal();
             showToast('Booking request sent! The creator will review your proposed budget.', 'success');
             setTimeout(() => navigateToPage('bookings'), 1500);
         } else {
-            showToast(response.message || 'Failed to create booking', 'error');
+            throw new Error(response.message || 'Failed to create booking');
         }
     } catch (error) {
-        console.error('Booking submission failed:', error);
+        console.error('❌ Booking submission failed:', error);
         showToast(error.message || 'Failed to create booking request', 'error');
     } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = originalText;
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
+        }
     }
 }
 
