@@ -6,6 +6,7 @@ import { renderBookingsPage } from './pages/bookings.js';
 import { renderWalletPage } from './pages/wallet.js';
 import { renderProfilePage } from './pages/profile.js';
 import { renderSettingsPage } from './pages/settings.js';
+import { renderFavoritesPage } from './pages/favorites.js';
 
 export function navigateToPage(page, addToHistoryFlag = true) {
     // Track navigation history
@@ -57,6 +58,9 @@ export function navigateToPage(page, addToHistoryFlag = true) {
                 break;
             case 'settings':
                 renderSettingsPage();
+                break;
+            case 'favorites':
+                renderFavoritesPage();
                 break;
         }
         mainContent.style.opacity = '1';

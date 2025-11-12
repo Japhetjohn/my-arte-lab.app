@@ -1,6 +1,7 @@
 // Profile Page Module
 import { appState } from '../state.js';
 import { getAvatarUrl } from '../utils/avatar.js';
+import { renderProfileCompletionWidget } from '../utils/profileCompletion.js';
 
 export function renderProfilePage() {
     const mainContent = document.getElementById('mainContent');
@@ -72,6 +73,12 @@ export function renderProfilePage() {
                     </div>
                     ` : ''}
                 </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="container">
+                ${renderProfileCompletionWidget(user)}
             </div>
         </div>
 

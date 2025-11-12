@@ -87,13 +87,18 @@ export async function renderCreatorProfile(creatorIdOrObject) {
                     rating: apiCreator.rating?.average?.toFixed(1) || '0.0',
                     reviewCount: apiCreator.rating?.count || 0,
                     verified: apiCreator.isVerified || false,
+                    isEmailVerified: apiCreator.isEmailVerified || false,
+                    isPhoneVerified: apiCreator.isPhoneVerified || false,
+                    isIdVerified: apiCreator.isIdVerified || false,
                     price: apiCreator.hourlyRate ? `From $${apiCreator.hourlyRate}/hr` : 'Contact for pricing',
                     bio: apiCreator.bio || 'No bio yet',
                     cover: apiCreator.coverImage,
                     portfolio: apiCreator.portfolio || [],
                     services: apiCreator.services || [],
                     responseTime: apiCreator.responseTime || 'Within a day',
-                    completedJobs: apiCreator.completedJobs || 0
+                    completedJobs: apiCreator.completedBookings || 0,
+                    metrics: apiCreator.metrics || {},
+                    badges: apiCreator.badges || []
                 };
                 console.log('✅ Transformed creator:', creator);
             } else {
@@ -131,8 +136,65 @@ export async function renderCreatorProfile(creatorIdOrObject) {
             <div class="profile-info">
                 <div class="profile-name-row">
                     <div>
-                        <h1>${creator.name}</h1>
-                        ${creator.verified ? '<span class="verified-badge">✓ Verified</span>' : ''}
+                        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                            <h1>${creator.name}</h1>
+                            ${creator.verified ? '<span class="verified-badge">✓ Verified</span>' : ''}
+                        </div>
+
+                        <!-- Trust Verification Badges -->
+                        ${(creator.isEmailVerified || creator.isPhoneVerified || creator.isIdVerified) ? `
+                            <div style="display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;">
+                                ${creator.isEmailVerified ? `
+                                    <span style="display: inline-flex; align-items: center; gap: 4px; background: #DCFCE7; color: #166534; padding: 4px 10px; border-radius: 6px; font-size: 13px; font-weight: 500;">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                                            <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" stroke="currentColor" stroke-width="2"/>
+                                        </svg>
+                                        Email Verified
+                                    </span>
+                                ` : ''}
+                                ${creator.isPhoneVerified ? `
+                                    <span style="display: inline-flex; align-items: center; gap: 4px; background: #DCFCE7; color: #166534; padding: 4px 10px; border-radius: 6px; font-size: 13px; font-weight: 500;">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                                            <rect x="5" y="2" width="14" height="20" rx="2" stroke="currentColor" stroke-width="2"/>
+                                            <path d="M12 18h.01" stroke="currentColor" stroke-width="2"/>
+                                        </svg>
+                                        Phone Verified
+                                    </span>
+                                ` : ''}
+                                ${creator.isIdVerified ? `
+                                    <span style="display: inline-flex; align-items: center; gap: 4px; background: #DCFCE7; color: #166534; padding: 4px 10px; border-radius: 6px; font-size: 13px; font-weight: 500;">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                                            <path d="M21 10H3M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2" stroke="currentColor" stroke-width="2"/>
+                                            <rect x="3" y="6" width="18" height="14" rx="2" stroke="currentColor" stroke-width="2"/>
+                                        </svg>
+                                        ID Verified
+                                    </span>
+                                ` : ''}
+                            </div>
+                        ` : ''}
+
+                        <!-- Achievement Badges -->
+                        ${creator.badges && creator.badges.length > 0 ? `
+                            <div style="display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;">
+                                ${creator.badges.map(badge => {
+                                    const badgeInfo = {
+                                        'top_rated': { icon: '⭐', label: 'Top Rated', color: '#FEF3C7', textColor: '#92400E' },
+                                        'power_seller': { icon: '💪', label: 'Power Seller', color: '#DBEAFE', textColor: '#1E40AF' },
+                                        'rising_talent': { icon: '🚀', label: 'Rising Talent', color: '#E0E7FF', textColor: '#3730A3' },
+                                        'fast_responder': { icon: '⚡', label: 'Fast Responder', color: '#FEF3C7', textColor: '#92400E' },
+                                        'reliable': { icon: '✓', label: 'Reliable', color: '#DCFCE7', textColor: '#166534' },
+                                        'new_seller': { icon: '✨', label: 'New Seller', color: '#FCE7F3', textColor: '#831843' }
+                                    };
+                                    const info = badgeInfo[badge.type] || { icon: '🏆', label: badge.type, color: '#F3F4F6', textColor: '#374151' };
+                                    return `
+                                        <span style="display: inline-flex; align-items: center; gap: 4px; background: ${info.color}; color: ${info.textColor}; padding: 4px 10px; border-radius: 6px; font-size: 13px; font-weight: 500;">
+                                            ${info.icon} ${info.label}
+                                        </span>
+                                    `;
+                                }).join('')}
+                            </div>
+                        ` : ''}
+
                         <div class="creator-role mt-sm">${creator.role}</div>
                         <div class="creator-location mt-sm">
                             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -151,20 +213,35 @@ export async function renderCreatorProfile(creatorIdOrObject) {
                 <div class="profile-actions">
                     <button class="btn-primary profile-book-now-btn" data-creator-id="${creator.id}">Book now</button>
                     <button class="btn-secondary">Message</button>
-                    <button class="btn-ghost">Save</button>
+                    <button class="btn-ghost" id="favoriteBtn" data-creator-id="${creator.id}">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="margin-right: 4px;">
+                            <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        Save
+                    </button>
                 </div>
 
                 <div class="mt-lg">
                     <h3 class="mb-sm">About</h3>
                     <p>${creator.bio || 'No bio available'}</p>
-                    <div class="mt-md" style="display: flex; gap: 24px; flex-wrap: wrap;">
-                        <div>
-                            <div class="small-text">Response time</div>
-                            <div style="font-weight: 600;">${creator.responseTime || 'N/A'}</div>
+
+                    <!-- Performance Metrics -->
+                    <div class="mt-md" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px;">
+                        <div style="text-align: center; padding: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px;">
+                            <div class="small-text">Response Rate</div>
+                            <div style="font-weight: 600; font-size: 24px; color: var(--primary); margin-top: 4px;">${creator.metrics?.responseRate || 100}%</div>
                         </div>
-                        <div>
-                            <div class="small-text">Completed jobs</div>
-                            <div style="font-weight: 600;">${creator.completedJobs || 0}</div>
+                        <div style="text-align: center; padding: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px;">
+                            <div class="small-text">On-Time Delivery</div>
+                            <div style="font-weight: 600; font-size: 24px; color: var(--primary); margin-top: 4px;">${creator.metrics?.onTimeDeliveryRate || 100}%</div>
+                        </div>
+                        <div style="text-align: center; padding: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px;">
+                            <div class="small-text">Completed Jobs</div>
+                            <div style="font-weight: 600; font-size: 24px; color: var(--primary); margin-top: 4px;">${creator.completedJobs || 0}</div>
+                        </div>
+                        <div style="text-align: center; padding: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px;">
+                            <div class="small-text">Repeat Clients</div>
+                            <div style="font-weight: 600; font-size: 24px; color: var(--primary); margin-top: 4px;">${creator.metrics?.repeatClientRate || 0}%</div>
                         </div>
                     </div>
                 </div>
@@ -217,16 +294,61 @@ export async function renderCreatorProfile(creatorIdOrObject) {
                                         </a>
                                     </div>
                                 ` : ''}
-                                <div style="background: #EFF6FF; padding: 12px; border-radius: 8px; margin-bottom: 16px;">
-                                    <div style="color: #1E40AF; font-size: 14px; font-weight: 500;">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="display: inline; margin-right: 4px; vertical-align: middle;">
-                                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-                                            <path d="M12 16v-4M12 8h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                        </svg>
-                                        Client-Proposed Pricing: You set your budget when booking
+                                <!-- Service Packages -->
+                                ${service.packages && service.packages.length > 0 ? `
+                                    <div style="margin-bottom: 16px;">
+                                        <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 12px;">Service Packages</h4>
+                                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
+                                            ${service.packages.map(pkg => `
+                                                <div style="border: ${pkg.popular ? '2px solid var(--primary)' : '1px solid var(--border)'}; border-radius: 8px; padding: 16px; position: relative; background: var(--background);">
+                                                    ${pkg.popular ? `<span style="position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: var(--primary); color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600;">POPULAR</span>` : ''}
+                                                    <div style="font-weight: 600; font-size: 18px; margin-bottom: 8px;">${pkg.name}</div>
+                                                    <div style="color: var(--primary); font-size: 24px; font-weight: 700; margin-bottom: 12px;">$${pkg.suggestedPrice || 0}</div>
+                                                    <div style="color: var(--text-secondary); font-size: 14px; margin-bottom: 12px;">${pkg.description || ''}</div>
+                                                    <div style="display: flex; gap: 16px; margin-bottom: 12px; font-size: 13px;">
+                                                        <div>
+                                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style="display: inline; margin-right: 4px; vertical-align: middle;">
+                                                                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                                                                <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                                            </svg>
+                                                            ${pkg.deliveryDays} days
+                                                        </div>
+                                                        <div>
+                                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style="display: inline; margin-right: 4px; vertical-align: middle;">
+                                                                <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0118-6l1.5 2M22 12.5a10 10 0 01-18 6l-1.5-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                            </svg>
+                                                            ${pkg.revisions} revisions
+                                                        </div>
+                                                    </div>
+                                                    ${pkg.features && pkg.features.length > 0 ? `
+                                                        <ul style="list-style: none; padding: 0; margin: 0 0 12px 0; font-size: 13px;">
+                                                            ${pkg.features.slice(0, 5).map(feature => `
+                                                                <li style="padding: 4px 0; color: var(--text-secondary);">
+                                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style="display: inline; margin-right: 6px; vertical-align: middle; color: var(--primary);">
+                                                                        <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                                    </svg>
+                                                                    ${feature}
+                                                                </li>
+                                                            `).join('')}
+                                                        </ul>
+                                                    ` : ''}
+                                                    <button class="btn-primary service-package-btn" data-creator-id="${creator.id}" data-service-index="${index}" data-package-name="${pkg.name}" style="width: 100%; font-size: 14px;">Select ${pkg.name}</button>
+                                                </div>
+                                            `).join('')}
+                                        </div>
                                     </div>
-                                </div>
-                                <button class="btn-primary service-book-btn" data-creator-id="${creator.id}" data-service-index="${index}" style="width: 100%;">Request This Service</button>
+                                ` : `
+                                    <div style="background: #EFF6FF; padding: 12px; border-radius: 8px; margin-bottom: 16px;">
+                                        <div style="color: #1E40AF; font-size: 14px; font-weight: 500;">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="display: inline; margin-right: 4px; vertical-align: middle;">
+                                                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                                                <path d="M12 16v-4M12 8h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                            </svg>
+                                            Client-Proposed Pricing: You set your budget when booking
+                                        </div>
+                                    </div>
+                                    <button class="btn-primary service-book-btn" data-creator-id="${creator.id}" data-service-index="${index}" style="width: 100%;">Request This Service</button>
+                                `}
                             </div>
                         `).join('')}
                     </div>
@@ -299,6 +421,60 @@ function setupProfileButtonListeners(creator) {
             }
         });
     });
+
+    // Handle Service package booking buttons
+    document.querySelectorAll('.service-package-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const creatorId = btn.dataset.creatorId;
+            const serviceIndex = parseInt(btn.dataset.serviceIndex);
+            const packageName = btn.dataset.packageName;
+            if (!appState.user) {
+                window.showAuthModal('signin');
+            } else {
+                window.showBookingModal(creatorId, serviceIndex, packageName);
+            }
+        });
+    });
+
+    // Handle Favorite button
+    const favoriteBtn = document.getElementById('favoriteBtn');
+    if (favoriteBtn && appState.user) {
+        // Check if creator is already favorited
+        checkFavoriteStatus(creator.id, favoriteBtn);
+
+        favoriteBtn.addEventListener('click', async () => {
+            try {
+                const isFavorited = favoriteBtn.classList.contains('favorited');
+
+                if (isFavorited) {
+                    await api.removeFromFavorites(creator.id);
+                    favoriteBtn.classList.remove('favorited');
+                    favoriteBtn.querySelector('svg path').setAttribute('fill', 'none');
+                    window.showToast('Removed from favorites', 'success');
+                } else {
+                    await api.addToFavorites(creator.id);
+                    favoriteBtn.classList.add('favorited');
+                    favoriteBtn.querySelector('svg path').setAttribute('fill', 'currentColor');
+                    window.showToast('Added to favorites!', 'success');
+                }
+            } catch (error) {
+                console.error('Error toggling favorite:', error);
+                window.showToast(error.message || 'Failed to update favorite', 'error');
+            }
+        });
+    }
+}
+
+async function checkFavoriteStatus(creatorId, btn) {
+    try {
+        const response = await api.isFavorited(creatorId);
+        if (response.success && response.data.isFavorited) {
+            btn.classList.add('favorited');
+            btn.querySelector('svg path').setAttribute('fill', 'currentColor');
+        }
+    } catch (error) {
+        console.error('Error checking favorite status:', error);
+    }
 }
 
 export function setupCreatorCardListeners() {

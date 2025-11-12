@@ -394,6 +394,24 @@ class ApiService {
     async getFeaturedCreators(limit = 8) {
         return this.get(`/stats/featured-creators?limit=${limit}`, { auth: false });
     }
+
+    // ==================== Favorites Endpoints ====================
+
+    async getFavorites() {
+        return this.get('/favorites');
+    }
+
+    async addToFavorites(creatorId) {
+        return this.post(`/favorites/${creatorId}`);
+    }
+
+    async removeFromFavorites(creatorId) {
+        return this.delete(`/favorites/${creatorId}`);
+    }
+
+    async isFavorited(creatorId) {
+        return this.get(`/favorites/${creatorId}/status`);
+    }
 }
 
 // Export singleton instance

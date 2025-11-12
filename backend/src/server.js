@@ -22,6 +22,7 @@ const webhookRoutes = require('./routes/webhookRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
 const statsRoutes = require('./routes/statsRoutes');
 const servicesRoutes = require('./routes/servicesRoutes');
+const favoritesRoutes = require('./routes/favoritesRoutes');
 
 const app = express();
 
@@ -109,6 +110,7 @@ app.use('/api/webhooks', webhookRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/services', servicesRoutes);
+app.use('/api/favorites', favoritesRoutes);
 
 app.get('/api', (req, res) => {
   res.json({

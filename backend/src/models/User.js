@@ -100,6 +100,32 @@ const userSchema = new mongoose.Schema({
       trim: true,
       match: [/^https?:\/\/.+/, 'Please provide a valid URL']
     },
+    // Service Packages (Basic/Standard/Premium)
+    packages: [{
+      name: {
+        type: String,
+        required: true,
+        enum: ['Basic', 'Standard', 'Premium']
+      },
+      description: String,
+      suggestedPrice: {
+        type: Number,
+        min: 0
+      },
+      deliveryDays: {
+        type: Number,
+        min: 1
+      },
+      revisions: {
+        type: String,
+        default: '2'
+      },
+      features: [String],
+      popular: {
+        type: Boolean,
+        default: false
+      }
+    }],
     createdAt: {
       type: Date,
       default: Date.now
@@ -152,6 +178,16 @@ const userSchema = new mongoose.Schema({
     default: false
   },
 
+  isPhoneVerified: {
+    type: Boolean,
+    default: false
+  },
+
+  isIdVerified: {
+    type: Boolean,
+    default: false
+  },
+
   isActive: {
     type: Boolean,
     default: true
@@ -170,6 +206,7 @@ const userSchema = new mongoose.Schema({
   lockUntil: Date,
 
   lastLogin: Date,
+  lastActive: Date,
 
   completedBookings: {
     type: Number,
@@ -179,6 +216,69 @@ const userSchema = new mongoose.Schema({
   responseTime: {
     type: Number,
     default: null
+  },
+
+  // Performance Metrics
+  metrics: {
+    responseRate: {
+      type: Number,
+      default: 100,
+      min: 0,
+      max: 100
+    },
+    onTimeDeliveryRate: {
+      type: Number,
+      default: 100,
+      min: 0,
+      max: 100
+    },
+    repeatClientRate: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 100
+    },
+    totalEarnings: {
+      type: Number,
+      default: 0
+    },
+    averageOrderValue: {
+      type: Number,
+      default: 0
+    }
+  },
+
+  // Badges & Achievements
+  badges: [{
+    type: {
+      type: String,
+      enum: ['top_rated', 'power_seller', 'rising_talent', 'fast_responder', 'reliable', 'new_seller']
+    },
+    earnedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
+
+  // Profile Completion
+  profileCompletion: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 100
+  },
+
+  // Favorites/Bookmarks
+  favoriteCreators: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
+
+  // SEO fields
+  seoSlug: {
+    type: String,
+    unique: true,
+    sparse: true
   }
 
 }, {
