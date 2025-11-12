@@ -104,7 +104,7 @@ export async function showBookingModal(creatorId, serviceIndex = 0) {
 
                 <div style="background: #FEF3C7; padding: 16px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #F59E0B;">
                     <div style="color: #92400E; font-size: 14px; font-weight: 500; margin-bottom: 8px;">
-                        📋 How it works:
+                        How it works:
                     </div>
                     <ol style="color: #92400E; font-size: 13px; margin: 0; padding-left: 20px; line-height: 1.6;">
                         <li>Submit your booking request with your proposed budget</li>
@@ -113,7 +113,7 @@ export async function showBookingModal(creatorId, serviceIndex = 0) {
                         <li>Funds are held in escrow until job completion</li>
                     </ol>
                     <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(146, 64, 14, 0.2); color: #92400E; font-size: 13px; font-weight: 500;">
-                        💰 Make sure your wallet has sufficient USDC balance before booking
+                        Make sure your wallet has sufficient USDC balance before booking
                     </div>
                 </div>
 
@@ -211,21 +211,21 @@ export async function handleBookingSubmit(event, creatorId, serviceIndex) {
             endDate: document.getElementById('endDate').value
         };
 
-        console.log('📤 Submitting booking:', bookingData);
+        console.log('Submitting booking:', bookingData);
 
         const response = await api.createBooking(bookingData);
 
-        console.log('📥 Booking response:', response);
+        console.log('Booking response:', response);
 
         if (response.success) {
             closeModal();
-            showToast('✅ Booking request sent to creator! You will be notified when they respond.', 'success');
+            showToast('Booking request sent to creator! You will be notified when they respond.', 'success');
             setTimeout(() => navigateToPage('bookings'), 2000);
         } else {
             throw new Error(response.message || 'Failed to send booking request');
         }
     } catch (error) {
-        console.error('❌ Booking submission failed:', error);
+        console.error('Booking submission failed:', error);
         showToast(error.message || 'Failed to create booking request', 'error');
     } finally {
         if (submitBtn) {

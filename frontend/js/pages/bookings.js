@@ -11,7 +11,10 @@ export async function renderBookingsPage() {
     if (!appState.user) {
         mainContent.innerHTML = `
             <div class="empty-state">
-                <div class="empty-icon">📅</div>
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" style="opacity: 0.4; margin-bottom: 16px;">
+                    <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
+                    <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
                 <h3>Sign in to view your bookings</h3>
                 <p>Keep track of all your active and completed jobs</p>
                 <button class="btn-primary" onclick="showAuthModal('signin')">Sign in</button>
@@ -26,7 +29,9 @@ export async function renderBookingsPage() {
             <div class="container">
                 <h1 class="mb-lg">Bookings</h1>
                 <div class="text-center" style="padding: 60px 20px;">
-                    <div style="font-size: 48px; margin-bottom: 16px;">📅</div>
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" style="opacity: 0.4; margin-bottom: 16px; animation: spin 2s linear infinite;">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" stroke-dasharray="60" stroke-dashoffset="20"/>
+                    </svg>
                     <p class="text-secondary">Loading bookings...</p>
                 </div>
             </div>
@@ -79,7 +84,10 @@ function renderBookingsList() {
                     </div>
                 ` : `
                     <div class="empty-state">
-                        <div class="empty-icon">📭</div>
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" style="opacity: 0.4; margin-bottom: 16px;">
+                            <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
+                            <path d="M3 10h18" stroke="currentColor" stroke-width="2"/>
+                        </svg>
                         <h3>No active bookings</h3>
                         <p>Your active jobs will appear here</p>
                         ${appState.user.role === 'client' ? '<button class="btn-primary" onclick="navigateToPage(\'discover\')">Find creators</button>' : ''}
@@ -93,7 +101,10 @@ function renderBookingsList() {
                     </div>
                 ` : `
                     <div class="empty-state">
-                        <div class="empty-icon">📋</div>
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" style="opacity: 0.4; margin-bottom: 16px;">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="2"/>
+                            <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
                         <h3>No booking history yet</h3>
                         <p>Your completed jobs will appear here</p>
                         ${appState.user.role === 'client' ? '<button class="btn-primary" onclick="navigateToPage(\'discover\')">Find creators</button>' : ''}

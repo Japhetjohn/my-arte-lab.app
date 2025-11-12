@@ -104,16 +104,33 @@ exports.createBooking = catchAsync(async (req, res, next) => {
 exports.getMyBookings = catchAsync(async (req, res, next) => {
   const { status, type } = req.query;
 
-  const query = {};
+  let query = {};
 
-  if (type === 'client' || !type) {
+  if (type === 'client') {
     query.client = req.user._id;
   } else if (type === 'creator') {
     query.creator = req.user._id;
+  } else {
+    // If no type specified, return all bookings where user is either client or creator
+    query = {
+      $or: [
+        { client: req.user._id },
+        { creator: req.user._id }
+      ]
+    };
   }
 
   if (status) {
-    query.status = status;
+    if (query.$or) {
+      query = {
+        $and: [
+          { $or: query.$or },
+          { status }
+        ]
+      };
+    } else {
+      query.status = status;
+    }
   }
 
   const bookings = await Booking.find(query)

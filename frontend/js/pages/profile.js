@@ -31,12 +31,12 @@ export async function renderProfilePage() {
         user.role.toLowerCase() === 'creator'
     );
 
-    console.log('👤 Profile Page - Full User Object:', user);
-    console.log('📋 User Role (raw):', user.role);
-    console.log('📋 User Role (type):', typeof user.role);
-    console.log('🎯 Is Creator?', isCreator);
-    console.log('📊 User Category:', user.category);
-    console.log('🔧 Has Services Field?', 'services' in user);
+    console.log('Profile Page - Full User Object:', user);
+    console.log('User Role (raw):', user.role);
+    console.log('User Role (type):', typeof user.role);
+    console.log('Is Creator?', isCreator);
+    console.log('User Category:', user.category);
+    console.log('Has Services Field?', 'services' in user);
 
     // Load services if creator
     let services = [];

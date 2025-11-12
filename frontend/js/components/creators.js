@@ -66,9 +66,9 @@ export async function renderCreatorProfile(creatorIdOrObject) {
                 </div>
             `;
 
-            console.log('🔄 Fetching fresh creator profile from API:', creatorIdOrObject.id);
+            console.log('Fetching fresh creator profile from API:', creatorIdOrObject.id);
             const response = await api.getCreatorProfile(creatorIdOrObject.id);
-            console.log('✅ Creator profile API response:', response);
+            console.log('Creator profile API response:', response);
 
             if (response.success) {
                 // Transform API data to match frontend format
@@ -100,17 +100,20 @@ export async function renderCreatorProfile(creatorIdOrObject) {
                     metrics: apiCreator.metrics || {},
                     badges: apiCreator.badges || []
                 };
-                console.log('✅ Transformed creator:', creator);
+                console.log('Transformed creator:', creator);
             } else {
                 throw new Error('Failed to load creator profile');
             }
         } catch (error) {
-            console.error('❌ Failed to load creator profile:', error);
+            console.error('Failed to load creator profile:', error);
             mainContent.innerHTML = `
                 <div class="section">
                     <div class="container">
                         <div class="empty-state">
-                            <div class="empty-icon">❌</div>
+                            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" style="opacity: 0.4; margin-bottom: 16px; color: var(--error);">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                                <path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
                             <h3>Failed to load profile</h3>
                             <p>${error.message}</p>
                             <button class="btn-primary" onclick="window.history.back()">Go back</button>
@@ -212,7 +215,6 @@ export async function renderCreatorProfile(creatorIdOrObject) {
 
                 <div class="profile-actions">
                     <button class="btn-primary profile-book-now-btn" data-creator-id="${creator.id}">Book now</button>
-                    <button class="btn-secondary">Message</button>
                     <button class="btn-ghost" id="favoriteBtn" data-creator-id="${creator.id}">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="margin-right: 4px;">
                             <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
