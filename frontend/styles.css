@@ -1108,6 +1108,10 @@ p {
         padding: 0 var(--spacing-md);
     }
 
+    .nav-content > div:first-child {
+        gap: 8px !important;
+    }
+
     .nav-actions {
         gap: 8px;
     }
@@ -1120,12 +1124,34 @@ p {
         display: inline;
     }
 
+    .logo img {
+        height: 28px;
+    }
+
     .icon-btn {
         padding: 8px;
     }
 
+    #backBtn {
+        padding: 6px;
+    }
+
     #searchBtn {
         display: flex;
+    }
+
+    .btn-secondary {
+        font-size: 14px;
+        padding: 8px 16px;
+    }
+
+    .user-avatar-btn {
+        padding: 4px;
+    }
+
+    .user-avatar-btn img {
+        width: 32px;
+        height: 32px;
     }
 
     .form-actions {
