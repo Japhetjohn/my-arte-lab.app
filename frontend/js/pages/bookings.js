@@ -226,7 +226,13 @@ window.viewBookingDetails = async function(bookingId) {
                                 </div>
                             ` : ''}
 
-                            ${isCreator && booking.status === 'in_progress' ? `
+                            ${isCreator && booking.status === 'pending' ? `
+                                <button class="btn-primary" style="width: 100%; margin-top: 16px;" onclick="window.acceptBooking('${booking._id}')">
+                                    Accept Booking Request
+                                </button>
+                            ` : ''}
+
+                            ${isCreator && (booking.status === 'in_progress' || booking.status === 'confirmed') ? `
                                 <button class="btn-primary" style="width: 100%; margin-top: 16px;" onclick="window.completeBooking('${booking._id}')">
                                     Mark as Completed
                                 </button>
@@ -248,6 +254,24 @@ window.viewBookingDetails = async function(bookingId) {
     } catch (error) {
         console.error('Failed to load booking details:', error);
         alert('Failed to load booking details');
+    }
+};
+
+// Accept booking (creator only)
+window.acceptBooking = async function(bookingId) {
+    if (!confirm('Are you sure you want to accept this booking request?')) return;
+
+    try {
+        const response = await api.acceptBooking(bookingId);
+
+        if (response.success) {
+            closeModal();
+            await renderBookingsPage();
+            showToast('Booking accepted! Client will be notified to make payment.', 'success');
+        }
+    } catch (error) {
+        console.error('Failed to accept booking:', error);
+        showToast(error.message || 'Failed to accept booking', 'error');
     }
 };
 
