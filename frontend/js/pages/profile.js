@@ -24,7 +24,7 @@ export async function renderProfilePage() {
 
     const user = appState.user;
     const avatarUrl = getAvatarUrl(user);
-    const isCreator = user.role === 'creator';
+    const isCreator = user.role && (user.role.toLowerCase() === 'creator' || user.role === 'Creator');
 
     // Load services if creator
     let services = [];

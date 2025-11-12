@@ -138,7 +138,7 @@ function renderBookingCard(booking) {
                         </span>
                     ` : ''}
                 </div>
-                <div class="transaction-amount">${booking.currency || 'USDT'} ${booking.amount.toFixed(2)}</div>
+                <div class="transaction-amount">${booking.currency || 'USDC'} ${booking.amount.toFixed(2)}</div>
             </div>
         </div>
     `;

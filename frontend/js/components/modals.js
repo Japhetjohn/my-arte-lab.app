@@ -80,15 +80,15 @@ export async function showBookingModal(creatorId, serviceIndex = 0) {
                 <div class="booking-stepper mb-lg">
                     <div class="step active">
                         <div class="step-circle">1</div>
-                        <div class="step-label">Details</div>
+                        <div class="step-label">Request</div>
                     </div>
                     <div class="step">
                         <div class="step-circle">2</div>
-                        <div class="step-label">Payment</div>
+                        <div class="step-label">Approval</div>
                     </div>
                     <div class="step">
                         <div class="step-circle">3</div>
-                        <div class="step-label">Confirm</div>
+                        <div class="step-label">Payment</div>
                     </div>
                 </div>
 
@@ -102,13 +102,19 @@ export async function showBookingModal(creatorId, serviceIndex = 0) {
                     </div>
                 </div>
 
-                <div style="background: #EFF6FF; padding: 12px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #3B82F6;">
-                    <div style="color: #1E40AF; font-size: 14px;">
-                        <strong>Client-Proposed Pricing:</strong> You set your budget and the creator will review your request. If they accept, you'll receive a payment link to proceed.
+                <div style="background: #FEF3C7; padding: 16px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #F59E0B;">
+                    <div style="color: #92400E; font-size: 14px; font-weight: 500; margin-bottom: 8px;">
+                        📋 How it works:
                     </div>
+                    <ol style="color: #92400E; font-size: 13px; margin: 0; padding-left: 20px; line-height: 1.6;">
+                        <li>Submit your booking request with your proposed budget</li>
+                        <li>The creator reviews and accepts/rejects/counter-proposes</li>
+                        <li>Once accepted, you'll receive a payment link via email</li>
+                        <li>Complete payment to confirm the booking</li>
+                    </ol>
                 </div>
 
-                <form onsubmit="handleBookingSubmit(event, ${creatorId}, ${serviceIndex})">
+                <form id="bookingForm" data-creator-id="${creatorId}" data-service-index="${serviceIndex}">
                     <div class="form-group">
                         <label class="form-label">Your Budget (USDC)</label>
                         <input type="number" id="proposedPrice" name="proposedPrice" class="form-input" required min="1" step="0.01" placeholder="e.g., 500">
@@ -136,12 +142,12 @@ export async function showBookingModal(creatorId, serviceIndex = 0) {
                     </div>
 
                     <div class="alert alert-success">
-                        <strong>Escrow protection:</strong> Your payment is held securely until you confirm delivery.
+                        <strong>No payment required yet!</strong> The creator will review your request first. Payment is only processed after they accept.
                     </div>
 
                     <div class="form-actions">
                         <button type="button" class="btn-ghost" onclick="closeModal()">Cancel</button>
-                        <button type="submit" class="btn-primary">Continue to payment</button>
+                        <button type="submit" class="btn-primary" id="submitBookingBtn">Send Booking Request</button>
                     </div>
                 </form>
             </div>
@@ -150,6 +156,19 @@ export async function showBookingModal(creatorId, serviceIndex = 0) {
 
     document.getElementById('modalsContainer').innerHTML = modalContent;
     openModal();
+
+    // Attach form submit handler after modal is rendered
+    const bookingForm = document.getElementById('bookingForm');
+    if (bookingForm) {
+        bookingForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const creatorId = this.dataset.creatorId;
+            const serviceIndex = parseInt(this.dataset.serviceIndex);
+            handleBookingSubmit(e, creatorId, serviceIndex);
+            return false;
+        });
+    }
 }
 
 export async function handleBookingSubmit(event, creatorId, serviceIndex) {
@@ -197,10 +216,10 @@ export async function handleBookingSubmit(event, creatorId, serviceIndex) {
 
         if (response.success) {
             closeModal();
-            showToast('Booking request sent! The creator will review your proposed budget.', 'success');
-            setTimeout(() => navigateToPage('bookings'), 1500);
+            showToast('✅ Booking request sent to creator! You will be notified when they respond.', 'success');
+            setTimeout(() => navigateToPage('bookings'), 2000);
         } else {
-            throw new Error(response.message || 'Failed to create booking');
+            throw new Error(response.message || 'Failed to send booking request');
         }
     } catch (error) {
         console.error('❌ Booking submission failed:', error);
@@ -484,8 +503,8 @@ export function showWithdrawModal() {
 
                 <form onsubmit="handleWithdrawal(event)" style="padding: 20px;">
                     <div class="form-group">
-                        <label class="form-label">Amount (USDT)</label>
-                        <input type="number" id="withdrawAmount" class="form-input" required min="20" step="0.01" placeholder="Minimum: 20 USDT">
+                        <label class="form-label">Amount (USDC)</label>
+                        <input type="number" id="withdrawAmount" class="form-input" required min="20" step="0.01" placeholder="Minimum: 20 USDC">
                     </div>
 
                     <div class="form-group">
@@ -496,14 +515,14 @@ export function showWithdrawModal() {
                     <div class="form-group">
                         <label class="form-label">Currency</label>
                         <select id="withdrawCurrency" class="form-select">
+                            <option value="USDC" selected>USDC</option>
                             <option value="USDT">USDT</option>
-                            <option value="USDC">USDC</option>
                             <option value="DAI">DAI</option>
                         </select>
                     </div>
 
                     <div class="caption" style="color: var(--text-secondary); margin-bottom: 16px;">
-                        💡 Minimum withdrawal: 20 USDT. Funds will be sent to your Solana wallet within 24-48 hours.
+                        💡 Minimum withdrawal: 20 USDC. Funds will be sent to your Solana wallet within 24-48 hours.
                     </div>
 
                     <button type="submit" class="btn-primary" style="width: 100%;">
@@ -526,7 +545,7 @@ window.handleWithdrawal = async function(event) {
     const currency = document.getElementById('withdrawCurrency').value;
 
     if (amount < 20) {
-        showToast('Minimum withdrawal amount is 20 USDT', 'error');
+        showToast('Minimum withdrawal amount is 20 USDC', 'error');
         return;
     }
 
