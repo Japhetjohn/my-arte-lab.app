@@ -7,6 +7,7 @@ const tsaraService = require('../services/tsaraService');
 const tsaraConfig = require('../config/tsara');
 const emailConfig = require('../config/email');
 const adminNotificationService = require('../services/adminNotificationService');
+const { v4: uuidv4 } = require('uuid');
 
 exports.createBooking = catchAsync(async (req, res, next) => {
   const {
@@ -21,7 +22,7 @@ exports.createBooking = catchAsync(async (req, res, next) => {
   } = req.body;
 
   const creator = await User.findById(creatorId);
-  if (!creator || creator.role !== 'creator') {
+  if (!creator || !creator.role || !creator.role.toLowerCase().includes('creator')) {
     return next(new ErrorHandler('Creator not found', 404));
   }
 
@@ -29,14 +30,18 @@ exports.createBooking = catchAsync(async (req, res, next) => {
   const platformFee = (amount * platformCommission) / 100;
   const creatorAmount = amount - platformFee;
 
+  // Generate unique booking ID
+  const bookingId = `BKG-${uuidv4().substring(0, 8).toUpperCase()}`;
+
   const booking = await Booking.create({
+    bookingId,
     client: req.user._id,
     creator: creatorId,
     serviceTitle,
     serviceDescription,
     category,
     amount,
-    currency: currency || 'USDT',
+    currency: currency || 'USDC',
     platformCommission,
     platformFee,
     creatorAmount,

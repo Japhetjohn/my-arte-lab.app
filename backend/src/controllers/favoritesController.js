@@ -10,7 +10,7 @@ exports.addToFavorites = catchAsync(async (req, res, next) => {
 
   // Check if creator exists
   const creator = await User.findById(creatorId);
-  if (!creator || creator.role !== 'creator') {
+  if (!creator || !creator.role || !creator.role.toLowerCase().includes('creator')) {
     return next(new ErrorHandler('Creator not found', 404));
   }
 

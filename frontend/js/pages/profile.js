@@ -26,10 +26,17 @@ export async function renderProfilePage() {
     const avatarUrl = getAvatarUrl(user);
 
     // More flexible creator check - check role, category, or services array
-    const isCreator = user.role && user.role.toLowerCase().includes('creator');
+    const isCreator = user.role && (
+        user.role.toLowerCase().includes('creator') ||
+        user.role.toLowerCase() === 'creator'
+    );
 
-    console.log('👤 Profile Page - User Role:', user.role);
+    console.log('👤 Profile Page - Full User Object:', user);
+    console.log('📋 User Role (raw):', user.role);
+    console.log('📋 User Role (type):', typeof user.role);
     console.log('🎯 Is Creator?', isCreator);
+    console.log('📊 User Category:', user.category);
+    console.log('🔧 Has Services Field?', 'services' in user);
 
     // Load services if creator
     let services = [];
@@ -56,13 +63,13 @@ export async function renderProfilePage() {
                         <h1>${user.name}</h1>
                         ${user.verified ? '<span class="verified-badge">✓ Verified</span>' : ''}
                         <div class="creator-role mt-sm">${isCreator ? 'Creator' : 'Client'}</div>
-                        ${user.location?.country ? `
+                        ${user.location && (user.location.city || user.location.country) ? `
                         <div class="creator-location mt-sm">
                             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                                 <path d="M8 8.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" stroke="currentColor" stroke-width="1.5"/>
                                 <path d="M8 14s5-4 5-7.5a5 5 0 0 0-10 0C3 10 8 14 8 14z" stroke="currentColor" stroke-width="1.5"/>
                             </svg>
-                            ${user.location.country}
+                            ${[user.location.city, user.location.country].filter(Boolean).join(', ')}
                         </div>
                         ` : ''}
                     </div>
