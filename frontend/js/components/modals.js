@@ -391,7 +391,7 @@ export function showWithdrawModal() {
                 <form onsubmit="handleWithdrawal(event)" style="padding: 20px;">
                     <div class="form-group">
                         <label class="form-label">Amount (USDC)</label>
-                        <input type="number" id="withdrawAmount" class="form-input" required min="20" step="0.01" placeholder="Minimum: 20 USDC">
+                        <input type="number" id="withdrawAmount" class="form-input" required min="0.01" step="0.01" placeholder="Enter amount to withdraw">
                     </div>
 
                     <div class="form-group">
@@ -409,7 +409,7 @@ export function showWithdrawModal() {
                     </div>
 
                     <div class="caption" style="color: var(--text-secondary); margin-bottom: 16px;">
-                        💡 Minimum withdrawal: 20 USDC. Funds will be sent to your Solana wallet within 24-48 hours.
+                        💡 No minimum withdrawal limit. Funds will be sent to your Solana wallet within 24-48 hours.
                     </div>
 
                     <button type="submit" class="btn-primary" style="width: 100%;">
@@ -431,8 +431,8 @@ window.handleWithdrawal = async function(event) {
     const address = document.getElementById('withdrawAddress').value;
     const currency = document.getElementById('withdrawCurrency').value;
 
-    if (amount < 20) {
-        showToast('Minimum withdrawal amount is 20 USDC', 'error');
+    if (amount <= 0) {
+        showToast('Withdrawal amount must be greater than 0', 'error');
         return;
     }
 

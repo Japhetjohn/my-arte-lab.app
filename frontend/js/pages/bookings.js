@@ -230,18 +230,32 @@ window.viewBookingDetails = async function(bookingId) {
                                 <button class="btn-primary" style="width: 100%; margin-top: 16px;" onclick="window.acceptBooking('${booking._id}')">
                                     Accept Booking Request
                                 </button>
+                                <div class="caption" style="margin-top: 12px; color: var(--text-secondary); text-align: center;">
+                                    Once accepted, funds will be deducted from client's wallet and held in escrow
+                                </div>
                             ` : ''}
 
-                            ${isCreator && (booking.status === 'in_progress' || booking.status === 'confirmed') ? `
-                                <button class="btn-primary" style="width: 100%; margin-top: 16px;" onclick="window.completeBooking('${booking._id}')">
-                                    Mark as Completed
-                                </button>
+                            ${booking.status === 'confirmed' && !booking.fundsReleased ? `
+                                <div style="background: #FEF3C7; padding: 16px; border-radius: 12px; margin-top: 16px; border-left: 4px solid #F59E0B;">
+                                    <div style="color: #92400E; font-weight: 600; margin-bottom: 4px;">Funds in Escrow</div>
+                                    <div style="color: #78350F; font-size: 14px;">
+                                        Payment has been secured. Funds will be automatically released to ${isCreator ? 'your' : "the creator's"} wallet after ${new Date(booking.endDate).toLocaleDateString()}.
+                                    </div>
+                                </div>
                             ` : ''}
 
-                            ${!isCreator && booking.status === 'completed' && !booking.fundsReleased ? `
-                                <button class="btn-primary" style="width: 100%; margin-top: 16px;" onclick="window.releasePayment('${booking._id}')">
-                                    Release Payment to Creator
-                                </button>
+                            ${booking.status === 'completed' && booking.fundsReleased ? `
+                                <div style="background: #D1FAE5; padding: 16px; border-radius: 12px; margin-top: 16px; border-left: 4px solid #10B981;">
+                                    <div style="color: #065F46; font-weight: 600; margin-bottom: 4px;">Booking Completed!</div>
+                                    <div style="color: #047857; font-size: 14px;">
+                                        ${isCreator ? 'Funds have been released to your wallet.' : 'Please rate your experience with this creator!'}
+                                    </div>
+                                </div>
+                                ${!isCreator && !booking.review ? `
+                                    <button class="btn-primary" style="width: 100%; margin-top: 16px;" onclick="window.showReviewModal('${booking._id}')">
+                                        Leave a Review
+                                    </button>
+                                ` : ''}
                             ` : ''}
                         </div>
                     </div>

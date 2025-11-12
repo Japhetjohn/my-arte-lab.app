@@ -141,13 +141,14 @@ exports.getBooking = catchAsync(async (req, res, next) => {
 
 exports.acceptBooking = catchAsync(async (req, res, next) => {
   const booking = await Booking.findById(req.params.id)
-    .populate('client', 'name email');
+    .populate('client', 'name email wallet')
+    .populate('creator', 'name email wallet');
 
   if (!booking) {
     return next(new ErrorHandler('Booking not found', 404));
   }
 
-  if (booking.creator.toString() !== req.user._id.toString()) {
+  if (booking.creator._id.toString() !== req.user._id.toString()) {
     return next(new ErrorHandler('Only the creator can accept this booking', 403));
   }
 
@@ -155,153 +156,170 @@ exports.acceptBooking = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Only pending bookings can be accepted', 400));
   }
 
+  // Check if client has sufficient balance
+  if (booking.client.wallet.balance < booking.amount) {
+    return next(new ErrorHandler('Client has insufficient balance. Client needs to fund their wallet first.', 400));
+  }
+
+  // Deduct money from client's wallet
+  const client = await User.findById(booking.client._id);
+  await client.updateWalletBalance(booking.amount, 'subtract');
+  await client.save();
+
+  // Add to creator's pending balance (escrow)
+  const creator = await User.findById(booking.creator._id);
+  creator.wallet.pendingBalance = (creator.wallet.pendingBalance || 0) + booking.creatorAmount;
+  await creator.save();
+
+  // Update booking status
   booking.status = 'confirmed';
+  booking.paymentStatus = 'paid';
+  booking.escrowWallet.isPaid = true;
+  booking.escrowWallet.paidAt = new Date();
   await booking.save();
+
+  // Create transaction records
+  await Transaction.create([
+    {
+      user: booking.client._id,
+      type: 'payment',
+      amount: booking.amount,
+      currency: booking.currency,
+      status: 'completed',
+      booking: booking._id,
+      description: `Payment for ${booking.serviceTitle}`,
+      completedAt: new Date()
+    },
+    {
+      user: booking.creator._id,
+      type: 'earning',
+      amount: booking.creatorAmount,
+      currency: booking.currency,
+      status: 'pending',
+      booking: booking._id,
+      description: `Pending payment for ${booking.serviceTitle}`
+    }
+  ]);
 
   // Notify client
   emailConfig.sendEmail({
     to: booking.client.email,
-    subject: 'Booking Accepted! ',
+    subject: 'Booking Confirmed! ',
     html: `
-      <h1>Booking Accepted!</h1>
+      <h1>Booking Confirmed!</h1>
       <p>Hi ${booking.client.name},</p>
-      <p>${req.user.name} has accepted your booking request.</p>
+      <p>${creator.name} has accepted your booking request.</p>
       <p><strong>Service:</strong> ${booking.serviceTitle}</p>
-      <p><strong>Amount:</strong> ${booking.amount} ${booking.currency}</p>
-      <p>Please send payment to the escrow address: ${booking.escrowWallet.address}</p>
-      <p>The work will begin once payment is confirmed.</p>
+      <p><strong>Amount:</strong> ${booking.amount} ${booking.currency} (deducted from your wallet)</p>
+      <p><strong>Work starts:</strong> ${new Date(booking.startDate).toLocaleDateString()}</p>
+      <p><strong>Expected completion:</strong> ${new Date(booking.endDate).toLocaleDateString()}</p>
+      <p>Funds will be automatically released to the creator after the work is completed.</p>
     `
   }).catch(err => console.error('Email failed:', err));
 
-  successResponse(res, 200, 'Booking accepted successfully', { booking });
-});
-
-exports.completeBooking = catchAsync(async (req, res, next) => {
-  const booking = await Booking.findById(req.params.id);
-
-  if (!booking) {
-    return next(new ErrorHandler('Booking not found', 404));
-  }
-
-  if (booking.creator.toString() !== req.user._id.toString()) {
-    return next(new ErrorHandler('Only the creator can mark the booking as completed', 403));
-  }
-
-  if (booking.status !== 'in_progress' && booking.status !== 'confirmed') {
-    return next(new ErrorHandler('Only in-progress or confirmed bookings can be marked as completed', 400));
-  }
-
-  await booking.markCompleted();
-
-  const client = await User.findById(booking.client);
+  // Notify creator
   emailConfig.sendEmail({
-    to: client.email,
-    subject: 'Booking Completed! ',
+    to: booking.creator.email,
+    subject: 'Booking Payment Received! ',
     html: `
-      <h1>Work Completed!</h1>
-      <p>Hi ${client.name},</p>
-      <p>${req.user.name} has marked your booking as completed.</p>
-      <p><strong>Service:</strong> ${booking.serviceTitle}</p>
-      <p>Please review the deliverables and release payment if satisfied.</p>
+      <h1>Payment Secured!</h1>
+      <p>Hi ${creator.name},</p>
+      <p>The client has been charged ${booking.amount} ${booking.currency} for the booking.</p>
+      <p><strong>Your earnings:</strong> ${booking.creatorAmount} ${booking.currency} (after ${booking.platformCommission}% platform fee)</p>
+      <p>The funds are currently in escrow and will be automatically released to your wallet after ${new Date(booking.endDate).toLocaleDateString()}.</p>
     `
   }).catch(err => console.error('Email failed:', err));
 
-  successResponse(res, 200, 'Booking marked as completed', { booking });
+  successResponse(res, 200, 'Booking accepted and payment secured', { booking });
 });
 
-exports.releaseFunds = catchAsync(async (req, res, next) => {
+// Automatic completion and fund release (called by cron job or after end date)
+exports.autoCompletBooking = catchAsync(async (req, res, next) => {
   const booking = await Booking.findById(req.params.id)
-    .populate('creator', 'wallet.address name email')
-    .populate('client', 'name');
+    .populate('creator', 'wallet name email')
+    .populate('client', 'name email');
 
   if (!booking) {
     return next(new ErrorHandler('Booking not found', 404));
   }
 
-  if (booking.client._id.toString() !== req.user._id.toString()) {
-    return next(new ErrorHandler('Only the client can release funds', 403));
+  // Check if booking has reached end date
+  if (new Date() < new Date(booking.endDate)) {
+    return next(new ErrorHandler('Booking end date has not been reached yet', 400));
   }
 
-  if (!booking.canReleaseFunds()) {
-    return next(new ErrorHandler('Funds cannot be released for this booking', 400));
+  if (booking.status !== 'confirmed') {
+    return next(new ErrorHandler('Only confirmed bookings can be auto-completed', 400));
   }
 
-  try {
-    const releaseResult = await tsaraService.releaseEscrowFunds({
-      escrowId: booking.escrowWallet.escrowId,
-      escrowAddress: booking.escrowWallet.address,
-      creatorAddress: booking.creator.wallet.address,
-      platformAddress: tsaraConfig.platformWallet,
-      creatorAmount: booking.creatorAmount,
-      platformFee: booking.platformFee,
-      currency: booking.currency,
-      bookingId: booking.bookingId
-    });
-
-    await booking.releaseFunds();
-    booking.platformFeePaid = true;
-    booking.platformFeePaidAt = new Date();
-    booking.platformFeeTransactionHash = releaseResult.platformTransaction?.hash;
-    await booking.save();
-
-    await Transaction.create([
-      {
-        user: booking.creator._id,
-        type: 'earning',
-        amount: booking.creatorAmount,
-        currency: booking.currency,
-        status: 'completed',
-        booking: booking._id,
-        toAddress: booking.creator.wallet.address,
-        transactionHash: releaseResult.creatorTransaction?.hash,
-        description: `Payment received for ${booking.serviceTitle}`,
-        completedAt: new Date()
-      },
-      {
-        user: booking.creator._id,
-        type: 'platform_fee',
-        amount: booking.platformFee,
-        currency: booking.currency,
-        status: 'completed',
-        booking: booking._id,
-        toAddress: tsaraConfig.platformWallet,
-        transactionHash: releaseResult.platformTransaction?.hash,
-        description: `Platform fee for ${booking.bookingId}`,
-        completedAt: new Date()
-      }
-    ]);
-
-    const creator = await User.findById(booking.creator._id);
-    await creator.updateWalletBalance(booking.creatorAmount, 'add');
-    creator.wallet.totalEarnings += booking.creatorAmount;
-    creator.completedBookings += 1;
-    await creator.save();
-
-    emailConfig.sendEmail({
-      to: booking.creator.email,
-      subject: 'Payment Received! ',
-      html: `
-        <h1>Payment Received!</h1>
-        <p>Hi ${booking.creator.name},</p>
-        <p>Payment for "${booking.serviceTitle}" has been released!</p>
-        <p><strong>Amount Received:</strong> ${booking.creatorAmount} ${booking.currency}</p>
-        <p><strong>Platform Fee:</strong> ${booking.platformFee} ${booking.currency}</p>
-        <p>The funds are now available in your wallet.</p>
-      `
-    }).catch(err => console.error('Email failed:', err));
-
-    adminNotificationService.notifyPaymentReceived(booking, releaseResult.creatorTransaction)
-      .catch(err => console.error('Admin notification failed:', err));
-
-    successResponse(res, 200, 'Funds released successfully', {
-      booking,
-      transactions: releaseResult
-    });
-
-  } catch (error) {
-    console.error('Fund release failed:', error);
-    return next(new ErrorHandler('Failed to release funds. Please contact support', 500));
+  if (booking.fundsReleased) {
+    return next(new ErrorHandler('Funds have already been released', 400));
   }
+
+  // Mark as completed
+  booking.status = 'completed';
+  booking.completedAt = new Date();
+  booking.fundsReleased = true;
+  booking.fundsReleasedAt = new Date();
+  booking.paymentStatus = 'released';
+  await booking.save();
+
+  // Move money from pending to available balance
+  const creator = await User.findById(booking.creator._id);
+  creator.wallet.pendingBalance = Math.max(0, (creator.wallet.pendingBalance || 0) - booking.creatorAmount);
+  await creator.updateWalletBalance(booking.creatorAmount, 'add');
+  creator.wallet.totalEarnings = (creator.wallet.totalEarnings || 0) + booking.creatorAmount;
+  creator.completedBookings += 1;
+  await creator.save();
+
+  // Update transaction status
+  await Transaction.findOneAndUpdate(
+    { booking: booking._id, type: 'earning', status: 'pending' },
+    { status: 'completed', completedAt: new Date() }
+  );
+
+  // Create platform fee transaction
+  await Transaction.create({
+    user: creator._id,
+    type: 'platform_fee',
+    amount: booking.platformFee,
+    currency: booking.currency,
+    status: 'completed',
+    booking: booking._id,
+    description: `Platform fee for ${booking.bookingId}`,
+    completedAt: new Date()
+  });
+
+  // Notify creator
+  emailConfig.sendEmail({
+    to: booking.creator.email,
+    subject: 'Payment Released! ',
+    html: `
+      <h1>Payment Released!</h1>
+      <p>Hi ${booking.creator.name},</p>
+      <p>The booking for "${booking.serviceTitle}" has been completed!</p>
+      <p><strong>Amount Received:</strong> ${booking.creatorAmount} ${booking.currency}</p>
+      <p>The funds are now available in your wallet for withdrawal.</p>
+    `
+  }).catch(err => console.error('Email failed:', err));
+
+  // Notify client to leave review
+  emailConfig.sendEmail({
+    to: booking.client.email,
+    subject: 'Please Rate Your Experience! ',
+    html: `
+      <h1>How was your experience?</h1>
+      <p>Hi ${booking.client.name},</p>
+      <p>Your booking for "${booking.serviceTitle}" with ${booking.creator.name} has been completed!</p>
+      <p>We'd love to hear about your experience. Please take a moment to rate and review the service.</p>
+      <p>Your feedback helps other clients and improves our platform!</p>
+    `
+  }).catch(err => console.error('Email failed:', err));
+
+  adminNotificationService.notifyBookingCompleted(booking)
+    .catch(err => console.error('Admin notification failed:', err));
+
+  successResponse(res, 200, 'Booking completed and funds released automatically', { booking });
 });
 
 exports.cancelBooking = catchAsync(async (req, res, next) => {

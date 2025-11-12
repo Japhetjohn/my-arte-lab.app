@@ -56,13 +56,12 @@ exports.requestWithdrawal = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Only creators can withdraw funds', 403));
   }
 
-  const minWithdrawal = parseFloat(process.env.MINIMUM_WITHDRAWAL) || 20;
-  if (amount < minWithdrawal) {
-    return next(new ErrorHandler(`Minimum withdrawal amount is ${minWithdrawal}`, 400));
-  }
-
   if (user.wallet.balance < amount) {
     return next(new ErrorHandler('Insufficient balance', 400));
+  }
+
+  if (amount <= 0) {
+    return next(new ErrorHandler('Withdrawal amount must be greater than 0', 400));
   }
 
   const transaction = await Transaction.create({
