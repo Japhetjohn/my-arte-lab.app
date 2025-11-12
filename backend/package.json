@@ -8,6 +8,7 @@
     "dev": "nodemon src/server.js",
     "dev:clean": "bash kill-port.sh && npm run dev",
     "kill-port": "bash kill-port.sh",
+    "migrate:usdc": "node src/migrations/migrate-usdt-to-usdc.js",
     "test": "jest --coverage",
     "lint": "eslint src/"
   },
