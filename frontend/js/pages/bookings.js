@@ -134,22 +134,22 @@ function renderBookingCard(booking) {
                 </div>
             </div>
             <div style="text-align: right;">
-                <div style="margin-bottom: 8px;">
-                    <span class="tag" style="background: ${getStatusColor(booking.status)}; color: white;">
+                <div style="display: flex; flex-direction: column; gap: 8px; align-items: flex-end; margin-bottom: 12px;">
+                    <span class="tag" style="background: ${getStatusColor(booking.status)}; color: white; padding: 6px 12px;">
                         ${formatStatus(booking.status)}
                     </span>
                     ${booking.paymentStatus === 'pending' ? `
-                        <span class="tag" style="background: #FFA500; color: white; margin-left: 4px;">
+                        <span class="tag" style="background: #FFA500; color: white; padding: 6px 12px;">
                             Payment Pending
                         </span>
                     ` : ''}
                     ${booking.paymentStatus === 'paid' ? `
-                        <span class="tag" style="background: #10B981; color: white; margin-left: 4px;">
+                        <span class="tag" style="background: #10B981; color: white; padding: 6px 12px;">
                             Paid
                         </span>
                     ` : ''}
                 </div>
-                <div class="transaction-amount">${booking.currency || 'USDC'} ${booking.amount.toFixed(2)}</div>
+                <div class="transaction-amount" style="font-size: 18px; font-weight: 700;">USDC ${booking.amount.toFixed(2)}</div>
             </div>
         </div>
     `;
@@ -200,7 +200,7 @@ window.viewBookingDetails = async function(bookingId) {
                                 <div style="background: #EFF6FF; padding: 16px; border-radius: 12px; margin-bottom: 20px; border-left: 4px solid #3B82F6;">
                                     <div style="color: #1E40AF; font-weight: 600; margin-bottom: 4px;">Counter Proposal</div>
                                     <div style="color: #1E3A8A; font-size: 14px;">
-                                        Creator proposed: ${booking.currency} ${booking.counterProposal.amount.toFixed(2)}
+                                        Creator proposed: USDC ${booking.counterProposal.amount.toFixed(2)}
                                         <div class="caption">Proposed ${formatDate(booking.counterProposal.proposedAt)}</div>
                                     </div>
                                 </div>
@@ -233,7 +233,7 @@ window.viewBookingDetails = async function(bookingId) {
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
                                 <div>
                                     <div class="caption" style="color: var(--text-secondary); margin-bottom: 4px;">Amount</div>
-                                    <div style="font-size: 20px; font-weight: 700; color: var(--primary);">${booking.currency || 'USDC'} ${booking.amount.toFixed(2)}</div>
+                                    <div style="font-size: 20px; font-weight: 700; color: var(--primary);">USDC ${booking.amount.toFixed(2)}</div>
                                 </div>
                                 <div>
                                     <div class="caption" style="color: var(--text-secondary); margin-bottom: 4px;">Payment</div>
@@ -246,7 +246,7 @@ window.viewBookingDetails = async function(bookingId) {
                             ${booking.paymentStatus === 'pending' && booking.escrowWallet?.address && !isCreator && booking.status === 'confirmed' ? `
                                 <div style="background: var(--primary); color: white; padding: 16px; border-radius: 12px; margin: 20px 0;">
                                     <div style="font-weight: 600; margin-bottom: 8px;">Pay for this booking</div>
-                                    <div style="font-size: 14px; opacity: 0.9; margin-bottom: 12px;">Send ${booking.currency || 'USDC'} ${booking.amount.toFixed(2)} to:</div>
+                                    <div style="font-size: 14px; opacity: 0.9; margin-bottom: 12px;">Send USDC ${booking.amount.toFixed(2)} to:</div>
                                     <div style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; word-break: break-all; font-family: monospace; font-size: 13px;">
                                         ${booking.escrowWallet.address}
                                     </div>
