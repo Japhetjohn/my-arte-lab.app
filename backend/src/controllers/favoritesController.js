@@ -1,7 +1,6 @@
 const User = require('../models/User');
-const { catchAsync } = require('../utils/catchAsync');
-const { ErrorHandler } = require('../middleware/errorHandler');
-const { successResponse } = require('../utils/response');
+const { ErrorHandler, catchAsync } = require('../utils/errorHandler');
+const { successResponse } = require('../utils/apiResponse');
 
 /**
  * Add creator to favorites
