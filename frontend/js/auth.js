@@ -238,20 +238,17 @@ export async function initAuth() {
 }
 
 export function updateUserMenu() {
-    console.log('🔄 updateUserMenu() called');
-    console.log('📱 Current appState.user:', appState.user);
+    console.log('updateUserMenu() called');
+    console.log('Current appState.user:', appState.user);
 
     const userMenuContainer = document.getElementById('userMenuContainer');
     if (!userMenuContainer) {
-        console.warn('⚠️ userMenuContainer not found in DOM!');
+        console.warn('userMenuContainer not found in DOM');
         return;
     }
 
     if (appState.user) {
-        console.log('✅ User is logged in, rendering user menu');
-        console.log('👤 User name to display:', appState.user.name);
-        console.log('📧 User email to display:', appState.user.email);
-        console.log('🖼️ User avatar:', appState.user.avatar);
+        console.log('User is logged in, rendering user menu');
 
         // Show user avatar dropdown with professional fallback
         const avatarUrl = getAvatarUrl(appState.user);
@@ -320,10 +317,57 @@ export function updateUserMenu() {
                 dropdown.classList.remove('active');
             }
         });
+
+        // Show notifications button and update badge
+        const notificationsBtn = document.getElementById('notificationsBtn');
+        if (notificationsBtn) {
+            notificationsBtn.style.display = 'flex';
+            notificationsBtn.addEventListener('click', () => navigateToPage('notifications'));
+        }
+
+        // Update notification badge
+        updateNotificationBadge();
+
+        // Update notification badge every 30 seconds
+        if (!window.notificationInterval) {
+            window.notificationInterval = setInterval(updateNotificationBadge, 30000);
+        }
     } else {
+        // Hide notifications button when logged out
+        const notificationsBtn = document.getElementById('notificationsBtn');
+        if (notificationsBtn) {
+            notificationsBtn.style.display = 'none';
+        }
+
+        // Clear notification interval
+        if (window.notificationInterval) {
+            clearInterval(window.notificationInterval);
+            window.notificationInterval = null;
+        }
+
         // Show sign in button
         userMenuContainer.innerHTML = `<button class="btn-secondary" id="authBtn">Sign in</button>`;
         document.getElementById('authBtn')?.addEventListener('click', () => showAuthModal('signin'));
+    }
+}
+
+async function updateNotificationBadge() {
+    try {
+        const response = await api.getUnreadNotificationCount();
+        if (response.success) {
+            const unreadCount = response.data.unreadCount || 0;
+            const badge = document.querySelector('.notification-badge');
+            if (badge) {
+                if (unreadCount > 0) {
+                    badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+                    badge.style.display = 'flex';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Failed to update notification badge:', error);
     }
 }
 

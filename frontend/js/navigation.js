@@ -7,6 +7,7 @@ import { renderWalletPage } from './pages/wallet.js';
 import { renderProfilePage } from './pages/profile.js';
 import { renderSettingsPage } from './pages/settings.js';
 import { renderFavoritesPage } from './pages/favorites.js';
+import { renderNotificationsPage } from './pages/notifications.js';
 
 export function navigateToPage(page, addToHistoryFlag = true) {
     // Track navigation history
@@ -49,6 +50,9 @@ export function navigateToPage(page, addToHistoryFlag = true) {
                 break;
             case 'bookings':
                 renderBookingsPage();
+                break;
+            case 'notifications':
+                renderNotificationsPage();
                 break;
             case 'wallet':
                 renderWalletPage();

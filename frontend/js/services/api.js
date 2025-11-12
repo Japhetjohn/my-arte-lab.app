@@ -412,6 +412,34 @@ class ApiService {
     async isFavorited(creatorId) {
         return this.get(`/favorites/${creatorId}/status`);
     }
+
+    // ==================== Notification Endpoints ====================
+
+    async getNotifications(filters = {}) {
+        const queryParams = new URLSearchParams(filters).toString();
+        const endpoint = queryParams ? `/notifications?${queryParams}` : '/notifications';
+        return this.get(endpoint);
+    }
+
+    async getUnreadNotificationCount() {
+        return this.get('/notifications/unread-count');
+    }
+
+    async markNotificationAsRead(notificationId) {
+        return this.request(`/notifications/${notificationId}/read`, { method: 'PATCH' });
+    }
+
+    async markAllNotificationsAsRead() {
+        return this.request('/notifications/mark-all-read', { method: 'PATCH' });
+    }
+
+    async deleteNotification(notificationId) {
+        return this.delete(`/notifications/${notificationId}`);
+    }
+
+    async deleteAllReadNotifications() {
+        return this.delete('/notifications/read/all');
+    }
 }
 
 // Export singleton instance

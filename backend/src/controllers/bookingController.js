@@ -1,6 +1,7 @@
 const Booking = require('../models/Booking');
 const User = require('../models/User');
 const Transaction = require('../models/Transaction');
+const Notification = require('../models/Notification');
 const { successResponse } = require('../utils/apiResponse');
 const { ErrorHandler, catchAsync } = require('../utils/errorHandler');
 const tsaraService = require('../services/tsaraService');
@@ -89,14 +90,29 @@ exports.createBooking = catchAsync(async (req, res, next) => {
   adminNotificationService.notifyNewBooking(booking, req.user, creator)
     .catch(err => console.error('Admin notification failed:', err));
 
+  // Create notification for creator
+  await Notification.createNotification({
+    recipient: creator._id,
+    sender: req.user._id,
+    type: 'booking_request',
+    title: 'New Booking Request',
+    message: `${req.user.name} has sent you a booking request for ${serviceTitle}`,
+    link: `/bookings`,
+    booking: booking._id,
+    metadata: {
+      amount: booking.amount,
+      currency: booking.currency,
+      bookingId: booking.bookingId
+    }
+  });
+
   successResponse(res, 201, 'Booking created successfully', {
     booking,
     paymentInstructions: {
-      message: 'Please send payment to the escrow address below',
-      escrowAddress: booking.escrowWallet.address,
+      message: 'Creator will review your request first. Payment will be auto-deducted from your wallet once approved.',
       amount: booking.amount,
       currency: booking.currency,
-      note: 'Funds will be held in escrow until job completion'
+      note: 'Please ensure you have sufficient balance in your wallet'
     }
   });
 });
@@ -354,25 +370,103 @@ exports.acceptBooking = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Booking can only be accepted when pending', 400));
   }
 
-  booking.status = 'confirmed';
-  await booking.save();
+  // Get client's wallet balance
+  const client = await User.findById(booking.client._id);
 
-  // Send email notification to client
-  emailConfig.sendEmail({
-    to: booking.client.email,
-    subject: 'Booking Accepted!',
-    html: `
-      <h1>Booking Accepted!</h1>
-      <p>Hi ${booking.client.name},</p>
-      <p>${booking.creator.name} has accepted your booking request for "${booking.serviceTitle}".</p>
-      <p><strong>Amount:</strong> ${booking.amount} ${booking.currency}</p>
-      <p>Please send payment to the escrow address to proceed:</p>
-      <p style="background: #f5f5f5; padding: 12px; border-radius: 8px; font-family: monospace;">${booking.escrowWallet.address}</p>
-      <p>Best regards,<br/>MyArteLab Team</p>
-    `
-  }).catch(err => console.error('Email failed:', err));
+  if (!client.wallet || client.wallet.balance < booking.amount) {
+    // Create notification for client about insufficient balance
+    await Notification.createNotification({
+      recipient: client._id,
+      sender: booking.creator._id,
+      type: 'insufficient_balance',
+      title: 'Insufficient Wallet Balance',
+      message: `Your booking request for "${booking.serviceTitle}" was accepted, but you have insufficient balance. Please fund your wallet with at least ${booking.amount} ${booking.currency}`,
+      link: `/wallet`,
+      booking: booking._id,
+      metadata: {
+        required: booking.amount,
+        current: client.wallet?.balance || 0,
+        currency: booking.currency
+      }
+    });
 
-  successResponse(res, 200, 'Booking accepted successfully', { booking });
+    return next(new ErrorHandler(`Insufficient wallet balance. Required: ${booking.amount} ${booking.currency}, Available: ${client.wallet?.balance || 0} ${booking.currency}. Please fund your wallet first.`, 400));
+  }
+
+  // Deduct payment from client's wallet automatically
+  try {
+    await client.updateWalletBalance(booking.amount, 'subtract');
+    await client.save();
+
+    // Create transaction record for deduction
+    await Transaction.create({
+      user: client._id,
+      type: 'booking_payment',
+      amount: booking.amount,
+      currency: booking.currency,
+      status: 'completed',
+      booking: booking._id,
+      description: `Payment for ${booking.serviceTitle}`,
+      completedAt: new Date()
+    });
+
+    // Update booking status and payment status
+    booking.status = 'confirmed';
+    booking.paymentStatus = 'paid';
+    booking.paidAt = new Date();
+    await booking.save();
+
+    // Create notification for client
+    await Notification.createNotification({
+      recipient: client._id,
+      sender: booking.creator._id,
+      type: 'booking_accepted',
+      title: 'Booking Accepted',
+      message: `${booking.creator.name} has accepted your booking for "${booking.serviceTitle}". Payment of ${booking.amount} ${booking.currency} has been deducted from your wallet and held in escrow.`,
+      link: `/bookings`,
+      booking: booking._id,
+      metadata: {
+        amount: booking.amount,
+        currency: booking.currency,
+        bookingId: booking.bookingId
+      }
+    });
+
+    // Create notification for payment deduction
+    await Notification.createNotification({
+      recipient: client._id,
+      type: 'payment_deducted',
+      title: 'Payment Deducted',
+      message: `${booking.amount} ${booking.currency} has been deducted from your wallet for booking ${booking.bookingId}`,
+      link: `/wallet`,
+      booking: booking._id,
+      metadata: {
+        amount: booking.amount,
+        currency: booking.currency,
+        newBalance: client.wallet.balance
+      }
+    });
+
+    // Send email notification to client
+    emailConfig.sendEmail({
+      to: booking.client.email,
+      subject: 'Booking Accepted and Payment Processed',
+      html: `
+        <h1>Booking Accepted!</h1>
+        <p>Hi ${booking.client.name},</p>
+        <p>${booking.creator.name} has accepted your booking request for "${booking.serviceTitle}".</p>
+        <p><strong>Amount:</strong> ${booking.amount} ${booking.currency}</p>
+        <p><strong>Payment Status:</strong> Payment has been automatically deducted from your wallet and is being held in escrow.</p>
+        <p>The funds will be released to the creator once the job is completed and you approve.</p>
+        <p>Best regards,<br/>MyArteLab Team</p>
+      `
+    }).catch(err => console.error('Email failed:', err));
+
+    successResponse(res, 200, 'Booking accepted and payment processed successfully', { booking });
+  } catch (error) {
+    console.error('Payment deduction failed:', error);
+    return next(new ErrorHandler('Failed to process payment. Please try again.', 500));
+  }
 });
 
 exports.rejectBooking = catchAsync(async (req, res, next) => {
@@ -396,6 +490,21 @@ exports.rejectBooking = catchAsync(async (req, res, next) => {
   booking.cancelledAt = new Date();
   booking.cancellationReason = reason || 'Rejected by creator';
   await booking.save();
+
+  // Create notification for client
+  await Notification.createNotification({
+    recipient: booking.client._id,
+    sender: booking.creator._id,
+    type: 'booking_rejected',
+    title: 'Booking Request Declined',
+    message: `${booking.creator.name} has declined your booking request for "${booking.serviceTitle}"${reason ? `. Reason: ${reason}` : ''}`,
+    link: `/bookings`,
+    booking: booking._id,
+    metadata: {
+      reason,
+      bookingId: booking.bookingId
+    }
+  });
 
   // Send email notification to client
   emailConfig.sendEmail({
@@ -449,6 +558,23 @@ exports.counterProposal = catchAsync(async (req, res, next) => {
 
   await booking.addMessage(req.user._id, `Counter proposal: ${booking.currency} ${amount.toFixed(2)}`);
   await booking.save();
+
+  // Create notification for client
+  await Notification.createNotification({
+    recipient: booking.client._id,
+    sender: booking.creator._id,
+    type: 'counter_proposal',
+    title: 'Counter Proposal Received',
+    message: `${booking.creator.name} has made a counter proposal of ${booking.currency} ${amount.toFixed(2)} for "${booking.serviceTitle}"`,
+    link: `/bookings`,
+    booking: booking._id,
+    metadata: {
+      originalAmount: booking.amount,
+      counterAmount: amount,
+      currency: booking.currency,
+      bookingId: booking.bookingId
+    }
+  });
 
   // Send email notification to client
   emailConfig.sendEmail({
