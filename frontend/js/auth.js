@@ -265,12 +265,19 @@ export function updateUserMenu() {
                     <div class="user-dropdown-name">${appState.user.name}</div>
                     <div class="user-dropdown-email">${appState.user.email}</div>
                 </div>
-                <button class="user-dropdown-item" onclick="navigateToPage('settings')">
+                <button class="user-dropdown-item" onclick="navigateToPage('profile')">
                     <svg viewBox="0 0 24 24" fill="none">
                         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2"/>
                         <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
                     </svg>
                     My profile
+                </button>
+                <button class="user-dropdown-item" onclick="navigateToPage('bookings')">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
+                        <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                    My bookings
                 </button>
                 <button class="user-dropdown-item" onclick="navigateToPage('wallet')">
                     <svg viewBox="0 0 24 24" fill="none">
@@ -279,12 +286,13 @@ export function updateUserMenu() {
                     </svg>
                     Wallet
                 </button>
-                <button class="user-dropdown-item" onclick="navigateToPage('bookings')">
+                <button class="user-dropdown-item" onclick="navigateToPage('settings')">
                     <svg viewBox="0 0 24 24" fill="none">
-                        <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
-                        <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" stroke-width="2"/>
+                        <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+                        <path d="M12 1v6m0 6v6M23 12h-6m-6 0H5" stroke="currentColor" stroke-width="2"/>
+                        <path d="M18.364 5.636l-4.243 4.243m-4.242 4.242L5.636 18.364M18.364 18.364l-4.243-4.243m-4.242-4.242L5.636 5.636" stroke="currentColor" stroke-width="2"/>
                     </svg>
-                    My bookings
+                    Settings
                 </button>
                 <div class="user-dropdown-divider"></div>
                 <button class="user-dropdown-item" onclick="closeUserDropdown()">
