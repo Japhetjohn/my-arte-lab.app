@@ -88,7 +88,7 @@ function renderWalletContent() {
 
                 <!-- Wallet Address Card -->
                 <div style="background: var(--surface); border-radius: 16px; padding: 20px; margin-bottom: 24px; border: 1px solid var(--border);">
-                    <div class="caption" style="margin-bottom: 8px; color: var(--text-secondary);">Your Solana Wallet Address (${walletData.currency || 'USDT'})</div>
+                    <div class="caption" style="margin-bottom: 8px; color: var(--text-secondary);">Your Solana Wallet Address (${walletData.currency || 'USDC'})</div>
                     ${walletData.address && !walletData.address.startsWith('pending_') ? `
                         <div style="display: flex; align-items: center; gap: 12px;">
                             <code id="walletAddress" style="flex: 1; background: var(--background); padding: 12px; border-radius: 8px; font-size: 14px; overflow-x: auto; white-space: nowrap;">${walletData.address}</code>
@@ -101,7 +101,7 @@ function renderWalletContent() {
                             </button>
                         </div>
                         <div class="caption" style="margin-top: 8px; color: var(--text-secondary);">
-                            Network: ${walletData.network || 'Solana'} • Send ${walletData.currency || 'USDT'} to this address to fund your wallet
+                            Network: ${walletData.network || 'Solana'} • Send ${walletData.currency || 'USDC'} to this address to fund your wallet
                         </div>
                     ` : `
                         <div style="background: #FEF3C7; padding: 16px; border-radius: 8px; border-left: 4px solid #F59E0B;">
@@ -115,7 +115,7 @@ function renderWalletContent() {
 
                 <div class="balance-card">
                     <div class="balance-label">Available balance</div>
-                    <div class="balance-amount">${walletData.currency || 'USDT'} ${balance.toFixed(2)}</div>
+                    <div class="balance-amount">${walletData.currency || 'USDC'} ${balance.toFixed(2)}</div>
                     <div class="balance-actions">
                         ${appState.user.role === 'creator' ? `
                         <button class="btn-primary" style="background: white; color: var(--primary);" onclick="showWithdrawModal()">
@@ -144,7 +144,7 @@ function renderWalletContent() {
                             </svg>
                         </div>
                         <div class="wallet-card-label">Total earnings</div>
-                        <div class="wallet-card-value">${walletData.currency || 'USDT'} ${totalEarnings.toFixed(2)}</div>
+                        <div class="wallet-card-value">${walletData.currency || 'USDC'} ${totalEarnings.toFixed(2)}</div>
                     </div>
 
                     <div class="wallet-card-item">
@@ -155,7 +155,7 @@ function renderWalletContent() {
                             </svg>
                         </div>
                         <div class="wallet-card-label">Pending</div>
-                        <div class="wallet-card-value" style="color: #FFA500;">${walletData.currency || 'USDT'} ${pendingBalance.toFixed(2)}</div>
+                        <div class="wallet-card-value" style="color: #FFA500;">${walletData.currency || 'USDC'} ${pendingBalance.toFixed(2)}</div>
                     </div>
 
                     <div class="wallet-card-item">
@@ -165,7 +165,7 @@ function renderWalletContent() {
                             </svg>
                         </div>
                         <div class="wallet-card-label">Withdrawn</div>
-                        <div class="wallet-card-value" style="color: var(--success);">${walletData.currency || 'USDT'} ${withdrawn.toFixed(2)}</div>
+                        <div class="wallet-card-value" style="color: var(--success);">${walletData.currency || 'USDC'} ${withdrawn.toFixed(2)}</div>
                     </div>
                 </div>
 
@@ -236,7 +236,7 @@ function renderWalletContent() {
                                     ${transaction.status === 'processing' ? `<div class="caption" style="color: #3B82F6; margin-bottom: 4px;">Processing</div>` : ''}
                                     ${transaction.status === 'failed' ? `<div class="caption" style="color: #EF4444; margin-bottom: 4px;">Failed</div>` : ''}
                                     <div class="transaction-amount ${isCredit ? 'positive' : 'negative'}">
-                                        ${isCredit ? '+' : '-'}${transaction.currency || 'USDT'} ${Math.abs(transaction.amount).toFixed(2)}
+                                        ${isCredit ? '+' : '-'}${transaction.currency || 'USDC'} ${Math.abs(transaction.amount).toFixed(2)}
                                     </div>
                                 </div>
                             </div>

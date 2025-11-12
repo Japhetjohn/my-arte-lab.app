@@ -81,7 +81,9 @@ export async function renderCreatorProfile(creatorIdOrObject) {
                     role: apiCreator.category ? apiCreator.category.charAt(0).toUpperCase() + apiCreator.category.slice(1) : 'Creator',
                     location: apiCreator.location ?
                         (typeof apiCreator.location === 'object' ?
-                            `${apiCreator.location.city || ''}${apiCreator.location.city && apiCreator.location.country ? ', ' : ''}${apiCreator.location.country || ''}`.trim()
+                            (apiCreator.location.fullAddress ||
+                             [apiCreator.location.city, apiCreator.location.country].filter(Boolean).join(', ') ||
+                             'Nigeria')
                             : apiCreator.location)
                         : 'Nigeria',
                     rating: apiCreator.rating?.average?.toFixed(1) || '0.0',

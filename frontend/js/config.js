@@ -37,9 +37,10 @@ export const API_ENDPOINTS = {
     bookings: '/bookings',
     createBooking: '/bookings',
     bookingDetails: (id) => `/bookings/${id}`,
+    acceptBooking: (id) => `/bookings/${id}/accept`,
     completeBooking: (id) => `/bookings/${id}/complete`,
     cancelBooking: (id) => `/bookings/${id}/cancel`,
-    releasePayment: (id) => `/bookings/${id}/release-payment`,
+    releasePayment: (id) => `/bookings/${id}/release-funds`,
 
     // Wallet
     wallet: '/wallet',

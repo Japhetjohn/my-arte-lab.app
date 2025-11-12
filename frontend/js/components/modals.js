@@ -158,12 +158,25 @@ export async function handleProfileUpdate(event) {
         submitBtn.disabled = true;
         submitBtn.textContent = 'Saving...';
 
+        const localArea = document.getElementById('profileLocalArea')?.value.trim();
+        const city = document.getElementById('profileCity')?.value.trim();
+        const state = document.getElementById('profileState')?.value.trim();
+        const country = document.getElementById('profileCountry')?.value.trim();
+
+        // Build full address from components
+        const addressParts = [localArea, city, state, country].filter(part => part);
+        const fullAddress = addressParts.join(', ');
+
         const profileData = {
             name: document.getElementById('profileName').value,
             email: document.getElementById('profileEmail').value,
             bio: document.getElementById('profileBio').value,
             location: {
-                city: document.getElementById('profileLocation')?.value
+                localArea,
+                city,
+                state,
+                country,
+                fullAddress
             }
         };
 
@@ -377,8 +390,8 @@ export function showWithdrawModal() {
 
                 <form onsubmit="handleWithdrawal(event)" style="padding: 20px;">
                     <div class="form-group">
-                        <label class="form-label">Amount (USDT)</label>
-                        <input type="number" id="withdrawAmount" class="form-input" required min="20" step="0.01" placeholder="Minimum: 20 USDT">
+                        <label class="form-label">Amount (USDC)</label>
+                        <input type="number" id="withdrawAmount" class="form-input" required min="20" step="0.01" placeholder="Minimum: 20 USDC">
                     </div>
 
                     <div class="form-group">
@@ -389,14 +402,14 @@ export function showWithdrawModal() {
                     <div class="form-group">
                         <label class="form-label">Currency</label>
                         <select id="withdrawCurrency" class="form-select">
+                            <option value="USDC" selected>USDC</option>
                             <option value="USDT">USDT</option>
-                            <option value="USDC">USDC</option>
                             <option value="DAI">DAI</option>
                         </select>
                     </div>
 
                     <div class="caption" style="color: var(--text-secondary); margin-bottom: 16px;">
-                        💡 Minimum withdrawal: 20 USDT. Funds will be sent to your Solana wallet within 24-48 hours.
+                        💡 Minimum withdrawal: 20 USDC. Funds will be sent to your Solana wallet within 24-48 hours.
                     </div>
 
                     <button type="submit" class="btn-primary" style="width: 100%;">
@@ -419,7 +432,7 @@ window.handleWithdrawal = async function(event) {
     const currency = document.getElementById('withdrawCurrency').value;
 
     if (amount < 20) {
-        showToast('Minimum withdrawal amount is 20 USDT', 'error');
+        showToast('Minimum withdrawal amount is 20 USDC', 'error');
         return;
     }
 

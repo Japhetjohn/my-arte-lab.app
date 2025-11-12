@@ -47,7 +47,7 @@ class TsaraService {
 
       return {
         address: publicKey,
-        currency: 'USDT',
+        currency: 'USDC',
         balance: 0,
         network: 'Solana',
         type: 'crypto',
@@ -78,12 +78,12 @@ class TsaraService {
 
       console.log(`Escrow wallet created: ${depositAddress}`);
       console.log(`   Checkout ID: ${checkoutId}`);
-      console.log(`   Amount: ${bookingData.amount} ${bookingData.currency || 'USDT'}`);
+      console.log(`   Amount: ${bookingData.amount} ${bookingData.currency || 'USDC'}`);
 
       return {
         address: depositAddress,
         amount: bookingData.amount,
-        currency: bookingData.currency || 'USDT',
+        currency: bookingData.currency || 'USDC',
         escrowId: checkoutId,
         checkoutId: checkoutId,
         status: 'pending',
@@ -113,7 +113,7 @@ class TsaraService {
           status: checkoutData.status,
           amount: checkoutData.amount,
           paidAmount: checkoutData.amount,
-          currency: checkoutData.tokenType || 'USDT',
+          currency: checkoutData.tokenType || 'USDC',
           address: checkoutData.depositAddress,
           checkoutId: checkoutData.checkoutId,
           createdAt: checkoutData.createdAt,
@@ -138,7 +138,7 @@ class TsaraService {
       if (response.data && response.data.data) {
         return {
           balance: response.data.data.balance || 0,
-          currency: 'USDT',
+          currency: 'USDC',
           network: 'Solana',
           type: 'crypto'
         };
@@ -148,7 +148,7 @@ class TsaraService {
 
     } catch (error) {
       console.error('Balance check failed:', error.response ? error.response.data : error.message);
-      return { balance: 0, currency: 'USDT', network: 'Solana', type: 'crypto' };
+      return { balance: 0, currency: 'USDC', network: 'Solana', type: 'crypto' };
     }
   }
 
@@ -171,7 +171,7 @@ class TsaraService {
         escrow_id: escrowId || escrowAddress,
         recipient_address: creatorAddress,
         amount: creatorAmount,
-        currency: currency || 'USDT',
+        currency: currency || 'USDC',
         metadata: {
           platform: 'myartelab',
           booking_id: bookingId,
@@ -183,7 +183,7 @@ class TsaraService {
         escrow_id: escrowId || escrowAddress,
         recipient_address: platformAddress,
         amount: platformFee,
-        currency: currency || 'USDT',
+        currency: currency || 'USDC',
         metadata: {
           platform: 'myartelab',
           booking_id: bookingId,
@@ -229,7 +229,7 @@ class TsaraService {
         from_address: fromAddress,
         to_address: toAddress,
         amount: amount,
-        currency: currency || 'USDT',
+        currency: currency || 'USDC',
         memo: memo || 'Withdrawal',
         metadata: {
           platform: 'myartelab'
@@ -312,7 +312,7 @@ class TsaraService {
         user: booking.client,
         type: 'payment',
         amount: data.amount,
-        currency: data.currency || 'USDT',
+        currency: data.currency || 'USDC',
         status: 'completed',
         booking: booking._id,
         description: `Stablecoin payment for booking ${booking.bookingId}`,

@@ -53,8 +53,11 @@ const userSchema = new mongoose.Schema({
   },
 
   location: {
+    localArea: String,
     city: String,
-    country: String
+    state: String,
+    country: String,
+    fullAddress: String
   },
 
   category: {
@@ -78,7 +81,7 @@ const userSchema = new mongoose.Schema({
     title: String,
     description: String,
     price: Number,
-    currency: { type: String, default: 'USDT' },
+    currency: { type: String, default: 'USDC' },
     deliveryTime: Number
   }],
 
@@ -111,7 +114,7 @@ const userSchema = new mongoose.Schema({
     currency: {
       type: String,
       enum: ['USDT', 'USDC', 'DAI'],
-      default: 'USDT'
+      default: 'USDC'
     },
     network: {
       type: String,

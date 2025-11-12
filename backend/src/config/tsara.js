@@ -12,7 +12,7 @@ const tsaraConfig = {
 
   supportedCoins: (process.env.SUPPORTED_STABLECOINS || 'USDT,USDC,DAI').split(','),
 
-  defaultCoin: process.env.DEFAULT_STABLECOIN || 'USDT',
+  defaultCoin: process.env.DEFAULT_STABLECOIN || 'USDC',
 
   network: 'Solana',
 

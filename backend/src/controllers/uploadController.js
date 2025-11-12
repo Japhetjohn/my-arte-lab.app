@@ -54,6 +54,11 @@ exports.uploadPortfolio = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Only creators can upload portfolio images', 403));
   }
 
+  // Check if user already has max portfolio items
+  if (user.portfolio && user.portfolio.length >= 5) {
+    return next(new ErrorHandler('Maximum of 5 portfolio items allowed. Please delete an existing item to upload a new one.', 400));
+  }
+
   const result = await uploadPortfolio(req.file.buffer);
 
   const portfolioItem = {

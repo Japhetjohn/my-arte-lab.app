@@ -37,7 +37,7 @@ const transactionSchema = new mongoose.Schema({
     type: String,
     required: true,
     enum: ['USDT', 'USDC', 'DAI'],
-    default: 'USDT'
+    default: 'USDC'
   },
 
   status: {

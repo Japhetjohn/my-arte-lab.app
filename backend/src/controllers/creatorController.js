@@ -20,20 +20,32 @@ exports.getAllCreators = catchAsync(async (req, res, next) => {
     query.category = category;
   }
 
+  const orConditions = [];
+
   if (search) {
-    query.$or = [
+    orConditions.push(
       { name: { $regex: search, $options: 'i' } },
       { bio: { $regex: search, $options: 'i' } },
       { skills: { $in: [new RegExp(search, 'i')] } }
-    ];
+    );
+  }
+
+  if (location) {
+    orConditions.push(
+      { 'location.localArea': { $regex: location, $options: 'i' } },
+      { 'location.city': { $regex: location, $options: 'i' } },
+      { 'location.state': { $regex: location, $options: 'i' } },
+      { 'location.country': { $regex: location, $options: 'i' } },
+      { 'location.fullAddress': { $regex: location, $options: 'i' } }
+    );
+  }
+
+  if (orConditions.length > 0) {
+    query.$or = orConditions;
   }
 
   if (minRating) {
     query['rating.average'] = { $gte: parseFloat(minRating) };
-  }
-
-  if (location) {
-    query['location.country'] = { $regex: location, $options: 'i' };
   }
 
   let sort = {};

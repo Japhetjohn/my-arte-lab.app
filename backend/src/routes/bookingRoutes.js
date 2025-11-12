@@ -14,6 +14,7 @@ router.post('/', validateBooking, handleValidationErrors, bookingController.crea
 router.get('/', bookingController.getMyBookings);
 router.get('/:id', validateObjectId('id'), handleValidationErrors, bookingController.getBooking);
 
+router.post('/:id/accept', validateObjectId('id'), handleValidationErrors, bookingController.acceptBooking);
 router.post('/:id/complete', validateObjectId('id'), handleValidationErrors, bookingController.completeBooking);
 
 router.post('/:id/release-funds', validateObjectId('id'), handleValidationErrors, bookingController.releaseFunds);

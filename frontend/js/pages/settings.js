@@ -84,7 +84,15 @@ export function renderSettingsPage() {
 
                         <div class="form-group">
                             <label class="form-label">Location</label>
-                            <input type="text" class="form-input" value="${userLocation}" id="profileLocation" placeholder="City, Country">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                                <input type="text" class="form-input" value="${appState.user.location?.localArea || ''}" id="profileLocalArea" placeholder="Local area (e.g., Faring Gada)">
+                                <input type="text" class="form-input" value="${appState.user.location?.city || ''}" id="profileCity" placeholder="City (e.g., Jos)">
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px;">
+                                <input type="text" class="form-input" value="${appState.user.location?.state || ''}" id="profileState" placeholder="State (e.g., Plateau)">
+                                <input type="text" class="form-input" value="${appState.user.location?.country || ''}" id="profileCountry" placeholder="Country (e.g., Nigeria)">
+                            </div>
+                            <div class="caption mt-sm">Add detailed location to help clients find you easily</div>
                         </div>
 
                         ${appState.user.type === 'creator' ? `

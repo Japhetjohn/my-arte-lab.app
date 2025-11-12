@@ -36,7 +36,7 @@ exports.createBooking = catchAsync(async (req, res, next) => {
     serviceDescription,
     category,
     amount,
-    currency: currency || 'USDT',
+    currency: currency || 'USDC',
     platformCommission,
     platformFee,
     creatorAmount,
@@ -52,7 +52,7 @@ exports.createBooking = catchAsync(async (req, res, next) => {
     const escrowWallet = await tsaraService.generateEscrowWallet({
       bookingId: booking.bookingId,
       amount,
-      currency: currency || 'USDT',
+      currency: currency || 'USDC',
       clientEmail: req.user.email,
       creatorEmail: creator.email
     });
@@ -137,6 +137,43 @@ exports.getBooking = catchAsync(async (req, res, next) => {
   }
 
   successResponse(res, 200, 'Booking retrieved successfully', { booking });
+});
+
+exports.acceptBooking = catchAsync(async (req, res, next) => {
+  const booking = await Booking.findById(req.params.id)
+    .populate('client', 'name email');
+
+  if (!booking) {
+    return next(new ErrorHandler('Booking not found', 404));
+  }
+
+  if (booking.creator.toString() !== req.user._id.toString()) {
+    return next(new ErrorHandler('Only the creator can accept this booking', 403));
+  }
+
+  if (booking.status !== 'pending') {
+    return next(new ErrorHandler('Only pending bookings can be accepted', 400));
+  }
+
+  booking.status = 'confirmed';
+  await booking.save();
+
+  // Notify client
+  emailConfig.sendEmail({
+    to: booking.client.email,
+    subject: 'Booking Accepted! ',
+    html: `
+      <h1>Booking Accepted!</h1>
+      <p>Hi ${booking.client.name},</p>
+      <p>${req.user.name} has accepted your booking request.</p>
+      <p><strong>Service:</strong> ${booking.serviceTitle}</p>
+      <p><strong>Amount:</strong> ${booking.amount} ${booking.currency}</p>
+      <p>Please send payment to the escrow address: ${booking.escrowWallet.address}</p>
+      <p>The work will begin once payment is confirmed.</p>
+    `
+  }).catch(err => console.error('Email failed:', err));
+
+  successResponse(res, 200, 'Booking accepted successfully', { booking });
 });
 
 exports.completeBooking = catchAsync(async (req, res, next) => {

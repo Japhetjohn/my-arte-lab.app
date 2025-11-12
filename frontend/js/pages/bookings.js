@@ -138,7 +138,7 @@ function renderBookingCard(booking) {
                         </span>
                     ` : ''}
                 </div>
-                <div class="transaction-amount">${booking.currency || 'USDT'} ${booking.amount.toFixed(2)}</div>
+                <div class="transaction-amount">${booking.currency || 'USDC'} ${booking.amount.toFixed(2)}</div>
             </div>
         </div>
     `;
@@ -201,7 +201,7 @@ window.viewBookingDetails = async function(bookingId) {
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
                                 <div class="form-group">
                                     <label class="form-label">Amount</label>
-                                    <div style="font-size: 20px; font-weight: 600;">${booking.currency || 'USDT'} ${booking.amount.toFixed(2)}</div>
+                                    <div style="font-size: 20px; font-weight: 600;">${booking.currency || 'USDC'} ${booking.amount.toFixed(2)}</div>
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label">Payment Status</label>
@@ -216,7 +216,7 @@ window.viewBookingDetails = async function(bookingId) {
                             ${booking.paymentStatus === 'pending' && booking.escrowWallet?.address ? `
                                 <div style="background: var(--primary); color: white; padding: 16px; border-radius: 12px; margin: 20px 0;">
                                     <div style="font-weight: 600; margin-bottom: 8px;">Pay for this booking</div>
-                                    <div style="font-size: 14px; opacity: 0.9; margin-bottom: 12px;">Send ${booking.currency || 'USDT'} ${booking.amount.toFixed(2)} to:</div>
+                                    <div style="font-size: 14px; opacity: 0.9; margin-bottom: 12px;">Send ${booking.currency || 'USDC'} ${booking.amount.toFixed(2)} to:</div>
                                     <div style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; word-break: break-all; font-family: monospace; font-size: 13px;">
                                         ${booking.escrowWallet.address}
                                     </div>

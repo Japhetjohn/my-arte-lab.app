@@ -196,6 +196,10 @@ class ApiService {
         return this.get(API_ENDPOINTS.bookingDetails(bookingId));
     }
 
+    async acceptBooking(bookingId) {
+        return this.post(API_ENDPOINTS.acceptBooking(bookingId));
+    }
+
     async completeBooking(bookingId) {
         return this.post(API_ENDPOINTS.completeBooking(bookingId));
     }
