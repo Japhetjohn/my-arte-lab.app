@@ -109,9 +109,12 @@ export async function showBookingModal(creatorId, serviceIndex = 0) {
                     <ol style="color: #92400E; font-size: 13px; margin: 0; padding-left: 20px; line-height: 1.6;">
                         <li>Submit your booking request with your proposed budget</li>
                         <li>The creator reviews and accepts/rejects/counter-proposes</li>
-                        <li>Once accepted, you'll receive a payment link via email</li>
-                        <li>Complete payment to confirm the booking</li>
+                        <li>Once accepted, payment is auto-deducted from your wallet</li>
+                        <li>Funds are held in escrow until job completion</li>
                     </ol>
+                    <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(146, 64, 14, 0.2); color: #92400E; font-size: 13px; font-weight: 500;">
+                        💰 Make sure your wallet has sufficient USDC balance before booking
+                    </div>
                 </div>
 
                 <form id="bookingForm" data-creator-id="${creatorId}" data-service-index="${serviceIndex}">
@@ -122,13 +125,14 @@ export async function showBookingModal(creatorId, serviceIndex = 0) {
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">Select date</label>
+                        <label class="form-label">Start Date</label>
                         <input type="date" id="bookingDate" name="bookingDate" class="form-input" required min="${new Date().toISOString().split('T')[0]}">
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">Preferred time</label>
-                        <input type="time" id="bookingTime" name="bookingTime" class="form-input" required>
+                        <label class="form-label">End Date (Expected Completion)</label>
+                        <input type="date" id="endDate" name="endDate" class="form-input" required min="${new Date().toISOString().split('T')[0]}">
+                        <div class="caption mt-sm">When do you expect the project to be completed?</div>
                     </div>
 
                     <div class="form-group">
@@ -199,13 +203,12 @@ export async function handleBookingSubmit(event, creatorId, serviceIndex) {
         const bookingData = {
             creatorId: creator._id || creator.id,
             serviceTitle: service.title,
-            serviceDescription: service.description || '',
+            serviceDescription: document.getElementById('projectBrief')?.value || service.description || 'Booking request',
             category: creator.category || 'other',
             amount: parseFloat(document.getElementById('proposedPrice').value),
             currency: 'USDC',
             startDate: document.getElementById('bookingDate').value,
-            preferredTime: document.getElementById('bookingTime').value,
-            projectBrief: document.getElementById('projectBrief').value
+            endDate: document.getElementById('endDate').value
         };
 
         console.log('📤 Submitting booking:', bookingData);

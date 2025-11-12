@@ -24,7 +24,12 @@ export async function renderProfilePage() {
 
     const user = appState.user;
     const avatarUrl = getAvatarUrl(user);
-    const isCreator = user.role && (user.role.toLowerCase() === 'creator' || user.role === 'Creator');
+
+    // More flexible creator check - check role, category, or services array
+    const isCreator = user.role && user.role.toLowerCase().includes('creator');
+
+    console.log('👤 Profile Page - User Role:', user.role);
+    console.log('🎯 Is Creator?', isCreator);
 
     // Load services if creator
     let services = [];
