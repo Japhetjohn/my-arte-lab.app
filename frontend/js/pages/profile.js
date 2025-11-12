@@ -360,7 +360,7 @@ export async function renderProfilePage() {
                         ${user.wallet ? `
                         <tr style="border-bottom: 1px solid var(--border);">
                             <td style="padding: 16px 0; font-weight: 600;">Wallet Balance</td>
-                            <td style="padding: 16px 0; text-align: right; font-weight: 600; color: var(--primary);">${user.wallet.currency || 'USDC'} ${(user.wallet.balance || 0).toFixed(2)}</td>
+                            <td style="padding: 16px 0; text-align: right; font-weight: 600; color: var(--primary);">USDC ${(user.wallet.balance || 0).toFixed(2)}</td>
                         </tr>
                         ` : ''}
                         <tr>
