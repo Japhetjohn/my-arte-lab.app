@@ -24,6 +24,15 @@ export function renderSettingsPage() {
     const userAvatar = appState.user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(appState.user.name || 'User')}&background=9747FF&color=fff&bold=true&size=200`;
     const userCover = appState.user.coverImage || 'https://images.unsplash.com/photo-1557683316-973673baf926?w=1200&h=400&fit=crop';
 
+    // More flexible creator check - check role with case-insensitive match
+    const isCreator = appState.user.role && (
+        appState.user.role.toLowerCase().includes('creator') ||
+        appState.user.role.toLowerCase() === 'creator'
+    );
+
+    console.log('Settings Page - User Role:', appState.user.role);
+    console.log('Settings Page - Is Creator?', isCreator);
+
     // Format location for display
     const userLocation = appState.user.location ?
         (typeof appState.user.location === 'object' ?
@@ -113,7 +122,7 @@ export function renderSettingsPage() {
                     </form>
                 </div>
 
-                ${appState.user.role === 'creator' ? `
+                ${isCreator ? `
                 <!-- Services Management Section -->
                 <div class="settings-section mt-lg" id="servicesSection">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
@@ -206,7 +215,7 @@ export function renderSettingsPage() {
     `;
 
     // Load services for creators
-    if (appState.user.role === 'creator') {
+    if (isCreator) {
         loadServices();
     }
 }

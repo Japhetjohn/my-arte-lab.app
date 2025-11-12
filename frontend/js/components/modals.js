@@ -126,14 +126,24 @@ export async function showBookingModal(creatorId, serviceIndex = 0) {
 
                     <div class="form-group">
                         <label class="form-label">Start Date</label>
-                        <input type="date" id="bookingDate" name="bookingDate" class="form-input" required min="${new Date().toISOString().split('T')[0]}">
+                        <input type="date" id="bookingDate" name="bookingDate" class="form-input" required min="${new Date().toISOString().split('T')[0]}" onchange="updateEndDateMin()">
                     </div>
 
                     <div class="form-group">
                         <label class="form-label">End Date (Expected Completion)</label>
                         <input type="date" id="endDate" name="endDate" class="form-input" required min="${new Date().toISOString().split('T')[0]}">
-                        <div class="caption mt-sm">When do you expect the project to be completed?</div>
+                        <div class="caption mt-sm">Can be the same day for single-day jobs</div>
                     </div>
+
+                    <script>
+                        function updateEndDateMin() {
+                            const startDate = document.getElementById('bookingDate').value;
+                            const endDateInput = document.getElementById('endDate');
+                            if (startDate) {
+                                endDateInput.min = startDate;
+                            }
+                        }
+                    </script>
 
                     <div class="form-group">
                         <label class="form-label">Project brief (300 characters)</label>
