@@ -1100,6 +1100,34 @@ p {
         display: none;
     }
 
+    .top-nav {
+        padding: 12px 0;
+    }
+
+    .nav-content {
+        padding: 0 var(--spacing-md);
+    }
+
+    .nav-actions {
+        gap: 8px;
+    }
+
+    .logo {
+        font-size: 18px;
+    }
+
+    .logo span {
+        display: inline;
+    }
+
+    .icon-btn {
+        padding: 8px;
+    }
+
+    #searchBtn {
+        display: flex;
+    }
+
     .form-actions {
         flex-direction: column-reverse;
     }
