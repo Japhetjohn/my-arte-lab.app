@@ -9,7 +9,6 @@ const axios = require('axios');
 const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 const { generateJwt } = require('@coinbase/cdp-sdk/auth');
-const { HttpsProxyAgent } = require('https-proxy-agent');
 
 class CoinbaseService {
   constructor() {
@@ -17,40 +16,6 @@ class CoinbaseService {
     this.apiKeyId = process.env.COINBASE_CDP_API_KEY_ID;
     this.apiSecret = process.env.COINBASE_CDP_API_SECRET;
     this.baseUrl = 'https://api.developer.coinbase.com';
-
-    // Configure proxy if set in environment (development only)
-    this.axiosConfig = this.buildAxiosConfig();
-  }
-
-  /**
-   * Build axios configuration with optional proxy support
-   * Proxy is only used if HTTPS_PROXY is set in environment
-   */
-  buildAxiosConfig() {
-    const config = {
-      timeout: 30000 // 30 second timeout
-    };
-
-    // Check for proxy configuration
-    const proxyUrl = process.env.HTTPS_PROXY || process.env.HTTP_PROXY;
-
-    if (proxyUrl) {
-      console.log('🔄 Using proxy for Coinbase API:', proxyUrl.replace(/\/\/.*@/, '//<credentials>@'));
-
-      // Add proxy authentication if provided
-      let fullProxyUrl = proxyUrl;
-      if (process.env.PROXY_USERNAME && process.env.PROXY_PASSWORD) {
-        const url = new URL(proxyUrl);
-        url.username = process.env.PROXY_USERNAME;
-        url.password = process.env.PROXY_PASSWORD;
-        fullProxyUrl = url.toString();
-      }
-
-      config.httpsAgent = new HttpsProxyAgent(fullProxyUrl);
-      config.proxy = false; // Disable axios default proxy handling
-    }
-
-    return config;
   }
 
   /**
@@ -118,12 +83,12 @@ class CoinbaseService {
         `${this.baseUrl}${endpoint}`,
         requestBody,
         {
-          ...this.axiosConfig,
           headers: {
             'Authorization': `Bearer ${jwt}`,
             'Content-Type': 'application/json',
             'X-CB-PROJECT-ID': this.projectId
-          }
+          },
+          timeout: 30000
         }
       );
 
@@ -231,12 +196,12 @@ class CoinbaseService {
           payment_method: 'CARD'
         },
         {
-          ...this.axiosConfig,
           headers: {
             'Authorization': `Bearer ${jwt}`,
             'Content-Type': 'application/json',
             'X-CB-PROJECT-ID': this.projectId
-          }
+          },
+          timeout: 30000
         }
       );
 
@@ -281,12 +246,12 @@ class CoinbaseService {
         `${this.baseUrl}${endpoint}`,
         requestBody,
         {
-          ...this.axiosConfig,
           headers: {
             'Authorization': `Bearer ${jwt}`,
             'Content-Type': 'application/json',
             'X-CB-PROJECT-ID': this.projectId
-          }
+          },
+          timeout: 30000
         }
       );
 
@@ -385,12 +350,12 @@ class CoinbaseService {
           payout_method: 'BANK'
         },
         {
-          ...this.axiosConfig,
           headers: {
             'Authorization': `Bearer ${jwt}`,
             'Content-Type': 'application/json',
             'X-CB-PROJECT-ID': this.projectId
-          }
+          },
+          timeout: 30000
         }
       );
 
