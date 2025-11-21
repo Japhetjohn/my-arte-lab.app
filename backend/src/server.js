@@ -36,12 +36,19 @@ const allowedOrigins = [
   'http://localhost:8000',
   'http://127.0.0.1:8000',
   'http://0.0.0.0:8000',
+  'https://my-arte-lab-app.onrender.com',
   process.env.FRONTEND_URL
 ].filter(Boolean);
 
 app.use(cors({
   origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps, Postman, or same-origin)
     if (!origin) return callback(null, true);
+
+    // In production, allow same-origin requests
+    if (process.env.NODE_ENV === 'production' && origin.includes('onrender.com')) {
+      return callback(null, true);
+    }
 
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
