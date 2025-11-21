@@ -289,15 +289,19 @@ exports.deleteAccount = catchAsync(async (req, res, next) => {
 
   const user = await User.findById(req.user._id).select('+password');
 
+  if (!user) {
+    return next(new ErrorHandler('User not found', 404));
+  }
+
   const isCorrect = await user.comparePassword(password);
   if (!isCorrect) {
     return next(new ErrorHandler('Incorrect password', 401));
   }
 
-  user.isActive = false;
-  await user.save({ validateBeforeSave: false });
+  // Permanently delete user from database
+  await User.findByIdAndDelete(req.user._id);
 
-  successResponse(res, 200, 'Account deleted successfully');
+  successResponse(res, 200, 'Account permanently deleted successfully');
 });
 
 exports.verifyEmail = catchAsync(async (req, res, next) => {

@@ -1,6 +1,8 @@
 // Settings Page Module
-import { appState } from '../state.js';
+import { appState, setUser } from '../state.js';
 import api from '../services/api.js';
+import { showToast } from '../components/toast.js';
+import { navigateToPage } from '../router.js';
 
 export function renderSettingsPage() {
     const mainContent = document.getElementById('mainContent');
@@ -61,7 +63,7 @@ export function renderSettingsPage() {
                         <div>
                             <h3>${appState.user.name}</h3>
                             <p class="caption">${appState.user.email}</p>
-                            <p class="caption mt-sm">${appState.user.type === 'creator' ? 'Creator Account' : 'Client Account'}</p>
+                            <p class="caption mt-sm">${appState.user.role === 'creator' ? 'Creator Account' : 'Client Account'}</p>
                         </div>
                     </div>
 
@@ -88,15 +90,15 @@ export function renderSettingsPage() {
                             <input type="text" class="form-input" value="${userLocation}" id="profileLocation" placeholder="City, Country">
                         </div>
 
-                        ${appState.user.type === 'creator' ? `
+                        ${appState.user.role === 'creator' ? `
                             <div class="form-group">
                                 <label class="form-label">Professional title</label>
-                                <input type="text" class="form-input" value="${appState.user.role || ''}" id="profileRole" placeholder="e.g. Wedding Photographer">
+                                <input type="text" class="form-input" value="${appState.user.category || ''}" id="profileRole" placeholder="e.g. Wedding Photographer">
                             </div>
 
                             <div class="form-group">
                                 <label class="form-label">Skills</label>
-                                <input type="text" class="form-input" value="${appState.user.skills || ''}" id="profileSkills" placeholder="Photography, Photoshop, Lightroom">
+                                <input type="text" class="form-input" value="${(appState.user.skills || []).join(', ')}" id="profileSkills" placeholder="Photography, Photoshop, Lightroom">
                                 <div class="caption mt-sm">Separate with commas</div>
                             </div>
                         ` : ''}
@@ -163,10 +165,10 @@ export function renderSettingsPage() {
                             <div class="settings-item-label">Profile visibility</div>
                             <div class="settings-item-description">Control who can see your profile</div>
                         </div>
-                        <select class="form-select" style="width: auto;">
-                            <option>Public</option>
-                            <option>Private</option>
-                            <option>Clients only</option>
+                        <select class="form-select" style="width: auto;" onchange="handleProfileVisibilityChange(this.value)">
+                            <option value="public" selected>Public</option>
+                            <option value="private">Private</option>
+                            <option value="clients">Clients only</option>
                         </select>
                     </div>
                 </div>
@@ -187,3 +189,333 @@ export function renderSettingsPage() {
         </div>
     `;
 }
+
+// ==================== Handler Functions ====================
+
+// Handle profile update
+window.handleProfileUpdate = async function(event) {
+    event.preventDefault();
+
+    try {
+        const name = document.getElementById('profileName').value;
+        const email = document.getElementById('profileEmail').value;
+        const bio = document.getElementById('profileBio').value;
+        const location = document.getElementById('profileLocation').value;
+        const phone = document.getElementById('profilePhone').value;
+
+        const profileData = {
+            name,
+            email,
+            bio,
+            location,
+            phone
+        };
+
+        // Add creator-specific fields
+        if (appState.user.role === 'creator') {
+            const role = document.getElementById('profileRole')?.value;
+            const skills = document.getElementById('profileSkills')?.value;
+
+            if (role) profileData.category = role;
+            if (skills) profileData.skills = skills.split(',').map(s => s.trim()).filter(s => s);
+        }
+
+        showToast('Updating profile...', 'info');
+
+        const response = await api.updateProfile(profileData);
+
+        if (response.success) {
+            // Update app state with new user data
+            setUser(response.data.user);
+            showToast('Profile updated successfully', 'success');
+
+            // Re-render the page to show updated data
+            setTimeout(() => {
+                renderSettingsPage();
+            }, 1000);
+        } else {
+            showToast(response.message || 'Failed to update profile', 'error');
+        }
+    } catch (error) {
+        console.error('Profile update error:', error);
+        showToast(error.message || 'Failed to update profile', 'error');
+    }
+};
+
+// Handle avatar upload
+window.handleAvatarUpload = function() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+
+    input.onchange = async function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Validate file size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            showToast('Image size must be less than 5MB', 'error');
+            return;
+        }
+
+        try {
+            showToast('Uploading avatar...', 'info');
+
+            const formData = new FormData();
+            formData.append('avatar', file);
+
+            const response = await api.updateProfile(formData);
+
+            if (response.success) {
+                setUser(response.data.user);
+                document.getElementById('avatarPreview').src = response.data.user.avatar;
+                showToast('Avatar updated successfully', 'success');
+            } else {
+                showToast(response.message || 'Failed to upload avatar', 'error');
+            }
+        } catch (error) {
+            console.error('Avatar upload error:', error);
+            showToast(error.message || 'Failed to upload avatar', 'error');
+        }
+    };
+
+    input.click();
+};
+
+// Handle cover image upload
+window.handleCoverUpload = function() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+
+    input.onchange = async function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Validate file size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            showToast('Image size must be less than 5MB', 'error');
+            return;
+        }
+
+        try {
+            showToast('Uploading cover image...', 'info');
+
+            const formData = new FormData();
+            formData.append('coverImage', file);
+
+            const response = await api.updateProfile(formData);
+
+            if (response.success) {
+                setUser(response.data.user);
+                document.getElementById('coverPreview').src = response.data.user.coverImage;
+                showToast('Cover image updated successfully', 'success');
+            } else {
+                showToast(response.message || 'Failed to upload cover image', 'error');
+            }
+        } catch (error) {
+            console.error('Cover upload error:', error);
+            showToast(error.message || 'Failed to upload cover image', 'error');
+        }
+    };
+
+    input.click();
+};
+
+// Toggle switch
+window.toggleSwitch = function(element) {
+    element.classList.toggle('active');
+    const isActive = element.classList.contains('active');
+    const label = element.previousElementSibling.querySelector('.settings-item-label').textContent;
+
+    showToast(`${label} ${isActive ? 'enabled' : 'disabled'}`, 'success');
+};
+
+// Handle profile visibility change
+window.handleProfileVisibilityChange = function(value) {
+    const visibilityLabels = {
+        'public': 'Public',
+        'private': 'Private',
+        'clients': 'Clients only'
+    };
+
+    showToast(`Profile visibility set to ${visibilityLabels[value]}`, 'success');
+};
+
+// Show change password modal
+window.showChangePasswordModal = function() {
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Change password</h2>
+                <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </button>
+            </div>
+            <form onsubmit="handlePasswordChange(event)">
+                <div class="form-group">
+                    <label class="form-label">Current password</label>
+                    <input type="password" class="form-input" id="currentPassword" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">New password</label>
+                    <input type="password" class="form-input" id="newPassword" required minlength="8">
+                    <div class="caption mt-sm">Minimum 8 characters</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Confirm new password</label>
+                    <input type="password" class="form-input" id="confirmPassword" required>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-ghost" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+                    <button type="submit" class="btn-primary">Change password</button>
+                </div>
+            </form>
+        </div>
+    `;
+    document.body.appendChild(modal);
+};
+
+// Handle password change
+window.handlePasswordChange = async function(event) {
+    event.preventDefault();
+
+    const currentPassword = document.getElementById('currentPassword').value;
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+
+    if (newPassword !== confirmPassword) {
+        showToast('New passwords do not match', 'error');
+        return;
+    }
+
+    try {
+        showToast('Changing password...', 'info');
+
+        const response = await api.updatePassword({
+            currentPassword,
+            newPassword
+        });
+
+        if (response.success) {
+            showToast('Password changed successfully', 'success');
+            document.querySelector('.modal-overlay').remove();
+        } else {
+            showToast(response.message || 'Failed to change password', 'error');
+        }
+    } catch (error) {
+        console.error('Password change error:', error);
+        showToast(error.message || 'Failed to change password', 'error');
+    }
+};
+
+// Show two-factor authentication modal
+window.showTwoFactorModal = function() {
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Two-factor authentication</h2>
+                <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Two-factor authentication adds an extra layer of security to your account by requiring a verification code in addition to your password.</p>
+                <p class="mt-md">This feature will be available soon!</p>
+            </div>
+            <div class="form-actions">
+                <button class="btn-primary" onclick="this.closest('.modal-overlay').remove()">Close</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+};
+
+// Show delete account modal
+window.showDeleteAccountModal = function() {
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+        <div class="modal">
+            <div class="modal-header">
+                <h2 style="color: var(--error);">Delete account</h2>
+                <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p><strong>Warning:</strong> This action cannot be undone.</p>
+                <p class="mt-md">Deleting your account will permanently remove all your data including:</p>
+                <ul style="margin-top: 12px; padding-left: 24px;">
+                    <li>Profile information</li>
+                    <li>Portfolio and services</li>
+                    <li>Bookings and messages</li>
+                    <li>Wallet balance and transaction history</li>
+                </ul>
+            </div>
+            <form onsubmit="handleAccountDeletion(event)">
+                <div class="form-group">
+                    <label class="form-label">Enter your password to confirm</label>
+                    <input type="password" class="form-input" id="deleteAccountPassword" required placeholder="Your password">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-ghost" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+                    <button type="submit" class="btn-primary" style="background: var(--error); border-color: var(--error);">Delete my account</button>
+                </div>
+            </form>
+        </div>
+    `;
+    document.body.appendChild(modal);
+};
+
+// Handle account deletion
+window.handleAccountDeletion = async function(event) {
+    event.preventDefault();
+
+    const password = document.getElementById('deleteAccountPassword').value;
+
+    if (!password) {
+        showToast('Please enter your password', 'error');
+        return;
+    }
+
+    // Double confirmation
+    const confirmed = confirm('Are you absolutely sure you want to delete your account? This cannot be undone.');
+    if (!confirmed) return;
+
+    try {
+        showToast('Deleting account...', 'info');
+
+        const response = await api.deleteAccount(password);
+
+        if (response.success) {
+            showToast('Account deleted successfully. Goodbye!', 'success');
+
+            // Clear auth data
+            localStorage.removeItem('token');
+            setUser(null);
+
+            // Close modal and redirect to home
+            document.querySelector('.modal-overlay').remove();
+
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 2000);
+        } else {
+            showToast(response.message || 'Failed to delete account', 'error');
+        }
+    } catch (error) {
+        console.error('Account deletion error:', error);
+        showToast(error.message || 'Failed to delete account', 'error');
+    }
+};

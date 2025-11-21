@@ -53,7 +53,8 @@ export const API_ENDPOINTS = {
 
     // Profile
     updateProfile: '/auth/update-profile',
-    updatePassword: '/auth/update-password'
+    updatePassword: '/auth/update-password',
+    deleteAccount: '/auth/delete-account'
 };
 
 // Mock Data for development/fallback

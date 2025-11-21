@@ -119,10 +119,11 @@ class ApiService {
     /**
      * DELETE request
      */
-    async delete(endpoint, options = {}) {
+    async delete(endpoint, data, options = {}) {
         return this.request(endpoint, {
             ...options,
-            method: 'DELETE'
+            method: 'DELETE',
+            body: data ? JSON.stringify(data) : undefined
         });
     }
 
@@ -166,6 +167,10 @@ class ApiService {
 
     async updatePassword(passwordData) {
         return this.put(API_ENDPOINTS.updatePassword, passwordData);
+    }
+
+    async deleteAccount(password) {
+        return this.delete(API_ENDPOINTS.deleteAccount, { password });
     }
 
     // ==================== Creator Endpoints ====================
