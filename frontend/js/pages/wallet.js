@@ -117,6 +117,13 @@ function renderWalletContent() {
                     <div class="balance-label">Available balance</div>
                     <div class="balance-amount">USDC ${balance.toFixed(2)}</div>
                     <div class="balance-actions">
+                        <button class="btn-primary" style="background: white; color: var(--primary);" onclick="window.fundWallet()">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style="margin-right: 8px; vertical-align: middle;">
+                                <path d="M10 6V14M6 10h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                <rect x="3" y="2" width="14" height="14" rx="2" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                            Fund Wallet
+                        </button>
                         ${appState.user.role === 'creator' ? `
                         <button class="btn-primary" style="background: white; color: var(--primary);" onclick="showWithdrawModal()">
                             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style="margin-right: 8px; vertical-align: middle;">
@@ -169,10 +176,19 @@ function renderWalletContent() {
                     </div>
                 </div>
 
-                ${appState.user.role === 'creator' ? `
                 <div class="mt-lg">
                     <h3 class="mb-md">Quick actions</h3>
                     <div class="quick-actions-grid">
+                        <button class="quick-action-btn" onclick="window.fundWallet()">
+                            <div class="quick-action-icon">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                    <path d="M12 14l-4-4m4 4l4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                </svg>
+                            </div>
+                            <div class="quick-action-label">Fund Wallet</div>
+                        </button>
+                        ${appState.user.role === 'creator' ? `
                         <button class="quick-action-btn" onclick="showWithdrawModal()">
                             <div class="quick-action-icon">
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -182,6 +198,7 @@ function renderWalletContent() {
                             </div>
                             <div class="quick-action-label">Withdraw</div>
                         </button>
+                        ` : ''}
                         <button class="quick-action-btn" onclick="showTransactionHistory()">
                             <div class="quick-action-icon">
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -210,7 +227,6 @@ function renderWalletContent() {
                         </button>
                     </div>
                 </div>
-                ` : ''}
 
                 <h2 class="mb-md mt-lg">Recent transactions</h2>
                 ${transactions.length > 0 ? `
@@ -284,6 +300,51 @@ window.copyWalletAddress = async function() {
         }
 
         document.body.removeChild(textArea);
+    }
+};
+
+// Fund wallet using Coinbase Onramp
+window.fundWallet = async function() {
+    try {
+        showToast('Opening Coinbase Pay...', 'info');
+
+        // Generate onramp session from backend
+        const response = await api.generateOnrampSession();
+
+        if (response.success && response.data.onrampUrl) {
+            // Open Coinbase Pay in a popup window
+            const width = 500;
+            const height = 700;
+            const left = (window.screen.width - width) / 2;
+            const top = (window.screen.height - height) / 2;
+
+            const popup = window.open(
+                response.data.onrampUrl,
+                'CoinbaseOnramp',
+                `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
+            );
+
+            if (!popup) {
+                showToast('Please allow popups to fund your wallet', 'error');
+                return;
+            }
+
+            // Monitor popup for close and refresh wallet
+            const checkPopupClosed = setInterval(() => {
+                if (popup.closed) {
+                    clearInterval(checkPopupClosed);
+                    showToast('Refreshing wallet...', 'info');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 2000);
+                }
+            }, 1000);
+        } else {
+            showToast(response.error || 'Failed to initialize Coinbase Onramp', 'error');
+        }
+    } catch (error) {
+        console.error('Fund wallet error:', error);
+        showToast(error.message || 'Failed to open Coinbase Pay', 'error');
     }
 };
 

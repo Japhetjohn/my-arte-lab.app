@@ -22,6 +22,7 @@
   "author": "MyArteLab",
   "license": "MIT",
   "dependencies": {
+    "@coinbase/cdp-sdk": "^1.38.6",
     "@solana/web3.js": "^1.98.4",
     "axios": "^1.6.5",
     "bcryptjs": "^2.4.3",
@@ -36,6 +37,7 @@
     "express-session": "^1.18.2",
     "express-validator": "^7.0.1",
     "helmet": "^7.1.0",
+    "https-proxy-agent": "^7.0.6",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.0.3",
     "morgan": "^1.10.0",

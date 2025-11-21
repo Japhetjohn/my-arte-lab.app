@@ -6,8 +6,11 @@
   "scripts": {
     "dev:frontend": "cd frontend && python3 -m http.server 8000",
     "dev:backend": "cd backend && npm run dev",
+    "dev:clean": "cd backend && npm run dev:clean",
+    "kill-port": "cd backend && npm run kill-port",
     "start": "cd frontend && python3 -m http.server 8000",
-    "open": "xdg-open http://localhost:8000 || firefox http://localhost:8000"
+    "open": "xdg-open http://localhost:8000 || firefox http://localhost:8000",
+    "test": "cd backend && npm test"
   },
   "repository": {
     "type": "git",

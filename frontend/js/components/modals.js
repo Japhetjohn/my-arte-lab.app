@@ -504,7 +504,7 @@ export function showDeleteAccountModal() {
 export function showWithdrawModal() {
     const modalContent = `
         <div class="modal" onclick="closeModalOnBackdrop(event)">
-            <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-content" style="max-width: 550px;">
                 <div class="modal-header">
                     <h2>Withdraw Funds</h2>
                     <button class="icon-btn" onclick="closeModal()">
@@ -514,33 +514,85 @@ export function showWithdrawModal() {
                     </button>
                 </div>
 
-                <form onsubmit="handleWithdrawal(event)" style="padding: 20px;">
-                    <div class="form-group">
-                        <label class="form-label">Amount (USDC)</label>
-                        <input type="number" id="withdrawAmount" class="form-input" required min="20" step="0.01" placeholder="Minimum: 20 USDC">
+                <div style="padding: 20px;">
+                    <!-- Withdrawal Method Tabs -->
+                    <div style="display: flex; gap: 8px; margin-bottom: 24px; background: var(--surface); padding: 4px; border-radius: 8px;">
+                        <button
+                            id="cryptoTabBtn"
+                            class="withdraw-tab-btn active"
+                            onclick="switchWithdrawTab('crypto')"
+                            style="flex: 1; padding: 10px; border: none; background: var(--primary); color: white; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.2s;"
+                        >
+                            Crypto Wallet
+                        </button>
+                        <button
+                            id="bankTabBtn"
+                            class="withdraw-tab-btn"
+                            onclick="switchWithdrawTab('bank')"
+                            style="flex: 1; padding: 10px; border: none; background: transparent; color: var(--text-secondary); border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.2s;"
+                        >
+                            Bank Account
+                        </button>
                     </div>
 
-                    <div class="form-group">
-                        <label class="form-label">Wallet Address (Solana)</label>
-                        <input type="text" id="withdrawAddress" class="form-input" required placeholder="Enter your Solana wallet address">
-                    </div>
+                    <!-- Crypto Withdrawal Form -->
+                    <form id="cryptoWithdrawForm" onsubmit="handleWithdrawal(event)" style="display: block;">
+                        <div class="form-group">
+                            <label class="form-label">Amount (USDC)</label>
+                            <input type="number" id="withdrawAmount" class="form-input" required min="20" step="0.01" placeholder="Minimum: 20 USDC">
+                        </div>
 
-                    <div class="form-group">
-                        <label class="form-label">Currency</label>
-                        <select id="withdrawCurrency" class="form-select">
-                            <option value="USDC" selected>USDC</option>
-                            <option value="DAI">DAI</option>
-                        </select>
-                    </div>
+                        <div class="form-group">
+                            <label class="form-label">Wallet Address (Solana)</label>
+                            <input type="text" id="withdrawAddress" class="form-input" required placeholder="Enter your Solana wallet address">
+                        </div>
 
-                    <div class="caption" style="color: var(--text-secondary); margin-bottom: 16px;">
-                        💡 Minimum withdrawal: 20 USDC. Funds will be sent to your Solana wallet within 24-48 hours.
-                    </div>
+                        <div class="form-group">
+                            <label class="form-label">Currency</label>
+                            <select id="withdrawCurrency" class="form-select">
+                                <option value="USDC" selected>USDC</option>
+                                <option value="DAI">DAI</option>
+                            </select>
+                        </div>
 
-                    <button type="submit" class="btn-primary" style="width: 100%;">
-                        Request Withdrawal
-                    </button>
-                </form>
+                        <div class="caption" style="color: var(--text-secondary); margin-bottom: 16px;">
+                            💡 Minimum withdrawal: 20 USDC. Funds will be sent to your Solana wallet within 24-48 hours.
+                        </div>
+
+                        <button type="submit" class="btn-primary" style="width: 100%;">
+                            Request Withdrawal
+                        </button>
+                    </form>
+
+                    <!-- Bank Withdrawal (Coinbase Offramp) -->
+                    <div id="bankWithdrawForm" style="display: none;">
+                        <div class="form-group">
+                            <label class="form-label">Amount (USDC)</label>
+                            <input type="number" id="offrampAmount" class="form-input" min="20" step="0.01" placeholder="Minimum: 20 USDC">
+                        </div>
+
+                        <div style="background: #EEF2FF; padding: 16px; border-radius: 8px; margin-bottom: 16px; border-left: 4px solid var(--primary);">
+                            <div style="font-weight: 600; margin-bottom: 8px; color: var(--primary);">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="vertical-align: middle; margin-right: 6px;">
+                                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                                    <path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                </svg>
+                                Powered by Coinbase
+                            </div>
+                            <div style="color: #4338CA; font-size: 14px; line-height: 1.5;">
+                                Cash out directly to your bank account. You'll need a Coinbase account with verified identity and linked bank account.
+                            </div>
+                        </div>
+
+                        <div class="caption" style="color: var(--text-secondary); margin-bottom: 16px;">
+                            ℹ️ You will be redirected to Coinbase to complete the cash out process. Funds typically arrive in 1-2 business days.
+                        </div>
+
+                        <button type="button" onclick="handleOfframpWithdrawal()" class="btn-primary" style="width: 100%;">
+                            Continue to Coinbase
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     `;
@@ -549,6 +601,31 @@ export function showWithdrawModal() {
     openModal();
 }
 
+// Switch between withdrawal tabs
+window.switchWithdrawTab = function(tab) {
+    const cryptoTab = document.getElementById('cryptoTabBtn');
+    const bankTab = document.getElementById('bankTabBtn');
+    const cryptoForm = document.getElementById('cryptoWithdrawForm');
+    const bankForm = document.getElementById('bankWithdrawForm');
+
+    if (tab === 'crypto') {
+        cryptoTab.style.background = 'var(--primary)';
+        cryptoTab.style.color = 'white';
+        bankTab.style.background = 'transparent';
+        bankTab.style.color = 'var(--text-secondary)';
+        cryptoForm.style.display = 'block';
+        bankForm.style.display = 'none';
+    } else {
+        bankTab.style.background = 'var(--primary)';
+        bankTab.style.color = 'white';
+        cryptoTab.style.background = 'transparent';
+        cryptoTab.style.color = 'var(--text-secondary)';
+        bankForm.style.display = 'block';
+        cryptoForm.style.display = 'none';
+    }
+};
+
+// Handle traditional crypto withdrawal
 window.handleWithdrawal = async function(event) {
     event.preventDefault();
 
@@ -587,6 +664,63 @@ window.handleWithdrawal = async function(event) {
     } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = originalText;
+    }
+};
+
+// Handle Coinbase Offramp withdrawal
+window.handleOfframpWithdrawal = async function() {
+    const amountInput = document.getElementById('offrampAmount');
+    const amount = parseFloat(amountInput.value);
+
+    if (!amount || amount < 20) {
+        showToast('Please enter a valid amount (minimum 20 USDC)', 'error');
+        amountInput.focus();
+        return;
+    }
+
+    try {
+        showToast('Opening Coinbase...', 'info');
+
+        // Generate offramp session from backend
+        const response = await api.generateOfframpSession(amount);
+
+        if (response.success && response.data.offrampUrl) {
+            // Close the modal
+            closeModal();
+
+            // Open Coinbase Pay in a popup window
+            const width = 500;
+            const height = 700;
+            const left = (window.screen.width - width) / 2;
+            const top = (window.screen.height - height) / 2;
+
+            const popup = window.open(
+                response.data.offrampUrl,
+                'CoinbaseOfframp',
+                `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
+            );
+
+            if (!popup) {
+                showToast('Please allow popups to cash out', 'error');
+                return;
+            }
+
+            // Monitor popup for close and refresh wallet
+            const checkPopupClosed = setInterval(() => {
+                if (popup.closed) {
+                    clearInterval(checkPopupClosed);
+                    showToast('Refreshing wallet...', 'info');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 2000);
+                }
+            }, 1000);
+        } else {
+            showToast(response.error || 'Failed to initialize Coinbase Offramp', 'error');
+        }
+    } catch (error) {
+        console.error('Offramp error:', error);
+        showToast(error.message || 'Failed to open Coinbase', 'error');
     }
 };
 
