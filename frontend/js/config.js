@@ -7,15 +7,16 @@ console.log('🔍 Is localhost?', window.location.hostname === 'localhost');
 console.log('🔍 Is 127.0.0.1?', window.location.hostname === '127.0.0.1');
 console.log('🔍 Starts with 192.168?', window.location.hostname.startsWith('192.168'));
 
-// API Configuration - FORCE localhost for development
+// API Configuration - Auto-detect environment
 const isDevelopment = window.location.hostname === 'localhost' ||
                       window.location.hostname === '127.0.0.1' ||
                       window.location.hostname.startsWith('192.168') ||
                       window.location.hostname === '0.0.0.0';
 
+// In production, API is served from the same domain
 export const API_BASE_URL = isDevelopment
     ? 'http://localhost:5000/api'
-    : 'https://api.myartelab.com/api';
+    : '/api';
 
 // Debug: Log API URL on load
 console.log('🔗 API Base URL:', API_BASE_URL);
