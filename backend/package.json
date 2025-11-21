@@ -23,6 +23,7 @@
   "license": "MIT",
   "dependencies": {
     "@coinbase/cdp-sdk": "^1.38.6",
+    "@solana/spl-token": "^0.4.14",
     "@solana/web3.js": "^1.98.4",
     "axios": "^1.6.5",
     "bcryptjs": "^2.4.3",
