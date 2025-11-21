@@ -27,6 +27,7 @@ export const API_ENDPOINTS = {
     login: '/auth/login',
     logout: '/auth/logout',
     verifyEmail: '/auth/verify-email',
+    resendVerification: '/auth/resend-verification',
     me: '/auth/me',
 
     // Creators

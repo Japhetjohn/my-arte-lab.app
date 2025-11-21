@@ -1,8 +1,7 @@
 // Settings Page Module
 import { appState, setUser } from '../state.js';
 import api from '../services/api.js';
-import { showToast } from '../components/toast.js';
-import { navigateToPage } from '../router.js';
+import { showToast } from '../utils.js';
 
 export function renderSettingsPage() {
     const mainContent = document.getElementById('mainContent');
@@ -482,40 +481,63 @@ window.showDeleteAccountModal = function() {
 window.handleAccountDeletion = async function(event) {
     event.preventDefault();
 
+    console.log('🗑️ [1] Account deletion initiated');
+
     const password = document.getElementById('deleteAccountPassword').value;
+    console.log('🗑️ [2] Password provided:', password ? 'YES' : 'NO');
 
     if (!password) {
+        console.log('🗑️ [2a] No password - showing error');
         showToast('Please enter your password', 'error');
         return;
     }
 
     // Double confirmation
+    console.log('🗑️ [3] Showing confirmation dialog');
     const confirmed = confirm('Are you absolutely sure you want to delete your account? This cannot be undone.');
+    console.log('🗑️ [4] User confirmed:', confirmed);
     if (!confirmed) return;
 
     try {
+        console.log('🗑️ [5] Starting deletion process...');
         showToast('Deleting account...', 'info');
+
+        console.log('🗑️ [6] Calling api.deleteAccount()...');
+        console.log('🗑️ [6a] Token exists:', !!localStorage.getItem('token'));
 
         const response = await api.deleteAccount(password);
 
+        console.log('🗑️ [7] API Response received:', response);
+        console.log('🗑️ [7a] Response success:', response.success);
+        console.log('🗑️ [7b] Response message:', response.message);
+
         if (response.success) {
+            console.log('🗑️ [8] Deletion successful - cleaning up...');
             showToast('Account deleted successfully. Goodbye!', 'success');
 
             // Clear auth data
+            console.log('🗑️ [9] Removing token from localStorage');
             localStorage.removeItem('token');
+
+            console.log('🗑️ [10] Setting user to null');
             setUser(null);
 
             // Close modal and redirect to home
-            document.querySelector('.modal-overlay').remove();
+            console.log('🗑️ [11] Closing modal');
+            document.querySelector('.modal-overlay')?.remove();
 
+            console.log('🗑️ [12] Redirecting to home in 2 seconds...');
             setTimeout(() => {
                 window.location.href = '/';
             }, 2000);
         } else {
+            console.log('🗑️ [8a] Deletion failed:', response.message);
             showToast(response.message || 'Failed to delete account', 'error');
         }
     } catch (error) {
-        console.error('Account deletion error:', error);
+        console.error('🗑️ [ERROR] Account deletion error:', error);
+        console.error('🗑️ [ERROR] Error message:', error.message);
+        console.error('🗑️ [ERROR] Error stack:', error.stack);
         showToast(error.message || 'Failed to delete account', 'error');
     }
 };

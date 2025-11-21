@@ -496,9 +496,8 @@ export function showTwoFactorModal() {
     showToast('Two-factor authentication setup coming soon!', 'success');
 }
 
-export function showDeleteAccountModal() {
-    showToast('Account deletion is not available in demo mode', 'success');
-}
+// Note: showDeleteAccountModal is implemented in settings.js
+// Removed stub to avoid overriding the real implementation
 
 // Wallet Handlers
 export function showWithdrawModal() {

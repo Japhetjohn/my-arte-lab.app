@@ -160,15 +160,10 @@ export async function handleAuth(event, type) {
 
                 updateUserMenu();
                 closeModal();
-                showToast('Account created successfully! Please check your email to verify your account.', 'success');
 
-                // Navigate based on role
-                if (userData.role === 'creator') {
-                    navigateToPage('settings');
-                    showToast('Complete your profile to start receiving bookings', 'info');
-                } else {
-                    navigateToPage('discover');
-                }
+                // Show email verification modal
+                showEmailVerificationModal(userData.email, userData.role);
+                showToast('Account created successfully! Please check your email for the verification code.', 'success');
             } else {
                 console.error('❌ REGISTRATION FAILED:', response);
                 showToast(response.message || 'Registration failed. Please try again.', 'error');
@@ -456,7 +451,166 @@ export function handleGoogleSignIn() {
     window.location.href = `${API_URL}/api/auth/google?mode=signin`;
 }
 
+/**
+ * Show email verification modal with 6-digit code input
+ */
+export function showEmailVerificationModal(email, userRole = 'client') {
+    const modalContent = `
+        <div class="modal" onclick="closeModalOnBackdrop(event)">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Verify your email</h2>
+                    <button class="icon-btn" onclick="skipVerification('${userRole}')">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <p style="color: var(--text-secondary); margin-bottom: 24px;">
+                    We sent a 6-digit verification code to<br>
+                    <strong style="color: var(--text-primary);">${email}</strong>
+                </p>
+
+                <form onsubmit="handleEmailVerification(event, '${userRole}')">
+                    <div class="form-group">
+                        <label class="form-label">Verification Code</label>
+                        <input
+                            type="text"
+                            name="code"
+                            class="form-input"
+                            placeholder="Enter 6-digit code"
+                            required
+                            maxlength="6"
+                            pattern="[0-9]{6}"
+                            style="text-align: center; font-size: 24px; letter-spacing: 8px; font-weight: 600;"
+                            inputmode="numeric"
+                        >
+                        <small style="color: var(--text-secondary); font-size: 12px; margin-top: 4px; display: block;">
+                            Code expires in 30 minutes
+                        </small>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn-primary">Verify Email</button>
+                    </div>
+                </form>
+
+                <div style="margin-top: 16px; text-align: center;">
+                    <p class="text-secondary" style="font-size: 14px;">
+                        Didn't receive the code?
+                        <button
+                            type="button"
+                            onclick="handleResendVerification()"
+                            class="btn-ghost"
+                            style="color: var(--primary); font-weight: 500; padding: 4px 8px;"
+                        >
+                            Resend Code
+                        </button>
+                    </p>
+                </div>
+
+                <div style="margin-top: 8px; text-align: center;">
+                    <button class="btn-ghost" onclick="skipVerification('${userRole}')">Skip for now</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('modalsContainer').innerHTML = modalContent;
+    openModal();
+}
+
+/**
+ * Handle email verification code submission
+ */
+async function handleEmailVerification(event, userRole) {
+    event.preventDefault();
+
+    const form = event.target;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalBtnText = submitBtn.textContent;
+    const code = form.code.value.trim();
+
+    if (code.length !== 6 || !/^\d{6}$/.test(code)) {
+        showToast('Please enter a valid 6-digit code', 'error');
+        return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Verifying...';
+
+    try {
+        const response = await api.verifyEmail(code);
+
+        if (response.success) {
+            // Update user in state to mark as verified
+            if (appState.user) {
+                appState.user.isEmailVerified = true;
+                setUser(appState.user);
+            }
+
+            closeModal();
+            showToast('Email verified successfully!', 'success');
+
+            // Navigate based on role
+            if (userRole === 'creator') {
+                navigateToPage('settings');
+                showToast('Complete your profile to start receiving bookings', 'info');
+            } else {
+                navigateToPage('discover');
+            }
+        } else {
+            showToast(response.message || 'Invalid or expired verification code', 'error');
+        }
+    } catch (error) {
+        console.error('Verification error:', error);
+        showToast(error.message || 'Verification failed. Please try again.', 'error');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalBtnText;
+    }
+}
+
+/**
+ * Resend verification code
+ */
+async function handleResendVerification() {
+    try {
+        showToast('Sending new verification code...', 'info');
+        const response = await api.resendVerification();
+
+        if (response.success) {
+            showToast('New verification code sent to your email', 'success');
+        } else {
+            showToast(response.message || 'Failed to resend verification code', 'error');
+        }
+    } catch (error) {
+        console.error('Resend verification error:', error);
+        showToast(error.message || 'Failed to resend code. Please try again.', 'error');
+    }
+}
+
+/**
+ * Skip verification for now
+ */
+function skipVerification(userRole) {
+    closeModal();
+
+    if (userRole === 'creator') {
+        navigateToPage('settings');
+        showToast('Complete your profile to start receiving bookings', 'info');
+    } else {
+        navigateToPage('discover');
+    }
+
+    showToast('Remember to verify your email later from settings', 'info');
+}
+
 // Make functions globally available for onclick handlers
 window.handleGoogleSignIn = handleGoogleSignIn;
 window.handleGoogleSignUp = handleGoogleSignUp;
 window.proceedWithGoogleOAuth = proceedWithGoogleOAuth;
+window.handleEmailVerification = handleEmailVerification;
+window.handleResendVerification = handleResendVerification;
+window.skipVerification = skipVerification;

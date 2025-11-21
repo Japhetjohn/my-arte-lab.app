@@ -120,6 +120,12 @@ class ApiService {
      * DELETE request
      */
     async delete(endpoint, data, options = {}) {
+        console.log('🌐 [API] DELETE request:', {
+            endpoint,
+            hasData: !!data,
+            data: data,
+            options
+        });
         return this.request(endpoint, {
             ...options,
             method: 'DELETE',
@@ -153,8 +159,12 @@ class ApiService {
         }
     }
 
-    async verifyEmail(token) {
-        return this.get(`${API_ENDPOINTS.verifyEmail}/${token}`, { auth: false });
+    async verifyEmail(code) {
+        return this.post(API_ENDPOINTS.verifyEmail, { code }, { auth: false });
+    }
+
+    async resendVerification() {
+        return this.post(API_ENDPOINTS.resendVerification);
     }
 
     async getMe() {
@@ -170,7 +180,11 @@ class ApiService {
     }
 
     async deleteAccount(password) {
-        return this.delete(API_ENDPOINTS.deleteAccount, { password });
+        console.log('🌐 [API] deleteAccount called with password:', password ? 'PROVIDED' : 'MISSING');
+        console.log('🌐 [API] Endpoint:', API_ENDPOINTS.deleteAccount);
+        const result = await this.delete(API_ENDPOINTS.deleteAccount, { password });
+        console.log('🌐 [API] deleteAccount result:', result);
+        return result;
     }
 
     // ==================== Creator Endpoints ====================

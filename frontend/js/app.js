@@ -16,7 +16,6 @@ import {
     handleCoverUpload,
     showChangePasswordModal,
     showTwoFactorModal,
-    showDeleteAccountModal,
     showWithdrawModal,
     showAddFundsModal,
     showPayoutSettings,
@@ -45,7 +44,7 @@ window.handleAvatarUpload = handleAvatarUpload;
 window.handleCoverUpload = handleCoverUpload;
 window.showChangePasswordModal = showChangePasswordModal;
 window.showTwoFactorModal = showTwoFactorModal;
-window.showDeleteAccountModal = showDeleteAccountModal;
+// showDeleteAccountModal is defined in settings.js
 window.showWithdrawModal = showWithdrawModal;
 window.showAddFundsModal = showAddFundsModal;
 window.showPayoutSettings = showPayoutSettings;
