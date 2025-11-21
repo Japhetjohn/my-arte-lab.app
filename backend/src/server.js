@@ -28,6 +28,10 @@ const coinbaseRoutes = require('./routes/coinbaseRoutes');
 
 const app = express();
 
+// Trust proxy - Required for Render and other cloud platforms
+// This allows Express to correctly read X-Forwarded-* headers
+app.set('trust proxy', 1);
+
 connectDatabase();
 
 app.use(helmet());
