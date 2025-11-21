@@ -57,14 +57,13 @@ exports.register = catchAsync(async (req, res, next) => {
   const token = generateToken(user._id);
   const refreshToken = generateRefreshToken(user._id);
 
-  const verificationToken = crypto.randomBytes(32).toString('hex');
-  const hashedToken = crypto.createHash('sha256').update(verificationToken).digest('hex');
+  // Generate 6-digit verification code
+  const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+  const hashedCode = crypto.createHash('sha256').update(verificationCode).digest('hex');
 
-  user.emailVerificationToken = hashedToken;
-  user.emailVerificationExpire = Date.now() + 24 * 60 * 60 * 1000;
-  await user.save({ validateBeforeSave: false });
-
-  const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
+  user.emailVerificationToken = hashedCode;
+  user.emailVerificationExpire = Date.now() + 30 * 60 * 1000; // 30 minutes
+  await user.save({ validateBeforeSave: false});
 
   const walletInfo = !walletCreationFailed ? `
     <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
@@ -87,9 +86,11 @@ exports.register = catchAsync(async (req, res, next) => {
       <h1>Welcome ${user.name}!</h1>
       <p>Your account has been created successfully${!walletCreationFailed ? ' with Solana stablecoin payment support' : ''}.</p>
       ${walletInfo}
-      <p>Please verify your email address to unlock all features:</p>
-      <a href="${verificationUrl}" style="display: inline-block; padding: 10px 20px; background: #FF6B35; color: white; text-decoration: none; border-radius: 5px;">Verify Email</a>
-      <p>This link is valid for 24 hours.</p>
+      <p>Please verify your email address using the code below:</p>
+      <div style="background: #f9f9f9; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0;">
+        <h2 style="font-size: 32px; letter-spacing: 8px; margin: 0; color: #FF6B35;">${verificationCode}</h2>
+      </div>
+      <p>This code will expire in 30 minutes.</p>
       <p>You can now start ${user.role === 'creator' ? 'offering your services' : 'booking creative services'}!</p>
       <p>Best regards,<br/>MyArteLab Team</p>
     `
@@ -305,21 +306,22 @@ exports.deleteAccount = catchAsync(async (req, res, next) => {
 });
 
 exports.verifyEmail = catchAsync(async (req, res, next) => {
-  const { token } = req.body;
+  const { code } = req.body;
 
-  if (!token) {
-    return next(new ErrorHandler('Please provide verification token', 400));
+  if (!code) {
+    return next(new ErrorHandler('Please provide verification code', 400));
   }
 
-  const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+  // Hash the incoming code to compare with stored hash
+  const hashedCode = crypto.createHash('sha256').update(code.toString()).digest('hex');
 
   const user = await User.findOne({
-    emailVerificationToken: hashedToken,
+    emailVerificationToken: hashedCode,
     emailVerificationExpire: { $gt: Date.now() }
   });
 
   if (!user) {
-    return next(new ErrorHandler('Invalid or expired verification token', 400));
+    return next(new ErrorHandler('Invalid or expired verification code', 400));
   }
 
   user.isEmailVerified = true;
@@ -354,14 +356,13 @@ exports.resendVerification = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Email is already verified', 400));
   }
 
-  const verificationToken = crypto.randomBytes(32).toString('hex');
-  const hashedToken = crypto.createHash('sha256').update(verificationToken).digest('hex');
+  // Generate new 6-digit verification code
+  const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+  const hashedCode = crypto.createHash('sha256').update(verificationCode).digest('hex');
 
-  user.emailVerificationToken = hashedToken;
-  user.emailVerificationExpire = Date.now() + 24 * 60 * 60 * 1000;
+  user.emailVerificationToken = hashedCode;
+  user.emailVerificationExpire = Date.now() + 30 * 60 * 1000; // 30 minutes
   await user.save({ validateBeforeSave: false });
-
-  const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
 
   try {
     await emailConfig.sendEmail({
@@ -370,9 +371,11 @@ exports.resendVerification = catchAsync(async (req, res, next) => {
       html: `
         <h1>Verify Your Email</h1>
         <p>Hi ${user.name},</p>
-        <p>Please verify your email address by clicking the link below:</p>
-        <a href="${verificationUrl}" style="display: inline-block; padding: 10px 20px; background: #FF6B35; color: white; text-decoration: none; border-radius: 5px;">Verify Email</a>
-        <p>This link is valid for 24 hours.</p>
+        <p>Please verify your email address using the code below:</p>
+        <div style="background: #f9f9f9; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0;">
+          <h2 style="font-size: 32px; letter-spacing: 8px; margin: 0; color: #FF6B35;">${verificationCode}</h2>
+        </div>
+        <p>This code will expire in 30 minutes.</p>
         <p>If you didn't request this, please ignore this email.</p>
         <p>Best regards,<br/>MyArteLab Team</p>
       `
