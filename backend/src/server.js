@@ -145,11 +145,12 @@ app.use((req, res) => {
 const path = require('path');
 if (process.env.NODE_ENV === 'production') {
   // Serve static files from frontend directory
-  app.use(express.static(path.join(__dirname, '../../frontend')));
+  // In production (Render), frontend is copied to backend/frontend during build
+  app.use(express.static(path.join(__dirname, '../frontend')));
 
   // Handle client-side routing - send index.html for all non-API routes
   app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../../frontend/index.html'));
+    res.sendFile(path.join(__dirname, '../frontend/index.html'));
   });
 }
 
