@@ -141,6 +141,18 @@ app.use((req, res) => {
   });
 });
 
+// Serve frontend static files in production
+const path = require('path');
+if (process.env.NODE_ENV === 'production') {
+  // Serve static files from frontend directory
+  app.use(express.static(path.join(__dirname, '../../frontend')));
+
+  // Handle client-side routing - send index.html for all non-API routes
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../../frontend/index.html'));
+  });
+}
+
 app.use(errorMiddleware);
 
 try {
