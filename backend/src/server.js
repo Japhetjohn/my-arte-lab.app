@@ -134,13 +134,6 @@ app.get('/api', (req, res) => {
   });
 });
 
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    error: 'API endpoint not found'
-  });
-});
-
 // Serve frontend static files in production
 const path = require('path');
 if (process.env.NODE_ENV === 'production') {
@@ -153,6 +146,14 @@ if (process.env.NODE_ENV === 'production') {
     res.sendFile(path.join(__dirname, '../frontend/index.html'));
   });
 }
+
+// API 404 handler - must come AFTER static file serving
+app.use('/api/*', (req, res) => {
+  res.status(404).json({
+    success: false,
+    error: 'API endpoint not found'
+  });
+});
 
 app.use(errorMiddleware);
 
