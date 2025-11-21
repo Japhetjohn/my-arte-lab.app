@@ -440,6 +440,9 @@ window.showTwoFactorModal = function() {
 
 // Show delete account modal
 window.showDeleteAccountModal = function() {
+    const user = appState.user;
+    const isOAuthUser = !!user?.googleId;
+
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
     modal.innerHTML = `
@@ -461,12 +464,19 @@ window.showDeleteAccountModal = function() {
                     <li>Bookings and messages</li>
                     <li>Wallet balance and transaction history</li>
                 </ul>
+                ${isOAuthUser ? `
+                    <p style="margin-top: 16px; padding: 12px; background: var(--background-secondary); border-radius: 8px; font-size: 14px;">
+                        <strong>Note:</strong> You signed in with Google, so no password is required to delete your account.
+                    </p>
+                ` : ''}
             </div>
             <form onsubmit="handleAccountDeletion(event)">
-                <div class="form-group">
-                    <label class="form-label">Enter your password to confirm</label>
-                    <input type="password" class="form-input" id="deleteAccountPassword" required placeholder="Your password">
-                </div>
+                ${!isOAuthUser ? `
+                    <div class="form-group">
+                        <label class="form-label">Enter your password to confirm</label>
+                        <input type="password" class="form-input" id="deleteAccountPassword" required placeholder="Your password">
+                    </div>
+                ` : ''}
                 <div class="form-actions">
                     <button type="button" class="btn-ghost" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
                     <button type="submit" class="btn-primary" style="background: var(--error); border-color: var(--error);">Delete my account</button>
@@ -483,10 +493,17 @@ window.handleAccountDeletion = async function(event) {
 
     console.log('🗑️ [1] Account deletion initiated');
 
-    const password = document.getElementById('deleteAccountPassword').value;
-    console.log('🗑️ [2] Password provided:', password ? 'YES' : 'NO');
+    const user = appState.user;
+    const isOAuthUser = !!user?.googleId;
+    console.log('🗑️ [1a] Is OAuth user:', isOAuthUser);
 
-    if (!password) {
+    // Get password only if user is not OAuth user
+    const passwordInput = document.getElementById('deleteAccountPassword');
+    const password = passwordInput ? passwordInput.value : '';
+    console.log('🗑️ [2] Password provided:', password ? 'YES' : 'NO (OAuth user - not required)');
+
+    // Only validate password for non-OAuth users
+    if (!isOAuthUser && !password) {
         console.log('🗑️ [2a] No password - showing error');
         showToast('Please enter your password', 'error');
         return;

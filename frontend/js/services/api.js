@@ -75,11 +75,29 @@ class ApiService {
             headers: this.getHeaders(options.auth !== false)
         };
 
+        console.log('🌐 [API REQUEST]', {
+            method: options.method || 'GET',
+            url,
+            headers: config.headers,
+            hasBody: !!config.body,
+            body: config.body
+        });
+
         try {
             const response = await fetch(url, config);
-            return await this.handleResponse(response);
+            console.log('🌐 [API RESPONSE]', {
+                status: response.status,
+                statusText: response.statusText,
+                ok: response.ok
+            });
+            const result = await this.handleResponse(response);
+            console.log('🌐 [API RESPONSE DATA]', result);
+            return result;
         } catch (error) {
-            console.error('API Request failed:', error);
+            console.error('🌐 [API REQUEST FAILED]', {
+                error: error.message,
+                stack: error.stack
+            });
             throw error;
         }
     }
