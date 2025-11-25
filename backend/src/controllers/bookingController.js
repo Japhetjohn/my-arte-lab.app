@@ -8,6 +8,7 @@ const tsaraService = require('../services/tsaraService');
 const tsaraConfig = require('../config/tsara');
 const emailConfig = require('../config/email');
 const adminNotificationService = require('../services/adminNotificationService');
+const { escapeHtml } = require('../utils/sanitize');
 const { v4: uuidv4 } = require('uuid');
 
 exports.createBooking = catchAsync(async (req, res, next) => {
@@ -150,6 +151,7 @@ exports.getMyBookings = catchAsync(async (req, res, next) => {
   }
 
   const bookings = await Booking.find(query)
+    .select('-messages') // Exclude messages array to prevent N+1 queries and reduce payload
     .populate('client', 'name avatar email')
     .populate('creator', 'name avatar email category')
     .sort({ createdAt: -1 });
@@ -228,23 +230,32 @@ exports.completeBooking = catchAsync(async (req, res, next) => {
 });
 
 exports.releaseFunds = catchAsync(async (req, res, next) => {
-  const booking = await Booking.findById(req.params.id)
-    .populate('creator', 'wallet.address name email')
-    .populate('client', 'name');
+  const booking = await Booking.findById(req.params.id);
 
   if (!booking) {
     return next(new ErrorHandler('Booking not found', 404));
   }
 
-  if (booking.client._id.toString() !== req.user._id.toString()) {
+  // Check authorization before populating (client is ObjectId at this point)
+  if (booking.client.toString() !== req.user._id.toString()) {
     return next(new ErrorHandler('Only the client can release funds', 403));
   }
+
+  // Now populate the needed fields
+  await booking.populate('creator', 'wallet.address name email');
+  await booking.populate('client', 'name');
 
   if (!booking.canReleaseFunds()) {
     return next(new ErrorHandler('Funds cannot be released for this booking', 400));
   }
 
   try {
+    // SECURITY: Verify escrow wallet has sufficient balance before releasing funds
+    const escrowBalance = await tsaraService.getWalletBalance(booking.escrowWallet.address);
+    if (escrowBalance.balance < booking.amount) {
+      return next(new ErrorHandler('Insufficient funds in escrow wallet', 400));
+    }
+
     const releaseResult = await tsaraService.releaseEscrowFunds({
       escrowId: booking.escrowWallet.escrowId,
       escrowAddress: booking.escrowWallet.address,
@@ -289,9 +300,11 @@ exports.releaseFunds = catchAsync(async (req, res, next) => {
       }
     ]);
 
+    // Update creator balance and stats (do all updates in memory, then save once)
     const creator = await User.findById(booking.creator._id);
-    await creator.updateWalletBalance(booking.creatorAmount, 'add');
+    creator.wallet.balance += booking.creatorAmount;
     creator.wallet.totalEarnings += booking.creatorAmount;
+    creator.wallet.lastUpdated = Date.now();
     creator.completedBookings += 1;
     await creator.save();
 
@@ -300,10 +313,10 @@ exports.releaseFunds = catchAsync(async (req, res, next) => {
       subject: 'Payment Received! ',
       html: `
         <h1>Payment Received!</h1>
-        <p>Hi ${booking.creator.name},</p>
-        <p>Payment for "${booking.serviceTitle}" has been released!</p>
-        <p><strong>Amount Received:</strong> ${booking.creatorAmount} ${booking.currency}</p>
-        <p><strong>Platform Fee:</strong> ${booking.platformFee} ${booking.currency}</p>
+        <p>Hi ${escapeHtml(booking.creator.name)},</p>
+        <p>Payment for "${escapeHtml(booking.serviceTitle)}" has been released!</p>
+        <p><strong>Amount Received:</strong> ${escapeHtml(String(booking.creatorAmount))} ${escapeHtml(booking.currency)}</p>
+        <p><strong>Platform Fee:</strong> ${escapeHtml(String(booking.platformFee))} ${escapeHtml(booking.currency)}</p>
         <p>The funds are now available in your wallet.</p>
       `
     }).catch(err => console.error('Email failed:', err));
@@ -460,7 +473,7 @@ exports.acceptBooking = catchAsync(async (req, res, next) => {
     // Create transaction record for deduction
     await Transaction.create({
       user: client._id,
-      type: 'booking_payment',
+      type: 'payment',
       amount: booking.amount,
       currency: booking.currency,
       status: 'completed',

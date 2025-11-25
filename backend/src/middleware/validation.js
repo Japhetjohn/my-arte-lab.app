@@ -130,7 +130,9 @@ exports.validateWithdrawal = [
 
   body('externalAddress')
     .notEmpty().withMessage('Withdrawal address is required')
-    .matches(/^0x[a-fA-F0-9]{40}$/).withMessage('Invalid wallet address format'),
+    .trim()
+    .isLength({ min: 32, max: 44 }).withMessage('Invalid Solana wallet address length')
+    .matches(/^[1-9A-HJ-NP-Za-km-z]+$/).withMessage('Invalid Solana wallet address format (must be base58)'),
 
   body('currency')
     .optional()
@@ -181,4 +183,16 @@ exports.validatePagination = [
   query('limit')
     .optional()
     .isInt({ min: 1, max: 100 }).withMessage('Limit must be between 1 and 100')
+];
+
+exports.validateBookingQuery = [
+  query('status')
+    .optional()
+    .isIn(['pending', 'confirmed', 'in_progress', 'completed', 'cancelled', 'disputed', 'rejected'])
+    .withMessage('Invalid booking status'),
+
+  query('type')
+    .optional()
+    .isIn(['client', 'creator'])
+    .withMessage('Type must be either client or creator')
 ];

@@ -23,10 +23,10 @@
   "author": "MyArteLab",
   "license": "MIT",
   "dependencies": {
-    "@coinbase/cdp-sdk": "^1.38.6",
     "@solana/spl-token": "^0.4.14",
     "@solana/web3.js": "^1.98.4",
     "axios": "^1.6.5",
+    "axios-retry": "^4.5.0",
     "bcryptjs": "^2.4.3",
     "bip39": "^3.1.0",
     "cloudinary": "^1.41.3",

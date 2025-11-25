@@ -1,11 +1,5 @@
 // Application Configuration
-// Last Updated: 2025-11-09 - Fixed localhost API detection
-
-// Debug: Check hostname detection
-console.log('🌐 window.location.hostname:', window.location.hostname);
-console.log('🔍 Is localhost?', window.location.hostname === 'localhost');
-console.log('🔍 Is 127.0.0.1?', window.location.hostname === '127.0.0.1');
-console.log('🔍 Starts with 192.168?', window.location.hostname.startsWith('192.168'));
+// Last Updated: 2025-11-24 - Cleaned up debug logging
 
 // API Configuration - Auto-detect environment
 const isDevelopment = window.location.hostname === 'localhost' ||
@@ -17,10 +11,6 @@ const isDevelopment = window.location.hostname === 'localhost' ||
 export const API_BASE_URL = isDevelopment
     ? 'http://localhost:5000/api'
     : '/api';
-
-// Debug: Log API URL on load
-console.log('🔗 API Base URL:', API_BASE_URL);
-console.log('🔗 Backend should be at:', 'http://localhost:5000');
 
 export const API_ENDPOINTS = {
     // Auth

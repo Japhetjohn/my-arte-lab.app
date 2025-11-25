@@ -151,7 +151,7 @@ transactionSchema.statics.getUserBalanceSummary = async function(userId) {
   const result = await this.aggregate([
     {
       $match: {
-        user: mongoose.Types.ObjectId(userId),
+        user: new mongoose.Types.ObjectId(userId),
         status: 'completed'
       }
     },

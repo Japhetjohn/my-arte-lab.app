@@ -303,51 +303,6 @@ window.copyWalletAddress = async function() {
     }
 };
 
-// Fund wallet using Coinbase Onramp
-window.fundWallet = async function() {
-    try {
-        showToast('Opening Coinbase Pay...', 'info');
-
-        // Generate onramp session from backend
-        const response = await api.generateOnrampSession();
-
-        if (response.success && response.data.onrampUrl) {
-            // Open Coinbase Pay in a popup window
-            const width = 500;
-            const height = 700;
-            const left = (window.screen.width - width) / 2;
-            const top = (window.screen.height - height) / 2;
-
-            const popup = window.open(
-                response.data.onrampUrl,
-                'CoinbaseOnramp',
-                `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
-            );
-
-            if (!popup) {
-                showToast('Please allow popups to fund your wallet', 'error');
-                return;
-            }
-
-            // Monitor popup for close and refresh wallet
-            const checkPopupClosed = setInterval(() => {
-                if (popup.closed) {
-                    clearInterval(checkPopupClosed);
-                    showToast('Refreshing wallet...', 'info');
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 2000);
-                }
-            }, 1000);
-        } else {
-            showToast(response.error || 'Failed to initialize Coinbase Onramp', 'error');
-        }
-    } catch (error) {
-        console.error('Fund wallet error:', error);
-        showToast(error.message || 'Failed to open Coinbase Pay', 'error');
-    }
-};
-
 // Export wallet data for use in modals
 export function getWalletData() {
     return walletData;

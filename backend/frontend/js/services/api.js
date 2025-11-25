@@ -477,54 +477,6 @@ class ApiService {
     async deleteAllReadNotifications() {
         return this.delete('/notifications/read/all');
     }
-
-    // ==================== Coinbase Onramp & Offramp Endpoints ====================
-
-    /**
-     * Generate Coinbase Onramp session for wallet funding
-     * @param {number} amount - Optional preset amount in USD
-     * @returns {Promise} Session data with onrampUrl
-     */
-    async generateOnrampSession(amount = null) {
-        return this.post('/coinbase/onramp/session', { amount });
-    }
-
-    /**
-     * Generate Coinbase Offramp session for cash out
-     * @param {number} amount - Amount of USDC to sell
-     * @returns {Promise} Session data with offrampUrl
-     */
-    async generateOfframpSession(amount) {
-        return this.post('/coinbase/offramp/session', { amount });
-    }
-
-    /**
-     * Get buy quote (estimate) for onramp
-     * @param {number} amount - Fiat amount
-     * @param {string} currency - Fiat currency (USD, EUR, etc.)
-     * @returns {Promise} Quote details
-     */
-    async getOnrampQuote(amount, currency = 'USD') {
-        return this.get(`/coinbase/onramp/quote?amount=${amount}&currency=${currency}`);
-    }
-
-    /**
-     * Get sell quote (estimate) for offramp
-     * @param {number} amount - Crypto amount
-     * @param {string} currency - Fiat currency (USD, EUR, etc.)
-     * @returns {Promise} Quote details
-     */
-    async getOfframpQuote(amount, currency = 'USD') {
-        return this.get(`/coinbase/offramp/quote?amount=${amount}&currency=${currency}`);
-    }
-
-    /**
-     * Check Coinbase integration status
-     * @returns {Promise} Status data
-     */
-    async getCoinbaseStatus() {
-        return this.get('/coinbase/status');
-    }
 }
 
 // Export singleton instance

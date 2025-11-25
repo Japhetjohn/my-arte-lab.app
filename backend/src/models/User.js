@@ -20,7 +20,9 @@ const userSchema = new mongoose.Schema({
 
   password: {
     type: String,
-    required: [true, 'Please provide a password'],
+    required: function() {
+      return !this.googleId; // Only required if NOT using Google OAuth
+    },
     minlength: [8, 'Password must be at least 8 characters'],
     select: false
   },
@@ -288,6 +290,9 @@ const userSchema = new mongoose.Schema({
 userSchema.index({ role: 1 });
 userSchema.index({ category: 1 });
 userSchema.index({ 'rating.average': -1 });
+userSchema.index({ 'wallet.address': 1 }); // Index for wallet address lookups
+userSchema.index({ email: 1 }); // Index for email lookups (already unique, but explicit index)
+userSchema.index({ googleId: 1 }); // Index for OAuth lookups
 
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) {

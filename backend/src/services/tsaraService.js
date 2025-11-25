@@ -1,4 +1,5 @@
 const axios = require('axios');
+const axiosRetry = require('axios-retry');
 const crypto = require('crypto');
 const tsaraConfig = require('../config/tsara');
 const { Keypair } = require('@solana/web3.js');
@@ -22,13 +23,23 @@ class TsaraService {
       timeout: 30000
     });
 
-    console.log(`Tsara Stablecoin Service - Solana Network (Local Wallet Generation)`);
+    // Configure retry logic for transient network failures
+    axiosRetry(this.api, {
+      retries: 3,
+      retryDelay: axiosRetry.exponentialDelay,
+      retryCondition: (error) => {
+        // Retry on network errors or 5xx server errors
+        return axiosRetry.isNetworkOrIdempotentRequestError(error) ||
+               (error.response && error.response.status >= 500);
+      },
+      onRetry: (retryCount, error, requestConfig) => {
+        console.warn(`Tsara API retry attempt ${retryCount} for ${requestConfig.url}`);
+      }
+    });
   }
 
   async generateWallet(userData) {
     try {
-      console.log(`Generating Solana wallet locally for: ${userData.email}`);
-
       const mnemonic = bip39.generateMnemonic(128);
 
       const seed = await bip39.mnemonicToSeed(mnemonic);
@@ -41,18 +52,16 @@ class TsaraService {
 
       const secretKey = Array.from(keypair.secretKey);
 
-      console.log(`Real Solana wallet created: ${publicKey}`);
-      console.log(`   Network: Solana Mainnet-Beta`);
-      console.log(`   Supports: USDT, USDC, DAI, SOL`);
+      // SECURITY: mnemonic and secretKey should NEVER be returned in API responses
+      // In production, these should be encrypted and stored in a secure vault (AWS KMS, HashiCorp Vault)
+      // For now, only return public information
 
       return {
         address: publicKey,
         currency: 'USDT',
         balance: 0,
         network: 'Solana',
-        type: 'crypto',
-        mnemonic: mnemonic,
-        secretKey: secretKey
+        type: 'crypto'
       };
 
     } catch (error) {
@@ -63,8 +72,6 @@ class TsaraService {
 
   async generateEscrowWallet(bookingData) {
     try {
-      console.log(`Generating escrow wallet for booking: ${bookingData.bookingId}`);
-
       const mnemonic = bip39.generateMnemonic(128);
       const seed = await bip39.mnemonicToSeed(mnemonic);
       const { key } = derivePath(`m/44'/501'/0'`, seed.toString('hex'));
@@ -76,10 +83,6 @@ class TsaraService {
 
       const expiresAt = Date.now() + 3600000;
 
-      console.log(`Escrow wallet created: ${depositAddress}`);
-      console.log(`   Checkout ID: ${checkoutId}`);
-      console.log(`   Amount: ${bookingData.amount} ${bookingData.currency || 'USDT'}`);
-
       return {
         address: depositAddress,
         amount: bookingData.amount,
@@ -90,9 +93,8 @@ class TsaraService {
         network: 'Solana',
         reference: bookingData.bookingId,
         type: 'crypto',
-        expiresAt: expiresAt,
-        mnemonic: mnemonic,
-        secretKey: secretKey
+        expiresAt: expiresAt
+        // SECURITY: mnemonic and secretKey removed - should be stored securely, not returned
       };
 
     } catch (error) {
@@ -165,8 +167,6 @@ class TsaraService {
         bookingId
       } = releaseData;
 
-      console.log(`Releasing escrow funds for booking: ${bookingId}`);
-
       const creatorRelease = await this.api.post('/escrow/release', {
         escrow_id: escrowId || escrowAddress,
         recipient_address: creatorAddress,
@@ -190,8 +190,6 @@ class TsaraService {
           recipient_type: 'platform'
         }
       });
-
-      console.log('Escrow funds released successfully');
 
       return {
         success: true,
@@ -223,8 +221,6 @@ class TsaraService {
         memo
       } = withdrawalData;
 
-      console.log(`Processing withdrawal: ${amount} ${currency}`);
-
       const response = await this.api.post('/withdrawals/create', {
         from_address: fromAddress,
         to_address: toAddress,
@@ -237,8 +233,6 @@ class TsaraService {
       });
 
       if (response.data && response.data.withdrawal) {
-        console.log('Withdrawal initiated');
-
         return {
           success: true,
           withdrawalId: response.data.withdrawal.id,
@@ -258,8 +252,6 @@ class TsaraService {
 
   async handleWebhookEvent(event) {
     const { type, data } = event;
-
-    console.log(`Processing webhook event: ${type}`);
 
     try {
       switch (type) {
@@ -321,8 +313,6 @@ class TsaraService {
         completedAt: new Date()
       });
 
-      console.log(`Payment processed for booking: ${booking.bookingId}`);
-
       return { success: true, bookingId: booking.bookingId };
     } catch (error) {
       console.error('Failed to handle payment:', error);
@@ -331,8 +321,6 @@ class TsaraService {
   }
 
   async handlePaymentFailed(data) {
-    console.log(`Payment failed:`, data.booking_id || data.reference);
-
     const Booking = require('../models/Booking');
 
     try {
@@ -354,8 +342,6 @@ class TsaraService {
   }
 
   async handleWithdrawalCompleted(data) {
-    console.log(`Withdrawal completed:`, data.withdrawal_id);
-
     const Transaction = require('../models/Transaction');
 
     try {
@@ -396,6 +382,27 @@ class TsaraService {
     }
 
     return { success: true };
+  }
+
+  verifyWebhookSignature(payload, signature) {
+    if (!signature || !payload) {
+      return false;
+    }
+
+    try {
+      const expectedSignature = crypto
+        .createHmac('sha256', this.webhookSecret)
+        .update(payload)
+        .digest('hex');
+
+      return crypto.timingSafeEqual(
+        Buffer.from(signature),
+        Buffer.from(expectedSignature)
+      );
+    } catch (error) {
+      console.error('Webhook signature verification failed:', error);
+      return false;
+    }
   }
 }
 

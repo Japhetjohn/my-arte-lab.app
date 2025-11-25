@@ -4,6 +4,7 @@ const bookingController = require('../controllers/bookingController');
 const { protect, authorize } = require('../middleware/auth');
 const {
   validateBooking,
+  validateBookingQuery,
   validateObjectId,
   handleValidationErrors
 } = require('../middleware/validation');
@@ -11,7 +12,7 @@ const {
 router.use(protect);
 
 router.post('/', validateBooking, handleValidationErrors, bookingController.createBooking);
-router.get('/', bookingController.getMyBookings);
+router.get('/', validateBookingQuery, handleValidationErrors, bookingController.getMyBookings);
 router.get('/:id', validateObjectId('id'), handleValidationErrors, bookingController.getBooking);
 
 router.post('/:id/complete', validateObjectId('id'), handleValidationErrors, bookingController.completeBooking);

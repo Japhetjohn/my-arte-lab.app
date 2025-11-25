@@ -24,7 +24,6 @@ const statsRoutes = require('./routes/statsRoutes');
 const servicesRoutes = require('./routes/servicesRoutes');
 const favoritesRoutes = require('./routes/favoritesRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
-const coinbaseRoutes = require('./routes/coinbaseRoutes');
 
 const app = express();
 
@@ -32,24 +31,51 @@ const app = express();
 // This allows Express to correctly read X-Forwarded-* headers
 app.set('trust proxy', 1);
 
+// Validate required environment variables
+const requiredEnvVars = [
+  'MONGODB_URI',
+  'JWT_SECRET',
+  'TSARA_PUBLIC_KEY',
+  'TSARA_SECRET_KEY',
+  'PLATFORM_WALLET_ADDRESS'
+];
+
+const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
+if (missingEnvVars.length > 0) {
+  console.error(`❌ Missing required environment variables: ${missingEnvVars.join(', ')}`);
+  console.error('Please check your .env file and ensure all required variables are set.');
+  if (process.env.NODE_ENV === 'production') {
+    process.exit(1);
+  }
+}
+
 connectDatabase();
 
-// Configure Helmet with relaxed CSP for frontend compatibility
+// Configure Helmet with security-hardened CSP
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-      scriptSrcAttr: ["'unsafe-inline'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      imgSrc: ["'self'", "data:", "https:", "blob:"],
-      connectSrc: ["'self'", "https:"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https://res.cloudinary.com", "blob:"],
+      connectSrc: ["'self'", "https://api.tsara.ng", "https://api.cloudinary.com"],
       fontSrc: ["'self'", "data:"],
       objectSrc: ["'none'"],
       mediaSrc: ["'self'"],
-      frameSrc: ["'self'"],
+      frameSrc: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+      frameAncestors: ["'none'"]
     },
   },
+  hsts: {
+    maxAge: 31536000, // 1 year
+    includeSubDomains: true,
+    preload: true
+  },
+  noSniff: true,
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
 }));
 
 const allowedOrigins = [
@@ -118,15 +144,59 @@ const limiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Stricter rate limiting for webhook endpoints to prevent DDoS
+const webhookLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute window
+  max: 100, // Max 100 requests per minute
+  message: 'Too many webhook requests, please try again later',
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => {
+    // Skip rate limiting for verified webhook signatures (after verification passes)
+    return req.webhookVerified === true;
+  }
+});
+
 app.use('/api/', limiter);
 
-app.get('/health', (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: 'MyArteLab Backend API is running',
+app.get('/health', async (req, res) => {
+  const health = {
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV,
-    timestamp: new Date().toISOString()
-  });
+    status: 'OK',
+    checks: {}
+  };
+
+  // Check database connectivity
+  try {
+    const mongoose = require('mongoose');
+    if (mongoose.connection.readyState === 1) {
+      await mongoose.connection.db.admin().ping();
+      health.checks.database = 'connected';
+    } else {
+      health.checks.database = 'disconnected';
+      health.status = 'DEGRADED';
+    }
+  } catch (error) {
+    health.checks.database = `error: ${error.message}`;
+    health.status = 'DEGRADED';
+  }
+
+  // Check Tsara API connectivity (lightweight check)
+  try {
+    const tsaraService = require('./services/tsaraService');
+    health.checks.tsaraAPI = tsaraService.isConfigured() ? 'configured' : 'not configured';
+    if (!tsaraService.isConfigured()) {
+      health.status = 'DEGRADED';
+    }
+  } catch (error) {
+    health.checks.tsaraAPI = `error: ${error.message}`;
+    health.status = 'DEGRADED';
+  }
+
+  const statusCode = health.status === 'OK' ? 200 : 503;
+  res.status(statusCode).json(health);
 });
 
 app.use('/api/auth', googleAuthRoutes);
@@ -135,13 +205,12 @@ app.use('/api/bookings', bookingRoutes);
 app.use('/api/wallet', walletRoutes);
 app.use('/api/creators', creatorRoutes);
 app.use('/api/reviews', reviewRoutes);
-app.use('/api/webhooks', webhookRoutes);
+app.use('/api/webhooks', webhookLimiter, webhookRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/services', servicesRoutes);
 app.use('/api/favorites', favoritesRoutes);
 app.use('/api/notifications', notificationRoutes);
-app.use('/api/coinbase', coinbaseRoutes);
 
 app.get('/api', (req, res) => {
   res.json({
@@ -155,8 +224,7 @@ app.get('/api', (req, res) => {
       creators: '/api/creators',
       reviews: '/api/reviews',
       webhooks: '/api/webhooks',
-      stats: '/api/stats',
-      coinbase: '/api/coinbase'
+      stats: '/api/stats'
     }
   });
 });
@@ -222,10 +290,32 @@ process.on('uncaughtException', (err) => {
 
 process.on('SIGTERM', () => {
   console.log('SIGTERM received, shutting down gracefully...');
-  server.close(() => {
-    console.log('Server closed');
+  server.close(async () => {
+    console.log('HTTP server closed');
+
+    // Close database connection
+    try {
+      const mongoose = require('mongoose');
+      await mongoose.connection.close(false);
+      console.log('Database connection closed');
+    } catch (error) {
+      console.error('Error closing database connection:', error);
+    }
+
+    console.log('Graceful shutdown complete');
     process.exit(0);
   });
+
+  // Force shutdown after 30 seconds
+  setTimeout(() => {
+    console.error('Forced shutdown due to timeout');
+    process.exit(1);
+  }, 30000);
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGINT received, shutting down gracefully...');
+  process.emit('SIGTERM');
 });
 
 module.exports = app;

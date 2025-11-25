@@ -78,7 +78,7 @@ reviewSchema.statics.getCreatorAverageRating = async function(creatorId) {
   const result = await this.aggregate([
     {
       $match: {
-        creator: mongoose.Types.ObjectId(creatorId),
+        creator: new mongoose.Types.ObjectId(creatorId),
         isPublished: true
       }
     },
@@ -106,8 +106,8 @@ reviewSchema.post('save', async function() {
   const stats = await this.constructor.getCreatorAverageRating(this.creator);
 
   await User.findByIdAndUpdate(this.creator, {
-    'rating.average': Math.round(stats.averageRating * 10) / 10,
-    'rating.count': stats.totalReviews
+    'rating.average': stats.averageRating ? Math.round(stats.averageRating * 10) / 10 : 0,
+    'rating.count': stats.totalReviews || 0
   });
 });
 
@@ -116,8 +116,8 @@ reviewSchema.post('remove', async function() {
   const stats = await this.constructor.getCreatorAverageRating(this.creator);
 
   await User.findByIdAndUpdate(this.creator, {
-    'rating.average': Math.round(stats.averageRating * 10) / 10,
-    'rating.count': stats.totalReviews
+    'rating.average': stats.averageRating ? Math.round(stats.averageRating * 10) / 10 : 0,
+    'rating.count': stats.totalReviews || 0
   });
 });
 

@@ -6,6 +6,7 @@ const tsaraService = require('../services/tsaraService');
 const emailConfig = require('../config/email');
 const adminNotificationService = require('../services/adminNotificationService');
 const crypto = require('crypto');
+const { escapeHtml } = require('../utils/sanitize');
 
 exports.register = catchAsync(async (req, res, next) => {
   const { name, email, password, role, category } = req.body;
@@ -67,9 +68,9 @@ exports.register = catchAsync(async (req, res, next) => {
 
   const walletInfo = !walletCreationFailed ? `
     <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
-      <p><strong>Payment Wallet:</strong> Solana Stablecoin (${wallet.currency})</p>
-      <p><strong>Wallet Address:</strong> ${wallet.address}</p>
-      <p><strong>Network:</strong> ${wallet.network}</p>
+      <p><strong>Payment Wallet:</strong> Solana Stablecoin (${escapeHtml(wallet.currency)})</p>
+      <p><strong>Wallet Address:</strong> ${escapeHtml(wallet.address)}</p>
+      <p><strong>Network:</strong> ${escapeHtml(wallet.network)}</p>
       <p>You can receive payments in stablecoins (USDT, USDC, DAI) from anywhere in the world!</p>
     </div>
   ` : `
@@ -83,12 +84,12 @@ exports.register = catchAsync(async (req, res, next) => {
     to: user.email,
     subject: 'Welcome to MyArteLab! Verify Your Email',
     html: `
-      <h1>Welcome ${user.name}!</h1>
+      <h1>Welcome ${escapeHtml(user.name)}!</h1>
       <p>Your account has been created successfully${!walletCreationFailed ? ' with Solana stablecoin payment support' : ''}.</p>
       ${walletInfo}
       <p>Please verify your email address using the code below:</p>
       <div style="background: #f9f9f9; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0;">
-        <h2 style="font-size: 32px; letter-spacing: 8px; margin: 0; color: #FF6B35;">${verificationCode}</h2>
+        <h2 style="font-size: 32px; letter-spacing: 8px; margin: 0; color: #FF6B35;">${escapeHtml(verificationCode)}</h2>
       </div>
       <p>This code will expire in 30 minutes.</p>
       <p>You can now start ${user.role === 'creator' ? 'offering your services' : 'booking creative services'}!</p>
