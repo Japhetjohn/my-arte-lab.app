@@ -290,9 +290,7 @@ const userSchema = new mongoose.Schema({
 userSchema.index({ role: 1 });
 userSchema.index({ category: 1 });
 userSchema.index({ 'rating.average': -1 });
-userSchema.index({ 'wallet.address': 1 }); // Index for wallet address lookups
-userSchema.index({ email: 1 }); // Index for email lookups (already unique, but explicit index)
-userSchema.index({ googleId: 1 }); // Index for OAuth lookups
+// Note: wallet.address, email, and googleId already have unique indexes from schema definition
 
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) {

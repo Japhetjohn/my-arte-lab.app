@@ -56,9 +56,10 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'"],
-      styleSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https://res.cloudinary.com", "blob:"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrcAttr: ["'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "https://res.cloudinary.com", "https://images.unsplash.com", "blob:"],
       connectSrc: ["'self'", "https://api.tsara.ng", "https://api.cloudinary.com"],
       fontSrc: ["'self'", "data:"],
       objectSrc: ["'none'"],
@@ -79,8 +80,11 @@ app.use(helmet({
 }));
 
 const allowedOrigins = [
+  'http://localhost:5000',
   'http://localhost:8000',
+  'http://127.0.0.1:5000',
   'http://127.0.0.1:8000',
+  'http://0.0.0.0:5000',
   'http://0.0.0.0:8000',
   'https://my-arte-lab-app.onrender.com',
   process.env.FRONTEND_URL
@@ -230,18 +234,16 @@ app.get('/api', (req, res) => {
   });
 });
 
-// Serve frontend static files in production
+// Serve frontend static files
 const path = require('path');
-if (process.env.NODE_ENV === 'production') {
-  // Serve static files from frontend directory
-  // In production (Render), frontend is copied to backend/frontend during build
-  app.use(express.static(path.join(__dirname, '../frontend')));
 
-  // Handle client-side routing - send index.html for all non-API routes
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../frontend/index.html'));
-  });
-}
+// Serve static files from frontend directory
+app.use(express.static(path.join(__dirname, '../frontend')));
+
+// Handle client-side routing - send index.html for all non-API routes
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/index.html'));
+});
 
 // API 404 handler - must come AFTER static file serving
 app.use('/api/*', (req, res) => {
