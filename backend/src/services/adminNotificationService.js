@@ -186,8 +186,6 @@ class AdminNotificationService {
           html
         });
       }
-
-      console.log(`Admin notified of new user: ${user.email} (sent to ${ADMIN_EMAILS.length} admins)`);
     } catch (error) {
       console.error('Failed to send admin notification:', error.message);
     }
@@ -286,8 +284,6 @@ class AdminNotificationService {
           html
         });
       }
-
-      console.log(`Admin notified of new booking: ${booking.bookingId} (sent to ${ADMIN_EMAILS.length} admins)`);
     } catch (error) {
       console.error('Failed to send admin notification:', error.message);
     }
@@ -340,8 +336,6 @@ class AdminNotificationService {
           html
         });
       }
-
-      console.log(`Admin notified of payment: ${booking.bookingId} (sent to ${ADMIN_EMAILS.length} admins)`);
     } catch (error) {
       console.error('Failed to send admin notification:', error.message);
     }
@@ -386,8 +380,6 @@ class AdminNotificationService {
           html
         });
       }
-
-      console.log(`Admin notified of withdrawal: ${user.email} (sent to ${ADMIN_EMAILS.length} admins)`);
     } catch (error) {
       console.error('Failed to send admin notification:', error.message);
     }
@@ -441,8 +433,6 @@ class AdminNotificationService {
           html
         });
       }
-
-      console.log(`Daily summary sent to all admins (sent to ${ADMIN_EMAILS.length} admins)`);
     } catch (error) {
       console.error('Failed to send daily summary:', error.message);
     }

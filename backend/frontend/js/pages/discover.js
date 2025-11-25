@@ -70,9 +70,6 @@ async function loadCreators() {
         }
 
         const response = await api.getCreators(filters);
-        console.log('🔍 Discover page - API response:', response);
-        console.log('📊 Creators array:', response.data);
-        console.log('📈 Creators count:', response.data?.length);
 
         if (response.success) {
             // Transform API data to match frontend format
@@ -98,7 +95,6 @@ async function loadCreators() {
             // Store in appState so event listeners can access them
             appState.creators = creators;
 
-            console.log('✅ Transformed creators:', creators);
             renderCreatorsList();
         }
     } catch (error) {

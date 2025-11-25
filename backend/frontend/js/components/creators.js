@@ -41,7 +41,6 @@ export async function renderCreatorProfile(creatorIdOrObject) {
     setCurrentPage('creator-profile');
 
     if (!creatorIdOrObject) {
-        console.error('No creator data provided to renderCreatorProfile');
         return;
     }
 
@@ -66,9 +65,7 @@ export async function renderCreatorProfile(creatorIdOrObject) {
                 </div>
             `;
 
-            console.log('Fetching fresh creator profile from API:', creatorIdOrObject.id);
             const response = await api.getCreatorProfile(creatorIdOrObject.id);
-            console.log('Creator profile API response:', response);
 
             if (response.success) {
                 // Transform API data to match frontend format
@@ -100,12 +97,10 @@ export async function renderCreatorProfile(creatorIdOrObject) {
                     metrics: apiCreator.metrics || {},
                     badges: apiCreator.badges || []
                 };
-                console.log('Transformed creator:', creator);
             } else {
                 throw new Error('Failed to load creator profile');
             }
         } catch (error) {
-            console.error('Failed to load creator profile:', error);
             mainContent.innerHTML = `
                 <div class="section">
                     <div class="container">

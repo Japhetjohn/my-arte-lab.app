@@ -42,14 +42,12 @@ export async function showBookingModal(creatorId, serviceIndex = 0) {
                 appState.creators.push(creator);
             }
         } catch (error) {
-            console.error('Failed to load creator:', error);
             showToast('Failed to load creator details', 'error');
             return;
         }
     }
 
     if (!creator) {
-        console.error('Creator not found:', creatorId);
         showToast('Creator not found', 'error');
         return;
     }
@@ -221,11 +219,7 @@ export async function handleBookingSubmit(event, creatorId, serviceIndex) {
             endDate: document.getElementById('endDate').value
         };
 
-        console.log('Submitting booking:', bookingData);
-
         const response = await api.createBooking(bookingData);
-
-        console.log('Booking response:', response);
 
         if (response.success) {
             closeModal();
@@ -235,7 +229,6 @@ export async function handleBookingSubmit(event, creatorId, serviceIndex) {
             throw new Error(response.message || 'Failed to send booking request');
         }
     } catch (error) {
-        console.error('Booking submission failed:', error);
         showToast(error.message || 'Failed to create booking request', 'error');
     } finally {
         if (submitBtn) {
@@ -320,7 +313,6 @@ export async function handleProfileUpdate(event) {
             showToast('Profile updated successfully!', 'success');
         }
     } catch (error) {
-        console.error('Profile update failed:', error);
         showToast(error.message || 'Failed to update profile', 'error');
     } finally {
         submitBtn.disabled = false;
@@ -363,7 +355,6 @@ export function handleAvatarUpload() {
                 setTimeout(() => window.location.reload(), 1000);
             }
         } catch (error) {
-            console.error('Avatar upload failed:', error);
             showToast(error.message || 'Failed to upload avatar', 'error');
         }
     };
@@ -406,7 +397,6 @@ export function handleCoverUpload() {
                 setTimeout(() => window.location.reload(), 1000);
             }
         } catch (error) {
-            console.error('Cover upload failed:', error);
             showToast(error.message || 'Failed to upload cover image', 'error');
         }
     };
@@ -484,7 +474,6 @@ window.handlePasswordChange = async function(event) {
             showToast('Password changed successfully!', 'success');
         }
     } catch (error) {
-        console.error('Password change failed:', error);
         showToast(error.message || 'Failed to change password', 'error');
     } finally {
         submitBtn.disabled = false;
@@ -585,7 +574,6 @@ window.handleWithdrawal = async function(event) {
             setTimeout(() => window.location.reload(), 1500);
         }
     } catch (error) {
-        console.error('Withdrawal failed:', error);
         showToast(error.message || 'Failed to process withdrawal', 'error');
     } finally {
         submitBtn.disabled = false;

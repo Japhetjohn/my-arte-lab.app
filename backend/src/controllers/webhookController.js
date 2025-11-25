@@ -21,8 +21,6 @@ exports.handleTsaraWebhook = catchAsync(async (req, res, next) => {
   try {
     const result = await tsaraService.handleWebhookEvent(req.body);
 
-    console.log(' Webhook processed successfully:', result);
-
     successResponse(res, 200, 'Webhook received', result);
 
   } catch (error) {
@@ -36,8 +34,6 @@ exports.testWebhook = catchAsync(async (req, res, next) => {
   if (process.env.NODE_ENV === 'production') {
     return next(new ErrorHandler('Test endpoint not available in production', 404));
   }
-
-  console.log(' Test webhook received:', req.body);
 
   successResponse(res, 200, 'Test webhook received', {
     receivedData: req.body,

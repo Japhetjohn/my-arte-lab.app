@@ -48,7 +48,6 @@ class GasSponsorService {
       const balance = await this.connection.getBalance(publicKey);
       return balance / LAMPORTS_PER_SOL;
     } catch (error) {
-      console.error('Get sponsor balance error:', error);
       return 0;
     }
   }
@@ -67,7 +66,6 @@ class GasSponsorService {
 
       return estimatedFee;
     } catch (error) {
-      console.error('Estimate gas fee error:', error);
       // Return conservative estimate (0.000005 SOL is typical)
       return 0.000005;
     }
@@ -143,7 +141,6 @@ class GasSponsorService {
         note: 'Transaction must be signed by both user and sponsor before sending'
       };
     } catch (error) {
-      console.error('Sponsor USDC transfer error:', error);
       return {
         success: false,
         error: error.message
@@ -161,7 +158,6 @@ class GasSponsorService {
       const balance = await this.getSponsorBalance();
       return balance >= requiredAmount;
     } catch (error) {
-      console.error('Check sufficient gas error:', error);
       return false;
     }
   }
@@ -199,7 +195,6 @@ class GasSponsorService {
           : 'Gas sponsorship active'
       };
     } catch (error) {
-      console.error('Get sponsor status error:', error);
       return {
         configured: false,
         error: error.message
@@ -237,7 +232,6 @@ class GasSponsorService {
         message: `Airdropped ${amount} SOL to sponsor wallet`
       };
     } catch (error) {
-      console.error('Airdrop error:', error);
       return {
         success: false,
         error: error.message

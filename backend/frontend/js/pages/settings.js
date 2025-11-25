@@ -236,7 +236,6 @@ window.handleProfileUpdate = async function(event) {
             showToast(response.message || 'Failed to update profile', 'error');
         }
     } catch (error) {
-        console.error('Profile update error:', error);
         showToast(error.message || 'Failed to update profile', 'error');
     }
 };
@@ -273,7 +272,6 @@ window.handleAvatarUpload = function() {
                 showToast(response.message || 'Failed to upload avatar', 'error');
             }
         } catch (error) {
-            console.error('Avatar upload error:', error);
             showToast(error.message || 'Failed to upload avatar', 'error');
         }
     };
@@ -313,7 +311,6 @@ window.handleCoverUpload = function() {
                 showToast(response.message || 'Failed to upload cover image', 'error');
             }
         } catch (error) {
-            console.error('Cover upload error:', error);
             showToast(error.message || 'Failed to upload cover image', 'error');
         }
     };
@@ -407,7 +404,6 @@ window.handlePasswordChange = async function(event) {
             showToast(response.message || 'Failed to change password', 'error');
         }
     } catch (error) {
-        console.error('Password change error:', error);
         showToast(error.message || 'Failed to change password', 'error');
     }
 };
@@ -491,70 +487,47 @@ window.showDeleteAccountModal = function() {
 window.handleAccountDeletion = async function(event) {
     event.preventDefault();
 
-    console.log('🗑️ [1] Account deletion initiated');
-
     const user = appState.user;
     const isOAuthUser = !!user?.googleId;
-    console.log('🗑️ [1a] Is OAuth user:', isOAuthUser);
 
     // Get password only if user is not OAuth user
     const passwordInput = document.getElementById('deleteAccountPassword');
     const password = passwordInput ? passwordInput.value : '';
-    console.log('🗑️ [2] Password provided:', password ? 'YES' : 'NO (OAuth user - not required)');
 
     // Only validate password for non-OAuth users
     if (!isOAuthUser && !password) {
-        console.log('🗑️ [2a] No password - showing error');
         showToast('Please enter your password', 'error');
         return;
     }
 
     // Double confirmation
-    console.log('🗑️ [3] Showing confirmation dialog');
     const confirmed = confirm('Are you absolutely sure you want to delete your account? This cannot be undone.');
-    console.log('🗑️ [4] User confirmed:', confirmed);
     if (!confirmed) return;
 
     try {
-        console.log('🗑️ [5] Starting deletion process...');
         showToast('Deleting account...', 'info');
-
-        console.log('🗑️ [6] Calling api.deleteAccount()...');
-        console.log('🗑️ [6a] Token exists:', !!localStorage.getItem('token'));
 
         const response = await api.deleteAccount(password);
 
-        console.log('🗑️ [7] API Response received:', response);
-        console.log('🗑️ [7a] Response success:', response.success);
-        console.log('🗑️ [7b] Response message:', response.message);
-
         if (response.success) {
-            console.log('🗑️ [8] Deletion successful - cleaning up...');
             showToast('Account deleted successfully. Goodbye!', 'success');
 
             // Clear auth data
-            console.log('🗑️ [9] Removing token from localStorage');
             localStorage.removeItem('token');
 
-            console.log('🗑️ [10] Setting user to null');
             setUser(null);
 
             // Close modal and redirect to home
-            console.log('🗑️ [11] Closing modal');
             document.querySelector('.modal-overlay')?.remove();
 
-            console.log('🗑️ [12] Redirecting to home in 2 seconds...');
             setTimeout(() => {
                 window.location.href = '/';
             }, 2000);
         } else {
-            console.log('🗑️ [8a] Deletion failed:', response.message);
             showToast(response.message || 'Failed to delete account', 'error');
         }
     } catch (error) {
-        console.error('🗑️ [ERROR] Account deletion error:', error);
-        console.error('🗑️ [ERROR] Error message:', error.message);
-        console.error('🗑️ [ERROR] Error stack:', error.stack);
+        console.error('Account deletion error:', error);
         showToast(error.message || 'Failed to delete account', 'error');
     }
 };

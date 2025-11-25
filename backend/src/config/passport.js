@@ -48,8 +48,6 @@ passport.use(
           return done(new Error('No account found. Please sign up first.'), null);
         }
 
-        console.log('Creating new user via Google OAuth:', profile.emails[0].value, 'Role:', requestedRole);
-
         let wallet;
         try {
           wallet = await generateWallet({
@@ -82,14 +80,11 @@ passport.use(
 
         const newUser = await User.create(userData);
 
-        console.log('New user created via Google:', newUser.email);
-
         adminNotificationService.notifyNewUserRegistration(newUser)
           .catch(err => console.error('Admin notification failed:', err));
 
         done(null, newUser);
       } catch (error) {
-        console.error('Google OAuth error:', error);
         done(error, null);
       }
     }

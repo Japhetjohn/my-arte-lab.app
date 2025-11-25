@@ -37,10 +37,8 @@ router.get('/google/callback',
       const oauthData = pendingOAuthRequests.get(stateToken);
       req.oauthMode = oauthData.mode;
       req.oauthRole = oauthData.role;
-      console.log(`Google OAuth callback: mode=${oauthData.mode}, role=${oauthData.role}`);
       pendingOAuthRequests.delete(stateToken);
     } else {
-      console.log('Google OAuth callback: No state found, defaulting to signin');
       req.oauthMode = 'signin';
       req.oauthRole = 'client';
     }
@@ -88,7 +86,6 @@ router.get('/google/callback',
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
       res.redirect(`${frontendUrl}/oauth-callback.html?token=${token}&refresh=${refreshToken}`);
     } catch (error) {
-      console.error('Google OAuth callback error:', error);
       res.redirect(`${process.env.FRONTEND_URL}/?error=token_generation_failed`);
     }
   }

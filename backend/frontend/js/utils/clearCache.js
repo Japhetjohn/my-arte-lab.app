@@ -16,7 +16,6 @@ export function clearOldMockData() {
             localStorage.setItem('token', token);
         }
 
-        console.log('✅ Cleared old mock data from localStorage');
         return true;
     } catch (error) {
         console.error('Failed to clear localStorage:', error);
@@ -32,9 +31,7 @@ export function checkAndClearCache() {
     const storedVersion = localStorage.getItem('cacheVersion');
 
     if (storedVersion !== cacheVersion) {
-        console.log('🔄 Detected cache version mismatch - clearing old data...');
         clearOldMockData();
         localStorage.setItem('cacheVersion', cacheVersion);
-        console.log('✅ Cache updated to', cacheVersion);
     }
 }

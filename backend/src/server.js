@@ -99,7 +99,6 @@ app.use(cors({
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      console.warn(`CORS blocked origin: ${origin}`);
       callback(new Error('Not allowed by CORS'));
     }
   },
@@ -254,7 +253,6 @@ app.use(errorMiddleware);
 
 try {
   tsaraConfig.validate();
-  console.log('Tsara configuration validated');
 } catch (error) {
   console.error('Tsara configuration error:', error.message);
   if (process.env.NODE_ENV === 'production') {
@@ -289,20 +287,15 @@ process.on('uncaughtException', (err) => {
 });
 
 process.on('SIGTERM', () => {
-  console.log('SIGTERM received, shutting down gracefully...');
   server.close(async () => {
-    console.log('HTTP server closed');
-
     // Close database connection
     try {
       const mongoose = require('mongoose');
       await mongoose.connection.close(false);
-      console.log('Database connection closed');
     } catch (error) {
       console.error('Error closing database connection:', error);
     }
 
-    console.log('Graceful shutdown complete');
     process.exit(0);
   });
 
@@ -314,7 +307,6 @@ process.on('SIGTERM', () => {
 });
 
 process.on('SIGINT', () => {
-  console.log('SIGINT received, shutting down gracefully...');
   process.emit('SIGTERM');
 });
 

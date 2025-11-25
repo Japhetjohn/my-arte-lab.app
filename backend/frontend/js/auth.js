@@ -134,29 +134,10 @@ export async function handleAuth(event, type) {
                 };
             }
 
-            console.log('📝 REGISTRATION ATTEMPT - Form Data:', {
-                name: userData.name,
-                email: userData.email,
-                role: userData.role,
-                hasPassword: !!userData.password,
-                passwordLength: userData.password?.length
-            });
-
             const response = await api.register(userData);
 
-            console.log('📨 REGISTRATION RESPONSE:', response);
-            console.log('✅ Response Success:', response.success);
-            console.log('👤 User Data in Response:', response.data?.user);
-
             if (response.success) {
-                console.log('🎉 REGISTRATION SUCCESSFUL! Setting user in appState...');
-                console.log('User object being set:', response.data.user);
-
                 setUser(response.data.user);
-
-                console.log('📱 Current appState.user after setUser:', appState.user);
-                console.log('📱 User name:', appState.user?.name);
-                console.log('📱 User email:', appState.user?.email);
 
                 updateUserMenu();
                 closeModal();
@@ -165,7 +146,6 @@ export async function handleAuth(event, type) {
                 showEmailVerificationModal(userData.email, userData.role);
                 showToast('Account created successfully! Please check your email for the verification code.', 'success');
             } else {
-                console.error('❌ REGISTRATION FAILED:', response);
                 showToast(response.message || 'Registration failed. Please try again.', 'error');
             }
         } else {
@@ -185,7 +165,6 @@ export async function handleAuth(event, type) {
             }
         }
     } catch (error) {
-        console.error('Authentication error:', error);
         showToast(error.message || 'Authentication failed. Please try again.', 'error');
     } finally {
         submitBtn.disabled = false;
@@ -197,7 +176,7 @@ export async function handleLogout() {
     try {
         await api.logout();
     } catch (error) {
-        console.error('Logout error:', error);
+        // Ignore logout errors
     } finally {
         clearUser();
         updateUserMenu();
@@ -222,7 +201,6 @@ export async function initAuth() {
                 return response.data.user;
             }
         } catch (error) {
-            console.error('Failed to restore session:', error);
             api.setToken(null);
             clearUser();
         }
@@ -233,17 +211,12 @@ export async function initAuth() {
 }
 
 export function updateUserMenu() {
-    console.log('updateUserMenu() called');
-    console.log('Current appState.user:', appState.user);
-
     const userMenuContainer = document.getElementById('userMenuContainer');
     if (!userMenuContainer) {
-        console.warn('userMenuContainer not found in DOM');
         return;
     }
 
     if (appState.user) {
-        console.log('User is logged in, rendering user menu');
 
         // Show user avatar dropdown with professional fallback
         const avatarUrl = getAvatarUrl(appState.user);
@@ -370,7 +343,7 @@ async function updateNotificationBadge() {
             }
         }
     } catch (error) {
-        console.error('Failed to update notification badge:', error);
+        // Ignore notification badge errors
     }
 }
 
@@ -586,7 +559,6 @@ async function handleResendVerification() {
             showToast(response.message || 'Failed to resend verification code', 'error');
         }
     } catch (error) {
-        console.error('Resend verification error:', error);
         showToast(error.message || 'Failed to resend code. Please try again.', 'error');
     }
 }

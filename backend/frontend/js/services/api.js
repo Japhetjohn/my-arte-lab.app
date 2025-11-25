@@ -75,29 +75,12 @@ class ApiService {
             headers: this.getHeaders(options.auth !== false)
         };
 
-        console.log('🌐 [API REQUEST]', {
-            method: options.method || 'GET',
-            url,
-            headers: config.headers,
-            hasBody: !!config.body,
-            body: config.body
-        });
-
         try {
             const response = await fetch(url, config);
-            console.log('🌐 [API RESPONSE]', {
-                status: response.status,
-                statusText: response.statusText,
-                ok: response.ok
-            });
             const result = await this.handleResponse(response);
-            console.log('🌐 [API RESPONSE DATA]', result);
             return result;
         } catch (error) {
-            console.error('🌐 [API REQUEST FAILED]', {
-                error: error.message,
-                stack: error.stack
-            });
+            console.error('API request failed:', error.message);
             throw error;
         }
     }
@@ -138,12 +121,6 @@ class ApiService {
      * DELETE request
      */
     async delete(endpoint, data, options = {}) {
-        console.log('🌐 [API] DELETE request:', {
-            endpoint,
-            hasData: !!data,
-            data: data,
-            options
-        });
         return this.request(endpoint, {
             ...options,
             method: 'DELETE',
@@ -198,10 +175,7 @@ class ApiService {
     }
 
     async deleteAccount(password) {
-        console.log('🌐 [API] deleteAccount called with password:', password ? 'PROVIDED' : 'MISSING');
-        console.log('🌐 [API] Endpoint:', API_ENDPOINTS.deleteAccount);
         const result = await this.delete(API_ENDPOINTS.deleteAccount, { password });
-        console.log('🌐 [API] deleteAccount result:', result);
         return result;
     }
 

@@ -16,7 +16,6 @@ const validateConfig = () => {
     return false;
   }
 
-  console.log(' Cloudinary configuration validated');
   return true;
 };
 

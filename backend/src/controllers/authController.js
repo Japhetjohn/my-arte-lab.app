@@ -26,7 +26,6 @@ exports.register = catchAsync(async (req, res, next) => {
       name,
       role: role || 'client'
     });
-    console.log(' Wallet created successfully for:', email);
   } catch (error) {
     console.error(' Wallet creation failed (will retry later):', error.message);
     walletCreationFailed = true;
@@ -99,8 +98,6 @@ exports.register = catchAsync(async (req, res, next) => {
 
   adminNotificationService.notifyNewUserRegistration(user)
     .catch(err => console.error('Admin notification failed:', err));
-
-  console.log(` User created via ${user.googleId ? 'Google OAuth' : 'registration'}`);
 
   successResponse(res, 201, 'Registration successful', {
     user: user.getPublicProfile(),
@@ -283,59 +280,35 @@ exports.updateProfile = catchAsync(async (req, res, next) => {
 });
 
 exports.deleteAccount = catchAsync(async (req, res, next) => {
-  console.log('🗑️ [BACKEND] Delete account request received');
-  console.log('🗑️ [BACKEND] User ID:', req.user?._id);
-  console.log('🗑️ [BACKEND] User Email:', req.user?.email);
-
   const { password } = req.body;
-  console.log('🗑️ [BACKEND] Password provided:', password ? 'YES' : 'NO');
 
-  console.log('🗑️ [BACKEND] Finding user in database...');
   const user = await User.findById(req.user._id).select('+password +googleId');
 
   if (!user) {
-    console.log('🗑️ [BACKEND] Error: User not found');
     return next(new ErrorHandler('User not found', 404));
   }
 
   // Check if user is OAuth user (has googleId but no password)
   const isOAuthUser = !!user.googleId;
-  console.log('🗑️ [BACKEND] Is OAuth user:', isOAuthUser);
 
   // For OAuth users, allow deletion without password
   // For regular users, require password verification
   if (!isOAuthUser) {
     if (!password) {
-      console.log('🗑️ [BACKEND] Error: No password provided (required for non-OAuth users)');
       return next(new ErrorHandler('Please provide your password to confirm account deletion', 400));
     }
 
-    console.log('🗑️ [BACKEND] Verifying password for non-OAuth user...');
     const isCorrect = await user.comparePassword(password);
-    console.log('🗑️ [BACKEND] Password match:', isCorrect);
 
     if (!isCorrect) {
-      console.log('🗑️ [BACKEND] Error: Incorrect password');
       return next(new ErrorHandler('Incorrect password', 401));
     }
-  } else {
-    console.log('🗑️ [BACKEND] OAuth user - skipping password verification');
   }
 
   // Permanently delete user from database
-  console.log('🗑️ [BACKEND] Deleting user from database...');
-  const deleteResult = await User.findByIdAndDelete(req.user._id);
-  console.log('🗑️ [BACKEND] Delete result:', deleteResult ? 'SUCCESS' : 'FAILED');
-  console.log('🗑️ [BACKEND] Deleted user details:', {
-    id: deleteResult?._id,
-    email: deleteResult?.email,
-    name: deleteResult?.name,
-    wasOAuthUser: isOAuthUser
-  });
+  await User.findByIdAndDelete(req.user._id);
 
-  console.log('🗑️ [BACKEND] Sending success response...');
   successResponse(res, 200, 'Account permanently deleted successfully');
-  console.log('🗑️ [BACKEND] Account deletion complete');
 });
 
 exports.verifyEmail = catchAsync(async (req, res, next) => {

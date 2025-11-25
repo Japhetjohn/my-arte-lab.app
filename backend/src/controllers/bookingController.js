@@ -361,7 +361,6 @@ exports.releaseFunds = catchAsync(async (req, res, next) => {
     });
 
   } catch (error) {
-    console.error('Fund release failed:', error);
     return next(new ErrorHandler('Failed to release funds. Please contact support', 500));
   }
 });
@@ -536,7 +535,6 @@ exports.acceptBooking = catchAsync(async (req, res, next) => {
 
     successResponse(res, 200, 'Booking accepted and payment processed successfully', { booking });
   } catch (error) {
-    console.error('Payment deduction failed:', error);
     return next(new ErrorHandler('Failed to process payment. Please try again.', 500));
   }
 });

@@ -14,9 +14,6 @@ const connectDatabase = async () => {
 
     const conn = await mongoose.connect(process.env.MONGODB_URI, options);
 
-    console.log(` MongoDB Connected: ${conn.connection.host}`);
-    console.log(` Database: ${conn.connection.name}`);
-
     mongoose.connection.on('error', (err) => {
       console.error(` MongoDB connection error: ${err}`);
     });
@@ -25,19 +22,12 @@ const connectDatabase = async () => {
       console.warn(' MongoDB disconnected. Attempting to reconnect...');
     });
 
-    mongoose.connection.on('reconnected', () => {
-      console.log(' MongoDB reconnected');
-    });
-
     return conn;
   } catch (error) {
     console.error(` MongoDB Connection Error: ${error.message}`);
     if (process.env.NODE_ENV === 'production') {
       // In production, exit if we can't connect to the database
       process.exit(1);
-    } else {
-      // In development, log error but allow server to continue
-      console.warn(' Continuing in development mode without database connection');
     }
   }
 };

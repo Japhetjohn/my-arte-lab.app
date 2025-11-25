@@ -46,7 +46,6 @@ const emailConfig = {
       };
 
       const info = await transporter.sendMail(mailOptions);
-      console.log(` Email sent to ${to}: ${info.messageId}`);
       return info;
     } catch (error) {
       console.error(` Email sending failed:`, error.message);
@@ -60,7 +59,6 @@ const emailConfig = {
         transporter = createTransporter();
       }
       await transporter.verify();
-      console.log(' Email service connected and ready');
       return true;
     } catch (error) {
       console.error(' Email service connection failed:', error.message);
