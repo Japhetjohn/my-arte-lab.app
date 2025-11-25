@@ -178,6 +178,12 @@ export async function handleLogout() {
     } catch (error) {
         // Ignore logout errors
     } finally {
+        // Clear notification interval to prevent memory leak
+        if (window.notificationInterval) {
+            clearInterval(window.notificationInterval);
+            window.notificationInterval = null;
+        }
+
         clearUser();
         updateUserMenu();
         navigateToPage('home');

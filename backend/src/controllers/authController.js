@@ -136,10 +136,8 @@ exports.login = catchAsync(async (req, res, next) => {
   const token = generateToken(user._id);
   const refreshToken = generateRefreshToken(user._id);
 
-  const userData = await User.findById(user._id);
-
   successResponse(res, 200, 'Login successful', {
-    user: userData.getPublicProfile(),
+    user: user.getPublicProfile(),
     token,
     refreshToken
   });

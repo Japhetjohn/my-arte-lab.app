@@ -36,11 +36,15 @@ export function navigateToPage(page, addToHistoryFlag = true) {
     // Scroll to top
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
-    // Render page content
+    // Render page content with smooth transition
     const mainContent = document.getElementById('mainContent');
+
+    // Fade out quickly
+    mainContent.style.transition = 'opacity 0.15s ease-out';
     mainContent.style.opacity = '0';
 
-    setTimeout(() => {
+    // Render new content immediately after fade starts
+    requestAnimationFrame(() => {
         switch (page) {
             case 'home':
                 renderHomePage();
@@ -67,10 +71,15 @@ export function navigateToPage(page, addToHistoryFlag = true) {
                 renderFavoritesPage();
                 break;
         }
-        mainContent.style.opacity = '1';
+
+        // Fade in after content is rendered
+        requestAnimationFrame(() => {
+            mainContent.style.opacity = '1';
+        });
+
         // Ensure back button is updated after rendering
         updateBackButton();
-    }, 150);
+    });
 }
 
 export function goBack() {

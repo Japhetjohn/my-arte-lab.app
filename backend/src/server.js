@@ -88,11 +88,13 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps, Postman, or same-origin)
-    if (!origin) return callback(null, true);
+    // Allow requests with no origin only in development (Postman, curl, etc.)
+    if (!origin && process.env.NODE_ENV !== 'production') {
+      return callback(null, true);
+    }
 
-    // In production, allow same-origin requests
-    if (process.env.NODE_ENV === 'production' && origin.includes('onrender.com')) {
+    // In production, allow same-origin requests from exact Render domain
+    if (process.env.NODE_ENV === 'production' && origin === 'https://my-arte-lab-app.onrender.com') {
       return callback(null, true);
     }
 

@@ -119,7 +119,12 @@ exports.createBooking = catchAsync(async (req, res, next) => {
 });
 
 exports.getMyBookings = catchAsync(async (req, res, next) => {
-  const { status, type } = req.query;
+  const { status, type, page = 1, limit = 20 } = req.query;
+
+  // Parse pagination params
+  const pageNum = parseInt(page, 10);
+  const limitNum = parseInt(limit, 10);
+  const skip = (pageNum - 1) * limitNum;
 
   let query = {};
 
@@ -150,13 +155,26 @@ exports.getMyBookings = catchAsync(async (req, res, next) => {
     }
   }
 
+  // Get total count for pagination
+  const totalBookings = await Booking.countDocuments(query);
+
   const bookings = await Booking.find(query)
     .select('-messages') // Exclude messages array to prevent N+1 queries and reduce payload
     .populate('client', 'name avatar email')
     .populate('creator', 'name avatar email category')
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limitNum);
 
-  successResponse(res, 200, 'Bookings retrieved successfully', { bookings });
+  successResponse(res, 200, 'Bookings retrieved successfully', {
+    bookings,
+    pagination: {
+      total: totalBookings,
+      page: pageNum,
+      limit: limitNum,
+      totalPages: Math.ceil(totalBookings / limitNum)
+    }
+  });
 });
 
 exports.getBooking = catchAsync(async (req, res, next) => {
