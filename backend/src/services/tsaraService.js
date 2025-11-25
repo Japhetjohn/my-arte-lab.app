@@ -1,5 +1,5 @@
 const axios = require('axios');
-const axiosRetry = require('axios-retry');
+const axiosRetry = require('axios-retry').default;
 const crypto = require('crypto');
 const tsaraConfig = require('../config/tsara');
 const { Keypair } = require('@solana/web3.js');
