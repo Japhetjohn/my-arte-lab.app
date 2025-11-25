@@ -363,8 +363,6 @@ class TsaraService {
   }
 
   async handleWithdrawalFailed(data) {
-    console.log(`Withdrawal failed:`, data.withdrawal_id);
-
     const Transaction = require('../models/Transaction');
 
     try {
