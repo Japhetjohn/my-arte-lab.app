@@ -40,7 +40,4 @@ router.delete('/beneficiaries/:id', walletController.deleteBeneficiary);
 router.get('/banks', walletController.getSupportedBanks);
 router.post('/verify-bank-account', walletController.verifyBankAccount);
 
-// Test/Debug routes
-router.post('/reinitialize-bread-account', walletController.reinitializeBreadAccount);
-
 module.exports = router;
