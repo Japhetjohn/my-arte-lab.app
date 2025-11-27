@@ -2,7 +2,6 @@ const User = require('../models/User');
 const { generateToken, generateRefreshToken } = require('../utils/jwtUtils');
 const { successResponse, errorResponse } = require('../utils/apiResponse');
 const { ErrorHandler, catchAsync } = require('../utils/errorHandler');
-const tsaraService = require('../services/tsaraService');
 const emailConfig = require('../config/email');
 const adminNotificationService = require('../services/adminNotificationService');
 const crypto = require('crypto');
@@ -16,27 +15,14 @@ exports.register = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Email already registered', 400));
   }
 
-  let wallet = null;
-  let walletCreationFailed = false;
-
-  try {
-    wallet = await tsaraService.generateWallet({
-      userId: email,
-      email,
-      name,
-      role: role || 'client'
-    });
-  } catch (error) {
-    console.error(' Wallet creation failed (will retry later):', error.message);
-    walletCreationFailed = true;
-    const tempWalletId = crypto.randomBytes(16).toString('hex');
-    wallet = {
-      address: `pending_${tempWalletId}`,
-      currency: 'USDC',
-      balance: 0,
-      network: 'Solana'
-    };
-  }
+  // Generate unique wallet identifier for internal tracking
+  // bread.africa handles actual crypto/fiat conversions
+  const walletId = crypto.randomBytes(16).toString('hex');
+  const wallet = {
+    address: `wallet_${walletId}`,
+    currency: 'USDC',
+    balance: 0
+  };
 
   const user = await User.create({
     name,

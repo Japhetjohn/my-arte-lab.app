@@ -237,6 +237,54 @@ class ApiService {
         return this.get(API_ENDPOINTS.balanceSummary);
     }
 
+    // ==================== bread.africa Onramp (Deposit) Endpoints ====================
+
+    async initiateBankTransferOnramp(amountNGN) {
+        return this.post('/wallet/onramp/bank-transfer', { amountNGN });
+    }
+
+    async initiateMobileMoneyOnramp(data) {
+        return this.post('/wallet/onramp/mobile-money', data);
+    }
+
+    async getExchangeRate(from, to, amount) {
+        return this.get(`/wallet/exchange-rate?from=${from}&to=${to}&amount=${amount}`);
+    }
+
+    // ==================== bread.africa Offramp (Withdrawal) Endpoints ====================
+
+    async requestBankWithdrawal(data) {
+        return this.post('/wallet/offramp/bank', data);
+    }
+
+    async requestMobileMoneyWithdrawal(data) {
+        return this.post('/wallet/offramp/mobile-money', data);
+    }
+
+    // ==================== Beneficiary Management Endpoints ====================
+
+    async getBeneficiaries() {
+        return this.get('/wallet/beneficiaries');
+    }
+
+    async addBeneficiary(beneficiaryData) {
+        return this.post('/wallet/beneficiaries', beneficiaryData);
+    }
+
+    async deleteBeneficiary(beneficiaryId) {
+        return this.delete(`/wallet/beneficiaries/${beneficiaryId}`);
+    }
+
+    // ==================== Utility Endpoints ====================
+
+    async getSupportedBanks() {
+        return this.get('/wallet/banks');
+    }
+
+    async verifyBankAccount(bankCode, accountNumber) {
+        return this.post('/wallet/verify-bank-account', { bankCode, accountNumber });
+    }
+
     // ==================== Review Endpoints ====================
 
     async getReviews(creatorId) {

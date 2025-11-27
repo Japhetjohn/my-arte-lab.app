@@ -1,7 +1,7 @@
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const User = require('../models/User');
-const { generateWallet } = require('../services/tsaraService');
+const crypto = require('crypto');
 const adminNotificationService = require('../services/adminNotificationService');
 
 passport.use(
@@ -48,16 +48,13 @@ passport.use(
           return done(new Error('No account found. Please sign up first.'), null);
         }
 
-        let wallet;
-        try {
-          wallet = await generateWallet({
-            email: profile.emails[0].value,
-            fullName: profile.displayName
-          });
-        } catch (walletError) {
-          console.error('Tsara wallet generation failed for Google user:', walletError.message);
-          wallet = null;
-        }
+        // Generate unique wallet identifier for internal tracking
+        const walletId = crypto.randomBytes(16).toString('hex');
+        const wallet = {
+          address: `wallet_${walletId}`,
+          balance: 0,
+          currency: 'USDC'
+        };
 
         const userData = {
           name: profile.displayName,
@@ -66,11 +63,7 @@ passport.use(
           avatar: profile.photos && profile.photos.length > 0 ? profile.photos[0].value : undefined,
           role: requestedRole,
           isEmailVerified: true,
-          wallet: wallet ? {
-            address: wallet.address,
-            balance: 0,
-            currency: 'USDT'
-          } : undefined,
+          wallet: wallet,
           password: Math.random().toString(36).slice(-16)
         };
 

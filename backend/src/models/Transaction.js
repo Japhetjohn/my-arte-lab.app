@@ -23,7 +23,9 @@ const transactionSchema = new mongoose.Schema({
       'refund',
       'platform_fee',
       'bonus',
-      'reversal'
+      'reversal',
+      'onramp',
+      'offramp'
     ],
     required: true
   },
@@ -36,7 +38,7 @@ const transactionSchema = new mongoose.Schema({
   currency: {
     type: String,
     required: true,
-    enum: ['USDT', 'USDC', 'DAI'],
+    enum: ['USDT', 'USDC', 'DAI', 'NGN'],
     default: 'USDT'
   },
 
@@ -77,6 +79,29 @@ const transactionSchema = new mongoose.Schema({
   tsaraPaymentId: String,
   tsaraPaymentStatus: String,
 
+  // bread.africa fields for onramp/offramp
+  breadPaymentId: String,
+  fiatAmount: Number,
+  fiatCurrency: {
+    type: String,
+    enum: ['NGN', '']
+  },
+  exchangeRate: Number,
+  paymentMethod: {
+    type: String,
+    enum: ['bank_transfer', 'mobile_money', 'crypto', '']
+  },
+  paymentDetails: {
+    accountNumber: String,
+    accountName: String,
+    bankName: String,
+    bankCode: String,
+    phoneNumber: String,
+    provider: String,
+    reference: String,
+    ussdCode: String
+  },
+
   metadata: {
     ipAddress: String,
     userAgent: String,
@@ -100,6 +125,7 @@ transactionSchema.index({ status: 1 });
 transactionSchema.index({ booking: 1 });
 transactionSchema.index({ transactionHash: 1 });
 transactionSchema.index({ tsaraPaymentId: 1 });
+transactionSchema.index({ breadPaymentId: 1 });
 
 transactionSchema.pre('save', async function(next) {
   if (!this.transactionId) {
@@ -160,12 +186,12 @@ transactionSchema.statics.getUserBalanceSummary = async function(userId) {
         _id: '$currency',
         totalDeposits: {
           $sum: {
-            $cond: [{ $in: ['$type', ['deposit', 'earning', 'bonus']] }, '$netAmount', 0]
+            $cond: [{ $in: ['$type', ['deposit', 'earning', 'bonus', 'onramp']] }, '$netAmount', 0]
           }
         },
         totalWithdrawals: {
           $sum: {
-            $cond: [{ $in: ['$type', ['withdrawal', 'payment']] }, '$netAmount', 0]
+            $cond: [{ $in: ['$type', ['withdrawal', 'payment', 'offramp']] }, '$netAmount', 0]
           }
         },
         totalRefunds: {

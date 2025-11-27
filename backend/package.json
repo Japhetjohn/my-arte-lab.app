@@ -17,8 +17,10 @@
     "marketplace",
     "creator-economy",
     "stablecoin",
-    "tsara",
-    "payments"
+    "bread.africa",
+    "payments",
+    "fiat-onramp",
+    "offramp"
   ],
   "author": "MyArteLab",
   "license": "MIT",

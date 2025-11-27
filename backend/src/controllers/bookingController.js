@@ -4,12 +4,13 @@ const Transaction = require('../models/Transaction');
 const Notification = require('../models/Notification');
 const { successResponse } = require('../utils/apiResponse');
 const { ErrorHandler, catchAsync } = require('../utils/errorHandler');
-const tsaraService = require('../services/tsaraService');
-const tsaraConfig = require('../config/tsara');
 const emailConfig = require('../config/email');
 const adminNotificationService = require('../services/adminNotificationService');
 const { escapeHtml } = require('../utils/sanitize');
 const { v4: uuidv4 } = require('uuid');
+
+// Platform configuration
+const PLATFORM_COMMISSION = parseFloat(process.env.PLATFORM_COMMISSION) || 10;
 
 exports.createBooking = catchAsync(async (req, res, next) => {
   const {
@@ -28,7 +29,13 @@ exports.createBooking = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Creator not found', 404));
   }
 
-  const platformCommission = tsaraConfig.commission;
+  // Check if client has sufficient balance
+  const client = await User.findById(req.user._id);
+  if (client.wallet.balance < amount) {
+    return next(new ErrorHandler('Insufficient balance to create booking', 400));
+  }
+
+  const platformCommission = PLATFORM_COMMISSION;
   const platformFee = (amount * platformCommission) / 100;
   const creatorAmount = amount - platformFee;
 
@@ -50,29 +57,27 @@ exports.createBooking = catchAsync(async (req, res, next) => {
     startDate,
     endDate,
     escrowWallet: {
-      address: 'pending',
-      balance: 0
+      address: `escrow-${bookingId}`,  // Database-only escrow identifier
+      balance: amount  // Track escrow balance in database
     }
   });
 
-  try {
-    const escrowWallet = await tsaraService.generateEscrowWallet({
-      bookingId: booking.bookingId,
-      amount,
-      currency: currency || 'USDT',
-      clientEmail: req.user.email,
-      creatorEmail: creator.email
-    });
+  // Deduct funds from client's wallet (hold in escrow)
+  client.wallet.balance -= amount;
+  client.wallet.pendingBalance += amount;
+  await client.save({ validateBeforeSave: false });
 
-    booking.escrowWallet.address = escrowWallet.address;
-    booking.escrowWallet.escrowId = escrowWallet.escrowId;
-    await booking.save();
-
-  } catch (error) {
-    console.error('Escrow wallet generation failed:', error);
-    await Booking.findByIdAndDelete(booking._id);
-    return next(new ErrorHandler('Failed to create escrow wallet. Please try again', 500));
-  }
+  // Create escrow transaction record
+  await Transaction.create({
+    user: client._id,
+    type: 'escrow',
+    amount,
+    currency: currency || 'USDC',
+    status: 'completed',
+    booking: booking._id,
+    description: `Funds held in escrow for ${serviceTitle}`,
+    completedAt: new Date()
+  });
 
   emailConfig.sendEmail({
     to: creator.email,
@@ -268,29 +273,19 @@ exports.releaseFunds = catchAsync(async (req, res, next) => {
   }
 
   try {
-    // SECURITY: Verify escrow wallet has sufficient balance before releasing funds
-    const escrowBalance = await tsaraService.getWalletBalance(booking.escrowWallet.address);
-    if (escrowBalance.balance < booking.amount) {
-      return next(new ErrorHandler('Insufficient funds in escrow wallet', 400));
+    // Verify escrow wallet has sufficient balance before releasing funds
+    if (booking.escrowWallet.balance < booking.amount) {
+      return next(new ErrorHandler('Insufficient funds in escrow', 400));
     }
 
-    const releaseResult = await tsaraService.releaseEscrowFunds({
-      escrowId: booking.escrowWallet.escrowId,
-      escrowAddress: booking.escrowWallet.address,
-      creatorAddress: booking.creator.wallet.address,
-      platformAddress: tsaraConfig.platformWallet,
-      creatorAmount: booking.creatorAmount,
-      platformFee: booking.platformFee,
-      currency: booking.currency,
-      bookingId: booking.bookingId
-    });
-
+    // Release funds from escrow
     await booking.releaseFunds();
     booking.platformFeePaid = true;
     booking.platformFeePaidAt = new Date();
-    booking.platformFeeTransactionHash = releaseResult.platformTransaction?.hash;
+    booking.escrowWallet.balance = 0;  // Clear escrow balance
     await booking.save();
 
+    // Create transaction records
     await Transaction.create([
       {
         user: booking.creator._id,
@@ -300,7 +295,6 @@ exports.releaseFunds = catchAsync(async (req, res, next) => {
         status: 'completed',
         booking: booking._id,
         toAddress: booking.creator.wallet.address,
-        transactionHash: releaseResult.creatorTransaction?.hash,
         description: `Payment received for ${booking.serviceTitle}`,
         completedAt: new Date()
       },
@@ -311,12 +305,15 @@ exports.releaseFunds = catchAsync(async (req, res, next) => {
         currency: booking.currency,
         status: 'completed',
         booking: booking._id,
-        toAddress: tsaraConfig.platformWallet,
-        transactionHash: releaseResult.platformTransaction?.hash,
         description: `Platform fee for ${booking.bookingId}`,
         completedAt: new Date()
       }
     ]);
+
+    // Update client's pending balance (release from escrow)
+    const client = await User.findById(booking.client._id);
+    client.wallet.pendingBalance -= booking.amount;
+    await client.save({ validateBeforeSave: false });
 
     // Update creator balance and stats (do all updates in memory, then save once)
     const creator = await User.findById(booking.creator._id);
@@ -339,7 +336,7 @@ exports.releaseFunds = catchAsync(async (req, res, next) => {
       `
     }).catch(err => console.error('Email failed:', err));
 
-    adminNotificationService.notifyPaymentReceived(booking, releaseResult.creatorTransaction)
+    adminNotificationService.notifyPaymentReceived(booking, { amount: booking.creatorAmount })
       .catch(err => console.error('Admin notification failed:', err));
 
     // Create notification for creator about payment
@@ -632,7 +629,7 @@ exports.counterProposal = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Please provide a valid counter proposal amount', 400));
   }
 
-  const platformCommission = tsaraConfig.commission;
+  const platformCommission = PLATFORM_COMMISSION;
   const platformFee = (amount * platformCommission) / 100;
   const creatorAmount = amount - platformFee;
 

@@ -503,7 +503,238 @@ export function showWithdrawModal() {
                 </div>
 
                 <div style="padding: 20px;">
-                    <!-- Crypto Withdrawal Form -->
+                    <p style="color: var(--text-secondary); margin-bottom: 20px;">Choose your withdrawal method</p>
+
+                    <div style="display: grid; gap: 12px; margin-bottom: 20px;">
+                        <!-- Bank Transfer Option -->
+                        <div class="card" onclick="window.showBankWithdrawal()" style="cursor: pointer; padding: 16px; background: var(--background-alt); border: 2px solid transparent; transition: border-color 0.2s;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div style="font-size: 24px;">🏦</div>
+                                <div style="flex: 1;">
+                                    <div style="font-weight: 600;">Bank Transfer</div>
+                                    <small style="color: var(--text-secondary);">Withdraw to your bank account (NGN)</small>
+                                </div>
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                    <path d="M7.5 5l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                </svg>
+                            </div>
+                        </div>
+
+                        <!-- Mobile Money Option -->
+                        <div class="card" onclick="window.showMobileMoneyWithdrawal()" style="cursor: pointer; padding: 16px; background: var(--background-alt); border: 2px solid transparent; transition: border-color 0.2s;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div style="font-size: 24px;">📱</div>
+                                <div style="flex: 1;">
+                                    <div style="font-weight: 600;">Mobile Money</div>
+                                    <small style="color: var(--text-secondary);">MTN, Airtel, Glo, 9mobile</small>
+                                </div>
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                    <path d="M7.5 5l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                </svg>
+                            </div>
+                        </div>
+
+                        <!-- Crypto Option (Existing) -->
+                        <div class="card" onclick="window.showCryptoWithdrawal()" style="cursor: pointer; padding: 16px; background: var(--background-alt); border: 2px solid transparent; transition: border-color 0.2s;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div style="font-size: 24px;">₿</div>
+                                <div style="flex: 1;">
+                                    <div style="font-weight: 600;">Crypto (Direct)</div>
+                                    <small style="color: var(--text-secondary);">Send USDC to Solana address</small>
+                                </div>
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                    <path d="M7.5 5l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('modalsContainer').innerHTML = modalContent;
+    openModal();
+}
+
+// Show bank transfer withdrawal form
+window.showBankWithdrawal = function() {
+    const modalContent = `
+        <div class="modal" onclick="closeModalOnBackdrop(event)">
+            <div class="modal-content" style="max-width: 550px;">
+                <div class="modal-header">
+                    <h2>🏦 Bank Withdrawal</h2>
+                    <button class="icon-btn" onclick="closeModal()">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div style="padding: 20px;">
+                    <form id="bankWithdrawForm" onsubmit="window.handleBankWithdrawal(event)">
+                        <div class="form-group">
+                            <label class="form-label">Amount (USDC)</label>
+                            <input type="number" id="bankWithdrawAmount" class="form-input" required min="20" step="0.01" placeholder="Minimum: 20 USDC">
+                            <small style="color: var(--text-secondary);">You'll receive: ₦<span id="ngnEquivalent">0</span></small>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Bank</label>
+                            <select id="bankCode" class="form-select" required>
+                                <option value="">Select your bank</option>
+                                <option value="058">GTBank</option>
+                                <option value="011">First Bank</option>
+                                <option value="214">First City Monument Bank</option>
+                                <option value="070">Fidelity Bank</option>
+                                <option value="033">United Bank for Africa</option>
+                                <option value="032">Union Bank</option>
+                                <option value="221">Stanbic IBTC Bank</option>
+                                <option value="068">Standard Chartered</option>
+                                <option value="215">Unity Bank</option>
+                                <option value="232">Sterling Bank</option>
+                                <option value="057">Zenith Bank</option>
+                                <option value="044">Access Bank</option>
+                                <option value="050">Ecobank</option>
+                                <option value="035">Wema Bank</option>
+                                <option value="082">Keystone Bank</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Account Number</label>
+                            <input type="text" id="accountNumber" class="form-input" required minlength="10" maxlength="10" placeholder="10-digit account number">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Account Name</label>
+                            <input type="text" id="accountName" class="form-input" required placeholder="Account holder name">
+                            <small style="color: var(--text-secondary);">Enter the exact name on your bank account</small>
+                        </div>
+
+                        <div class="caption" style="color: var(--text-secondary); margin-bottom: 16px;">
+                            💡 Minimum: 20 USDC. Funds will be sent to your bank account within 24-48 hours.
+                        </div>
+
+                        <button type="submit" class="btn-primary" style="width: 100%;">
+                            Request Withdrawal
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('modalsContainer').innerHTML = modalContent;
+    openModal();
+
+    // Exchange rate calculator
+    const amountInput = document.getElementById('bankWithdrawAmount');
+    let debounceTimer;
+    amountInput.addEventListener('input', async (e) => {
+        clearTimeout(debounceTimer);
+        const amount = parseFloat(e.target.value);
+        if (amount >= 20) {
+            debounceTimer = setTimeout(async () => {
+                try {
+                    const rateData = await api.getExchangeRate('USDC', 'NGN', amount);
+                    document.getElementById('ngnEquivalent').textContent = rateData.convertedAmount.toLocaleString();
+                } catch (error) {
+                    console.error('Failed to fetch exchange rate:', error);
+                }
+            }, 500);
+        }
+    });
+};
+
+// Show mobile money withdrawal form
+window.showMobileMoneyWithdrawal = function() {
+    const modalContent = `
+        <div class="modal" onclick="closeModalOnBackdrop(event)">
+            <div class="modal-content" style="max-width: 550px;">
+                <div class="modal-header">
+                    <h2>📱 Mobile Money Withdrawal</h2>
+                    <button class="icon-btn" onclick="closeModal()">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div style="padding: 20px;">
+                    <form id="mobileWithdrawForm" onsubmit="window.handleMobileMoneyWithdrawal(event)">
+                        <div class="form-group">
+                            <label class="form-label">Amount (USDC)</label>
+                            <input type="number" id="mobileWithdrawAmount" class="form-input" required min="20" step="0.01" placeholder="Minimum: 20 USDC">
+                            <small style="color: var(--text-secondary);">You'll receive: ₦<span id="mobileNgnEquivalent">0</span></small>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Provider</label>
+                            <select id="mobileProvider" class="form-select" required>
+                                <option value="">Select provider</option>
+                                <option value="MTN">MTN Mobile Money</option>
+                                <option value="AIRTEL">Airtel Money</option>
+                                <option value="GLO">Glo Mobile Money</option>
+                                <option value="9MOBILE">9mobile Money</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Phone Number</label>
+                            <input type="tel" id="mobilePhoneNumber" class="form-input" required placeholder="08012345678">
+                        </div>
+
+                        <div class="caption" style="color: var(--text-secondary); margin-bottom: 16px;">
+                            💡 Minimum: 20 USDC. Funds will be sent to your mobile wallet within 1-2 hours.
+                        </div>
+
+                        <button type="submit" class="btn-primary" style="width: 100%;">
+                            Request Withdrawal
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('modalsContainer').innerHTML = modalContent;
+    openModal();
+
+    // Exchange rate calculator
+    const amountInput = document.getElementById('mobileWithdrawAmount');
+    let debounceTimer;
+    amountInput.addEventListener('input', async (e) => {
+        clearTimeout(debounceTimer);
+        const amount = parseFloat(e.target.value);
+        if (amount >= 20) {
+            debounceTimer = setTimeout(async () => {
+                try {
+                    const rateData = await api.getExchangeRate('USDC', 'NGN', amount);
+                    document.getElementById('mobileNgnEquivalent').textContent = rateData.convertedAmount.toLocaleString();
+                } catch (error) {
+                    console.error('Failed to fetch exchange rate:', error);
+                }
+            }, 500);
+        }
+    });
+};
+
+// Show crypto withdrawal form (existing functionality)
+window.showCryptoWithdrawal = function() {
+    const modalContent = `
+        <div class="modal" onclick="closeModalOnBackdrop(event)">
+            <div class="modal-content" style="max-width: 550px;">
+                <div class="modal-header">
+                    <h2>₿ Crypto Withdrawal</h2>
+                    <button class="icon-btn" onclick="closeModal()">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div style="padding: 20px;">
                     <form id="cryptoWithdrawForm" onsubmit="handleWithdrawal(event)">
                         <div class="form-group">
                             <label class="form-label">Amount (USDC)</label>
@@ -538,7 +769,87 @@ export function showWithdrawModal() {
 
     document.getElementById('modalsContainer').innerHTML = modalContent;
     openModal();
-}
+};
+
+// Handle bank withdrawal submission
+window.handleBankWithdrawal = async function(event) {
+    event.preventDefault();
+
+    const amount = parseFloat(document.getElementById('bankWithdrawAmount').value);
+    const bankCode = document.getElementById('bankCode').value;
+    const accountNumber = document.getElementById('accountNumber').value;
+    const accountName = document.getElementById('accountName').value;
+
+    if (amount < 20) {
+        showToast('Minimum withdrawal amount is 20 USDC', 'error');
+        return;
+    }
+
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+
+    try {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Processing...';
+
+        const response = await api.requestBankWithdrawal({
+            amountUSDC: amount,
+            bankCode,
+            accountNumber,
+            accountName
+        });
+
+        if (response.success) {
+            closeModal();
+            showToast('Bank withdrawal request submitted successfully!', 'success');
+            setTimeout(() => window.location.reload(), 1500);
+        }
+    } catch (error) {
+        showToast(error.message || 'Failed to process withdrawal', 'error');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+    }
+};
+
+// Handle mobile money withdrawal submission
+window.handleMobileMoneyWithdrawal = async function(event) {
+    event.preventDefault();
+
+    const amount = parseFloat(document.getElementById('mobileWithdrawAmount').value);
+    const provider = document.getElementById('mobileProvider').value;
+    const phoneNumber = document.getElementById('mobilePhoneNumber').value;
+
+    if (amount < 20) {
+        showToast('Minimum withdrawal amount is 20 USDC', 'error');
+        return;
+    }
+
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+
+    try {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Processing...';
+
+        const response = await api.requestMobileMoneyWithdrawal({
+            amountUSDC: amount,
+            provider,
+            phoneNumber
+        });
+
+        if (response.success) {
+            closeModal();
+            showToast('Mobile money withdrawal request submitted successfully!', 'success');
+            setTimeout(() => window.location.reload(), 1500);
+        }
+    } catch (error) {
+        showToast(error.message || 'Failed to process withdrawal', 'error');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+    }
+};
 
 // Handle traditional crypto withdrawal
 window.handleWithdrawal = async function(event) {

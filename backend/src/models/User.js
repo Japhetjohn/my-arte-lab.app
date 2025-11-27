@@ -172,7 +172,35 @@ const userSchema = new mongoose.Schema({
     lastUpdated: {
       type: Date,
       default: Date.now
-    }
+    },
+    beneficiaries: [{
+      id: {
+        type: String,
+        default: function() { return require('uuid').v4(); }
+      },
+      type: {
+        type: String,
+        enum: ['bank_account', 'mobile_money'],
+        required: true
+      },
+      accountNumber: String,
+      accountName: String,
+      bankCode: String,
+      bankName: String,
+      phoneNumber: String,
+      provider: {
+        type: String,
+        enum: ['MTN', 'AIRTEL', 'GLO', '9MOBILE', '']
+      },
+      isDefault: {
+        type: Boolean,
+        default: false
+      },
+      addedAt: {
+        type: Date,
+        default: Date.now
+      }
+    }]
   },
 
   isEmailVerified: {

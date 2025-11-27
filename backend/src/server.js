@@ -8,7 +8,7 @@ const session = require('express-session');
 const passport = require('./config/passport');
 
 const connectDatabase = require('./config/database');
-const tsaraConfig = require('./config/tsara');
+const breadConfig = require('./config/bread');
 const emailConfig = require('./config/email');
 const { errorMiddleware } = require('./utils/errorHandler');
 
@@ -35,8 +35,8 @@ app.set('trust proxy', 1);
 const requiredEnvVars = [
   'MONGODB_URI',
   'JWT_SECRET',
-  'TSARA_PUBLIC_KEY',
-  'TSARA_SECRET_KEY',
+  'BREAD_SERVICE_KEY',
+  'BREAD_ACCOUNT_CODE',
   'PLATFORM_WALLET_ADDRESS'
 ];
 
@@ -60,7 +60,7 @@ app.use(helmet({
       scriptSrcAttr: ["'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "https://res.cloudinary.com", "https://images.unsplash.com", "blob:"],
-      connectSrc: ["'self'", "https://api.tsara.ng", "https://api.cloudinary.com"],
+      connectSrc: ["'self'", "https://processor-prod.up.railway.app", "https://api.cloudinary.com"],
       fontSrc: ["'self'", "data:"],
       objectSrc: ["'none'"],
       mediaSrc: ["'self'"],
@@ -117,14 +117,7 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('combined'));
 }
 
-app.use((req, res, next) => {
-  if (req.path === '/api/webhooks/tsara') {
-    next();
-  } else {
-    express.json({ limit: '10mb' })(req, res, next);
-  }
-});
-
+app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 app.use(session({
@@ -188,15 +181,14 @@ app.get('/health', async (req, res) => {
     health.status = 'DEGRADED';
   }
 
-  // Check Tsara API connectivity (lightweight check)
+  // Check bread.africa API configuration
   try {
-    const tsaraService = require('./services/tsaraService');
-    health.checks.tsaraAPI = tsaraService.isConfigured() ? 'configured' : 'not configured';
-    if (!tsaraService.isConfigured()) {
+    health.checks.breadAPI = breadConfig.serviceKey ? 'configured' : 'not configured';
+    if (!breadConfig.serviceKey) {
       health.status = 'DEGRADED';
     }
   } catch (error) {
-    health.checks.tsaraAPI = `error: ${error.message}`;
+    health.checks.breadAPI = `error: ${error.message}`;
     health.status = 'DEGRADED';
   }
 
@@ -256,9 +248,9 @@ app.use('/api/*', (req, res) => {
 app.use(errorMiddleware);
 
 try {
-  tsaraConfig.validate();
+  breadConfig.validate();
 } catch (error) {
-  console.error('Tsara configuration error:', error.message);
+  console.error('bread.africa configuration error:', error.message);
   if (process.env.NODE_ENV === 'production') {
     process.exit(1);
   }
@@ -276,7 +268,7 @@ const server = app.listen(PORT, () => {
   console.log(`║  Port: ${PORT}`);
   console.log(`║  Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`║  API: http://localhost:${PORT}/api`);
-  console.log(`║  Payment Gateway: Tsara (${tsaraConfig.environment})`);
+  console.log(`║  Payment Gateway: bread.africa`);
   console.log('╚════════════════════════════════════════════════════════╝\n');
 });
 

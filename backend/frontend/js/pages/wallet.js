@@ -2,6 +2,7 @@
 import { appState } from '../state.js';
 import { formatDate, showToast } from '../utils.js';
 import api from '../services/api.js';
+import { showOnrampModal } from '../components/onrampModal.js';
 
 let walletData = null;
 let transactions = [];
@@ -274,6 +275,14 @@ function renderWalletContent() {
         </div>
     `;
 }
+
+// Fund wallet - show onramp modal
+window.fundWallet = function() {
+    showOnrampModal();
+};
+
+// Store wallet data globally for onramp modal
+window.walletData = walletData;
 
 // Copy wallet address to clipboard
 window.copyWalletAddress = async function() {

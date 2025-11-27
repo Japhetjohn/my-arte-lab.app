@@ -51,7 +51,7 @@ Make sure the backend server is running before starting the frontend.
 
 The frontend connects to:
 - Backend API: `http://localhost:5000/api` (development)
-- Tsara Payment Gateway: Integrated via backend
+- bread.africa Payment Processor: Integrated via backend
 
 ## 📧 Email Verification
 
@@ -65,7 +65,7 @@ Users receive email verification links after registration. The verification flow
 - User authentication (register, login, logout)
 - Creator discovery and filtering
 - Booking management
-- Wallet integration with Tsara stablecoin payments
+- Wallet integration with bread.africa fiat onramp/offramp
 - Profile management
 - Settings and preferences
 
