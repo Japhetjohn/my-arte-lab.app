@@ -509,7 +509,10 @@ export function showWithdrawModal() {
                         <!-- Bank Transfer Option -->
                         <div class="card" onclick="window.showBankWithdrawal()" style="cursor: pointer; padding: 16px; background: var(--background-alt); border: 2px solid transparent; transition: border-color 0.2s;">
                             <div style="display: flex; align-items: center; gap: 12px;">
-                                <div style="font-size: 24px;">🏦</div>
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="2" y="4" width="20" height="16" rx="2"/>
+                                    <path d="M6 16h12M6 12h12M6 8h12"/>
+                                </svg>
                                 <div style="flex: 1;">
                                     <div style="font-weight: 600;">Bank Transfer</div>
                                     <small style="color: var(--text-secondary);">Withdraw to your bank account (NGN)</small>
@@ -549,7 +552,7 @@ window.showBankWithdrawal = function() {
         <div class="modal" onclick="closeModalOnBackdrop(event)">
             <div class="modal-content" style="max-width: 550px;">
                 <div class="modal-header">
-                    <h2>🏦 Bank Withdrawal</h2>
+                    <h2>Bank Withdrawal</h2>
                     <button class="icon-btn" onclick="closeModal()">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                             <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2"/>
@@ -594,7 +597,7 @@ window.showBankWithdrawal = function() {
                         </div>
 
                         <div class="caption" style="color: var(--text-secondary); margin-bottom: 16px;">
-                            💡 Minimum: 20 USDC. Funds will be sent to your bank account within 24-48 hours.
+                            Minimum: 20 USDC. Funds will be sent to your bank account within 24-48 hours.
                         </div>
 
                         <button type="submit" class="btn-primary" style="width: 100%;">
@@ -666,7 +669,7 @@ window.showCryptoWithdrawal = function() {
                         </div>
 
                         <div class="caption" style="color: var(--text-secondary); margin-bottom: 16px;">
-                            💡 Minimum withdrawal: 20 USDC. Funds will be sent to your Solana wallet within 24-48 hours.
+                            Minimum withdrawal: 20 USDC. Funds will be sent to your Solana wallet within 24-48 hours.
                         </div>
 
                         <button type="submit" class="btn-primary" style="width: 100%;">
@@ -778,7 +781,7 @@ export async function showAddFundsModal() {
             <div class="modal" onclick="closeModalOnBackdrop(event)">
                 <div class="modal-content" style="max-width: 550px;">
                     <div class="modal-header">
-                        <h2>💰 Add Funds</h2>
+                        <h2>Add Funds</h2>
                         <button class="icon-btn" onclick="closeModal()">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                                 <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2"/>
@@ -788,7 +791,7 @@ export async function showAddFundsModal() {
 
                     <div style="padding: 20px;">
                         <div style="background: #EEF2FF; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
-                            <p style="color: #4338CA; font-weight: 600; margin-bottom: 12px;">📱 Deposit via Bank Transfer</p>
+                            <p style="color: #4338CA; font-weight: 600; margin-bottom: 12px;">Deposit via Bank Transfer</p>
                             <p style="color: #4338CA; font-size: 14px; line-height: 1.5;">
                                 Transfer NGN from any Nigerian bank to the account below. Your wallet will be automatically credited with USDC within minutes!
                             </p>
@@ -801,7 +804,7 @@ export async function showAddFundsModal() {
                                 <div style="font-size: 32px; font-weight: 700; color: var(--primary); letter-spacing: 2px; margin-bottom: 8px;">${virtualAccount.accountNumber}</div>
                                 <button onclick="navigator.clipboard.writeText('${virtualAccount.accountNumber}'); window.showToast('Account number copied!', 'success');"
                                         style="background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 12px;">
-                                    📋 Copy Account Number
+                                    Copy Account Number
                                 </button>
                             </div>
 
@@ -824,7 +827,7 @@ export async function showAddFundsModal() {
                         <!-- Instructions -->
                         <div style="background: #FEF3C7; padding: 16px; border-radius: 8px; margin-bottom: 16px; border-left: 4px solid #F59E0B;">
                             <div style="color: #92400E; font-size: 14px; font-weight: 600; margin-bottom: 12px;">
-                                📝 How it works:
+                                How it works:
                             </div>
                             <ol style="color: #92400E; font-size: 13px; margin: 0; padding-left: 20px; line-height: 1.8;">
                                 <li>${instructions.step1}</li>
@@ -837,7 +840,7 @@ export async function showAddFundsModal() {
                         </div>
 
                         <div class="caption" style="color: var(--text-secondary); text-align: center;">
-                            💡 ${instructions.note}
+                            ${instructions.note}
                         </div>
 
                         <button onclick="closeModal()" class="btn-primary" style="width: 100%; margin-top: 16px;">

@@ -33,34 +33,102 @@ const breadConfig = {
   maxOfframpAmount: parseFloat(process.env.MAX_OFFRAMP_AMOUNT) || 10000, // USDC
 
   // Supported Currencies
-  supportedFiatCurrencies: ['NGN'],
-  supportedCryptoCurrencies: ['USDC', 'USDT', 'DAI'],
+  supportedFiatCurrencies: ['NGN', 'USD', 'CAD', 'INR', 'GBP', 'AUD', 'MXN', 'CNY', 'HKD', 'BRL', 'EUR'],
+  supportedCryptoCurrencies: ['USDC', 'USDT', 'CNGN'],
   defaultCryptoCurrency: 'USDC',
 
-  // Mobile Money Providers
-  mobileMoneyProviders: [
-    { code: 'MTN', name: 'MTN Mobile Money' },
-    { code: 'AIRTEL', name: 'Airtel Money' },
-    { code: 'GLO', name: 'Glo Mobile Money' },
-    { code: '9MOBILE', name: '9mobile Money' }
-  ],
-
-  // Webhook Event Types
-  events: {
-    ONRAMP_INITIATED: 'onramp.initiated',
-    ONRAMP_SUCCESS: 'onramp.success',
-    ONRAMP_FAILED: 'onramp.failed',
-    ONRAMP_PENDING: 'onramp.pending',
-    OFFRAMP_INITIATED: 'offramp.initiated',
-    OFFRAMP_SUCCESS: 'offramp.success',
-    OFFRAMP_FAILED: 'offramp.failed',
-    OFFRAMP_PENDING: 'offramp.pending'
+  // Supported Countries for Offramp
+  supportedCountries: {
+    NG: {
+      name: 'Nigeria',
+      currency: 'NGN',
+      fields: ['bank_code', 'account_number'],
+      identityTypes: ['BVN', 'NIN']
+    },
+    US: {
+      name: 'United States',
+      currency: 'USD',
+      fields: ['routing_number', 'account_number'],
+      identityTypes: ['Link']
+    },
+    CA: {
+      name: 'Canada',
+      currency: 'CAD',
+      fields: ['transit_number', 'institution_number', 'account_number'],
+      identityTypes: ['Link']
+    },
+    IN: {
+      name: 'India',
+      currency: 'INR',
+      fields: ['ifsc_code', 'account_number'],
+      identityTypes: ['Link']
+    },
+    GB: {
+      name: 'United Kingdom',
+      currency: 'GBP',
+      fields: ['sort_code', 'account_number'],
+      identityTypes: ['Link']
+    },
+    AU: {
+      name: 'Australia',
+      currency: 'AUD',
+      fields: ['bsb_number', 'account_number'],
+      identityTypes: ['Link']
+    },
+    MX: {
+      name: 'Mexico',
+      currency: 'MXN',
+      fields: ['clabe_number'],
+      identityTypes: ['Link']
+    },
+    CN: {
+      name: 'China',
+      currency: 'CNY',
+      fields: ['cnaps_code', 'account_number'],
+      identityTypes: ['Link']
+    },
+    HK: {
+      name: 'Hong Kong',
+      currency: 'HKD',
+      fields: ['clearing_code', 'account_number'],
+      identityTypes: ['Link']
+    },
+    BR: {
+      name: 'Brazil',
+      currency: 'BRL',
+      fields: ['pix_code'],
+      identityTypes: ['Link']
+    },
+    EU: {
+      name: 'Europe (SEPA)',
+      currency: 'EUR',
+      fields: ['iban', 'swift_code'],
+      identityTypes: ['Link']
+    }
   },
 
-  // Payment Methods
+  // Supported Blockchain Networks
+  supportedNetworks: {
+    USDC: ['ethereum', 'base', 'arbitrum', 'solana', 'bsc', 'polygon', 'optimism', 'avalanche'],
+    USDT: ['ethereum', 'arbitrum', 'solana', 'polygon', 'bsc', 'optimism', 'avalanche'],
+    CNGN: ['base', 'bsc']
+  },
+
+  // Webhook Event Types (from bread.africa documentation)
+  events: {
+    ONRAMP_PENDING: 'onramp:pending',
+    ONRAMP_PROCESSING: 'onramp:processing',
+    ONRAMP_COMPLETED: 'onramp:completed',
+    ONRAMP_FAILED: 'onramp:failed',
+    OFFRAMP_PENDING: 'offramp:pending',
+    OFFRAMP_PROCESSING: 'offramp:processing',
+    OFFRAMP_COMPLETED: 'offramp:completed',
+    OFFRAMP_FAILED: 'offramp:failed'
+  },
+
+  // Payment Methods (only bank transfer documented)
   paymentMethods: {
     BANK_TRANSFER: 'bank_transfer',
-    MOBILE_MONEY: 'mobile_money',
     CRYPTO: 'crypto'
   },
 
@@ -162,6 +230,55 @@ const breadConfig = {
     }
 
     return { valid: true };
+  },
+
+  /**
+   * Get country configuration
+   * @param {string} countryCode - Country code (e.g., 'NG', 'US')
+   * @returns {Object|null} Country configuration
+   */
+  getCountryConfig(countryCode) {
+    return this.supportedCountries[countryCode.toUpperCase()] || null;
+  },
+
+  /**
+   * Check if country is supported
+   * @param {string} countryCode - Country code
+   * @returns {boolean}
+   */
+  isCountrySupported(countryCode) {
+    return !!this.supportedCountries[countryCode.toUpperCase()];
+  },
+
+  /**
+   * Get all supported countries as array
+   * @returns {Array} Array of country objects
+   */
+  getAllCountries() {
+    return Object.keys(this.supportedCountries).map(code => ({
+      code,
+      ...this.supportedCountries[code]
+    }));
+  },
+
+  /**
+   * Get required fields for a country
+   * @param {string} countryCode - Country code
+   * @returns {Array} Required fields
+   */
+  getCountryFields(countryCode) {
+    const country = this.getCountryConfig(countryCode);
+    return country ? country.fields : [];
+  },
+
+  /**
+   * Get identity types for a country
+   * @param {string} countryCode - Country code
+   * @returns {Array} Identity types
+   */
+  getIdentityTypes(countryCode) {
+    const country = this.getCountryConfig(countryCode);
+    return country ? country.identityTypes : ['Link'];
   }
 };
 
