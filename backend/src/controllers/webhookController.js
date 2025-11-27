@@ -38,160 +38,149 @@ exports.handleBreadWebhook = catchAsync(async (req, res, next) => {
   }
 
   try {
-    const eventResult = await breadService.handleWebhookEvent(req.body);
+    const { event, data } = req.body;
 
-    if (!eventResult.processed) {
-      console.warn('bread.africa webhook: Event not processed', eventResult.reason);
-      return successResponse(res, 200, 'Webhook received but not processed', eventResult);
+    if (!event || !data) {
+      console.warn('bread.africa webhook: Invalid payload structure');
+      return successResponse(res, 200, 'Webhook received but invalid structure');
     }
 
-    switch (eventResult.event) {
-      case breadConfig.events.ONRAMP_SUCCESS:
-        await processOnrampSuccess(eventResult);
+    console.log(`bread.africa webhook received: ${event}`, JSON.stringify(data, null, 2));
+
+    switch (event) {
+      case 'wallet.credited':
+        await processWalletCredited(data);
         break;
 
-      case breadConfig.events.ONRAMP_FAILED:
-        await processOnrampFailed(eventResult);
+      case 'offramp.completed':
+        await processOfframpCompleted(data);
         break;
 
-      case breadConfig.events.OFFRAMP_SUCCESS:
-        await processOfframpSuccess(eventResult);
-        break;
-
-      case breadConfig.events.OFFRAMP_FAILED:
-        await processOfframpFailed(eventResult);
+      case 'offramp.failed':
+        await processOfframpFailed(data);
         break;
 
       default:
-        console.warn('bread.africa webhook: Unknown event type', eventResult.event);
+        console.warn('bread.africa webhook: Unknown event type', event);
     }
 
-    successResponse(res, 200, 'Webhook processed successfully', eventResult);
+    successResponse(res, 200, 'Webhook processed successfully', { event });
 
   } catch (error) {
     console.error('bread.africa webhook processing error:', error);
+    // Always return 200 to prevent bread.africa from retrying
     successResponse(res, 200, 'Webhook received but processing failed');
   }
 });
 
-// Helper function: Process successful onramp (deposit)
-async function processOnrampSuccess(eventResult) {
+// Helper function: Process wallet credited (deposit completed)
+async function processWalletCredited(data) {
   try {
-    const { paymentId, userId, amountUSDC, amountNGN, exchangeRate, completedAt } = eventResult;
+    const {
+      wallet_id: walletId,
+      amount,
+      currency,
+      reference,
+      transaction_id: transactionId,
+      credited_at: creditedAt
+    } = data;
 
-    const transaction = await Transaction.findOne({ breadPaymentId: paymentId });
+    // Find user by breadWalletId
+    const user = await User.findOne({ 'wallet.breadWalletId': walletId });
 
-    if (!transaction) {
-      console.error(`Onramp transaction not found: ${paymentId}`);
+    if (!user) {
+      console.error(`User not found for wallet: ${walletId}`);
       return;
     }
 
-    if (transaction.status === 'completed') {
-      console.warn(`Onramp transaction already completed: ${paymentId}`);
-      return;
-    }
-
-    transaction.status = 'completed';
-    transaction.completedAt = completedAt;
-    await transaction.save();
-
-    const user = await User.findById(transaction.user);
-    if (user) {
-      user.wallet.balance += amountUSDC;
-      user.wallet.lastUpdated = new Date();
-      await user.save({ validateBeforeSave: false });
-
-      await notificationService.createNotification({
-        user: user._id,
-        type: 'payment_received',
-        title: 'Deposit Successful',
-        message: `Your deposit of ₦${amountNGN.toLocaleString()} has been credited as ${amountUSDC.toFixed(2)} USDC`,
-        relatedId: transaction._id,
-        relatedModel: 'Transaction'
-      });
-
-      try {
-        await emailService.sendDepositConfirmation(user, {
-          amountNGN,
-          amountUSDC,
-          exchangeRate,
-          transactionId: transaction.transactionId
-        });
-      } catch (emailError) {
-        console.error('Failed to send deposit confirmation email:', emailError);
+    // Create transaction record for the deposit
+    const transaction = await Transaction.create({
+      user: user._id,
+      type: 'onramp',
+      amount: parseFloat(amount),
+      currency: currency || 'USDC',
+      fiatCurrency: 'NGN',
+      paymentMethod: 'virtual_account',
+      status: 'completed',
+      breadTransactionId: transactionId,
+      breadWalletId: walletId,
+      description: 'Virtual account deposit',
+      completedAt: creditedAt ? new Date(creditedAt) : new Date(),
+      paymentDetails: {
+        reference,
+        accountNumber: user.wallet.virtualAccount?.accountNumber,
+        accountName: user.wallet.virtualAccount?.accountName,
+        bankName: user.wallet.virtualAccount?.bankName
       }
-    }
+    });
 
-    console.log(`Onramp processed successfully: ${paymentId}, credited ${amountUSDC} USDC`);
+    // Credit user wallet
+    user.wallet.balance += parseFloat(amount);
+    user.wallet.lastUpdated = new Date();
+    await user.save({ validateBeforeSave: false });
 
-  } catch (error) {
-    console.error('Error processing onramp success:', error);
-    throw error;
-  }
-}
+    // Send notification
+    await notificationService.createNotification({
+      user: user._id,
+      type: 'payment_received',
+      title: 'Deposit Successful',
+      message: `Your wallet has been credited with ${parseFloat(amount).toFixed(2)} ${currency}`,
+      relatedId: transaction._id,
+      relatedModel: 'Transaction'
+    });
 
-// Helper function: Process failed onramp (deposit)
-async function processOnrampFailed(eventResult) {
-  try {
-    const { paymentId, failedReason, failedAt } = eventResult;
-
-    const transaction = await Transaction.findOne({ breadPaymentId: paymentId });
-
-    if (!transaction) {
-      console.error(`Onramp transaction not found: ${paymentId}`);
-      return;
-    }
-
-    transaction.status = 'failed';
-    transaction.failedAt = failedAt;
-    transaction.errorMessage = failedReason;
-    await transaction.save();
-
-    const user = await User.findById(transaction.user);
-    if (user) {
-      await notificationService.createNotification({
-        user: user._id,
-        type: 'payment_failed',
-        title: 'Deposit Failed',
-        message: `Your deposit of ₦${transaction.fiatAmount.toLocaleString()} failed. Reason: ${failedReason}`,
-        relatedId: transaction._id,
-        relatedModel: 'Transaction'
+    // Send email
+    try {
+      await emailService.sendDepositConfirmation(user, {
+        amountUSDC: parseFloat(amount),
+        currency,
+        transactionId: transaction.transactionId
       });
+    } catch (emailError) {
+      console.error('Failed to send deposit confirmation email:', emailError);
     }
 
-    console.log(`Onramp failed: ${paymentId}, reason: ${failedReason}`);
+    console.log(`Wallet credited: ${walletId}, amount: ${amount} ${currency}`);
 
   } catch (error) {
-    console.error('Error processing onramp failure:', error);
+    console.error('Error processing wallet.credited event:', error);
     throw error;
   }
 }
 
-// Helper function: Process successful offramp (withdrawal)
-async function processOfframpSuccess(eventResult) {
+// Helper function: Process offramp completed (withdrawal successful)
+async function processOfframpCompleted(data) {
   try {
-    const { withdrawalId, userId, amountUSDC, amountNGN, exchangeRate, transactionHash, completedAt } = eventResult;
+    const {
+      transaction_id: transactionId,
+      wallet_id: walletId,
+      amount,
+      currency,
+      output_amount: outputAmount,
+      output_currency: outputCurrency,
+      completed_at: completedAt
+    } = data;
 
-    const transaction = await Transaction.findOne({ breadPaymentId: withdrawalId });
+    const transaction = await Transaction.findOne({ breadTransactionId: transactionId });
 
     if (!transaction) {
-      console.error(`Offramp transaction not found: ${withdrawalId}`);
+      console.error(`Offramp transaction not found: ${transactionId}`);
       return;
     }
 
     if (transaction.status === 'completed') {
-      console.warn(`Offramp transaction already completed: ${withdrawalId}`);
+      console.warn(`Offramp transaction already completed: ${transactionId}`);
       return;
     }
 
     transaction.status = 'completed';
-    transaction.completedAt = completedAt;
-    transaction.transactionHash = transactionHash;
+    transaction.completedAt = completedAt ? new Date(completedAt) : new Date();
     await transaction.save();
 
     const user = await User.findById(transaction.user);
     if (user) {
-      user.wallet.pendingBalance -= amountUSDC;
+      // Remove from pending balance
+      user.wallet.pendingBalance -= parseFloat(amount);
       user.wallet.lastUpdated = new Date();
       await user.save({ validateBeforeSave: false });
 
@@ -199,16 +188,16 @@ async function processOfframpSuccess(eventResult) {
         user: user._id,
         type: 'withdrawal_completed',
         title: 'Withdrawal Successful',
-        message: `Your withdrawal of ${amountUSDC} USDC (₦${amountNGN.toLocaleString()}) has been completed`,
+        message: `Your withdrawal of ${parseFloat(amount).toFixed(2)} ${currency} (₦${parseFloat(outputAmount).toLocaleString()}) has been sent to your bank account`,
         relatedId: transaction._id,
         relatedModel: 'Transaction'
       });
 
       try {
         await emailService.sendWithdrawalCompleted(user, {
-          amountUSDC,
-          amountNGN,
-          exchangeRate,
+          amountUSDC: parseFloat(amount),
+          amountNGN: parseFloat(outputAmount),
+          currency,
           transactionId: transaction.transactionId,
           accountDetails: transaction.paymentDetails
         });
@@ -217,33 +206,39 @@ async function processOfframpSuccess(eventResult) {
       }
     }
 
-    console.log(`Offramp processed successfully: ${withdrawalId}, sent ₦${amountNGN}`);
+    console.log(`Offramp completed: ${transactionId}, sent ₦${outputAmount} to bank`);
 
   } catch (error) {
-    console.error('Error processing offramp success:', error);
+    console.error('Error processing offramp.completed event:', error);
     throw error;
   }
 }
 
-// Helper function: Process failed offramp (withdrawal)
-async function processOfframpFailed(eventResult) {
+// Helper function: Process offramp failed (withdrawal failed)
+async function processOfframpFailed(data) {
   try {
-    const { withdrawalId, failedReason, failedAt } = eventResult;
+    const {
+      transaction_id: transactionId,
+      wallet_id: walletId,
+      failed_reason: failedReason,
+      failed_at: failedAt
+    } = data;
 
-    const transaction = await Transaction.findOne({ breadPaymentId: withdrawalId });
+    const transaction = await Transaction.findOne({ breadTransactionId: transactionId });
 
     if (!transaction) {
-      console.error(`Offramp transaction not found: ${withdrawalId}`);
+      console.error(`Offramp transaction not found: ${transactionId}`);
       return;
     }
 
     transaction.status = 'failed';
-    transaction.failedAt = failedAt;
+    transaction.failedAt = failedAt ? new Date(failedAt) : new Date();
     transaction.errorMessage = failedReason;
     await transaction.save();
 
     const user = await User.findById(transaction.user);
     if (user) {
+      // Refund: move from pending back to available balance
       user.wallet.balance += transaction.amount;
       user.wallet.pendingBalance -= transaction.amount;
       user.wallet.lastUpdated = new Date();
@@ -253,16 +248,16 @@ async function processOfframpFailed(eventResult) {
         user: user._id,
         type: 'withdrawal_failed',
         title: 'Withdrawal Failed',
-        message: `Your withdrawal of ${transaction.amount} USDC failed. Amount has been refunded. Reason: ${failedReason}`,
+        message: `Your withdrawal of ${transaction.amount} ${transaction.currency} failed and has been refunded. Reason: ${failedReason}`,
         relatedId: transaction._id,
         relatedModel: 'Transaction'
       });
     }
 
-    console.log(`Offramp failed: ${withdrawalId}, refunded ${transaction.amount} USDC, reason: ${failedReason}`);
+    console.log(`Offramp failed: ${transactionId}, refunded ${transaction.amount} ${transaction.currency}, reason: ${failedReason}`);
 
   } catch (error) {
-    console.error('Error processing offramp failure:', error);
+    console.error('Error processing offramp.failed event:', error);
     throw error;
   }
 }

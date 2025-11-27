@@ -4,6 +4,7 @@ const { successResponse, errorResponse } = require('../utils/apiResponse');
 const { ErrorHandler, catchAsync } = require('../utils/errorHandler');
 const emailConfig = require('../config/email');
 const adminNotificationService = require('../services/adminNotificationService');
+const walletController = require('./walletController');
 const crypto = require('crypto');
 const { escapeHtml } = require('../utils/sanitize');
 
@@ -40,6 +41,20 @@ exports.register = catchAsync(async (req, res, next) => {
     }
   });
 
+  // Initialize bread.africa account (wallet + virtual account for deposits)
+  let breadAccount = null;
+  let walletCreationFailed = false;
+  try {
+    breadAccount = await walletController.initializeBreadAccount(user._id, user.name, user.email);
+    if (!breadAccount) {
+      walletCreationFailed = true;
+      console.warn(`bread.africa initialization failed for user ${user._id}`);
+    }
+  } catch (error) {
+    walletCreationFailed = true;
+    console.error('Failed to initialize bread.africa account:', error.message);
+  }
+
   const token = generateToken(user._id);
   const refreshToken = generateRefreshToken(user._id);
 
@@ -51,12 +66,13 @@ exports.register = catchAsync(async (req, res, next) => {
   user.emailVerificationExpire = Date.now() + 30 * 60 * 1000; // 30 minutes
   await user.save({ validateBeforeSave: false});
 
-  const walletInfo = !walletCreationFailed ? `
+  const walletInfo = !walletCreationFailed && breadAccount?.virtualAccount ? `
     <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
-      <p><strong>Payment Wallet:</strong> Solana Stablecoin (${escapeHtml(wallet.currency)})</p>
-      <p><strong>Wallet Address:</strong> ${escapeHtml(wallet.address)}</p>
-      <p><strong>Network:</strong> ${escapeHtml(wallet.network)}</p>
-      <p>You can receive payments in stablecoins (USDT, USDC, DAI) from anywhere in the world!</p>
+      <p><strong>Payment Wallet:</strong> Deposit NGN, receive USDC automatically!</p>
+      <p><strong>Virtual Account Number:</strong> ${escapeHtml(breadAccount.virtualAccount.accountNumber)}</p>
+      <p><strong>Bank Name:</strong> ${escapeHtml(breadAccount.virtualAccount.bankName)}</p>
+      <p><strong>Account Name:</strong> ${escapeHtml(breadAccount.virtualAccount.accountName)}</p>
+      <p>Transfer NGN to this account from any Nigerian bank to fund your wallet with USDC!</p>
     </div>
   ` : `
     <div style="background: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #ffc107;">

@@ -239,26 +239,18 @@ class ApiService {
 
     // ==================== bread.africa Onramp (Deposit) Endpoints ====================
 
-    async initiateBankTransferOnramp(amountNGN) {
-        return this.post('/wallet/onramp/bank-transfer', { amountNGN });
+    async getVirtualAccount() {
+        return this.get('/wallet/virtual-account');
     }
 
-    async initiateMobileMoneyOnramp(data) {
-        return this.post('/wallet/onramp/mobile-money', data);
-    }
-
-    async getExchangeRate(from, to, amount) {
-        return this.get(`/wallet/exchange-rate?from=${from}&to=${to}&amount=${amount}`);
+    async getExchangeRate({asset = 'USDC', currency = 'NGN', amount}) {
+        return this.get(`/wallet/exchange-rate?asset=${asset}&currency=${currency}&amount=${amount}`);
     }
 
     // ==================== bread.africa Offramp (Withdrawal) Endpoints ====================
 
     async requestBankWithdrawal(data) {
         return this.post('/wallet/offramp/bank', data);
-    }
-
-    async requestMobileMoneyWithdrawal(data) {
-        return this.post('/wallet/offramp/mobile-money', data);
     }
 
     // ==================== Beneficiary Management Endpoints ====================

@@ -80,26 +80,38 @@ const transactionSchema = new mongoose.Schema({
   tsaraPaymentStatus: String,
 
   // bread.africa fields for onramp/offramp
-  breadPaymentId: String,
-  fiatAmount: Number,
+  breadTransactionId: String,        // Transaction ID from bread.africa
+  breadQuoteId: String,              // Quote ID for offramp transactions
+  breadWalletId: String,             // Wallet ID used for the transaction
+  breadBeneficiaryId: String,        // Beneficiary ID for offramp transactions
+  fiatAmount: Number,                // Amount in fiat (NGN)
   fiatCurrency: {
     type: String,
-    enum: ['NGN', '']
+    enum: ['NGN', ''],
+    default: 'NGN'
   },
-  exchangeRate: Number,
+  exchangeRate: Number,              // Crypto to fiat exchange rate
   paymentMethod: {
     type: String,
-    enum: ['bank_transfer', 'mobile_money', 'crypto', '']
+    enum: ['bank_transfer', 'virtual_account', 'crypto', ''],
+    default: ''
   },
   paymentDetails: {
+    // For onramp (virtual account details)
     accountNumber: String,
     accountName: String,
     bankName: String,
     bankCode: String,
-    phoneNumber: String,
-    provider: String,
+
+    // For offramp (beneficiary details)
+    beneficiaryAccountNumber: String,
+    beneficiaryAccountName: String,
+    beneficiaryBankName: String,
+    beneficiaryBankCode: String,
+
+    // Additional fields
     reference: String,
-    ussdCode: String
+    expiresAt: Date
   },
 
   metadata: {
@@ -125,7 +137,8 @@ transactionSchema.index({ status: 1 });
 transactionSchema.index({ booking: 1 });
 transactionSchema.index({ transactionHash: 1 });
 transactionSchema.index({ tsaraPaymentId: 1 });
-transactionSchema.index({ breadPaymentId: 1 });
+transactionSchema.index({ breadTransactionId: 1 });
+transactionSchema.index({ breadWalletId: 1 });
 
 transactionSchema.pre('save', async function(next) {
   if (!this.transactionId) {

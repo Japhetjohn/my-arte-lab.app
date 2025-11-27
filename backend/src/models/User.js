@@ -173,10 +173,39 @@ const userSchema = new mongoose.Schema({
       type: Date,
       default: Date.now
     },
+
+    // bread.africa Integration Fields
+    breadUserId: {
+      type: String,
+      sparse: true
+    },
+    breadIdentityId: {
+      type: String,
+      sparse: true
+    },
+    breadWalletId: {
+      type: String,
+      sparse: true
+    },
+    virtualAccount: {
+      accountNumber: String,
+      accountName: String,
+      bankName: String,
+      bankCode: String,
+      currency: {
+        type: String,
+        default: 'NGN'
+      }
+    },
+
     beneficiaries: [{
       id: {
         type: String,
         default: function() { return require('uuid').v4(); }
+      },
+      breadBeneficiaryId: {
+        type: String,
+        sparse: true
       },
       type: {
         type: String,

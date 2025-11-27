@@ -520,20 +520,6 @@ export function showWithdrawModal() {
                             </div>
                         </div>
 
-                        <!-- Mobile Money Option -->
-                        <div class="card" onclick="window.showMobileMoneyWithdrawal()" style="cursor: pointer; padding: 16px; background: var(--background-alt); border: 2px solid transparent; transition: border-color 0.2s;">
-                            <div style="display: flex; align-items: center; gap: 12px;">
-                                <div style="font-size: 24px;">📱</div>
-                                <div style="flex: 1;">
-                                    <div style="font-weight: 600;">Mobile Money</div>
-                                    <small style="color: var(--text-secondary);">MTN, Airtel, Glo, 9mobile</small>
-                                </div>
-                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                                    <path d="M7.5 5l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                </svg>
-                            </div>
-                        </div>
-
                         <!-- Crypto Option (Existing) -->
                         <div class="card" onclick="window.showCryptoWithdrawal()" style="cursor: pointer; padding: 16px; background: var(--background-alt); border: 2px solid transparent; transition: border-color 0.2s;">
                             <div style="display: flex; align-items: center; gap: 12px;">
@@ -604,12 +590,7 @@ window.showBankWithdrawal = function() {
                         <div class="form-group">
                             <label class="form-label">Account Number</label>
                             <input type="text" id="accountNumber" class="form-input" required minlength="10" maxlength="10" placeholder="10-digit account number">
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label">Account Name</label>
-                            <input type="text" id="accountName" class="form-input" required placeholder="Account holder name">
-                            <small style="color: var(--text-secondary);">Enter the exact name on your bank account</small>
+                            <small style="color: var(--text-secondary);">Account name will be verified automatically</small>
                         </div>
 
                         <div class="caption" style="color: var(--text-secondary); margin-bottom: 16px;">
@@ -637,8 +618,10 @@ window.showBankWithdrawal = function() {
         if (amount >= 20) {
             debounceTimer = setTimeout(async () => {
                 try {
-                    const rateData = await api.getExchangeRate('USDC', 'NGN', amount);
-                    document.getElementById('ngnEquivalent').textContent = rateData.convertedAmount.toLocaleString();
+                    const response = await api.getExchangeRate({asset: 'USDC', currency: 'NGN', amount: amount});
+                    if (response.success && response.data.estimatedOutput) {
+                        document.getElementById('ngnEquivalent').textContent = response.data.estimatedOutput.toLocaleString();
+                    }
                 } catch (error) {
                     console.error('Failed to fetch exchange rate:', error);
                 }
@@ -647,78 +630,6 @@ window.showBankWithdrawal = function() {
     });
 };
 
-// Show mobile money withdrawal form
-window.showMobileMoneyWithdrawal = function() {
-    const modalContent = `
-        <div class="modal" onclick="closeModalOnBackdrop(event)">
-            <div class="modal-content" style="max-width: 550px;">
-                <div class="modal-header">
-                    <h2>📱 Mobile Money Withdrawal</h2>
-                    <button class="icon-btn" onclick="closeModal()">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2"/>
-                        </svg>
-                    </button>
-                </div>
-
-                <div style="padding: 20px;">
-                    <form id="mobileWithdrawForm" onsubmit="window.handleMobileMoneyWithdrawal(event)">
-                        <div class="form-group">
-                            <label class="form-label">Amount (USDC)</label>
-                            <input type="number" id="mobileWithdrawAmount" class="form-input" required min="20" step="0.01" placeholder="Minimum: 20 USDC">
-                            <small style="color: var(--text-secondary);">You'll receive: ₦<span id="mobileNgnEquivalent">0</span></small>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label">Provider</label>
-                            <select id="mobileProvider" class="form-select" required>
-                                <option value="">Select provider</option>
-                                <option value="MTN">MTN Mobile Money</option>
-                                <option value="AIRTEL">Airtel Money</option>
-                                <option value="GLO">Glo Mobile Money</option>
-                                <option value="9MOBILE">9mobile Money</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label">Phone Number</label>
-                            <input type="tel" id="mobilePhoneNumber" class="form-input" required placeholder="08012345678">
-                        </div>
-
-                        <div class="caption" style="color: var(--text-secondary); margin-bottom: 16px;">
-                            💡 Minimum: 20 USDC. Funds will be sent to your mobile wallet within 1-2 hours.
-                        </div>
-
-                        <button type="submit" class="btn-primary" style="width: 100%;">
-                            Request Withdrawal
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    `;
-
-    document.getElementById('modalsContainer').innerHTML = modalContent;
-    openModal();
-
-    // Exchange rate calculator
-    const amountInput = document.getElementById('mobileWithdrawAmount');
-    let debounceTimer;
-    amountInput.addEventListener('input', async (e) => {
-        clearTimeout(debounceTimer);
-        const amount = parseFloat(e.target.value);
-        if (amount >= 20) {
-            debounceTimer = setTimeout(async () => {
-                try {
-                    const rateData = await api.getExchangeRate('USDC', 'NGN', amount);
-                    document.getElementById('mobileNgnEquivalent').textContent = rateData.convertedAmount.toLocaleString();
-                } catch (error) {
-                    console.error('Failed to fetch exchange rate:', error);
-                }
-            }, 500);
-        }
-    });
-};
 
 // Show crypto withdrawal form (existing functionality)
 window.showCryptoWithdrawal = function() {
@@ -778,7 +689,6 @@ window.handleBankWithdrawal = async function(event) {
     const amount = parseFloat(document.getElementById('bankWithdrawAmount').value);
     const bankCode = document.getElementById('bankCode').value;
     const accountNumber = document.getElementById('accountNumber').value;
-    const accountName = document.getElementById('accountName').value;
 
     if (amount < 20) {
         showToast('Minimum withdrawal amount is 20 USDC', 'error');
@@ -795,52 +705,12 @@ window.handleBankWithdrawal = async function(event) {
         const response = await api.requestBankWithdrawal({
             amountUSDC: amount,
             bankCode,
-            accountNumber,
-            accountName
+            accountNumber
         });
 
         if (response.success) {
             closeModal();
             showToast('Bank withdrawal request submitted successfully!', 'success');
-            setTimeout(() => window.location.reload(), 1500);
-        }
-    } catch (error) {
-        showToast(error.message || 'Failed to process withdrawal', 'error');
-    } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = originalText;
-    }
-};
-
-// Handle mobile money withdrawal submission
-window.handleMobileMoneyWithdrawal = async function(event) {
-    event.preventDefault();
-
-    const amount = parseFloat(document.getElementById('mobileWithdrawAmount').value);
-    const provider = document.getElementById('mobileProvider').value;
-    const phoneNumber = document.getElementById('mobilePhoneNumber').value;
-
-    if (amount < 20) {
-        showToast('Minimum withdrawal amount is 20 USDC', 'error');
-        return;
-    }
-
-    const submitBtn = event.target.querySelector('button[type="submit"]');
-    const originalText = submitBtn.textContent;
-
-    try {
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Processing...';
-
-        const response = await api.requestMobileMoneyWithdrawal({
-            amountUSDC: amount,
-            provider,
-            phoneNumber
-        });
-
-        if (response.success) {
-            closeModal();
-            showToast('Mobile money withdrawal request submitted successfully!', 'success');
             setTimeout(() => window.location.reload(), 1500);
         }
     } catch (error) {
@@ -892,8 +762,99 @@ window.handleWithdrawal = async function(event) {
     }
 };
 
-export function showAddFundsModal() {
-    showToast('Add funds feature coming soon!', 'success');
+export async function showAddFundsModal() {
+    try {
+        // Fetch virtual account details from backend
+        const response = await api.getVirtualAccount();
+
+        if (!response.success || !response.data.virtualAccount) {
+            showToast('Virtual account not initialized. Please contact support.', 'error');
+            return;
+        }
+
+        const { virtualAccount, instructions } = response.data;
+
+        const modalContent = `
+            <div class="modal" onclick="closeModalOnBackdrop(event)">
+                <div class="modal-content" style="max-width: 550px;">
+                    <div class="modal-header">
+                        <h2>💰 Add Funds</h2>
+                        <button class="icon-btn" onclick="closeModal()">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div style="padding: 20px;">
+                        <div style="background: #EEF2FF; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+                            <p style="color: #4338CA; font-weight: 600; margin-bottom: 12px;">📱 Deposit via Bank Transfer</p>
+                            <p style="color: #4338CA; font-size: 14px; line-height: 1.5;">
+                                Transfer NGN from any Nigerian bank to the account below. Your wallet will be automatically credited with USDC within minutes!
+                            </p>
+                        </div>
+
+                        <!-- Virtual Account Details -->
+                        <div style="background: var(--background-alt); padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 2px solid var(--primary);">
+                            <div style="text-align: center; margin-bottom: 20px;">
+                                <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Account Number</div>
+                                <div style="font-size: 32px; font-weight: 700; color: var(--primary); letter-spacing: 2px; margin-bottom: 8px;">${virtualAccount.accountNumber}</div>
+                                <button onclick="navigator.clipboard.writeText('${virtualAccount.accountNumber}'); window.showToast('Account number copied!', 'success');"
+                                        style="background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 12px;">
+                                    📋 Copy Account Number
+                                </button>
+                            </div>
+
+                            <div style="border-top: 1px solid var(--border); padding-top: 16px; margin-top: 16px;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                                    <span style="color: var(--text-secondary);">Bank Name:</span>
+                                    <span style="font-weight: 600;">${virtualAccount.bankName}</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                                    <span style="color: var(--text-secondary);">Account Name:</span>
+                                    <span style="font-weight: 600;">${virtualAccount.accountName}</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span style="color: var(--text-secondary);">Currency:</span>
+                                    <span style="font-weight: 600;">${virtualAccount.currency || 'NGN'}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Instructions -->
+                        <div style="background: #FEF3C7; padding: 16px; border-radius: 8px; margin-bottom: 16px; border-left: 4px solid #F59E0B;">
+                            <div style="color: #92400E; font-size: 14px; font-weight: 600; margin-bottom: 12px;">
+                                📝 How it works:
+                            </div>
+                            <ol style="color: #92400E; font-size: 13px; margin: 0; padding-left: 20px; line-height: 1.8;">
+                                <li>${instructions.step1}</li>
+                                <li>${instructions.step2}</li>
+                                <li>${instructions.step3}</li>
+                            </ol>
+                            <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(146, 64, 14, 0.2); color: #92400E; font-size: 13px;">
+                                <strong>Minimum Deposit:</strong> ${instructions.minimumDeposit}
+                            </div>
+                        </div>
+
+                        <div class="caption" style="color: var(--text-secondary); text-align: center;">
+                            💡 ${instructions.note}
+                        </div>
+
+                        <button onclick="closeModal()" class="btn-primary" style="width: 100%; margin-top: 16px;">
+                            Got it!
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('modalsContainer').innerHTML = modalContent;
+        openModal();
+
+    } catch (error) {
+        console.error('Failed to load virtual account:', error);
+        showToast(error.message || 'Failed to load deposit details', 'error');
+    }
 }
 
 export function showPayoutSettings() {

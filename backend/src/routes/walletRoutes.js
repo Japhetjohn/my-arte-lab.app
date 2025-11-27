@@ -25,13 +25,11 @@ router.post(
 );
 
 // bread.africa Onramp (Deposit) routes
-router.post('/onramp/bank-transfer', walletController.initiateBankTransferOnramp);
-router.post('/onramp/mobile-money', walletController.initiateMobileMoneyOnramp);
+router.get('/virtual-account', walletController.getVirtualAccount);
 router.get('/exchange-rate', walletController.getExchangeRate);
 
 // bread.africa Offramp (Withdrawal) routes
 router.post('/offramp/bank', authorize('creator'), walletController.requestBankWithdrawal);
-router.post('/offramp/mobile-money', authorize('creator'), walletController.requestMobileMoneyWithdrawal);
 
 // Beneficiary management routes
 router.get('/beneficiaries', walletController.getBeneficiaries);

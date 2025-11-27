@@ -4,8 +4,12 @@ const crypto = require('crypto');
 const breadConfig = require('../config/bread');
 
 /**
- * bread.africa Service
- * Handles fiat onramp/offramp operations via bread.africa API
+ * bread.africa Service - CORRECTED Implementation
+ * Based on actual bread.africa API documentation
+ *
+ * Key Flows:
+ * - Onramp: Create user → Create wallet → User deposits to virtual account → Webhook credits balance
+ * - Offramp: Create beneficiary → Get quote → Execute offramp → Webhook confirms completion
  */
 class BreadService {
   constructor() {
@@ -35,458 +39,428 @@ class BreadService {
     });
   }
 
+  // ==================== User/Identity Management ====================
+
   /**
-   * Get current exchange rate between currencies
-   * @param {string} fromCurrency - Source currency (e.g., 'NGN')
-   * @param {string} toCurrency - Target currency (e.g., 'USDC')
-   * @param {number} amount - Amount to convert
-   * @returns {Promise<Object>} Exchange rate data
+   * Create a bread.africa user
+   * @param {string} reference - Unique reference (user ID from platform)
+   * @param {string} name - User's full name
+   * @param {string} email - User's email
+   * @returns {Promise<Object>} User creation result
    */
-  async getExchangeRate(fromCurrency, toCurrency, amount) {
+  async createUser(reference, name, email) {
     try {
-      const response = await this.api.get('/exchange-rate', {
-        params: {
-          from: fromCurrency,
-          to: toCurrency,
-          amount: amount
-        }
+      const response = await this.api.post('/user', {
+        reference,
+        name,
+        email
       });
 
       return {
-        fromCurrency,
-        toCurrency,
-        rate: response.data.rate,
-        amount,
-        convertedAmount: response.data.convertedAmount,
-        fee: response.data.fee || 0,
-        expiresAt: response.data.expiresAt || new Date(Date.now() + 5 * 60 * 1000)
+        userId: response.data.data?.user_id || response.data.data?.id,
+        reference: response.data.data?.reference
       };
     } catch (error) {
-      console.error('Exchange rate fetch failed:', error.message);
-
-      // Fallback to approximate rate if API fails (NGN to USDC)
-      if (fromCurrency === 'NGN' && toCurrency === 'USDC') {
-        const approximateRate = 1600; // Approximate 1 USDC = 1600 NGN
-        return {
-          fromCurrency,
-          toCurrency,
-          rate: approximateRate,
-          amount,
-          convertedAmount: amount / approximateRate,
-          fee: 0,
-          expiresAt: new Date(Date.now() + 5 * 60 * 1000),
-          fallback: true
-        };
-      }
-
-      throw new Error(`Failed to fetch exchange rate: ${error.message}`);
+      console.error('bread.africa user creation failed:', error.response?.data || error.message);
+      throw new Error(`Failed to create bread user: ${error.response?.data?.message || error.message}`);
     }
   }
 
   /**
-   * Initiate bank transfer onramp
-   * @param {Object} data - Onramp request data
-   * @returns {Promise<Object>} Onramp transaction details
+   * Create identity verification (KYC)
+   * @param {string} type - Verification type: 'bvn', 'nin', or 'link'
+   * @param {string} name - Full name
+   * @param {Object} details - Verification details (bvn, nin, dob, etc.)
+   * @returns {Promise<Object>} Identity creation result
    */
-  async initiateBankTransferOnramp(data) {
+  async createIdentity(type, name, details) {
     try {
-      const { userId, amountNGN, userEmail, userName } = data;
-
-      // Validate amount
-      const validation = breadConfig.validateOnrampAmount(amountNGN);
-      if (!validation.valid) {
-        throw new Error(validation.error);
-      }
-
-      // Get exchange rate
-      const rateData = await this.getExchangeRate('NGN', 'USDC', amountNGN);
-
-      const requestData = {
-        type: 'onramp',
-        paymentMethod: 'bank_transfer',
-        amount: amountNGN,
-        currency: 'NGN',
-        targetCurrency: 'USDC',
-        targetAmount: rateData.convertedAmount,
-        exchangeRate: rateData.rate,
-        userReference: userId,
-        email: userEmail,
-        name: userName,
-        metadata: {
-          platform: 'myartelab',
-          userId: userId
-        }
-      };
-
-      const response = await this.api.post('/onramp/bank-transfer', requestData);
+      const response = await this.api.post('/identity', {
+        type,
+        name,
+        details
+      });
 
       return {
-        paymentId: response.data.id || response.data.paymentId,
-        status: response.data.status,
-        amountNGN,
-        amountUSDC: rateData.convertedAmount,
-        exchangeRate: rateData.rate,
-        paymentInstructions: {
-          accountNumber: response.data.accountNumber,
-          accountName: response.data.accountName,
-          bankName: response.data.bankName,
-          reference: response.data.reference,
-          expiresAt: response.data.expiresAt
-        },
-        createdAt: response.data.createdAt || new Date()
+        identityId: response.data.data?.identity_id || response.data.data?.id,
+        status: response.data.data?.status
       };
     } catch (error) {
-      console.error('Bank transfer onramp failed:', error.message);
-      throw new Error(`Failed to initiate bank transfer: ${error.response?.data?.message || error.message}`);
+      console.error('bread.africa identity creation failed:', error.response?.data || error.message);
+      throw new Error(`Failed to create identity: ${error.response?.data?.message || error.message}`);
     }
   }
 
   /**
-   * Initiate mobile money onramp
-   * @param {Object} data - Onramp request data
-   * @returns {Promise<Object>} Onramp transaction details
+   * Get identity verification status
+   * @param {string} identityId - Identity ID
+   * @returns {Promise<Object>} Identity status
    */
-  async initiateMobileMoneyOnramp(data) {
+  async getIdentity(identityId) {
     try {
-      const { userId, amountNGN, provider, phoneNumber, userEmail, userName } = data;
+      const response = await this.api.get(`/identity/${identityId}`);
+      return response.data.data;
+    } catch (error) {
+      console.error('Failed to get identity:', error.message);
+      throw new Error(`Failed to get identity: ${error.response?.data?.message || error.message}`);
+    }
+  }
 
-      // Validate amount
-      const validation = breadConfig.validateOnrampAmount(amountNGN);
-      if (!validation.valid) {
-        throw new Error(validation.error);
+  // ==================== Wallet Management ====================
+
+  /**
+   * Create a bread.africa wallet
+   * @param {string} reference - Unique reference (user ID)
+   * @param {string} type - Wallet type: 'basic', 'offramp', 'transfer', 'swap'
+   * @param {string} beneficiaryId - Optional beneficiary ID for offramp wallets
+   * @returns {Promise<Object>} Wallet creation result with virtual account details
+   */
+  async createWallet(reference, type = 'basic', beneficiaryId = null) {
+    try {
+      const requestData = {
+        reference,
+        type
+      };
+
+      if (beneficiaryId && type === 'offramp') {
+        requestData.beneficiary_id = beneficiaryId;
       }
 
-      // Get exchange rate
-      const rateData = await this.getExchangeRate('NGN', 'USDC', amountNGN);
-
-      const requestData = {
-        type: 'onramp',
-        paymentMethod: 'mobile_money',
-        amount: amountNGN,
-        currency: 'NGN',
-        targetCurrency: 'USDC',
-        targetAmount: rateData.convertedAmount,
-        exchangeRate: rateData.rate,
-        provider: provider,
-        phoneNumber: phoneNumber,
-        userReference: userId,
-        email: userEmail,
-        name: userName,
-        metadata: {
-          platform: 'myartelab',
-          userId: userId
-        }
-      };
-
-      const response = await this.api.post('/onramp/mobile-money', requestData);
+      const response = await this.api.post('/wallet', requestData);
+      const walletData = response.data.data;
 
       return {
-        paymentId: response.data.id || response.data.paymentId,
-        status: response.data.status,
-        amountNGN,
-        amountUSDC: rateData.convertedAmount,
-        exchangeRate: rateData.rate,
-        provider,
-        paymentInstructions: {
-          ussdCode: response.data.ussdCode,
-          phoneNumber: response.data.phoneNumber,
-          reference: response.data.reference,
-          instructions: response.data.instructions,
-          expiresAt: response.data.expiresAt
-        },
-        createdAt: response.data.createdAt || new Date()
+        walletId: walletData.wallet_id || walletData.id,
+        evmAddress: walletData.evm_address,
+        svmAddress: walletData.svm_address,
+        reference: walletData.reference,
+        virtualAccount: walletData.virtual_account ? {
+          accountNumber: walletData.virtual_account.account_number,
+          accountName: walletData.virtual_account.account_name,
+          bankName: walletData.virtual_account.bank_name,
+          bankCode: walletData.virtual_account.bank_code,
+          currency: walletData.virtual_account.currency || 'NGN'
+        } : null
       };
     } catch (error) {
-      console.error('Mobile money onramp failed:', error.message);
-      throw new Error(`Failed to initiate mobile money deposit: ${error.response?.data?.message || error.message}`);
+      console.error('bread.africa wallet creation failed:', error.response?.data || error.message);
+      throw new Error(`Failed to create wallet: ${error.response?.data?.message || error.message}`);
     }
   }
 
   /**
-   * Initiate bank offramp (withdrawal)
-   * @param {Object} data - Offramp request data
-   * @returns {Promise<Object>} Offramp transaction details
+   * Get wallet details and balance
+   * @param {string} walletId - Wallet ID
+   * @returns {Promise<Object>} Wallet details
    */
-  async initiateOfframp(data) {
+  async getWallet(walletId) {
     try {
-      const { userId, amountUSDC, bankCode, accountNumber, accountName, userEmail, userName } = data;
-
-      // Validate amount
-      const validation = breadConfig.validateOfframpAmount(amountUSDC);
-      if (!validation.valid) {
-        throw new Error(validation.error);
-      }
-
-      // Get exchange rate
-      const rateData = await this.getExchangeRate('USDC', 'NGN', amountUSDC);
-
-      const requestData = {
-        type: 'offramp',
-        paymentMethod: 'bank_transfer',
-        amount: amountUSDC,
-        currency: 'USDC',
-        targetCurrency: 'NGN',
-        targetAmount: rateData.convertedAmount,
-        exchangeRate: rateData.rate,
-        bankCode: bankCode,
-        accountNumber: accountNumber,
-        accountName: accountName,
-        userReference: userId,
-        email: userEmail,
-        name: userName,
-        metadata: {
-          platform: 'myartelab',
-          userId: userId
-        }
-      };
-
-      const response = await this.api.post('/offramp/bank', requestData);
+      const response = await this.api.get(`/wallet/${walletId}`);
+      const wallet = response.data.data;
 
       return {
-        withdrawalId: response.data.id || response.data.withdrawalId,
-        status: response.data.status || 'processing',
-        amountUSDC,
-        amountNGN: rateData.convertedAmount,
-        exchangeRate: rateData.rate,
-        fee: response.data.fee || 0,
-        bankDetails: {
-          accountNumber,
-          accountName,
-          bankCode,
-          bankName: response.data.bankName
-        },
-        estimatedTime: response.data.estimatedTime || '24-48 hours',
-        createdAt: response.data.createdAt || new Date()
+        walletId: wallet.wallet_id || wallet.id,
+        balance: wallet.balance || 0,
+        evmAddress: wallet.evm_address,
+        svmAddress: wallet.svm_address,
+        virtualAccount: wallet.virtual_account
       };
     } catch (error) {
-      console.error('Bank offramp failed:', error.message);
-      throw new Error(`Failed to initiate bank withdrawal: ${error.response?.data?.message || error.message}`);
+      console.error('Failed to get wallet:', error.message);
+      throw new Error(`Failed to get wallet: ${error.response?.data?.message || error.message}`);
     }
   }
 
   /**
-   * Initiate mobile money offramp (withdrawal)
-   * @param {Object} data - Offramp request data
-   * @returns {Promise<Object>} Offramp transaction details
+   * Get all wallets for a reference (user)
+   * @param {string} reference - User reference
+   * @returns {Promise<Array>} List of wallets
    */
-  async initiateMobileMoneyOfframp(data) {
+  async getWallets(reference) {
     try {
-      const { userId, amountUSDC, provider, phoneNumber, userEmail, userName } = data;
-
-      // Validate amount
-      const validation = breadConfig.validateOfframpAmount(amountUSDC);
-      if (!validation.valid) {
-        throw new Error(validation.error);
-      }
-
-      // Get exchange rate
-      const rateData = await this.getExchangeRate('USDC', 'NGN', amountUSDC);
-
-      const requestData = {
-        type: 'offramp',
-        paymentMethod: 'mobile_money',
-        amount: amountUSDC,
-        currency: 'USDC',
-        targetCurrency: 'NGN',
-        targetAmount: rateData.convertedAmount,
-        exchangeRate: rateData.rate,
-        provider: provider,
-        phoneNumber: phoneNumber,
-        userReference: userId,
-        email: userEmail,
-        name: userName,
-        metadata: {
-          platform: 'myartelab',
-          userId: userId
-        }
-      };
-
-      const response = await this.api.post('/offramp/mobile-money', requestData);
-
-      return {
-        withdrawalId: response.data.id || response.data.withdrawalId,
-        status: response.data.status || 'processing',
-        amountUSDC,
-        amountNGN: rateData.convertedAmount,
-        exchangeRate: rateData.rate,
-        fee: response.data.fee || 0,
-        provider,
-        phoneNumber,
-        estimatedTime: response.data.estimatedTime || '1-2 hours',
-        createdAt: response.data.createdAt || new Date()
-      };
+      const response = await this.api.get('/wallets', {
+        params: { reference }
+      });
+      return response.data.data || [];
     } catch (error) {
-      console.error('Mobile money offramp failed:', error.message);
-      throw new Error(`Failed to initiate mobile money withdrawal: ${error.response?.data?.message || error.message}`);
+      console.error('Failed to get wallets:', error.message);
+      return [];
     }
   }
 
+  // ==================== Beneficiary Management ====================
+
   /**
-   * Verify bank account details
+   * Create a beneficiary (bank account for withdrawals)
+   * @param {string} identityId - Identity ID (KYC)
+   * @param {string} currency - Currency code (e.g., 'NGN')
+   * @param {string} accountNumber - Bank account number
    * @param {string} bankCode - Bank code
-   * @param {string} accountNumber - Account number
-   * @returns {Promise<Object>} Account verification result
+   * @returns {Promise<Object>} Beneficiary creation result
    */
-  async verifyBankAccount(bankCode, accountNumber) {
+  async createBeneficiary(identityId, currency, accountNumber, bankCode) {
     try {
-      const response = await this.api.post('/verify-bank-account', {
-        bankCode,
-        accountNumber
+      const response = await this.api.post('/beneficiary', {
+        identity_id: identityId,
+        currency,
+        account_number: accountNumber,
+        bank_code: bankCode
       });
 
+      const beneficiary = response.data.data;
+
       return {
-        valid: response.data.valid !== false,
-        accountName: response.data.accountName,
-        accountNumber: accountNumber,
-        bankCode: bankCode,
-        bankName: response.data.bankName
+        beneficiaryId: beneficiary.beneficiary_id || beneficiary.id,
+        accountName: beneficiary.account_name,
+        accountNumber: beneficiary.account_number,
+        bankCode: beneficiary.bank_code,
+        bankName: beneficiary.bank_name,
+        currency: beneficiary.currency
       };
     } catch (error) {
-      console.error('Bank account verification failed:', error.message);
-      throw new Error(`Failed to verify bank account: ${error.response?.data?.message || error.message}`);
+      console.error('bread.africa beneficiary creation failed:', error.response?.data || error.message);
+      throw new Error(`Failed to create beneficiary: ${error.response?.data?.message || error.message}`);
     }
   }
 
   /**
-   * Get list of supported banks
-   * @returns {Promise<Array>} List of banks
+   * Get all beneficiaries for an identity
+   * @param {string} identityId - Identity ID
+   * @returns {Promise<Array>} List of beneficiaries
    */
-  async getSupportedBanks() {
+  async getBeneficiaries(identityId) {
     try {
-      const response = await this.api.get('/banks');
-      return response.data.banks || response.data || [];
+      const response = await this.api.get('/beneficiaries', {
+        params: { identity_id: identityId }
+      });
+      return response.data.data || [];
     } catch (error) {
-      console.error('Failed to fetch banks:', error.message);
-      // Return empty array if API fails
+      console.error('Failed to get beneficiaries:', error.message);
       return [];
     }
   }
 
   /**
-   * Check transaction status
-   * @param {string} transactionId - Transaction/Payment ID
-   * @returns {Promise<Object>} Transaction status
+   * Get a specific beneficiary
+   * @param {string} beneficiaryId - Beneficiary ID
+   * @returns {Promise<Object>} Beneficiary details
    */
-  async checkTransactionStatus(transactionId) {
+  async getBeneficiary(beneficiaryId) {
     try {
-      const response = await this.api.get(`/transactions/${transactionId}`);
+      const response = await this.api.get(`/beneficiary/${beneficiaryId}`);
+      return response.data.data;
+    } catch (error) {
+      console.error('Failed to get beneficiary:', error.message);
+      throw new Error(`Failed to get beneficiary: ${error.response?.data?.message || error.message}`);
+    }
+  }
+
+  // ==================== Offramp Operations ====================
+
+  /**
+   * Get offramp exchange rate
+   * @param {string} asset - Crypto asset (e.g., 'USDC')
+   * @param {string} currency - Fiat currency (e.g., 'NGN')
+   * @param {number} amount - Amount to convert
+   * @returns {Promise<Object>} Exchange rate data
+   */
+  async getOfframpRate(asset, currency, amount) {
+    try {
+      const response = await this.api.get('/offramp/get-rate', {
+        params: {
+          asset,
+          currency,
+          amount
+        }
+      });
 
       return {
-        id: response.data.id,
-        status: response.data.status,
-        type: response.data.type,
-        amount: response.data.amount,
-        currency: response.data.currency,
-        createdAt: response.data.createdAt,
-        completedAt: response.data.completedAt,
-        failedReason: response.data.failedReason
+        rate: response.data.data?.rate,
+        expiresAt: response.data.data?.expires_at
       };
     } catch (error) {
-      console.error('Transaction status check failed:', error.message);
-      throw new Error(`Failed to check transaction status: ${error.response?.data?.message || error.message}`);
+      console.error('Failed to get offramp rate:', error.message);
+      throw new Error(`Failed to get rate: ${error.response?.data?.message || error.message}`);
     }
   }
 
   /**
-   * Handle webhook event from bread.africa
-   * @param {Object} eventData - Webhook event data
-   * @returns {Promise<Object>} Processed event result
+   * Get offramp quote
+   * @param {string} walletId - Wallet ID
+   * @param {number} amount - Amount in crypto
+   * @param {string} asset - Asset type (USDC, USDT)
+   * @param {string} beneficiaryId - Beneficiary ID
+   * @returns {Promise<Object>} Quote details
    */
-  async handleWebhookEvent(eventData) {
+  async getOfframpQuote(walletId, amount, asset, beneficiaryId) {
     try {
-      const { event, data } = eventData;
+      const response = await this.api.get('/offramp/get-quote', {
+        params: {
+          wallet_id: walletId,
+          amount,
+          asset,
+          beneficiary_id: beneficiaryId
+        }
+      });
 
-      switch (event) {
-        case breadConfig.events.ONRAMP_SUCCESS:
-          return await this.handleOnrampSuccess(data);
+      const quote = response.data.data;
 
-        case breadConfig.events.ONRAMP_FAILED:
-          return await this.handleOnrampFailed(data);
-
-        case breadConfig.events.OFFRAMP_SUCCESS:
-          return await this.handleOfframpSuccess(data);
-
-        case breadConfig.events.OFFRAMP_FAILED:
-          return await this.handleOfframpFailed(data);
-
-        default:
-          console.warn(`Unknown webhook event: ${event}`);
-          return { processed: false, reason: 'Unknown event type' };
-      }
+      return {
+        quoteId: quote.quote_id || quote.id,
+        inputAmount: quote.input_amount,
+        outputAmount: quote.output_amount,
+        fee: quote.fee || 0,
+        rate: quote.rate,
+        expiresAt: quote.expires_at
+      };
     } catch (error) {
-      console.error('Webhook event handling failed:', error.message);
-      throw error;
+      console.error('Failed to get offramp quote:', error.message);
+      throw new Error(`Failed to get quote: ${error.response?.data?.message || error.message}`);
     }
   }
 
   /**
-   * Handle successful onramp webhook
-   * @param {Object} data - Event data
-   * @returns {Promise<Object>} Processing result
+   * Execute offramp (withdraw crypto to bank account)
+   * @param {string} walletId - Wallet ID
+   * @param {number} amount - Amount in crypto
+   * @param {string} asset - Asset type (USDC, USDT)
+   * @param {string} beneficiaryId - Beneficiary ID
+   * @param {string} quoteId - Optional quote ID
+   * @returns {Promise<Object>} Offramp transaction result
    */
-  async handleOnrampSuccess(data) {
-    return {
-      processed: true,
-      event: 'onramp.success',
-      paymentId: data.id || data.paymentId,
-      userId: data.userReference || data.metadata?.userId,
-      amountUSDC: data.targetAmount,
-      amountNGN: data.amount,
-      exchangeRate: data.exchangeRate,
-      completedAt: data.completedAt || new Date()
-    };
+  async executeOfframp(walletId, amount, asset, beneficiaryId, quoteId = null) {
+    try {
+      const requestData = {
+        wallet_id: walletId,
+        amount,
+        asset,
+        beneficiary_id: beneficiaryId
+      };
+
+      if (quoteId) {
+        requestData.quote_id = quoteId;
+      }
+
+      const response = await this.api.post('/offramp/execute', requestData);
+      const offramp = response.data.data;
+
+      return {
+        transactionId: offramp.transaction_id || offramp.id,
+        status: offramp.status,
+        reference: offramp.reference
+      };
+    } catch (error) {
+      console.error('bread.africa offramp execution failed:', error.response?.data || error.message);
+      throw new Error(`Failed to execute offramp: ${error.response?.data?.message || error.message}`);
+    }
   }
 
   /**
-   * Handle failed onramp webhook
-   * @param {Object} data - Event data
-   * @returns {Promise<Object>} Processing result
+   * Get offramp transaction status
+   * @param {string} transactionId - Transaction ID
+   * @returns {Promise<Object>} Transaction status
    */
-  async handleOnrampFailed(data) {
-    return {
-      processed: true,
-      event: 'onramp.failed',
-      paymentId: data.id || data.paymentId,
-      userId: data.userReference || data.metadata?.userId,
-      failedReason: data.failedReason || data.reason,
-      failedAt: data.failedAt || new Date()
-    };
+  async getOfframpStatus(transactionId) {
+    try {
+      const response = await this.api.get('/offramp/get-status', {
+        params: { transaction_id: transactionId }
+      });
+
+      const status = response.data.data;
+
+      return {
+        status: status.status,
+        completedAt: status.completed_at,
+        failedReason: status.failed_reason
+      };
+    } catch (error) {
+      console.error('Failed to get offramp status:', error.message);
+      throw new Error(`Failed to get status: ${error.response?.data?.message || error.message}`);
+    }
+  }
+
+  // ==================== Utility Methods ====================
+
+  /**
+   * Get list of supported banks
+   * @param {string} currency - Currency code (e.g., 'NGN')
+   * @returns {Promise<Array>} List of banks
+   */
+  async getBanks(currency) {
+    try {
+      const response = await this.api.get('/banks', {
+        params: { currency }
+      });
+
+      return response.data.data || [];
+    } catch (error) {
+      console.error('Failed to get banks:', error.message);
+      return [];
+    }
   }
 
   /**
-   * Handle successful offramp webhook
-   * @param {Object} data - Event data
-   * @returns {Promise<Object>} Processing result
+   * Lookup and verify bank account
+   * @param {string} bankCode - Bank code
+   * @param {string} accountNumber - Account number
+   * @returns {Promise<Object>} Account verification result
    */
-  async handleOfframpSuccess(data) {
-    return {
-      processed: true,
-      event: 'offramp.success',
-      withdrawalId: data.id || data.withdrawalId,
-      userId: data.userReference || data.metadata?.userId,
-      amountUSDC: data.amount,
-      amountNGN: data.targetAmount,
-      exchangeRate: data.exchangeRate,
-      transactionHash: data.transactionHash,
-      completedAt: data.completedAt || new Date()
-    };
+  async lookupAccount(bankCode, accountNumber) {
+    try {
+      const response = await this.api.post('/lookup-account', {
+        bank_code: bankCode,
+        account_number: accountNumber
+      });
+
+      const account = response.data.data;
+
+      return {
+        accountName: account.account_name,
+        accountNumber: account.account_number,
+        bankName: account.bank_name,
+        bankCode: account.bank_code
+      };
+    } catch (error) {
+      console.error('Failed to lookup account:', error.message);
+      throw new Error(`Failed to verify account: ${error.response?.data?.message || error.message}`);
+    }
   }
 
   /**
-   * Handle failed offramp webhook
-   * @param {Object} data - Event data
-   * @returns {Promise<Object>} Processing result
+   * Get supported crypto assets
+   * @returns {Promise<Array>} List of supported assets
    */
-  async handleOfframpFailed(data) {
-    return {
-      processed: true,
-      event: 'offramp.failed',
-      withdrawalId: data.id || data.withdrawalId,
-      userId: data.userReference || data.metadata?.userId,
-      failedReason: data.failedReason || data.reason,
-      failedAt: data.failedAt || new Date()
-    };
+  async getAssets() {
+    try {
+      const response = await this.api.get('/assets');
+      return response.data.data || [];
+    } catch (error) {
+      console.error('Failed to get assets:', error.message);
+      return [];
+    }
   }
+
+  /**
+   * Create webhook configuration
+   * @param {string} url - Webhook URL
+   * @param {Array} events - List of events to subscribe to
+   * @returns {Promise<Object>} Webhook configuration result
+   */
+  async createWebhook(url, events) {
+    try {
+      const response = await this.api.post('/webhook', {
+        url,
+        events
+      });
+
+      return response.data.data;
+    } catch (error) {
+      console.error('Failed to create webhook:', error.message);
+      throw new Error(`Failed to create webhook: ${error.response?.data?.message || error.message}`);
+    }
+  }
+
+  // ==================== Webhook Verification ====================
 
   /**
    * Verify webhook signature
