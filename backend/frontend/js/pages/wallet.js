@@ -2,7 +2,7 @@
 import { appState } from '../state.js';
 import { formatDate, showToast } from '../utils.js';
 import api from '../services/api.js';
-import { showOnrampModal } from '../components/onrampModal.js';
+import { showAddFundsModal } from '../components/modals.js';
 
 let walletData = null;
 let transactions = [];
@@ -276,9 +276,9 @@ function renderWalletContent() {
     `;
 }
 
-// Fund wallet - show onramp modal
+// Fund wallet - show virtual account modal
 window.fundWallet = function() {
-    showOnrampModal();
+    showAddFundsModal();
 };
 
 // Store wallet data globally for onramp modal
