@@ -187,16 +187,6 @@ const userSchema = new mongoose.Schema({
       type: String,
       sparse: true
     },
-    virtualAccount: {
-      accountNumber: String,
-      accountName: String,
-      bankName: String,
-      bankCode: String,
-      currency: {
-        type: String,
-        default: 'NGN'
-      }
-    },
 
     beneficiaries: [{
       id: {

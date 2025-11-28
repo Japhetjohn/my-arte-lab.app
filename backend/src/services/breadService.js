@@ -4,11 +4,10 @@ const crypto = require('crypto');
 const breadConfig = require('../config/bread');
 
 /**
- * bread.africa Service - CORRECTED Implementation
+ * bread.africa Service - Offramp Only Implementation
  * Based on actual bread.africa API documentation
  *
- * Key Flows:
- * - Onramp: Create user → Create wallet → User deposits to virtual account → Webhook credits balance
+ * Key Flow:
  * - Offramp: Create beneficiary → Get quote → Execute offramp → Webhook confirms completion
  */
 class BreadService {
@@ -42,27 +41,51 @@ class BreadService {
   // ==================== User/Identity Management ====================
 
   /**
-   * Create a bread.africa user
-   * @param {string} reference - Unique reference (user ID from platform)
-   * @param {string} name - User's full name
+   * NOTE: User creation is for creating service accounts, not end-user accounts
+   * For platform users, we create wallets directly with their reference
+   * This method is kept for completeness but may not be needed
+   *
    * @param {string} email - User's email
+   * @param {string} password - User's password
+   * @param {string} name - User's full name
+   * @param {string} website - Optional website URL
+   * @param {string} description - Optional description
    * @returns {Promise<Object>} User creation result
    */
-  async createUser(reference, name, email) {
+  async createServiceUser(email, password, name, website = null, description = null) {
     try {
-      const response = await this.api.post('/user', {
-        reference,
-        name,
-        email
-      });
+      const requestData = {
+        email,
+        password,
+        name
+      };
+
+      if (website) requestData.website = website;
+      if (description) requestData.description = description;
+
+      const response = await this.api.post('/user', requestData);
 
       return {
-        userId: response.data.data?.user_id || response.data.data?.id,
-        reference: response.data.data?.reference
+        code: response.data.data?.code,
+        key: response.data.data?.key
       };
     } catch (error) {
-      console.error('bread.africa user creation failed:', error.response?.data || error.message);
-      throw new Error(`Failed to create bread user: ${error.response?.data?.message || error.message}`);
+      console.error('bread.africa service user creation failed:', error.response?.data || error.message);
+      throw new Error(`Failed to create service user: ${error.response?.data?.message || error.message}`);
+    }
+  }
+
+  /**
+   * Get service account details
+   * @returns {Promise<Object>} Account details
+   */
+  async getUser() {
+    try {
+      const response = await this.api.get('/user');
+      return response.data.data;
+    } catch (error) {
+      console.error('Failed to get user:', error.message);
+      throw new Error(`Failed to get user: ${error.response?.data?.message || error.message}`);
     }
   }
 
@@ -111,36 +134,18 @@ class BreadService {
   /**
    * Create a bread.africa wallet
    * @param {string} reference - Unique reference (user ID)
-   * @param {string} type - Wallet type: 'basic', 'offramp', 'transfer', 'swap'
-   * @param {string} beneficiaryId - Optional beneficiary ID for offramp wallets
-   * @returns {Promise<Object>} Wallet creation result with virtual account details
+   * @returns {Promise<Object>} Wallet creation result
    */
-  async createWallet(reference, type = 'basic', beneficiaryId = null) {
+  async createWallet(reference) {
     try {
-      const requestData = {
-        reference,
-        type
-      };
-
-      if (beneficiaryId && type === 'offramp') {
-        requestData.beneficiary_id = beneficiaryId;
-      }
-
-      const response = await this.api.post('/wallet', requestData);
+      const response = await this.api.post('/wallet', { reference });
       const walletData = response.data.data;
 
       return {
         walletId: walletData.wallet_id || walletData.id,
-        evmAddress: walletData.evm_address,
-        svmAddress: walletData.svm_address,
-        reference: walletData.reference,
-        virtualAccount: walletData.virtual_account ? {
-          accountNumber: walletData.virtual_account.account_number,
-          accountName: walletData.virtual_account.account_name,
-          bankName: walletData.virtual_account.bank_name,
-          bankCode: walletData.virtual_account.bank_code,
-          currency: walletData.virtual_account.currency || 'NGN'
-        } : null
+        evmAddress: walletData.address?.evm,
+        svmAddress: walletData.address?.svm,
+        reference: walletData.reference
       };
     } catch (error) {
       console.error('bread.africa wallet creation failed:', error.response?.data || error.message);
@@ -149,21 +154,59 @@ class BreadService {
   }
 
   /**
-   * Get wallet details and balance
+   * Configure wallet automation (offramp, transfer, or swap)
+   * @param {string} walletId - Wallet ID
+   * @param {Object} options - Automation options
+   * @param {boolean} options.transfer - Enable automatic transfer
+   * @param {boolean} options.swap - Enable automatic swap
+   * @param {boolean} options.offramp - Enable automatic offramp
+   * @param {string} options.beneficiaryId - Beneficiary ID (required if offramp is enabled)
+   * @returns {Promise<Object>} Automation configuration result
+   */
+  async configureWalletAutomation(walletId, options) {
+    try {
+      const requestData = {
+        wallet_id: walletId,
+        transfer: options.transfer || false,
+        swap: options.swap || false,
+        offramp: options.offramp || false
+      };
+
+      if (options.offramp && options.beneficiaryId) {
+        requestData.beneficiary_id = options.beneficiaryId;
+      }
+
+      const response = await this.api.post('/automate', requestData);
+
+      return response.data.data;
+    } catch (error) {
+      console.error('Failed to configure wallet automation:', error.message);
+      throw new Error(`Failed to configure automation: ${error.response?.data?.message || error.message}`);
+    }
+  }
+
+  /**
+   * Get wallet details
    * @param {string} walletId - Wallet ID
    * @returns {Promise<Object>} Wallet details
    */
   async getWallet(walletId) {
     try {
-      const response = await this.api.get(`/wallet/${walletId}`);
+      const response = await this.api.get('/wallet', {
+        params: { wallet_id: walletId }
+      });
       const wallet = response.data.data;
 
       return {
-        walletId: wallet.wallet_id || wallet.id,
-        balance: wallet.balance || 0,
-        evmAddress: wallet.evm_address,
-        svmAddress: wallet.svm_address,
-        virtualAccount: wallet.virtual_account
+        walletId: wallet.id,
+        reference: wallet.reference,
+        isActive: wallet.is_active,
+        evmAddress: wallet.address?.evm,
+        svmAddress: wallet.address?.svm,
+        transfer: wallet.transfer,
+        swap: wallet.swap,
+        offramp: wallet.offramp,
+        beneficiary: wallet.beneficiary
       };
     } catch (error) {
       console.error('Failed to get wallet:', error.message);
@@ -258,64 +301,60 @@ class BreadService {
   // ==================== Offramp Operations ====================
 
   /**
-   * Get offramp exchange rate
-   * @param {string} asset - Crypto asset (e.g., 'USDC')
+   * Get offramp exchange rate (crypto to fiat)
    * @param {string} currency - Fiat currency (e.g., 'NGN')
-   * @param {number} amount - Amount to convert
    * @returns {Promise<Object>} Exchange rate data
    */
-  async getOfframpRate(asset, currency, amount) {
+  async getOfframpRate(currency) {
     try {
-      const response = await this.api.get('/offramp/get-rate', {
-        params: {
-          asset,
-          currency,
-          amount
-        }
+      const response = await this.api.get('/rate/offramp', {
+        params: { currency }
       });
 
       return {
         rate: response.data.data?.rate,
-        expiresAt: response.data.data?.expires_at
+        currency
       };
     } catch (error) {
       console.error('Failed to get offramp rate:', error.message);
-      throw new Error(`Failed to get rate: ${error.response?.data?.message || error.message}`);
+      throw new Error(`Failed to get offramp rate: ${error.response?.data?.message || error.message}`);
     }
   }
 
   /**
-   * Get offramp quote
+   * Get offramp quote (crypto to fiat)
    * @param {string} walletId - Wallet ID
    * @param {number} amount - Amount in crypto
-   * @param {string} asset - Asset type (USDC, USDT)
+   * @param {string} asset - Asset ID (e.g., 'base:usdc')
    * @param {string} beneficiaryId - Beneficiary ID
+   * @param {string} currency - Target fiat currency (e.g., 'NGN')
    * @returns {Promise<Object>} Quote details
    */
-  async getOfframpQuote(walletId, amount, asset, beneficiaryId) {
+  async getOfframpQuote(walletId, amount, asset, beneficiaryId, currency = 'NGN') {
     try {
-      const response = await this.api.get('/offramp/get-quote', {
-        params: {
-          wallet_id: walletId,
-          amount,
-          asset,
-          beneficiary_id: beneficiaryId
-        }
+      const response = await this.api.post('/quote/offramp', {
+        wallet_id: walletId,
+        amount,
+        asset,
+        beneficiary_id: beneficiaryId,
+        currency
       });
 
       const quote = response.data.data;
 
       return {
-        quoteId: quote.quote_id || quote.id,
-        inputAmount: quote.input_amount,
-        outputAmount: quote.output_amount,
+        quoteId: quote.id || quote.quote_id,
+        type: quote.type,
         fee: quote.fee || 0,
+        expiry: quote.expiry,
+        currency: quote.currency,
         rate: quote.rate,
-        expiresAt: quote.expires_at
+        inputAmount: quote.input_amount,
+        outputAmount: quote.output_amount
       };
     } catch (error) {
       console.error('Failed to get offramp quote:', error.message);
-      throw new Error(`Failed to get quote: ${error.response?.data?.message || error.message}`);
+      throw new Error(`Failed to get offramp quote: ${error.response?.data?.message || error.message}`);
     }
   }
 
@@ -323,30 +362,29 @@ class BreadService {
    * Execute offramp (withdraw crypto to bank account)
    * @param {string} walletId - Wallet ID
    * @param {number} amount - Amount in crypto
-   * @param {string} asset - Asset type (USDC, USDT)
+   * @param {string} asset - Asset ID (e.g., 'base:usdc')
    * @param {string} beneficiaryId - Beneficiary ID
-   * @param {string} quoteId - Optional quote ID
+   * @param {string} currency - Target fiat currency (default: 'NGN')
    * @returns {Promise<Object>} Offramp transaction result
    */
-  async executeOfframp(walletId, amount, asset, beneficiaryId, quoteId = null) {
+  async executeOfframp(walletId, amount, asset, beneficiaryId, currency = 'NGN') {
     try {
-      const requestData = {
+      const response = await this.api.post('/offramp', {
         wallet_id: walletId,
         amount,
         asset,
-        beneficiary_id: beneficiaryId
-      };
+        beneficiary_id: beneficiaryId,
+        currency
+      });
 
-      if (quoteId) {
-        requestData.quote_id = quoteId;
-      }
-
-      const response = await this.api.post('/offramp/execute', requestData);
       const offramp = response.data.data;
 
       return {
-        transactionId: offramp.transaction_id || offramp.id,
+        transactionId: offramp.id || offramp.transaction_id,
+        hash: offramp.hash,
         status: offramp.status,
+        amount: offramp.amount,
+        rate: offramp.rate,
         reference: offramp.reference
       };
     } catch (error) {
@@ -362,20 +400,75 @@ class BreadService {
    */
   async getOfframpStatus(transactionId) {
     try {
-      const response = await this.api.get('/offramp/get-status', {
-        params: { transaction_id: transactionId }
-      });
-
-      const status = response.data.data;
+      const response = await this.api.get(`/offramp/${transactionId}`);
+      const data = response.data.data;
 
       return {
-        status: status.status,
-        completedAt: status.completed_at,
-        failedReason: status.failed_reason
+        id: data.id,
+        status: data.status,
+        amount: data.amount,
+        rate: data.rate,
+        hash: data.hash,
+        completedAt: data.completed_at,
+        failedReason: data.failed_reason
       };
     } catch (error) {
       console.error('Failed to get offramp status:', error.message);
-      throw new Error(`Failed to get status: ${error.response?.data?.message || error.message}`);
+      throw new Error(`Failed to get offramp status: ${error.response?.data?.message || error.message}`);
+    }
+  }
+
+  // ==================== Balance Operations ====================
+
+  /**
+   * Get wallet balance for a specific asset
+   * @param {string} walletId - Wallet ID
+   * @param {string} asset - Asset ID (e.g., 'base:usdc')
+   * @returns {Promise<Object>} Asset balance
+   */
+  async getBalance(walletId, asset) {
+    try {
+      const response = await this.api.get('/balance', {
+        params: {
+          wallet_id: walletId,
+          asset
+        }
+      });
+
+      const balance = response.data.data;
+
+      return {
+        asset: balance.asset,
+        amount: balance.amount || 0,
+        usdValue: balance.usd_value || 0
+      };
+    } catch (error) {
+      console.error('Failed to get balance:', error.message);
+      throw new Error(`Failed to get balance: ${error.response?.data?.message || error.message}`);
+    }
+  }
+
+  /**
+   * Get all balances for a wallet
+   * @param {string} walletId - Wallet ID
+   * @returns {Promise<Array>} List of balances
+   */
+  async getBalances(walletId) {
+    try {
+      const response = await this.api.get('/balances', {
+        params: { wallet_id: walletId }
+      });
+
+      const balances = response.data.data || [];
+
+      return balances.map(balance => ({
+        asset: balance.asset,
+        amount: balance.amount || 0,
+        usdValue: balance.usd_value || 0
+      }));
+    } catch (error) {
+      console.error('Failed to get balances:', error.message);
+      return [];
     }
   }
 
@@ -421,8 +514,9 @@ class BreadService {
         bankCode: account.bank_code
       };
     } catch (error) {
-      console.error('Failed to lookup account:', error.message);
-      throw new Error(`Failed to verify account: ${error.response?.data?.message || error.message}`);
+      console.error('Failed to lookup account:', error.response?.status, error.response?.data || error.message);
+      // Re-throw the original error to preserve the response object
+      throw error;
     }
   }
 
@@ -441,22 +535,41 @@ class BreadService {
   }
 
   /**
-   * Create webhook configuration
-   * @param {string} url - Webhook URL
-   * @param {Array} events - List of events to subscribe to
+   * Create or update webhook configuration
+   * @param {string} url - Webhook URL (leave empty to disable)
    * @returns {Promise<Object>} Webhook configuration result
    */
-  async createWebhook(url, events) {
+  async createWebhook(url) {
     try {
-      const response = await this.api.post('/webhook', {
-        url,
-        events
-      });
+      const response = await this.api.post('/webhook', { url });
 
-      return response.data.data;
+      return {
+        enabled: response.data.data?.enabled,
+        url: response.data.data?.url,
+        secret: response.data.data?.secret
+      };
     } catch (error) {
       console.error('Failed to create webhook:', error.message);
       throw new Error(`Failed to create webhook: ${error.response?.data?.message || error.message}`);
+    }
+  }
+
+  /**
+   * Get notifications for a wallet
+   * @param {string} walletId - Wallet ID
+   * @param {string} type - Notification type (optional)
+   * @returns {Promise<Array>} List of notifications
+   */
+  async getNotifications(walletId, type = null) {
+    try {
+      const params = { wallet_id: walletId };
+      if (type) params.type = type;
+
+      const response = await this.api.get('/notifications', { params });
+      return response.data.data || [];
+    } catch (error) {
+      console.error('Failed to get notifications:', error.message);
+      return [];
     }
   }
 

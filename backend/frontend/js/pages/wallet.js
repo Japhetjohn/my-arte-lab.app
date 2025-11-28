@@ -125,7 +125,6 @@ function renderWalletContent() {
                             </svg>
                             Fund Wallet
                         </button>
-                        ${appState.user.role === 'creator' ? `
                         <button class="btn-primary" style="background: white; color: var(--primary);" onclick="showWithdrawModal()">
                             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style="margin-right: 8px; vertical-align: middle;">
                                 <path d="M10 14V6M7 9l3-3 3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -133,7 +132,6 @@ function renderWalletContent() {
                             </svg>
                             Withdraw
                         </button>
-                        ` : ''}
                         <button class="btn-secondary" style="border-color: white; color: white;" onclick="window.location.reload()">
                             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style="margin-right: 8px; vertical-align: middle;">
                                 <path d="M4 10a6 6 0 1 1 12 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -189,7 +187,6 @@ function renderWalletContent() {
                             </div>
                             <div class="quick-action-label">Fund Wallet</div>
                         </button>
-                        ${appState.user.role === 'creator' ? `
                         <button class="quick-action-btn" onclick="showWithdrawModal()">
                             <div class="quick-action-icon">
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -199,7 +196,6 @@ function renderWalletContent() {
                             </div>
                             <div class="quick-action-label">Withdraw</div>
                         </button>
-                        ` : ''}
                         <button class="quick-action-btn" onclick="showTransactionHistory()">
                             <div class="quick-action-icon">
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none">

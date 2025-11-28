@@ -547,12 +547,12 @@ export function showWithdrawModal() {
 }
 
 // Show bank transfer withdrawal form
-window.showBankWithdrawal = function() {
+window.showBankWithdrawal = async function() {
     const modalContent = `
         <div class="modal" onclick="closeModalOnBackdrop(event)">
             <div class="modal-content" style="max-width: 550px;">
                 <div class="modal-header">
-                    <h2>Bank Withdrawal</h2>
+                    <h2>Withdraw to Bank</h2>
                     <button class="icon-btn" onclick="closeModal()">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                             <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2"/>
@@ -564,44 +564,34 @@ window.showBankWithdrawal = function() {
                     <form id="bankWithdrawForm" onsubmit="window.handleBankWithdrawal(event)">
                         <div class="form-group">
                             <label class="form-label">Amount (USDC)</label>
-                            <input type="number" id="bankWithdrawAmount" class="form-input" required min="20" step="0.01" placeholder="Minimum: 20 USDC">
-                            <small style="color: var(--text-secondary);">You'll receive: ₦<span id="ngnEquivalent">0</span></small>
+                            <input type="number" id="bankWithdrawAmount" class="form-input" required min="1" step="0.01" placeholder="Enter amount">
+                            <small style="color: var(--text-secondary); margin-top: 4px; display: block;">Estimated: <span style="font-weight: 600;">₦<span id="ngnEquivalent">0.00</span></span></small>
                         </div>
 
                         <div class="form-group">
-                            <label class="form-label">Bank</label>
+                            <label class="form-label">Select Bank</label>
                             <select id="bankCode" class="form-select" required>
-                                <option value="">Select your bank</option>
-                                <option value="058">GTBank</option>
-                                <option value="011">First Bank</option>
-                                <option value="214">First City Monument Bank</option>
-                                <option value="070">Fidelity Bank</option>
-                                <option value="033">United Bank for Africa</option>
-                                <option value="032">Union Bank</option>
-                                <option value="221">Stanbic IBTC Bank</option>
-                                <option value="068">Standard Chartered</option>
-                                <option value="215">Unity Bank</option>
-                                <option value="232">Sterling Bank</option>
-                                <option value="057">Zenith Bank</option>
-                                <option value="044">Access Bank</option>
-                                <option value="050">Ecobank</option>
-                                <option value="035">Wema Bank</option>
-                                <option value="082">Keystone Bank</option>
+                                <option value="">Loading banks...</option>
                             </select>
                         </div>
 
                         <div class="form-group">
                             <label class="form-label">Account Number</label>
-                            <input type="text" id="accountNumber" class="form-input" required minlength="10" maxlength="10" placeholder="10-digit account number">
-                            <small style="color: var(--text-secondary);">Account name will be verified automatically</small>
+                            <input type="text" id="accountNumber" class="form-input" required minlength="10" maxlength="10" placeholder="Enter account number" inputmode="numeric">
+                            <small id="accountNameDisplay" style="display: none; margin-top: 4px; font-weight: 500; color: var(--success);"></small>
+                            <small id="accountVerifyLoading" style="color: var(--text-secondary); display: none; margin-top: 4px;">Verifying account...</small>
+                            <small id="accountVerifyError" style="display: none; margin-top: 4px; color: var(--danger);"></small>
                         </div>
 
-                        <div class="caption" style="color: var(--text-secondary); margin-bottom: 16px;">
-                            Minimum: 20 USDC. Funds will be sent to your bank account within 24-48 hours.
+                        <div style="background: var(--background-alt); padding: 12px; border-radius: 8px; margin-bottom: 16px;">
+                            <small style="color: var(--text-secondary); display: block; line-height: 1.5;">
+                                Minimum withdrawal: $1 USDC<br>
+                                Processing time: Usually within minutes
+                            </small>
                         </div>
 
-                        <button type="submit" class="btn-primary" style="width: 100%;">
-                            Request Withdrawal
+                        <button type="submit" class="btn-primary" style="width: 100%;" id="withdrawSubmitBtn">
+                            Complete Withdrawal
                         </button>
                     </form>
                 </div>
@@ -612,24 +602,93 @@ window.showBankWithdrawal = function() {
     document.getElementById('modalsContainer').innerHTML = modalContent;
     openModal();
 
-    // Exchange rate calculator
+    // Load banks from API
+    const bankSelect = document.getElementById('bankCode');
+    try {
+        const response = await api.getSupportedBanks();
+        if (response.success && response.data.banks) {
+            const banks = response.data.banks;
+            bankSelect.innerHTML = '<option value="">-- Select your bank --</option>' +
+                banks.map(bank => `<option value="${bank.code}">${bank.name}</option>`).join('');
+        }
+    } catch (error) {
+        console.error('Failed to load banks:', error);
+        bankSelect.innerHTML = '<option value="">Failed to load banks</option>';
+        showToast('Failed to load banks. Please refresh and try again.', 'error');
+    }
+
+    // Real-time estimate calculator using bread.africa rate API
     const amountInput = document.getElementById('bankWithdrawAmount');
     let debounceTimer;
+
     amountInput.addEventListener('input', async (e) => {
         clearTimeout(debounceTimer);
         const amount = parseFloat(e.target.value);
-        if (amount >= 20) {
+
+        if (amount >= 1) {
             debounceTimer = setTimeout(async () => {
                 try {
-                    const response = await api.getExchangeRate({asset: 'USDC', currency: 'NGN', amount: amount});
-                    if (response.success && response.data.estimatedOutput) {
-                        document.getElementById('ngnEquivalent').textContent = response.data.estimatedOutput.toLocaleString();
+                    // Get estimate from bread.africa rate API
+                    const response = await api.getOfframpQuote({
+                        amount: amount,
+                        currency: 'NGN'
+                    });
+
+                    if (response.success && response.data.outputAmount) {
+                        // Use estimated output amount from bread.africa (includes estimated fees)
+                        document.getElementById('ngnEquivalent').textContent =
+                            parseFloat(response.data.outputAmount).toLocaleString(undefined, {maximumFractionDigits: 2});
                     }
                 } catch (error) {
-                    console.error('Failed to fetch exchange rate:', error);
+                    console.error('Failed to get estimate:', error);
+                    document.getElementById('ngnEquivalent').textContent = 'N/A';
                 }
             }, 500);
+        } else {
+            document.getElementById('ngnEquivalent').textContent = '0.00';
         }
+    });
+
+    // Real-time account verification
+    const accountInput = document.getElementById('accountNumber');
+    const accountNameDisplay = document.getElementById('accountNameDisplay');
+    const accountVerifyLoading = document.getElementById('accountVerifyLoading');
+    const accountVerifyError = document.getElementById('accountVerifyError');
+    let verifyDebounce;
+
+    accountInput.addEventListener('input', async (e) => {
+        clearTimeout(verifyDebounce);
+        const accountNumber = e.target.value;
+        const bankCode = bankSelect.value;
+
+        accountNameDisplay.style.display = 'none';
+        accountVerifyLoading.style.display = 'none';
+        accountVerifyError.style.display = 'none';
+
+        if (accountNumber.length === 10 && bankCode) {
+            accountVerifyLoading.style.display = 'block';
+
+            verifyDebounce = setTimeout(async () => {
+                try {
+                    const response = await api.verifyBankAccount(bankCode, accountNumber);
+                    if (response.success && response.data.accountName) {
+                        accountVerifyLoading.style.display = 'none';
+                        accountNameDisplay.style.display = 'block';
+                        accountNameDisplay.textContent = response.data.accountName;
+                    }
+                } catch (error) {
+                    accountVerifyLoading.style.display = 'none';
+                    accountVerifyError.style.display = 'block';
+                    accountVerifyError.textContent = 'Could not verify account. Please check details.';
+                }
+            }, 800);
+        }
+    });
+
+    // Trigger verification when bank changes
+    bankSelect.addEventListener('change', () => {
+        const event = new Event('input');
+        accountInput.dispatchEvent(event);
     });
 };
 
@@ -652,7 +711,7 @@ window.showCryptoWithdrawal = function() {
                     <form id="cryptoWithdrawForm" onsubmit="handleWithdrawal(event)">
                         <div class="form-group">
                             <label class="form-label">Amount (USDC)</label>
-                            <input type="number" id="withdrawAmount" class="form-input" required min="20" step="0.01" placeholder="Minimum: 20 USDC">
+                            <input type="number" id="withdrawAmount" class="form-input" required min="1" step="0.01" placeholder="Minimum: $1 USDC">
                         </div>
 
                         <div class="form-group">
@@ -668,8 +727,11 @@ window.showCryptoWithdrawal = function() {
                             </select>
                         </div>
 
-                        <div class="caption" style="color: var(--text-secondary); margin-bottom: 16px;">
-                            Minimum withdrawal: 20 USDC. Funds will be sent to your Solana wallet within 24-48 hours.
+                        <div style="background: var(--background-alt); padding: 12px; border-radius: 8px; margin-bottom: 16px;">
+                            <small style="color: var(--text-secondary); display: block; line-height: 1.5;">
+                                Minimum withdrawal: $1 USDC<br>
+                                Processing time: 24-48 hours
+                            </small>
                         </div>
 
                         <button type="submit" class="btn-primary" style="width: 100%;">
@@ -693,8 +755,8 @@ window.handleBankWithdrawal = async function(event) {
     const bankCode = document.getElementById('bankCode').value;
     const accountNumber = document.getElementById('accountNumber').value;
 
-    if (amount < 20) {
-        showToast('Minimum withdrawal amount is 20 USDC', 'error');
+    if (amount < 1) {
+        showToast('Minimum withdrawal amount is $1 USDC', 'error');
         return;
     }
 

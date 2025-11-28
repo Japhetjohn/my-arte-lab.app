@@ -63,8 +63,11 @@ exports.getBalanceSummary = catchAsync(async (req, res, next) => {
 
 /**
  * Initialize bread.africa account for a user
- * Creates user, wallet, and virtual account for deposits
+ * Creates wallet for withdrawals (offramp only)
  * Called during user registration
+ *
+ * NOTE: bread.africa user creation is for service accounts, not end users
+ * We use our service key and create wallets with user references
  */
 exports.initializeBreadAccount = async (userId, userName, userEmail) => {
   try {
@@ -74,54 +77,34 @@ exports.initializeBreadAccount = async (userId, userName, userEmail) => {
     }
 
     // Skip if already initialized
-    if (user.wallet.breadUserId && user.wallet.breadWalletId) {
-      console.log(`bread.africa account already initialized for user ${userId}`);
+    if (user.wallet.breadWalletId) {
+      console.log(`bread.africa wallet already initialized for user ${userId}`);
       return {
-        breadUserId: user.wallet.breadUserId,
-        breadWalletId: user.wallet.breadWalletId,
-        virtualAccount: user.wallet.virtualAccount
+        breadWalletId: user.wallet.breadWalletId
       };
     }
 
-    // Step 1: Create bread.africa user
-    const breadUser = await breadService.createUser(
-      userId.toString(),  // Use platform user ID as reference
-      userName,
-      userEmail
-    );
-
-    // Step 2: Create bread.africa wallet (returns virtual account for deposits)
+    // Create bread.africa wallet with user ID as reference
     const breadWallet = await breadService.createWallet(
       userId.toString(),
-      'basic'  // Basic wallet type for deposits and withdrawals
+      'basic'  // Basic wallet type for withdrawals
     );
 
-    // Step 3: Update user model with bread.africa details
-    user.wallet.breadUserId = breadUser.userId;
+    // Update user model with bread.africa details
     user.wallet.breadWalletId = breadWallet.walletId;
-
-    if (breadWallet.virtualAccount) {
-      user.wallet.virtualAccount = {
-        accountNumber: breadWallet.virtualAccount.accountNumber,
-        accountName: breadWallet.virtualAccount.accountName,
-        bankName: breadWallet.virtualAccount.bankName,
-        bankCode: breadWallet.virtualAccount.bankCode,
-        currency: breadWallet.virtualAccount.currency
-      };
-    }
 
     await user.save({ validateBeforeSave: false });
 
-    console.log(`bread.africa account initialized for user ${userId}: wallet ${breadWallet.walletId}`);
+    console.log(`bread.africa wallet initialized for user ${userId}: ${breadWallet.walletId}`);
 
     return {
-      breadUserId: breadUser.userId,
       breadWalletId: breadWallet.walletId,
-      virtualAccount: user.wallet.virtualAccount
+      evmAddress: breadWallet.evmAddress,
+      svmAddress: breadWallet.svmAddress
     };
 
   } catch (error) {
-    console.error('Failed to initialize bread.africa account:', error.message);
+    console.error('Failed to initialize bread.africa wallet:', error.message);
     // Don't throw - allow registration to proceed even if bread initialization fails
     // User can retry later or admin can manually initialize
     return null;
@@ -156,51 +139,23 @@ const ensureBreadIdentity = async (user) => {
   }
 };
 
-// ============= bread.africa Onramp Methods =============
+// ============= bread.africa Exchange Rate =============
 
 /**
- * Get virtual account details for deposits (onramp)
- * Users deposit NGN to this account, bread.africa auto-converts to USDC
- */
-exports.getVirtualAccount = catchAsync(async (req, res, next) => {
-  const user = await User.findById(req.user._id);
-
-  if (!user.wallet.virtualAccount) {
-    return next(new ErrorHandler('Virtual account not initialized. Please contact support.', 400));
-  }
-
-  successResponse(res, 200, 'Virtual account retrieved successfully', {
-    virtualAccount: user.wallet.virtualAccount,
-    instructions: {
-      step1: 'Transfer NGN to the account details above from your bank app',
-      step2: 'bread.africa will automatically convert NGN to USDC',
-      step3: 'Your wallet balance will be credited within minutes',
-      minimumDeposit: 'NGN 1,000',
-      note: 'Use your bank app or USSD to transfer funds'
-    }
-  });
-});
-
-/**
- * Get offramp exchange rate (crypto to fiat)
+ * Get exchange rate for offramp (crypto to fiat)
  */
 exports.getExchangeRate = catchAsync(async (req, res, next) => {
-  const { asset = 'USDC', currency = 'NGN', amount } = req.query;
-
-  if (!amount) {
-    return next(new ErrorHandler('amount parameter is required', 400));
-  }
+  const { currency = 'NGN' } = req.query;
 
   try {
-    const rateData = await breadService.getOfframpRate(asset, currency, parseFloat(amount));
+    // Crypto to fiat rate for offramp
+    const rateData = await breadService.getOfframpRate(currency);
 
     successResponse(res, 200, 'Exchange rate retrieved successfully', {
-      asset,
+      type: 'offramp',
       currency,
-      amount: parseFloat(amount),
       rate: rateData.rate,
-      estimatedOutput: parseFloat(amount) * rateData.rate,
-      expiresAt: rateData.expiresAt
+      note: `1 ${currency} ≈ ${(1 / rateData.rate).toFixed(6)} USDC`
     });
 
   } catch (error) {
@@ -208,17 +163,55 @@ exports.getExchangeRate = catchAsync(async (req, res, next) => {
   }
 });
 
+/**
+ * Get offramp quote (real-time estimate with fees)
+ * This is a lightweight estimate endpoint that doesn't create resources
+ * Uses exchange rate API for quick calculations
+ */
+exports.getOfframpQuote = catchAsync(async (req, res, next) => {
+  const { amount, currency = 'NGN' } = req.body;
+
+  if (!amount || amount < 1) {
+    return next(new ErrorHandler('Valid amount is required (minimum $1 USDC)', 400));
+  }
+
+  try {
+    // Get current exchange rate from bread.africa
+    const rateData = await breadService.getOfframpRate(currency);
+
+    // Calculate estimated output amount
+    // Note: This is an estimate. Actual amount may vary due to fees and rate fluctuations
+    const estimatedOutput = amount * rateData.rate;
+
+    // Estimate fee (bread.africa typically charges ~1-2% for offramp)
+    const estimatedFee = amount * 0.015; // 1.5% estimated fee
+    const estimatedOutputAfterFees = (amount - estimatedFee) * rateData.rate;
+
+    successResponse(res, 200, 'Estimate retrieved successfully', {
+      inputAmount: amount,
+      outputAmount: estimatedOutputAfterFees,
+      estimatedBeforeFees: estimatedOutput,
+      currency,
+      rate: rateData.rate,
+      estimatedFee: estimatedFee,
+      note: 'This is an estimate. Final amount will be calculated at withdrawal time.'
+    });
+
+  } catch (error) {
+    console.error('Failed to get estimate:', error.message);
+    return next(new ErrorHandler(error.message, 500));
+  }
+});
+
 // ============= bread.africa Offramp Methods =============
 
 exports.requestBankWithdrawal = catchAsync(async (req, res, next) => {
-  const { amountUSDC, bankCode, accountNumber } = req.body;
+  const { amountUSDC, currency = 'NGN', country = 'NG', bankDetails } = req.body;
   const user = await User.findById(req.user._id);
 
-  // Validation
-  if (user.role !== 'creator') {
-    return next(new ErrorHandler('Only creators can withdraw funds', 403));
-  }
+  // Both creators AND clients can withdraw funds
 
+  // Validation
   const validation = breadConfig.validateOfframpAmount(amountUSDC);
   if (!validation.valid) {
     return next(new ErrorHandler(validation.error, 400));
@@ -228,8 +221,22 @@ exports.requestBankWithdrawal = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Insufficient balance', 400));
   }
 
-  if (!bankCode || !accountNumber) {
-    return next(new ErrorHandler('Bank code and account number are required', 400));
+  // Validate country support
+  if (!breadConfig.isCountrySupported(country)) {
+    return next(new ErrorHandler(`Country ${country} is not supported`, 400));
+  }
+
+  const countryConfig = breadConfig.getCountryConfig(country);
+
+  // Validate bank details based on country
+  if (!bankDetails || typeof bankDetails !== 'object') {
+    return next(new ErrorHandler(`Bank details are required. Required fields for ${countryConfig.name}: ${countryConfig.fields.join(', ')}`, 400));
+  }
+
+  // Check required fields for country
+  const missingFields = countryConfig.fields.filter(field => !bankDetails[field]);
+  if (missingFields.length > 0) {
+    return next(new ErrorHandler(`Missing required fields for ${countryConfig.name}: ${missingFields.join(', ')}`, 400));
   }
 
   if (!user.wallet.breadWalletId) {
@@ -237,27 +244,32 @@ exports.requestBankWithdrawal = catchAsync(async (req, res, next) => {
   }
 
   try {
-    // Step 1: Verify bank account and get account name
-    const accountInfo = await breadService.lookupAccount(bankCode, accountNumber);
+    // Step 1: Verify bank account (if applicable for the country)
+    let accountInfo;
+    if (country === 'NG' && bankDetails.bank_code && bankDetails.account_number) {
+      accountInfo = await breadService.lookupAccount(bankDetails.bank_code, bankDetails.account_number);
+    }
 
     // Step 2: Ensure user has identity (KYC)
     const identityId = await ensureBreadIdentity(user);
 
-    // Step 3: Check if beneficiary already exists
+    // Step 3: Create unique fingerprint for beneficiary based on bank details
+    const beneficiaryFingerprint = JSON.stringify({ country, currency, ...bankDetails });
+
+    // Step 4: Check if beneficiary already exists
     let beneficiary = user.wallet.beneficiaries?.find(
-      b => b.type === 'bank_account' &&
-           b.accountNumber === accountNumber &&
-           b.bankCode === bankCode &&
+      b => b.country === country &&
+           b.currency === currency &&
+           JSON.stringify(b.bankDetails) === JSON.stringify(bankDetails) &&
            b.breadBeneficiaryId
     );
 
-    // Step 4: Create beneficiary if not exists
+    // Step 5: Create beneficiary if not exists
     if (!beneficiary || !beneficiary.breadBeneficiaryId) {
       const breadBeneficiary = await breadService.createBeneficiary(
         identityId,
-        'NGN',
-        accountNumber,
-        bankCode
+        currency,
+        bankDetails
       );
 
       // Save beneficiary to user model
@@ -268,10 +280,11 @@ exports.requestBankWithdrawal = catchAsync(async (req, res, next) => {
       const newBeneficiary = {
         breadBeneficiaryId: breadBeneficiary.beneficiaryId,
         type: 'bank_account',
-        accountNumber: breadBeneficiary.accountNumber,
-        accountName: breadBeneficiary.accountName,
-        bankCode: breadBeneficiary.bankCode,
-        bankName: breadBeneficiary.bankName,
+        country,
+        currency,
+        bankDetails: breadBeneficiary.details || bankDetails,
+        accountName: accountInfo?.accountName || breadBeneficiary.accountName || bankDetails.account_name,
+        accountNumber: bankDetails.account_number,
         isDefault: user.wallet.beneficiaries.length === 0
       };
 
@@ -281,31 +294,32 @@ exports.requestBankWithdrawal = catchAsync(async (req, res, next) => {
       beneficiary = newBeneficiary;
     }
 
-    // Step 5: Get exchange rate quote
+    // Step 6: Get exchange rate quote
     const quote = await breadService.getOfframpQuote(
       user.wallet.breadWalletId,
       amountUSDC,
-      'USDC',
-      beneficiary.breadBeneficiaryId
+      'base:usdc',  // Use asset ID format
+      beneficiary.breadBeneficiaryId,
+      currency
     );
 
-    // Step 6: Execute offramp
+    // Step 7: Execute offramp
     const offrampResult = await breadService.executeOfframp(
       user.wallet.breadWalletId,
       amountUSDC,
-      'USDC',
+      'base:usdc',  // Use asset ID format
       beneficiary.breadBeneficiaryId,
-      quote.quoteId
+      currency
     );
 
-    // Step 7: Create transaction record
+    // Step 8: Create transaction record
     const transaction = await Transaction.create({
       user: user._id,
       type: 'offramp',
       amount: amountUSDC,
       currency: 'USDC',
       fiatAmount: quote.outputAmount,
-      fiatCurrency: 'NGN',
+      fiatCurrency: currency,
       exchangeRate: quote.rate,
       paymentMethod: 'bank_transfer',
       status: 'processing',
@@ -313,13 +327,13 @@ exports.requestBankWithdrawal = catchAsync(async (req, res, next) => {
       breadQuoteId: quote.quoteId,
       breadWalletId: user.wallet.breadWalletId,
       breadBeneficiaryId: beneficiary.breadBeneficiaryId,
-      description: 'Bank withdrawal',
+      description: `Bank withdrawal to ${countryConfig.name}`,
       fromAddress: user.wallet.address,
       paymentDetails: {
-        beneficiaryAccountNumber: beneficiary.accountNumber,
+        country: countryConfig.name,
+        currency,
+        bankDetails: beneficiary.bankDetails,
         beneficiaryAccountName: beneficiary.accountName,
-        beneficiaryBankName: beneficiary.bankName,
-        beneficiaryBankCode: beneficiary.bankCode,
         reference: offrampResult.reference
       }
     });
@@ -336,13 +350,16 @@ exports.requestBankWithdrawal = catchAsync(async (req, res, next) => {
     successResponse(res, 200, 'Bank withdrawal request submitted successfully', {
       transaction,
       amountUSDC,
-      amountNGN: quote.outputAmount,
+      fiatAmount: quote.outputAmount,
+      fiatCurrency: currency,
       exchangeRate: quote.rate,
       fee: quote.fee,
+      country: countryConfig.name,
       beneficiary: {
         accountName: beneficiary.accountName,
         accountNumber: beneficiary.accountNumber,
-        bankName: beneficiary.bankName
+        country: countryConfig.name,
+        currency
       }
     });
 
@@ -453,7 +470,13 @@ exports.verifyBankAccount = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Bank code and account number are required', 400));
   }
 
+  // Validate account number format
+  if (accountNumber.length !== 10) {
+    return next(new ErrorHandler('Account number must be 10 digits', 400));
+  }
+
   try {
+    console.log(`Verifying account: ${accountNumber} with bank code: ${bankCode}`);
     const accountInfo = await breadService.lookupAccount(bankCode, accountNumber);
 
     successResponse(res, 200, 'Bank account verified successfully', {
@@ -464,6 +487,22 @@ exports.verifyBankAccount = catchAsync(async (req, res, next) => {
     });
 
   } catch (error) {
-    return next(new ErrorHandler(error.message, 500));
+    console.error('Bank verification error:', error.response?.data || error.message);
+
+    // Handle specific error responses from bread.africa
+    if (error.response) {
+      const status = error.response.status;
+      const message = error.response.data?.message || error.message;
+
+      if (status === 404) {
+        return next(new ErrorHandler('Account not found. Please check the account number and bank selected.', 404));
+      } else if (status === 400) {
+        return next(new ErrorHandler(message || 'Invalid account details provided.', 400));
+      } else if (status === 401) {
+        return next(new ErrorHandler('Authentication failed. Please contact support.', 500));
+      }
+    }
+
+    return next(new ErrorHandler('Unable to verify account at this time. Please try again.', 500));
   }
 });

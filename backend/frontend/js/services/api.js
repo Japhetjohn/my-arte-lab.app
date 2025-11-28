@@ -249,6 +249,10 @@ class ApiService {
 
     // ==================== bread.africa Offramp (Withdrawal) Endpoints ====================
 
+    async getOfframpQuote(data) {
+        return this.post('/wallet/offramp/quote', data);
+    }
+
     async requestBankWithdrawal(data) {
         return this.post('/wallet/offramp/bank', data);
     }

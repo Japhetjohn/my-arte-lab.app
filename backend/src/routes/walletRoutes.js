@@ -24,12 +24,10 @@ router.post(
   walletController.requestWithdrawal
 );
 
-// bread.africa Onramp (Deposit) routes
-router.get('/virtual-account', walletController.getVirtualAccount);
+// bread.africa Offramp (Withdrawal) routes - Available to ALL users
 router.get('/exchange-rate', walletController.getExchangeRate);
-
-// bread.africa Offramp (Withdrawal) routes
-router.post('/offramp/bank', authorize('creator'), walletController.requestBankWithdrawal);
+router.post('/offramp/quote', walletController.getOfframpQuote);
+router.post('/offramp/bank', walletController.requestBankWithdrawal);
 
 // Beneficiary management routes
 router.get('/beneficiaries', walletController.getBeneficiaries);

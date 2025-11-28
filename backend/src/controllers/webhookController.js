@@ -48,10 +48,6 @@ exports.handleBreadWebhook = catchAsync(async (req, res, next) => {
     console.log(`bread.africa webhook received: ${event}`, JSON.stringify(data, null, 2));
 
     switch (event) {
-      case 'wallet.credited':
-        await processWalletCredited(data);
-        break;
-
       case 'offramp.completed':
         await processOfframpCompleted(data);
         break;
@@ -72,81 +68,6 @@ exports.handleBreadWebhook = catchAsync(async (req, res, next) => {
     successResponse(res, 200, 'Webhook received but processing failed');
   }
 });
-
-// Helper function: Process wallet credited (deposit completed)
-async function processWalletCredited(data) {
-  try {
-    const {
-      wallet_id: walletId,
-      amount,
-      currency,
-      reference,
-      transaction_id: transactionId,
-      credited_at: creditedAt
-    } = data;
-
-    // Find user by breadWalletId
-    const user = await User.findOne({ 'wallet.breadWalletId': walletId });
-
-    if (!user) {
-      console.error(`User not found for wallet: ${walletId}`);
-      return;
-    }
-
-    // Create transaction record for the deposit
-    const transaction = await Transaction.create({
-      user: user._id,
-      type: 'onramp',
-      amount: parseFloat(amount),
-      currency: currency || 'USDC',
-      fiatCurrency: 'NGN',
-      paymentMethod: 'virtual_account',
-      status: 'completed',
-      breadTransactionId: transactionId,
-      breadWalletId: walletId,
-      description: 'Virtual account deposit',
-      completedAt: creditedAt ? new Date(creditedAt) : new Date(),
-      paymentDetails: {
-        reference,
-        accountNumber: user.wallet.virtualAccount?.accountNumber,
-        accountName: user.wallet.virtualAccount?.accountName,
-        bankName: user.wallet.virtualAccount?.bankName
-      }
-    });
-
-    // Credit user wallet
-    user.wallet.balance += parseFloat(amount);
-    user.wallet.lastUpdated = new Date();
-    await user.save({ validateBeforeSave: false });
-
-    // Send notification
-    await notificationService.createNotification({
-      user: user._id,
-      type: 'payment_received',
-      title: 'Deposit Successful',
-      message: `Your wallet has been credited with ${parseFloat(amount).toFixed(2)} ${currency}`,
-      relatedId: transaction._id,
-      relatedModel: 'Transaction'
-    });
-
-    // Send email
-    try {
-      await emailService.sendDepositConfirmation(user, {
-        amountUSDC: parseFloat(amount),
-        currency,
-        transactionId: transaction.transactionId
-      });
-    } catch (emailError) {
-      console.error('Failed to send deposit confirmation email:', emailError);
-    }
-
-    console.log(`Wallet credited: ${walletId}, amount: ${amount} ${currency}`);
-
-  } catch (error) {
-    console.error('Error processing wallet.credited event:', error);
-    throw error;
-  }
-}
 
 // Helper function: Process offramp completed (withdrawal successful)
 async function processOfframpCompleted(data) {
