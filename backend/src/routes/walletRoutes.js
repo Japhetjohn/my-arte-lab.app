@@ -8,9 +8,10 @@ const {
   handleValidationErrors
 } = require('../middleware/validation');
 
-// Public routes (no auth required) - Rate estimates
+// Public routes (no auth required) - Rate estimates and bank list
 router.get('/exchange-rate', walletController.getExchangeRate);
 router.post('/offramp/quote', walletController.getOfframpQuote);
+router.get('/banks', walletController.getSupportedBanks);
 
 // All routes below require authentication
 router.use(protect);
@@ -37,8 +38,7 @@ router.get('/beneficiaries', walletController.getBeneficiaries);
 router.post('/beneficiaries', walletController.addBeneficiary);
 router.delete('/beneficiaries/:id', walletController.deleteBeneficiary);
 
-// Utility routes
-router.get('/banks', walletController.getSupportedBanks);
+// Utility routes (bank account verification requires auth)
 router.post('/verify-bank-account', walletController.verifyBankAccount);
 
 module.exports = router;

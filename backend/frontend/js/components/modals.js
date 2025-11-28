@@ -610,24 +610,13 @@ window.showBankWithdrawal = async function() {
     document.getElementById('modalsContainer').innerHTML = modalContent;
     openModal();
 
-    // Load banks from API
-    const bankSelect = document.getElementById('bankCode');
-    try {
-        const response = await api.getSupportedBanks();
-        if (response.success && response.data.banks) {
-            const banks = response.data.banks;
-            bankSelect.innerHTML = '<option value="">-- Select your bank --</option>' +
-                banks.map(bank => `<option value="${bank.code}">${bank.name}</option>`).join('');
-        }
-    } catch (error) {
-        console.error('Failed to load banks:', error);
-        bankSelect.innerHTML = '<option value="">Failed to load banks</option>';
-        showToast('Failed to load banks. Please refresh and try again.', 'error');
-    }
-
-    // Real-time estimate calculator using bread.africa rate API
     const amountInput = document.getElementById('bankWithdrawAmount');
     let debounceTimer;
+
+    if (!amountInput) {
+        console.error('Amount input field not found!');
+        return;
+    }
 
     amountInput.addEventListener('input', async (e) => {
         clearTimeout(debounceTimer);
@@ -643,24 +632,18 @@ window.showBankWithdrawal = async function() {
 
             debounceTimer = setTimeout(async () => {
                 try {
-                    console.log('Fetching quote for:', amount, 'USDC');
-                    // Get estimate from bread.africa rate API
                     const response = await api.getOfframpQuote({
                         amount: amount,
                         currency: 'NGN'
                     });
 
-                    console.log('Quote response:', response);
-
-                    // Hide loading indicator
                     if (loadingIndicator) {
                         loadingIndicator.style.display = 'none';
                     }
 
                     if (response.success && response.data.outputAmount) {
-                        // Use estimated output amount from bread.africa (includes estimated fees)
-                        estimateDisplay.textContent =
-                            parseFloat(response.data.outputAmount).toLocaleString(undefined, {maximumFractionDigits: 2});
+                        const formattedAmount = parseFloat(response.data.outputAmount).toLocaleString(undefined, {maximumFractionDigits: 2});
+                        estimateDisplay.textContent = formattedAmount;
                     } else {
                         console.warn('Invalid response structure:', response);
                         estimateDisplay.textContent = 'N/A';
@@ -682,6 +665,30 @@ window.showBankWithdrawal = async function() {
             estimateDisplay.textContent = '0.00';
         }
     });
+
+    const bankSelect = document.getElementById('bankCode');
+
+    (async () => {
+        try {
+            const response = await api.getSupportedBanks();
+
+            if (response.success && response.data.banks && response.data.banks.length > 0) {
+                bankSelect.innerHTML = '<option value="">Select your bank</option>';
+                response.data.banks.forEach(bank => {
+                    const option = document.createElement('option');
+                    option.value = bank.code;
+                    option.textContent = bank.name;
+                    bankSelect.appendChild(option);
+                });
+            } else {
+                console.warn('No banks in response:', response);
+                bankSelect.innerHTML = '<option value="">No banks available</option>';
+            }
+        } catch (error) {
+            console.error('Failed to load banks:', error);
+            bankSelect.innerHTML = '<option value="">Failed to load banks</option>';
+        }
+    })();
 
     // Real-time account verification
     const accountInput = document.getElementById('accountNumber');
@@ -764,12 +771,12 @@ window.showCryptoWithdrawal = function() {
                         <div style="background: var(--background-alt); padding: 12px; border-radius: 8px; margin-bottom: 16px;">
                             <small style="color: var(--text-secondary); display: block; line-height: 1.5;">
                                 Minimum withdrawal: $1 USDC<br>
-                                Processing time: 24-48 hours
+                                Transaction confirmed on blockchain within minutes
                             </small>
                         </div>
 
                         <button type="submit" class="btn-primary" style="width: 100%;">
-                            Request Withdrawal
+                            Send Crypto
                         </button>
                     </form>
                 </div>
