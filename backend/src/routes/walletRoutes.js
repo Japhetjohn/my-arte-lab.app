@@ -8,6 +8,11 @@ const {
   handleValidationErrors
 } = require('../middleware/validation');
 
+// Public routes (no auth required) - Rate estimates
+router.get('/exchange-rate', walletController.getExchangeRate);
+router.post('/offramp/quote', walletController.getOfframpQuote);
+
+// All routes below require authentication
 router.use(protect);
 
 // Wallet information routes
@@ -24,9 +29,7 @@ router.post(
   walletController.requestWithdrawal
 );
 
-// bread.africa Offramp (Withdrawal) routes - Available to ALL users
-router.get('/exchange-rate', walletController.getExchangeRate);
-router.post('/offramp/quote', walletController.getOfframpQuote);
+// bread.africa Offramp (Withdrawal) routes - Available to ALL authenticated users
 router.post('/offramp/bank', walletController.requestBankWithdrawal);
 
 // Beneficiary management routes

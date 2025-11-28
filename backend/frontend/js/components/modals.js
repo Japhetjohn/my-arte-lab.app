@@ -565,7 +565,15 @@ window.showBankWithdrawal = async function() {
                         <div class="form-group">
                             <label class="form-label">Amount (USDC)</label>
                             <input type="number" id="bankWithdrawAmount" class="form-input" required min="1" step="0.01" placeholder="Enter amount">
-                            <small style="color: var(--text-secondary); margin-top: 4px; display: block;">Estimated: <span style="font-weight: 600;">₦<span id="ngnEquivalent">0.00</span></span></small>
+                            <small style="color: var(--text-secondary); margin-top: 4px; display: block;">
+                                Estimated: <span style="font-weight: 600;">₦<span id="ngnEquivalent">0.00</span></span>
+                                <span id="estimateLoading" style="display: none; margin-left: 8px; color: var(--primary);">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="animation: spin 1s linear infinite; vertical-align: middle;">
+                                        <circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="31.4 31.4" stroke-linecap="round"/>
+                                    </svg>
+                                    Calculating...
+                                </span>
+                            </small>
                         </div>
 
                         <div class="form-group">
@@ -624,28 +632,54 @@ window.showBankWithdrawal = async function() {
     amountInput.addEventListener('input', async (e) => {
         clearTimeout(debounceTimer);
         const amount = parseFloat(e.target.value);
+        const estimateDisplay = document.getElementById('ngnEquivalent');
+        const loadingIndicator = document.getElementById('estimateLoading');
 
         if (amount >= 1) {
+            // Show loading indicator
+            if (loadingIndicator) {
+                loadingIndicator.style.display = 'inline';
+            }
+
             debounceTimer = setTimeout(async () => {
                 try {
+                    console.log('Fetching quote for:', amount, 'USDC');
                     // Get estimate from bread.africa rate API
                     const response = await api.getOfframpQuote({
                         amount: amount,
                         currency: 'NGN'
                     });
 
+                    console.log('Quote response:', response);
+
+                    // Hide loading indicator
+                    if (loadingIndicator) {
+                        loadingIndicator.style.display = 'none';
+                    }
+
                     if (response.success && response.data.outputAmount) {
                         // Use estimated output amount from bread.africa (includes estimated fees)
-                        document.getElementById('ngnEquivalent').textContent =
+                        estimateDisplay.textContent =
                             parseFloat(response.data.outputAmount).toLocaleString(undefined, {maximumFractionDigits: 2});
+                    } else {
+                        console.warn('Invalid response structure:', response);
+                        estimateDisplay.textContent = 'N/A';
                     }
                 } catch (error) {
                     console.error('Failed to get estimate:', error);
-                    document.getElementById('ngnEquivalent').textContent = 'N/A';
+                    // Hide loading indicator
+                    if (loadingIndicator) {
+                        loadingIndicator.style.display = 'none';
+                    }
+                    estimateDisplay.textContent = 'N/A';
                 }
             }, 500);
         } else {
-            document.getElementById('ngnEquivalent').textContent = '0.00';
+            // Hide loading indicator
+            if (loadingIndicator) {
+                loadingIndicator.style.display = 'none';
+            }
+            estimateDisplay.textContent = '0.00';
         }
     });
 

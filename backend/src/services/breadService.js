@@ -498,10 +498,11 @@ class BreadService {
    * @param {string} accountNumber - Account number
    * @returns {Promise<Object>} Account verification result
    */
-  async lookupAccount(bankCode, accountNumber) {
+  async lookupAccount(bankCode, accountNumber, currency = 'NGN') {
     try {
-      const response = await this.api.post('/lookup-account', {
+      const response = await this.api.post('/lookup', {
         bank_code: bankCode,
+        currency: currency.toLowerCase(),
         account_number: accountNumber
       });
 

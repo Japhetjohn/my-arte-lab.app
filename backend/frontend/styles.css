@@ -1943,3 +1943,13 @@ img.loaded {
 .user-avatar-btn .avatar-fallback {
     margin-right: 8px;
 }
+
+/* Loading spinner animation */
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
