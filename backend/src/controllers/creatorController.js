@@ -2,6 +2,7 @@ const User = require('../models/User');
 const Review = require('../models/Review');
 const { successResponse, paginatedResponse } = require('../utils/apiResponse');
 const { ErrorHandler, catchAsync } = require('../utils/errorHandler');
+const { escapeRegex } = require('../utils/sanitize');
 
 exports.getAllCreators = catchAsync(async (req, res, next) => {
   const {
@@ -21,19 +22,24 @@ exports.getAllCreators = catchAsync(async (req, res, next) => {
   }
 
   if (search) {
+    const escapedSearch = escapeRegex(search);
     query.$or = [
-      { name: { $regex: search, $options: 'i' } },
-      { bio: { $regex: search, $options: 'i' } },
-      { skills: { $in: [new RegExp(search, 'i')] } }
+      { name: { $regex: escapedSearch, $options: 'i' } },
+      { bio: { $regex: escapedSearch, $options: 'i' } },
+      { skills: { $in: [new RegExp(escapedSearch, 'i')] } }
     ];
   }
 
   if (minRating) {
-    query['rating.average'] = { $gte: parseFloat(minRating) };
+    const rating = parseFloat(minRating);
+    if (!isNaN(rating) && rating >= 0 && rating <= 5) {
+      query['rating.average'] = { $gte: rating };
+    }
   }
 
   if (location) {
-    query['location.country'] = { $regex: location, $options: 'i' };
+    const escapedLocation = escapeRegex(location);
+    query['location.country'] = { $regex: escapedLocation, $options: 'i' };
   }
 
   let sort = {};

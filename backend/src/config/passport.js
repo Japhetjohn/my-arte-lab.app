@@ -64,7 +64,7 @@ passport.use(
           role: requestedRole,
           isEmailVerified: true,
           wallet: wallet,
-          password: Math.random().toString(36).slice(-16)
+          password: crypto.randomBytes(32).toString('hex')
         };
 
         if (requestedRole === 'creator') {

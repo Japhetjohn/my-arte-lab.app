@@ -345,7 +345,11 @@ userSchema.pre('save', async function(next) {
   }
 
   try {
-    const salt = await bcrypt.genSalt(parseInt(process.env.BCRYPT_ROUNDS) || 12);
+    let rounds = parseInt(process.env.BCRYPT_ROUNDS, 10) || 12;
+    if (isNaN(rounds) || rounds < 10) {
+      rounds = 12;
+    }
+    const salt = await bcrypt.genSalt(rounds);
     this.password = await bcrypt.hash(this.password, salt);
     next();
   } catch (error) {

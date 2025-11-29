@@ -117,11 +117,24 @@ exports.respondToReview = catchAsync(async (req, res, next) => {
 exports.markHelpful = catchAsync(async (req, res, next) => {
   const { helpful } = req.body;
 
+  if (typeof helpful !== 'boolean') {
+    return next(new ErrorHandler('Invalid vote type', 400));
+  }
+
   const review = await Review.findById(req.params.id);
 
   if (!review) {
     return next(new ErrorHandler('Review not found', 404));
   }
+
+  const userId = req.user._id;
+  const existingVote = review.votedBy.find(v => v.user.toString() === userId.toString());
+
+  if (existingVote) {
+    return next(new ErrorHandler('You have already voted on this review', 400));
+  }
+
+  const voteType = helpful ? 'helpful' : 'unhelpful';
 
   if (helpful) {
     review.helpfulVotes += 1;
@@ -129,7 +142,15 @@ exports.markHelpful = catchAsync(async (req, res, next) => {
     review.unhelpfulVotes += 1;
   }
 
+  review.votedBy.push({
+    user: userId,
+    voteType: voteType
+  });
+
   await review.save();
 
-  successResponse(res, 200, 'Vote recorded successfully', { review });
+  successResponse(res, 200, 'Vote recorded successfully', {
+    helpfulVotes: review.helpfulVotes,
+    unhelpfulVotes: review.unhelpfulVotes
+  });
 });

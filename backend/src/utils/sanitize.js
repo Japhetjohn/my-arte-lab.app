@@ -63,8 +63,20 @@ const sanitizeObject = (obj) => {
   return sanitized;
 };
 
+/**
+ * Escape special regex characters to prevent ReDoS and regex injection
+ * Safe for use in MongoDB $regex queries
+ * @param {string} str - String to escape
+ * @returns {string} - Escaped string safe for regex
+ */
+const escapeRegex = (str) => {
+  if (typeof str !== 'string') return '';
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+};
+
 module.exports = {
   escapeHtml,
   sanitizeInput,
-  sanitizeObject
+  sanitizeObject,
+  escapeRegex
 };

@@ -166,8 +166,8 @@ exports.deleteServiceImage = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Service not found', 404));
   }
 
-  const index = parseInt(imageIndex);
-  if (index < 0 || index >= service.images.length) {
+  const index = parseInt(imageIndex, 10);
+  if (isNaN(index) || index < 0 || index >= service.images.length) {
     return next(new ErrorHandler('Invalid image index', 400));
   }
 

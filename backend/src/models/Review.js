@@ -63,7 +63,22 @@ const reviewSchema = new mongoose.Schema({
   unhelpfulVotes: {
     type: Number,
     default: 0
-  }
+  },
+
+  votedBy: [{
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    voteType: {
+      type: String,
+      enum: ['helpful', 'unhelpful']
+    },
+    votedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }]
 
 }, {
   timestamps: true

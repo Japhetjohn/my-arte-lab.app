@@ -79,9 +79,9 @@ exports.deletePortfolioImage = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Only creators can delete portfolio images', 403));
   }
 
-  const index = parseInt(req.params.index);
+  const index = parseInt(req.params.index, 10);
 
-  if (index < 0 || index >= user.portfolio.length) {
+  if (isNaN(index) || index < 0 || index >= user.portfolio.length) {
     return next(new ErrorHandler('Invalid portfolio image index', 400));
   }
 

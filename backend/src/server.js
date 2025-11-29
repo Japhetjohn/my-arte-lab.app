@@ -11,6 +11,12 @@ const connectDatabase = require('./config/database');
 const breadConfig = require('./config/bread');
 const emailConfig = require('./config/email');
 const { errorMiddleware } = require('./utils/errorHandler');
+const {
+  preventNoSQLInjection,
+  addSecurityHeaders,
+  preventParameterPollution,
+  securityLogger
+} = require('./middleware/security');
 
 const authRoutes = require('./routes/authRoutes');
 const googleAuthRoutes = require('./routes/googleAuthRoutes');
@@ -120,14 +126,25 @@ if (process.env.NODE_ENV === 'development') {
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+app.use(preventNoSQLInjection);
+app.use(addSecurityHeaders);
+app.use(preventParameterPollution());
+app.use(securityLogger);
+
+if (!process.env.JWT_SECRET) {
+  console.error('❌ CRITICAL: JWT_SECRET environment variable is not set');
+  process.exit(1);
+}
+
 app.use(session({
-  secret: process.env.JWT_SECRET || 'myartelab_session_secret_2025',
+  secret: process.env.JWT_SECRET,
   resave: false,
   saveUninitialized: false,
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000
+    maxAge: 24 * 60 * 60 * 1000,
+    sameSite: 'strict'
   }
 }));
 
