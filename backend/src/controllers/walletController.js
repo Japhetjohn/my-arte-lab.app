@@ -2,14 +2,14 @@ const User = require('../models/User');
 const Transaction = require('../models/Transaction');
 const { successResponse } = require('../utils/apiResponse');
 const { ErrorHandler, catchAsync } = require('../utils/errorHandler');
-const breadService = require('../services/breadService');
-const breadConfig = require('../config/bread');
+const switchService = require('../services/switchService');
+const switchConfig = require('../config/switch');
 const adminNotificationService = require('../services/adminNotificationService');
 
 exports.getWallet = catchAsync(async (req, res, next) => {
   const user = await User.findById(req.user._id);
 
-  // Wallet balance is managed through bread.africa webhooks
+  
   // No need for manual sync as balance updates happen automatically via webhooks
 
   successResponse(res, 200, 'Wallet retrieved successfully', {
@@ -40,7 +40,7 @@ exports.getTransactions = catchAsync(async (req, res, next) => {
 });
 
 // Legacy crypto withdrawal endpoint - Deprecated
-// Users should now use bread.africa offramp methods (bank or mobile money)
+
 exports.requestWithdrawal = catchAsync(async (req, res, next) => {
   return next(new ErrorHandler(
     'Direct crypto withdrawals are no longer supported. Please use Bank Withdrawal or Mobile Money Withdrawal instead.',
@@ -58,317 +58,6 @@ exports.getBalanceSummary = catchAsync(async (req, res, next) => {
     summary
   });
 });
-
-// ============= bread.africa Account Initialization =============
-
-/**
- * Initialize bread.africa account for a user
- * Creates wallet for withdrawals (offramp only)
- * Called during user registration
- *
- * NOTE: bread.africa user creation is for service accounts, not end users
- * We use our service key and create wallets with user references
- */
-exports.initializeBreadAccount = async (userId, userName, userEmail) => {
-  try {
-    const user = await User.findById(userId);
-    if (!user) {
-      throw new Error('User not found');
-    }
-
-    // Skip if already initialized
-    if (user.wallet.breadWalletId) {
-      console.log(`bread.africa wallet already initialized for user ${userId}`);
-      return {
-        breadWalletId: user.wallet.breadWalletId
-      };
-    }
-
-    // Create bread.africa wallet with user ID as reference
-    const breadWallet = await breadService.createWallet(
-      userId.toString(),
-      'basic'  // Basic wallet type for withdrawals
-    );
-
-    // Update user model with bread.africa details
-    user.wallet.breadWalletId = breadWallet.walletId;
-
-    await user.save({ validateBeforeSave: false });
-
-    console.log(`bread.africa wallet initialized for user ${userId}: ${breadWallet.walletId}`);
-
-    return {
-      breadWalletId: breadWallet.walletId,
-      evmAddress: breadWallet.evmAddress,
-      svmAddress: breadWallet.svmAddress
-    };
-
-  } catch (error) {
-    console.error('Failed to initialize bread.africa wallet:', error.message);
-    // Don't throw - allow registration to proceed even if bread initialization fails
-    // User can retry later or admin can manually initialize
-    return null;
-  }
-};
-
-/**
- * Ensure user has bread.africa identity (KYC)
- * For MVP: Creates basic identity without BVN/NIN
- * TODO: Add proper KYC flow with BVN/NIN verification
- */
-const ensureBreadIdentity = async (user) => {
-  if (user.wallet.breadIdentityId) {
-    return user.wallet.breadIdentityId;
-  }
-
-  try {
-    // Create basic identity (link type - no BVN/NIN required for MVP)
-    const identity = await breadService.createIdentity('link', user.name, {
-      email: user.email
-    });
-
-    user.wallet.breadIdentityId = identity.identityId;
-    await user.save({ validateBeforeSave: false });
-
-    console.log(`bread.africa identity created for user ${user._id}: ${identity.identityId}`);
-    return identity.identityId;
-
-  } catch (error) {
-    console.error('Failed to create bread.africa identity:', error.message);
-    throw new Error('Failed to initialize identity. Please contact support.');
-  }
-};
-
-// ============= bread.africa Exchange Rate =============
-
-/**
- * Get exchange rate for offramp (crypto to fiat)
- */
-exports.getExchangeRate = catchAsync(async (req, res, next) => {
-  const { currency = 'NGN' } = req.query;
-
-  try {
-    // Crypto to fiat rate for offramp
-    const rateData = await breadService.getOfframpRate(currency);
-
-    successResponse(res, 200, 'Exchange rate retrieved successfully', {
-      type: 'offramp',
-      currency,
-      rate: rateData.rate,
-      note: `1 ${currency} ≈ ${(1 / rateData.rate).toFixed(6)} USDC`
-    });
-
-  } catch (error) {
-    return next(new ErrorHandler(error.message, 500));
-  }
-});
-
-/**
- * Get offramp quote (real-time estimate with fees)
- * This is a lightweight estimate endpoint that doesn't create resources
- * Uses exchange rate API for quick calculations
- */
-exports.getOfframpQuote = catchAsync(async (req, res, next) => {
-  const { amount, currency = 'NGN' } = req.body;
-
-  if (!amount || amount < 1) {
-    return next(new ErrorHandler('Valid amount is required (minimum $1 USDC)', 400));
-  }
-
-  try {
-    // Get current exchange rate from bread.africa
-    const rateData = await breadService.getOfframpRate(currency);
-
-    // Calculate estimated output amount
-    // Note: This is an estimate. Actual amount may vary due to fees and rate fluctuations
-    const estimatedOutput = amount * rateData.rate;
-
-    // Estimate fee (bread.africa typically charges ~1-2% for offramp)
-    const estimatedFee = amount * 0.015; // 1.5% estimated fee
-    const estimatedOutputAfterFees = (amount - estimatedFee) * rateData.rate;
-
-    successResponse(res, 200, 'Estimate retrieved successfully', {
-      inputAmount: amount,
-      outputAmount: estimatedOutputAfterFees,
-      estimatedBeforeFees: estimatedOutput,
-      currency,
-      rate: rateData.rate,
-      estimatedFee: estimatedFee,
-      note: 'This is an estimate. Final amount will be calculated at withdrawal time.'
-    });
-
-  } catch (error) {
-    console.error('Failed to get estimate:', error.message);
-    return next(new ErrorHandler(error.message, 500));
-  }
-});
-
-// ============= bread.africa Offramp Methods =============
-
-exports.requestBankWithdrawal = catchAsync(async (req, res, next) => {
-  const { amountUSDC, currency = 'NGN', country = 'NG', bankDetails } = req.body;
-  const user = await User.findById(req.user._id);
-
-  // Both creators AND clients can withdraw funds
-
-  // Validation
-  const validation = breadConfig.validateOfframpAmount(amountUSDC);
-  if (!validation.valid) {
-    return next(new ErrorHandler(validation.error, 400));
-  }
-
-  if (user.wallet.balance < amountUSDC) {
-    return next(new ErrorHandler('Insufficient balance', 400));
-  }
-
-  // Validate country support
-  if (!breadConfig.isCountrySupported(country)) {
-    return next(new ErrorHandler(`Country ${country} is not supported`, 400));
-  }
-
-  const countryConfig = breadConfig.getCountryConfig(country);
-
-  // Validate bank details based on country
-  if (!bankDetails || typeof bankDetails !== 'object') {
-    return next(new ErrorHandler(`Bank details are required. Required fields for ${countryConfig.name}: ${countryConfig.fields.join(', ')}`, 400));
-  }
-
-  // Check required fields for country
-  const missingFields = countryConfig.fields.filter(field => !bankDetails[field]);
-  if (missingFields.length > 0) {
-    return next(new ErrorHandler(`Missing required fields for ${countryConfig.name}: ${missingFields.join(', ')}`, 400));
-  }
-
-  if (!user.wallet.breadWalletId) {
-    return next(new ErrorHandler('bread.africa wallet not initialized. Please contact support.', 400));
-  }
-
-  try {
-    // Step 1: Verify bank account (if applicable for the country)
-    let accountInfo;
-    if (country === 'NG' && bankDetails.bank_code && bankDetails.account_number) {
-      accountInfo = await breadService.lookupAccount(bankDetails.bank_code, bankDetails.account_number);
-    }
-
-    // Step 2: Ensure user has identity (KYC)
-    const identityId = await ensureBreadIdentity(user);
-
-    // Step 3: Create unique fingerprint for beneficiary based on bank details
-    const beneficiaryFingerprint = JSON.stringify({ country, currency, ...bankDetails });
-
-    // Step 4: Check if beneficiary already exists
-    let beneficiary = user.wallet.beneficiaries?.find(
-      b => b.country === country &&
-           b.currency === currency &&
-           JSON.stringify(b.bankDetails) === JSON.stringify(bankDetails) &&
-           b.breadBeneficiaryId
-    );
-
-    // Step 5: Create beneficiary if not exists
-    if (!beneficiary || !beneficiary.breadBeneficiaryId) {
-      const breadBeneficiary = await breadService.createBeneficiary(
-        identityId,
-        currency,
-        bankDetails
-      );
-
-      // Save beneficiary to user model
-      if (!user.wallet.beneficiaries) {
-        user.wallet.beneficiaries = [];
-      }
-
-      const newBeneficiary = {
-        breadBeneficiaryId: breadBeneficiary.beneficiaryId,
-        type: 'bank_account',
-        country,
-        currency,
-        bankDetails: breadBeneficiary.details || bankDetails,
-        accountName: accountInfo?.accountName || breadBeneficiary.accountName || bankDetails.account_name,
-        accountNumber: bankDetails.account_number,
-        isDefault: user.wallet.beneficiaries.length === 0
-      };
-
-      user.wallet.beneficiaries.push(newBeneficiary);
-      await user.save({ validateBeforeSave: false });
-
-      beneficiary = newBeneficiary;
-    }
-
-    // Step 6: Get exchange rate quote
-    const quote = await breadService.getOfframpQuote(
-      user.wallet.breadWalletId,
-      amountUSDC,
-      'base:usdc',  // Use asset ID format
-      beneficiary.breadBeneficiaryId,
-      currency
-    );
-
-    // Step 7: Execute offramp
-    const offrampResult = await breadService.executeOfframp(
-      user.wallet.breadWalletId,
-      amountUSDC,
-      'base:usdc',  // Use asset ID format
-      beneficiary.breadBeneficiaryId,
-      currency
-    );
-
-    // Step 8: Create transaction record
-    const transaction = await Transaction.create({
-      user: user._id,
-      type: 'offramp',
-      amount: amountUSDC,
-      currency: 'USDC',
-      fiatAmount: quote.outputAmount,
-      fiatCurrency: currency,
-      exchangeRate: quote.rate,
-      paymentMethod: 'bank_transfer',
-      status: 'processing',
-      breadTransactionId: offrampResult.transactionId,
-      breadQuoteId: quote.quoteId,
-      breadWalletId: user.wallet.breadWalletId,
-      breadBeneficiaryId: beneficiary.breadBeneficiaryId,
-      description: `Bank withdrawal to ${countryConfig.name}`,
-      fromAddress: user.wallet.address,
-      paymentDetails: {
-        country: countryConfig.name,
-        currency,
-        bankDetails: beneficiary.bankDetails,
-        beneficiaryAccountName: beneficiary.accountName,
-        reference: offrampResult.reference
-      }
-    });
-
-    // Step 8: Update user balance
-    user.wallet.balance -= amountUSDC;
-    user.wallet.pendingBalance += amountUSDC;
-    await user.save({ validateBeforeSave: false });
-
-    // Step 9: Notify admin
-    adminNotificationService.notifyWithdrawal(user, amountUSDC, 'USDC')
-      .catch(err => console.error('Admin notification failed:', err));
-
-    successResponse(res, 200, 'Bank withdrawal request submitted successfully', {
-      transaction,
-      amountUSDC,
-      fiatAmount: quote.outputAmount,
-      fiatCurrency: currency,
-      exchangeRate: quote.rate,
-      fee: quote.fee,
-      country: countryConfig.name,
-      beneficiary: {
-        accountName: beneficiary.accountName,
-        accountNumber: beneficiary.accountNumber,
-        country: countryConfig.name,
-        currency
-      }
-    });
-
-  } catch (error) {
-    console.error('Bank withdrawal error:', error.message);
-    return next(new ErrorHandler(error.message, 500));
-  }
-});
-
 
 // ============= Beneficiary Management =============
 
@@ -449,60 +138,309 @@ exports.deleteBeneficiary = catchAsync(async (req, res, next) => {
 
 // ============= Utility Methods =============
 
-exports.getSupportedBanks = catchAsync(async (req, res, next) => {
+// ============= Switch Global Offramp Methods =============
+
+/**
+ * Get all supported countries for offramp
+ */
+exports.getSwitchCountries = catchAsync(async (req, res, next) => {
   try {
-    const banks = await breadService.getBanks('NGN');
+    const coverage = await switchService.getCoverage('OFFRAMP');
 
-    successResponse(res, 200, 'Banks retrieved successfully', {
-      banks,
-      count: banks.length
+    successResponse(res, 200, 'Countries fetched successfully', {
+      countries: coverage,
+      count: coverage.length
     });
-
   } catch (error) {
     return next(new ErrorHandler(error.message, 500));
   }
 });
 
-exports.verifyBankAccount = catchAsync(async (req, res, next) => {
-  const { bankCode, accountNumber } = req.body;
+/**
+ * Get banks for a specific country
+ */
+exports.getSwitchBanksByCountry = catchAsync(async (req, res, next) => {
+  const { country } = req.params;
 
-  if (!bankCode || !accountNumber) {
-    return next(new ErrorHandler('Bank code and account number are required', 400));
-  }
-
-  // Validate account number format
-  if (accountNumber.length !== 10) {
-    return next(new ErrorHandler('Account number must be 10 digits', 400));
+  if (!country || country.length !== 2) {
+    return next(new ErrorHandler('Invalid country code. Use ISO 3166-1 alpha-2 format (e.g., NG, US)', 400));
   }
 
   try {
-    console.log(`Verifying account: ${accountNumber} with bank code: ${bankCode}`);
-    const accountInfo = await breadService.lookupAccount(bankCode, accountNumber);
+    const institutions = await switchService.getInstitutions(country.toUpperCase());
 
-    successResponse(res, 200, 'Bank account verified successfully', {
-      accountName: accountInfo.accountName,
-      accountNumber: accountInfo.accountNumber,
-      bankName: accountInfo.bankName,
-      bankCode: accountInfo.bankCode
+    successResponse(res, 200, 'Banks fetched successfully', {
+      country: country.toUpperCase(),
+      banks: institutions,
+      count: institutions.length
+    });
+  } catch (error) {
+    return next(new ErrorHandler(error.message, 500));
+  }
+});
+
+/**
+ * Get field requirements for a country
+ */
+exports.getSwitchRequirements = catchAsync(async (req, res, next) => {
+  const { country, type = 'INDIVIDUAL', currency } = req.query;
+
+  if (!country) {
+    return next(new ErrorHandler('Country code is required', 400));
+  }
+
+  try {
+    const requirements = await switchService.getRequirements(
+      country.toUpperCase(),
+      'OFFRAMP',
+      type,
+      currency
+    );
+
+    successResponse(res, 200, 'Requirements fetched successfully', {
+      country: country.toUpperCase(),
+      type,
+      requirements
+    });
+  } catch (error) {
+    return next(new ErrorHandler(error.message, 500));
+  }
+});
+
+/**
+ * Get offramp quote via Switch
+ */
+exports.getSwitchOfframpQuote = catchAsync(async (req, res, next) => {
+  const { amount, country, asset = 'solana:usdc', currency } = req.body;
+
+  if (!amount || amount < 1) {
+    return next(new ErrorHandler('Amount must be at least 1 USDC', 400));
+  }
+
+  if (!country) {
+    return next(new ErrorHandler('Country code is required', 400));
+  }
+
+  try {
+    const quote = await switchService.getOfframpQuote(
+      amount,
+      country.toUpperCase(),
+      asset,
+      currency
+    );
+
+    successResponse(res, 200, 'Quote retrieved successfully', quote);
+  } catch (error) {
+    return next(new ErrorHandler(error.message, 500));
+  }
+});
+
+/**
+ * Execute offramp withdrawal via Switch
+ */
+exports.requestSwitchOfframp = catchAsync(async (req, res, next) => {
+  const {
+    amount,
+    country,
+    currency,
+    asset = 'solana:usdc',
+    beneficiary
+  } = req.body;
+
+  // Validation
+  if (!amount || amount < 1) {
+    return next(new ErrorHandler('Amount must be at least 1 USDC', 400));
+  }
+
+  if (!country) {
+    return next(new ErrorHandler('Country code is required', 400));
+  }
+
+  if (!beneficiary || !beneficiary.holderName || !beneficiary.accountNumber || !beneficiary.bankCode) {
+    return next(new ErrorHandler('Complete beneficiary details are required', 400));
+  }
+
+  const user = await User.findById(req.user._id);
+
+  // Check balance
+  if (user.wallet.balance < amount) {
+    return next(new ErrorHandler('Insufficient balance', 400));
+  }
+
+  try {
+    // Generate unique reference
+    const reference = `SWITCH_${Date.now()}_${user._id.toString().slice(-6)}`;
+
+    // Execute offramp
+    const result = await switchService.executeOfframp({
+      amount,
+      country: country.toUpperCase(),
+      asset,
+      currency,
+      beneficiary,
+      reference,
+      callbackUrl: `${process.env.API_URL || 'http://localhost:5000'}/api/webhooks/switch/offramp`,
+      senderName: user.name
     });
 
-  } catch (error) {
-    console.error('Bank verification error:', error.response?.data || error.message);
+    // Deduct from balance (will be refunded if fails via webhook)
+    await user.updateWalletBalance(amount, 'subtract');
 
-    // Handle specific error responses from bread.africa
-    if (error.response) {
-      const status = error.response.status;
-      const message = error.response.data?.message || error.message;
-
-      if (status === 404) {
-        return next(new ErrorHandler('Account not found. Please check the account number and bank selected.', 404));
-      } else if (status === 400) {
-        return next(new ErrorHandler(message || 'Invalid account details provided.', 400));
-      } else if (status === 401) {
-        return next(new ErrorHandler('Authentication failed. Please contact support.', 500));
+    // Create transaction record
+    const transaction = await Transaction.create({
+      user: user._id,
+      type: 'withdrawal',
+      amount,
+      currency: currency || 'Local',
+      status: 'pending',
+      reference,
+      metadata: {
+        provider: 'switch',
+        country: country.toUpperCase(),
+        asset,
+        beneficiary: {
+          holderName: beneficiary.holderName,
+          accountNumber: beneficiary.accountNumber.slice(-4),
+          bankCode: beneficiary.bankCode
+        }
       }
-    }
+    });
 
-    return next(new ErrorHandler('Unable to verify account at this time. Please try again.', 500));
+    // Notify admin
+    adminNotificationService.notifyWithdrawal(user, transaction)
+      .catch(err => console.error('Admin notification failed:', err));
+
+    successResponse(res, 200, 'Withdrawal initiated successfully', {
+      transaction: {
+        id: transaction._id,
+        reference,
+        amount,
+        currency: currency || 'Local',
+        country: country.toUpperCase(),
+        status: 'pending'
+      },
+      message: 'Your withdrawal is being processed. You will be notified once complete.'
+    });
+  } catch (error) {
+    console.error('Switch offramp error:', error);
+    return next(new ErrorHandler(error.message, 500));
+  }
+});
+
+// ============= Switch Onramp (Deposit) =============
+
+/**
+ * Get onramp quote (fiat to crypto)
+ */
+exports.getSwitchOnrampQuote = catchAsync(async (req, res, next) => {
+  const { amount, country, asset = 'solana:usdc', currency } = req.body;
+
+  // Validation
+  if (!amount || amount < 1) {
+    return next(new ErrorHandler('Amount must be at least 1', 400));
+  }
+
+  if (!country) {
+    return next(new ErrorHandler('Country code is required', 400));
+  }
+
+  try {
+    const quote = await switchService.getOnrampQuote(
+      amount,
+      country.toUpperCase(),
+      asset,
+      currency
+    );
+
+    successResponse(res, 200, 'Onramp quote retrieved successfully', quote);
+  } catch (error) {
+    console.error('Switch onramp quote error:', error);
+    return next(new ErrorHandler(error.message, 500));
+  }
+});
+
+/**
+ * Execute onramp deposit (fiat to crypto)
+ * Creates virtual account for user to deposit fiat
+ */
+exports.requestSwitchOnramp = catchAsync(async (req, res, next) => {
+  const { amount, country, currency, asset = 'solana:usdc' } = req.body;
+
+  // Validation
+  if (!amount || amount < 1) {
+    return next(new ErrorHandler('Minimum deposit amount is 1', 400));
+  }
+
+  if (!country) {
+    return next(new ErrorHandler('Country code is required', 400));
+  }
+
+  const user = await User.findById(req.user._id);
+
+  // Use user's wallet address as recipient
+  const walletAddress = user.wallet.address;
+
+  if (!walletAddress || walletAddress.startsWith('pending_')) {
+    return next(new ErrorHandler('Wallet not initialized. Please contact support.', 400));
+  }
+
+  try {
+    // Generate unique reference
+    const reference = `ONRAMP_${Date.now()}_${user._id.toString().slice(-6)}`;
+
+    // Execute onramp - gets virtual account details
+    const result = await switchService.executeOnramp({
+      amount,
+      country: country.toUpperCase(),
+      asset,
+      currency,
+      walletAddress,
+      reference,
+      callbackUrl: `${process.env.API_URL || 'http://localhost:5000'}/api/webhooks/switch/onramp`,
+      holderName: user.name
+    });
+
+    // Create transaction record (pending status)
+    const transaction = await Transaction.create({
+      user: user._id,
+      type: 'deposit',
+      amount: result.data?.destination?.amount || amount, // Crypto amount
+      currency: currency || 'Local',
+      status: 'pending',
+      reference,
+      metadata: {
+        provider: 'switch',
+        country: country.toUpperCase(),
+        asset,
+        fiatAmount: amount,
+        fiatCurrency: currency || result.data?.source?.currency,
+        virtualAccount: result.data?.deposit || {}
+      }
+    });
+
+    // Notify admin
+    adminNotificationService.notifyDeposit(user, transaction)
+      .catch(err => console.error('Admin notification failed:', err));
+
+    successResponse(res, 200, 'Deposit initiated successfully', {
+      transaction: {
+        id: transaction._id,
+        reference,
+        status: 'pending',
+        country: country.toUpperCase()
+      },
+      virtualAccount: result.data?.deposit || {},
+      instructions: 'Please transfer the exact amount to the account details provided. Your wallet will be credited once payment is confirmed.',
+      quote: {
+        fiatAmount: amount,
+        fiatCurrency: currency || result.data?.source?.currency,
+        cryptoAmount: result.data?.destination?.amount,
+        asset: asset,
+        rate: result.data?.rate
+      }
+    });
+  } catch (error) {
+    console.error('Switch onramp error:', error);
+    return next(new ErrorHandler(error.message, 500));
   }
 });

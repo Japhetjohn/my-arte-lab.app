@@ -546,191 +546,290 @@ export function showWithdrawModal() {
     openModal();
 }
 
-// Show bank transfer withdrawal form
+// Show Switch global offramp (bank transfer withdrawal - 65 countries)
 window.showBankWithdrawal = async function() {
-    const modalContent = `
-        <div class="modal" onclick="closeModalOnBackdrop(event)">
-            <div class="modal-content" style="max-width: 550px;">
-                <div class="modal-header">
-                    <h2>Withdraw to Bank</h2>
-                    <button class="icon-btn" onclick="closeModal()">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2"/>
-                        </svg>
-                    </button>
-                </div>
+    try {
+        // Fetch available countries
+        const response = await api.getSwitchCountries();
 
-                <div style="padding: 20px;">
-                    <form id="bankWithdrawForm" onsubmit="window.handleBankWithdrawal(event)">
-                        <div class="form-group">
-                            <label class="form-label">Amount (USDC)</label>
-                            <input type="number" id="bankWithdrawAmount" class="form-input" required min="1" step="0.01" placeholder="Enter amount">
-                            <small style="color: var(--text-secondary); margin-top: 4px; display: block;">
-                                Estimated: <span style="font-weight: 600;">₦<span id="ngnEquivalent">0.00</span></span>
-                                <span id="estimateLoading" style="display: none; margin-left: 8px; color: var(--primary);">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="animation: spin 1s linear infinite; vertical-align: middle;">
-                                        <circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="31.4 31.4" stroke-linecap="round"/>
-                                    </svg>
-                                    Calculating...
-                                </span>
-                            </small>
-                        </div>
+        if (!response.success || !response.data) {
+            showToast('Failed to load countries', 'error');
+            return;
+        }
 
-                        <div class="form-group">
-                            <label class="form-label">Select Bank</label>
-                            <select id="bankCode" class="form-select" required>
-                                <option value="">Loading banks...</option>
-                            </select>
-                        </div>
+        const countries = response.data;
 
-                        <div class="form-group">
-                            <label class="form-label">Account Number</label>
-                            <input type="text" id="accountNumber" class="form-input" required minlength="10" maxlength="10" placeholder="Enter account number" inputmode="numeric">
-                            <small id="accountNameDisplay" style="display: none; margin-top: 4px; font-weight: 500; color: var(--success);"></small>
-                            <small id="accountVerifyLoading" style="color: var(--text-secondary); display: none; margin-top: 4px;">Verifying account...</small>
-                            <small id="accountVerifyError" style="display: none; margin-top: 4px; color: var(--danger);"></small>
-                        </div>
+        // Popular countries at the top
+        const popularCountries = ['NG', 'US', 'GB', 'KE', 'GH', 'ZA', 'CA'];
+        const sortedCountries = countries.sort((a, b) => {
+            const aIndex = popularCountries.indexOf(a.code);
+            const bIndex = popularCountries.indexOf(b.code);
+            if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
+            if (aIndex !== -1) return -1;
+            if (bIndex !== -1) return 1;
+            return a.name.localeCompare(b.name);
+        });
 
-                        <div style="background: var(--background-alt); padding: 12px; border-radius: 8px; margin-bottom: 16px;">
-                            <small style="color: var(--text-secondary); display: block; line-height: 1.5;">
-                                Minimum withdrawal: $1 USDC<br>
-                                Processing time: Usually within minutes
-                            </small>
-                        </div>
+        const countryOptions = sortedCountries.map(c =>
+            `<option value="${c.code}">${c.name}</option>`
+        ).join('');
 
-                        <button type="submit" class="btn-primary" style="width: 100%;" id="withdrawSubmitBtn">
-                            Complete Withdrawal
+        const modalContent = `
+            <div class="modal" onclick="closeModalOnBackdrop(event)">
+                <div class="modal-content" style="max-width: 550px;">
+                    <div class="modal-header">
+                        <h2>Withdraw to Bank</h2>
+                        <button class="icon-btn" onclick="closeModal()">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2"/>
+                            </svg>
                         </button>
-                    </form>
+                    </div>
+
+                    <div style="padding: 20px;">
+                        <div style="background: #EEF2FF; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+                            <p style="color: #4338CA; font-weight: 600; margin-bottom: 8px;">Global Withdrawals Available</p>
+                            <p style="color: #4338CA; font-size: 14px;">
+                                Withdraw to bank accounts in 65 countries!
+                            </p>
+                        </div>
+
+                        <form id="offrampForm" onsubmit="window.handleSwitchOfframp(event)">
+                            <div class="form-group">
+                                <label class="form-label">Select Your Country</label>
+                                <select id="offrampCountry" class="form-select" required>
+                                    <option value="">Choose a country...</option>
+                                    ${countryOptions}
+                                </select>
+                            </div>
+
+                            <div class="form-group" id="bankSelectGroup" style="display: none;">
+                                <label class="form-label">Select Bank/Payment Method</label>
+                                <select id="offrampBank" class="form-select">
+                                    <option value="">Loading banks...</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Amount (USDC)</label>
+                                <input type="number" id="offrampAmount" class="form-input" required min="1" step="0.01" placeholder="Enter amount">
+                                <small id="offrampQuoteDisplay" style="color: var(--text-secondary); margin-top: 4px; display: none;">
+                                    You'll receive: <span style="font-weight: 600;"><span id="offrampEstimate">0.00</span></span>
+                                    <span id="offrampEstimateLoading" style="display: none; margin-left: 8px; color: var(--primary);">
+                                        Calculating...
+                                    </span>
+                                </small>
+                            </div>
+
+                            <div id="dynamicFieldsContainer" style="display: none;">
+                                <!-- Dynamic form fields based on country requirements will be inserted here -->
+                            </div>
+
+                            <div style="background: var(--background-alt); padding: 12px; border-radius: 8px; margin-bottom: 16px;">
+                                <small style="color: var(--text-secondary); display: block; line-height: 1.5;">
+                                    Minimum withdrawal: $1 USDC<br>
+                                    Processing time: Usually within minutes
+                                </small>
+                            </div>
+
+                            <button type="submit" class="btn-primary" style="width: 100%;" id="offrampSubmitBtn" disabled>
+                                Complete Withdrawal
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </div>
-        </div>
-    `;
+        `;
 
-    document.getElementById('modalsContainer').innerHTML = modalContent;
-    openModal();
+        document.getElementById('modalsContainer').innerHTML = modalContent;
+        openModal();
 
-    const amountInput = document.getElementById('bankWithdrawAmount');
-    let debounceTimer;
+        // Form elements
+        const countrySelect = document.getElementById('offrampCountry');
+        const bankSelectGroup = document.getElementById('bankSelectGroup');
+        const bankSelect = document.getElementById('offrampBank');
+        const amountInput = document.getElementById('offrampAmount');
+        const submitBtn = document.getElementById('offrampSubmitBtn');
+        const dynamicFieldsContainer = document.getElementById('dynamicFieldsContainer');
+        const quoteDisplay = document.getElementById('offrampQuoteDisplay');
+        const estimateSpan = document.getElementById('offrampEstimate');
+        const estimateLoading = document.getElementById('offrampEstimateLoading');
 
-    if (!amountInput) {
-        console.error('Amount input field not found!');
-        return;
-    }
+        let debounceTimer;
+        let selectedCountry = null;
+        let selectedBank = null;
 
-    amountInput.addEventListener('input', async (e) => {
-        clearTimeout(debounceTimer);
-        const amount = parseFloat(e.target.value);
-        const estimateDisplay = document.getElementById('ngnEquivalent');
-        const loadingIndicator = document.getElementById('estimateLoading');
+        // Country change handler
+        countrySelect.addEventListener('change', async () => {
+            const country = countrySelect.value;
+            selectedCountry = country;
 
-        if (amount >= 1) {
-            // Show loading indicator
-            if (loadingIndicator) {
-                loadingIndicator.style.display = 'inline';
+            if (!country) {
+                bankSelectGroup.style.display = 'none';
+                dynamicFieldsContainer.style.display = 'none';
+                submitBtn.disabled = true;
+                return;
             }
 
-            debounceTimer = setTimeout(async () => {
-                try {
-                    const response = await api.getOfframpQuote({
-                        amount: amount,
-                        currency: 'NGN'
+            // Load banks for selected country
+            bankSelect.innerHTML = '<option value="">Loading banks...</option>';
+            bankSelectGroup.style.display = 'block';
+
+            try {
+                const banksResponse = await api.getSwitchBanks(country);
+
+                if (banksResponse.success && banksResponse.data && banksResponse.data.length > 0) {
+                    bankSelect.innerHTML = '<option value="">Select bank...</option>';
+                    banksResponse.data.forEach(bank => {
+                        const option = document.createElement('option');
+                        option.value = bank.code || bank.id;
+                        option.textContent = bank.name;
+                        option.dataset.rail = bank.rail || '';
+                        bankSelect.appendChild(option);
+                    });
+                } else {
+                    bankSelect.innerHTML = '<option value="">No banks available</option>';
+                }
+            } catch (error) {
+                console.error('Failed to load banks:', error);
+                bankSelect.innerHTML = '<option value="">Failed to load banks</option>';
+            }
+        });
+
+        // Bank change handler - load dynamic fields
+        bankSelect.addEventListener('change', async () => {
+            selectedBank = bankSelect.value;
+
+            if (!selectedBank || !selectedCountry) {
+                dynamicFieldsContainer.style.display = 'none';
+                checkFormValid();
+                return;
+            }
+
+            // Fetch dynamic requirements for this country
+            dynamicFieldsContainer.innerHTML = '<p style="color: var(--text-secondary);">Loading form fields...</p>';
+            dynamicFieldsContainer.style.display = 'block';
+
+            try {
+                const reqResponse = await api.getSwitchRequirements(selectedCountry, 'INDIVIDUAL');
+
+                if (reqResponse.success && reqResponse.data && reqResponse.data.length > 0) {
+                    const fields = reqResponse.data;
+
+                    let fieldsHTML = '';
+                    fields.forEach(field => {
+                        const fieldId = `dynamic_${field.field_name}`;
+                        const required = field.required ? 'required' : '';
+                        const placeholder = field.example || `Enter ${field.label}`;
+
+                        fieldsHTML += `
+                            <div class="form-group">
+                                <label class="form-label">${field.label}${field.required ? ' *' : ''}</label>
+                                <input type="text" id="${fieldId}" name="${field.field_name}"
+                                       class="form-input dynamic-field" ${required}
+                                       placeholder="${placeholder}"
+                                       data-field="${field.field_name}">
+                                ${field.description ? `<small style="color: var(--text-secondary); display: block; margin-top: 4px;">${field.description}</small>` : ''}
+                            </div>
+                        `;
                     });
 
-                    if (loadingIndicator) {
-                        loadingIndicator.style.display = 'none';
-                    }
+                    dynamicFieldsContainer.innerHTML = fieldsHTML;
 
-                    if (response.success && response.data.outputAmount) {
-                        const formattedAmount = parseFloat(response.data.outputAmount).toLocaleString(undefined, {maximumFractionDigits: 2});
-                        estimateDisplay.textContent = formattedAmount;
-                    } else {
-                        console.warn('Invalid response structure:', response);
-                        estimateDisplay.textContent = 'N/A';
-                    }
-                } catch (error) {
-                    console.error('Failed to get estimate:', error);
-                    // Hide loading indicator
-                    if (loadingIndicator) {
-                        loadingIndicator.style.display = 'none';
-                    }
-                    estimateDisplay.textContent = 'N/A';
+                    // Add event listeners to dynamic fields
+                    document.querySelectorAll('.dynamic-field').forEach(field => {
+                        field.addEventListener('input', checkFormValid);
+                    });
+                } else {
+                    // No specific requirements - just standard account details
+                    dynamicFieldsContainer.innerHTML = `
+                        <div class="form-group">
+                            <label class="form-label">Account Number *</label>
+                            <input type="text" id="dynamic_account_number" name="account_number"
+                                   class="form-input dynamic-field" required
+                                   placeholder="Enter account number">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Account Holder Name *</label>
+                            <input type="text" id="dynamic_account_name" name="account_name"
+                                   class="form-input dynamic-field" required
+                                   placeholder="Enter account holder name">
+                        </div>
+                    `;
+
+                    document.querySelectorAll('.dynamic-field').forEach(field => {
+                        field.addEventListener('input', checkFormValid);
+                    });
                 }
-            }, 500);
-        } else {
-            // Hide loading indicator
-            if (loadingIndicator) {
-                loadingIndicator.style.display = 'none';
+
+                checkFormValid();
+
+            } catch (error) {
+                console.error('Failed to load requirements:', error);
+                dynamicFieldsContainer.innerHTML = '<p style="color: var(--danger);">Failed to load form fields</p>';
             }
-            estimateDisplay.textContent = '0.00';
-        }
-    });
+        });
 
-    const bankSelect = document.getElementById('bankCode');
+        // Amount input with real-time quote
+        amountInput.addEventListener('input', async () => {
+            clearTimeout(debounceTimer);
+            const amount = parseFloat(amountInput.value);
 
-    (async () => {
-        try {
-            const response = await api.getSupportedBanks();
+            if (amount >= 1 && selectedCountry) {
+                estimateLoading.style.display = 'inline';
+                quoteDisplay.style.display = 'block';
 
-            if (response.success && response.data.banks && response.data.banks.length > 0) {
-                bankSelect.innerHTML = '<option value="">Select your bank</option>';
-                response.data.banks.forEach(bank => {
-                    const option = document.createElement('option');
-                    option.value = bank.code;
-                    option.textContent = bank.name;
-                    bankSelect.appendChild(option);
-                });
+                debounceTimer = setTimeout(async () => {
+                    try {
+                        const quoteResponse = await api.getSwitchOfframpQuote({
+                            amount,
+                            country: selectedCountry,
+                            asset: 'solana:usdc'
+                        });
+
+                        estimateLoading.style.display = 'none';
+
+                        if (quoteResponse.success && quoteResponse.data) {
+                            const quote = quoteResponse.data;
+                            estimateSpan.textContent = `${quote.destination?.amount || 0} ${quote.destination?.currency || ''}`;
+                        } else {
+                            estimateSpan.textContent = 'N/A';
+                        }
+                    } catch (error) {
+                        console.error('Failed to get quote:', error);
+                        estimateLoading.style.display = 'none';
+                        estimateSpan.textContent = 'N/A';
+                    }
+                }, 500);
             } else {
-                console.warn('No banks in response:', response);
-                bankSelect.innerHTML = '<option value="">No banks available</option>';
+                quoteDisplay.style.display = 'none';
             }
-        } catch (error) {
-            console.error('Failed to load banks:', error);
-            bankSelect.innerHTML = '<option value="">Failed to load banks</option>';
-        }
-    })();
 
-    // Real-time account verification
-    const accountInput = document.getElementById('accountNumber');
-    const accountNameDisplay = document.getElementById('accountNameDisplay');
-    const accountVerifyLoading = document.getElementById('accountVerifyLoading');
-    const accountVerifyError = document.getElementById('accountVerifyError');
-    let verifyDebounce;
+            checkFormValid();
+        });
 
-    accountInput.addEventListener('input', async (e) => {
-        clearTimeout(verifyDebounce);
-        const accountNumber = e.target.value;
-        const bankCode = bankSelect.value;
+        // Check if form is valid
+        function checkFormValid() {
+            const hasCountry = !!selectedCountry;
+            const hasBank = !!selectedBank;
+            const hasAmount = amountInput.value && parseFloat(amountInput.value) >= 1;
 
-        accountNameDisplay.style.display = 'none';
-        accountVerifyLoading.style.display = 'none';
-        accountVerifyError.style.display = 'none';
-
-        if (accountNumber.length === 10 && bankCode) {
-            accountVerifyLoading.style.display = 'block';
-
-            verifyDebounce = setTimeout(async () => {
-                try {
-                    const response = await api.verifyBankAccount(bankCode, accountNumber);
-                    if (response.success && response.data.accountName) {
-                        accountVerifyLoading.style.display = 'none';
-                        accountNameDisplay.style.display = 'block';
-                        accountNameDisplay.textContent = response.data.accountName;
-                    }
-                } catch (error) {
-                    accountVerifyLoading.style.display = 'none';
-                    accountVerifyError.style.display = 'block';
-                    accountVerifyError.textContent = 'Could not verify account. Please check details.';
+            // Check all dynamic fields
+            const dynamicFields = document.querySelectorAll('.dynamic-field');
+            const allDynamicFieldsFilled = Array.from(dynamicFields).every(field => {
+                if (field.required) {
+                    return field.value.trim() !== '';
                 }
-            }, 800);
-        }
-    });
+                return true;
+            });
 
-    // Trigger verification when bank changes
-    bankSelect.addEventListener('change', () => {
-        const event = new Event('input');
-        accountInput.dispatchEvent(event);
-    });
+            submitBtn.disabled = !(hasCountry && hasBank && hasAmount && allDynamicFieldsFilled);
+        }
+
+    } catch (error) {
+        console.error('Failed to load withdrawal modal:', error);
+        showToast(error.message || 'Failed to load withdrawal form', 'error');
+    }
 };
 
 
@@ -789,34 +888,45 @@ window.showCryptoWithdrawal = function() {
 };
 
 // Handle bank withdrawal submission
-window.handleBankWithdrawal = async function(event) {
+window.handleSwitchOfframp = async function(event) {
     event.preventDefault();
 
-    const amount = parseFloat(document.getElementById('bankWithdrawAmount').value);
-    const bankCode = document.getElementById('bankCode').value;
-    const accountNumber = document.getElementById('accountNumber').value;
+    const country = document.getElementById('offrampCountry').value;
+    const bank = document.getElementById('offrampBank').value;
+    const amount = parseFloat(document.getElementById('offrampAmount').value);
 
-    if (amount < 1) {
-        showToast('Minimum withdrawal amount is $1 USDC', 'error');
+    if (!country || !bank || !amount || amount < 1) {
+        showToast('Please fill in all required fields', 'error');
         return;
     }
+
+    // Collect dynamic field values
+    const dynamicFields = document.querySelectorAll('.dynamic-field');
+    const beneficiaryDetails = {};
+
+    dynamicFields.forEach(field => {
+        const fieldName = field.dataset.field || field.name;
+        beneficiaryDetails[fieldName] = field.value;
+    });
 
     const submitBtn = event.target.querySelector('button[type="submit"]');
     const originalText = submitBtn.textContent;
 
     try {
         submitBtn.disabled = true;
-        submitBtn.textContent = 'Processing...';
+        submitBtn.textContent = 'Processing withdrawal...';
 
-        const response = await api.requestBankWithdrawal({
-            amountUSDC: amount,
-            bankCode,
-            accountNumber
+        const response = await api.requestSwitchOfframp({
+            amount,
+            country,
+            bank,
+            asset: 'solana:usdc',
+            beneficiaryDetails
         });
 
         if (response.success) {
             closeModal();
-            showToast('Bank withdrawal request submitted successfully!', 'success');
+            showToast('Withdrawal request submitted successfully!', 'success');
             setTimeout(() => window.location.reload(), 1500);
         }
     } catch (error) {
@@ -870,15 +980,30 @@ window.handleWithdrawal = async function(event) {
 
 export async function showAddFundsModal() {
     try {
-        // Fetch virtual account details from backend
-        const response = await api.getVirtualAccount();
+        // Fetch available countries
+        const response = await api.getSwitchCountries();
 
-        if (!response.success || !response.data.virtualAccount) {
-            showToast('Virtual account not initialized. Please contact support.', 'error');
+        if (!response.success || !response.data) {
+            showToast('Failed to load countries', 'error');
             return;
         }
 
-        const { virtualAccount, instructions } = response.data;
+        const countries = response.data;
+
+        // Popular countries at the top
+        const popularCountries = ['NG', 'US', 'GB', 'KE', 'GH', 'ZA', 'CA'];
+        const sortedCountries = countries.sort((a, b) => {
+            const aIndex = popularCountries.indexOf(a.code);
+            const bIndex = popularCountries.indexOf(b.code);
+            if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
+            if (aIndex !== -1) return -1;
+            if (bIndex !== -1) return 1;
+            return a.name.localeCompare(b.name);
+        });
+
+        const countryOptions = sortedCountries.map(c =>
+            `<option value="${c.code}">${c.name}</option>`
+        ).join('');
 
         const modalContent = `
             <div class="modal" onclick="closeModalOnBackdrop(event)">
@@ -894,61 +1019,53 @@ export async function showAddFundsModal() {
 
                     <div style="padding: 20px;">
                         <div style="background: #EEF2FF; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
-                            <p style="color: #4338CA; font-weight: 600; margin-bottom: 12px;">Deposit via Bank Transfer</p>
-                            <p style="color: #4338CA; font-size: 14px; line-height: 1.5;">
-                                Transfer NGN from any Nigerian bank to the account below. Your wallet will be automatically credited with USDC within minutes!
+                            <p style="color: #4338CA; font-weight: 600; margin-bottom: 8px;">Global Deposits Available</p>
+                            <p style="color: #4338CA; font-size: 14px;">
+                                Deposit fiat from 65 countries and receive USDC instantly!
                             </p>
                         </div>
 
-                        <!-- Virtual Account Details -->
-                        <div style="background: var(--background-alt); padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 2px solid var(--primary);">
-                            <div style="text-align: center; margin-bottom: 20px;">
-                                <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Account Number</div>
-                                <div style="font-size: 32px; font-weight: 700; color: var(--primary); letter-spacing: 2px; margin-bottom: 8px;">${virtualAccount.accountNumber}</div>
-                                <button onclick="navigator.clipboard.writeText('${virtualAccount.accountNumber}'); window.showToast('Account number copied!', 'success');"
-                                        style="background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 12px;">
-                                    Copy Account Number
-                                </button>
+                        <div id="onrampFormContainer">
+                            <div class="form-group" style="margin-bottom: 16px;">
+                                <label>Select Your Country</label>
+                                <select id="onrampCountry" class="form-input" required>
+                                    <option value="">Choose a country...</option>
+                                    ${countryOptions}
+                                </select>
                             </div>
 
-                            <div style="border-top: 1px solid var(--border); padding-top: 16px; margin-top: 16px;">
-                                <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
-                                    <span style="color: var(--text-secondary);">Bank Name:</span>
-                                    <span style="font-weight: 600;">${virtualAccount.bankName}</span>
+                            <div class="form-group" style="margin-bottom: 16px;">
+                                <label>Amount to Deposit</label>
+                                <input type="number" id="onrampAmount" class="form-input"
+                                       placeholder="Enter amount" min="1" step="0.01" required />
+                                <small class="caption" style="color: var(--text-secondary);">
+                                    Minimum: 10 units in your local currency
+                                </small>
+                            </div>
+
+                            <div id="quoteDisplay" style="display: none; background: var(--background-alt); padding: 16px; border-radius: 8px; margin-bottom: 16px; border: 2px solid var(--primary);">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                    <span style="color: var(--text-secondary);">You send:</span>
+                                    <span id="quoteFiatAmount" style="font-weight: 600;"></span>
                                 </div>
-                                <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
-                                    <span style="color: var(--text-secondary);">Account Name:</span>
-                                    <span style="font-weight: 600;">${virtualAccount.accountName}</span>
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                    <span style="color: var(--text-secondary);">You receive:</span>
+                                    <span id="quoteCryptoAmount" style="font-weight: 600; color: var(--primary);"></span>
                                 </div>
                                 <div style="display: flex; justify-content: space-between;">
-                                    <span style="color: var(--text-secondary);">Currency:</span>
-                                    <span style="font-weight: 600;">${virtualAccount.currency || 'NGN'}</span>
+                                    <span style="color: var(--text-secondary);">Exchange rate:</span>
+                                    <span id="quoteRate" style="font-weight: 600;"></span>
                                 </div>
                             </div>
-                        </div>
 
-                        <!-- Instructions -->
-                        <div style="background: #FEF3C7; padding: 16px; border-radius: 8px; margin-bottom: 16px; border-left: 4px solid #F59E0B;">
-                            <div style="color: #92400E; font-size: 14px; font-weight: 600; margin-bottom: 12px;">
-                                How it works:
-                            </div>
-                            <ol style="color: #92400E; font-size: 13px; margin: 0; padding-left: 20px; line-height: 1.8;">
-                                <li>${instructions.step1}</li>
-                                <li>${instructions.step2}</li>
-                                <li>${instructions.step3}</li>
-                            </ol>
-                            <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(146, 64, 14, 0.2); color: #92400E; font-size: 13px;">
-                                <strong>Minimum Deposit:</strong> ${instructions.minimumDeposit}
+                            <button id="getQuoteBtn" class="btn-primary" style="width: 100%;" disabled>
+                                Get Quote
+                            </button>
+
+                            <div id="virtualAccountDisplay" style="display: none; margin-top: 20px;">
+                                <!-- Virtual account details will be shown here after getting quote -->
                             </div>
                         </div>
-
-                        <div class="caption" style="color: var(--text-secondary); text-align: center;">
-                            ${instructions.note}
-                        </div>
-
-                        <button onclick="closeModal()" class="btn-primary" style="width: 100%; margin-top: 16px;">
-                            Got it!
-                        </button>
                     </div>
                 </div>
             </div>
@@ -957,9 +1074,156 @@ export async function showAddFundsModal() {
         document.getElementById('modalsContainer').innerHTML = modalContent;
         openModal();
 
+        // Add event listeners
+        const countrySelect = document.getElementById('onrampCountry');
+        const amountInput = document.getElementById('onrampAmount');
+        const getQuoteBtn = document.getElementById('getQuoteBtn');
+        const quoteDisplay = document.getElementById('quoteDisplay');
+
+        // Enable button when both fields are filled
+        const checkFormValid = () => {
+            getQuoteBtn.disabled = !countrySelect.value || !amountInput.value || parseFloat(amountInput.value) < 1;
+        };
+
+        countrySelect.addEventListener('change', checkFormValid);
+        amountInput.addEventListener('input', checkFormValid);
+
+        // Get quote and execute onramp
+        getQuoteBtn.addEventListener('click', async () => {
+            const country = countrySelect.value;
+            const amount = parseFloat(amountInput.value);
+
+            if (!country || amount < 1) {
+                showToast('Please select a country and enter a valid amount', 'error');
+                return;
+            }
+
+            getQuoteBtn.disabled = true;
+            getQuoteBtn.textContent = 'Getting quote...';
+
+            try {
+                // Get quote first
+                const quoteResponse = await api.getSwitchOnrampQuote({
+                    amount,
+                    country,
+                    asset: 'solana:usdc'
+                });
+
+                if (!quoteResponse.success) {
+                    throw new Error(quoteResponse.message || 'Failed to get quote');
+                }
+
+                const quote = quoteResponse.data;
+
+                // Show quote
+                document.getElementById('quoteFiatAmount').textContent =
+                    `${quote.source?.amount || amount} ${quote.source?.currency || 'Local'}`;
+                document.getElementById('quoteCryptoAmount').textContent =
+                    `${quote.destination?.amount || 0} USDC`;
+                document.getElementById('quoteRate').textContent =
+                    `1 USDC = ${quote.rate || 'N/A'} ${quote.source?.currency || ''}`;
+                quoteDisplay.style.display = 'block';
+
+                // Change button to execute
+                getQuoteBtn.textContent = 'Proceed to Deposit';
+                getQuoteBtn.onclick = async () => {
+                    getQuoteBtn.disabled = true;
+                    getQuoteBtn.textContent = 'Creating deposit account...';
+
+                    try {
+                        // Execute onramp - get virtual account
+                        const onrampResponse = await api.requestSwitchOnramp({
+                            amount,
+                            country,
+                            asset: 'solana:usdc'
+                        });
+
+                        if (!onrampResponse.success) {
+                            throw new Error(onrampResponse.message || 'Failed to create deposit');
+                        }
+
+                        const { virtualAccount, quote: finalQuote, instructions } = onrampResponse.data;
+
+                        // Show virtual account details
+                        document.getElementById('virtualAccountDisplay').innerHTML = `
+                            <div style="background: var(--background-alt); padding: 20px; border-radius: 8px; border: 2px solid var(--success);">
+                                <div style="text-align: center; margin-bottom: 20px;">
+                                    <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">
+                                        Account Number
+                                    </div>
+                                    <div style="font-size: 32px; font-weight: 700; color: var(--primary); letter-spacing: 2px; margin-bottom: 8px;">
+                                        ${virtualAccount.account_number || virtualAccount.accountNumber || 'N/A'}
+                                    </div>
+                                    <button onclick="navigator.clipboard.writeText('${virtualAccount.account_number || virtualAccount.accountNumber}'); window.showToast('Copied!', 'success');"
+                                            style="background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 12px;">
+                                        Copy Account Number
+                                    </button>
+                                </div>
+
+                                <div style="border-top: 1px solid var(--border); padding-top: 16px; margin-top: 16px;">
+                                    ${virtualAccount.bank_name || virtualAccount.bankName ? `
+                                        <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                                            <span style="color: var(--text-secondary);">Bank Name:</span>
+                                            <span style="font-weight: 600;">${virtualAccount.bank_name || virtualAccount.bankName}</span>
+                                        </div>
+                                    ` : ''}
+                                    ${virtualAccount.account_name || virtualAccount.accountName ? `
+                                        <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                                            <span style="color: var(--text-secondary);">Account Name:</span>
+                                            <span style="font-weight: 600;">${virtualAccount.account_name || virtualAccount.accountName}</span>
+                                        </div>
+                                    ` : ''}
+                                    <div style="display: flex; justify-content: space-between;">
+                                        <span style="color: var(--text-secondary);">Amount to Send:</span>
+                                        <span style="font-weight: 600; color: var(--primary);">${finalQuote?.fiatAmount || amount} ${finalQuote?.fiatCurrency || quote.source?.currency || ''}</span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; margin-top: 8px;">
+                                        <span style="color: var(--text-secondary);">You'll Receive:</span>
+                                        <span style="font-weight: 600; color: var(--success);">${finalQuote?.cryptoAmount || quote.destination?.amount || 0} USDC</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="background: #FEF3C7; padding: 16px; border-radius: 8px; margin-top: 16px; border-left: 4px solid #F59E0B;">
+                                <div style="color: #92400E; font-size: 14px; font-weight: 600; margin-bottom: 12px;">
+                                    Instructions:
+                                </div>
+                                <ol style="color: #92400E; font-size: 13px; margin: 0; padding-left: 20px; line-height: 1.8;">
+                                    <li>Transfer the exact amount to the account above</li>
+                                    <li>Use the exact account number provided</li>
+                                    <li>Your wallet will be credited automatically within minutes</li>
+                                </ol>
+                            </div>
+
+                            <button onclick="closeModal()" class="btn-primary" style="width: 100%; margin-top: 16px;">
+                                Done
+                            </button>
+                        `;
+                        document.getElementById('virtualAccountDisplay').style.display = 'block';
+                        document.getElementById('onrampFormContainer').style.display = 'none';
+
+                        showToast('Deposit account created! Transfer funds to the account above.', 'success');
+
+                    } catch (error) {
+                        console.error('Onramp execution failed:', error);
+                        showToast(error.message || 'Failed to create deposit', 'error');
+                        getQuoteBtn.disabled = false;
+                        getQuoteBtn.textContent = 'Proceed to Deposit';
+                    }
+                };
+                getQuoteBtn.disabled = false;
+
+            } catch (error) {
+                console.error('Quote failed:', error);
+                showToast(error.message || 'Failed to get quote', 'error');
+                getQuoteBtn.disabled = false;
+                getQuoteBtn.textContent = 'Get Quote';
+            }
+        });
+
     } catch (error) {
-        console.error('Failed to load virtual account:', error);
-        showToast(error.message || 'Failed to load deposit details', 'error');
+        console.error('Failed to load add funds modal:', error);
+        showToast(error.message || 'Failed to load deposit form', 'error');
     }
 }
 

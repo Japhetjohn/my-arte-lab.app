@@ -3,7 +3,9 @@ const router = express.Router();
 const webhookController = require('../controllers/webhookController');
 
 // Payment provider webhooks
-router.post('/bread', webhookController.handleBreadWebhook);
+// Switch webhooks for onramp (deposits) and offramp (withdrawals)
+router.post('/switch/onramp', webhookController.handleSwitchOnrampWebhook);
+router.post('/switch/offramp', webhookController.handleSwitchOfframpWebhook);
 
 // Test endpoint (development only)
 if (process.env.NODE_ENV !== 'production') {

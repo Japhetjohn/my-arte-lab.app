@@ -17,7 +17,6 @@ exports.register = catchAsync(async (req, res, next) => {
   }
 
   // Generate unique wallet identifier for internal tracking
-  // bread.africa handles actual crypto/fiat conversions
   const walletId = crypto.randomBytes(16).toString('hex');
   const wallet = {
     address: `wallet_${walletId}`,
@@ -41,20 +40,6 @@ exports.register = catchAsync(async (req, res, next) => {
     }
   });
 
-  // Initialize bread.africa account (wallet + virtual account for deposits)
-  let breadAccount = null;
-  let walletCreationFailed = false;
-  try {
-    breadAccount = await walletController.initializeBreadAccount(user._id, user.name, user.email);
-    if (!breadAccount) {
-      walletCreationFailed = true;
-      console.warn(`bread.africa initialization failed for user ${user._id}`);
-    }
-  } catch (error) {
-    walletCreationFailed = true;
-    console.error('Failed to initialize bread.africa account:', error.message);
-  }
-
   const token = generateToken(user._id);
   const refreshToken = generateRefreshToken(user._id);
 
@@ -66,28 +51,16 @@ exports.register = catchAsync(async (req, res, next) => {
   user.emailVerificationExpire = Date.now() + 30 * 60 * 1000; // 30 minutes
   await user.save({ validateBeforeSave: false});
 
-  const walletInfo = !walletCreationFailed && breadAccount?.virtualAccount ? `
-    <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
-      <p><strong>Payment Wallet:</strong> Deposit NGN, receive USDC automatically!</p>
-      <p><strong>Virtual Account Number:</strong> ${escapeHtml(breadAccount.virtualAccount.accountNumber)}</p>
-      <p><strong>Bank Name:</strong> ${escapeHtml(breadAccount.virtualAccount.bankName)}</p>
-      <p><strong>Account Name:</strong> ${escapeHtml(breadAccount.virtualAccount.accountName)}</p>
-      <p>Transfer NGN to this account from any Nigerian bank to fund your wallet with USDC!</p>
-    </div>
-  ` : `
-    <div style="background: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #ffc107;">
-      <p><strong>Note:</strong> Your payment wallet is being set up and will be ready shortly.</p>
-      <p>You can start exploring the platform now, and your wallet will be activated automatically.</p>
-    </div>
-  `;
-
   emailConfig.sendEmail({
     to: user.email,
     subject: 'Welcome to MyArteLab! Verify Your Email',
     html: `
       <h1>Welcome ${escapeHtml(user.name)}!</h1>
-      <p>Your account has been created successfully${!walletCreationFailed ? ' with Solana stablecoin payment support' : ''}.</p>
-      ${walletInfo}
+      <p>Your account has been created successfully with global stablecoin payment support!</p>
+      <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+        <p><strong>Payment Wallet:</strong> Deposit from 65 countries, receive USDC instantly!</p>
+        <p>Once you verify your email, you can fund your wallet from any supported country.</p>
+      </div>
       <p>Please verify your email address using the code below:</p>
       <div style="background: #f9f9f9; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0;">
         <h2 style="font-size: 32px; letter-spacing: 8px; margin: 0; color: #FF6B35;">${escapeHtml(verificationCode)}</h2>

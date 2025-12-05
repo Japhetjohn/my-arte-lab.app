@@ -1,7 +1,5 @@
 const { successResponse } = require('../utils/apiResponse');
 const { ErrorHandler, catchAsync } = require('../utils/errorHandler');
-const breadService = require('../services/breadService');
-const breadConfig = require('../config/bread');
 const User = require('../models/User');
 const Transaction = require('../models/Transaction');
 const notificationService = require('../services/notificationService');
@@ -18,90 +16,206 @@ exports.testWebhook = catchAsync(async (req, res, next) => {
   });
 });
 
-// ============= bread.africa Webhook Handler =============
+// ============= Switch Webhook Handlers =============
 
-exports.handleBreadWebhook = catchAsync(async (req, res, next) => {
-  const signature = req.headers['x-bread-signature'] || req.headers['x-webhook-signature'];
-
-  if (!signature) {
-    console.warn('bread.africa webhook: Missing signature');
-    return next(new ErrorHandler('Missing webhook signature', 401));
-  }
-
-  const rawBody = JSON.stringify(req.body);
-
-  const isValid = breadService.verifyWebhookSignature(rawBody, signature);
-
-  if (!isValid) {
-    console.warn('bread.africa webhook: Invalid signature');
-    return next(new ErrorHandler('Invalid webhook signature', 401));
-  }
-
+/**
+ * Handle Switch onramp webhooks (deposit completion)
+ */
+exports.handleSwitchOnrampWebhook = catchAsync(async (req, res, next) => {
   try {
-    const { event, data } = req.body;
+    const webhookData = req.body;
 
-    if (!event || !data) {
-      console.warn('bread.africa webhook: Invalid payload structure');
-      return successResponse(res, 200, 'Webhook received but invalid structure');
+    console.log('Switch onramp webhook received:', JSON.stringify(webhookData, null, 2));
+
+    // Switch webhook structure: { reference, status, data }
+    const { reference, status, data } = webhookData;
+
+    if (!reference) {
+      console.warn('Switch onramp webhook: Missing reference');
+      return successResponse(res, 200, 'Webhook received but missing reference');
     }
 
-    console.log(`bread.africa webhook received: ${event}`, JSON.stringify(data, null, 2));
+    // Find transaction by reference
+    const transaction = await Transaction.findOne({ reference });
 
-    switch (event) {
-      case 'offramp.completed':
-        await processOfframpCompleted(data);
-        break;
-
-      case 'offramp.failed':
-        await processOfframpFailed(data);
-        break;
-
-      default:
-        console.warn('bread.africa webhook: Unknown event type', event);
+    if (!transaction) {
+      console.error(`Onramp transaction not found: ${reference}`);
+      return successResponse(res, 200, 'Transaction not found');
     }
 
-    successResponse(res, 200, 'Webhook processed successfully', { event });
+    if (transaction.status === 'completed') {
+      console.warn(`Onramp transaction already completed: ${reference}`);
+      return successResponse(res, 200, 'Transaction already processed');
+    }
+
+    // Process based on status
+    if (status === 'completed' || status === 'success') {
+      await processOnrampCompleted(transaction, data);
+    } else if (status === 'failed' || status === 'error') {
+      await processOnrampFailed(transaction, data);
+    } else {
+      console.log(`Onramp status update: ${reference} -> ${status}`);
+      transaction.status = status === 'pending' ? 'pending' : 'processing';
+      await transaction.save();
+    }
+
+    successResponse(res, 200, 'Webhook processed successfully', { reference, status });
 
   } catch (error) {
-    console.error('bread.africa webhook processing error:', error);
-    // Always return 200 to prevent bread.africa from retrying
+    console.error('Switch onramp webhook processing error:', error);
+    // Always return 200 to prevent Switch from retrying
     successResponse(res, 200, 'Webhook received but processing failed');
   }
 });
 
-// Helper function: Process offramp completed (withdrawal successful)
-async function processOfframpCompleted(data) {
+/**
+ * Handle Switch offramp webhooks (withdrawal completion)
+ */
+exports.handleSwitchOfframpWebhook = catchAsync(async (req, res, next) => {
   try {
-    const {
-      transaction_id: transactionId,
-      wallet_id: walletId,
-      amount,
-      currency,
-      output_amount: outputAmount,
-      output_currency: outputCurrency,
-      completed_at: completedAt
-    } = data;
+    const webhookData = req.body;
 
-    const transaction = await Transaction.findOne({ breadTransactionId: transactionId });
+    console.log('Switch offramp webhook received:', JSON.stringify(webhookData, null, 2));
+
+    const { reference, status, data } = webhookData;
+
+    if (!reference) {
+      console.warn('Switch offramp webhook: Missing reference');
+      return successResponse(res, 200, 'Webhook received but missing reference');
+    }
+
+    const transaction = await Transaction.findOne({ reference });
 
     if (!transaction) {
-      console.error(`Offramp transaction not found: ${transactionId}`);
-      return;
+      console.error(`Offramp transaction not found: ${reference}`);
+      return successResponse(res, 200, 'Transaction not found');
     }
 
     if (transaction.status === 'completed') {
-      console.warn(`Offramp transaction already completed: ${transactionId}`);
-      return;
+      console.warn(`Offramp transaction already completed: ${reference}`);
+      return successResponse(res, 200, 'Transaction already processed');
     }
 
+    // Process based on status
+    if (status === 'completed' || status === 'success') {
+      await processSwitchOfframpCompleted(transaction, data);
+    } else if (status === 'failed' || status === 'error') {
+      await processSwitchOfframpFailed(transaction, data);
+    } else {
+      console.log(`Offramp status update: ${reference} -> ${status}`);
+      transaction.status = status === 'pending' ? 'pending' : 'processing';
+      await transaction.save();
+    }
+
+    successResponse(res, 200, 'Webhook processed successfully', { reference, status });
+
+  } catch (error) {
+    console.error('Switch offramp webhook processing error:', error);
+    successResponse(res, 200, 'Webhook received but processing failed');
+  }
+});
+
+// ============= Switch Webhook Helper Functions =============
+
+/**
+ * Process completed onramp (deposit successful - credit user wallet)
+ */
+async function processOnrampCompleted(transaction, webhookData) {
+  try {
+    const cryptoAmount = webhookData?.destination?.amount || transaction.amount;
+    const asset = webhookData?.destination?.asset || 'USDC';
+
     transaction.status = 'completed';
-    transaction.completedAt = completedAt ? new Date(completedAt) : new Date();
+    transaction.completedAt = new Date();
+    transaction.metadata = {
+      ...transaction.metadata,
+      webhookData,
+      completedAmount: cryptoAmount
+    };
+    await transaction.save();
+
+    // Credit user wallet
+    const user = await User.findById(transaction.user);
+    if (user) {
+      user.wallet.balance += parseFloat(cryptoAmount);
+      user.wallet.lastUpdated = new Date();
+      await user.save({ validateBeforeSave: false });
+
+      await notificationService.createNotification({
+        user: user._id,
+        type: 'deposit_completed',
+        title: 'Deposit Successful',
+        message: `Your deposit of ${parseFloat(cryptoAmount).toFixed(2)} ${asset} has been credited to your wallet`,
+        relatedId: transaction._id,
+        relatedModel: 'Transaction'
+      });
+
+      console.log(`Onramp completed: ${transaction.reference}, credited ${cryptoAmount} ${asset} to user ${user.email}`);
+    }
+
+  } catch (error) {
+    console.error('Error processing onramp completion:', error);
+    throw error;
+  }
+}
+
+/**
+ * Process failed onramp (deposit failed - notify user)
+ */
+async function processOnrampFailed(transaction, webhookData) {
+  try {
+    const failReason = webhookData?.error?.message || 'Deposit processing failed';
+
+    transaction.status = 'failed';
+    transaction.failedAt = new Date();
+    transaction.errorMessage = failReason;
+    transaction.metadata = {
+      ...transaction.metadata,
+      webhookData
+    };
     await transaction.save();
 
     const user = await User.findById(transaction.user);
     if (user) {
-      // Remove from pending balance
-      user.wallet.pendingBalance -= parseFloat(amount);
+      await notificationService.createNotification({
+        user: user._id,
+        type: 'deposit_failed',
+        title: 'Deposit Failed',
+        message: `Your deposit failed. Reason: ${failReason}. Please contact support if funds were deducted.`,
+        relatedId: transaction._id,
+        relatedModel: 'Transaction'
+      });
+
+      console.log(`Onramp failed: ${transaction.reference}, reason: ${failReason}`);
+    }
+
+  } catch (error) {
+    console.error('Error processing onramp failure:', error);
+    throw error;
+  }
+}
+
+/**
+ * Process completed offramp (withdrawal successful - remove from pending)
+ */
+async function processSwitchOfframpCompleted(transaction, webhookData) {
+  try {
+    const fiatAmount = webhookData?.destination?.amount || transaction.metadata?.fiatAmount;
+    const currency = webhookData?.destination?.currency || transaction.metadata?.fiatCurrency;
+
+    transaction.status = 'completed';
+    transaction.completedAt = new Date();
+    transaction.metadata = {
+      ...transaction.metadata,
+      webhookData,
+      completedAmount: fiatAmount
+    };
+    await transaction.save();
+
+    const user = await User.findById(transaction.user);
+    if (user) {
+      // Remove from pending balance (already deducted from main balance when withdrawal was initiated)
+      user.wallet.pendingBalance -= transaction.amount;
       user.wallet.lastUpdated = new Date();
       await user.save({ validateBeforeSave: false });
 
@@ -109,52 +223,34 @@ async function processOfframpCompleted(data) {
         user: user._id,
         type: 'withdrawal_completed',
         title: 'Withdrawal Successful',
-        message: `Your withdrawal of ${parseFloat(amount).toFixed(2)} ${currency} (₦${parseFloat(outputAmount).toLocaleString()}) has been sent to your bank account`,
+        message: `Your withdrawal of ${transaction.amount} USDC (${fiatAmount} ${currency}) has been sent successfully`,
         relatedId: transaction._id,
         relatedModel: 'Transaction'
       });
 
-      try {
-        await emailService.sendWithdrawalCompleted(user, {
-          amountUSDC: parseFloat(amount),
-          amountNGN: parseFloat(outputAmount),
-          currency,
-          transactionId: transaction.transactionId,
-          accountDetails: transaction.paymentDetails
-        });
-      } catch (emailError) {
-        console.error('Failed to send withdrawal confirmation email:', emailError);
-      }
+      console.log(`Offramp completed: ${transaction.reference}, sent ${fiatAmount} ${currency} to user ${user.email}`);
     }
 
-    console.log(`Offramp completed: ${transactionId}, sent ₦${outputAmount} to bank`);
-
   } catch (error) {
-    console.error('Error processing offramp.completed event:', error);
+    console.error('Error processing offramp completion:', error);
     throw error;
   }
 }
 
-// Helper function: Process offramp failed (withdrawal failed)
-async function processOfframpFailed(data) {
+/**
+ * Process failed offramp (withdrawal failed - refund user)
+ */
+async function processSwitchOfframpFailed(transaction, webhookData) {
   try {
-    const {
-      transaction_id: transactionId,
-      wallet_id: walletId,
-      failed_reason: failedReason,
-      failed_at: failedAt
-    } = data;
-
-    const transaction = await Transaction.findOne({ breadTransactionId: transactionId });
-
-    if (!transaction) {
-      console.error(`Offramp transaction not found: ${transactionId}`);
-      return;
-    }
+    const failReason = webhookData?.error?.message || 'Withdrawal processing failed';
 
     transaction.status = 'failed';
-    transaction.failedAt = failedAt ? new Date(failedAt) : new Date();
-    transaction.errorMessage = failedReason;
+    transaction.failedAt = new Date();
+    transaction.errorMessage = failReason;
+    transaction.metadata = {
+      ...transaction.metadata,
+      webhookData
+    };
     await transaction.save();
 
     const user = await User.findById(transaction.user);
@@ -169,16 +265,16 @@ async function processOfframpFailed(data) {
         user: user._id,
         type: 'withdrawal_failed',
         title: 'Withdrawal Failed',
-        message: `Your withdrawal of ${transaction.amount} ${transaction.currency} failed and has been refunded. Reason: ${failedReason}`,
+        message: `Your withdrawal of ${transaction.amount} USDC failed and has been refunded. Reason: ${failReason}`,
         relatedId: transaction._id,
         relatedModel: 'Transaction'
       });
+
+      console.log(`Offramp failed: ${transaction.reference}, refunded ${transaction.amount} USDC, reason: ${failReason}`);
     }
 
-    console.log(`Offramp failed: ${transactionId}, refunded ${transaction.amount} ${transaction.currency}, reason: ${failedReason}`);
-
   } catch (error) {
-    console.error('Error processing offramp.failed event:', error);
+    console.error('Error processing offramp failure:', error);
     throw error;
   }
 }

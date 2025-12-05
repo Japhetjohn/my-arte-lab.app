@@ -18,9 +18,12 @@ const publicWalletLimiter = rateLimit({
 });
 
 // Public routes (no auth required) - Rate estimates and bank list with rate limiting
-router.get('/exchange-rate', publicWalletLimiter, walletController.getExchangeRate);
-router.post('/offramp/quote', publicWalletLimiter, walletController.getOfframpQuote);
-router.get('/banks', publicWalletLimiter, walletController.getSupportedBanks);
+// Switch global endpoints (public)
+router.get('/switch/countries', publicWalletLimiter, walletController.getSwitchCountries);
+router.get('/switch/banks/:country', publicWalletLimiter, walletController.getSwitchBanksByCountry);
+router.get('/switch/requirements', publicWalletLimiter, walletController.getSwitchRequirements);
+router.post('/switch/quote/offramp', publicWalletLimiter, walletController.getSwitchOfframpQuote);
+router.post('/switch/quote/onramp', publicWalletLimiter, walletController.getSwitchOnrampQuote);
 
 // All routes below require authentication
 router.use(protect);
@@ -39,15 +42,13 @@ router.post(
   walletController.requestWithdrawal
 );
 
-// bread.africa Offramp (Withdrawal) routes - Available to ALL authenticated users
-router.post('/offramp/bank', walletController.requestBankWithdrawal);
+// Switch Onramp & Offramp (Global deposits and withdrawals for 65 countries)
+router.post('/switch/onramp', walletController.requestSwitchOnramp);
+router.post('/switch/offramp', walletController.requestSwitchOfframp);
 
 // Beneficiary management routes
 router.get('/beneficiaries', walletController.getBeneficiaries);
 router.post('/beneficiaries', walletController.addBeneficiary);
 router.delete('/beneficiaries/:id', walletController.deleteBeneficiary);
-
-// Utility routes (bank account verification requires auth)
-router.post('/verify-bank-account', walletController.verifyBankAccount);
 
 module.exports = router;

@@ -8,7 +8,6 @@ const session = require('express-session');
 const passport = require('./config/passport');
 
 const connectDatabase = require('./config/database');
-const breadConfig = require('./config/bread');
 const emailConfig = require('./config/email');
 const { errorMiddleware } = require('./utils/errorHandler');
 const {
@@ -198,14 +197,11 @@ app.get('/health', async (req, res) => {
     health.status = 'DEGRADED';
   }
 
-  // Check bread.africa API configuration
   try {
-    health.checks.breadAPI = breadConfig.serviceKey ? 'configured' : 'not configured';
     if (!breadConfig.serviceKey) {
       health.status = 'DEGRADED';
     }
   } catch (error) {
-    health.checks.breadAPI = `error: ${error.message}`;
     health.status = 'DEGRADED';
   }
 
@@ -264,15 +260,6 @@ app.use('/api/*', (req, res) => {
 
 app.use(errorMiddleware);
 
-try {
-  breadConfig.validate();
-} catch (error) {
-  console.error('bread.africa configuration error:', error.message);
-  if (process.env.NODE_ENV === 'production') {
-    process.exit(1);
-  }
-}
-
 emailConfig.verifyConnection().catch(err => {
   console.warn('Email service not configured properly');
 });
@@ -285,7 +272,7 @@ const server = app.listen(PORT, () => {
   console.log(`║  Port: ${PORT}`);
   console.log(`║  Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`║  API: http://localhost:${PORT}/api`);
-  console.log(`║  Payment Gateway: bread.africa`);
+  console.log(`║  Payment Gateway: Switch`);
   console.log('╚════════════════════════════════════════════════════════╝\n');
 });
 

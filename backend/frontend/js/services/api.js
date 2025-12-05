@@ -237,24 +237,24 @@ class ApiService {
         return this.get(API_ENDPOINTS.balanceSummary);
     }
 
-    // ==================== bread.africa Onramp (Deposit) Endpoints ====================
+    // ==================== Switch Onramp (Deposit) Endpoints ====================
 
-    async getVirtualAccount() {
-        return this.get('/wallet/virtual-account');
+    async getSwitchOnrampQuote(data) {
+        return this.post('/wallet/switch/quote/onramp', data);
     }
 
-    async getExchangeRate({asset = 'USDC', currency = 'NGN', amount}) {
-        return this.get(`/wallet/exchange-rate?asset=${asset}&currency=${currency}&amount=${amount}`);
+    async requestSwitchOnramp(data) {
+        return this.post('/wallet/switch/onramp', data);
     }
 
-    // ==================== bread.africa Offramp (Withdrawal) Endpoints ====================
+    // ==================== Switch Offramp (Withdrawal) Endpoints ====================
 
-    async getOfframpQuote(data) {
-        return this.post('/wallet/offramp/quote', data);
+    async getSwitchOfframpQuote(data) {
+        return this.post('/wallet/switch/quote/offramp', data);
     }
 
-    async requestBankWithdrawal(data) {
-        return this.post('/wallet/offramp/bank', data);
+    async requestSwitchOfframp(data) {
+        return this.post('/wallet/switch/offramp', data);
     }
 
     // ==================== Beneficiary Management Endpoints ====================
@@ -271,14 +271,18 @@ class ApiService {
         return this.delete(`/wallet/beneficiaries/${beneficiaryId}`);
     }
 
-    // ==================== Utility Endpoints ====================
+    // ==================== Switch Utility Endpoints ====================
 
-    async getSupportedBanks() {
-        return this.get('/wallet/banks');
+    async getSwitchCountries() {
+        return this.get('/wallet/switch/countries');
     }
 
-    async verifyBankAccount(bankCode, accountNumber) {
-        return this.post('/wallet/verify-bank-account', { bankCode, accountNumber });
+    async getSwitchBanks(country) {
+        return this.get(`/wallet/switch/banks/${country}`);
+    }
+
+    async getSwitchRequirements(country, type = 'INDIVIDUAL') {
+        return this.get(`/wallet/switch/requirements?country=${country}&type=${type}`);
     }
 
     // ==================== Review Endpoints ====================
