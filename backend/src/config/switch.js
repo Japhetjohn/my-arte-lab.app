@@ -76,8 +76,6 @@ module.exports = {
    * @returns {string} Default asset identifier
    */
   getDefaultAsset() {
-    // Changed from 'solana:usdc' to 'solana:usdc' to fix wallet address format issue
-    // Base uses EVM addresses (0x...) which Switch API expects
-    return 'solana:usdc';
+    return 'solana:usdc'; // Match our platform's Solana wallet
   }
 };
