@@ -257,6 +257,10 @@ class ApiService {
         return this.post('/wallet/switch/offramp', data);
     }
 
+    async verifySwitchBankAccount(data) {
+        return this.post('/wallet/switch/verify-account', data);
+    }
+
     // ==================== Beneficiary Management Endpoints ====================
 
     async getBeneficiaries() {

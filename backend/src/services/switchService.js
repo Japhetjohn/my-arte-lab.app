@@ -291,6 +291,38 @@ class SwitchService {
     }
   }
 
+  // ==================== Account Verification ====================
+
+  /**
+   * Verify bank account and get account name
+   * @param {Object} params - Verification parameters
+   * @param {string} params.country - Country code
+   * @param {string} params.bankCode - Bank code
+   * @param {string} params.accountNumber - Account number
+   * @returns {Promise<Object>} Account details with name
+   */
+  async verifyBankAccount({ country, bankCode, accountNumber }) {
+    try {
+      // Try to call Switch verify endpoint
+      // Note: This endpoint may not be available yet in Switch API
+      const response = await this.api.post('/verify', {
+        country,
+        bank_code: bankCode,
+        account_number: accountNumber
+      });
+
+      return response.data.data;
+    } catch (error) {
+      // If endpoint doesn't exist (404) or not implemented, return friendly error
+      if (error.response?.status === 404) {
+        throw new Error('Account verification not available yet. Please enter account name manually.');
+      }
+
+      console.error('Failed to verify bank account:', error.response?.data || error.message);
+      throw new Error(error.response?.data?.message || 'Could not verify account. Please enter account name manually.');
+    }
+  }
+
   // ==================== Helper Methods ====================
 
   /**

@@ -6,6 +6,48 @@ import { navigateToPage } from '../navigation.js';
 import api from '../services/api.js';
 
 // Booking Modal
+
+// Global loading spinner
+window.showLoadingSpinner = function(message = 'Loading...') {
+    const existingSpinner = document.getElementById('globalLoadingSpinner');
+    if (existingSpinner) existingSpinner.remove();
+    
+    const spinner = document.createElement('div');
+    spinner.id = 'globalLoadingSpinner';
+    spinner.innerHTML = `
+        <div class="modal" style="z-index: 10000;">
+            <div class="modal-content" style="max-width: 300px; text-align: center; padding: 40px;">
+                <div style="margin-bottom: 20px;">
+                    <div class="spinner" style="
+                        border: 4px solid rgba(0,0,0,0.1);
+                        border-left-color: var(--primary);
+                        border-radius: 50%;
+                        width: 50px;
+                        height: 50px;
+                        animation: spin 1s linear infinite;
+                        margin: 0 auto;
+                    "></div>
+                </div>
+                <p style="color: var(--text-primary); font-weight: 500; margin: 0;">${message}</p>
+            </div>
+        </div>
+        <style>
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+        </style>
+    `;
+    document.body.appendChild(spinner);
+};
+
+window.hideLoadingSpinner = function() {
+    const spinner = document.getElementById('globalLoadingSpinner');
+    if (spinner) spinner.remove();
+};
+
+
+
 export async function showBookingModal(creatorId, serviceIndex = 0) {
     // Try to find creator in appState first
     let creator = appState.creators?.find(c => c.id === creatorId);
@@ -549,6 +591,9 @@ export function showWithdrawModal() {
 // Show Switch global offramp (bank transfer withdrawal - 65 countries)
 window.showBankWithdrawal = async function() {
     try {
+        // Show loading spinner while loading countries
+        window.showLoadingSpinner('Loading withdrawal form...');
+
         // Fetch available countries
         const response = await api.getSwitchCountries();
 
@@ -557,22 +602,36 @@ window.showBankWithdrawal = async function() {
             return;
         }
 
-        const countries = response.data;
+        const countries = response.data.countries || [];
+        window.hideLoadingSpinner();
 
         // Popular countries at the top
         const popularCountries = ['NG', 'US', 'GB', 'KE', 'GH', 'ZA', 'CA'];
         const sortedCountries = countries.sort((a, b) => {
-            const aIndex = popularCountries.indexOf(a.code);
-            const bIndex = popularCountries.indexOf(b.code);
+            const aIndex = popularCountries.indexOf(a.country);
+            const bIndex = popularCountries.indexOf(b.country);
             if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
             if (aIndex !== -1) return -1;
             if (bIndex !== -1) return 1;
-            return a.name.localeCompare(b.name);
+            return (a.country || '').localeCompare(b.country || '');
         });
 
-        const countryOptions = sortedCountries.map(c =>
-            `<option value="${c.code}">${c.name}</option>`
-        ).join('');
+        // Country code to name mapping
+        const countryNames = {
+            'NG': 'Nigeria', 'US': 'United States', 'GB': 'United Kingdom', 'KE': 'Kenya',
+            'GH': 'Ghana', 'ZA': 'South Africa', 'CA': 'Canada', 'BR': 'Brazil', 'MX': 'Mexico',
+            'AR': 'Argentina', 'PE': 'Peru', 'CL': 'Chile', 'CO': 'Colombia', 'AE': 'UAE',
+            'SA': 'Saudi Arabia', 'QA': 'Qatar', 'IL': 'Israel', 'EG': 'Egypt', 'JO': 'Jordan',
+            'TZ': 'Tanzania', 'UG': 'Uganda', 'MW': 'Malawi', 'ET': 'Ethiopia', 'CG': 'Congo',
+            'FR': 'France', 'DE': 'Germany', 'IT': 'Italy', 'ES': 'Spain', 'NL': 'Netherlands',
+            'BE': 'Belgium', 'PT': 'Portugal', 'PL': 'Poland', 'AT': 'Austria', 'SE': 'Sweden',
+            'DK': 'Denmark', 'NO': 'Norway', 'FI': 'Finland', 'IE': 'Ireland', 'CH': 'Switzerland'
+        };
+
+        const countryOptions = sortedCountries.map(c => {
+            const displayName = countryNames[c.country] || c.country;
+            return `<option value="${c.country}">${displayName} (${c.country})</option>`;
+        }).join('');
 
         const modalContent = `
             <div class="modal" onclick="closeModalOnBackdrop(event)">
@@ -605,6 +664,7 @@ window.showBankWithdrawal = async function() {
 
                             <div class="form-group" id="bankSelectGroup" style="display: none;">
                                 <label class="form-label">Select Bank/Payment Method</label>
+                                <input type="text" id="bankSearch" class="form-input" placeholder="Search banks..." style="margin-bottom: 8px; display: none;">
                                 <select id="offrampBank" class="form-select">
                                     <option value="">Loading banks...</option>
                                 </select>
@@ -672,26 +732,154 @@ window.showBankWithdrawal = async function() {
             }
 
             // Load banks for selected country
+            window.showLoadingSpinner('Loading banks...');
             bankSelect.innerHTML = '<option value="">Loading banks...</option>';
             bankSelectGroup.style.display = 'block';
 
             try {
                 const banksResponse = await api.getSwitchBanks(country);
 
-                if (banksResponse.success && banksResponse.data && banksResponse.data.length > 0) {
-                    bankSelect.innerHTML = '<option value="">Select bank...</option>';
-                    banksResponse.data.forEach(bank => {
-                        const option = document.createElement('option');
-                        option.value = bank.code || bank.id;
-                        option.textContent = bank.name;
-                        option.dataset.rail = bank.rail || '';
-                        bankSelect.appendChild(option);
+                if (banksResponse.success && banksResponse.data && banksResponse.data.banks) {
+                    const banks = banksResponse.data.banks;
+
+                    // Check if country has banks
+                    if (banks.length === 0) {
+                        // Country doesn't use bank selection (e.g., US uses routing numbers)
+                        // Hide bank selector and load dynamic fields directly
+                        bankSelectGroup.style.display = 'none';
+                        selectedBank = 'DIRECT'; // Mark as selected so fields can load
+                        window.hideLoadingSpinner();
+
+                        // Trigger loading of dynamic fields
+                        dynamicFieldsContainer.innerHTML = '<p style="color: var(--text-secondary);">Loading form fields...</p>';
+                        dynamicFieldsContainer.style.display = 'block';
+
+                        try {
+                            const reqResponse = await api.getSwitchRequirements(selectedCountry, 'INDIVIDUAL');
+
+                            if (reqResponse.success && reqResponse.data && reqResponse.data.requirements) {
+                                const requirements = reqResponse.data.requirements;
+
+                                // Map field names to labels
+                                const fieldLabels = {
+                                    'bank_code': 'Bank Code',
+                                    'account_number': 'Account Number',
+                                    'routing_number': 'Routing Number',
+                                    'account_name': 'Account Name',
+                                    'holder_name': 'Account Holder Name',
+                                    'holder_street': 'Street Address',
+                                    'holder_city': 'City',
+                                    'holder_state': 'State',
+                                    'holder_postal_code': 'Postal Code',
+                                    'phone_number': 'Phone Number',
+                                    'document_number': 'Document Number',
+                                    'cpf': 'CPF',
+                                    'rfc': 'RFC',
+                                    'clabe': 'CLABE',
+                                    'sort_code': 'Sort Code',
+                                    'bsb_code': 'BSB Code',
+                                    'ifsc_code': 'IFSC Code'
+                                };
+
+                                let fieldsHTML = '';
+                                requirements.forEach(req => {
+                                    const fieldName = req.path;
+
+                                    // Skip bank_code and holder_type
+                                    if (fieldName === 'bank_code' || fieldName === 'holder_type') return;
+
+                                    const fieldId = `dynamic_${fieldName}`;
+                                    const label = fieldLabels[fieldName] || fieldName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                                    const placeholder = req.example || `Enter ${label}`;
+
+                                    // Handle dropdown fields (like state)
+                                    if (req.option && req.option.length > 0) {
+                                        fieldsHTML += `
+                                            <div class="form-group">
+                                                <label class="form-label">${label} *</label>
+                                                <select id="${fieldId}" name="${fieldName}" class="form-select dynamic-field" required data-field="${fieldName}">
+                                                    <option value="">Select ${label}...</option>
+                                                    ${req.option.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
+                                                </select>
+                                                ${req.example ? `<small style="color: var(--text-secondary); display: block; margin-top: 4px;">Example: ${req.example}</small>` : ''}
+                                            </div>
+                                        `;
+                                    } else {
+                                        fieldsHTML += `
+                                            <div class="form-group">
+                                                <label class="form-label">${label} *</label>
+                                                <input type="text" id="${fieldId}" name="${fieldName}"
+                                                       class="form-input dynamic-field" required
+                                                       placeholder="${placeholder}"
+                                                       pattern="${req.regex || ''}"
+                                                       data-field="${fieldName}">
+                                                ${req.example ? `<small style="color: var(--text-secondary); display: block; margin-top: 4px;">Example: ${req.example}</small>` : ''}
+                                            </div>
+                                        `;
+                                    }
+                                });
+
+                                dynamicFieldsContainer.innerHTML = fieldsHTML;
+
+                                // Add event listeners to dynamic fields
+                                document.querySelectorAll('.dynamic-field').forEach(field => {
+                                    field.addEventListener('input', checkFormValid);
+                                    field.addEventListener('change', checkFormValid);
+                                });
+
+                                checkFormValid();
+                            }
+                        } catch (error) {
+                            console.error('Failed to load requirements:', error);
+                            dynamicFieldsContainer.innerHTML = '<p style="color: var(--danger);">Failed to load form fields</p>';
+                        }
+
+                        return; // Exit early, no need to show bank selector
+                    }
+
+                    // Country has banks - show bank selector
+                    const bankSearch = document.getElementById('bankSearch');
+
+                    // Show search if many banks
+                    if (banks.length > 10) {
+                        bankSearch.style.display = 'block';
+                    }
+
+                    // Render banks function
+                    window.renderBanks = (filter = '') => {
+                        bankSelect.innerHTML = '<option value="">Select bank...</option>';
+                        const filtered = filter
+                            ? banks.filter(b => b.name.toLowerCase().includes(filter.toLowerCase()))
+                            : banks;
+
+                        filtered.forEach(bank => {
+                            const option = document.createElement('option');
+                            option.value = bank.code || bank.id;
+                            option.textContent = bank.name;
+                            option.dataset.rail = bank.rail || '';
+                            bankSelect.appendChild(option);
+                        });
+
+                        if (filtered.length === 0) {
+                            bankSelect.innerHTML = '<option value="">No banks found</option>';
+                        }
+                    };
+
+                    // Add search handler
+                    bankSearch.addEventListener('input', (e) => {
+                        window.renderBanks(e.target.value);
                     });
+
+                    // Initial render
+                    window.renderBanks();
+                    window.hideLoadingSpinner();
                 } else {
                     bankSelect.innerHTML = '<option value="">No banks available</option>';
+                    window.hideLoadingSpinner();
                 }
             } catch (error) {
                 console.error('Failed to load banks:', error);
+                window.hideLoadingSpinner();
                 bankSelect.innerHTML = '<option value="">Failed to load banks</option>';
             }
         });
@@ -713,23 +901,45 @@ window.showBankWithdrawal = async function() {
             try {
                 const reqResponse = await api.getSwitchRequirements(selectedCountry, 'INDIVIDUAL');
 
-                if (reqResponse.success && reqResponse.data && reqResponse.data.length > 0) {
-                    const fields = reqResponse.data;
+                if (reqResponse.success && reqResponse.data && reqResponse.data.requirements && reqResponse.data.requirements.length > 0) {
+                    const requirements = reqResponse.data.requirements;
+
+                    // Map field names to labels
+                    const fieldLabels = {
+                        'bank_code': 'Bank Code',
+                        'account_number': 'Account Number',
+                        'routing_number': 'Routing Number',
+                        'account_name': 'Account Name',
+                        'phone_number': 'Phone Number',
+                        'document_number': 'Document Number',
+                        'cpf': 'CPF',
+                        'rfc': 'RFC',
+                        'clabe': 'CLABE',
+                        'sort_code': 'Sort Code',
+                        'bsb_code': 'BSB Code',
+                        'ifsc_code': 'IFSC Code'
+                    };
 
                     let fieldsHTML = '';
-                    fields.forEach(field => {
-                        const fieldId = `dynamic_${field.field_name}`;
-                        const required = field.required ? 'required' : '';
-                        const placeholder = field.example || `Enter ${field.label}`;
+                    requirements.forEach(req => {
+                        const fieldName = req.path;
+                        
+                        // Skip bank_code - it's already in the bank selector
+                        if (fieldName === 'bank_code') return;
+                        
+                        const fieldId = `dynamic_${fieldName}`;
+                        const label = fieldLabels[fieldName] || fieldName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                        const placeholder = req.example || `Enter ${label}`;
 
                         fieldsHTML += `
                             <div class="form-group">
-                                <label class="form-label">${field.label}${field.required ? ' *' : ''}</label>
-                                <input type="text" id="${fieldId}" name="${field.field_name}"
-                                       class="form-input dynamic-field" ${required}
+                                <label class="form-label">${label} *</label>
+                                <input type="text" id="${fieldId}" name="${fieldName}"
+                                       class="form-input dynamic-field" required
                                        placeholder="${placeholder}"
-                                       data-field="${field.field_name}">
-                                ${field.description ? `<small style="color: var(--text-secondary); display: block; margin-top: 4px;">${field.description}</small>` : ''}
+                                       pattern="${req.regex || ''}"
+                                       data-field="${fieldName}">
+                                ${req.example ? `<small style="color: var(--text-secondary); display: block; margin-top: 4px;">Example: ${req.example}</small>` : ''}
                             </div>
                         `;
                     });
@@ -759,6 +969,59 @@ window.showBankWithdrawal = async function() {
 
                     document.querySelectorAll('.dynamic-field').forEach(field => {
                         field.addEventListener('input', checkFormValid);
+                    });
+                }
+
+                // Add account number verification
+                const accountNumberField = document.getElementById('dynamic_account_number');
+                const accountNameField = document.getElementById('dynamic_account_name');
+
+                if (accountNumberField && accountNameField && selectedBank) {
+                    let verificationTimeout;
+
+                    accountNumberField.addEventListener('input', () => {
+                        clearTimeout(verificationTimeout);
+                        const accountNumber = accountNumberField.value.trim();
+
+                        // Check if account number looks complete (adjust length as needed)
+                        if (accountNumber.length >= 10) {
+                            verificationTimeout = setTimeout(async () => {
+                                // Show loading state
+                                accountNameField.value = 'Verifying...';
+                                accountNameField.disabled = true;
+
+                                try {
+                                    const result = await api.verifySwitchBankAccount({
+                                        country: selectedCountry,
+                                        bankCode: selectedBank,
+                                        accountNumber
+                                    });
+
+                                    if (result.success && result.data?.accountName) {
+                                        accountNameField.value = result.data.accountName;
+                                        accountNameField.disabled = true; // Keep it readonly
+                                        showToast('Account verified successfully', 'success');
+                                    } else {
+                                        accountNameField.value = '';
+                                        accountNameField.disabled = false;
+                                        accountNameField.placeholder = 'Enter account holder name';
+                                    }
+                                } catch (error) {
+                                    console.log('Account verification not available:', error.message);
+                                    // Silently fail - let user enter name manually
+                                    accountNameField.value = '';
+                                    accountNameField.disabled = false;
+                                    accountNameField.placeholder = 'Enter account holder name';
+                                }
+                            }, 800); // Debounce for 800ms
+                        }
+                    });
+
+                    // Allow manual edit if verification fails
+                    accountNameField.addEventListener('focus', () => {
+                        if (accountNameField.value === 'Verifying...') {
+                            accountNameField.value = '';
+                        }
                     });
                 }
 
@@ -980,6 +1243,9 @@ window.handleWithdrawal = async function(event) {
 
 export async function showAddFundsModal() {
     try {
+        // Show loading spinner while loading countries
+        window.showLoadingSpinner('Loading deposit options...');
+
         // Fetch available countries
         const response = await api.getSwitchCountries();
 
@@ -988,22 +1254,36 @@ export async function showAddFundsModal() {
             return;
         }
 
-        const countries = response.data;
+        const countries = response.data.countries || [];
+        window.hideLoadingSpinner();
 
         // Popular countries at the top
         const popularCountries = ['NG', 'US', 'GB', 'KE', 'GH', 'ZA', 'CA'];
         const sortedCountries = countries.sort((a, b) => {
-            const aIndex = popularCountries.indexOf(a.code);
-            const bIndex = popularCountries.indexOf(b.code);
+            const aIndex = popularCountries.indexOf(a.country);
+            const bIndex = popularCountries.indexOf(b.country);
             if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
             if (aIndex !== -1) return -1;
             if (bIndex !== -1) return 1;
-            return a.name.localeCompare(b.name);
+            return (a.country || '').localeCompare(b.country || '');
         });
 
-        const countryOptions = sortedCountries.map(c =>
-            `<option value="${c.code}">${c.name}</option>`
-        ).join('');
+        // Country code to name mapping
+        const countryNames = {
+            'NG': 'Nigeria', 'US': 'United States', 'GB': 'United Kingdom', 'KE': 'Kenya',
+            'GH': 'Ghana', 'ZA': 'South Africa', 'CA': 'Canada', 'BR': 'Brazil', 'MX': 'Mexico',
+            'AR': 'Argentina', 'PE': 'Peru', 'CL': 'Chile', 'CO': 'Colombia', 'AE': 'UAE',
+            'SA': 'Saudi Arabia', 'QA': 'Qatar', 'IL': 'Israel', 'EG': 'Egypt', 'JO': 'Jordan',
+            'TZ': 'Tanzania', 'UG': 'Uganda', 'MW': 'Malawi', 'ET': 'Ethiopia', 'CG': 'Congo',
+            'FR': 'France', 'DE': 'Germany', 'IT': 'Italy', 'ES': 'Spain', 'NL': 'Netherlands',
+            'BE': 'Belgium', 'PT': 'Portugal', 'PL': 'Poland', 'AT': 'Austria', 'SE': 'Sweden',
+            'DK': 'Denmark', 'NO': 'Norway', 'FI': 'Finland', 'IE': 'Ireland', 'CH': 'Switzerland'
+        };
+
+        const countryOptions = sortedCountries.map(c => {
+            const displayName = countryNames[c.country] || c.country;
+            return `<option value="${c.country}">${displayName} (${c.country})</option>`;
+        }).join('');
 
         const modalContent = `
             <div class="modal" onclick="closeModalOnBackdrop(event)">
@@ -1039,7 +1319,7 @@ export async function showAddFundsModal() {
                                 <input type="number" id="onrampAmount" class="form-input"
                                        placeholder="Enter amount" min="1" step="0.01" required />
                                 <small class="caption" style="color: var(--text-secondary);">
-                                    Minimum: 10 units in your local currency
+                                    Minimum: $1 USD equivalent
                                 </small>
                             </div>
 
@@ -1100,6 +1380,7 @@ export async function showAddFundsModal() {
 
             getQuoteBtn.disabled = true;
             getQuoteBtn.textContent = 'Getting quote...';
+            window.showLoadingSpinner('Getting deposit quote...');
 
             try {
                 // Get quote first
@@ -1124,11 +1405,15 @@ export async function showAddFundsModal() {
                     `1 USDC = ${quote.rate || 'N/A'} ${quote.source?.currency || ''}`;
                 quoteDisplay.style.display = 'block';
 
+                // Hide loading spinner
+                window.hideLoadingSpinner();
+
                 // Change button to execute
                 getQuoteBtn.textContent = 'Proceed to Deposit';
                 getQuoteBtn.onclick = async () => {
                     getQuoteBtn.disabled = true;
                     getQuoteBtn.textContent = 'Creating deposit account...';
+                    window.showLoadingSpinner('Creating deposit account...');
 
                     try {
                         // Execute onramp - get virtual account
@@ -1202,10 +1487,12 @@ export async function showAddFundsModal() {
                         document.getElementById('virtualAccountDisplay').style.display = 'block';
                         document.getElementById('onrampFormContainer').style.display = 'none';
 
+                        window.hideLoadingSpinner();
                         showToast('Deposit account created! Transfer funds to the account above.', 'success');
 
                     } catch (error) {
                         console.error('Onramp execution failed:', error);
+                        window.hideLoadingSpinner();
                         showToast(error.message || 'Failed to create deposit', 'error');
                         getQuoteBtn.disabled = false;
                         getQuoteBtn.textContent = 'Proceed to Deposit';
@@ -1215,6 +1502,7 @@ export async function showAddFundsModal() {
 
             } catch (error) {
                 console.error('Quote failed:', error);
+                window.hideLoadingSpinner();
                 showToast(error.message || 'Failed to get quote', 'error');
                 getQuoteBtn.disabled = false;
                 getQuoteBtn.textContent = 'Get Quote';
@@ -1223,6 +1511,7 @@ export async function showAddFundsModal() {
 
     } catch (error) {
         console.error('Failed to load add funds modal:', error);
+        window.hideLoadingSpinner();
         showToast(error.message || 'Failed to load deposit form', 'error');
     }
 }

@@ -24,6 +24,7 @@ router.get('/switch/banks/:country', publicWalletLimiter, walletController.getSw
 router.get('/switch/requirements', publicWalletLimiter, walletController.getSwitchRequirements);
 router.post('/switch/quote/offramp', publicWalletLimiter, walletController.getSwitchOfframpQuote);
 router.post('/switch/quote/onramp', publicWalletLimiter, walletController.getSwitchOnrampQuote);
+router.post('/switch/verify-account', publicWalletLimiter, walletController.verifySwitchBankAccount);
 
 // All routes below require authentication
 router.use(protect);

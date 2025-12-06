@@ -268,8 +268,9 @@ exports.requestSwitchOfframp = catchAsync(async (req, res, next) => {
   }
 
   try {
-    // Generate unique reference
-    const reference = `SWITCH_${Date.now()}_${user._id.toString().slice(-6)}`;
+    // Generate unique reference (GUID format required by Switch)
+    const { v4: uuidv4 } = require('uuid');
+    const reference = uuidv4();
 
     // Execute offramp
     const result = await switchService.executeOfframp({
@@ -385,8 +386,9 @@ exports.requestSwitchOnramp = catchAsync(async (req, res, next) => {
   }
 
   try {
-    // Generate unique reference
-    const reference = `ONRAMP_${Date.now()}_${user._id.toString().slice(-6)}`;
+    // Generate unique reference (GUID format required by Switch)
+    const { v4: uuidv4 } = require('uuid');
+    const reference = uuidv4();
 
     // Execute onramp - gets virtual account details
     const result = await switchService.executeOnramp({
@@ -442,5 +444,32 @@ exports.requestSwitchOnramp = catchAsync(async (req, res, next) => {
   } catch (error) {
     console.error('Switch onramp error:', error);
     return next(new ErrorHandler(error.message, 500));
+  }
+});
+
+/**
+ * Verify bank account and get account name
+ * @route POST /api/wallet/switch/verify-account
+ * @access Public (with rate limiting)
+ */
+exports.verifySwitchBankAccount = catchAsync(async (req, res, next) => {
+  const { country, bankCode, accountNumber } = req.body;
+
+  // Validation
+  if (!country || !bankCode || !accountNumber) {
+    return next(new ErrorHandler('Country, bank code, and account number are required', 400));
+  }
+
+  try {
+    const result = await switchService.verifyBankAccount({
+      country: country.toUpperCase(),
+      bankCode,
+      accountNumber
+    });
+
+    successResponse(res, 200, 'Account verified successfully', result);
+  } catch (error) {
+    console.error('Bank account verification error:', error);
+    return next(new ErrorHandler(error.message, 400));
   }
 });
