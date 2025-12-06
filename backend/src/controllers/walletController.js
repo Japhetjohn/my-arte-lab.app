@@ -244,7 +244,8 @@ exports.requestSwitchOfframp = catchAsync(async (req, res, next) => {
     country,
     currency,
     asset = 'solana:usdc',
-    beneficiary
+    bank,
+    beneficiaryDetails
   } = req.body;
 
   // Validation
@@ -256,9 +257,15 @@ exports.requestSwitchOfframp = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Country code is required', 400));
   }
 
-  if (!beneficiary || !beneficiary.holderName || !beneficiary.accountNumber || !beneficiary.bankCode) {
+  if (!beneficiaryDetails || Object.keys(beneficiaryDetails).length === 0) {
     return next(new ErrorHandler('Complete beneficiary details are required', 400));
   }
+
+  // Map beneficiaryDetails to include bank_code from bank parameter
+  const beneficiary = {
+    ...beneficiaryDetails,
+    bank_code: beneficiaryDetails.bank_code || bank
+  };
 
   const user = await User.findById(req.user._id);
 
@@ -300,9 +307,9 @@ exports.requestSwitchOfframp = catchAsync(async (req, res, next) => {
         country: country.toUpperCase(),
         asset,
         beneficiary: {
-          holderName: beneficiary.holderName,
-          accountNumber: beneficiary.accountNumber.slice(-4),
-          bankCode: beneficiary.bankCode
+          holderName: beneficiary.holder_name || beneficiary.account_name || 'N/A',
+          accountNumber: (beneficiary.account_number || '').toString().slice(-4),
+          bankCode: beneficiary.bank_code || bank
         }
       }
     });

@@ -1155,11 +1155,19 @@ window.handleSwitchOfframp = async function(event) {
     event.preventDefault();
 
     const country = document.getElementById('offrampCountry').value;
-    const bank = document.getElementById('offrampBank').value;
+    const bankElement = document.getElementById('offrampBank');
+    const bank = bankElement.value || 'DIRECT'; // Use 'DIRECT' for countries without banks
     const amount = parseFloat(document.getElementById('offrampAmount').value);
 
-    if (!country || !bank || !amount || amount < 1) {
+    if (!country || !amount || amount < 1) {
         showToast('Please fill in all required fields', 'error');
+        return;
+    }
+
+    // Check if bank selector is visible and bank is required
+    const bankSelectGroup = document.getElementById('bankSelectGroup');
+    if (bankSelectGroup.style.display !== 'none' && !bankElement.value) {
+        showToast('Please select a bank', 'error');
         return;
     }
 
@@ -1171,6 +1179,12 @@ window.handleSwitchOfframp = async function(event) {
         const fieldName = field.dataset.field || field.name;
         beneficiaryDetails[fieldName] = field.value;
     });
+
+    // Validate that beneficiary details are not empty
+    if (Object.keys(beneficiaryDetails).length === 0) {
+        showToast('Please fill in all beneficiary details', 'error');
+        return;
+    }
 
     const submitBtn = event.target.querySelector('button[type="submit"]');
     const originalText = submitBtn.textContent;
