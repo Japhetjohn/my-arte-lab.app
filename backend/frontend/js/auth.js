@@ -42,8 +42,8 @@ export function showAuthModal(type = 'signin', userType = 'client') {
 
                     <div class="form-group">
                         <label class="form-label">Password</label>
-                        <input type="password" name="password" class="form-input" required minlength="8">
-                        ${isSignUp ? `<small style="color: var(--text-secondary); font-size: 12px; margin-top: 4px; display: block;">Must be at least 8 characters with uppercase, lowercase, and a number</small>` : ''}
+                        <input type="password" name="password" class="form-input" required minlength="8" pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&_\\-#]).{8,}$">
+                        ${isSignUp ? `<small style="color: var(--text-secondary); font-size: 12px; margin-top: 4px; display: block;">Must be at least 8 characters with uppercase, lowercase, number, and special character (@$!%*?&_-#)</small>` : ''}
                     </div>
 
                     ${isSignUp ? `
