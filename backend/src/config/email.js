@@ -16,8 +16,8 @@ const createTransporter = () => {
   } else if (emailService === 'sendgrid') {
     return nodemailer.createTransport({
       host: 'smtp.sendgrid.net',
-      port: 587,
-      secure: false,
+      port: 465,
+      secure: true,
       auth: {
         user: 'apikey',
         pass: process.env.SENDGRID_API_KEY,
