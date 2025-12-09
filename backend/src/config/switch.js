@@ -7,7 +7,6 @@
 module.exports = {
   apiUrl: process.env.SWITCH_API_URL || 'https://switch.up.railway.app',
   serviceKey: process.env.SWITCH_SERVICE_KEY,
-  webhookSecret: process.env.SWITCH_WEBHOOK_SECRET,
 
   /**
    * Get headers for API requests

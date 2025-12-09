@@ -40,8 +40,6 @@ app.set('trust proxy', 1);
 const requiredEnvVars = [
   'MONGODB_URI',
   'JWT_SECRET',
-  'BREAD_SERVICE_KEY',
-  'BREAD_ACCOUNT_CODE',
   'PLATFORM_WALLET_ADDRESS'
 ];
 
