@@ -1,6 +1,15 @@
 const nodemailer = require('nodemailer');
+const sgMail = require('@sendgrid/mail');
 
 let transporter = null;
+let sendgridInitialized = false;
+
+const initializeSendGrid = () => {
+  if (!sendgridInitialized && process.env.SENDGRID_API_KEY) {
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+    sendgridInitialized = true;
+  }
+};
 
 const createTransporter = () => {
   const emailService = process.env.EMAIL_SERVICE || 'gmail';
@@ -14,15 +23,9 @@ const createTransporter = () => {
       },
     });
   } else if (emailService === 'sendgrid') {
-    return nodemailer.createTransport({
-      host: 'smtp.sendgrid.net',
-      port: 465,
-      secure: true,
-      auth: {
-        user: 'apikey',
-        pass: process.env.SENDGRID_API_KEY,
-      },
-    });
+    // For SendGrid, we use Web API instead of SMTP
+    initializeSendGrid();
+    return null; // We don't need nodemailer for SendGrid
   } else {
     throw new Error(`Unsupported email service: ${emailService}`);
   }
@@ -33,35 +36,66 @@ const emailConfig = {
 
   async sendEmail({ to, subject, html, text }) {
     try {
-      if (!transporter) {
-        transporter = createTransporter();
+      const emailService = process.env.EMAIL_SERVICE || 'gmail';
+
+      if (emailService === 'sendgrid') {
+        // Use SendGrid Web API
+        initializeSendGrid();
+
+        const msg = {
+          to,
+          from: this.from,
+          subject,
+          html,
+          text: text || html.replace(/<[^>]*>?/gm, ''),
+        };
+
+        const info = await sgMail.send(msg);
+        return info;
+      } else {
+        // Use nodemailer for Gmail
+        if (!transporter) {
+          transporter = createTransporter();
+        }
+
+        const mailOptions = {
+          from: this.from,
+          to,
+          subject,
+          html,
+          text: text || html.replace(/<[^>]*>?/gm, ''),
+        };
+
+        const info = await transporter.sendMail(mailOptions);
+        return info;
       }
-
-      const mailOptions = {
-        from: this.from,
-        to,
-        subject,
-        html,
-        text: text || html.replace(/<[^>]*>?/gm, ''),
-      };
-
-      const info = await transporter.sendMail(mailOptions);
-      return info;
     } catch (error) {
-      console.error(` Email sending failed:`, error.message);
+      console.error('Email sending failed:', error.message);
       throw error;
     }
   },
 
   async verifyConnection() {
     try {
-      if (!transporter) {
-        transporter = createTransporter();
+      const emailService = process.env.EMAIL_SERVICE || 'gmail';
+
+      if (emailService === 'sendgrid') {
+        // For SendGrid Web API, just verify the API key is set
+        initializeSendGrid();
+        if (!process.env.SENDGRID_API_KEY) {
+          throw new Error('SENDGRID_API_KEY is not set');
+        }
+        return true;
+      } else {
+        // For Gmail, use nodemailer's verify
+        if (!transporter) {
+          transporter = createTransporter();
+        }
+        await transporter.verify();
+        return true;
       }
-      await transporter.verify();
-      return true;
     } catch (error) {
-      console.error(' Email service connection failed:', error.message);
+      console.error('Email service connection failed:', error.message);
       return false;
     }
   }
