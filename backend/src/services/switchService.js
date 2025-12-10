@@ -286,11 +286,18 @@ class SwitchService {
       if (currency) payload.currency = currency;
       if (rail) payload.rail = rail;
 
+      console.log('Onramp quote request payload:', JSON.stringify(payload, null, 2));
       const response = await this.api.post('/onramp/quote', payload);
+      console.log('Onramp quote response:', JSON.stringify(response.data, null, 2));
       return response.data.data;
     } catch (error) {
-      console.error('Failed to get onramp quote:', error.response?.data || error.message);
-      throw new Error(error.response?.data?.message || 'Failed to get quote');
+      console.error('Failed to get onramp quote:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message,
+        payload: payload
+      });
+      throw new Error(error.response?.data?.message || error.response?.data?.error || 'Failed to get quote');
     }
   }
 

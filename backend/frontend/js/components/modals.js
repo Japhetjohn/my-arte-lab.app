@@ -1624,7 +1624,8 @@ export function showSwapModal() {
         </div>
     `;
 
-    document.body.insertAdjacentHTML('beforeend', modalContent);
+    document.getElementById('modalsContainer').innerHTML = modalContent;
+    openModal();
 
     // Setup event listeners
     const fromAssetSelect = document.getElementById('swapFromAsset');
