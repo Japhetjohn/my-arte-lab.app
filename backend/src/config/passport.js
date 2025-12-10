@@ -5,12 +5,18 @@ const crypto = require('crypto');
 const adminNotificationService = require('../services/adminNotificationService');
 const solanaWalletService = require('../services/solanaWalletService');
 
+// Validate required environment variables
+if (!process.env.GOOGLE_CALLBACK_URL) {
+  console.error('ERROR: GOOGLE_CALLBACK_URL environment variable is not set!');
+  console.error('Please set it to your callback URL (e.g., http://localhost:5000/api/auth/google/callback for dev or https://your-domain.com/api/auth/google/callback for production)');
+}
+
 passport.use(
   new GoogleStrategy(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: process.env.GOOGLE_CALLBACK_URL || 'http://localhost:5000/api/auth/google/callback',
+      callbackURL: process.env.GOOGLE_CALLBACK_URL,
       passReqToCallback: true
     },
     async (req, accessToken, refreshToken, profile, done) => {
