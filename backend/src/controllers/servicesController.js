@@ -103,7 +103,7 @@ exports.deleteService = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Service not found', 404));
   }
 
-  service.remove();
+  user.services.pull(serviceId);
   await user.save({ validateBeforeSave: false });
 
   successResponse(res, 200, 'Service deleted successfully', {
