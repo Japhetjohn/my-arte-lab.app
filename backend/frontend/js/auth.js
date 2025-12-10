@@ -61,10 +61,93 @@ export function showAuthModal(type = 'signin', userType = 'client') {
                         <div class="form-group">
                             <label class="form-label">Country</label>
                             <select name="country" class="form-select">
-                                <option>Nigeria</option>
-                                <option>Ghana</option>
-                                <option>Kenya</option>
-                                <option>South Africa</option>
+                                <option value="">Select your country</option>
+                                <optgroup label="Africa">
+                                    <option>Algeria</option>
+                                    <option>Angola</option>
+                                    <option>Benin</option>
+                                    <option>Botswana</option>
+                                    <option>Burkina Faso</option>
+                                    <option>Burundi</option>
+                                    <option>Cameroon</option>
+                                    <option>Cape Verde</option>
+                                    <option>Chad</option>
+                                    <option>Comoros</option>
+                                    <option>Congo</option>
+                                    <option>Côte d'Ivoire</option>
+                                    <option>Egypt</option>
+                                    <option>Ethiopia</option>
+                                    <option>Gabon</option>
+                                    <option>Gambia</option>
+                                    <option>Ghana</option>
+                                    <option>Guinea</option>
+                                    <option>Kenya</option>
+                                    <option>Lesotho</option>
+                                    <option>Liberia</option>
+                                    <option>Libya</option>
+                                    <option>Madagascar</option>
+                                    <option>Malawi</option>
+                                    <option>Mali</option>
+                                    <option>Mauritania</option>
+                                    <option>Mauritius</option>
+                                    <option>Morocco</option>
+                                    <option>Mozambique</option>
+                                    <option>Namibia</option>
+                                    <option>Niger</option>
+                                    <option>Nigeria</option>
+                                    <option>Rwanda</option>
+                                    <option>Senegal</option>
+                                    <option>Seychelles</option>
+                                    <option>Sierra Leone</option>
+                                    <option>Somalia</option>
+                                    <option>South Africa</option>
+                                    <option>South Sudan</option>
+                                    <option>Sudan</option>
+                                    <option>Tanzania</option>
+                                    <option>Togo</option>
+                                    <option>Tunisia</option>
+                                    <option>Uganda</option>
+                                    <option>Zambia</option>
+                                    <option>Zimbabwe</option>
+                                </optgroup>
+                                <optgroup label="Americas">
+                                    <option>Argentina</option>
+                                    <option>Brazil</option>
+                                    <option>Canada</option>
+                                    <option>Chile</option>
+                                    <option>Colombia</option>
+                                    <option>Mexico</option>
+                                    <option>Peru</option>
+                                    <option>United States</option>
+                                    <option>Venezuela</option>
+                                </optgroup>
+                                <optgroup label="Asia">
+                                    <option>China</option>
+                                    <option>India</option>
+                                    <option>Indonesia</option>
+                                    <option>Japan</option>
+                                    <option>Malaysia</option>
+                                    <option>Pakistan</option>
+                                    <option>Philippines</option>
+                                    <option>Singapore</option>
+                                    <option>South Korea</option>
+                                    <option>Thailand</option>
+                                    <option>United Arab Emirates</option>
+                                    <option>Vietnam</option>
+                                </optgroup>
+                                <optgroup label="Europe">
+                                    <option>France</option>
+                                    <option>Germany</option>
+                                    <option>Italy</option>
+                                    <option>Netherlands</option>
+                                    <option>Portugal</option>
+                                    <option>Spain</option>
+                                    <option>United Kingdom</option>
+                                </optgroup>
+                                <optgroup label="Oceania">
+                                    <option>Australia</option>
+                                    <option>New Zealand</option>
+                                </optgroup>
                             </select>
                         </div>
 
