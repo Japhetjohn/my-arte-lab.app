@@ -120,7 +120,7 @@ class SwitchService {
       if (currency) payload.currency = currency;
       if (rail) payload.rail = rail;
 
-      const response = await this.api.post('/quote', payload);
+      const response = await this.api.post('/offramp/quote', payload);
       return response.data.data;
     } catch (error) {
       console.error('Failed to get offramp quote:', error.response?.data || error.message);
@@ -178,7 +178,7 @@ class SwitchService {
 
       console.log('Executing offramp:', { reference, country, amount, asset });
 
-      const response = await this.api.post('/offramp', payload);
+      const response = await this.api.post('/offramp/initiate', payload);
       return response.data;
     } catch (error) {
       console.error('Offramp execution failed:', error.response?.data || error.message);
@@ -202,7 +202,6 @@ class SwitchService {
     try {
       const payload = {
         amount,
-        direction: 'ONRAMP',
         country,
         asset,
         exact_output: exactOutput
@@ -211,7 +210,7 @@ class SwitchService {
       if (currency) payload.currency = currency;
       if (rail) payload.rail = rail;
 
-      const response = await this.api.post('/quote', payload);
+      const response = await this.api.post('/onramp/quote', payload);
       return response.data.data;
     } catch (error) {
       console.error('Failed to get onramp quote:', error.response?.data || error.message);
@@ -266,7 +265,7 @@ class SwitchService {
 
       console.log('Executing onramp:', { reference, country, amount, asset, walletAddress });
 
-      const response = await this.api.post('/onramp', payload);
+      const response = await this.api.post('/onramp/initiate', payload);
       return response.data;
     } catch (error) {
       console.error('Onramp execution failed:', error.response?.data || error.message);
