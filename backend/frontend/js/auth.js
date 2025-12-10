@@ -28,9 +28,20 @@ export function showAuthModal(type = 'signin', userType = 'client') {
 
                         <div class="form-group">
                             <label class="form-label">I am a</label>
-                            <select name="role" class="form-select" id="userTypeSelect">
+                            <select name="role" class="form-select" id="userTypeSelect" onchange="toggleCategoryField()">
                                 <option value="client" ${userType === 'client' ? 'selected' : ''}>Client</option>
                                 <option value="creator" ${userType === 'creator' ? 'selected' : ''}>Creator</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group" id="categoryFieldGroup" style="display: ${userType === 'creator' ? 'block' : 'none'};">
+                            <label class="form-label">Category</label>
+                            <select name="category" class="form-select" id="categorySelect">
+                                <option value="photographer">Photographer</option>
+                                <option value="designer">Designer</option>
+                                <option value="videographer">Videographer</option>
+                                <option value="illustrator">Illustrator</option>
+                                <option value="other">Other</option>
                             </select>
                         </div>
                     ` : ''}
@@ -125,6 +136,11 @@ export async function handleAuth(event, type) {
                 email: formData.get('email'),
                 password: formData.get('password')
             };
+
+            // Add category if user is signing up as creator
+            if (userData.role === 'creator') {
+                userData.category = formData.get('category') || 'other';
+            }
 
             // Add location if country is provided
             const country = formData.get('country');
@@ -601,6 +617,29 @@ function skipVerification(userRole) {
     showToast('Remember to verify your email later from settings', 'info');
 }
 
+/**
+ * Toggle category field visibility based on role selection
+ */
+function toggleCategoryField() {
+    const roleSelect = document.getElementById('userTypeSelect');
+    const categoryFieldGroup = document.getElementById('categoryFieldGroup');
+    const categorySelect = document.getElementById('categorySelect');
+
+    if (roleSelect && categoryFieldGroup) {
+        if (roleSelect.value === 'creator') {
+            categoryFieldGroup.style.display = 'block';
+            if (categorySelect) {
+                categorySelect.required = true;
+            }
+        } else {
+            categoryFieldGroup.style.display = 'none';
+            if (categorySelect) {
+                categorySelect.required = false;
+            }
+        }
+    }
+}
+
 // Make functions globally available for onclick handlers
 window.handleGoogleSignIn = handleGoogleSignIn;
 window.handleGoogleSignUp = handleGoogleSignUp;
@@ -608,3 +647,4 @@ window.proceedWithGoogleOAuth = proceedWithGoogleOAuth;
 window.handleEmailVerification = handleEmailVerification;
 window.handleResendVerification = handleResendVerification;
 window.skipVerification = skipVerification;
+window.toggleCategoryField = toggleCategoryField;
