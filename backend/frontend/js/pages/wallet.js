@@ -355,7 +355,7 @@ window.checkTransactionStatus = async function(reference) {
             `Transaction Status: ${statusInfo.text}\n` +
             `Type: ${status.type || 'N/A'}\n` +
             `Amount: ${status.source?.amount || 'N/A'} ${status.source?.currency || ''}\n` +
-            ${status.finalized ? `Finalized: Yes` : `Confirmed: ${status.confirmed ? 'Yes' : 'No'}`}`,
+            `${status.finalized ? 'Finalized: Yes' : 'Confirmed: ' + (status.confirmed ? 'Yes' : 'No')}`,
             status.status === 'COMPLETED' ? 'success' : status.status === 'FAILED' ? 'error' : 'info'
         );
 
