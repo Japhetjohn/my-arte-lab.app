@@ -145,6 +145,11 @@ const userSchema = new mongoose.Schema({
       required: true,
       unique: true
     },
+    encryptedPrivateKey: {
+      type: String,
+      required: true,
+      select: false // Don't include in queries by default for security
+    },
     balance: {
       type: Number,
       default: 0,

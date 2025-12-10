@@ -3,6 +3,7 @@ const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const User = require('../models/User');
 const crypto = require('crypto');
 const adminNotificationService = require('../services/adminNotificationService');
+const solanaWalletService = require('../services/solanaWalletService');
 
 passport.use(
   new GoogleStrategy(
@@ -48,13 +49,8 @@ passport.use(
           return done(new Error('No account found. Please sign up first.'), null);
         }
 
-        // Generate unique wallet identifier for internal tracking
-        const walletId = crypto.randomBytes(16).toString('hex');
-        const wallet = {
-          address: `wallet_${walletId}`,
-          balance: 0,
-          currency: 'USDC'
-        };
+        // Generate real Solana wallet
+        const wallet = solanaWalletService.generateWallet();
 
         const userData = {
           name: profile.displayName,
@@ -63,7 +59,15 @@ passport.use(
           avatar: profile.photos && profile.photos.length > 0 ? profile.photos[0].value : undefined,
           role: requestedRole,
           isEmailVerified: true,
-          wallet: wallet,
+          wallet: {
+            address: wallet.address,
+            encryptedPrivateKey: wallet.encryptedPrivateKey,
+            currency: wallet.currency || 'USDC',
+            balance: 0,
+            pendingBalance: 0,
+            totalEarnings: 0,
+            network: 'Solana'
+          },
           password: crypto.randomBytes(32).toString('hex')
         };
 

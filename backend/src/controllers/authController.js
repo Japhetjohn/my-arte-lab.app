@@ -7,6 +7,7 @@ const adminNotificationService = require('../services/adminNotificationService')
 const walletController = require('./walletController');
 const crypto = require('crypto');
 const { escapeHtml } = require('../utils/sanitize');
+const solanaWalletService = require('../services/solanaWalletService');
 
 exports.register = catchAsync(async (req, res, next) => {
   const { name, email, password, role, category } = req.body;
@@ -16,13 +17,8 @@ exports.register = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Email already registered', 400));
   }
 
-  // Generate unique wallet identifier for internal tracking
-  const walletId = crypto.randomBytes(16).toString('hex');
-  const wallet = {
-    address: `wallet_${walletId}`,
-    currency: 'USDC',
-    balance: 0
-  };
+  // Generate real Solana wallet
+  const wallet = solanaWalletService.generateWallet();
 
   const user = await User.create({
     name,
@@ -32,11 +28,12 @@ exports.register = catchAsync(async (req, res, next) => {
     category: role === 'creator' ? category : undefined,
     wallet: {
       address: wallet.address,
-      currency: wallet.currency,
+      encryptedPrivateKey: wallet.encryptedPrivateKey,
+      currency: wallet.currency || 'USDC',
       balance: 0,
       pendingBalance: 0,
       totalEarnings: 0,
-      network: wallet.network
+      network: 'Solana'
     }
   });
 
