@@ -1044,9 +1044,21 @@ window.showBankWithdrawal = async function() {
 
                 debounceTimer = setTimeout(async () => {
                     try {
+                        // Map country to currency
+                        const currencyMap = {
+                            'NG': 'NGN', 'GH': 'GHS', 'KE': 'KES', 'ZA': 'ZAR', 'UG': 'UGX',
+                            'US': 'USD', 'GB': 'GBP', 'AE': 'AED', 'BR': 'BRL', 'PH': 'PHP',
+                            'MX': 'MXN', 'PL': 'PLN', 'RO': 'RON', 'CZ': 'CZK', 'HU': 'HUF',
+                            'NO': 'NOK', 'SE': 'SEK', 'DK': 'DKK'
+                        };
+                        const euroCountries = ['AD', 'AT', 'BE', 'HR', 'CY', 'EE', 'FI', 'FR', 'DE',
+                                              'GR', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PT', 'SK', 'SI', 'ES'];
+                        const currency = euroCountries.includes(selectedCountry) ? 'EUR' : (currencyMap[selectedCountry] || 'USD');
+
                         const quoteResponse = await api.getSwitchOfframpQuote({
                             amount,
                             country: selectedCountry,
+                            currency,
                             asset: 'solana:usdc'
                         });
 
@@ -1397,10 +1409,23 @@ export async function showAddFundsModal() {
             window.showLoadingSpinner('Getting deposit quote...');
 
             try {
+                // Map country to currency (Switch API requires currency for quotes)
+                const currencyMap = {
+                    'NG': 'NGN', 'GH': 'GHS', 'KE': 'KES', 'ZA': 'ZAR', 'UG': 'UGX',
+                    'US': 'USD', 'GB': 'GBP', 'AE': 'AED', 'BR': 'BRL', 'PH': 'PHP',
+                    'MX': 'MXN', 'PL': 'PLN', 'RO': 'RON', 'CZ': 'CZK', 'HU': 'HUF',
+                    'NO': 'NOK', 'SE': 'SEK', 'DK': 'DKK'
+                };
+                // Euro countries
+                const euroCountries = ['AD', 'AT', 'BE', 'HR', 'CY', 'EE', 'FI', 'FR', 'DE',
+                                      'GR', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PT', 'SK', 'SI', 'ES'];
+                const currency = euroCountries.includes(country) ? 'EUR' : (currencyMap[country] || 'USD');
+
                 // Get quote first
                 const quoteResponse = await api.getSwitchOnrampQuote({
                     amount,
                     country,
+                    currency,
                     asset: 'solana:usdc'
                 });
 
