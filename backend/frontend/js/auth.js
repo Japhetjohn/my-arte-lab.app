@@ -417,7 +417,15 @@ export function handleGoogleSignUp() {
  * Proceed with Google OAuth after role selection
  */
 function proceedWithGoogleOAuth(role) {
-    const API_URL = 'http://localhost:5000';
+    // Auto-detect environment
+    const isDevelopment = window.location.hostname === 'localhost' ||
+                          window.location.hostname === '127.0.0.1' ||
+                          window.location.hostname.startsWith('192.168');
+
+    const API_URL = isDevelopment
+        ? 'http://localhost:5000'
+        : window.location.origin;
+
     window.location.href = `${API_URL}/api/auth/google?mode=signup&role=${role}`;
 }
 
@@ -426,7 +434,15 @@ function proceedWithGoogleOAuth(role) {
  * Redirects to backend Google OAuth endpoint
  */
 export function handleGoogleSignIn() {
-    const API_URL = 'http://localhost:5000';
+    // Auto-detect environment
+    const isDevelopment = window.location.hostname === 'localhost' ||
+                          window.location.hostname === '127.0.0.1' ||
+                          window.location.hostname.startsWith('192.168');
+
+    const API_URL = isDevelopment
+        ? 'http://localhost:5000'
+        : window.location.origin;
+
     window.location.href = `${API_URL}/api/auth/google?mode=signin`;
 }
 
