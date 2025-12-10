@@ -480,3 +480,150 @@ exports.verifySwitchBankAccount = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler(error.message, 400));
   }
 });
+
+// ============= Switch Swap (Asset Exchange) =============
+
+/**
+ * Get swap quote for exchanging between assets
+ * @route POST /api/wallet/switch/quote/swap
+ * @access Public (with rate limiting)
+ */
+exports.getSwitchSwapQuote = catchAsync(async (req, res, next) => {
+  const { amount, fromAsset, toAsset, exactOutput = false } = req.body;
+
+  // Validation
+  if (!amount || amount < 1) {
+    return next(new ErrorHandler('Amount must be at least 1', 400));
+  }
+
+  if (!fromAsset || !toAsset) {
+    return next(new ErrorHandler('Both source and destination assets are required', 400));
+  }
+
+  if (fromAsset === toAsset) {
+    return next(new ErrorHandler('Source and destination assets must be different', 400));
+  }
+
+  try {
+    const quote = await switchService.getSwapQuote(
+      amount,
+      fromAsset,
+      toAsset,
+      exactOutput
+    );
+
+    successResponse(res, 200, 'Swap quote retrieved successfully', quote);
+  } catch (error) {
+    console.error('Switch swap quote error:', error);
+    return next(new ErrorHandler(error.message, 500));
+  }
+});
+
+/**
+ * Execute swap transaction
+ * @route POST /api/wallet/switch/swap
+ * @access Private
+ */
+exports.requestSwitchSwap = catchAsync(async (req, res, next) => {
+  const { amount, fromAsset, toAsset, exactOutput = false } = req.body;
+
+  // Validation
+  if (!amount || amount < 1) {
+    return next(new ErrorHandler('Amount must be at least 1', 400));
+  }
+
+  if (!fromAsset || !toAsset) {
+    return next(new ErrorHandler('Both source and destination assets are required', 400));
+  }
+
+  if (fromAsset === toAsset) {
+    return next(new ErrorHandler('Source and destination assets must be different', 400));
+  }
+
+  const user = await User.findById(req.user._id);
+
+  // Use user's wallet address as recipient
+  const walletAddress = user.wallet.address;
+
+  if (!walletAddress || walletAddress.startsWith('pending_')) {
+    return next(new ErrorHandler('Wallet not initialized. Please contact support.', 400));
+  }
+
+  try {
+    // Generate unique reference (GUID format required by Switch)
+    const { v4: uuidv4 } = require('uuid');
+    const reference = uuidv4();
+
+    // Execute swap
+    const result = await switchService.executeSwap({
+      amount,
+      fromAsset,
+      toAsset,
+      walletAddress,
+      reference,
+      callbackUrl: `${process.env.API_URL || 'http://localhost:5000'}/api/webhooks/switch/swap`,
+      exactOutput
+    });
+
+    // Create transaction record
+    const transaction = await Transaction.create({
+      user: user._id,
+      type: 'swap',
+      amount,
+      currency: fromAsset,
+      status: 'pending',
+      reference,
+      metadata: {
+        provider: 'switch',
+        fromAsset,
+        toAsset,
+        depositDetails: result.data?.deposit || {}
+      }
+    });
+
+    successResponse(res, 200, 'Swap initiated successfully', {
+      transaction: {
+        id: transaction._id,
+        reference,
+        status: 'pending',
+        fromAsset,
+        toAsset
+      },
+      depositDetails: result.data?.deposit || {},
+      instructions: 'Please send the exact amount to the provided wallet address. Your swapped assets will be sent once confirmed.',
+      quote: {
+        sourceAmount: result.data?.source?.amount,
+        sourceCurrency: result.data?.source?.currency,
+        destinationAmount: result.data?.destination?.amount,
+        destinationCurrency: result.data?.destination?.currency
+      }
+    });
+  } catch (error) {
+    console.error('Switch swap error:', error);
+    return next(new ErrorHandler(error.message, 500));
+  }
+});
+
+// ============= Transaction Status =============
+
+/**
+ * Get transaction status by reference
+ * @route GET /api/wallet/switch/status/:reference
+ * @access Private
+ */
+exports.getSwitchTransactionStatus = catchAsync(async (req, res, next) => {
+  const { reference } = req.params;
+
+  if (!reference) {
+    return next(new ErrorHandler('Transaction reference is required', 400));
+  }
+
+  try {
+    const status = await switchService.getTransactionStatus(reference);
+
+    successResponse(res, 200, 'Transaction status retrieved successfully', status);
+  } catch (error) {
+    console.error('Transaction status error:', error);
+    return next(new ErrorHandler(error.message, 500));
+  }
+});

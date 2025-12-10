@@ -289,6 +289,22 @@ class ApiService {
         return this.get(`/wallet/switch/requirements?country=${country}&type=${type}`);
     }
 
+    // ==================== Switch Swap (Asset Exchange) Endpoints ====================
+
+    async getSwitchSwapQuote(data) {
+        return this.post('/wallet/switch/quote/swap', data);
+    }
+
+    async requestSwitchSwap(data) {
+        return this.post('/wallet/switch/swap', data);
+    }
+
+    // ==================== Transaction Status Endpoints ====================
+
+    async getSwitchTransactionStatus(reference) {
+        return this.get(`/wallet/switch/status/${reference}`);
+    }
+
     // ==================== Review Endpoints ====================
 
     async getReviews(creatorId) {

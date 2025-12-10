@@ -24,6 +24,7 @@ router.get('/switch/banks/:country', publicWalletLimiter, walletController.getSw
 router.get('/switch/requirements', publicWalletLimiter, walletController.getSwitchRequirements);
 router.post('/switch/quote/offramp', publicWalletLimiter, walletController.getSwitchOfframpQuote);
 router.post('/switch/quote/onramp', publicWalletLimiter, walletController.getSwitchOnrampQuote);
+router.post('/switch/quote/swap', publicWalletLimiter, walletController.getSwitchSwapQuote);
 router.post('/switch/verify-account', publicWalletLimiter, walletController.verifySwitchBankAccount);
 
 // All routes below require authentication
@@ -46,6 +47,8 @@ router.post(
 // Switch Onramp & Offramp (Global deposits and withdrawals for 65 countries)
 router.post('/switch/onramp', walletController.requestSwitchOnramp);
 router.post('/switch/offramp', walletController.requestSwitchOfframp);
+router.post('/switch/swap', walletController.requestSwitchSwap);
+router.get('/switch/status/:reference', walletController.getSwitchTransactionStatus);
 
 // Beneficiary management routes
 router.get('/beneficiaries', walletController.getBeneficiaries);

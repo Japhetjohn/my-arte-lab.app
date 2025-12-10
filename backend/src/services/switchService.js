@@ -366,6 +366,96 @@ class SwitchService {
     }
   }
 
+  // ==================== Swap (Asset Exchange) ====================
+
+  /**
+   * Get swap quote for exchanging between two stablecoin assets
+   * @param {number} amount - Amount to swap
+   * @param {string} fromAsset - Source asset (e.g., 'base:usdc')
+   * @param {string} toAsset - Destination asset (e.g., 'solana:usdt')
+   * @param {boolean} exactOutput - If true, amount is the output amount
+   * @returns {Promise<Object>} Swap quote with rate and fees
+   */
+  async getSwapQuote(amount, fromAsset, toAsset, exactOutput = false) {
+    try {
+      const payload = {
+        amount,
+        from_asset: fromAsset,
+        to_asset: toAsset,
+        exact_output: exactOutput
+      };
+
+      const response = await this.api.post('/swap/quote', payload);
+      return response.data.data;
+    } catch (error) {
+      console.error('Failed to get swap quote:', error.response?.data || error.message);
+      throw new Error(error.response?.data?.message || 'Failed to get swap quote');
+    }
+  }
+
+  /**
+   * Execute swap transaction between two stablecoin assets
+   * @param {Object} params - Swap parameters
+   * @param {number} params.amount - Amount to swap
+   * @param {string} params.fromAsset - Source asset
+   * @param {string} params.toAsset - Destination asset
+   * @param {string} params.walletAddress - Recipient wallet address
+   * @param {string} params.reference - Unique transaction reference
+   * @param {string} params.callbackUrl - Webhook callback URL
+   * @param {boolean} params.exactOutput - If true, amount is output amount
+   * @returns {Promise<Object>} Swap response with deposit details
+   */
+  async executeSwap({
+    amount,
+    fromAsset,
+    toAsset,
+    walletAddress,
+    reference,
+    callbackUrl,
+    exactOutput = false
+  }) {
+    try {
+      const payload = {
+        amount,
+        from_asset: fromAsset,
+        to_asset: toAsset,
+        beneficiary: {
+          wallet_address: walletAddress
+        },
+        reference,
+        callback_url: callbackUrl,
+        exact_output: exactOutput
+      };
+
+      console.log('Executing swap:', { reference, fromAsset, toAsset, amount });
+
+      const response = await this.api.post('/swap/initiate', payload);
+      return response.data;
+    } catch (error) {
+      console.error('Swap execution failed:', error.response?.data || error.message);
+      throw new Error(error.response?.data?.message || 'Failed to execute swap');
+    }
+  }
+
+  // ==================== Transaction Status ====================
+
+  /**
+   * Get transaction status by reference
+   * @param {string} reference - Transaction reference (UUID)
+   * @returns {Promise<Object>} Transaction status and details
+   */
+  async getTransactionStatus(reference) {
+    try {
+      const response = await this.api.get('/status', {
+        params: { reference }
+      });
+      return response.data.data;
+    } catch (error) {
+      console.error('Failed to get transaction status:', error.response?.data || error.message);
+      throw new Error(error.response?.data?.message || 'Failed to fetch transaction status');
+    }
+  }
+
   // ==================== Account Verification ====================
 
   /**
