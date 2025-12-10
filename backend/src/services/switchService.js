@@ -275,17 +275,17 @@ class SwitchService {
    * @returns {Promise<Object>} Quote with rate and fees
    */
   async getOnrampQuote(amount, country, asset = 'solana:usdc', currency = null, rail = null, exactOutput = false) {
+    const payload = {
+      amount,
+      country,
+      asset,
+      exact_output: exactOutput
+    };
+
+    if (currency) payload.currency = currency;
+    if (rail) payload.rail = rail;
+
     try {
-      const payload = {
-        amount,
-        country,
-        asset,
-        exact_output: exactOutput
-      };
-
-      if (currency) payload.currency = currency;
-      if (rail) payload.rail = rail;
-
       console.log('Onramp quote request payload:', JSON.stringify(payload, null, 2));
       const response = await this.api.post('/onramp/quote', payload);
       console.log('Onramp quote response:', JSON.stringify(response.data, null, 2));
