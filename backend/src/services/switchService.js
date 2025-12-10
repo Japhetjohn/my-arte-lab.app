@@ -95,6 +95,82 @@ class SwitchService {
     }
   }
 
+  /**
+   * Lookup and validate account number/mobile number
+   * @param {string} country - ISO country code
+   * @param {Object} beneficiary - Beneficiary details (account_number, bank_code OR phone_number, mobile_network)
+   * @returns {Promise<Object>} Account name and validation result
+   */
+  async lookupInstitution(country, beneficiary) {
+    try {
+      const payload = { country, beneficiary };
+      const response = await this.api.post('/institution/lookup', payload);
+      return response.data.data;
+    } catch (error) {
+      console.error('Institution lookup failed:', error.response?.data || error.message);
+      throw new Error(error.response?.data?.message || 'Invalid account details');
+    }
+  }
+
+  /**
+   * Verify user identity for KYC compliance
+   * @param {Object} params - Identity verification parameters
+   * @param {string} params.holder_type - 'INDIVIDUAL' or 'BUSINESS'
+   * @param {string} params.country - ISO country code
+   * @param {string} params.first_name - First name (for individuals)
+   * @param {string} params.last_name - Last name (for individuals)
+   * @param {string} params.callback_url - Webhook URL for status updates
+   * @param {string} params.reference - Unique reference ID
+   * @returns {Promise<Object>} KYC verification response with kyc_url
+   */
+  async verifyIdentity(params) {
+    try {
+      const response = await this.api.post('/account/identity', params);
+      return response.data.data;
+    } catch (error) {
+      console.error('Identity verification failed:', error.response?.data || error.message);
+      throw new Error(error.response?.data?.message || 'Failed to verify identity');
+    }
+  }
+
+  /**
+   * Create virtual bank account for receiving payments
+   * @param {Object} params - Virtual account parameters
+   * @param {string} params.identity - Identity reference from KYC
+   * @param {string} params.currency - Currency code (USD, EUR, etc.)
+   * @param {string} params.wallet_address - Wallet address for receiving deposits
+   * @param {string} params.asset - Asset identifier (e.g., 'solana:usdc')
+   * @param {string} params.callback_url - Webhook URL
+   * @param {string} params.reference - Unique reference ID
+   * @returns {Promise<Object>} Virtual account details
+   */
+  async createVirtualAccount(params) {
+    try {
+      const response = await this.api.post('/account/create', params);
+      return response.data.data;
+    } catch (error) {
+      console.error('Virtual account creation failed:', error.response?.data || error.message);
+      throw new Error(error.response?.data?.message || 'Failed to create virtual account');
+    }
+  }
+
+  /**
+   * Confirm payment deposit with blockchain transaction hash
+   * @param {string} reference - Transaction reference
+   * @param {string} hash - Blockchain transaction hash
+   * @returns {Promise<Object>} Confirmation response
+   */
+  async confirmPayment(reference, hash) {
+    try {
+      const payload = { reference, hash };
+      const response = await this.api.post('/confirm', payload);
+      return response.data.data;
+    } catch (error) {
+      console.error('Payment confirmation failed:', error.response?.data || error.message);
+      throw new Error(error.response?.data?.message || 'Failed to confirm payment');
+    }
+  }
+
   // ==================== Offramp (Withdrawal) ====================
 
   /**
@@ -300,25 +376,33 @@ class SwitchService {
    * @param {string} params.accountNumber - Account number
    * @returns {Promise<Object>} Account details with name
    */
-  async verifyBankAccount({ country, bankCode, accountNumber }) {
+  async verifyBankAccount({ country, bankCode, accountNumber, phoneNumber, mobileNetwork }) {
     try {
-      // Try to call Switch verify endpoint
-      // Note: This endpoint may not be available yet in Switch API
-      const response = await this.api.post('/verify', {
-        country,
-        bank_code: bankCode,
-        account_number: accountNumber
+      // Use the correct institution lookup endpoint
+      const beneficiary = {};
+
+      // For bank transfers (most countries)
+      if (bankCode && accountNumber) {
+        beneficiary.bank_code = bankCode;
+        beneficiary.account_number = accountNumber;
+      }
+
+      // For mobile money (some African countries)
+      if (phoneNumber && mobileNetwork) {
+        beneficiary.phone_number = phoneNumber;
+        beneficiary.mobile_network = mobileNetwork;
+      }
+
+      const response = await this.api.post('/institution/lookup', {
+        country: country.toUpperCase(),
+        beneficiary
       });
 
       return response.data.data;
     } catch (error) {
-      // If endpoint doesn't exist (404) or not implemented, return friendly error
-      if (error.response?.status === 404) {
-        throw new Error('Account verification not available yet. Please enter account name manually.');
-      }
-
       console.error('Failed to verify bank account:', error.response?.data || error.message);
-      throw new Error(error.response?.data?.message || 'Could not verify account. Please enter account name manually.');
+      const errorMessage = error.response?.data?.message || 'Invalid account details. Please check and try again.';
+      throw new Error(errorMessage);
     }
   }
 
