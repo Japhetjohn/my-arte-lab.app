@@ -2,7 +2,7 @@
 import { appState } from '../state.js';
 import { formatDate, showToast } from '../utils.js';
 import api from '../services/api.js';
-import { showAddFundsModal } from '../components/modals.js';
+import { showAddFundsModal, showSwapModal } from '../components/modals.js';
 
 let walletData = null;
 let transactions = [];
@@ -132,6 +132,12 @@ function renderWalletContent() {
                             </svg>
                             Withdraw
                         </button>
+                        <button class="btn-primary" style="background: white; color: var(--primary);" onclick="window.showSwapModal()">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style="margin-right: 8px; vertical-align: middle;">
+                                <path d="M7 8l3-3 3 3M7 12l3 3 3-3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                            Swap
+                        </button>
                         <button class="btn-secondary" style="border-color: white; color: white;" onclick="window.location.reload()">
                             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style="margin-right: 8px; vertical-align: middle;">
                                 <path d="M4 10a6 6 0 1 1 12 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -251,6 +257,11 @@ function renderWalletContent() {
                                     <div class="transaction-amount ${isCredit ? 'positive' : 'negative'}">
                                         ${isCredit ? '+' : '-'}USDC ${Math.abs(transaction.amount).toFixed(2)}
                                     </div>
+                                    ${(transaction.status === 'pending' || transaction.status === 'processing') && transaction.reference ? `
+                                        <button class="btn-ghost" style="font-size: 12px; padding: 4px 8px; margin-top: 4px;" onclick="window.checkTransactionStatus('${transaction.reference}')">
+                                            Check Status
+                                        </button>
+                                    ` : ''}
                                 </div>
                             </div>
                         `}).join('')}
@@ -275,6 +286,11 @@ function renderWalletContent() {
 // Fund wallet - show virtual account modal
 window.fundWallet = function() {
     showAddFundsModal();
+};
+
+// Show swap modal
+window.showSwapModal = function() {
+    showSwapModal();
 };
 
 // Store wallet data globally for onramp modal
@@ -305,6 +321,51 @@ window.copyWalletAddress = async function() {
         }
 
         document.body.removeChild(textArea);
+    }
+};
+
+// Check transaction status
+window.checkTransactionStatus = async function(reference) {
+    if (!reference) {
+        showToast('No reference ID available', 'error');
+        return;
+    }
+
+    try {
+        showToast('Checking transaction status...', 'info');
+
+        const response = await api.getSwitchTransactionStatus(reference);
+
+        if (!response.success) {
+            throw new Error(response.message || 'Failed to get status');
+        }
+
+        const status = response.data;
+        const statusMap = {
+            'PENDING': { color: '#FFA500', text: 'Pending' },
+            'PROCESSING': { color: '#3B82F6', text: 'Processing' },
+            'COMPLETED': { color: '#10B981', text: 'Completed' },
+            'FAILED': { color: '#EF4444', text: 'Failed' },
+            'AWAITING_DEPOSIT': { color: '#F59E0B', text: 'Awaiting Deposit' }
+        };
+
+        const statusInfo = statusMap[status.status] || { color: '#6B7280', text: status.status };
+
+        showToast(
+            `Transaction Status: ${statusInfo.text}\n` +
+            `Type: ${status.type || 'N/A'}\n` +
+            `Amount: ${status.source?.amount || 'N/A'} ${status.source?.currency || ''}\n` +
+            ${status.finalized ? `Finalized: Yes` : `Confirmed: ${status.confirmed ? 'Yes' : 'No'}`}`,
+            status.status === 'COMPLETED' ? 'success' : status.status === 'FAILED' ? 'error' : 'info'
+        );
+
+        // Reload page if status changed to completed
+        if (status.status === 'COMPLETED' && status.finalized) {
+            setTimeout(() => window.location.reload(), 2000);
+        }
+    } catch (error) {
+        console.error('Failed to check transaction status:', error);
+        showToast(error.message || 'Failed to check transaction status', 'error');
     }
 };
 

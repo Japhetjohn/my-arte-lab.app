@@ -1530,6 +1530,216 @@ export async function showAddFundsModal() {
     }
 }
 
+// Swap Modal - Exchange between different stablecoin assets
+export function showSwapModal() {
+    const modalContent = `
+        <div class="modal" onclick="closeModalOnBackdrop(event)">
+            <div class="modal-content" style="max-width: 500px;">
+                <div class="modal-header">
+                    <h2>Swap Assets</h2>
+                    <button class="icon-btn" onclick="closeModal()">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div style="padding: 20px;">
+                    <p style="color: var(--text-secondary); margin-bottom: 20px;">Exchange between different stablecoin assets instantly</p>
+
+                    <form id="swapForm" onsubmit="window.handleSwap(event)">
+                        <!-- From Asset -->
+                        <div class="form-group" style="margin-bottom: 16px;">
+                            <label class="form-label">From Asset</label>
+                            <select id="swapFromAsset" class="form-select" required>
+                                <option value="">Select asset</option>
+                                <option value="solana:usdc">Solana USDC</option>
+                                <option value="solana:usdt">Solana USDT</option>
+                                <option value="ethereum:usdc">Ethereum USDC</option>
+                                <option value="ethereum:usdt">Ethereum USDT</option>
+                                <option value="base:usdc">Base USDC</option>
+                                <option value="polygon:usdc">Polygon USDC</option>
+                                <option value="polygon:usdt">Polygon USDT</option>
+                                <option value="bsc:usdc">BSC USDC</option>
+                                <option value="bsc:usdt">BSC USDT</option>
+                            </select>
+                        </div>
+
+                        <!-- Swap Direction Icon -->
+                        <div style="text-align: center; margin: -8px 0 8px 0;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--primary);">
+                                <path d="M7 10l5 5 5-5M7 14l5 5 5-5"/>
+                            </svg>
+                        </div>
+
+                        <!-- To Asset -->
+                        <div class="form-group" style="margin-bottom: 16px;">
+                            <label class="form-label">To Asset</label>
+                            <select id="swapToAsset" class="form-select" required>
+                                <option value="">Select asset</option>
+                                <option value="solana:usdc">Solana USDC</option>
+                                <option value="solana:usdt">Solana USDT</option>
+                                <option value="ethereum:usdc">Ethereum USDC</option>
+                                <option value="ethereum:usdt">Ethereum USDT</option>
+                                <option value="base:usdc">Base USDC</option>
+                                <option value="polygon:usdc">Polygon USDC</option>
+                                <option value="polygon:usdt">Polygon USDT</option>
+                                <option value="bsc:usdc">BSC USDC</option>
+                                <option value="bsc:usdt">BSC USDT</option>
+                            </select>
+                        </div>
+
+                        <!-- Amount -->
+                        <div class="form-group" style="margin-bottom: 16px;">
+                            <label class="form-label">Amount</label>
+                            <input type="number" id="swapAmount" class="form-input" required min="1" step="0.01" placeholder="Enter amount">
+                        </div>
+
+                        <!-- Quote Display -->
+                        <div id="swapQuoteDisplay" style="display: none; background: var(--background-alt); padding: 16px; border-radius: 8px; margin-bottom: 16px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                <span style="color: var(--text-secondary);">You'll receive:</span>
+                                <span style="font-weight: 600; color: var(--success);"><span id="swapEstimate">0.00</span></span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                <span style="color: var(--text-secondary);">Exchange rate:</span>
+                                <span style="font-weight: 600;" id="swapRate">1:1</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="color: var(--text-secondary);">Fee:</span>
+                                <span style="font-weight: 600;" id="swapFee">0.00</span>
+                            </div>
+                        </div>
+
+                        <button type="button" class="btn-secondary" style="width: 100%; margin-bottom: 12px;" id="getSwapQuoteBtn" disabled>
+                            Get Quote
+                        </button>
+
+                        <button type="submit" class="btn-primary" style="width: 100%;" id="swapSubmitBtn" disabled>
+                            Swap Assets
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalContent);
+
+    // Setup event listeners
+    const fromAssetSelect = document.getElementById('swapFromAsset');
+    const toAssetSelect = document.getElementById('swapToAsset');
+    const amountInput = document.getElementById('swapAmount');
+    const getQuoteBtn = document.getElementById('getSwapQuoteBtn');
+    const submitBtn = document.getElementById('swapSubmitBtn');
+
+    // Enable quote button when all fields are filled
+    const checkFields = () => {
+        const fromAsset = fromAssetSelect.value;
+        const toAsset = toAssetSelect.value;
+        const amount = parseFloat(amountInput.value);
+
+        if (fromAsset && toAsset && amount > 0 && fromAsset !== toAsset) {
+            getQuoteBtn.disabled = false;
+        } else {
+            getQuoteBtn.disabled = true;
+            submitBtn.disabled = true;
+        }
+    };
+
+    fromAssetSelect.addEventListener('change', checkFields);
+    toAssetSelect.addEventListener('change', checkFields);
+    amountInput.addEventListener('input', checkFields);
+
+    // Get quote button handler
+    getQuoteBtn.addEventListener('click', async () => {
+        const fromAsset = fromAssetSelect.value;
+        const toAsset = toAssetSelect.value;
+        const amount = parseFloat(amountInput.value);
+
+        if (fromAsset === toAsset) {
+            showToast('Please select different assets', 'error');
+            return;
+        }
+
+        try {
+            getQuoteBtn.disabled = true;
+            getQuoteBtn.textContent = 'Loading...';
+
+            const quoteResponse = await api.getSwitchSwapQuote({
+                amount,
+                fromAsset,
+                toAsset
+            });
+
+            if (!quoteResponse.success) {
+                throw new Error(quoteResponse.message || 'Failed to get quote');
+            }
+
+            const quote = quoteResponse.data;
+            document.getElementById('swapEstimate').textContent = `${quote.destination?.amount || 0} ${quote.destination?.currency || ''}`;
+            document.getElementById('swapRate').textContent = `1 ${quote.source?.currency || ''} = ${(quote.destination?.amount / quote.source?.amount).toFixed(4)} ${quote.destination?.currency || ''}`;
+            document.getElementById('swapFee').textContent = `${quote.fee?.amount || 0} ${quote.fee?.currency || ''}`;
+            document.getElementById('swapQuoteDisplay').style.display = 'block';
+
+            submitBtn.disabled = false;
+            getQuoteBtn.textContent = 'Get New Quote';
+            getQuoteBtn.disabled = false;
+
+            showToast('Quote retrieved successfully', 'success');
+        } catch (error) {
+            console.error('Failed to get swap quote:', error);
+            showToast(error.message || 'Failed to get quote', 'error');
+            getQuoteBtn.disabled = false;
+            getQuoteBtn.textContent = 'Get Quote';
+        }
+    });
+}
+
+// Handle swap form submission
+window.handleSwap = async function(event) {
+    event.preventDefault();
+
+    const fromAsset = document.getElementById('swapFromAsset').value;
+    const toAsset = document.getElementById('swapToAsset').value;
+    const amount = parseFloat(document.getElementById('swapAmount').value);
+
+    if (!fromAsset || !toAsset || !amount) {
+        showToast('Please fill in all fields', 'error');
+        return;
+    }
+
+    if (fromAsset === toAsset) {
+        showToast('Please select different assets', 'error');
+        return;
+    }
+
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+
+    try {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Processing swap...';
+
+        const response = await api.requestSwitchSwap({
+            amount,
+            fromAsset,
+            toAsset
+        });
+
+        if (response.success) {
+            closeModal();
+            showToast('Swap initiated successfully! Check your wallet for deposit details.', 'success');
+            setTimeout(() => window.location.reload(), 2000);
+        }
+    } catch (error) {
+        showToast(error.message || 'Failed to process swap', 'error');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+    }
+};
+
 export function showPayoutSettings() {
     showToast('Payout settings coming soon!', 'success');
 }
