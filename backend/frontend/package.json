@@ -2,12 +2,25 @@
   "name": "myartelab-frontend",
   "version": "1.0.0",
   "description": "MyArteLab Frontend - Static SPA",
+  "type": "module",
   "scripts": {
-    "dev": "python3 -m http.server 8000",
-    "start": "python3 -m http.server 8000",
-    "open": "xdg-open http://localhost:8000 || firefox http://localhost:8000"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "old-dev": "python3 -m http.server 8000"
   },
-  "keywords": ["spa", "vanilla-js"],
+  "keywords": [
+    "spa",
+    "vanilla-js"
+  ],
   "author": "Japhetjohn",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "@privy-io/react-auth": "^1.94.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "vite": "^7.2.7"
+  }
 }

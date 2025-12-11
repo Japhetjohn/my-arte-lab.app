@@ -19,6 +19,7 @@ const {
 
 const authRoutes = require('./routes/authRoutes');
 const googleAuthRoutes = require('./routes/googleAuthRoutes');
+const privyAuthRoutes = require('./routes/privyAuthRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
 const walletRoutes = require('./routes/walletRoutes');
 const creatorRoutes = require('./routes/creatorRoutes');
@@ -208,6 +209,7 @@ app.get('/health', async (req, res) => {
 });
 
 app.use('/api/auth', googleAuthRoutes);
+app.use('/api/auth', privyAuthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/wallet', walletRoutes);

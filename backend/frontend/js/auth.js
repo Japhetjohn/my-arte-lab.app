@@ -466,36 +466,34 @@ export function handleGoogleSignUp() {
 }
 
 /**
- * Proceed with Google OAuth after role selection
+ * Proceed with Google OAuth using Privy
  */
 function proceedWithGoogleOAuth(role) {
-    // Auto-detect environment
-    const isDevelopment = window.location.hostname === 'localhost' ||
-                          window.location.hostname === '127.0.0.1' ||
-                          window.location.hostname.startsWith('192.168');
+    // Store the role for the backend
+    sessionStorage.setItem('signupRole', role);
 
-    const API_URL = isDevelopment
-        ? 'http://localhost:5000'
-        : window.location.origin;
-
-    window.location.href = `${API_URL}/api/auth/google?mode=signup&role=${role}`;
+    if (window.privyAuth) {
+        window.privyAuth.login();
+    } else {
+        // Wait for Privy to be ready
+        window.addEventListener('privy-ready', () => {
+            window.privyAuth.login();
+        }, { once: true });
+    }
 }
 
 /**
- * Handle Google Sign-In (existing users)
- * Redirects to backend Google OAuth endpoint
+ * Handle Google Sign-In using Privy
  */
 export function handleGoogleSignIn() {
-    // Auto-detect environment
-    const isDevelopment = window.location.hostname === 'localhost' ||
-                          window.location.hostname === '127.0.0.1' ||
-                          window.location.hostname.startsWith('192.168');
-
-    const API_URL = isDevelopment
-        ? 'http://localhost:5000'
-        : window.location.origin;
-
-    window.location.href = `${API_URL}/api/auth/google?mode=signin`;
+    if (window.privyAuth) {
+        window.privyAuth.login();
+    } else {
+        // Wait for Privy to be ready
+        window.addEventListener('privy-ready', () => {
+            window.privyAuth.login();
+        }, { once: true });
+    }
 }
 
 /**
@@ -684,3 +682,31 @@ window.handleEmailVerification = handleEmailVerification;
 window.handleResendVerification = handleResendVerification;
 window.skipVerification = skipVerification;
 window.toggleCategoryField = toggleCategoryField;
+
+// Listen for Privy auth events
+window.addEventListener('privy-login-success', (event) => {
+    const { user, token } = event.detail;
+    setUser(user);
+    updateUserMenu();
+    closeModal();
+    showToast('Welcome! You\'re now signed in with Google.', 'success');
+    navigateToPage(user.role === 'creator' ? 'settings' : 'discover');
+});
+
+window.addEventListener('privy-auto-login', (event) => {
+    const { user } = event.detail;
+    setUser(user);
+    updateUserMenu();
+});
+
+window.addEventListener('privy-login-error', (event) => {
+    const { error } = event.detail;
+    showToast(`Sign in failed: ${error}`, 'error');
+});
+
+window.addEventListener('privy-logout', () => {
+    clearUser();
+    updateUserMenu();
+    navigateToPage('home');
+    showToast('You have been logged out successfully', 'success');
+});
