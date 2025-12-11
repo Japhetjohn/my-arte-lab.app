@@ -3,7 +3,6 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { successResponse, errorResponse } = require('../utils/apiResponse');
-const solanaWalletService = require('../services/solanaWalletService');
 const adminNotificationService = require('../services/adminNotificationService');
 
 /**
@@ -11,9 +10,25 @@ const adminNotificationService = require('../services/adminNotificationService')
  */
 router.post('/privy', async (req, res) => {
   try {
+    console.log('=== Privy Auth Request Received ===');
+    console.log('Request body:', JSON.stringify(req.body, null, 2));
+    console.log('Headers:', req.headers);
+
     const { privyToken, user: userData, isNewUser } = req.body;
 
+    console.log('Extracted data:', {
+      hasPrivyToken: !!privyToken,
+      hasUserData: !!userData,
+      userDataEmail: userData?.email,
+      isNewUser
+    });
+
     if (!privyToken || !userData || !userData.email) {
+      console.log('❌ Missing required fields:', {
+        privyToken: !!privyToken,
+        userData: !!userData,
+        email: userData?.email
+      });
       return errorResponse(res, 400, 'Missing required fields');
     }
 
@@ -47,15 +62,15 @@ router.post('/privy', async (req, res) => {
         lastLogin: Date.now()
       });
 
-      // Create Solana wallet for new user
-      try {
-        const walletData = await solanaWalletService.createWallet(user._id);
+      // Use Privy's embedded wallet (if available)
+      if (userData.walletAddress) {
+        console.log('✅ Using Privy embedded wallet:', userData.walletAddress);
         user.wallet = {
-          address: walletData.publicKey,
+          address: userData.walletAddress,
           balance: 0
         };
-      } catch (walletError) {
-        console.error('Failed to create Solana wallet:', walletError);
+      } else {
+        console.log('⚠️ No wallet from Privy, will be created on first login');
       }
 
       await user.save();
@@ -73,6 +88,14 @@ router.post('/privy', async (req, res) => {
       }
       if (!user.profilePicture && userData.profilePicture) {
         user.profilePicture = userData.profilePicture;
+      }
+      // Update wallet address if provided by Privy and not already set
+      if (userData.walletAddress && !user.wallet?.address) {
+        console.log('✅ Adding Privy wallet to existing user:', userData.walletAddress);
+        user.wallet = {
+          address: userData.walletAddress,
+          balance: user.wallet?.balance || 0
+        };
       }
       user.lastLogin = Date.now();
       await user.save();

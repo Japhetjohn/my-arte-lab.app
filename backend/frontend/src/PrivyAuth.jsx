@@ -6,13 +6,25 @@ const PrivyAuth = () => {
   const { login } = useLogin({
     onComplete: async (user, isNewUser) => {
       console.log('Privy login complete:', { user, isNewUser });
-      
+
       // Get Privy access token
       const privyToken = await getAccessToken();
-      
+
       // Get signup role if exists
       const signupRole = sessionStorage.getItem('signupRole') || 'client';
       sessionStorage.removeItem('signupRole');
+
+      // Get embedded wallet address (Privy creates this automatically)
+      const embeddedWallet = user.wallet;
+      console.log('Embedded wallet:', embeddedWallet);
+      console.log('Full user object:', user);
+
+      // Extract email - try multiple possible locations
+      const userEmail = user.email?.address || user.google?.email || user.email;
+      const userName = user.google?.name || user.name || user.email?.address?.split('@')[0] || 'User';
+
+      console.log('Extracted email:', userEmail);
+      console.log('Extracted name:', userName);
 
       // Send to backend to create/login user
       try {
@@ -24,11 +36,12 @@ const PrivyAuth = () => {
           body: JSON.stringify({
             privyToken,
             user: {
-              email: user.email?.address,
-              name: user.google?.name || user.email?.address?.split('@')[0],
+              email: userEmail,
+              name: userName,
               googleId: user.google?.subject,
               profilePicture: user.google?.picture,
-              role: signupRole
+              role: signupRole,
+              walletAddress: embeddedWallet?.address
             },
             isNewUser
           })
@@ -91,6 +104,11 @@ const PrivyAuth = () => {
       (async () => {
         try {
           const privyToken = await getAccessToken();
+
+          // Extract email - try multiple possible locations
+          const userEmail = user.email?.address || user.google?.email || user.email;
+          const userName = user.google?.name || user.name || user.email?.address?.split('@')[0] || 'User';
+
           const response = await fetch('/api/auth/privy', {
             method: 'POST',
             headers: {
@@ -99,11 +117,12 @@ const PrivyAuth = () => {
             body: JSON.stringify({
               privyToken,
               user: {
-                email: user.email?.address,
-                name: user.google?.name || user.email?.address?.split('@')[0],
+                email: userEmail,
+                name: userName,
                 googleId: user.google?.subject,
                 profilePicture: user.google?.picture
-              }
+              },
+              isNewUser: false
             })
           });
           

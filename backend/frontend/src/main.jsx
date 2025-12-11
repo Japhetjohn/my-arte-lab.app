@@ -15,7 +15,8 @@ const App = () => {
         },
         loginMethods: ['google', 'email'],
         embeddedWallets: {
-          createOnLogin: 'off'
+          createOnLogin: 'users-without-wallets',
+          requireUserPasswordOnCreate: false
         }
       }}
     >
