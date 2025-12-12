@@ -100,7 +100,8 @@ router.post('/privy', async (req, res) => {
         console.log('✅ Using Privy embedded wallet:', userData.walletAddress);
         user.wallet = {
           address: userData.walletAddress,
-          balance: 0
+          balance: 0,
+          currency: 'USDC'
         };
       } else {
         console.log('⚠️ No wallet from Privy, will be created on first login');
@@ -127,7 +128,8 @@ router.post('/privy', async (req, res) => {
         console.log('✅ Adding Privy wallet to existing user:', userData.walletAddress);
         user.wallet = {
           address: userData.walletAddress,
-          balance: user.wallet?.balance || 0
+          balance: user.wallet?.balance || 0,
+          currency: 'USDC'
         };
       }
       user.lastLogin = Date.now();
