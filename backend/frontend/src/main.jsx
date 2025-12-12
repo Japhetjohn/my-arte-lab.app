@@ -15,8 +15,7 @@ const App = () => {
         },
         loginMethods: ['google', 'email'],
         embeddedWallets: {
-          createOnLogin: 'users-without-wallets',
-          requireUserPasswordOnCreate: false
+          createOnLogin: 'off'  // Completely disable Privy wallet creation
         }
       }}
     >

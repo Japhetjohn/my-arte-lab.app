@@ -5,6 +5,8 @@ const jwksClient = require('jwks-rsa');
 const User = require('../models/User');
 const { successResponse, errorResponse } = require('../utils/apiResponse');
 const adminNotificationService = require('../services/adminNotificationService');
+const { Keypair } = require('@solana/web3.js');
+const crypto = require('crypto');
 
 // Create JWKS client for Privy token verification
 const client = jwksClient({
@@ -79,41 +81,56 @@ router.post('/privy', async (req, res) => {
       return errorResponse(res, 401, 'Invalid Privy token');
     }
 
-    // Find or create user
+    // Find or create user (with duplicate handling)
     let user = await User.findOne({ email: userData.email });
 
     if (!user) {
-      // Create new user
-      user = new User({
+      // Create new user with manually generated Solana wallet
+      console.log('Creating new user with manual Solana wallet generation');
+
+      // Generate new Solana keypair
+      const keypair = Keypair.generate();
+      const walletAddress = keypair.publicKey.toString();
+
+      // Encrypt private key before storing
+      const encryptionKey = process.env.WALLET_ENCRYPTION_KEY || crypto.randomBytes(32).toString('hex');
+      const iv = crypto.randomBytes(16);
+      const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(encryptionKey.slice(0, 64), 'hex'), iv);
+      let encryptedPrivateKey = cipher.update(Buffer.from(keypair.secretKey));
+      encryptedPrivateKey = Buffer.concat([encryptedPrivateKey, cipher.final()]);
+      const encryptedKey = iv.toString('hex') + ':' + encryptedPrivateKey.toString('hex');
+
+      const newUserData = {
         name: userData.name,
         email: userData.email,
         role: userData.role || 'client',
         googleId: userData.googleId,
         profilePicture: userData.profilePicture,
         isEmailVerified: true, // Privy emails are verified
-        password: 'N/A', // No password for OAuth users
-        lastLogin: Date.now()
-      });
-
-      // Use Privy's embedded wallet (if available)
-      if (userData.walletAddress) {
-        console.log('✅ Using Privy embedded wallet:', userData.walletAddress);
-        user.wallet = {
-          address: userData.walletAddress,
+        password: 'OAUTH_USER_NO_PASSWORD', // Placeholder for OAuth users
+        lastLogin: Date.now(),
+        wallet: {
+          address: walletAddress,
+          encryptedPrivateKey: encryptedKey,
           balance: 0,
-          currency: 'USDC'
-        };
-      } else {
-        console.log('⚠️ No wallet from Privy, will be created on first login');
-      }
+          currency: 'USDC',
+          network: 'Solana'
+        }
+      };
 
-      await user.save();
+      console.log('✅ Creating new user with Solana wallet:', walletAddress);
 
-      // Notify admin of new user
       try {
-        await adminNotificationService.notifyNewUser(user);
+        user = new User(newUserData);
+        await user.save();
       } catch (error) {
-        console.error('Failed to notify admin:', error);
+        // Handle duplicate key error (race condition)
+        if (error.code === 11000) {
+          console.log('⚠️ User already exists (race condition), fetching existing user');
+          user = await User.findOne({ email: userData.email });
+        } else {
+          throw error;
+        }
       }
     } else {
       // Update existing user
@@ -123,13 +140,25 @@ router.post('/privy', async (req, res) => {
       if (!user.profilePicture && userData.profilePicture) {
         user.profilePicture = userData.profilePicture;
       }
-      // Update wallet address if provided by Privy and not already set
-      if (userData.walletAddress && !user.wallet?.address) {
-        console.log('✅ Adding Privy wallet to existing user:', userData.walletAddress);
+      // Generate wallet for existing users who don't have one
+      if (!user.wallet?.address) {
+        console.log('✅ Generating Solana wallet for existing user');
+        const keypair = Keypair.generate();
+        const walletAddress = keypair.publicKey.toString();
+
+        const encryptionKey = process.env.WALLET_ENCRYPTION_KEY || crypto.randomBytes(32).toString('hex');
+        const iv = crypto.randomBytes(16);
+        const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(encryptionKey.slice(0, 64), 'hex'), iv);
+        let encryptedPrivateKey = cipher.update(Buffer.from(keypair.secretKey));
+        encryptedPrivateKey = Buffer.concat([encryptedPrivateKey, cipher.final()]);
+        const encryptedKey = iv.toString('hex') + ':' + encryptedPrivateKey.toString('hex');
+
         user.wallet = {
-          address: userData.walletAddress,
+          address: walletAddress,
+          encryptedPrivateKey: encryptedKey,
           balance: user.wallet?.balance || 0,
-          currency: 'USDC'
+          currency: 'USDC',
+          network: 'Solana'
         };
       }
       user.lastLogin = Date.now();

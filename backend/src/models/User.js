@@ -20,10 +20,17 @@ const userSchema = new mongoose.Schema({
 
   password: {
     type: String,
-    required: function() {
-      return !this.googleId; // Only required if NOT using Google OAuth
+    required: false, // Not required for OAuth users
+    validate: {
+      validator: function(value) {
+        // If password is set and not an OAuth placeholder, validate length
+        if (!value || value === 'OAUTH_USER_NO_PASSWORD') {
+          return true; // Allow OAuth placeholders
+        }
+        return value.length >= 8;
+      },
+      message: 'Password must be at least 8 characters'
     },
-    minlength: [8, 'Password must be at least 8 characters'],
     select: false
   },
 
@@ -142,12 +149,12 @@ const userSchema = new mongoose.Schema({
   wallet: {
     address: {
       type: String,
-      required: true,
+      required: true, // Required - manually generated
       unique: true
     },
     encryptedPrivateKey: {
       type: String,
-      required: true,
+      required: true, // Required - manually generated
       select: false // Don't include in queries by default for security
     },
     balance: {

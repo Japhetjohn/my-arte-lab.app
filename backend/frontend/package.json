@@ -16,7 +16,7 @@
   "author": "Japhetjohn",
   "license": "MIT",
   "dependencies": {
-    "@privy-io/react-auth": "^1.94.2",
+    "@privy-io/react-auth": "^3.8.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

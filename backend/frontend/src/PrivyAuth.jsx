@@ -1,10 +1,19 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { usePrivy, useLogin } from '@privy-io/react-auth';
 
 const PrivyAuth = () => {
   const { ready, authenticated, user, logout, getAccessToken } = usePrivy();
+  const isAuthenticating = useRef(false);
+
   const { login } = useLogin({
     onComplete: async (user, isNewUser) => {
+      // Prevent duplicate auth requests
+      if (isAuthenticating.current) {
+        console.log('⚠️ Already authenticating, skipping duplicate request');
+        return;
+      }
+      isAuthenticating.current = true;
+
       console.log('Privy login complete:', { user, isNewUser });
 
       // Get Privy access token
@@ -13,11 +22,6 @@ const PrivyAuth = () => {
       // Get signup role if exists
       const signupRole = sessionStorage.getItem('signupRole') || 'client';
       sessionStorage.removeItem('signupRole');
-
-      // Get embedded wallet address (Privy creates this automatically)
-      const embeddedWallet = user.wallet;
-      console.log('Embedded wallet:', embeddedWallet);
-      console.log('Full user object:', user);
 
       // Extract email - try multiple possible locations
       const userEmail = user.email?.address || user.google?.email || user.email;
@@ -40,19 +44,18 @@ const PrivyAuth = () => {
               name: userName,
               googleId: user.google?.subject,
               profilePicture: user.google?.picture,
-              role: signupRole,
-              walletAddress: embeddedWallet?.address
+              role: signupRole
             },
             isNewUser
           })
         });
         
         const data = await response.json();
-        
+
         if (data.success) {
           // Store JWT token
           localStorage.setItem('token', data.data.token);
-          
+
           // Trigger custom event for vanilla JS app
           window.dispatchEvent(new CustomEvent('privy-login-success', {
             detail: { user: data.data.user, token: data.data.token }
@@ -67,10 +70,16 @@ const PrivyAuth = () => {
         window.dispatchEvent(new CustomEvent('privy-login-error', {
           detail: { error: error.message }
         }));
+      } finally {
+        // Reset authentication flag after completion
+        setTimeout(() => {
+          isAuthenticating.current = false;
+        }, 1000);
       }
     },
     onError: (error) => {
       console.error('Privy login error:', error);
+      isAuthenticating.current = false;
       window.dispatchEvent(new CustomEvent('privy-login-error', {
         detail: { error: error.message }
       }));
@@ -100,8 +109,14 @@ const PrivyAuth = () => {
   // Auto-check if user is already authenticated
   useEffect(() => {
     if (ready && authenticated && user) {
+      // Prevent duplicate auth requests
+      if (isAuthenticating.current) {
+        return;
+      }
+
       // User is already logged in, sync with backend
       (async () => {
+        isAuthenticating.current = true;
         try {
           const privyToken = await getAccessToken();
 
@@ -135,6 +150,11 @@ const PrivyAuth = () => {
           }
         } catch (error) {
           console.error('Auto-login error:', error);
+        } finally {
+          // Reset authentication flag
+          setTimeout(() => {
+            isAuthenticating.current = false;
+          }, 1000);
         }
       })();
     }
