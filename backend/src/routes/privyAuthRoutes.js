@@ -1,9 +1,46 @@
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
+const jwksClient = require('jwks-rsa');
 const User = require('../models/User');
 const { successResponse, errorResponse } = require('../utils/apiResponse');
 const adminNotificationService = require('../services/adminNotificationService');
+
+// Create JWKS client for Privy token verification
+const client = jwksClient({
+  jwksUri: `https://auth.privy.io/api/v1/apps/${process.env.PRIVY_APP_ID}/jwks.json`,
+  cache: true,
+  cacheMaxAge: 86400000 // 24 hours
+});
+
+// Helper function to get signing key
+function getKey(header, callback) {
+  client.getSigningKey(header.kid, (err, key) => {
+    if (err) {
+      callback(err);
+      return;
+    }
+    const signingKey = key.getPublicKey();
+    callback(null, signingKey);
+  });
+}
+
+// Helper function to verify Privy token using JWKS
+function verifyPrivyToken(token) {
+  return new Promise((resolve, reject) => {
+    jwt.verify(token, getKey, {
+      algorithms: ['ES256'],
+      issuer: 'privy.io',
+      audience: process.env.PRIVY_APP_ID
+    }, (err, decoded) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(decoded);
+      }
+    });
+  });
+}
 
 /**
  * Verify Privy token and create/login user
@@ -32,19 +69,15 @@ router.post('/privy', async (req, res) => {
       return errorResponse(res, 400, 'Missing required fields');
     }
 
-    // Verify Privy token by calling Privy API
-    const privyResponse = await fetch(`https://auth.privy.io/api/v1/users/me`, {
-      headers: {
-        'Authorization': `Bearer ${privyToken}`,
-        'privy-app-id': process.env.PRIVY_APP_ID
-      }
-    });
-
-    if (!privyResponse.ok) {
+    // Verify Privy token using JWKS
+    let decodedToken;
+    try {
+      decodedToken = await verifyPrivyToken(privyToken);
+      console.log('✅ Privy token verified successfully:', decodedToken.sub);
+    } catch (error) {
+      console.error('❌ Privy token verification failed:', error.message);
       return errorResponse(res, 401, 'Invalid Privy token');
     }
-
-    const privyUser = await privyResponse.json();
 
     // Find or create user
     let user = await User.findOne({ email: userData.email });

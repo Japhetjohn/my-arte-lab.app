@@ -5,7 +5,7 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const session = require('express-session');
-const passport = require('./config/passport');
+// const passport = require('./config/passport'); // REMOVED: Using Privy instead
 
 const connectDatabase = require('./config/database');
 const emailConfig = require('./config/email');
@@ -18,7 +18,7 @@ const {
 } = require('./middleware/security');
 
 const authRoutes = require('./routes/authRoutes');
-const googleAuthRoutes = require('./routes/googleAuthRoutes');
+// const googleAuthRoutes = require('./routes/googleAuthRoutes'); // REMOVED: Using Privy instead
 const privyAuthRoutes = require('./routes/privyAuthRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
 const walletRoutes = require('./routes/walletRoutes');
@@ -60,17 +60,17 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://auth.privy.io", "https://*.privy.io"],
       scriptSrcAttr: ["'unsafe-inline'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      imgSrc: ["'self'", "data:", "https://res.cloudinary.com", "https://images.unsplash.com", "https://ui-avatars.com", "blob:"],
-      connectSrc: ["'self'", "https://processor-prod.up.railway.app", "https://api.cloudinary.com", "https://accounts.google.com"],
-      fontSrc: ["'self'", "data:"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://auth.privy.io"],
+      imgSrc: ["'self'", "data:", "https://res.cloudinary.com", "https://images.unsplash.com", "https://ui-avatars.com", "https://auth.privy.io", "https://*.privy.io", "blob:"],
+      connectSrc: ["'self'", "https://processor-prod.up.railway.app", "https://api.cloudinary.com", "https://auth.privy.io", "https://*.privy.io", "wss://*.privy.io"],
+      fontSrc: ["'self'", "data:", "https://auth.privy.io"],
       objectSrc: ["'none'"],
       mediaSrc: ["'self'"],
-      frameSrc: ["'none'"],
+      frameSrc: ["'self'", "https://auth.privy.io", "https://*.privy.io"],
       baseUri: ["'self'"],
-      formAction: ["'self'"],
+      formAction: ["'self'", "https://auth.privy.io"],
       frameAncestors: ["'none'"]
     },
   },
@@ -151,8 +151,8 @@ app.use(session({
   }
 }));
 
-app.use(passport.initialize());
-app.use(passport.session());
+// app.use(passport.initialize()); // REMOVED: Using Privy instead
+// app.use(passport.session()); // REMOVED: Using Privy instead
 
 const limiter = rateLimit({
   windowMs: (parseInt(process.env.RATE_LIMIT_WINDOW) || 15) * 60 * 1000,
@@ -213,7 +213,7 @@ app.get('/health', async (req, res) => {
   res.status(statusCode).json(health);
 });
 
-app.use('/api/auth', googleAuthRoutes);
+// app.use('/api/auth', googleAuthRoutes); // REMOVED: Using Privy instead
 app.use('/api/auth', privyAuthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/bookings', bookingRoutes);
