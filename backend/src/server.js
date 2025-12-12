@@ -247,6 +247,15 @@ app.get('/api', (req, res) => {
 // Serve frontend static files
 const path = require('path');
 
+// Serve built Vite assets from dist directory with correct MIME types
+app.use('/dist', express.static(path.join(__dirname, '../frontend/dist'), {
+  setHeaders: (res, filepath) => {
+    if (filepath.endsWith('.js')) {
+      res.setHeader('Content-Type', 'application/javascript');
+    }
+  }
+}));
+
 // Serve static files from frontend directory
 app.use(express.static(path.join(__dirname, '../frontend')));
 
