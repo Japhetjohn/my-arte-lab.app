@@ -269,6 +269,15 @@ app.use('/dist', express.static(path.join(__dirname, '../frontend/dist'), {
   }
 }));
 
+// Also serve /assets directly from /dist/assets for Vite compatibility
+app.use('/assets', express.static(path.join(__dirname, '../frontend/dist/assets'), {
+  setHeaders: (res, filepath) => {
+    if (filepath.endsWith('.js')) {
+      res.setHeader('Content-Type', 'application/javascript');
+    }
+  }
+}));
+
 // Serve static files from frontend directory
 app.use(express.static(path.join(__dirname, '../frontend')));
 
