@@ -148,19 +148,19 @@ export async function showBookingModal(creatorId, serviceIndex = 0) {
                     </div>
                     <ol style="color: #92400E; font-size: 13px; margin: 0; padding-left: 20px; line-height: 1.6;">
                         <li>Submit your booking request with your proposed budget</li>
-                        <li>The creator reviews and accepts/rejects/counter-proposes</li>
-                        <li>Once accepted, payment is auto-deducted from your wallet</li>
-                        <li>Funds are held in escrow until job completion</li>
+                        <li>The creator reviews and accepts, declines, or counter-proposes</li>
+                        <li>Once accepted, payment is secured</li>
+                        <li>Funds are held safely until the job is completed</li>
                     </ol>
                     <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(146, 64, 14, 0.2); color: #92400E; font-size: 13px; font-weight: 500;">
-                        Make sure your wallet has sufficient USDC balance before booking
+                        Note: Make sure you have enough USDC before sending a request.
                     </div>
                 </div>
 
                 <form id="bookingForm" data-creator-id="${creatorId}" data-service-index="${serviceIndex}">
                     <div class="form-group">
                         <label class="form-label">Your Budget (USDC)</label>
-                        <input type="number" id="proposedPrice" name="proposedPrice" class="form-input" required min="1" step="0.01" placeholder="e.g., 500">
+                        <input type="number" id="proposedPrice" name="proposedPrice" class="form-input" required min="1" step="0.01" placeholder="Enter your proposed budget for this project">
                         <div class="caption mt-sm">Enter the amount you're willing to pay for this service</div>
                     </div>
 
@@ -196,7 +196,7 @@ export async function showBookingModal(creatorId, serviceIndex = 0) {
                     </div>
 
                     <div class="alert alert-success">
-                        <strong>No payment required yet!</strong> The creator will review your request first. Payment is only processed after they accept.
+                        <strong>No payment yet.</strong> The creator will review your request first. Payment is only secured after acceptance.
                     </div>
 
                     <div class="form-actions">

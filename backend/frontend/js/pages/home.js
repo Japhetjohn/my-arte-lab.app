@@ -13,8 +13,9 @@ export async function renderHomePage() {
     mainContent.innerHTML = `
         <div class="hero-section">
             <div class="hero-content">
-                <h1>Built for creators. Trusted by clients.</h1>
-                <p>Connect with talented photographers and designers across Africa</p>
+                <h1>Built for African creators. Trusted by clients globally.</h1>
+                <p>Connect with authentic African photographers and designers.</p>
+                <p style="font-weight: 600; margin-top: 8px;">Fast. Fair. Secure.</p>
                 <div class="hero-cta">
                     <button class="btn-primary" onclick="navigateToPage('discover')">Explore creators</button>
                 </div>
@@ -28,7 +29,7 @@ export async function renderHomePage() {
             </div>
             <div class="stat-item">
                 <div class="stat-number">...</div>
-                <div class="stat-label">Verified creators</div>
+                <div class="stat-label">Creator verification (coming soon)</div>
             </div>
             <div class="stat-item">
                 <div class="stat-number">...</div>
@@ -101,7 +102,7 @@ function updateStatsRibbon() {
         </div>
         <div class="stat-item">
             <div class="stat-number">${platformStats.verifiedCreators.toLocaleString()}+</div>
-            <div class="stat-label">Verified creators</div>
+            <div class="stat-label">Creator verification (coming soon)</div>
         </div>
         <div class="stat-item">
             <div class="stat-number">${platformStats.completedBookings.toLocaleString()}+</div>
