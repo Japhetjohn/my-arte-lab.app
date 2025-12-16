@@ -14,7 +14,7 @@ const PrivyAuth = () => {
       }
       isAuthenticating.current = true;
 
-      console.log('Privy login complete:', { user, isNewUser });
+      console.log('Privy login complete');
 
       // Get Privy access token
       const privyToken = await getAccessToken();
@@ -23,12 +23,29 @@ const PrivyAuth = () => {
       const signupRole = sessionStorage.getItem('signupRole') || 'client';
       sessionStorage.removeItem('signupRole');
 
-      // Extract email - try multiple possible locations
-      const userEmail = user.email?.address || user.google?.email || user.email;
-      const userName = user.google?.name || user.name || user.email?.address?.split('@')[0] || 'User';
+      // Extract email from linked accounts (Privy stores OAuth data here)
+      const googleAccount = user.linkedAccounts?.find(account => account.type === 'google_oauth');
+      const emailAccount = user.linkedAccounts?.find(account => account.type === 'email');
 
-      console.log('Extracted email:', userEmail);
-      console.log('Extracted name:', userName);
+      // Try multiple locations for email extraction
+      const userEmail = googleAccount?.email ||
+                        emailAccount?.address ||
+                        user.email?.address ||
+                        user.google?.email ||
+                        user.email;
+
+      const userName = googleAccount?.name ||
+                       user.google?.name ||
+                       user.name ||
+                       userEmail?.split('@')[0] ||
+                       'User';
+
+      // Validate that we have required data before proceeding
+      if (!userEmail) {
+        console.error('❌ Cannot authenticate: No email found in Privy user object');
+        isAuthenticating.current = false;
+        return;
+      }
 
       // Send to backend to create/login user
       try {
@@ -42,8 +59,8 @@ const PrivyAuth = () => {
             user: {
               email: userEmail,
               name: userName,
-              googleId: user.google?.subject,
-              profilePicture: user.google?.picture,
+              googleId: googleAccount?.subject || user.google?.subject,
+              profilePicture: googleAccount?.picture || user.google?.picture,
               role: signupRole
             },
             isNewUser
@@ -114,15 +131,34 @@ const PrivyAuth = () => {
         return;
       }
 
+      // Extract email from linked accounts (Privy stores OAuth data here)
+      const googleAccount = user.linkedAccounts?.find(account => account.type === 'google_oauth');
+      const emailAccount = user.linkedAccounts?.find(account => account.type === 'email');
+
+      // Try multiple locations for email extraction
+      const userEmail = googleAccount?.email ||
+                        emailAccount?.address ||
+                        user.email?.address ||
+                        user.google?.email ||
+                        user.email;
+
+      // Only sync with backend if we have a valid email
+      if (!userEmail) {
+        console.debug('Skipping auto-login: No email available yet');
+        return;
+      }
+
       // User is already logged in, sync with backend
       (async () => {
         isAuthenticating.current = true;
         try {
           const privyToken = await getAccessToken();
 
-          // Extract email - try multiple possible locations
-          const userEmail = user.email?.address || user.google?.email || user.email;
-          const userName = user.google?.name || user.name || user.email?.address?.split('@')[0] || 'User';
+          const userName = googleAccount?.name ||
+                           user.google?.name ||
+                           user.name ||
+                           userEmail?.split('@')[0] ||
+                           'User';
 
           const response = await fetch('/api/auth/privy', {
             method: 'POST',
@@ -134,8 +170,8 @@ const PrivyAuth = () => {
               user: {
                 email: userEmail,
                 name: userName,
-                googleId: user.google?.subject,
-                profilePicture: user.google?.picture
+                googleId: googleAccount?.subject || user.google?.subject,
+                profilePicture: googleAccount?.picture || user.google?.picture
               },
               isNewUser: false
             })
