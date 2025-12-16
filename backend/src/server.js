@@ -78,21 +78,24 @@ connectDatabase();
 
 // Configure Helmet with security-hardened CSP
 app.use(helmet({
+  crossOriginOpenerPolicy: false,
+  crossOriginEmbedderPolicy: false,
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://auth.privy.io", "https://*.privy.io"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://auth.privy.io", "https://*.privy.io", "https://challenges.cloudflare.com", "https://*.coinbase.com", "https://*.walletconnect.com"],
       scriptSrcAttr: ["'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://auth.privy.io"],
-      imgSrc: ["'self'", "data:", "https://res.cloudinary.com", "https://images.unsplash.com", "https://ui-avatars.com", "https://auth.privy.io", "https://*.privy.io", "blob:"],
-      connectSrc: ["'self'", "https://processor-prod.up.railway.app", "https://api.cloudinary.com", "https://auth.privy.io", "https://*.privy.io", "wss://*.privy.io"],
+      imgSrc: ["'self'", "data:", "https:", "blob:"],
+      connectSrc: ["'self'", "https://processor-prod.up.railway.app", "https://api.cloudinary.com", "https://auth.privy.io", "https://*.privy.io", "wss://*.privy.io", "https://*.coinbase.com", "https://*.walletconnect.com", "wss://*.walletconnect.com", "https://*.base.org"],
       fontSrc: ["'self'", "data:", "https://auth.privy.io"],
       objectSrc: ["'none'"],
       mediaSrc: ["'self'"],
-      frameSrc: ["'self'", "https://auth.privy.io", "https://*.privy.io"],
+      frameSrc: ["'self'", "https://auth.privy.io", "https://*.privy.io", "https://*.coinbase.com"],
       baseUri: ["'self'"],
       formAction: ["'self'", "https://auth.privy.io"],
-      frameAncestors: ["'none'"]
+      frameAncestors: ["'none'"],
+      workerSrc: ["'self'", "blob:"]
     },
   },
   hsts: {
