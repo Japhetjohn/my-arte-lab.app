@@ -236,6 +236,7 @@ export async function handleLogout() {
             window.notificationInterval = null;
         }
 
+        api.setUserData(null);
         clearUser();
         updateUserMenu();
         navigateToPage('home');
@@ -248,18 +249,39 @@ export async function handleLogout() {
  */
 export async function initAuth() {
     const token = api.getToken();
+    const cachedUser = api.getUserData();
 
-    if (token) {
+    if (token && cachedUser) {
+        setUser(cachedUser);
+        updateUserMenu();
+
         try {
             const response = await api.getMe();
 
             if (response.success && response.data.user) {
                 setUser(response.data.user);
+                api.setUserData(response.data.user);
+                updateUserMenu();
+                return response.data.user;
+            }
+        } catch (error) {
+            console.warn('Failed to refresh user data, using cached data:', error.message);
+        }
+
+        return cachedUser;
+    } else if (token) {
+        try {
+            const response = await api.getMe();
+
+            if (response.success && response.data.user) {
+                setUser(response.data.user);
+                api.setUserData(response.data.user);
                 updateUserMenu();
                 return response.data.user;
             }
         } catch (error) {
             api.setToken(null);
+            api.setUserData(null);
             clearUser();
         }
     }

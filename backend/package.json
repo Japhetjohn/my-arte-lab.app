@@ -9,7 +9,7 @@
     "dev:clean": "bash kill-port.sh && npm run dev",
     "kill-port": "bash kill-port.sh",
     "build": "cd frontend && npm ci && npm run build && cd ..",
-    "migrate:usdc": "node src/migrations/migrate-usdt-to-usdc.js",
+    "migrate:wallet-encryption": "node scripts/migrateWalletEncryption.js",
     "test": "jest --coverage",
     "lint": "eslint src/"
   },
@@ -17,10 +17,12 @@
     "marketplace",
     "creator-economy",
     "stablecoin",
-    "bread.africa",
+    "switch",
     "payments",
     "fiat-onramp",
-    "offramp"
+    "offramp",
+    "solana",
+    "usdc"
   ],
   "author": "MyArteLab",
   "license": "MIT",
@@ -48,8 +50,6 @@
     "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.1",
     "nodemailer": "^6.9.9",
-    "passport": "^0.7.0",
-    "passport-google-oauth20": "^2.0.0",
     "uuid": "^9.0.1"
   },
   "devDependencies": {

@@ -3,12 +3,12 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
-const rateLimit = require('express-rate-limit');
 const session = require('express-session');
-// const passport = require('./config/passport'); // REMOVED: Using Privy instead
+const crypto = require('crypto');
 
 const connectDatabase = require('./config/database');
 const emailConfig = require('./config/email');
+const switchConfig = require('./config/switch');
 const { errorMiddleware } = require('./utils/errorHandler');
 const {
   preventNoSQLInjection,
@@ -16,9 +16,18 @@ const {
   preventParameterPollution,
   securityLogger
 } = require('./middleware/security');
+const {
+  verifySwitchWebhookSignature,
+  preventWebhookReplay
+} = require('./middleware/webhookSecurity');
+const {
+  authLimiter,
+  passwordResetLimiter,
+  apiLimiter,
+  webhookLimiter
+} = require('./config/rateLimiting');
 
 const authRoutes = require('./routes/authRoutes');
-// const googleAuthRoutes = require('./routes/googleAuthRoutes'); // REMOVED: Using Privy instead
 const privyAuthRoutes = require('./routes/privyAuthRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
 const walletRoutes = require('./routes/walletRoutes');
@@ -41,7 +50,9 @@ app.set('trust proxy', 1);
 const requiredEnvVars = [
   'MONGODB_URI',
   'JWT_SECRET',
-  'PLATFORM_WALLET_ADDRESS'
+  'PLATFORM_WALLET_ADDRESS',
+  'WALLET_ENCRYPTION_KEY',
+  'SWITCH_WEBHOOK_SECRET'
 ];
 
 const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
@@ -51,6 +62,16 @@ if (missingEnvVars.length > 0) {
   if (process.env.NODE_ENV === 'production') {
     process.exit(1);
   }
+}
+
+if (process.env.WALLET_ENCRYPTION_KEY === process.env.JWT_SECRET) {
+  console.error('❌ CRITICAL: WALLET_ENCRYPTION_KEY must be different from JWT_SECRET');
+  process.exit(1);
+}
+
+if (process.env.WALLET_ENCRYPTION_KEY.length < 32) {
+  console.error('❌ CRITICAL: WALLET_ENCRYPTION_KEY must be at least 32 characters');
+  process.exit(1);
 }
 
 connectDatabase();
@@ -134,13 +155,8 @@ app.use(addSecurityHeaders);
 app.use(preventParameterPollution());
 app.use(securityLogger);
 
-if (!process.env.JWT_SECRET) {
-  console.error('❌ CRITICAL: JWT_SECRET environment variable is not set');
-  process.exit(1);
-}
-
 app.use(session({
-  secret: process.env.JWT_SECRET,
+  secret: process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex'),
   resave: false,
   saveUninitialized: false,
   cookie: {
@@ -151,31 +167,11 @@ app.use(session({
   }
 }));
 
-// app.use(passport.initialize()); // REMOVED: Using Privy instead
-// app.use(passport.session()); // REMOVED: Using Privy instead
-
-const limiter = rateLimit({
-  windowMs: (parseInt(process.env.RATE_LIMIT_WINDOW) || 15) * 60 * 1000,
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
-  message: 'Too many requests from this IP, please try again later',
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-// Stricter rate limiting for webhook endpoints to prevent DDoS
-const webhookLimiter = rateLimit({
-  windowMs: 1 * 60 * 1000, // 1 minute window
-  max: 100, // Max 100 requests per minute
-  message: 'Too many webhook requests, please try again later',
-  standardHeaders: true,
-  legacyHeaders: false,
-  skip: (req) => {
-    // Skip rate limiting for verified webhook signatures (after verification passes)
-    return req.webhookVerified === true;
-  }
-});
-
-app.use('/api/', limiter);
+app.use('/api/', apiLimiter);
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+app.use('/api/auth/forgot-password', passwordResetLimiter);
+app.use('/api/auth/reset-password', passwordResetLimiter);
 
 app.get('/health', async (req, res) => {
   const health = {
@@ -202,25 +198,39 @@ app.get('/health', async (req, res) => {
   }
 
   try {
-    if (!breadConfig.serviceKey) {
+    if (!switchConfig.serviceKey) {
+      health.checks.paymentGateway = 'not_configured';
       health.status = 'DEGRADED';
+    } else {
+      health.checks.paymentGateway = 'configured';
     }
   } catch (error) {
+    health.checks.paymentGateway = `error: ${error.message}`;
     health.status = 'DEGRADED';
+  }
+
+  try {
+    if (!process.env.WALLET_ENCRYPTION_KEY || !process.env.JWT_SECRET) {
+      health.checks.security = 'missing_keys';
+      health.status = 'DEGRADED';
+    } else {
+      health.checks.security = 'keys_configured';
+    }
+  } catch (error) {
+    health.checks.security = `error: ${error.message}`;
   }
 
   const statusCode = health.status === 'OK' ? 200 : 503;
   res.status(statusCode).json(health);
 });
 
-// app.use('/api/auth', googleAuthRoutes); // REMOVED: Using Privy instead
+app.use('/api/webhooks', verifySwitchWebhookSignature, preventWebhookReplay, webhookLimiter, webhookRoutes);
 app.use('/api/auth', privyAuthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/wallet', walletRoutes);
 app.use('/api/creators', creatorRoutes);
 app.use('/api/reviews', reviewRoutes);
-app.use('/api/webhooks', webhookLimiter, webhookRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/services', servicesRoutes);

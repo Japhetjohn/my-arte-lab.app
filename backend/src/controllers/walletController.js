@@ -39,8 +39,6 @@ exports.getTransactions = catchAsync(async (req, res, next) => {
   });
 });
 
-// Legacy crypto withdrawal endpoint - Deprecated
-
 exports.requestWithdrawal = catchAsync(async (req, res, next) => {
   return next(new ErrorHandler(
     'Direct crypto withdrawals are no longer supported. Please use Bank Withdrawal or Mobile Money Withdrawal instead.',
@@ -58,8 +56,6 @@ exports.getBalanceSummary = catchAsync(async (req, res, next) => {
     summary
   });
 });
-
-// ============= Beneficiary Management =============
 
 exports.getBeneficiaries = catchAsync(async (req, res, next) => {
   const user = await User.findById(req.user._id);
@@ -136,9 +132,7 @@ exports.deleteBeneficiary = catchAsync(async (req, res, next) => {
   successResponse(res, 200, 'Beneficiary deleted successfully');
 });
 
-// ============= Utility Methods =============
 
-// ============= Switch Global Offramp Methods =============
 
 /**
  * Get all supported countries for offramp
@@ -335,7 +329,6 @@ exports.requestSwitchOfframp = catchAsync(async (req, res, next) => {
   }
 });
 
-// ============= Switch Onramp (Deposit) =============
 
 /**
  * Get onramp quote (fiat to crypto)
@@ -481,7 +474,6 @@ exports.verifySwitchBankAccount = catchAsync(async (req, res, next) => {
   }
 });
 
-// ============= Switch Swap (Asset Exchange) =============
 
 /**
  * Get swap quote for exchanging between assets
@@ -604,7 +596,6 @@ exports.requestSwitchSwap = catchAsync(async (req, res, next) => {
   }
 });
 
-// ============= Transaction Status =============
 
 /**
  * Get transaction status by reference

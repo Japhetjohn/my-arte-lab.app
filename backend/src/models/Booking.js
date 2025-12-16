@@ -1,10 +1,18 @@
 const mongoose = require('mongoose');
+const { BOOKING_LIMITS } = require('../utils/constants');
 
 const bookingSchema = new mongoose.Schema({
   bookingId: {
     type: String,
     required: true,
     unique: true
+  },
+
+  idempotencyKey: {
+    type: String,
+    unique: true,
+    sparse: true,
+    index: true
   },
 
   client: {
@@ -37,13 +45,14 @@ const bookingSchema = new mongoose.Schema({
   amount: {
     type: Number,
     required: true,
-    min: 0
+    min: BOOKING_LIMITS.MIN_AMOUNT,
+    max: BOOKING_LIMITS.MAX_AMOUNT
   },
 
   currency: {
     type: String,
     required: true,
-    enum: ['USDT', 'USDC', 'DAI'],
+    enum: ['USDC', 'DAI'],
     default: 'USDC'
   },
 
@@ -187,6 +196,8 @@ bookingSchema.index({ creator: 1, status: 1 });
 bookingSchema.index({ paymentStatus: 1 });
 bookingSchema.index({ status: 1 });
 bookingSchema.index({ createdAt: -1 });
+bookingSchema.index({ _id: 1, status: 1, __v: 1 });
+bookingSchema.index({ idempotencyKey: 1 });
 
 bookingSchema.pre('save', async function(next) {
   if (!this.bookingId) {

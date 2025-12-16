@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const { SECURITY, USER_ROLES, CREATOR_CATEGORIES } = require('../utils/constants');
+const { formatLocation } = require('../utils/formatters');
 
 const userSchema = new mongoose.Schema({
   name: {
@@ -20,16 +22,18 @@ const userSchema = new mongoose.Schema({
 
   password: {
     type: String,
-    required: false, // Not required for OAuth users
+    required: false,
     validate: {
       validator: function(value) {
-        // If password is set and not an OAuth placeholder, validate length
         if (!value || value === 'OAUTH_USER_NO_PASSWORD') {
-          return true; // Allow OAuth placeholders
+          return true;
         }
-        return value.length >= 8;
+        if (value.length < SECURITY.PASSWORD_MIN_LENGTH) {
+          return false;
+        }
+        return SECURITY.PASSWORD_REGEX.test(value);
       },
-      message: 'Password must be at least 8 characters'
+      message: 'Password must be at least 8 characters and contain uppercase, lowercase, number, and special character (@$!%*?&_-#)'
     },
     select: false
   },
@@ -42,8 +46,8 @@ const userSchema = new mongoose.Schema({
 
   role: {
     type: String,
-    enum: ['client', 'creator', 'admin'],
-    default: 'client'
+    enum: Object.values(USER_ROLES),
+    default: USER_ROLES.CLIENT
   },
 
   bio: {
@@ -68,8 +72,8 @@ const userSchema = new mongoose.Schema({
 
   category: {
     type: String,
-    enum: ['photographer', 'designer', 'videographer', 'illustrator', 'other'],
-    required: function() { return this.role === 'creator'; }
+    enum: Object.values(CREATOR_CATEGORIES),
+    required: function() { return this.role === USER_ROLES.CREATOR; }
   },
 
   skills: [{
@@ -331,7 +335,14 @@ const userSchema = new mongoose.Schema({
 userSchema.index({ role: 1 });
 userSchema.index({ category: 1 });
 userSchema.index({ 'rating.average': -1 });
+userSchema.index({ 'wallet.address': 1 });
+userSchema.index({ email: 1, googleId: 1 });
+userSchema.index({ role: 1, category: 1, 'rating.average': -1 });
 // Note: wallet.address, email, and googleId already have unique indexes from schema definition
+
+userSchema.virtual('formattedLocation').get(function() {
+  return formatLocation(this.location);
+});
 
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) {
@@ -339,7 +350,7 @@ userSchema.pre('save', async function(next) {
   }
 
   try {
-    let rounds = parseInt(process.env.BCRYPT_ROUNDS, 10) || 12;
+    let rounds = SECURITY.BCRYPT_ROUNDS;
     if (isNaN(rounds) || rounds < 10) {
       rounds = 12;
     }
@@ -372,11 +383,9 @@ userSchema.methods.incLoginAttempts = async function() {
   }
 
   const updates = { $inc: { loginAttempts: 1 } };
-  const maxAttempts = parseInt(process.env.MAX_LOGIN_ATTEMPTS) || 5;
 
-  if (this.loginAttempts + 1 >= maxAttempts && !this.isLocked()) {
-    const lockoutDuration = parseInt(process.env.LOCKOUT_DURATION) || 15;
-    updates.$set = { lockUntil: Date.now() + (lockoutDuration * 60 * 1000) };
+  if (this.loginAttempts + 1 >= SECURITY.MAX_LOGIN_ATTEMPTS && !this.isLocked()) {
+    updates.$set = { lockUntil: Date.now() + (SECURITY.LOCKOUT_DURATION_MINUTES * 60 * 1000) };
   }
 
   return await this.updateOne(updates);
@@ -390,13 +399,28 @@ userSchema.methods.resetLoginAttempts = async function() {
 };
 
 userSchema.methods.updateWalletBalance = async function(amount, type = 'add') {
-  const update = type === 'add'
-    ? { $inc: { 'wallet.balance': amount } }
-    : { $inc: { 'wallet.balance': -amount } };
+  const amountChange = type === 'add' ? amount : -amount;
 
-  update.$set = { 'wallet.lastUpdated': Date.now() };
+  const result = await this.constructor.findOneAndUpdate(
+    { _id: this._id, __v: this.__v },
+    {
+      $inc: {
+        'wallet.balance': amountChange,
+        'wallet.pendingBalance': amountChange,
+        __v: 1
+      },
+      $set: { 'wallet.lastUpdated': Date.now() }
+    },
+    { new: true }
+  );
 
-  return await this.updateOne(update);
+  if (!result) {
+    const { ErrorHandler } = require('../utils/errorHandler');
+    throw new ErrorHandler('Concurrent modification detected during wallet update', 409);
+  }
+
+  Object.assign(this, result.toObject());
+  return result;
 };
 
 userSchema.methods.getPublicProfile = function() {

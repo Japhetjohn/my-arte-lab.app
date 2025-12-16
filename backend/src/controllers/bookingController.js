@@ -8,9 +8,11 @@ const emailConfig = require('../config/email');
 const adminNotificationService = require('../services/adminNotificationService');
 const { escapeHtml } = require('../utils/sanitize');
 const { v4: uuidv4 } = require('uuid');
+const bookingService = require('../services/bookingService');
+const { isValidBookingAmount } = require('../utils/validators');
+const { PLATFORM_CONFIG } = require('../utils/constants');
 
-// Platform configuration
-const PLATFORM_COMMISSION = parseFloat(process.env.PLATFORM_COMMISSION) || 10;
+const PLATFORM_COMMISSION = parseFloat(process.env.PLATFORM_COMMISSION) || PLATFORM_CONFIG.COMMISSION_RATE;
 
 exports.createBooking = catchAsync(async (req, res, next) => {
   const {
@@ -24,103 +26,89 @@ exports.createBooking = catchAsync(async (req, res, next) => {
     endDate
   } = req.body;
 
-  const creator = await User.findById(creatorId);
-  if (!creator || !creator.role || !creator.role.toLowerCase().includes('creator')) {
-    return next(new ErrorHandler('Creator not found', 404));
+  const validation = isValidBookingAmount(amount);
+  if (!validation.valid) {
+    return next(new ErrorHandler(validation.error, 400));
   }
 
-  // Check if client has sufficient balance
-  const client = await User.findById(req.user._id);
-  if (client.wallet.balance < amount) {
-    return next(new ErrorHandler('Insufficient balance to create booking', 400));
+  const idempotencyKey = req.headers['idempotency-key'];
+
+  try {
+    const result = await bookingService.createBookingWithValidation(
+      {
+        creatorId,
+        serviceTitle,
+        serviceDescription,
+        category,
+        amount,
+        currency,
+        startDate,
+        endDate
+      },
+      req.user._id,
+      idempotencyKey
+    );
+
+    if (result.alreadyExists) {
+      return successResponse(res, 200, 'Booking already exists', {
+        booking: result.booking
+      });
+    }
+
+    const { booking } = result;
+
+    await booking.populate('creator', 'name email');
+
+    emailConfig.sendEmail({
+      to: booking.creator.email,
+      subject: 'New Booking Request! ',
+      html: `
+        <h1>New Booking!</h1>
+        <p>Hi ${booking.creator.name},</p>
+        <p>You have received a new booking request from ${req.user.name}.</p>
+        <p><strong>Service:</strong> ${serviceTitle}</p>
+        <p><strong>Amount:</strong> ${amount} ${currency || 'USDC'}</p>
+        <p><strong>Your Earnings:</strong> ${booking.creatorAmount} ${booking.currency} (after ${booking.platformCommission}% platform fee)</p>
+        <p>Login to your account to view details.</p>
+      `
+    }).catch(err => console.error('Email failed:', err));
+
+    adminNotificationService.notifyNewBooking(booking, req.user, booking.creator)
+      .catch(err => console.error('Admin notification failed:', err));
+
+    await Notification.createNotification({
+      recipient: booking.creator._id,
+      sender: req.user._id,
+      type: 'booking_request',
+      title: 'New Booking Request',
+      message: `${req.user.name} has sent you a booking request for ${serviceTitle}`,
+      link: `/bookings`,
+      booking: booking._id,
+      metadata: {
+        amount: booking.amount,
+        currency: booking.currency,
+        bookingId: booking.bookingId
+      }
+    });
+
+    successResponse(res, 201, 'Booking created successfully', {
+      booking,
+      paymentInstructions: {
+        message: 'Creator will review your request first. Payment will be auto-deducted from your wallet once approved.',
+        amount: booking.amount,
+        currency: booking.currency,
+        note: 'Please ensure you have sufficient balance in your wallet'
+      }
+    });
+  } catch (error) {
+    if (error.statusCode === 404 && error.message.includes('Creator')) {
+      return next(new ErrorHandler('Creator not found', 404));
+    }
+    if (error.statusCode === 400) {
+      return next(error);
+    }
+    return next(new ErrorHandler('Failed to create booking. Please try again.', 500));
   }
-
-  const platformCommission = PLATFORM_COMMISSION;
-  const platformFee = (amount * platformCommission) / 100;
-  const creatorAmount = amount - platformFee;
-
-  // Generate unique booking ID
-  const bookingId = `BKG-${uuidv4().substring(0, 8).toUpperCase()}`;
-
-  const booking = await Booking.create({
-    bookingId,
-    client: req.user._id,
-    creator: creatorId,
-    serviceTitle,
-    serviceDescription,
-    category,
-    amount,
-    currency: currency || 'USDC',
-    platformCommission,
-    platformFee,
-    creatorAmount,
-    startDate,
-    endDate,
-    escrowWallet: {
-      address: `escrow-${bookingId}`,  // Database-only escrow identifier
-      balance: amount  // Track escrow balance in database
-    }
-  });
-
-  // Deduct funds from client's wallet (hold in escrow)
-  client.wallet.balance -= amount;
-  client.wallet.pendingBalance += amount;
-  await client.save({ validateBeforeSave: false });
-
-  // Create escrow transaction record
-  await Transaction.create({
-    user: client._id,
-    type: 'escrow',
-    amount,
-    currency: currency || 'USDC',
-    status: 'completed',
-    booking: booking._id,
-    description: `Funds held in escrow for ${serviceTitle}`,
-    completedAt: new Date()
-  });
-
-  emailConfig.sendEmail({
-    to: creator.email,
-    subject: 'New Booking Request! ',
-    html: `
-      <h1>New Booking!</h1>
-      <p>Hi ${creator.name},</p>
-      <p>You have received a new booking request from ${req.user.name}.</p>
-      <p><strong>Service:</strong> ${serviceTitle}</p>
-      <p><strong>Amount:</strong> ${amount} ${currency}</p>
-      <p><strong>Your Earnings:</strong> ${creatorAmount} ${currency} (after ${platformCommission}% platform fee)</p>
-      <p>Login to your account to view details.</p>
-    `
-  }).catch(err => console.error('Email failed:', err));
-
-  adminNotificationService.notifyNewBooking(booking, req.user, creator)
-    .catch(err => console.error('Admin notification failed:', err));
-
-  // Create notification for creator
-  await Notification.createNotification({
-    recipient: creator._id,
-    sender: req.user._id,
-    type: 'booking_request',
-    title: 'New Booking Request',
-    message: `${req.user.name} has sent you a booking request for ${serviceTitle}`,
-    link: `/bookings`,
-    booking: booking._id,
-    metadata: {
-      amount: booking.amount,
-      currency: booking.currency,
-      bookingId: booking.bookingId
-    }
-  });
-
-  successResponse(res, 201, 'Booking created successfully', {
-    booking,
-    paymentInstructions: {
-      message: 'Creator will review your request first. Payment will be auto-deducted from your wallet once approved.',
-      amount: booking.amount,
-      currency: booking.currency,
-      note: 'Please ensure you have sufficient balance in your wallet'
-    }
-  });
 });
 
 exports.getMyBookings = catchAsync(async (req, res, next) => {
@@ -253,82 +241,20 @@ exports.completeBooking = catchAsync(async (req, res, next) => {
 });
 
 exports.releaseFunds = catchAsync(async (req, res, next) => {
-  const booking = await Booking.findById(req.params.id);
-
-  if (!booking) {
-    return next(new ErrorHandler('Booking not found', 404));
-  }
-
-  // Check authorization before populating (client is ObjectId at this point)
-  if (booking.client.toString() !== req.user._id.toString()) {
-    return next(new ErrorHandler('Only the client can release funds', 403));
-  }
-
-  // Now populate the needed fields
-  await booking.populate('creator', 'wallet.address name email');
-  await booking.populate('client', 'name');
-
-  if (!booking.canReleaseFunds()) {
-    return next(new ErrorHandler('Funds cannot be released for this booking', 400));
-  }
-
   try {
-    // Verify escrow wallet has sufficient balance before releasing funds
-    if (booking.escrowWallet.balance < booking.amount) {
-      return next(new ErrorHandler('Insufficient funds in escrow', 400));
-    }
+    const result = await bookingService.releaseFundsWithTransaction(
+      req.params.id,
+      req.user._id
+    );
 
-    // Release funds from escrow
-    await booking.releaseFunds();
-    booking.platformFeePaid = true;
-    booking.platformFeePaidAt = new Date();
-    booking.escrowWallet.balance = 0;  // Clear escrow balance
-    await booking.save();
-
-    // Create transaction records
-    await Transaction.create([
-      {
-        user: booking.creator._id,
-        type: 'earning',
-        amount: booking.creatorAmount,
-        currency: booking.currency,
-        status: 'completed',
-        booking: booking._id,
-        toAddress: booking.creator.wallet.address,
-        description: `Payment received for ${booking.serviceTitle}`,
-        completedAt: new Date()
-      },
-      {
-        user: booking.creator._id,
-        type: 'platform_fee',
-        amount: booking.platformFee,
-        currency: booking.currency,
-        status: 'completed',
-        booking: booking._id,
-        description: `Platform fee for ${booking.bookingId}`,
-        completedAt: new Date()
-      }
-    ]);
-
-    // Update client's pending balance (release from escrow)
-    const client = await User.findById(booking.client._id);
-    client.wallet.pendingBalance -= booking.amount;
-    await client.save({ validateBeforeSave: false });
-
-    // Update creator balance and stats (do all updates in memory, then save once)
-    const creator = await User.findById(booking.creator._id);
-    creator.wallet.balance += booking.creatorAmount;
-    creator.wallet.totalEarnings += booking.creatorAmount;
-    creator.wallet.lastUpdated = Date.now();
-    creator.completedBookings += 1;
-    await creator.save();
+    const { booking, creator, client } = result;
 
     emailConfig.sendEmail({
-      to: booking.creator.email,
+      to: creator.email,
       subject: 'Payment Received! ',
       html: `
         <h1>Payment Received!</h1>
-        <p>Hi ${escapeHtml(booking.creator.name)},</p>
+        <p>Hi ${escapeHtml(creator.name)},</p>
         <p>Payment for "${escapeHtml(booking.serviceTitle)}" has been released!</p>
         <p><strong>Amount Received:</strong> ${escapeHtml(String(booking.creatorAmount))} ${escapeHtml(booking.currency)}</p>
         <p><strong>Platform Fee:</strong> ${escapeHtml(String(booking.platformFee))} ${escapeHtml(booking.currency)}</p>
@@ -339,10 +265,9 @@ exports.releaseFunds = catchAsync(async (req, res, next) => {
     adminNotificationService.notifyPaymentReceived(booking, { amount: booking.creatorAmount })
       .catch(err => console.error('Admin notification failed:', err));
 
-    // Create notification for creator about payment
     await Notification.createNotification({
-      recipient: booking.creator._id,
-      sender: booking.client._id,
+      recipient: creator._id,
+      sender: client._id,
       type: 'payment_received',
       title: 'Payment Received',
       message: `Payment of ${booking.creatorAmount} ${booking.currency} for "${booking.serviceTitle}" has been released to your wallet`,
@@ -355,27 +280,30 @@ exports.releaseFunds = catchAsync(async (req, res, next) => {
       }
     });
 
-    // Create notification for client to leave a review
     await Notification.createNotification({
-      recipient: booking.client._id,
-      sender: booking.creator._id,
+      recipient: client._id,
+      sender: creator._id,
       type: 'system',
       title: 'Leave a Review',
-      message: `Payment has been released for "${booking.serviceTitle}". How was your experience working with ${booking.creator.name}? Leave a review to help other clients.`,
+      message: `Payment has been released for "${booking.serviceTitle}". How was your experience working with ${creator.name}? Leave a review to help other clients.`,
       link: `/bookings`,
       booking: booking._id,
       metadata: {
         bookingId: booking.bookingId,
-        creatorId: booking.creator._id
+        creatorId: creator._id
       }
     });
 
     successResponse(res, 200, 'Funds released successfully', {
-      booking,
-      transactions: releaseResult
+      booking
     });
-
   } catch (error) {
+    if (error.statusCode === 404) {
+      return next(new ErrorHandler('Booking not found', 404));
+    }
+    if (error.statusCode === 400) {
+      return next(error);
+    }
     return next(new ErrorHandler('Failed to release funds. Please contact support', 500));
   }
 });
@@ -430,79 +358,26 @@ exports.addMessage = catchAsync(async (req, res, next) => {
 });
 
 exports.acceptBooking = catchAsync(async (req, res, next) => {
-  const booking = await Booking.findById(req.params.id).populate('client creator');
+  const idempotencyKey = req.headers['idempotency-key'];
 
-  if (!booking) {
-    return next(new ErrorHandler('Booking not found', 404));
-  }
-
-  // Only creator can accept
-  if (booking.creator._id.toString() !== req.user._id.toString()) {
-    return next(new ErrorHandler('Only the creator can accept this booking', 403));
-  }
-
-  if (booking.status !== 'pending') {
-    return next(new ErrorHandler('Booking can only be accepted when pending', 400));
-  }
-
-  // Get client's wallet balance
-  const client = await User.findById(booking.client._id);
-
-  if (!client.wallet || client.wallet.balance < booking.amount) {
-    // Create notification for client about insufficient balance
-    await Notification.createNotification({
-      recipient: client._id,
-      sender: booking.creator._id,
-      type: 'insufficient_balance',
-      title: 'Insufficient Wallet Balance',
-      message: `Your booking request for "${booking.serviceTitle}" was accepted, but you have insufficient balance. Please fund your wallet with at least ${booking.amount} ${booking.currency}`,
-      link: `/wallet`,
-      booking: booking._id,
-      metadata: {
-        required: booking.amount,
-        current: client.wallet?.balance || 0,
-        currency: booking.currency
-      }
-    });
-
-    // Also notify creator about the issue
-    await Notification.createNotification({
-      recipient: booking.creator._id,
-      sender: client._id,
-      type: 'system',
-      title: 'Client Wallet Balance Insufficient',
-      message: `${client.name} has insufficient wallet balance for booking "${booking.serviceTitle}". They need to fund their wallet before payment can be processed. You will be notified once they fund their wallet.`,
-      link: `/bookings`,
-      booking: booking._id
-    });
-
-    return next(new ErrorHandler(`Cannot accept booking: ${client.name}'s wallet balance is insufficient. Required: ${booking.amount} ${booking.currency}, Available: ${client.wallet?.balance || 0} ${booking.currency}. The client has been notified to fund their wallet. You will be notified once they have sufficient funds.`, 400));
-  }
-
-  // Deduct payment from client's wallet automatically
   try {
-    await client.updateWalletBalance(booking.amount, 'subtract');
-    await client.save();
+    const result = await bookingService.acceptBookingWithTransaction(
+      req.params.id,
+      req.user._id,
+      idempotencyKey
+    );
 
-    // Create transaction record for deduction
-    await Transaction.create({
-      user: client._id,
-      type: 'payment',
-      amount: booking.amount,
-      currency: booking.currency,
-      status: 'completed',
-      booking: booking._id,
-      description: `Payment for ${booking.serviceTitle}`,
-      completedAt: new Date()
-    });
+    if (result.alreadyProcessed) {
+      return successResponse(res, 200, 'Booking already processed', {
+        booking: result.booking
+      });
+    }
 
-    // Update booking status and payment status
-    booking.status = 'confirmed';
-    booking.paymentStatus = 'paid';
-    booking.paidAt = new Date();
-    await booking.save();
+    const { booking, client } = result;
 
-    // Create notification for client
+    await booking.populate('creator', 'name email');
+    await booking.populate('client', 'name email');
+
     await Notification.createNotification({
       recipient: client._id,
       sender: booking.creator._id,
@@ -518,7 +393,6 @@ exports.acceptBooking = catchAsync(async (req, res, next) => {
       }
     });
 
-    // Create notification for payment deduction
     await Notification.createNotification({
       recipient: client._id,
       type: 'payment_deducted',
@@ -533,7 +407,6 @@ exports.acceptBooking = catchAsync(async (req, res, next) => {
       }
     });
 
-    // Send email notification to client
     emailConfig.sendEmail({
       to: booking.client.email,
       subject: 'Booking Accepted and Payment Processed',
@@ -548,9 +421,42 @@ exports.acceptBooking = catchAsync(async (req, res, next) => {
       `
     }).catch(err => console.error('Email failed:', err));
 
-    successResponse(res, 200, 'Booking accepted and payment processed successfully', { booking });
+    successResponse(res, 200, 'Booking accepted and payment processed successfully', {
+      booking
+    });
   } catch (error) {
-    return next(new ErrorHandler('Failed to process payment. Please try again.', 500));
+    if (error.statusCode === 404) {
+      return next(new ErrorHandler('Booking not found or cannot be accepted', 404));
+    }
+    if (error.statusCode === 400 && error.message.includes('Insufficient balance')) {
+      const booking = await Booking.findById(req.params.id).populate('client creator');
+      if (booking) {
+        await Notification.createNotification({
+          recipient: booking.client._id,
+          sender: booking.creator._id,
+          type: 'insufficient_balance',
+          title: 'Insufficient Wallet Balance',
+          message: `Your booking request for "${booking.serviceTitle}" was accepted, but you have insufficient balance. Please fund your wallet with at least ${booking.amount} ${booking.currency}`,
+          link: `/wallet`,
+          booking: booking._id,
+          metadata: {
+            required: booking.amount,
+            currency: booking.currency
+          }
+        });
+
+        await Notification.createNotification({
+          recipient: booking.creator._id,
+          sender: booking.client._id,
+          type: 'system',
+          title: 'Client Wallet Balance Insufficient',
+          message: `${booking.client.name} has insufficient wallet balance for booking "${booking.serviceTitle}". They need to fund their wallet before payment can be processed.`,
+          link: `/bookings`,
+          booking: booking._id
+        });
+      }
+    }
+    return next(error);
   }
 });
 

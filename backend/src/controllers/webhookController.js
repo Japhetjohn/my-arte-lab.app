@@ -16,7 +16,6 @@ exports.testWebhook = catchAsync(async (req, res, next) => {
   });
 });
 
-// ============= Switch Webhook Handlers =============
 
 /**
  * Handle Switch onramp webhooks (deposit completion)
@@ -115,7 +114,6 @@ exports.handleSwitchOfframpWebhook = catchAsync(async (req, res, next) => {
   }
 });
 
-// ============= Switch Webhook Helper Functions =============
 
 /**
  * Process completed onramp (deposit successful - credit user wallet)
@@ -134,18 +132,33 @@ async function processOnrampCompleted(transaction, webhookData) {
     };
     await transaction.save();
 
-    // Credit user wallet
     const user = await User.findById(transaction.user);
     if (user) {
-      user.wallet.balance += parseFloat(cryptoAmount);
-      user.wallet.lastUpdated = new Date();
-      await user.save({ validateBeforeSave: false });
+      const amountToCredit = parseFloat(cryptoAmount);
+
+      const updatedUser = await User.findOneAndUpdate(
+        { _id: user._id, __v: user.__v },
+        {
+          $inc: {
+            'wallet.balance': amountToCredit,
+            __v: 1
+          },
+          $set: {
+            'wallet.lastUpdated': new Date()
+          }
+        },
+        { new: true }
+      );
+
+      if (!updatedUser) {
+        throw new ErrorHandler('Concurrent modification detected during wallet credit', 409);
+      }
 
       await notificationService.createNotification({
         user: user._id,
         type: 'deposit_completed',
         title: 'Deposit Successful',
-        message: `Your deposit of ${parseFloat(cryptoAmount).toFixed(2)} ${asset} has been credited to your wallet`,
+        message: `Your deposit of ${amountToCredit.toFixed(2)} ${asset} has been credited to your wallet`,
         relatedId: transaction._id,
         relatedModel: 'Transaction'
       });
@@ -214,10 +227,23 @@ async function processSwitchOfframpCompleted(transaction, webhookData) {
 
     const user = await User.findById(transaction.user);
     if (user) {
-      // Remove from pending balance (already deducted from main balance when withdrawal was initiated)
-      user.wallet.pendingBalance -= transaction.amount;
-      user.wallet.lastUpdated = new Date();
-      await user.save({ validateBeforeSave: false });
+      const updatedUser = await User.findOneAndUpdate(
+        { _id: user._id, __v: user.__v },
+        {
+          $inc: {
+            'wallet.pendingBalance': -transaction.amount,
+            __v: 1
+          },
+          $set: {
+            'wallet.lastUpdated': new Date()
+          }
+        },
+        { new: true }
+      );
+
+      if (!updatedUser) {
+        throw new ErrorHandler('Concurrent modification detected during offramp completion', 409);
+      }
 
       await notificationService.createNotification({
         user: user._id,
@@ -255,11 +281,24 @@ async function processSwitchOfframpFailed(transaction, webhookData) {
 
     const user = await User.findById(transaction.user);
     if (user) {
-      // Refund: move from pending back to available balance
-      user.wallet.balance += transaction.amount;
-      user.wallet.pendingBalance -= transaction.amount;
-      user.wallet.lastUpdated = new Date();
-      await user.save({ validateBeforeSave: false });
+      const updatedUser = await User.findOneAndUpdate(
+        { _id: user._id, __v: user.__v },
+        {
+          $inc: {
+            'wallet.balance': transaction.amount,
+            'wallet.pendingBalance': -transaction.amount,
+            __v: 1
+          },
+          $set: {
+            'wallet.lastUpdated': new Date()
+          }
+        },
+        { new: true }
+      );
+
+      if (!updatedUser) {
+        throw new ErrorHandler('Concurrent modification detected during offramp refund', 409);
+      }
 
       await notificationService.createNotification({
         user: user._id,

@@ -31,6 +31,25 @@ class ApiService {
     }
 
     /**
+     * Set user data in localStorage
+     */
+    setUserData(user) {
+        if (user) {
+            localStorage.setItem('userData', JSON.stringify(user));
+        } else {
+            localStorage.removeItem('userData');
+        }
+    }
+
+    /**
+     * Get user data from localStorage
+     */
+    getUserData() {
+        const userData = localStorage.getItem('userData');
+        return userData ? JSON.parse(userData) : null;
+    }
+
+    /**
      * Get headers for API requests
      */
     getHeaders(includeAuth = true) {
@@ -55,6 +74,7 @@ class ApiService {
             // Handle authentication errors
             if (response.status === 401) {
                 this.setToken(null);
+                this.setUserData(null);
                 window.location.href = '/';
                 throw new Error('Session expired. Please login again.');
             }
@@ -135,6 +155,9 @@ class ApiService {
         if (response.data?.token) {
             this.setToken(response.data.token);
         }
+        if (response.data?.user) {
+            this.setUserData(response.data.user);
+        }
         return response;
     }
 
@@ -142,6 +165,9 @@ class ApiService {
         const response = await this.post(API_ENDPOINTS.login, credentials, { auth: false });
         if (response.data?.token) {
             this.setToken(response.data.token);
+        }
+        if (response.data?.user) {
+            this.setUserData(response.data.user);
         }
         return response;
     }
@@ -151,6 +177,7 @@ class ApiService {
             await this.post(API_ENDPOINTS.logout);
         } finally {
             this.setToken(null);
+            this.setUserData(null);
         }
     }
 

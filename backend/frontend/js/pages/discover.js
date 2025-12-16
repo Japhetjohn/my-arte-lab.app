@@ -2,6 +2,7 @@
 import { appState } from '../state.js';
 import { renderCreatorCards, setupCreatorCardListeners } from '../components/creators.js';
 import api from '../services/api.js';
+import { formatLocation } from '../utils/formatters.js';
 
 let creators = [];
 let currentFilters = {
@@ -79,7 +80,7 @@ async function loadCreators() {
                 // Use uploaded avatar if available, otherwise use default with initials
                 avatar: creator.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name || 'User')}&background=9747FF&color=fff&bold=true`,
                 role: creator.category ? creator.category.charAt(0).toUpperCase() + creator.category.slice(1) : 'Creator',
-                location: creator.location || 'Nigeria',
+                location: formatLocation(creator.location),
                 rating: creator.rating?.average?.toFixed(1) || '0.0',
                 reviewCount: creator.rating?.count || 0,
                 verified: creator.isVerified || false,
