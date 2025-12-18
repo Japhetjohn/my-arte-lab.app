@@ -26,7 +26,6 @@ exports.handleSwitchOnrampWebhook = catchAsync(async (req, res, next) => {
 
     console.log('Switch onramp webhook received:', JSON.stringify(webhookData, null, 2));
 
-    // Switch webhook structure: { reference, status, data }
     const { reference, status, data } = webhookData;
 
     if (!reference) {
@@ -34,7 +33,6 @@ exports.handleSwitchOnrampWebhook = catchAsync(async (req, res, next) => {
       return successResponse(res, 200, 'Webhook received but missing reference');
     }
 
-    // Find transaction by reference
     const transaction = await Transaction.findOne({ reference });
 
     if (!transaction) {
@@ -47,7 +45,6 @@ exports.handleSwitchOnrampWebhook = catchAsync(async (req, res, next) => {
       return successResponse(res, 200, 'Transaction already processed');
     }
 
-    // Process based on status
     if (status === 'completed' || status === 'success') {
       await processOnrampCompleted(transaction, data);
     } else if (status === 'failed' || status === 'error') {
@@ -62,7 +59,6 @@ exports.handleSwitchOnrampWebhook = catchAsync(async (req, res, next) => {
 
   } catch (error) {
     console.error('Switch onramp webhook processing error:', error);
-    // Always return 200 to prevent Switch from retrying
     successResponse(res, 200, 'Webhook received but processing failed');
   }
 });
@@ -95,7 +91,6 @@ exports.handleSwitchOfframpWebhook = catchAsync(async (req, res, next) => {
       return successResponse(res, 200, 'Transaction already processed');
     }
 
-    // Process based on status
     if (status === 'completed' || status === 'success') {
       await processSwitchOfframpCompleted(transaction, data);
     } else if (status === 'failed' || status === 'error') {

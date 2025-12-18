@@ -1,4 +1,3 @@
-// Notifications Page Module
 import { appState } from '../state.js';
 import { formatDate } from '../utils.js';
 import api from '../services/api.js';
@@ -24,7 +23,6 @@ export async function renderNotificationsPage() {
         return;
     }
 
-    // Show loading state
     mainContent.innerHTML = `
         <div class="section">
             <div class="container">
@@ -165,16 +163,13 @@ function renderNotificationCard(notification) {
     `;
 }
 
-// Mark single notification as read
 window.handleNotificationClick = async function(notificationId, link) {
     try {
         await api.markNotificationAsRead(notificationId);
 
-        // Navigate to the link if provided
         if (link && link !== '#') {
             window.navigateToPage(link.replace('/', ''));
         } else {
-            // Just refresh notifications
             await renderNotificationsPage();
         }
     } catch (error) {
@@ -182,7 +177,6 @@ window.handleNotificationClick = async function(notificationId, link) {
     }
 };
 
-// Mark all as read
 window.markAllNotificationsRead = async function() {
     try {
         await api.markAllNotificationsAsRead();
@@ -194,7 +188,6 @@ window.markAllNotificationsRead = async function() {
     }
 };
 
-// Delete all read notifications
 window.deleteAllReadNotifications = async function() {
     if (!confirm('Delete all read notifications?')) return;
 
@@ -208,7 +201,6 @@ window.deleteAllReadNotifications = async function() {
     }
 };
 
-// Fetch unread count for badge
 export async function getUnreadNotificationCount() {
     try {
         const response = await api.getUnreadNotificationCount();

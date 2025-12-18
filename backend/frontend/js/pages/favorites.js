@@ -1,4 +1,3 @@
-// Favorites Page Module
 import { appState, setCurrentPage } from '../state.js';
 import api from '../services/api.js';
 import { updateBackButton } from '../navigation.js';
@@ -8,7 +7,6 @@ export async function renderFavoritesPage() {
     setCurrentPage('favorites');
     const mainContent = document.getElementById('mainContent');
 
-    // Show loading state
     mainContent.innerHTML = `
         <div class="section">
             <div class="container">
@@ -48,7 +46,6 @@ export async function renderFavoritesPage() {
 
                 setupFavoriteListeners();
             } else {
-                // Empty state
                 mainContent.innerHTML = `
                     <div class="section">
                         <div class="container">
@@ -176,7 +173,6 @@ function renderFavoriteCard(creator) {
 }
 
 function setupFavoriteListeners() {
-    // View profile buttons
     document.querySelectorAll('.view-profile-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -185,7 +181,6 @@ function setupFavoriteListeners() {
         });
     });
 
-    // Book now buttons
     document.querySelectorAll('.book-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -194,7 +189,6 @@ function setupFavoriteListeners() {
         });
     });
 
-    // Unfavorite buttons
     document.querySelectorAll('.unfavorite-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             e.stopPropagation();
@@ -213,10 +207,8 @@ function setupFavoriteListeners() {
         });
     });
 
-    // Card click - view profile
     document.querySelectorAll('.creator-card').forEach(card => {
         card.addEventListener('click', (e) => {
-            // Only trigger if not clicking on a button
             if (!e.target.closest('button')) {
                 const creatorId = card.dataset.creatorId;
                 renderCreatorProfile({ id: creatorId });

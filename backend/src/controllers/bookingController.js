@@ -114,7 +114,6 @@ exports.createBooking = catchAsync(async (req, res, next) => {
 exports.getMyBookings = catchAsync(async (req, res, next) => {
   const { status, type, page = 1, limit = 20 } = req.query;
 
-  // Parse pagination params
   const pageNum = parseInt(page, 10);
   const limitNum = parseInt(limit, 10);
   const skip = (pageNum - 1) * limitNum;
@@ -126,7 +125,6 @@ exports.getMyBookings = catchAsync(async (req, res, next) => {
   } else if (type === 'creator') {
     query.creator = req.user._id;
   } else {
-    // If no type specified, return all bookings where user is either client or creator
     query = {
       $or: [
         { client: req.user._id },
@@ -148,7 +146,6 @@ exports.getMyBookings = catchAsync(async (req, res, next) => {
     }
   }
 
-  // Get total count for pagination
   const totalBookings = await Booking.countDocuments(query);
 
   const bookings = await Booking.find(query)
@@ -209,7 +206,6 @@ exports.completeBooking = catchAsync(async (req, res, next) => {
 
   const client = await User.findById(booking.client);
 
-  // Create notification for client
   await Notification.createNotification({
     recipient: client._id,
     sender: req.user._id,
@@ -468,7 +464,6 @@ exports.rejectBooking = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Booking not found', 404));
   }
 
-  // Only creator can reject
   if (booking.creator._id.toString() !== req.user._id.toString()) {
     return next(new ErrorHandler('Only the creator can reject this booking', 403));
   }
@@ -482,7 +477,6 @@ exports.rejectBooking = catchAsync(async (req, res, next) => {
   booking.cancellationReason = reason || 'Rejected by creator';
   await booking.save();
 
-  // Create notification for client
   await Notification.createNotification({
     recipient: booking.client._id,
     sender: booking.creator._id,
@@ -497,7 +491,6 @@ exports.rejectBooking = catchAsync(async (req, res, next) => {
     }
   });
 
-  // Send email notification to client
   emailConfig.sendEmail({
     to: booking.client.email,
     subject: 'Booking Request Declined',
@@ -522,7 +515,6 @@ exports.counterProposal = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Booking not found', 404));
   }
 
-  // Only creator can make counter proposal
   if (booking.creator._id.toString() !== req.user._id.toString()) {
     return next(new ErrorHandler('Only the creator can make a counter proposal', 403));
   }
@@ -539,7 +531,6 @@ exports.counterProposal = catchAsync(async (req, res, next) => {
   const platformFee = (amount * platformCommission) / 100;
   const creatorAmount = amount - platformFee;
 
-  // Store counter proposal in metadata or add a message
   booking.counterProposal = {
     amount,
     creatorAmount,
@@ -550,7 +541,6 @@ exports.counterProposal = catchAsync(async (req, res, next) => {
   await booking.addMessage(req.user._id, `Counter proposal: ${booking.currency} ${amount.toFixed(2)}`);
   await booking.save();
 
-  // Create notification for client
   await Notification.createNotification({
     recipient: booking.client._id,
     sender: booking.creator._id,
@@ -567,7 +557,6 @@ exports.counterProposal = catchAsync(async (req, res, next) => {
     }
   });
 
-  // Send email notification to client
   emailConfig.sendEmail({
     to: booking.client.email,
     subject: 'Counter Proposal Received',

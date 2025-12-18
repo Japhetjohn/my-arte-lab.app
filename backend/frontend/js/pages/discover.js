@@ -1,4 +1,3 @@
-// Discover Page Module
 import { appState } from '../state.js';
 import { renderCreatorCards, setupCreatorCardListeners } from '../components/creators.js';
 import api from '../services/api.js';
@@ -16,14 +15,12 @@ let currentFilters = {
 export async function renderDiscoverPage() {
     const mainContent = document.getElementById('mainContent');
 
-    // Check if there's a category filter from home page
     const filterFromHome = localStorage.getItem('discoverFilter');
     if (filterFromHome) {
         currentFilters.category = filterFromHome;
         localStorage.removeItem('discoverFilter'); // Clear it after using
     }
 
-    // Show loading state
     mainContent.innerHTML = `
         <div class="discover-header">
             <div class="container">
@@ -45,14 +42,23 @@ export async function renderDiscoverPage() {
         <div class="section">
             <div class="container">
                 <div class="text-center" style="padding: 60px 20px;">
-                    <div style="font-size: 48px; margin-bottom: 16px;">🎨</div>
+                    <div style="margin-bottom: 20px;">
+                        <div style="
+                            border: 4px solid rgba(151, 71, 255, 0.1);
+                            border-left-color: var(--primary);
+                            border-radius: 50%;
+                            width: 50px;
+                            height: 50px;
+                            animation: spin 1s linear infinite;
+                            margin: 0 auto;
+                        "></div>
+                    </div>
                     <p class="text-secondary">Loading creators...</p>
                 </div>
             </div>
         </div>
     `;
 
-    // Load creators from API
     await loadCreators();
 }
 
@@ -73,11 +79,9 @@ async function loadCreators() {
         const response = await api.getCreators(filters);
 
         if (response.success) {
-            // Transform API data to match frontend format
             creators = (response.data || []).map(creator => ({
                 id: creator._id,
                 name: creator.name || 'Unknown Creator',
-                // Use uploaded avatar if available, otherwise use default with initials
                 avatar: creator.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name || 'User')}&background=9747FF&color=fff&bold=true`,
                 role: creator.category ? creator.category.charAt(0).toUpperCase() + creator.category.slice(1) : 'Creator',
                 location: formatLocation(creator.location),
@@ -93,7 +97,6 @@ async function loadCreators() {
                 completedJobs: creator.completedJobs || 0
             }));
 
-            // Store in appState so event listeners can access them
             appState.creators = creators;
 
             renderCreatorsList();
@@ -156,7 +159,10 @@ function renderCreatorsList() {
                     </div>
                 ` : `
                     <div class="empty-state" style="padding: 60px 20px;">
-                        <div style="font-size: 64px; margin-bottom: 16px;">🔍</div>
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" style="opacity: 0.4; margin-bottom: 16px; color: var(--text-secondary);">
+                            <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
+                            <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
                         <h3>No creators found</h3>
                         <p class="text-secondary">Try adjusting your filters or search terms</p>
                         <button class="btn-primary" onclick="window.location.reload()" style="margin-top: 16px;">Clear filters</button>
@@ -212,7 +218,6 @@ function setupSortListener() {
     const sortSelect = document.getElementById('sortSelect');
     sortSelect?.addEventListener('change', (e) => {
         currentFilters.sort = e.target.value;
-        // Sort creators locally
         sortCreators();
         renderCreatorsList();
     });
@@ -227,7 +232,6 @@ function sortCreators() {
             creators.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
             break;
         default:
-            // relevance - keep as is
             break;
     }
 }

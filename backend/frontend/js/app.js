@@ -1,4 +1,3 @@
-// MyArteLab - Main Application Entry Point
 import { appState, setUser } from './state.js';
 import { navigateToPage, goBack, updateBackButton, openSearchOverlay, closeSearchOverlay, closeUserDropdown } from './navigation.js';
 import { showAuthModal, handleAuth, handleLogout, updateUserMenu, initAuth } from './auth.js';
@@ -23,7 +22,6 @@ import {
     showEarningsReport
 } from './components/modals.js';
 
-// Make functions globally available for onclick handlers
 window.navigateToPage = navigateToPage;
 window.goBack = goBack;
 window.showAuthModal = showAuthModal;
@@ -44,37 +42,29 @@ window.handleAvatarUpload = handleAvatarUpload;
 window.handleCoverUpload = handleCoverUpload;
 window.showChangePasswordModal = showChangePasswordModal;
 window.showTwoFactorModal = showTwoFactorModal;
-// showDeleteAccountModal is defined in settings.js
 window.showWithdrawModal = showWithdrawModal;
 window.showAddFundsModal = showAddFundsModal;
 window.showPayoutSettings = showPayoutSettings;
 window.showTransactionHistory = showTransactionHistory;
 window.showEarningsReport = showEarningsReport;
 
-// Initialize App
 document.addEventListener('DOMContentLoaded', async () => {
     await initializeApp();
     setupEventListeners();
 
-    // Restore last page from localStorage or default to 'home'
     const lastPage = localStorage.getItem('currentPage') || 'home';
     navigateToPage(lastPage, false);
     updateBackButton();
 });
 
 async function initializeApp() {
-    // Clear old mock data from localStorage (if any)
     checkAndClearCache();
 
-    // Initialize authentication and restore user session from backend
     await initAuth();
 
-    // All data is now loaded from the backend API when pages are rendered
-    // No more mock data - everything is LIVE!
 }
 
 function setupEventListeners() {
-    // Bottom navigation
     document.querySelectorAll('.nav-item').forEach(item => {
         item.addEventListener('click', (e) => {
             const page = e.currentTarget.dataset.page;
@@ -82,26 +72,20 @@ function setupEventListeners() {
         });
     });
 
-    // Back button
     document.getElementById('backBtn')?.addEventListener('click', goBack);
 
-    // Search button
     document.getElementById('searchBtn')?.addEventListener('click', openSearchOverlay);
     document.getElementById('closeSearchBtn')?.addEventListener('click', closeSearchOverlay);
 
-    // Auth button will be handled dynamically
     updateUserMenu();
 
-    // Close overlay when clicking outside
     document.getElementById('searchOverlay')?.addEventListener('click', (e) => {
         if (e.target.id === 'searchOverlay') {
             closeSearchOverlay();
         }
     });
 
-    // Keyboard navigation
     document.addEventListener('keydown', (e) => {
-        // ESC key closes modals, dropdowns, and overlays
         if (e.key === 'Escape') {
             closeModal();
             closeSearchOverlay();
@@ -110,5 +94,4 @@ function setupEventListeners() {
     });
 }
 
-// Export for use in other modules
 export { appState };

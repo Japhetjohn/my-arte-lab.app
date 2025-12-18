@@ -17,7 +17,6 @@ export function getInitials(name) {
         return parts[0].charAt(0).toUpperCase();
     }
 
-    // First letter of first name + first letter of last name
     return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
 }
 
@@ -29,7 +28,6 @@ export function getInitials(name) {
 export function getAvatarColor(name) {
     if (!name) return '#667eea';
 
-    // Predefined beautiful colors
     const colors = [
         '#667eea', // Purple
         '#f56565', // Red
@@ -43,7 +41,6 @@ export function getAvatarColor(name) {
         '#fc8181', // Light Red
     ];
 
-    // Generate consistent hash from name
     let hash = 0;
     for (let i = 0; i < name.length; i++) {
         hash = name.charCodeAt(i) + ((hash << 5) - hash);
@@ -87,7 +84,6 @@ export function generateAvatarHTML(user, size = 'medium') {
 export function getAvatarUrl(user) {
     if (user?.avatar) return user.avatar;
 
-    // Generate SVG data URL for initials
     const initials = getInitials(user?.name);
     const color = getAvatarColor(user?.name);
 

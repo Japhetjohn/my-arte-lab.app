@@ -17,7 +17,6 @@ class GasSponsorService {
     this.sponsorPrivateKey = process.env.GAS_SPONSOR_PRIVATE_KEY;
     this.connection = new Connection('https://api.mainnet-beta.solana.com', 'confirmed');
 
-    // USDC Token Mint on Solana Mainnet
     this.usdcMint = new PublicKey('EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v');
   }
 
@@ -58,15 +57,12 @@ class GasSponsorService {
    */
   async estimateGasFee() {
     try {
-      // Get recent blockhash to estimate fee
       const { feeCalculator } = await this.connection.getRecentBlockhash();
 
-      // Typical USDC transfer transaction has ~1 signature
       const estimatedFee = feeCalculator.lamportsPerSignature / LAMPORTS_PER_SOL;
 
       return estimatedFee;
     } catch (error) {
-      // Return conservative estimate (0.000005 SOL is typical)
       return 0.000005;
     }
   }
@@ -86,12 +82,10 @@ class GasSponsorService {
         throw new Error('Gas sponsorship not configured. Please set sponsor wallet credentials.');
       }
 
-      // Convert addresses to PublicKey
       const fromPubkey = new PublicKey(fromAddress);
       const toPubkey = new PublicKey(toAddress);
       const sponsorPubkey = new PublicKey(this.sponsorWallet);
 
-      // Get associated token accounts for USDC
       const fromTokenAccount = await getAssociatedTokenAddress(
         this.usdcMint,
         fromPubkey
@@ -102,11 +96,8 @@ class GasSponsorService {
         toPubkey
       );
 
-      // Create transaction
       const transaction = new Transaction();
 
-      // Add USDC transfer instruction
-      // USDC has 6 decimals
       const transferAmount = Math.floor(amount * 1_000_000);
 
       transaction.add(
@@ -120,18 +111,11 @@ class GasSponsorService {
         )
       );
 
-      // Set fee payer to sponsor wallet
       transaction.feePayer = sponsorPubkey;
 
-      // Get recent blockhash
       const { blockhash } = await this.connection.getRecentBlockhash();
       transaction.recentBlockhash = blockhash;
 
-      // Sign transaction:
-      // 1. User signs to authorize USDC transfer
-      // 2. Sponsor signs to pay gas fee
-      // Note: In production, you'd need the sponsor private key as a Keypair object
-      // For security, this should be stored in a secure key management system
 
       return {
         success: true,
@@ -211,7 +195,6 @@ class GasSponsorService {
    */
   async requestAirdrop(amount = 1) {
     try {
-      // Only allow on devnet/testnet
       const endpoint = this.connection.rpcEndpoint;
       if (endpoint.includes('mainnet')) {
         throw new Error('Airdrops not available on mainnet. Please fund sponsor wallet manually.');

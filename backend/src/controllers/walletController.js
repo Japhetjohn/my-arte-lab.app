@@ -10,7 +10,6 @@ exports.getWallet = catchAsync(async (req, res, next) => {
   const user = await User.findById(req.user._id);
 
   
-  // No need for manual sync as balance updates happen automatically via webhooks
 
   successResponse(res, 200, 'Wallet retrieved successfully', {
     wallet: user.wallet
@@ -242,7 +241,6 @@ exports.requestSwitchOfframp = catchAsync(async (req, res, next) => {
     beneficiaryDetails
   } = req.body;
 
-  // Validation
   if (!amount || amount < 1) {
     return next(new ErrorHandler('Amount must be at least 1 USDC', 400));
   }
@@ -255,7 +253,6 @@ exports.requestSwitchOfframp = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Complete beneficiary details are required', 400));
   }
 
-  // Map beneficiaryDetails to include bank_code from bank parameter
   const beneficiary = {
     ...beneficiaryDetails,
     bank_code: beneficiaryDetails.bank_code || bank
@@ -263,17 +260,14 @@ exports.requestSwitchOfframp = catchAsync(async (req, res, next) => {
 
   const user = await User.findById(req.user._id);
 
-  // Check balance
   if (user.wallet.balance < amount) {
     return next(new ErrorHandler('Insufficient balance', 400));
   }
 
   try {
-    // Generate unique reference (GUID format required by Switch)
     const { v4: uuidv4 } = require('uuid');
     const reference = uuidv4();
 
-    // Execute offramp
     const result = await switchService.executeOfframp({
       amount,
       country: country.toUpperCase(),
@@ -285,10 +279,8 @@ exports.requestSwitchOfframp = catchAsync(async (req, res, next) => {
       senderName: user.name
     });
 
-    // Deduct from balance (will be refunded if fails via webhook)
     await user.updateWalletBalance(amount, 'subtract');
 
-    // Create transaction record
     const transaction = await Transaction.create({
       user: user._id,
       type: 'withdrawal',
@@ -308,7 +300,6 @@ exports.requestSwitchOfframp = catchAsync(async (req, res, next) => {
       }
     });
 
-    // Notify admin
     adminNotificationService.notifyWithdrawal(user, transaction)
       .catch(err => console.error('Admin notification failed:', err));
 
@@ -336,7 +327,6 @@ exports.requestSwitchOfframp = catchAsync(async (req, res, next) => {
 exports.getSwitchOnrampQuote = catchAsync(async (req, res, next) => {
   const { amount, country, asset = 'solana:usdc', currency } = req.body;
 
-  // Validation
   if (!amount || amount < 1) {
     return next(new ErrorHandler('Amount must be at least 1', 400));
   }
@@ -367,7 +357,6 @@ exports.getSwitchOnrampQuote = catchAsync(async (req, res, next) => {
 exports.requestSwitchOnramp = catchAsync(async (req, res, next) => {
   const { amount, country, currency, asset = 'solana:usdc' } = req.body;
 
-  // Validation
   if (!amount || amount < 1) {
     return next(new ErrorHandler('Minimum deposit amount is 1', 400));
   }
@@ -378,7 +367,6 @@ exports.requestSwitchOnramp = catchAsync(async (req, res, next) => {
 
   const user = await User.findById(req.user._id);
 
-  // Use user's wallet address as recipient
   const walletAddress = user.wallet.address;
 
   if (!walletAddress || walletAddress.startsWith('pending_')) {
@@ -386,11 +374,9 @@ exports.requestSwitchOnramp = catchAsync(async (req, res, next) => {
   }
 
   try {
-    // Generate unique reference (GUID format required by Switch)
     const { v4: uuidv4 } = require('uuid');
     const reference = uuidv4();
 
-    // Execute onramp - gets virtual account details
     const result = await switchService.executeOnramp({
       amount,
       country: country.toUpperCase(),
@@ -402,7 +388,6 @@ exports.requestSwitchOnramp = catchAsync(async (req, res, next) => {
       holderName: user.name
     });
 
-    // Create transaction record (pending status)
     const transaction = await Transaction.create({
       user: user._id,
       type: 'deposit',
@@ -420,7 +405,6 @@ exports.requestSwitchOnramp = catchAsync(async (req, res, next) => {
       }
     });
 
-    // Notify admin
     adminNotificationService.notifyDeposit(user, transaction)
       .catch(err => console.error('Admin notification failed:', err));
 
@@ -455,7 +439,6 @@ exports.requestSwitchOnramp = catchAsync(async (req, res, next) => {
 exports.verifySwitchBankAccount = catchAsync(async (req, res, next) => {
   const { country, bankCode, accountNumber } = req.body;
 
-  // Validation
   if (!country || !bankCode || !accountNumber) {
     return next(new ErrorHandler('Country, bank code, and account number are required', 400));
   }
@@ -483,7 +466,6 @@ exports.verifySwitchBankAccount = catchAsync(async (req, res, next) => {
 exports.getSwitchSwapQuote = catchAsync(async (req, res, next) => {
   const { amount, fromAsset, toAsset, exactOutput = false } = req.body;
 
-  // Validation
   if (!amount || amount < 1) {
     return next(new ErrorHandler('Amount must be at least 1', 400));
   }
@@ -519,7 +501,6 @@ exports.getSwitchSwapQuote = catchAsync(async (req, res, next) => {
 exports.requestSwitchSwap = catchAsync(async (req, res, next) => {
   const { amount, fromAsset, toAsset, exactOutput = false } = req.body;
 
-  // Validation
   if (!amount || amount < 1) {
     return next(new ErrorHandler('Amount must be at least 1', 400));
   }
@@ -534,7 +515,6 @@ exports.requestSwitchSwap = catchAsync(async (req, res, next) => {
 
   const user = await User.findById(req.user._id);
 
-  // Use user's wallet address as recipient
   const walletAddress = user.wallet.address;
 
   if (!walletAddress || walletAddress.startsWith('pending_')) {
@@ -542,11 +522,9 @@ exports.requestSwitchSwap = catchAsync(async (req, res, next) => {
   }
 
   try {
-    // Generate unique reference (GUID format required by Switch)
     const { v4: uuidv4 } = require('uuid');
     const reference = uuidv4();
 
-    // Execute swap
     const result = await switchService.executeSwap({
       amount,
       fromAsset,
@@ -557,7 +535,6 @@ exports.requestSwitchSwap = catchAsync(async (req, res, next) => {
       exactOutput
     });
 
-    // Create transaction record
     const transaction = await Transaction.create({
       user: user._id,
       type: 'swap',

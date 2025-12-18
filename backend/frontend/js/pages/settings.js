@@ -1,4 +1,3 @@
-// Settings Page Module
 import { appState, setUser } from '../state.js';
 import api from '../services/api.js';
 import { showToast } from '../utils.js';
@@ -21,11 +20,9 @@ export function renderSettingsPage() {
         return;
     }
 
-    // Use uploaded avatar if available, otherwise use default with initials
     const userAvatar = appState.user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(appState.user.name || 'User')}&background=9747FF&color=fff&bold=true&size=200`;
     const userCover = appState.user.coverImage || 'https://images.unsplash.com/photo-1557683316-973673baf926?w=1200&h=400&fit=crop';
 
-    // Format location for display
     const userLocation = appState.user.location ?
         (typeof appState.user.location === 'object' ?
             `${appState.user.location.city || ''}${appState.user.location.city && appState.user.location.country ? ', ' : ''}${appState.user.location.country || ''}`.trim()
@@ -189,9 +186,7 @@ export function renderSettingsPage() {
     `;
 }
 
-// ==================== Handler Functions ====================
 
-// Handle profile update
 window.handleProfileUpdate = async function(event) {
     event.preventDefault();
 
@@ -210,7 +205,6 @@ window.handleProfileUpdate = async function(event) {
             phone
         };
 
-        // Add creator-specific fields
         if (appState.user.role === 'creator') {
             const role = document.getElementById('profileRole')?.value;
             const skills = document.getElementById('profileSkills')?.value;
@@ -224,11 +218,9 @@ window.handleProfileUpdate = async function(event) {
         const response = await api.updateProfile(profileData);
 
         if (response.success) {
-            // Update app state with new user data
             setUser(response.data.user);
             showToast('Profile updated successfully', 'success');
 
-            // Re-render the page to show updated data
             setTimeout(() => {
                 renderSettingsPage();
             }, 1000);
@@ -240,7 +232,6 @@ window.handleProfileUpdate = async function(event) {
     }
 };
 
-// Handle avatar upload
 window.handleAvatarUpload = function() {
     const input = document.createElement('input');
     input.type = 'file';
@@ -250,7 +241,6 @@ window.handleAvatarUpload = function() {
         const file = e.target.files[0];
         if (!file) return;
 
-        // Validate file size (max 5MB)
         if (file.size > 5 * 1024 * 1024) {
             showToast('Image size must be less than 5MB', 'error');
             return;
@@ -279,7 +269,6 @@ window.handleAvatarUpload = function() {
     input.click();
 };
 
-// Handle cover image upload
 window.handleCoverUpload = function() {
     const input = document.createElement('input');
     input.type = 'file';
@@ -289,7 +278,6 @@ window.handleCoverUpload = function() {
         const file = e.target.files[0];
         if (!file) return;
 
-        // Validate file size (max 5MB)
         if (file.size > 5 * 1024 * 1024) {
             showToast('Image size must be less than 5MB', 'error');
             return;
@@ -318,7 +306,6 @@ window.handleCoverUpload = function() {
     input.click();
 };
 
-// Toggle switch
 window.toggleSwitch = function(element) {
     element.classList.toggle('active');
     const isActive = element.classList.contains('active');
@@ -327,7 +314,6 @@ window.toggleSwitch = function(element) {
     showToast(`${label} ${isActive ? 'enabled' : 'disabled'}`, 'success');
 };
 
-// Handle profile visibility change
 window.handleProfileVisibilityChange = function(value) {
     const visibilityLabels = {
         'public': 'Public',
@@ -338,7 +324,6 @@ window.handleProfileVisibilityChange = function(value) {
     showToast(`Profile visibility set to ${visibilityLabels[value]}`, 'success');
 };
 
-// Show change password modal
 window.showChangePasswordModal = function() {
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
@@ -376,7 +361,6 @@ window.showChangePasswordModal = function() {
     document.body.appendChild(modal);
 };
 
-// Handle password change
 window.handlePasswordChange = async function(event) {
     event.preventDefault();
 
@@ -408,7 +392,6 @@ window.handlePasswordChange = async function(event) {
     }
 };
 
-// Show two-factor authentication modal
 window.showTwoFactorModal = function() {
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
@@ -434,7 +417,6 @@ window.showTwoFactorModal = function() {
     document.body.appendChild(modal);
 };
 
-// Show delete account modal
 window.showDeleteAccountModal = function() {
     const user = appState.user;
     const isOAuthUser = !!user?.googleId;
@@ -483,24 +465,20 @@ window.showDeleteAccountModal = function() {
     document.body.appendChild(modal);
 };
 
-// Handle account deletion
 window.handleAccountDeletion = async function(event) {
     event.preventDefault();
 
     const user = appState.user;
     const isOAuthUser = !!user?.googleId;
 
-    // Get password only if user is not OAuth user
     const passwordInput = document.getElementById('deleteAccountPassword');
     const password = passwordInput ? passwordInput.value : '';
 
-    // Only validate password for non-OAuth users
     if (!isOAuthUser && !password) {
         showToast('Please enter your password', 'error');
         return;
     }
 
-    // Double confirmation
     const confirmed = confirm('Are you absolutely sure you want to delete your account? This cannot be undone.');
     if (!confirmed) return;
 
@@ -512,12 +490,10 @@ window.handleAccountDeletion = async function(event) {
         if (response.success) {
             showToast('Account deleted successfully. Goodbye!', 'success');
 
-            // Clear auth data
             localStorage.removeItem('token');
 
             setUser(null);
 
-            // Close modal and redirect to home
             document.querySelector('.modal-overlay')?.remove();
 
             setTimeout(() => {

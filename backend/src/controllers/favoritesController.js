@@ -8,19 +8,16 @@ const { successResponse } = require('../utils/apiResponse');
 exports.addToFavorites = catchAsync(async (req, res, next) => {
   const { creatorId } = req.params;
 
-  // Check if creator exists
   const creator = await User.findById(creatorId);
   if (!creator || !creator.role || !creator.role.toLowerCase().includes('creator')) {
     return next(new ErrorHandler('Creator not found', 404));
   }
 
-  // Check if already favorited
   const user = await User.findById(req.user._id);
   if (user.favoriteCreators.includes(creatorId)) {
     return next(new ErrorHandler('Creator already in favorites', 400));
   }
 
-  // Add to favorites
   user.favoriteCreators.push(creatorId);
   await user.save();
 
@@ -37,7 +34,6 @@ exports.removeFromFavorites = catchAsync(async (req, res, next) => {
 
   const user = await User.findById(req.user._id);
 
-  // Remove from favorites
   user.favoriteCreators = user.favoriteCreators.filter(
     id => id.toString() !== creatorId
   );

@@ -5,13 +5,10 @@
 
 export function clearOldMockData() {
     try {
-        // Get the token (we want to keep this)
         const token = localStorage.getItem('token');
 
-        // Clear all localStorage
         localStorage.clear();
 
-        // Restore the token if it exists
         if (token) {
             localStorage.setItem('token', token);
         }

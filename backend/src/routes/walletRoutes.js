@@ -17,8 +17,6 @@ const publicWalletLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Public routes (no auth required) - Rate estimates and bank list with rate limiting
-// Switch global endpoints (public)
 router.get('/switch/countries', publicWalletLimiter, walletController.getSwitchCountries);
 router.get('/switch/banks/:country', publicWalletLimiter, walletController.getSwitchBanksByCountry);
 router.get('/switch/requirements', publicWalletLimiter, walletController.getSwitchRequirements);
@@ -27,15 +25,12 @@ router.post('/switch/quote/onramp', publicWalletLimiter, walletController.getSwi
 router.post('/switch/quote/swap', publicWalletLimiter, walletController.getSwitchSwapQuote);
 router.post('/switch/verify-account', publicWalletLimiter, walletController.verifySwitchBankAccount);
 
-// All routes below require authentication
 router.use(protect);
 
-// Wallet information routes
 router.get('/', walletController.getWallet);
 router.get('/transactions', validatePagination, handleValidationErrors, walletController.getTransactions);
 router.get('/balance-summary', walletController.getBalanceSummary);
 
-// Legacy crypto withdrawal (Tsara)
 router.post(
   '/withdraw',
   authorize('creator'),
@@ -44,13 +39,11 @@ router.post(
   walletController.requestWithdrawal
 );
 
-// Switch Onramp & Offramp (Global deposits and withdrawals for 65 countries)
 router.post('/switch/onramp', walletController.requestSwitchOnramp);
 router.post('/switch/offramp', walletController.requestSwitchOfframp);
 router.post('/switch/swap', walletController.requestSwitchSwap);
 router.get('/switch/status/:reference', walletController.getSwitchTransactionStatus);
 
-// Beneficiary management routes
 router.get('/beneficiaries', walletController.getBeneficiaries);
 router.post('/beneficiaries', walletController.addBeneficiary);
 router.delete('/beneficiaries/:id', walletController.deleteBeneficiary);

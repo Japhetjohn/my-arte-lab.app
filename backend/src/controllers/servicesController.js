@@ -30,12 +30,10 @@ exports.addService = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Only creators can add services', 403));
   }
 
-  // Validate input
   if (!title || !description) {
     return next(new ErrorHandler('Title and description are required', 400));
   }
 
-  // Create new service
   const newService = {
     title: title.trim(),
     description: description.trim(),
@@ -71,7 +69,6 @@ exports.updateService = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Service not found', 404));
   }
 
-  // Update fields if provided
   if (title) service.title = title.trim();
   if (description) service.description = description.trim();
   if (directLink !== undefined) {
@@ -132,12 +129,10 @@ exports.uploadServiceImage = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Service not found', 404));
   }
 
-  // Check if service already has 5 images
   if (service.images.length >= 5) {
     return next(new ErrorHandler('Maximum 5 images allowed per service', 400));
   }
 
-  // Upload to Cloudinary
   const result = await uploadServiceImage(req.file.buffer);
 
   service.images.push(result.secure_url);

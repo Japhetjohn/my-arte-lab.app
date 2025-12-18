@@ -28,12 +28,10 @@ async function createNotification(data) {
       link: data.link
     };
 
-    // Map relatedId/relatedModel to booking field if it's a booking
     if (data.relatedModel === 'Booking' || data.booking) {
       notificationData.booking = data.relatedId || data.booking;
     }
 
-    // Store other metadata
     if (data.relatedId && data.relatedModel !== 'Booking') {
       notificationData.metadata = {
         relatedId: data.relatedId,

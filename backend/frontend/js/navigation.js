@@ -1,4 +1,3 @@
-// Navigation System
 import { appState, setCurrentPage, addToHistory, popHistory } from './state.js';
 import { renderHomePage } from './pages/home.js';
 import { renderDiscoverPage } from './pages/discover.js';
@@ -10,22 +9,18 @@ import { renderFavoritesPage } from './pages/favorites.js';
 import { renderNotificationsPage } from './pages/notifications.js';
 
 export function navigateToPage(page, addToHistoryFlag = true) {
-    // Track navigation history
     if (addToHistoryFlag && appState.currentPage !== page) {
         addToHistory(appState.currentPage);
     }
 
     setCurrentPage(page);
 
-    // Save current page to localStorage for persistence after refresh
     localStorage.setItem('currentPage', page);
 
     closeUserDropdown();
 
-    // Update back button visibility
     updateBackButton();
 
-    // Update active nav item
     document.querySelectorAll('.nav-item').forEach(item => {
         item.classList.remove('active');
         if (item.dataset.page === page) {
@@ -33,17 +28,13 @@ export function navigateToPage(page, addToHistoryFlag = true) {
         }
     });
 
-    // Scroll to top
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
-    // Render page content with smooth transition
     const mainContent = document.getElementById('mainContent');
 
-    // Fade out quickly
     mainContent.style.transition = 'opacity 0.15s ease-out';
     mainContent.style.opacity = '0';
 
-    // Render new content immediately after fade starts
     requestAnimationFrame(() => {
         switch (page) {
             case 'home':
@@ -72,12 +63,10 @@ export function navigateToPage(page, addToHistoryFlag = true) {
                 break;
         }
 
-        // Fade in after content is rendered
         requestAnimationFrame(() => {
             mainContent.style.opacity = '1';
         });
 
-        // Ensure back button is updated after rendering
         updateBackButton();
     });
 }
@@ -95,7 +84,6 @@ export function updateBackButton() {
     const backBtn = document.getElementById('backBtn');
     if (!backBtn) return;
 
-    // Always show back button on all pages except home
     if (appState.currentPage !== 'home') {
         backBtn.style.display = 'flex';
     } else {

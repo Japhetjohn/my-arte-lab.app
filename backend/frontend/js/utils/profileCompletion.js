@@ -18,7 +18,6 @@ export function calculateProfileCompletion(user) {
         { key: 'wallet.address', weight: 10 }
     ];
 
-    // Additional fields for creators
     if (user.role === 'creator') {
         fields.push(
             { key: 'category', weight: 10 },
@@ -46,7 +45,6 @@ export function calculateProfileCompletion(user) {
         }
     });
 
-    // Normalize to 100%
     const percentage = Math.min(100, Math.round((achievedWeight / totalWeight) * 100));
     return percentage;
 }

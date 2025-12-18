@@ -23,7 +23,6 @@ const createTransporter = () => {
       },
     });
   } else if (emailService === 'sendgrid') {
-    // For SendGrid, we use Web API instead of SMTP
     initializeSendGrid();
     return null; // We don't need nodemailer for SendGrid
   } else {
@@ -39,7 +38,6 @@ const emailConfig = {
       const emailService = process.env.EMAIL_SERVICE || 'gmail';
 
       if (emailService === 'sendgrid') {
-        // Use SendGrid Web API
         initializeSendGrid();
 
         const msg = {
@@ -53,7 +51,6 @@ const emailConfig = {
         const info = await sgMail.send(msg);
         return info;
       } else {
-        // Use nodemailer for Gmail
         if (!transporter) {
           transporter = createTransporter();
         }
@@ -80,14 +77,12 @@ const emailConfig = {
       const emailService = process.env.EMAIL_SERVICE || 'gmail';
 
       if (emailService === 'sendgrid') {
-        // For SendGrid Web API, just verify the API key is set
         initializeSendGrid();
         if (!process.env.SENDGRID_API_KEY) {
           throw new Error('SENDGRID_API_KEY is not set');
         }
         return true;
       } else {
-        // For Gmail, use nodemailer's verify
         if (!transporter) {
           transporter = createTransporter();
         }

@@ -17,7 +17,6 @@ exports.register = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Email already registered', 400));
   }
 
-  // Generate real Solana wallet
   const wallet = solanaWalletService.generateWallet();
 
   const user = await User.create({
@@ -40,7 +39,6 @@ exports.register = catchAsync(async (req, res, next) => {
   const token = generateToken(user._id);
   const refreshToken = generateRefreshToken(user._id);
 
-  // Generate 6-digit verification code
   const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
   const hashedCode = crypto.createHash('sha256').update(verificationCode).digest('hex');
 
@@ -258,11 +256,8 @@ exports.deleteAccount = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('User not found', 404));
   }
 
-  // Check if user is OAuth user (has googleId but no password)
   const isOAuthUser = !!user.googleId;
 
-  // For OAuth users, allow deletion without password
-  // For regular users, require password verification
   if (!isOAuthUser) {
     if (!password) {
       return next(new ErrorHandler('Please provide your password to confirm account deletion', 400));
@@ -275,7 +270,6 @@ exports.deleteAccount = catchAsync(async (req, res, next) => {
     }
   }
 
-  // Permanently delete user from database
   await User.findByIdAndDelete(req.user._id);
 
   successResponse(res, 200, 'Account permanently deleted successfully');
@@ -288,7 +282,6 @@ exports.verifyEmail = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Please provide verification code', 400));
   }
 
-  // Hash the incoming code to compare with stored hash
   const hashedCode = crypto.createHash('sha256').update(code.toString()).digest('hex');
 
   const user = await User.findOne({
@@ -332,7 +325,6 @@ exports.resendVerification = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Email is already verified', 400));
   }
 
-  // Generate new 6-digit verification code
   const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
   const hashedCode = crypto.createHash('sha256').update(verificationCode).digest('hex');
 

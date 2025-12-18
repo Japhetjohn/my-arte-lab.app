@@ -1,4 +1,3 @@
-// Utility Helper Functions
 
 export function formatDate(dateString) {
     const date = new Date(dateString);

@@ -1,13 +1,10 @@
-// Modal Components
 import { appState, setUser } from '../state.js';
 import { showToast, closeModal, openModal } from '../utils.js';
 import { updateUserMenu } from '../auth.js';
 import { navigateToPage } from '../navigation.js';
 import api from '../services/api.js';
 
-// Booking Modal
 
-// Global loading spinner
 window.showLoadingSpinner = function(message = 'Loading...') {
     const existingSpinner = document.getElementById('globalLoadingSpinner');
     if (existingSpinner) existingSpinner.remove();
@@ -49,10 +46,8 @@ window.hideLoadingSpinner = function() {
 
 
 export async function showBookingModal(creatorId, serviceIndex = 0) {
-    // Try to find creator in appState first
     let creator = appState.creators?.find(c => c.id === creatorId);
 
-    // If not found, fetch from API
     if (!creator) {
         try {
             const response = await api.getCreatorProfile(creatorId);
@@ -77,7 +72,6 @@ export async function showBookingModal(creatorId, serviceIndex = 0) {
                     category: apiCreator.category
                 };
 
-                // Add to appState so handleBookingSubmit can find it
                 if (!appState.creators) {
                     appState.creators = [];
                 }
@@ -94,7 +88,6 @@ export async function showBookingModal(creatorId, serviceIndex = 0) {
         return;
     }
 
-    // Check if creator has services
     if (!creator.services || creator.services.length === 0) {
         showToast('This creator has not set up any services yet', 'info');
         return;
@@ -102,7 +95,6 @@ export async function showBookingModal(creatorId, serviceIndex = 0) {
 
     const service = creator.services[serviceIndex];
 
-    // Use uploaded avatar if available, otherwise use default with initials
     const avatarUrl = creator.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name || 'User')}&background=9747FF&color=fff&bold=true`;
 
     const modalContent = `
@@ -211,7 +203,6 @@ export async function showBookingModal(creatorId, serviceIndex = 0) {
     document.getElementById('modalsContainer').innerHTML = modalContent;
     openModal();
 
-    // Attach form submit handler after modal is rendered
     const bookingForm = document.getElementById('bookingForm');
     if (bookingForm) {
         bookingForm.addEventListener('submit', function(e) {
@@ -237,7 +228,6 @@ export async function handleBookingSubmit(event, creatorId, serviceIndex) {
         submitBtn.disabled = true;
         submitBtn.textContent = 'Creating booking...';
 
-        // Find creator in appState
         const creator = appState.creators?.find(c => c.id === creatorId);
 
         if (!creator) {
@@ -309,13 +299,11 @@ export function openLightbox(creatorId, imageIndex) {
     openModal();
 }
 
-// Make functions available globally for inline onclick handlers
 window.handleBookNow = handleBookNow;
 window.handleBookingSubmit = handleBookingSubmit;
 window.openLightbox = openLightbox;
 window.showBookingModal = showBookingModal;
 
-// Settings/Profile Handlers
 export async function handleProfileUpdate(event) {
     event.preventDefault();
 
@@ -336,7 +324,6 @@ export async function handleProfileUpdate(event) {
             }
         };
 
-        // Add creator-specific fields
         if (appState.user.role === 'creator') {
             const skills = document.getElementById('profileSkills')?.value;
             if (skills) {
@@ -363,7 +350,6 @@ export async function handleProfileUpdate(event) {
 }
 
 export function handleAvatarUpload() {
-    // Create file input
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
@@ -372,7 +358,6 @@ export function handleAvatarUpload() {
         const file = e.target.files[0];
         if (!file) return;
 
-        // Validate file size (5MB max)
         if (file.size > 5 * 1024 * 1024) {
             showToast('Image must be less than 5MB', 'error');
             return;
@@ -384,7 +369,6 @@ export function handleAvatarUpload() {
             const response = await api.uploadAvatar(file);
 
             if (response.success) {
-                // Fetch fresh user data from the API to ensure we have the latest
                 const freshUserData = await api.getMe();
                 if (freshUserData.success) {
                     setUser(freshUserData.data.user);
@@ -393,7 +377,6 @@ export function handleAvatarUpload() {
 
                 showToast('Avatar updated successfully!', 'success');
 
-                // Refresh the settings page if we're on it
                 setTimeout(() => window.location.reload(), 1000);
             }
         } catch (error) {
@@ -405,7 +388,6 @@ export function handleAvatarUpload() {
 }
 
 export function handleCoverUpload() {
-    // Create file input
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
@@ -414,7 +396,6 @@ export function handleCoverUpload() {
         const file = e.target.files[0];
         if (!file) return;
 
-        // Validate file size (5MB max)
         if (file.size > 5 * 1024 * 1024) {
             showToast('Image must be less than 5MB', 'error');
             return;
@@ -426,7 +407,6 @@ export function handleCoverUpload() {
             const response = await api.uploadCover(file);
 
             if (response.success) {
-                // Fetch fresh user data from the API to ensure we have the latest
                 const freshUserData = await api.getMe();
                 if (freshUserData.success) {
                     setUser(freshUserData.data.user);
@@ -435,7 +415,6 @@ export function handleCoverUpload() {
 
                 showToast('Cover image updated successfully!', 'success');
 
-                // Refresh the page to show new cover
                 setTimeout(() => window.location.reload(), 1000);
             }
         } catch (error) {
@@ -527,10 +506,7 @@ export function showTwoFactorModal() {
     showToast('Two-factor authentication setup coming soon!', 'success');
 }
 
-// Note: showDeleteAccountModal is implemented in settings.js
-// Removed stub to avoid overriding the real implementation
 
-// Wallet Handlers
 export function showWithdrawModal() {
     const modalContent = `
         <div class="modal" onclick="closeModalOnBackdrop(event)">
@@ -588,13 +564,10 @@ export function showWithdrawModal() {
     openModal();
 }
 
-// Show Switch global offramp (bank transfer withdrawal - 65 countries)
 window.showBankWithdrawal = async function() {
     try {
-        // Show loading spinner while loading countries
         window.showLoadingSpinner('Loading withdrawal form...');
 
-        // Fetch available countries
         const response = await api.getSwitchCountries();
 
         if (!response.success || !response.data) {
@@ -605,7 +578,6 @@ window.showBankWithdrawal = async function() {
         const countries = response.data.countries || [];
         window.hideLoadingSpinner();
 
-        // Popular countries at the top
         const popularCountries = ['NG', 'US', 'GB', 'KE', 'GH', 'ZA', 'CA'];
         const sortedCountries = countries.sort((a, b) => {
             const aIndex = popularCountries.indexOf(a.country);
@@ -616,7 +588,6 @@ window.showBankWithdrawal = async function() {
             return (a.country || '').localeCompare(b.country || '');
         });
 
-        // Country code to name mapping
         const countryNames = {
             'NG': 'Nigeria', 'US': 'United States', 'GB': 'United Kingdom', 'KE': 'Kenya',
             'GH': 'Ghana', 'ZA': 'South Africa', 'CA': 'Canada', 'BR': 'Brazil', 'MX': 'Mexico',
@@ -704,7 +675,6 @@ window.showBankWithdrawal = async function() {
         document.getElementById('modalsContainer').innerHTML = modalContent;
         openModal();
 
-        // Form elements
         const countrySelect = document.getElementById('offrampCountry');
         const bankSelectGroup = document.getElementById('bankSelectGroup');
         const bankSelect = document.getElementById('offrampBank');
@@ -719,7 +689,6 @@ window.showBankWithdrawal = async function() {
         let selectedCountry = null;
         let selectedBank = null;
 
-        // Country change handler
         countrySelect.addEventListener('change', async () => {
             const country = countrySelect.value;
             selectedCountry = country;
@@ -731,7 +700,6 @@ window.showBankWithdrawal = async function() {
                 return;
             }
 
-            // Load banks for selected country
             window.showLoadingSpinner('Loading banks...');
             bankSelect.innerHTML = '<option value="">Loading banks...</option>';
             bankSelectGroup.style.display = 'block';
@@ -742,15 +710,11 @@ window.showBankWithdrawal = async function() {
                 if (banksResponse.success && banksResponse.data && banksResponse.data.banks) {
                     const banks = banksResponse.data.banks;
 
-                    // Check if country has banks
                     if (banks.length === 0) {
-                        // Country doesn't use bank selection (e.g., US uses routing numbers)
-                        // Hide bank selector and load dynamic fields directly
                         bankSelectGroup.style.display = 'none';
                         selectedBank = 'DIRECT'; // Mark as selected so fields can load
                         window.hideLoadingSpinner();
 
-                        // Trigger loading of dynamic fields
                         dynamicFieldsContainer.innerHTML = '<p style="color: var(--text-secondary);">Loading form fields...</p>';
                         dynamicFieldsContainer.style.display = 'block';
 
@@ -760,7 +724,6 @@ window.showBankWithdrawal = async function() {
                             if (reqResponse.success && reqResponse.data && reqResponse.data.requirements) {
                                 const requirements = reqResponse.data.requirements;
 
-                                // Map field names to labels
                                 const fieldLabels = {
                                     'bank_code': 'Bank Code',
                                     'account_number': 'Account Number',
@@ -785,14 +748,12 @@ window.showBankWithdrawal = async function() {
                                 requirements.forEach(req => {
                                     const fieldName = req.path;
 
-                                    // Skip bank_code and holder_type
                                     if (fieldName === 'bank_code' || fieldName === 'holder_type') return;
 
                                     const fieldId = `dynamic_${fieldName}`;
                                     const label = fieldLabels[fieldName] || fieldName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
                                     const placeholder = req.example || `Enter ${label}`;
 
-                                    // Handle dropdown fields (like state)
                                     if (req.option && req.option.length > 0) {
                                         fieldsHTML += `
                                             <div class="form-group">
@@ -821,7 +782,6 @@ window.showBankWithdrawal = async function() {
 
                                 dynamicFieldsContainer.innerHTML = fieldsHTML;
 
-                                // Add event listeners to dynamic fields
                                 document.querySelectorAll('.dynamic-field').forEach(field => {
                                     field.addEventListener('input', checkFormValid);
                                     field.addEventListener('change', checkFormValid);
@@ -837,15 +797,12 @@ window.showBankWithdrawal = async function() {
                         return; // Exit early, no need to show bank selector
                     }
 
-                    // Country has banks - show bank selector
                     const bankSearch = document.getElementById('bankSearch');
 
-                    // Show search if many banks
                     if (banks.length > 10) {
                         bankSearch.style.display = 'block';
                     }
 
-                    // Render banks function
                     window.renderBanks = (filter = '') => {
                         bankSelect.innerHTML = '<option value="">Select bank...</option>';
                         const filtered = filter
@@ -865,12 +822,10 @@ window.showBankWithdrawal = async function() {
                         }
                     };
 
-                    // Add search handler
                     bankSearch.addEventListener('input', (e) => {
                         window.renderBanks(e.target.value);
                     });
 
-                    // Initial render
                     window.renderBanks();
                     window.hideLoadingSpinner();
                 } else {
@@ -884,7 +839,6 @@ window.showBankWithdrawal = async function() {
             }
         });
 
-        // Bank change handler - load dynamic fields
         bankSelect.addEventListener('change', async () => {
             selectedBank = bankSelect.value;
 
@@ -894,7 +848,6 @@ window.showBankWithdrawal = async function() {
                 return;
             }
 
-            // Fetch dynamic requirements for this country
             dynamicFieldsContainer.innerHTML = '<p style="color: var(--text-secondary);">Loading form fields...</p>';
             dynamicFieldsContainer.style.display = 'block';
 
@@ -904,7 +857,6 @@ window.showBankWithdrawal = async function() {
                 if (reqResponse.success && reqResponse.data && reqResponse.data.requirements && reqResponse.data.requirements.length > 0) {
                     const requirements = reqResponse.data.requirements;
 
-                    // Map field names to labels
                     const fieldLabels = {
                         'bank_code': 'Bank Code',
                         'account_number': 'Account Number',
@@ -924,7 +876,6 @@ window.showBankWithdrawal = async function() {
                     requirements.forEach(req => {
                         const fieldName = req.path;
                         
-                        // Skip bank_code - it's already in the bank selector
                         if (fieldName === 'bank_code') return;
                         
                         const fieldId = `dynamic_${fieldName}`;
@@ -946,12 +897,10 @@ window.showBankWithdrawal = async function() {
 
                     dynamicFieldsContainer.innerHTML = fieldsHTML;
 
-                    // Add event listeners to dynamic fields
                     document.querySelectorAll('.dynamic-field').forEach(field => {
                         field.addEventListener('input', checkFormValid);
                     });
                 } else {
-                    // No specific requirements - just standard account details
                     dynamicFieldsContainer.innerHTML = `
                         <div class="form-group">
                             <label class="form-label">Account Number *</label>
@@ -972,7 +921,6 @@ window.showBankWithdrawal = async function() {
                     });
                 }
 
-                // Add account number verification
                 const accountNumberField = document.getElementById('dynamic_account_number');
                 const accountNameField = document.getElementById('dynamic_account_name');
 
@@ -983,10 +931,8 @@ window.showBankWithdrawal = async function() {
                         clearTimeout(verificationTimeout);
                         const accountNumber = accountNumberField.value.trim();
 
-                        // Check if account number looks complete (adjust length as needed)
                         if (accountNumber.length >= 10) {
                             verificationTimeout = setTimeout(async () => {
-                                // Show loading state
                                 accountNameField.value = 'Verifying...';
                                 accountNameField.disabled = true;
 
@@ -1008,7 +954,6 @@ window.showBankWithdrawal = async function() {
                                     }
                                 } catch (error) {
                                     console.log('Account verification not available:', error.message);
-                                    // Silently fail - let user enter name manually
                                     accountNameField.value = '';
                                     accountNameField.disabled = false;
                                     accountNameField.placeholder = 'Enter account holder name';
@@ -1017,7 +962,6 @@ window.showBankWithdrawal = async function() {
                         }
                     });
 
-                    // Allow manual edit if verification fails
                     accountNameField.addEventListener('focus', () => {
                         if (accountNameField.value === 'Verifying...') {
                             accountNameField.value = '';
@@ -1033,7 +977,6 @@ window.showBankWithdrawal = async function() {
             }
         });
 
-        // Amount input with real-time quote
         amountInput.addEventListener('input', async () => {
             clearTimeout(debounceTimer);
             const amount = parseFloat(amountInput.value);
@@ -1044,7 +987,6 @@ window.showBankWithdrawal = async function() {
 
                 debounceTimer = setTimeout(async () => {
                     try {
-                        // Map country to currency
                         const currencyMap = {
                             'NG': 'NGN', 'GH': 'GHS', 'KE': 'KES', 'ZA': 'ZAR', 'UG': 'UGX',
                             'US': 'USD', 'GB': 'GBP', 'AE': 'AED', 'BR': 'BRL', 'PH': 'PHP',
@@ -1083,13 +1025,11 @@ window.showBankWithdrawal = async function() {
             checkFormValid();
         });
 
-        // Check if form is valid
         function checkFormValid() {
             const hasCountry = !!selectedCountry;
             const hasBank = !!selectedBank;
             const hasAmount = amountInput.value && parseFloat(amountInput.value) >= 1;
 
-            // Check all dynamic fields
             const dynamicFields = document.querySelectorAll('.dynamic-field');
             const allDynamicFieldsFilled = Array.from(dynamicFields).every(field => {
                 if (field.required) {
@@ -1108,7 +1048,6 @@ window.showBankWithdrawal = async function() {
 };
 
 
-// Show crypto withdrawal form (existing functionality)
 window.showCryptoWithdrawal = function() {
     const modalContent = `
         <div class="modal" onclick="closeModalOnBackdrop(event)">
@@ -1162,7 +1101,6 @@ window.showCryptoWithdrawal = function() {
     openModal();
 };
 
-// Handle bank withdrawal submission
 window.handleSwitchOfframp = async function(event) {
     event.preventDefault();
 
@@ -1176,14 +1114,12 @@ window.handleSwitchOfframp = async function(event) {
         return;
     }
 
-    // Check if bank selector is visible and bank is required
     const bankSelectGroup = document.getElementById('bankSelectGroup');
     if (bankSelectGroup.style.display !== 'none' && !bankElement.value) {
         showToast('Please select a bank', 'error');
         return;
     }
 
-    // Collect dynamic field values
     const dynamicFields = document.querySelectorAll('.dynamic-field');
     const beneficiaryDetails = {};
 
@@ -1192,7 +1128,6 @@ window.handleSwitchOfframp = async function(event) {
         beneficiaryDetails[fieldName] = field.value;
     });
 
-    // Validate that beneficiary details are not empty
     if (Object.keys(beneficiaryDetails).length === 0) {
         showToast('Please fill in all beneficiary details', 'error');
         return;
@@ -1226,7 +1161,6 @@ window.handleSwitchOfframp = async function(event) {
     }
 };
 
-// Handle traditional crypto withdrawal
 window.handleWithdrawal = async function(event) {
     event.preventDefault();
 
@@ -1256,7 +1190,6 @@ window.handleWithdrawal = async function(event) {
             closeModal();
             showToast('Withdrawal request submitted successfully!', 'success');
 
-            // Reload wallet page to show updated balance
             setTimeout(() => window.location.reload(), 1500);
         }
     } catch (error) {
@@ -1269,10 +1202,8 @@ window.handleWithdrawal = async function(event) {
 
 export async function showAddFundsModal() {
     try {
-        // Show loading spinner while loading countries
         window.showLoadingSpinner('Loading deposit options...');
 
-        // Fetch available countries
         const response = await api.getSwitchCountries();
 
         if (!response.success || !response.data) {
@@ -1283,7 +1214,6 @@ export async function showAddFundsModal() {
         const countries = response.data.countries || [];
         window.hideLoadingSpinner();
 
-        // Popular countries at the top
         const popularCountries = ['NG', 'US', 'GB', 'KE', 'GH', 'ZA', 'CA'];
         const sortedCountries = countries.sort((a, b) => {
             const aIndex = popularCountries.indexOf(a.country);
@@ -1294,7 +1224,6 @@ export async function showAddFundsModal() {
             return (a.country || '').localeCompare(b.country || '');
         });
 
-        // Country code to name mapping
         const countryNames = {
             'NG': 'Nigeria', 'US': 'United States', 'GB': 'United Kingdom', 'KE': 'Kenya',
             'GH': 'Ghana', 'ZA': 'South Africa', 'CA': 'Canada', 'BR': 'Brazil', 'MX': 'Mexico',
@@ -1380,13 +1309,11 @@ export async function showAddFundsModal() {
         document.getElementById('modalsContainer').innerHTML = modalContent;
         openModal();
 
-        // Add event listeners
         const countrySelect = document.getElementById('onrampCountry');
         const amountInput = document.getElementById('onrampAmount');
         const getQuoteBtn = document.getElementById('getQuoteBtn');
         const quoteDisplay = document.getElementById('quoteDisplay');
 
-        // Enable button when both fields are filled
         const checkFormValid = () => {
             getQuoteBtn.disabled = !countrySelect.value || !amountInput.value || parseFloat(amountInput.value) < 1;
         };
@@ -1394,7 +1321,6 @@ export async function showAddFundsModal() {
         countrySelect.addEventListener('change', checkFormValid);
         amountInput.addEventListener('input', checkFormValid);
 
-        // Get quote and execute onramp
         getQuoteBtn.addEventListener('click', async () => {
             const country = countrySelect.value;
             const amount = parseFloat(amountInput.value);
@@ -1409,19 +1335,16 @@ export async function showAddFundsModal() {
             window.showLoadingSpinner('Getting deposit quote...');
 
             try {
-                // Map country to currency (Switch API requires currency for quotes)
                 const currencyMap = {
                     'NG': 'NGN', 'GH': 'GHS', 'KE': 'KES', 'ZA': 'ZAR', 'UG': 'UGX',
                     'US': 'USD', 'GB': 'GBP', 'AE': 'AED', 'BR': 'BRL', 'PH': 'PHP',
                     'MX': 'MXN', 'PL': 'PLN', 'RO': 'RON', 'CZ': 'CZK', 'HU': 'HUF',
                     'NO': 'NOK', 'SE': 'SEK', 'DK': 'DKK'
                 };
-                // Euro countries
                 const euroCountries = ['AD', 'AT', 'BE', 'HR', 'CY', 'EE', 'FI', 'FR', 'DE',
                                       'GR', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PT', 'SK', 'SI', 'ES'];
                 const currency = euroCountries.includes(country) ? 'EUR' : (currencyMap[country] || 'USD');
 
-                // Get quote first
                 const quoteResponse = await api.getSwitchOnrampQuote({
                     amount,
                     country,
@@ -1435,7 +1358,6 @@ export async function showAddFundsModal() {
 
                 const quote = quoteResponse.data;
 
-                // Show quote
                 document.getElementById('quoteFiatAmount').textContent =
                     `${quote.source?.amount || amount} ${quote.source?.currency || 'Local'}`;
                 document.getElementById('quoteCryptoAmount').textContent =
@@ -1444,10 +1366,8 @@ export async function showAddFundsModal() {
                     `1 USDC = ${quote.rate || 'N/A'} ${quote.source?.currency || ''}`;
                 quoteDisplay.style.display = 'block';
 
-                // Hide loading spinner
                 window.hideLoadingSpinner();
 
-                // Change button to execute
                 getQuoteBtn.textContent = 'Proceed to Deposit';
                 getQuoteBtn.onclick = async () => {
                     getQuoteBtn.disabled = true;
@@ -1455,7 +1375,6 @@ export async function showAddFundsModal() {
                     window.showLoadingSpinner('Creating deposit account...');
 
                     try {
-                        // Execute onramp - get virtual account
                         const onrampResponse = await api.requestSwitchOnramp({
                             amount,
                             country,
@@ -1468,7 +1387,6 @@ export async function showAddFundsModal() {
 
                         const { virtualAccount, quote: finalQuote, instructions } = onrampResponse.data;
 
-                        // Show virtual account details
                         document.getElementById('virtualAccountDisplay').innerHTML = `
                             <div style="background: var(--background-alt); padding: 20px; border-radius: 8px; border: 2px solid var(--success);">
                                 <div style="text-align: center; margin-bottom: 20px;">
@@ -1555,7 +1473,6 @@ export async function showAddFundsModal() {
     }
 }
 
-// Swap Modal - Exchange between different stablecoin assets
 export function showSwapModal() {
     const modalContent = `
         <div class="modal" onclick="closeModalOnBackdrop(event)">
@@ -1652,14 +1569,12 @@ export function showSwapModal() {
     document.getElementById('modalsContainer').innerHTML = modalContent;
     openModal();
 
-    // Setup event listeners
     const fromAssetSelect = document.getElementById('swapFromAsset');
     const toAssetSelect = document.getElementById('swapToAsset');
     const amountInput = document.getElementById('swapAmount');
     const getQuoteBtn = document.getElementById('getSwapQuoteBtn');
     const submitBtn = document.getElementById('swapSubmitBtn');
 
-    // Enable quote button when all fields are filled
     const checkFields = () => {
         const fromAsset = fromAssetSelect.value;
         const toAsset = toAssetSelect.value;
@@ -1677,7 +1592,6 @@ export function showSwapModal() {
     toAssetSelect.addEventListener('change', checkFields);
     amountInput.addEventListener('input', checkFields);
 
-    // Get quote button handler
     getQuoteBtn.addEventListener('click', async () => {
         const fromAsset = fromAssetSelect.value;
         const toAsset = toAssetSelect.value;
@@ -1722,7 +1636,6 @@ export function showSwapModal() {
     });
 }
 
-// Handle swap form submission
 window.handleSwap = async function(event) {
     event.preventDefault();
 

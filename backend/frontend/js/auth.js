@@ -1,4 +1,3 @@
-// Authentication Module
 import { appState, setUser, clearUser } from './state.js';
 import { navigateToPage } from './navigation.js';
 import { showToast, closeModal, openModal } from './utils.js';
@@ -194,7 +193,6 @@ export async function handleAuth(event, type) {
     const submitBtn = form.querySelector('button[type="submit"]');
     const originalBtnText = submitBtn.textContent;
 
-    // Disable button and show loading state
     submitBtn.disabled = true;
     submitBtn.textContent = type === 'signup' ? 'Creating account...' : 'Signing in...';
 
@@ -202,7 +200,6 @@ export async function handleAuth(event, type) {
         const formData = new FormData(form);
 
         if (type === 'signup') {
-            // Validate password confirmation
             const password = formData.get('password');
             const confirmPassword = formData.get('confirmPassword');
 
@@ -213,7 +210,6 @@ export async function handleAuth(event, type) {
                 return;
             }
 
-            // Validate password requirements
             if (password.length < 8) {
                 showToast('Password must be at least 8 characters', 'error');
                 submitBtn.disabled = false;
@@ -252,12 +248,10 @@ export async function handleAuth(event, type) {
                 password: password
             };
 
-            // Add category if user is signing up as creator
             if (userData.role === 'creator') {
                 userData.category = formData.get('category') || 'other';
             }
 
-            // Add location if country is provided
             const country = formData.get('country');
             if (country) {
                 userData.location = {
@@ -273,7 +267,6 @@ export async function handleAuth(event, type) {
                 updateUserMenu();
                 closeModal();
 
-                // Show email verification modal
                 showEmailVerificationModal(userData.email, userData.role);
                 showToast('Account created successfully! Please check your email for the verification code.', 'success');
             } else {
@@ -307,9 +300,7 @@ export async function handleLogout() {
     try {
         await api.logout();
     } catch (error) {
-        // Ignore logout errors
     } finally {
-        // Clear notification interval to prevent memory leak
         if (window.notificationInterval) {
             clearInterval(window.notificationInterval);
             window.notificationInterval = null;
@@ -377,7 +368,6 @@ export function updateUserMenu() {
 
     if (appState.user) {
 
-        // Show user avatar dropdown with professional fallback
         const avatarUrl = getAvatarUrl(appState.user);
         userMenuContainer.innerHTML = `
             <button class="user-avatar-btn" id="userAvatarBtn">
@@ -438,13 +428,11 @@ export function updateUserMenu() {
             </div>
         `;
 
-        // Add click listener to toggle dropdown
         document.getElementById('userAvatarBtn')?.addEventListener('click', (e) => {
             e.stopPropagation();
             document.getElementById('userDropdown')?.classList.toggle('active');
         });
 
-        // Close dropdown when clicking outside
         document.addEventListener('click', (e) => {
             const dropdown = document.getElementById('userDropdown');
             const btn = document.getElementById('userAvatarBtn');
@@ -453,34 +441,28 @@ export function updateUserMenu() {
             }
         });
 
-        // Show notifications button and update badge
         const notificationsBtn = document.getElementById('notificationsBtn');
         if (notificationsBtn) {
             notificationsBtn.style.display = 'flex';
             notificationsBtn.addEventListener('click', () => navigateToPage('notifications'));
         }
 
-        // Update notification badge
         updateNotificationBadge();
 
-        // Update notification badge every 30 seconds
         if (!window.notificationInterval) {
             window.notificationInterval = setInterval(updateNotificationBadge, 30000);
         }
     } else {
-        // Hide notifications button when logged out
         const notificationsBtn = document.getElementById('notificationsBtn');
         if (notificationsBtn) {
             notificationsBtn.style.display = 'none';
         }
 
-        // Clear notification interval
         if (window.notificationInterval) {
             clearInterval(window.notificationInterval);
             window.notificationInterval = null;
         }
 
-        // Show sign in button
         userMenuContainer.innerHTML = `<button class="btn-secondary" id="authBtn">Sign in</button>`;
         document.getElementById('authBtn')?.addEventListener('click', () => showAuthModal('signin'));
     }
@@ -502,7 +484,6 @@ async function updateNotificationBadge() {
             }
         }
     } catch (error) {
-        // Ignore notification badge errors
     }
 }
 
@@ -512,7 +493,6 @@ async function updateNotificationBadge() {
 function validatePassword() {
     const password = document.getElementById('passwordInput')?.value || '';
 
-    // Check length
     const lengthReq = document.getElementById('req-length');
     if (password.length >= 8) {
         updateRequirementUI(lengthReq, true);
@@ -520,7 +500,6 @@ function validatePassword() {
         updateRequirementUI(lengthReq, false);
     }
 
-    // Check uppercase
     const uppercaseReq = document.getElementById('req-uppercase');
     if (/[A-Z]/.test(password)) {
         updateRequirementUI(uppercaseReq, true);
@@ -528,7 +507,6 @@ function validatePassword() {
         updateRequirementUI(uppercaseReq, false);
     }
 
-    // Check lowercase
     const lowercaseReq = document.getElementById('req-lowercase');
     if (/[a-z]/.test(password)) {
         updateRequirementUI(lowercaseReq, true);
@@ -536,7 +514,6 @@ function validatePassword() {
         updateRequirementUI(lowercaseReq, false);
     }
 
-    // Check number
     const numberReq = document.getElementById('req-number');
     if (/\d/.test(password)) {
         updateRequirementUI(numberReq, true);
@@ -544,7 +521,6 @@ function validatePassword() {
         updateRequirementUI(numberReq, false);
     }
 
-    // Check special character
     const specialReq = document.getElementById('req-special');
     if (/[@$!%*?&_\-#]/.test(password)) {
         updateRequirementUI(specialReq, true);
@@ -688,7 +664,6 @@ async function handleEmailVerification(event, userRole) {
         const response = await api.verifyEmail(code);
 
         if (response.success) {
-            // Update user in state to mark as verified
             if (appState.user) {
                 appState.user.isEmailVerified = true;
                 setUser(appState.user);
@@ -697,7 +672,6 @@ async function handleEmailVerification(event, userRole) {
             closeModal();
             showToast('Email verified successfully!', 'success');
 
-            // Navigate based on role
             if (userRole === 'creator') {
                 navigateToPage('settings');
                 showToast('Complete your profile to start receiving bookings', 'info');
@@ -773,7 +747,6 @@ function toggleCategoryField() {
     }
 }
 
-// Make functions globally available for onclick handlers
 window.handleEmailVerification = handleEmailVerification;
 window.handleResendVerification = handleResendVerification;
 window.skipVerification = skipVerification;

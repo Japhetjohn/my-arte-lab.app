@@ -70,10 +70,8 @@ const notificationSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Index for efficient queries
 notificationSchema.index({ recipient: 1, read: 1, createdAt: -1 });
 
-// Mark notification as read
 notificationSchema.methods.markAsRead = async function() {
   if (!this.read) {
     this.read = true;
@@ -83,7 +81,6 @@ notificationSchema.methods.markAsRead = async function() {
   return this;
 };
 
-// Static method to create notification
 notificationSchema.statics.createNotification = async function(data) {
   try {
     const notification = await this.create(data);
@@ -94,7 +91,6 @@ notificationSchema.statics.createNotification = async function(data) {
   }
 };
 
-// Static method to mark all as read for a user
 notificationSchema.statics.markAllAsRead = async function(userId) {
   return this.updateMany(
     { recipient: userId, read: false },
@@ -102,7 +98,6 @@ notificationSchema.statics.markAllAsRead = async function(userId) {
   );
 };
 
-// Static method to get unread count
 notificationSchema.statics.getUnreadCount = async function(userId) {
   return this.countDocuments({ recipient: userId, read: false });
 };

@@ -1,4 +1,3 @@
-// Bookings Page Module
 import { appState } from '../state.js';
 import { formatDate, formatStatus, getStatusColor } from '../utils.js';
 import api from '../services/api.js';
@@ -23,7 +22,6 @@ export async function renderBookingsPage() {
         return;
     }
 
-    // Show loading state
     mainContent.innerHTML = `
         <div class="section">
             <div class="container">
@@ -39,7 +37,6 @@ export async function renderBookingsPage() {
     `;
 
     try {
-        // Load bookings from API
         const response = await api.getBookings();
 
         if (response.success) {
@@ -116,7 +113,6 @@ function renderBookingsList() {
 }
 
 function renderBookingCard(booking) {
-    // Get the other party's info based on user role
     const isCreator = appState.user.role === 'creator';
     const otherPartyName = isCreator ? booking.client?.name || 'Client' : booking.creator?.name || 'Creator';
     const otherPartyAvatar = isCreator
@@ -155,7 +151,6 @@ function renderBookingCard(booking) {
     `;
 }
 
-// View booking details
 window.viewBookingDetails = async function(bookingId) {
     try {
         const response = await api.getBookingDetails(bookingId);
@@ -167,7 +162,6 @@ window.viewBookingDetails = async function(bookingId) {
                 !m.read && m.sender.toString() !== appState.user._id
             ).length || 0;
 
-            // Show booking details modal with messaging
             const modalContent = `
                 <div class="modal" onclick="closeModalOnBackdrop(event)">
                     <div class="modal-content" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
@@ -306,7 +300,6 @@ window.viewBookingDetails = async function(bookingId) {
             document.getElementById('modalsContainer').innerHTML = modalContent;
             document.body.style.overflow = 'hidden';
 
-            // Scroll messages to bottom
             const messagesContainer = document.getElementById('messagesContainer');
             if (messagesContainer) {
                 messagesContainer.scrollTop = messagesContainer.scrollHeight;
@@ -318,7 +311,6 @@ window.viewBookingDetails = async function(bookingId) {
     }
 };
 
-// Complete booking (creator only)
 window.completeBooking = async function(bookingId) {
     if (!confirm('Are you sure you want to mark this booking as completed?')) return;
 
@@ -336,7 +328,6 @@ window.completeBooking = async function(bookingId) {
     }
 };
 
-// Release payment (client only)
 window.releasePayment = async function(bookingId) {
     if (!confirm('Are you sure you want to release payment to the creator?')) return;
 
@@ -354,7 +345,6 @@ window.releasePayment = async function(bookingId) {
     }
 };
 
-// Send booking message
 window.sendBookingMessage = async function(event, bookingId) {
     event.preventDefault();
     const messageInput = document.getElementById('messageInput');
@@ -367,7 +357,6 @@ window.sendBookingMessage = async function(event, bookingId) {
 
         if (response.success) {
             messageInput.value = '';
-            // Reload booking details to show new message
             await window.viewBookingDetails(bookingId);
             showToast('Message sent!', 'success');
         }
@@ -377,7 +366,6 @@ window.sendBookingMessage = async function(event, bookingId) {
     }
 };
 
-// Accept booking request (creator only)
 window.acceptBookingRequest = async function(bookingId) {
     if (!confirm('Accept this booking request?')) return;
 
@@ -395,7 +383,6 @@ window.acceptBookingRequest = async function(bookingId) {
     }
 };
 
-// Reject booking request (creator only)
 window.rejectBookingRequest = async function(bookingId) {
     const reason = prompt('Reason for rejection (optional):');
     if (reason === null) return; // User cancelled
@@ -414,7 +401,6 @@ window.rejectBookingRequest = async function(bookingId) {
     }
 };
 
-// Show counter proposal form (creator only)
 window.showCounterProposalForm = function(bookingId) {
     const amount = prompt('Enter your counter proposal amount (USDC):');
     if (!amount || isNaN(amount) || parseFloat(amount) <= 0) {
@@ -425,7 +411,6 @@ window.showCounterProposalForm = function(bookingId) {
     window.submitCounterProposal(bookingId, parseFloat(amount));
 };
 
-// Submit counter proposal (creator only)
 window.submitCounterProposal = async function(bookingId, amount) {
     try {
         const response = await api.counterProposal(bookingId, amount);

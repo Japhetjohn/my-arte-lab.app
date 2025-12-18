@@ -1,7 +1,5 @@
-// Service Management Utilities
 import api from '../services/api.js';
 
-// Load services for a user
 export async function loadServices() {
     try {
         const response = await api.getMyServices();
@@ -15,7 +13,6 @@ export async function loadServices() {
     return [];
 }
 
-// Show add service modal
 window.showAddServiceModal = function() {
     const modal = `
         <div class="modal" onclick="closeModalOnBackdrop(event)">
@@ -54,7 +51,6 @@ window.showAddServiceModal = function() {
     document.body.style.overflow = 'hidden';
 };
 
-// Handle add service
 window.handleAddService = async function(event) {
     event.preventDefault();
     const submitBtn = event.target.querySelector('button[type="submit"]');
@@ -71,7 +67,6 @@ window.handleAddService = async function(event) {
         if (response.success) {
             window.closeModal();
             window.showToast('Service added successfully!', 'success');
-            // Reload the profile page to show new service
             if (window.location.hash === '#profile' || window.navigateToPage) {
                 window.navigateToPage('profile');
             }
@@ -84,7 +79,6 @@ window.handleAddService = async function(event) {
     }
 };
 
-// Edit service
 window.editService = async function(serviceId) {
     try {
         const response = await api.getMyServices();
@@ -131,7 +125,6 @@ window.editService = async function(serviceId) {
     }
 };
 
-// Handle edit service
 window.handleEditService = async function(event, serviceId) {
     event.preventDefault();
     const submitBtn = event.target.querySelector('button[type="submit"]');
@@ -148,7 +141,6 @@ window.handleEditService = async function(event, serviceId) {
         if (response.success) {
             window.closeModal();
             window.showToast('Service updated successfully!', 'success');
-            // Reload the profile page to show updated service
             if (window.location.hash === '#profile' || window.navigateToPage) {
                 window.navigateToPage('profile');
             }
@@ -161,7 +153,6 @@ window.handleEditService = async function(event, serviceId) {
     }
 };
 
-// Delete service
 window.deleteService = async function(serviceId) {
     if (!confirm('Are you sure you want to delete this service?')) return;
 
@@ -169,7 +160,6 @@ window.deleteService = async function(serviceId) {
         const response = await api.deleteService(serviceId);
         if (response.success) {
             window.showToast('Service deleted successfully!', 'success');
-            // Reload the profile page to show updated services
             if (window.location.hash === '#profile' || window.navigateToPage) {
                 window.navigateToPage('profile');
             }
@@ -180,7 +170,6 @@ window.deleteService = async function(serviceId) {
     }
 };
 
-// Upload service image
 window.uploadServiceImage = function(serviceId) {
     const input = document.createElement('input');
     input.type = 'file';
@@ -199,7 +188,6 @@ window.uploadServiceImage = function(serviceId) {
             const response = await api.uploadServiceImage(serviceId, file);
             if (response.success) {
                 window.showToast('Image uploaded successfully!', 'success');
-                // Reload the profile page to show updated service
                 if (window.location.hash === '#profile' || window.navigateToPage) {
                     window.navigateToPage('profile');
                 }
@@ -212,7 +200,6 @@ window.uploadServiceImage = function(serviceId) {
     input.click();
 };
 
-// Delete service image
 window.deleteServiceImage = async function(serviceId, imageIndex) {
     if (!confirm('Delete this image?')) return;
 
@@ -220,7 +207,6 @@ window.deleteServiceImage = async function(serviceId, imageIndex) {
         const response = await api.deleteServiceImage(serviceId, imageIndex);
         if (response.success) {
             window.showToast('Image deleted successfully!', 'success');
-            // Reload the profile page to show updated service
             if (window.location.hash === '#profile' || window.navigateToPage) {
                 window.navigateToPage('profile');
             }

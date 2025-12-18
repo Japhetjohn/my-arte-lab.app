@@ -41,11 +41,8 @@ const notificationRoutes = require('./routes/notificationRoutes');
 
 const app = express();
 
-// Trust proxy - Required for Render and other cloud platforms
-// This allows Express to correctly read X-Forwarded-* headers
 app.set('trust proxy', 1);
 
-// Validate required environment variables
 const requiredEnvVars = [
   'MONGODB_URI',
   'JWT_SECRET',
@@ -75,7 +72,6 @@ if (process.env.WALLET_ENCRYPTION_KEY.length < 32) {
 
 connectDatabase();
 
-// Configure Helmet with security-hardened CSP
 app.use(helmet({
   crossOriginOpenerPolicy: false,  // Required for Coinbase SDK
   crossOriginEmbedderPolicy: false,  // Required for wallet integrations
@@ -123,12 +119,10 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (server-to-server, health checks, Postman, etc.)
     if (!origin) {
       return callback(null, true);
     }
 
-    // In production, allow same-origin requests from exact Render domain
     if (process.env.NODE_ENV === 'production' && origin === 'https://my-arte-lab-app.onrender.com') {
       return callback(null, true);
     }
@@ -183,7 +177,6 @@ app.get('/health', async (req, res) => {
     checks: {}
   };
 
-  // Check database connectivity
   try {
     const mongoose = require('mongoose');
     if (mongoose.connection.readyState === 1) {
@@ -254,10 +247,8 @@ app.get('/api', (req, res) => {
   });
 });
 
-// Serve frontend static files
 const path = require('path');
 
-// Serve built Vite assets from dist directory with correct MIME types
 app.use('/dist', express.static(path.join(__dirname, '../frontend/dist'), {
   setHeaders: (res, filepath) => {
     if (filepath.endsWith('.js')) {
@@ -266,7 +257,6 @@ app.use('/dist', express.static(path.join(__dirname, '../frontend/dist'), {
   }
 }));
 
-// Also serve /assets directly from /dist/assets for Vite compatibility
 app.use('/assets', express.static(path.join(__dirname, '../frontend/dist/assets'), {
   setHeaders: (res, filepath) => {
     if (filepath.endsWith('.js')) {
@@ -275,15 +265,12 @@ app.use('/assets', express.static(path.join(__dirname, '../frontend/dist/assets'
   }
 }));
 
-// Serve static files from frontend directory
 app.use(express.static(path.join(__dirname, '../frontend')));
 
-// Handle client-side routing - send index.html for all non-API routes
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/index.html'));
 });
 
-// API 404 handler - must come AFTER static file serving
 app.use('/api/*', (req, res) => {
   res.status(404).json({
     success: false,
@@ -321,7 +308,6 @@ process.on('uncaughtException', (err) => {
 
 process.on('SIGTERM', () => {
   server.close(async () => {
-    // Close database connection
     try {
       const mongoose = require('mongoose');
       await mongoose.connection.close(false);
@@ -332,7 +318,6 @@ process.on('SIGTERM', () => {
     process.exit(0);
   });
 
-  // Force shutdown after 30 seconds
   setTimeout(() => {
     console.error('Forced shutdown due to timeout');
     process.exit(1);

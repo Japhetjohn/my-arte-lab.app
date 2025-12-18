@@ -1,4 +1,3 @@
-// Wallet Page Module
 import { appState } from '../state.js';
 import { formatDate, showToast } from '../utils.js';
 import api from '../services/api.js';
@@ -25,7 +24,6 @@ export async function renderWalletPage() {
         return;
     }
 
-    // Show loading state
     mainContent.innerHTML = `
         <div class="section">
             <div class="container">
@@ -42,7 +40,6 @@ export async function renderWalletPage() {
     `;
 
     try {
-        // Load wallet data from API
         const [walletResponse, transactionsResponse] = await Promise.all([
             api.getWallet(),
             api.getTransactions(1, 10)
@@ -76,7 +73,6 @@ export async function renderWalletPage() {
 function renderWalletContent() {
     const mainContent = document.getElementById('mainContent');
 
-    // Calculate totals from wallet data
     const balance = walletData.balance || 0;
     const pendingBalance = walletData.pendingBalance || 0;
     const totalEarnings = walletData.totalEarnings || 0;
@@ -283,20 +279,16 @@ function renderWalletContent() {
     `;
 }
 
-// Fund wallet - show virtual account modal
 window.fundWallet = function() {
     showAddFundsModal();
 };
 
-// Show swap modal
 window.showSwapModal = function() {
     showSwapModal();
 };
 
-// Store wallet data globally for onramp modal
 window.walletData = walletData;
 
-// Copy wallet address to clipboard
 window.copyWalletAddress = async function() {
     const address = walletData?.address;
     if (!address) return;
@@ -305,7 +297,6 @@ window.copyWalletAddress = async function() {
         await navigator.clipboard.writeText(address);
         showToast('Wallet address copied to clipboard!', 'success');
     } catch (error) {
-        // Fallback for older browsers
         const textArea = document.createElement('textarea');
         textArea.value = address;
         textArea.style.position = 'fixed';
@@ -324,7 +315,6 @@ window.copyWalletAddress = async function() {
     }
 };
 
-// Check transaction status
 window.checkTransactionStatus = async function(reference) {
     if (!reference) {
         showToast('No reference ID available', 'error');
@@ -359,7 +349,6 @@ window.checkTransactionStatus = async function(reference) {
             status.status === 'COMPLETED' ? 'success' : status.status === 'FAILED' ? 'error' : 'info'
         );
 
-        // Reload page if status changed to completed
         if (status.status === 'COMPLETED' && status.finalized) {
             setTimeout(() => window.location.reload(), 2000);
         }
@@ -369,7 +358,6 @@ window.checkTransactionStatus = async function(reference) {
     }
 };
 
-// Export wallet data for use in modals
 export function getWalletData() {
     return walletData;
 }

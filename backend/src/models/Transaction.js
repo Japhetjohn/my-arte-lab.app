@@ -79,7 +79,6 @@ const transactionSchema = new mongoose.Schema({
   tsaraPaymentId: String,
   tsaraPaymentStatus: String,
 
-  // bread.africa fields for onramp/offramp
   breadTransactionId: String,        // Transaction ID from bread.africa
   breadQuoteId: String,              // Quote ID for offramp transactions
   breadWalletId: String,             // Wallet ID used for the transaction
@@ -97,19 +96,16 @@ const transactionSchema = new mongoose.Schema({
     default: ''
   },
   paymentDetails: {
-    // For onramp (virtual account details)
     accountNumber: String,
     accountName: String,
     bankName: String,
     bankCode: String,
 
-    // For offramp (beneficiary details)
     beneficiaryAccountNumber: String,
     beneficiaryAccountName: String,
     beneficiaryBankName: String,
     beneficiaryBankCode: String,
 
-    // Additional fields
     reference: String,
     expiresAt: Date
   },

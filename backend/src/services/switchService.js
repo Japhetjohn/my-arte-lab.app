@@ -12,14 +12,12 @@ class SwitchService {
     this.serviceKey = switchConfig.serviceKey;
     this.webhookSecret = switchConfig.webhookSecret;
 
-    // Create axios instance with Switch configuration
     this.api = axios.create({
       baseURL: this.apiUrl,
       headers: switchConfig.getHeaders(),
       timeout: 30000
     });
 
-    // Configure retry logic for transient failures
     axiosRetry(this.api, {
       retries: 3,
       retryDelay: axiosRetry.exponentialDelay,
@@ -33,7 +31,6 @@ class SwitchService {
     });
   }
 
-  // ==================== Coverage & Discovery ====================
 
   /**
    * Get all supported countries for offramp/onramp
@@ -171,7 +168,6 @@ class SwitchService {
     }
   }
 
-  // ==================== Offramp (Withdrawal) ====================
 
   /**
    * Get offramp quote (exchange rate and fees)
@@ -262,7 +258,6 @@ class SwitchService {
     }
   }
 
-  // ==================== Onramp (Deposit) ====================
 
   /**
    * Get onramp quote
@@ -356,7 +351,6 @@ class SwitchService {
     }
   }
 
-  // ==================== Asset Information ====================
 
   /**
    * Get supported assets/cryptocurrencies
@@ -368,12 +362,10 @@ class SwitchService {
       return response.data.data || [];
     } catch (error) {
       console.error('Failed to get assets:', error.response?.data || error.message);
-      // Return default assets if API fails
       return switchConfig.getSupportedAssets();
     }
   }
 
-  // ==================== Swap (Asset Exchange) ====================
 
   /**
    * Get swap quote for exchanging between two stablecoin assets
@@ -444,7 +436,6 @@ class SwitchService {
     }
   }
 
-  // ==================== Transaction Status ====================
 
   /**
    * Get transaction status by reference
@@ -463,7 +454,6 @@ class SwitchService {
     }
   }
 
-  // ==================== Account Verification ====================
 
   /**
    * Verify bank account and get account name
@@ -475,16 +465,13 @@ class SwitchService {
    */
   async verifyBankAccount({ country, bankCode, accountNumber, phoneNumber, mobileNetwork }) {
     try {
-      // Use the correct institution lookup endpoint
       const beneficiary = {};
 
-      // For bank transfers (most countries)
       if (bankCode && accountNumber) {
         beneficiary.bank_code = bankCode;
         beneficiary.account_number = accountNumber;
       }
 
-      // For mobile money (some African countries)
       if (phoneNumber && mobileNetwork) {
         beneficiary.phone_number = phoneNumber;
         beneficiary.mobile_network = mobileNetwork;
@@ -503,7 +490,6 @@ class SwitchService {
     }
   }
 
-  // ==================== Helper Methods ====================
 
   /**
    * Verify webhook signature
@@ -558,7 +544,6 @@ class SwitchService {
       'PH': 'Philippines',
       'CA': 'Canada',
       'AE': 'United Arab Emirates'
-      // Add more as needed
     };
 
     return countries[code] || code;

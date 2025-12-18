@@ -11,16 +11,13 @@ const {
 const { protect } = require('../middleware/auth');
 const { upload } = require('../services/uploadService');
 
-// All routes require authentication
 router.use(protect);
 
-// Service CRUD operations
 router.get('/', getMyServices);
 router.post('/', addService);
 router.put('/:serviceId', updateService);
 router.delete('/:serviceId', deleteService);
 
-// Service image management
 router.post('/:serviceId/images', upload.single('image'), uploadServiceImage);
 router.delete('/:serviceId/images/:imageIndex', deleteServiceImage);
 

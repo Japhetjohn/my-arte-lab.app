@@ -2,33 +2,26 @@ const User = require('../models/User');
 const Booking = require('../models/Booking');
 const { successResponse } = require('../utils/apiResponse');
 
-// Get platform statistics for homepage
 exports.getPlatformStats = async (req, res, next) => {
   try {
-    // Run all queries in parallel for better performance
     const [
       totalCreators,
       verifiedCreators,
       completedBookings,
       categoryCounts
     ] = await Promise.all([
-      // Total creators
       User.countDocuments({ role: 'creator' }),
 
-      // Verified creators
       User.countDocuments({ role: 'creator', isVerified: true }),
 
-      // Completed bookings
       Booking.countDocuments({ status: 'completed' }),
 
-      // Category counts
       User.aggregate([
         { $match: { role: 'creator' } },
         { $group: { _id: '$category', count: { $sum: 1 } } }
       ])
     ]);
 
-    // Transform category counts into object
     const categories = {};
     categoryCounts.forEach(cat => {
       if (cat._id) {
@@ -47,12 +40,10 @@ exports.getPlatformStats = async (req, res, next) => {
   }
 };
 
-// Get featured creators (top-rated or verified)
 exports.getFeaturedCreators = async (req, res, next) => {
   try {
     const limit = parseInt(req.query.limit) || 8;
 
-    // Get verified creators or top-rated creators
     const creators = await User.find({
       role: 'creator',
       $or: [
@@ -65,9 +56,7 @@ exports.getFeaturedCreators = async (req, res, next) => {
       .limit(limit)
       .lean();
 
-    // Transform to match frontend format
     const featuredCreators = creators.map(creator => {
-      // Format location
       let locationStr = 'Nigeria';
       if (creator.location) {
         if (creator.location.city && creator.location.country) {
@@ -82,7 +71,6 @@ exports.getFeaturedCreators = async (req, res, next) => {
       return {
         id: creator._id.toString(),
         name: creator.name || 'Unknown Creator',
-        // Always use default avatar with initials for consistency
         avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name || 'User')}&background=9747FF&color=fff&bold=true`,
         role: creator.category ? creator.category.charAt(0).toUpperCase() + creator.category.slice(1) : 'Creator',
         location: locationStr,

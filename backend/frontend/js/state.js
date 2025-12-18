@@ -1,4 +1,3 @@
-// Application State Management
 export const appState = {
     currentPage: 'home',
     previousPage: null,
@@ -12,7 +11,6 @@ export const appState = {
     }
 };
 
-// State update functions
 export function setUser(user) {
     appState.user = user;
 }

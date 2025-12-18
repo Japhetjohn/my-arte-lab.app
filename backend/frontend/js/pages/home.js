@@ -1,4 +1,3 @@
-// Home Page Module
 import { appState } from '../state.js';
 import { renderCreatorCards, setupCreatorCardListeners, renderCategories } from '../components/creators.js';
 import api from '../services/api.js';
@@ -9,7 +8,6 @@ let featuredCreators = [];
 export async function renderHomePage() {
     const mainContent = document.getElementById('mainContent');
 
-    // Show initial content with loading state
     mainContent.innerHTML = `
         <div class="hero-section">
             <div class="hero-content">
@@ -63,13 +61,11 @@ export async function renderHomePage() {
         </div>
     `;
 
-    // Load real data from API
     await loadHomePageData();
 }
 
 async function loadHomePageData() {
     try {
-        // Load stats and featured creators in parallel
         const [statsResponse, featuredResponse] = await Promise.all([
             api.getPlatformStats(),
             api.getFeaturedCreators(8)
@@ -87,7 +83,6 @@ async function loadHomePageData() {
         }
     } catch (error) {
         console.error('Failed to load homepage data:', error);
-        // Show error states or fallback to minimal display
     }
 }
 
@@ -116,7 +111,6 @@ function updateFeaturedCreators() {
     if (!featuredContainer) return;
 
     if (featuredCreators.length > 0) {
-        // Store featured creators in appState for click handlers
         appState.creators = featuredCreators;
         featuredContainer.innerHTML = renderCreatorCards(featuredCreators);
         setupCreatorCardListeners();

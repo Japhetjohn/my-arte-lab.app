@@ -113,7 +113,6 @@ const userSchema = new mongoose.Schema({
       trim: true,
       match: [/^https?:\/\/.+/, 'Please provide a valid URL']
     },
-    // Service Packages (Basic/Standard/Premium)
     packages: [{
       name: {
         type: String,
@@ -265,7 +264,6 @@ const userSchema = new mongoose.Schema({
     default: null
   },
 
-  // Performance Metrics
   metrics: {
     responseRate: {
       type: Number,
@@ -295,7 +293,6 @@ const userSchema = new mongoose.Schema({
     }
   },
 
-  // Badges & Achievements
   badges: [{
     type: {
       type: String,
@@ -307,7 +304,6 @@ const userSchema = new mongoose.Schema({
     }
   }],
 
-  // Profile Completion
   profileCompletion: {
     type: Number,
     default: 0,
@@ -315,13 +311,11 @@ const userSchema = new mongoose.Schema({
     max: 100
   },
 
-  // Favorites/Bookmarks
   favoriteCreators: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   }],
 
-  // SEO fields
   seoSlug: {
     type: String,
     unique: true,
@@ -338,7 +332,6 @@ userSchema.index({ 'rating.average': -1 });
 userSchema.index({ 'wallet.address': 1 });
 userSchema.index({ email: 1, googleId: 1 });
 userSchema.index({ role: 1, category: 1, 'rating.average': -1 });
-// Note: wallet.address, email, and googleId already have unique indexes from schema definition
 
 userSchema.virtual('formattedLocation').get(function() {
   return formatLocation(this.location);

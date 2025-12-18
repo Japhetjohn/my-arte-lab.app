@@ -1,4 +1,3 @@
-// Creators Component Module
 import { appState, addToHistory, setCurrentPage } from '../state.js';
 import { updateBackButton } from '../navigation.js';
 import api from '../services/api.js';
@@ -37,7 +36,6 @@ export function renderCreatorCards(creators) {
 }
 
 export async function renderCreatorProfile(creatorIdOrObject) {
-    // Track that we're viewing a profile (not a main page)
     setCurrentPage('creator-profile');
 
     if (!creatorIdOrObject) {
@@ -47,10 +45,8 @@ export async function renderCreatorProfile(creatorIdOrObject) {
     const mainContent = document.getElementById('mainContent');
     let creator;
 
-    // If passed an object with id, fetch fresh data from API
     if (typeof creatorIdOrObject === 'object' && creatorIdOrObject.id) {
         try {
-            // Show loading state
             mainContent.innerHTML = `
                 <div class="section">
                     <div class="container">
@@ -68,12 +64,10 @@ export async function renderCreatorProfile(creatorIdOrObject) {
             const response = await api.getCreatorProfile(creatorIdOrObject.id);
 
             if (response.success) {
-                // Transform API data to match frontend format
                 const apiCreator = response.data.creator;
                 creator = {
                     id: apiCreator._id || apiCreator.id,
                     name: apiCreator.name || 'Unknown Creator',
-                    // Use uploaded avatar if available, otherwise use default with initials
                     avatar: apiCreator.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(apiCreator.name || 'User')}&background=9747FF&color=fff&bold=true`,
                     role: apiCreator.category ? apiCreator.category.charAt(0).toUpperCase() + apiCreator.category.slice(1) : 'Creator',
                     location: apiCreator.location ?
@@ -119,10 +113,8 @@ export async function renderCreatorProfile(creatorIdOrObject) {
             return;
         }
     } else {
-        // If passed a full creator object, use it directly (for backward compatibility)
         creator = creatorIdOrObject;
     }
-    // Use uploaded avatar if available, otherwise use default with initials
     const avatarUrl = creator.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name || 'User')}&background=9747FF&color=fff&bold=true`;
     const coverImage = creator.cover || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200';
     mainContent.innerHTML = `
@@ -377,15 +369,12 @@ export async function renderCreatorProfile(creatorIdOrObject) {
         </div>
     `;
 
-    // Update back button visibility
     updateBackButton();
 
-    // Setup profile page button listeners
     setupProfileButtonListeners(creator);
 }
 
 function setupProfileButtonListeners(creator) {
-    // Handle Book Now button in profile header
     const profileBookBtn = document.querySelector('.profile-book-now-btn');
     if (profileBookBtn) {
         profileBookBtn.addEventListener('click', () => {
@@ -397,7 +386,6 @@ function setupProfileButtonListeners(creator) {
         });
     }
 
-    // Handle Portfolio lightbox items
     document.querySelectorAll('.portfolio-item').forEach(item => {
         item.addEventListener('click', () => {
             const creatorId = item.dataset.creatorId;
@@ -406,7 +394,6 @@ function setupProfileButtonListeners(creator) {
         });
     });
 
-    // Handle Service booking buttons
     document.querySelectorAll('.service-book-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             const creatorId = btn.dataset.creatorId;
@@ -419,7 +406,6 @@ function setupProfileButtonListeners(creator) {
         });
     });
 
-    // Handle Service package booking buttons
     document.querySelectorAll('.service-package-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             const creatorId = btn.dataset.creatorId;
@@ -433,10 +419,8 @@ function setupProfileButtonListeners(creator) {
         });
     });
 
-    // Handle Favorite button
     const favoriteBtn = document.getElementById('favoriteBtn');
     if (favoriteBtn && appState.user) {
-        // Check if creator is already favorited
         checkFavoriteStatus(creator.id, favoriteBtn);
 
         favoriteBtn.addEventListener('click', async () => {
@@ -475,14 +459,12 @@ async function checkFavoriteStatus(creatorId, btn) {
 }
 
 export function setupCreatorCardListeners() {
-    // Handle View Profile buttons
     document.querySelectorAll('.view-profile-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
             const creatorId = btn.dataset.creatorId;
             const creator = appState.creators.find(c => c.id === creatorId);
             if (creator) {
-                // Add current page to history before navigating to profile
                 if (appState.currentPage !== 'creator-profile') {
                     addToHistory(appState.currentPage);
                 }
@@ -491,7 +473,6 @@ export function setupCreatorCardListeners() {
         });
     });
 
-    // Handle Book Now buttons
     document.querySelectorAll('.book-now-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -504,14 +485,12 @@ export function setupCreatorCardListeners() {
         });
     });
 
-    // Handle card clicks (anywhere except buttons)
     document.querySelectorAll('.creator-card').forEach(card => {
         card.addEventListener('click', (e) => {
             if (!e.target.closest('button')) {
                 const creatorId = card.dataset.creatorId;
                 const creator = appState.creators.find(c => c.id === creatorId);
                 if (creator) {
-                    // Add current page to history before navigating to profile
                     if (appState.currentPage !== 'creator-profile') {
                         addToHistory(appState.currentPage);
                     }
@@ -522,11 +501,9 @@ export function setupCreatorCardListeners() {
     });
 }
 
-// Make function available globally for inline onclick handlers
 window.renderCreatorProfile = renderCreatorProfile;
 
 export function renderCategories(categoryCounts = {}) {
-    // Map category types to display info
     const categoryMap = {
         photographer: { name: 'Photographers', icon: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="2" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/><path d="M7 4V2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>' },
         designer: { name: 'Designers', icon: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M12 2l3 7h7l-5.5 4 2 7-6.5-5-6.5 5 2-7L2 9h7l3-7z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>' },
@@ -537,7 +514,6 @@ export function renderCategories(categoryCounts = {}) {
 
     const categories = [];
 
-    // Add categories from API data
     Object.keys(categoryMap).forEach(key => {
         const count = categoryCounts[key] || 0;
         if (count > 0 || key === 'photographer' || key === 'designer') {
@@ -549,12 +525,11 @@ export function renderCategories(categoryCounts = {}) {
         }
     });
 
-    // If no categories have counts, show placeholders
     if (categories.length === 0) {
         categories.push(
-            { name: 'Photographers', icon: '📷', count: 0 },
-            { name: 'Designers', icon: '🎨', count: 0 },
-            { name: 'Videographers', icon: '🎥', count: 0 }
+            { name: 'Photographers', icon: categoryMap.photographer.icon, count: 0 },
+            { name: 'Designers', icon: categoryMap.designer.icon, count: 0 },
+            { name: 'Videographers', icon: categoryMap.videographer.icon, count: 0 }
         );
     }
 
@@ -572,9 +547,7 @@ export function renderCategories(categoryCounts = {}) {
     }).join('');
 }
 
-// Filter by category function
 window.filterByCategory = function(category) {
-    // Navigate to discover page with category filter
     localStorage.setItem('discoverFilter', category);
     window.navigateToPage('discover');
 };

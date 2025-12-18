@@ -1,4 +1,3 @@
-// Profile Page Module
 import { appState } from '../state.js';
 import { getAvatarUrl } from '../utils/avatar.js';
 import { renderProfileCompletionWidget } from '../utils/profileCompletion.js';
@@ -25,13 +24,11 @@ export async function renderProfilePage() {
     const user = appState.user;
     const avatarUrl = getAvatarUrl(user);
 
-    // More flexible creator check - check role, category, or services array
     const isCreator = user.role && (
         user.role.toLowerCase().includes('creator') ||
         user.role.toLowerCase() === 'creator'
     );
 
-    // Load services if creator
     let services = [];
     if (isCreator) {
         try {
@@ -44,7 +41,6 @@ export async function renderProfilePage() {
         }
     }
 
-    // Get user data with defaults
     const coverImage = user.coverImage || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200';
     const userLocation = user.location ?
         (typeof user.location === 'object' ?

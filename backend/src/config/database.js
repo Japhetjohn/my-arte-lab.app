@@ -2,7 +2,6 @@ const mongoose = require('mongoose');
 
 const connectDatabase = async () => {
   try {
-    // MongoDB connection options for better Atlas compatibility
     const options = {
       serverSelectionTimeoutMS: 30000, // 30 second timeout for initial connection
       socketTimeoutMS: 45000, // 45 second socket timeout
@@ -26,7 +25,6 @@ const connectDatabase = async () => {
   } catch (error) {
     console.error(` MongoDB Connection Error: ${error.message}`);
     if (process.env.NODE_ENV === 'production') {
-      // In production, exit if we can't connect to the database
       process.exit(1);
     }
   }

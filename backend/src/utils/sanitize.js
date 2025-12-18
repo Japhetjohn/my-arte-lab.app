@@ -26,7 +26,6 @@ const escapeHtml = (text) => {
 const sanitizeInput = (input) => {
   if (typeof input !== 'string') return input;
 
-  // Remove common NoSQL injection patterns
   return input
     .replace(/\$/g, '')
     .replace(/\{/g, '')

@@ -71,7 +71,6 @@ class ApiService {
         const data = await response.json();
 
         if (!response.ok) {
-            // Handle authentication errors
             if (response.status === 401) {
                 this.setToken(null);
                 this.setUserData(null);
@@ -148,7 +147,6 @@ class ApiService {
         });
     }
 
-    // ==================== Auth Endpoints ====================
 
     async register(userData) {
         const response = await this.post(API_ENDPOINTS.register, userData, { auth: false });
@@ -206,7 +204,6 @@ class ApiService {
         return result;
     }
 
-    // ==================== Creator Endpoints ====================
 
     async getCreators(filters = {}) {
         const queryParams = new URLSearchParams(filters).toString();
@@ -218,7 +215,6 @@ class ApiService {
         return this.get(API_ENDPOINTS.creatorProfile(creatorId), { auth: false });
     }
 
-    // ==================== Booking Endpoints ====================
 
     async getBookings(filters = {}) {
         const queryParams = new URLSearchParams(filters).toString();
@@ -246,7 +242,6 @@ class ApiService {
         return this.post(API_ENDPOINTS.releasePayment(bookingId));
     }
 
-    // ==================== Wallet Endpoints ====================
 
     async getWallet() {
         return this.get(API_ENDPOINTS.wallet);
@@ -264,7 +259,6 @@ class ApiService {
         return this.get(API_ENDPOINTS.balanceSummary);
     }
 
-    // ==================== Switch Onramp (Deposit) Endpoints ====================
 
     async getSwitchOnrampQuote(data) {
         return this.post('/wallet/switch/quote/onramp', data);
@@ -274,7 +268,6 @@ class ApiService {
         return this.post('/wallet/switch/onramp', data);
     }
 
-    // ==================== Switch Offramp (Withdrawal) Endpoints ====================
 
     async getSwitchOfframpQuote(data) {
         return this.post('/wallet/switch/quote/offramp', data);
@@ -288,7 +281,6 @@ class ApiService {
         return this.post('/wallet/switch/verify-account', data);
     }
 
-    // ==================== Beneficiary Management Endpoints ====================
 
     async getBeneficiaries() {
         return this.get('/wallet/beneficiaries');
@@ -302,7 +294,6 @@ class ApiService {
         return this.delete(`/wallet/beneficiaries/${beneficiaryId}`);
     }
 
-    // ==================== Switch Utility Endpoints ====================
 
     async getSwitchCountries() {
         return this.get('/wallet/switch/countries');
@@ -316,7 +307,6 @@ class ApiService {
         return this.get(`/wallet/switch/requirements?country=${country}&type=${type}`);
     }
 
-    // ==================== Switch Swap (Asset Exchange) Endpoints ====================
 
     async getSwitchSwapQuote(data) {
         return this.post('/wallet/switch/quote/swap', data);
@@ -326,13 +316,11 @@ class ApiService {
         return this.post('/wallet/switch/swap', data);
     }
 
-    // ==================== Transaction Status Endpoints ====================
 
     async getSwitchTransactionStatus(reference) {
         return this.get(`/wallet/switch/status/${reference}`);
     }
 
-    // ==================== Review Endpoints ====================
 
     async getReviews(creatorId) {
         return this.get(`${API_ENDPOINTS.reviews}?creator=${creatorId}`, { auth: false });
@@ -342,7 +330,6 @@ class ApiService {
         return this.post(API_ENDPOINTS.createReview, reviewData);
     }
 
-    // ==================== Upload Endpoints ====================
 
     /**
      * Upload file (generic method for FormData)
@@ -351,7 +338,6 @@ class ApiService {
         const formData = new FormData();
         formData.append('file', file);
 
-        // Add any additional data
         Object.keys(additionalData).forEach(key => {
             formData.append(key, additionalData[key]);
         });
@@ -361,7 +347,6 @@ class ApiService {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${this.getToken()}`
-                // Don't set Content-Type - browser will set it with boundary
             },
             body: formData
         });
@@ -435,7 +420,6 @@ class ApiService {
         return this.delete(`/upload/portfolio/${index}`);
     }
 
-    // ==================== Services Endpoints ====================
 
     async getMyServices() {
         return this.get('/services');
@@ -473,7 +457,6 @@ class ApiService {
         return this.delete(`/services/${serviceId}/images/${imageIndex}`);
     }
 
-    // ==================== Booking Messages Endpoints ====================
 
     async addBookingMessage(bookingId, message) {
         return this.post(`/bookings/${bookingId}/messages`, { message });
@@ -491,7 +474,6 @@ class ApiService {
         return this.post(`/bookings/${bookingId}/counter-proposal`, { amount });
     }
 
-    // ==================== Stats Endpoints ====================
 
     async getPlatformStats() {
         return this.get('/stats/platform', { auth: false });
@@ -501,7 +483,6 @@ class ApiService {
         return this.get(`/stats/featured-creators?limit=${limit}`, { auth: false });
     }
 
-    // ==================== Favorites Endpoints ====================
 
     async getFavorites() {
         return this.get('/favorites');
@@ -519,7 +500,6 @@ class ApiService {
         return this.get(`/favorites/${creatorId}/status`);
     }
 
-    // ==================== Notification Endpoints ====================
 
     async getNotifications(filters = {}) {
         const queryParams = new URLSearchParams(filters).toString();
@@ -548,5 +528,4 @@ class ApiService {
     }
 }
 
-// Export singleton instance
 export default new ApiService();
