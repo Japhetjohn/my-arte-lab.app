@@ -19,7 +19,7 @@ export function showAuthModal(type = 'signin', userType = 'client') {
                     </button>
                 </div>
 
-                <form onsubmit="handleAuth(event, '${type}')">
+                <form onsubmit="handleAuth(event, '${type}')" id="authForm">
                     ${isSignUp ? `
                         <div class="form-group">
                             <label class="form-label">Full name</label>
@@ -53,9 +53,57 @@ export function showAuthModal(type = 'signin', userType = 'client') {
 
                     <div class="form-group">
                         <label class="form-label">Password</label>
-                        <input type="password" name="password" class="form-input" required minlength="8" pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&_\\-#]).{8,}$">
-                        ${isSignUp ? `<small style="color: var(--text-secondary); font-size: 12px; margin-top: 4px; display: block;">Must be at least 8 characters with uppercase, lowercase, number, and special character (@$!%*?&_-#)</small>` : ''}
+                        <input type="password" name="password" class="form-input" id="passwordInput" required minlength="8" oninput="${isSignUp ? 'validatePassword()' : ''}">
+                        ${isSignUp ? `
+                        <div id="passwordRequirements" style="margin-top: 8px; font-size: 12px;">
+                            <div id="req-length" class="password-requirement" style="color: #EF4444; display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                                    <path d="M15 9l-6 6M9 9l6 6" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+                                <span>At least 8 characters</span>
+                            </div>
+                            <div id="req-uppercase" class="password-requirement" style="color: #EF4444; display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                                    <path d="M15 9l-6 6M9 9l6 6" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+                                <span>One uppercase letter</span>
+                            </div>
+                            <div id="req-lowercase" class="password-requirement" style="color: #EF4444; display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                                    <path d="M15 9l-6 6M9 9l6 6" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+                                <span>One lowercase letter</span>
+                            </div>
+                            <div id="req-number" class="password-requirement" style="color: #EF4444; display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                                    <path d="M15 9l-6 6M9 9l6 6" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+                                <span>One number</span>
+                            </div>
+                            <div id="req-special" class="password-requirement" style="color: #EF4444; display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                                    <path d="M15 9l-6 6M9 9l6 6" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+                                <span>One special character (@$!%*?&_-#)</span>
+                            </div>
+                        </div>
+                        ` : ''}
                     </div>
+
+                    ${isSignUp ? `
+                    <div class="form-group">
+                        <label class="form-label">Confirm Password</label>
+                        <input type="password" name="confirmPassword" class="form-input" id="confirmPasswordInput" required minlength="8" oninput="validatePasswordMatch()">
+                        <div id="passwordMatchError" style="color: #EF4444; font-size: 12px; margin-top: 4px; display: none;">
+                            Passwords do not match
+                        </div>
+                    </div>
+                    ` : ''}
 
                     ${isSignUp ? `
                         <div class="form-group">
@@ -113,21 +161,9 @@ export function showAuthModal(type = 'signin', userType = 'client') {
                     ` : ''}
 
                     <div class="form-actions">
-                        <button type="submit" class="btn-primary">${isSignUp ? 'Create account' : 'Sign in'}</button>
+                        <button type="submit" class="btn-primary" id="authSubmitBtn">${isSignUp ? 'Create account' : 'Sign in'}</button>
                     </div>
                 </form>
-
-                <div style="margin-top: 16px; text-align: center; padding-top: 16px; border-top: 1px solid var(--border);">
-                    <button class="btn-secondary" style="width: 100%;" onclick="${isSignUp ? 'handleGoogleSignUp()' : 'handleGoogleSignIn()'}">
-                        <svg width="18" height="18" viewBox="0 0 18 18" style="margin-right: 8px; vertical-align: middle;">
-                            <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/>
-                            <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/>
-                            <path fill="#FBBC05" d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957C.347 6.175 0 7.55 0 9s.348 2.825.957 4.039l3.007-2.332z"/>
-                            <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 7.293C4.672 5.163 6.656 3.58 9 3.58z"/>
-                        </svg>
-                        ${isSignUp ? 'Sign up' : 'Continue'} with Google
-                    </button>
-                </div>
 
                 <div style="margin-top: 16px; text-align: center;">
                     <p class="text-secondary">
@@ -166,11 +202,54 @@ export async function handleAuth(event, type) {
         const formData = new FormData(form);
 
         if (type === 'signup') {
+            // Validate password confirmation
+            const password = formData.get('password');
+            const confirmPassword = formData.get('confirmPassword');
+
+            if (password !== confirmPassword) {
+                showToast('Passwords do not match', 'error');
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalBtnText;
+                return;
+            }
+
+            // Validate password requirements
+            if (password.length < 8) {
+                showToast('Password must be at least 8 characters', 'error');
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalBtnText;
+                return;
+            }
+            if (!/[A-Z]/.test(password)) {
+                showToast('Password must contain at least one uppercase letter', 'error');
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalBtnText;
+                return;
+            }
+            if (!/[a-z]/.test(password)) {
+                showToast('Password must contain at least one lowercase letter', 'error');
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalBtnText;
+                return;
+            }
+            if (!/\d/.test(password)) {
+                showToast('Password must contain at least one number', 'error');
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalBtnText;
+                return;
+            }
+            if (!/[@$!%*?&_\-#]/.test(password)) {
+                showToast('Password must contain at least one special character (@$!%*?&_-#)', 'error');
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalBtnText;
+                return;
+            }
+
             const userData = {
                 name: formData.get('name'),
                 role: formData.get('role') || 'client',
                 email: formData.get('email'),
-                password: formData.get('password')
+                password: password
             };
 
             // Add category if user is signing up as creator
@@ -428,93 +507,91 @@ async function updateNotificationBadge() {
 }
 
 /**
- * Handle Google Sign-Up (with role selection)
+ * Validate password requirements and update UI
  */
-export function handleGoogleSignUp() {
-    const modalContent = `
-        <div class="modal" onclick="closeModalOnBackdrop(event)">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2>Sign up with Google</h2>
-                    <button class="icon-btn" onclick="closeModal()">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2"/>
-                        </svg>
-                    </button>
-                </div>
+function validatePassword() {
+    const password = document.getElementById('passwordInput')?.value || '';
 
-                <p style="margin-bottom: 24px; color: var(--text-secondary);">
-                    Choose how you want to use MyArteLab
-                </p>
-
-                <div style="display: flex; flex-direction: column; gap: 12px;">
-                    <button class="btn-primary" onclick="proceedWithGoogleOAuth('client')" style="padding: 16px; text-align: left; display: flex; align-items: center; gap: 12px;">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" style="flex-shrink: 0;">
-                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="white" stroke-width="2" stroke-linecap="round"/>
-                            <circle cx="12" cy="7" r="4" stroke="white" stroke-width="2"/>
-                        </svg>
-                        <div>
-                            <div style="font-weight: 600; font-size: 16px;">Continue as Client</div>
-                            <div style="font-size: 13px; opacity: 0.8; margin-top: 2px;">Book and hire creative professionals</div>
-                        </div>
-                    </button>
-
-                    <button class="btn-secondary" onclick="proceedWithGoogleOAuth('creator')" style="padding: 16px; text-align: left; display: flex; align-items: center; gap: 12px;">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" style="flex-shrink: 0;">
-                            <path d="M12 2L2 7l10 5 10-5-10-5z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            <path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                        <div>
-                            <div style="font-weight: 600; font-size: 16px;">Continue as Creator</div>
-                            <div style="font-size: 13px; opacity: 0.8; margin-top: 2px;">Offer your services and get booked</div>
-                        </div>
-                    </button>
-                </div>
-
-                <div style="margin-top: 16px; text-align: center;">
-                    <p class="text-secondary" style="font-size: 14px;">
-                        Already have an account?
-                        <a href="#" onclick="showAuthModal('signin'); return false;" style="color: var(--primary); text-decoration: none; font-weight: 500;">
-                            Sign in
-                        </a>
-                    </p>
-                </div>
-            </div>
-        </div>
-    `;
-
-    document.getElementById('modalsContainer').innerHTML = modalContent;
-    openModal();
-}
-
-/**
- * Proceed with Google OAuth using Privy
- */
-function proceedWithGoogleOAuth(role) {
-    // Store the role for the backend
-    sessionStorage.setItem('signupRole', role);
-
-    if (window.privyAuth) {
-        window.privyAuth.login();
+    // Check length
+    const lengthReq = document.getElementById('req-length');
+    if (password.length >= 8) {
+        updateRequirementUI(lengthReq, true);
     } else {
-        // Wait for Privy to be ready
-        window.addEventListener('privy-ready', () => {
-            window.privyAuth.login();
-        }, { once: true });
+        updateRequirementUI(lengthReq, false);
+    }
+
+    // Check uppercase
+    const uppercaseReq = document.getElementById('req-uppercase');
+    if (/[A-Z]/.test(password)) {
+        updateRequirementUI(uppercaseReq, true);
+    } else {
+        updateRequirementUI(uppercaseReq, false);
+    }
+
+    // Check lowercase
+    const lowercaseReq = document.getElementById('req-lowercase');
+    if (/[a-z]/.test(password)) {
+        updateRequirementUI(lowercaseReq, true);
+    } else {
+        updateRequirementUI(lowercaseReq, false);
+    }
+
+    // Check number
+    const numberReq = document.getElementById('req-number');
+    if (/\d/.test(password)) {
+        updateRequirementUI(numberReq, true);
+    } else {
+        updateRequirementUI(numberReq, false);
+    }
+
+    // Check special character
+    const specialReq = document.getElementById('req-special');
+    if (/[@$!%*?&_\-#]/.test(password)) {
+        updateRequirementUI(specialReq, true);
+    } else {
+        updateRequirementUI(specialReq, false);
     }
 }
 
 /**
- * Handle Google Sign-In using Privy
+ * Update requirement UI (red with X or green with checkmark)
  */
-export function handleGoogleSignIn() {
-    if (window.privyAuth) {
-        window.privyAuth.login();
+function updateRequirementUI(element, isValid) {
+    if (!element) return;
+
+    if (isValid) {
+        element.style.color = '#10B981';
+        element.innerHTML = `
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <span>${element.querySelector('span').textContent}</span>
+        `;
     } else {
-        // Wait for Privy to be ready
-        window.addEventListener('privy-ready', () => {
-            window.privyAuth.login();
-        }, { once: true });
+        element.style.color = '#EF4444';
+        element.innerHTML = `
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                <path d="M15 9l-6 6M9 9l6 6" stroke="currentColor" stroke-width="2"/>
+            </svg>
+            <span>${element.querySelector('span').textContent}</span>
+        `;
+    }
+}
+
+/**
+ * Validate password match and show error if needed
+ */
+function validatePasswordMatch() {
+    const password = document.getElementById('passwordInput')?.value || '';
+    const confirmPassword = document.getElementById('confirmPasswordInput')?.value || '';
+    const errorDiv = document.getElementById('passwordMatchError');
+
+    if (confirmPassword.length > 0 && password !== confirmPassword) {
+        errorDiv.style.display = 'block';
+    } else {
+        errorDiv.style.display = 'none';
     }
 }
 
@@ -697,38 +774,9 @@ function toggleCategoryField() {
 }
 
 // Make functions globally available for onclick handlers
-window.handleGoogleSignIn = handleGoogleSignIn;
-window.handleGoogleSignUp = handleGoogleSignUp;
-window.proceedWithGoogleOAuth = proceedWithGoogleOAuth;
 window.handleEmailVerification = handleEmailVerification;
 window.handleResendVerification = handleResendVerification;
 window.skipVerification = skipVerification;
 window.toggleCategoryField = toggleCategoryField;
-
-// Listen for Privy auth events
-window.addEventListener('privy-login-success', (event) => {
-    const { user, token } = event.detail;
-    setUser(user);
-    updateUserMenu();
-    closeModal();
-    showToast('Welcome! You\'re now signed in with Google.', 'success');
-    navigateToPage(user.role === 'creator' ? 'settings' : 'discover');
-});
-
-window.addEventListener('privy-auto-login', (event) => {
-    const { user } = event.detail;
-    setUser(user);
-    updateUserMenu();
-});
-
-window.addEventListener('privy-login-error', (event) => {
-    const { error } = event.detail;
-    showToast(`Sign in failed: ${error}`, 'error');
-});
-
-window.addEventListener('privy-logout', () => {
-    clearUser();
-    updateUserMenu();
-    navigateToPage('home');
-    showToast('You have been logged out successfully', 'success');
-});
+window.validatePassword = validatePassword;
+window.validatePasswordMatch = validatePasswordMatch;

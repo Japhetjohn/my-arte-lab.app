@@ -28,7 +28,6 @@ const {
 } = require('./config/rateLimiting');
 
 const authRoutes = require('./routes/authRoutes');
-const privyAuthRoutes = require('./routes/privyAuthRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
 const walletRoutes = require('./routes/walletRoutes');
 const creatorRoutes = require('./routes/creatorRoutes');
@@ -78,22 +77,22 @@ connectDatabase();
 
 // Configure Helmet with security-hardened CSP
 app.use(helmet({
-  crossOriginOpenerPolicy: false,
-  crossOriginEmbedderPolicy: false,
+  crossOriginOpenerPolicy: false,  // Required for Coinbase SDK
+  crossOriginEmbedderPolicy: false,  // Required for wallet integrations
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://auth.privy.io", "https://*.privy.io", "https://challenges.cloudflare.com", "https://*.coinbase.com", "https://*.walletconnect.com"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://challenges.cloudflare.com", "https://*.coinbase.com", "https://*.walletconnect.com"],
       scriptSrcAttr: ["'unsafe-inline'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://auth.privy.io"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "https:", "blob:"],
-      connectSrc: ["'self'", "https://processor-prod.up.railway.app", "https://api.cloudinary.com", "https://auth.privy.io", "https://*.privy.io", "wss://*.privy.io", "https://*.coinbase.com", "https://*.walletconnect.com", "wss://*.walletconnect.com", "https://*.base.org"],
-      fontSrc: ["'self'", "data:", "https://auth.privy.io"],
+      connectSrc: ["'self'", "https://processor-prod.up.railway.app", "https://api.cloudinary.com", "https://*.coinbase.com", "https://*.walletconnect.com", "wss://*.walletconnect.com", "https://*.base.org"],
+      fontSrc: ["'self'", "data:"],
       objectSrc: ["'none'"],
       mediaSrc: ["'self'"],
-      frameSrc: ["'self'", "https://auth.privy.io", "https://*.privy.io", "https://*.coinbase.com"],
+      frameSrc: ["'self'", "https://*.coinbase.com"],
       baseUri: ["'self'"],
-      formAction: ["'self'", "https://auth.privy.io"],
+      formAction: ["'self'"],
       frameAncestors: ["'none'"],
       workerSrc: ["'self'", "blob:"]
     },
@@ -119,7 +118,6 @@ const allowedOrigins = [
   'http://0.0.0.0:5000',
   'http://0.0.0.0:8000',
   'https://my-arte-lab-app.onrender.com',
-  'https://auth.privy.io',
   process.env.FRONTEND_URL
 ].filter(Boolean);
 
@@ -228,7 +226,6 @@ app.get('/health', async (req, res) => {
 });
 
 app.use('/api/webhooks', verifySwitchWebhookSignature, preventWebhookReplay, webhookLimiter, webhookRoutes);
-app.use('/api/auth', privyAuthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/wallet', walletRoutes);
