@@ -20,21 +20,6 @@ export async function renderHomePage() {
             </div>
         </div>
 
-        <div class="stats-ribbon" id="statsRibbon">
-            <div class="stat-item">
-                <div class="stat-number">...</div>
-                <div class="stat-label">Creators onboarded</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-number">...</div>
-                <div class="stat-label">Creator verification (coming soon)</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-number">...</div>
-                <div class="stat-label">Completed bookings</div>
-            </div>
-        </div>
-
         <div class="section">
             <div class="container">
                 <div class="section-header">
@@ -73,7 +58,6 @@ async function loadHomePageData() {
 
         if (statsResponse.success) {
             platformStats = statsResponse.data;
-            updateStatsRibbon();
             updateCategoryGrid();
         }
 
@@ -84,26 +68,6 @@ async function loadHomePageData() {
     } catch (error) {
         console.error('Failed to load homepage data:', error);
     }
-}
-
-function updateStatsRibbon() {
-    const statsRibbon = document.getElementById('statsRibbon');
-    if (!statsRibbon || !platformStats) return;
-
-    statsRibbon.innerHTML = `
-        <div class="stat-item">
-            <div class="stat-number">${platformStats.totalCreators.toLocaleString()}+</div>
-            <div class="stat-label">Creators onboarded</div>
-        </div>
-        <div class="stat-item">
-            <div class="stat-number">${platformStats.verifiedCreators.toLocaleString()}+</div>
-            <div class="stat-label">Creator verification (coming soon)</div>
-        </div>
-        <div class="stat-item">
-            <div class="stat-number">${platformStats.completedBookings.toLocaleString()}+</div>
-            <div class="stat-label">Completed bookings</div>
-        </div>
-    `;
 }
 
 function updateFeaturedCreators() {
