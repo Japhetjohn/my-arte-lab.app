@@ -182,7 +182,7 @@ export async function renderProfilePage() {
                 <h2 class="mb-md">Portfolio</h2>
                 <div class="portfolio-grid">
                     ${user.portfolio.map((image, index) => `
-                        <div class="portfolio-item" onclick="window.open('${image}', '_blank')" style="cursor: pointer;">
+                        <div class="portfolio-item" onclick="window.openImageModal('${image}')" style="cursor: pointer;">
                             <img src="${image}" alt="Portfolio ${index + 1}">
                             <div class="portfolio-overlay">
                                 <div>Project ${index + 1}</div>
@@ -214,7 +214,7 @@ export async function renderProfilePage() {
                                     <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-bottom: 16px;">
                                         ${service.images.slice(0, 5).map((img, idx) => `
                                             <div style="position: relative;">
-                                                <img src="${img}" alt="${service.title}" style="width: 100%; height: 120px; object-fit: cover; border-radius: 8px; cursor: pointer;" onclick="window.open('${img}', '_blank')">
+                                                <img src="${img}" alt="${service.title}" style="width: 100%; height: 120px; object-fit: cover; border-radius: 8px; cursor: pointer;" onclick="window.openImageModal('${img}')">
                                                 <button onclick="event.stopPropagation(); window.deleteServiceImage('${service._id}', ${idx})" style="position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,0.7); color: white; border: none; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px;">×</button>
                                             </div>
                                         `).join('')}

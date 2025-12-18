@@ -265,7 +265,7 @@ export async function renderCreatorProfile(creatorIdOrObject) {
                                 ${service.images && service.images.length > 0 ? `
                                     <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-bottom: 16px;">
                                         ${service.images.slice(0, 5).map(img => `
-                                            <img src="${img}" alt="${service.title}" style="width: 100%; height: 120px; object-fit: cover; border-radius: 8px; cursor: pointer;" onclick="window.open('${img}', '_blank')">
+                                            <img src="${img}" alt="${service.title}" style="width: 100%; height: 120px; object-fit: cover; border-radius: 8px; cursor: pointer;" onclick="window.openImageModal('${img}')">
                                         `).join('')}
                                     </div>
                                 ` : ''}

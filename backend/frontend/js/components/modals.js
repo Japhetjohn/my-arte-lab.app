@@ -1690,3 +1690,32 @@ export function showTransactionHistory() {
 export function showEarningsReport() {
     showToast('Earnings reports coming soon!', 'success');
 }
+
+window.openImageModal = function(imageUrl) {
+    const existingModal = document.getElementById('globalImageModal');
+    if (existingModal) existingModal.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'globalImageModal';
+    modal.innerHTML = `
+        <div style="display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 10000; justify-content: center; align-items: center;">
+            <button onclick="window.closeImageModal()" style="position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.1); color: white; border: none; border-radius: 50%; width: 48px; height: 48px; cursor: pointer; font-size: 24px; display: flex; align-items: center; justify-content: center; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">×</button>
+            <img src="${imageUrl}" alt="Full size" style="max-width: 90%; max-height: 90%; object-fit: contain;">
+        </div>
+    `;
+
+    modal.querySelector('div').addEventListener('click', function(e) {
+        if (e.target === e.currentTarget) {
+            window.closeImageModal();
+        }
+    });
+
+    document.body.appendChild(modal);
+};
+
+window.closeImageModal = function() {
+    const modal = document.getElementById('globalImageModal');
+    if (modal) {
+        modal.remove();
+    }
+};
