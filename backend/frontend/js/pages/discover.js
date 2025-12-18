@@ -94,7 +94,8 @@ async function loadCreators() {
                 portfolio: creator.portfolio || [],
                 services: creator.services || [],
                 responseTime: creator.responseTime || 'Within a day',
-                completedJobs: creator.completedJobs || 0
+                completedJobs: creator.completedJobs || 0,
+                createdAt: creator.createdAt
             }));
 
             appState.creators = creators;
@@ -149,9 +150,9 @@ function renderCreatorsList() {
                     <div class="section-header">
                         <h3>${creators.length} creator${creators.length !== 1 ? 's' : ''} found</h3>
                         <select class="form-select" style="width: auto;" id="sortSelect">
-                            <option value="relevance">Sort by relevance</option>
-                            <option value="rating">Highest rated</option>
-                            <option value="newest">Newest</option>
+                            <option value="relevance" ${currentFilters.sort === 'relevance' ? 'selected' : ''}>Sort by relevance</option>
+                            <option value="rating" ${currentFilters.sort === 'rating' ? 'selected' : ''}>Highest rated</option>
+                            <option value="newest" ${currentFilters.sort === 'newest' ? 'selected' : ''}>Newest</option>
                         </select>
                     </div>
                     <div class="creators-grid" id="discoverGrid">
@@ -226,10 +227,10 @@ function setupSortListener() {
 function sortCreators() {
     switch (currentFilters.sort) {
         case 'rating':
-            creators.sort((a, b) => (b.rating?.average || 0) - (a.rating?.average || 0));
+            creators.sort((a, b) => parseFloat(b.rating || 0) - parseFloat(a.rating || 0));
             break;
         case 'newest':
-            creators.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            creators.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
             break;
         default:
             break;
