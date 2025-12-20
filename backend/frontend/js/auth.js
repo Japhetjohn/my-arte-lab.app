@@ -452,6 +452,13 @@ export function updateUserMenu() {
         if (!window.notificationInterval) {
             window.notificationInterval = setInterval(updateNotificationBadge, 30000);
         }
+
+        document.querySelectorAll('.nav-item').forEach(item => {
+            const page = item.dataset.page;
+            if (page === 'bookings' || page === 'notifications' || page === 'wallet' || page === 'profile') {
+                item.style.display = 'flex';
+            }
+        });
     } else {
         const notificationsBtn = document.getElementById('notificationsBtn');
         if (notificationsBtn) {
@@ -465,6 +472,18 @@ export function updateUserMenu() {
 
         userMenuContainer.innerHTML = `<button class="btn-secondary" id="authBtn">Sign in</button>`;
         document.getElementById('authBtn')?.addEventListener('click', () => showAuthModal('signin'));
+
+        document.querySelectorAll('.nav-item').forEach(item => {
+            const page = item.dataset.page;
+            if (page === 'bookings' || page === 'notifications' || page === 'wallet' || page === 'profile') {
+                item.style.display = 'none';
+            }
+        });
+
+        if (appState.currentPage === 'bookings' || appState.currentPage === 'notifications' ||
+            appState.currentPage === 'wallet' || appState.currentPage === 'profile') {
+            navigateToPage('home');
+        }
     }
 }
 
