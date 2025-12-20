@@ -46,7 +46,7 @@ export async function renderHomePage() {
                         </svg>
                         <h3 style="font-size: 20px; font-weight: 600; margin-bottom: 12px;">Secure Payments</h3>
                         <p style="color: var(--text-secondary); line-height: 1.6;">
-                            Pay with USDC on Base blockchain. Fast, transparent, and secure transactions.
+                            Pay with USDC on Solana blockchain. Fast, transparent, and secure transactions.
                         </p>
                     </div>
 
