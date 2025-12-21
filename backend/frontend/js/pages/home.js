@@ -4,7 +4,7 @@ export async function renderHomePage() {
     mainContent.innerHTML = `
         <div class="hero-section" style="
             background: linear-gradient(135deg, rgba(151, 71, 255, 0.95) 0%, rgba(107, 70, 255, 0.95) 100%),
-            url('https://images.unsplash.com/photo-1542038784456-1ea8e935640e?w=1600&q=80');
+            url('https://images.unsplash.com/photo-1531983412531-1f49a365ffed?w=1600&q=80');
             background-size: cover;
             background-position: center;
             background-blend-mode: multiply;

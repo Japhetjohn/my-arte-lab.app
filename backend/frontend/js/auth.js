@@ -157,7 +157,14 @@ export function showAuthModal(type = 'signin', userType = 'client') {
                                 <span>I accept the terms and conditions</span>
                             </label>
                         </div>
-                    ` : ''}
+                    ` : `
+                        <div class="form-group">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <input type="checkbox" name="rememberMe" id="rememberMeCheckbox">
+                                <span>Remember me</span>
+                            </label>
+                        </div>
+                    `}
 
                     <div class="form-actions">
                         <button type="submit" class="btn-primary" id="authSubmitBtn">${isSignUp ? 'Create account' : 'Sign in'}</button>
@@ -459,6 +466,11 @@ export function updateUserMenu() {
                 item.style.display = 'flex';
             }
         });
+
+        const searchBtn = document.getElementById('searchBtn');
+        if (searchBtn) {
+            searchBtn.style.display = 'flex';
+        }
     } else {
         const notificationsBtn = document.getElementById('notificationsBtn');
         if (notificationsBtn) {
@@ -479,6 +491,11 @@ export function updateUserMenu() {
                 item.style.display = 'none';
             }
         });
+
+        const searchBtn = document.getElementById('searchBtn');
+        if (searchBtn) {
+            searchBtn.style.display = 'none';
+        }
 
         if (appState.currentPage === 'bookings' || appState.currentPage === 'notifications' ||
             appState.currentPage === 'wallet' || appState.currentPage === 'profile') {
