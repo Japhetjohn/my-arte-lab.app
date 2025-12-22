@@ -521,7 +521,7 @@ p {
 
 .creator-image {
     width: 100%;
-    height: 300px;
+    height: 240px;
     object-fit: cover;
     background: linear-gradient(135deg, #e0e7ff 0%, #ddd6fe 100%);
 }
@@ -789,6 +789,13 @@ p {
     grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
     gap: var(--spacing-lg);
     padding: var(--spacing-lg) var(--spacing-md);
+}
+
+@media (min-width: 768px) {
+    .creators-grid {
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        max-width: 100%;
+    }
 }
 
 @media (max-width: 640px) {
