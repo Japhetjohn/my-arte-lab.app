@@ -6,7 +6,12 @@ import { formatLocation } from '../utils/formatters.js';
 export function renderCreatorCards(creators) {
     return creators.map(creator => `
         <div class="creator-card" data-creator-id="${creator.id}">
-            <img src="${creator.avatar}" alt="${creator.name}" class="creator-image">
+            <img src="${creator.avatar}" alt="${creator.name}" class="creator-image" loading="lazy">
+            <button class="creator-quick-favorite" data-creator-id="${creator.id}" aria-label="Add to favorites">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
+                </svg>
+            </button>
             <div class="creator-info">
                 <div class="creator-header">
                     <div>
@@ -456,6 +461,49 @@ async function checkFavoriteStatus(creatorId, btn) {
 }
 
 export function setupCreatorCardListeners() {
+    // Quick favorite buttons
+    document.querySelectorAll('.creator-quick-favorite').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const creatorId = btn.dataset.creatorId;
+
+            if (!appState.user) {
+                window.showAuthModal('signin');
+                return;
+            }
+
+            try {
+                const isFavorited = btn.classList.contains('favorited');
+
+                if (isFavorited) {
+                    await api.removeFromFavorites(creatorId);
+                    btn.classList.remove('favorited');
+                    btn.setAttribute('aria-label', 'Add to favorites');
+                    window.showToast('Removed from favorites', 'success');
+                } else {
+                    await api.addToFavorites(creatorId);
+                    btn.classList.add('favorited');
+                    btn.setAttribute('aria-label', 'Remove from favorites');
+                    window.showToast('Added to favorites!', 'success');
+                }
+            } catch (error) {
+                console.error('Error toggling favorite:', error);
+                window.showToast(error.message || 'Failed to update favorite', 'error');
+            }
+        });
+
+        // Check initial favorite status if user is logged in
+        if (appState.user) {
+            const creatorId = btn.dataset.creatorId;
+            api.isFavorited(creatorId).then(response => {
+                if (response.success && response.data.isFavorited) {
+                    btn.classList.add('favorited');
+                    btn.setAttribute('aria-label', 'Remove from favorites');
+                }
+            }).catch(err => console.error('Error checking favorite status:', err));
+        }
+    });
+
     document.querySelectorAll('.view-profile-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();

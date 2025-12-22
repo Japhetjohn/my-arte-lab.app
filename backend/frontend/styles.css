@@ -512,11 +512,12 @@ p {
     scroll-snap-align: start;
     transition: all var(--transition-base);
     cursor: pointer;
+    position: relative;
 }
 
 .creator-card:hover {
-    transform: translateY(-8px);
-    box-shadow: var(--shadow-lg);
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 12px 24px rgba(151, 71, 255, 0.15);
 }
 
 .creator-image {
@@ -524,6 +525,55 @@ p {
     height: 240px;
     object-fit: cover;
     background: linear-gradient(135deg, #e0e7ff 0%, #ddd6fe 100%);
+    transition: transform var(--transition-base);
+}
+
+.creator-card:hover .creator-image {
+    transform: scale(1.08);
+}
+
+.creator-quick-favorite {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    z-index: 10;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.creator-quick-favorite:hover {
+    transform: scale(1.1);
+    background: white;
+}
+
+.creator-quick-favorite svg {
+    width: 20px;
+    height: 20px;
+    transition: all var(--transition-fast);
+}
+
+.creator-quick-favorite.favorited svg {
+    fill: #EF4444;
+    stroke: #EF4444;
+}
+
+.creator-quick-favorite:not(.favorited) svg {
+    fill: none;
+    stroke: #64748B;
+}
+
+.creator-quick-favorite:hover svg {
+    transform: scale(1.1);
 }
 
 .creator-info {
