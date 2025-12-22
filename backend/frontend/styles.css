@@ -488,8 +488,11 @@ p {
     display: none;
 }
 
-.creator-card {
+.creators-carousel .creator-card {
     min-width: 300px;
+}
+
+.creator-card {
     background: white;
     border-radius: var(--radius);
     overflow: hidden;
@@ -764,9 +767,17 @@ p {
 
 .creators-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
     gap: var(--spacing-lg);
     padding: var(--spacing-lg) var(--spacing-md);
+}
+
+@media (max-width: 640px) {
+    .creators-grid {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-md);
+        padding: var(--spacing-md);
+    }
 }
 
 /* Profile Page */
