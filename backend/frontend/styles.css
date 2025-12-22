@@ -48,6 +48,11 @@
     box-sizing: border-box;
 }
 
+html {
+    overflow-x: hidden;
+    width: 100%;
+}
+
 body {
     font-family: var(--font-body);
     font-size: var(--size-body);
@@ -55,6 +60,8 @@ body {
     background: var(--background);
     line-height: 1.6;
     overflow-x: hidden;
+    width: 100%;
+    max-width: 100vw;
 }
 
 /* Typography */
@@ -96,7 +103,8 @@ p {
 
 /* Container */
 .container {
-    max-width: 1200px;
+    max-width: min(1200px, 100%);
+    width: 100%;
     margin: 0 auto;
     padding: 0 var(--spacing-md);
 }
@@ -298,6 +306,9 @@ p {
     min-height: calc(100vh - 140px);
     padding-bottom: 80px;
     animation: fadeIn var(--transition-base);
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
 }
 
 @keyframes fadeIn {
@@ -318,6 +329,7 @@ p {
     padding: var(--spacing-lg);
     box-shadow: var(--shadow-md);
     transition: all var(--transition-fast);
+    max-width: 100%;
 }
 
 .card:hover {
@@ -598,9 +610,16 @@ p {
 /* Category Grid */
 .category-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
     gap: var(--spacing-md);
     margin-top: var(--spacing-lg);
+}
+
+@media (max-width: 640px) {
+    .category-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--spacing-sm);
+    }
 }
 
 .category-card {
@@ -827,9 +846,17 @@ p {
 
 .portfolio-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr));
     gap: var(--spacing-md);
     padding: var(--spacing-lg) var(--spacing-md);
+}
+
+@media (max-width: 640px) {
+    .portfolio-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--spacing-sm);
+        padding: var(--spacing-md);
+    }
 }
 
 .portfolio-item {
@@ -1460,9 +1487,15 @@ p {
 /* Wallet Card Styles */
 .wallet-cards-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
     gap: var(--spacing-md);
     margin-bottom: var(--spacing-lg);
+}
+
+@media (max-width: 640px) {
+    .wallet-cards-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 .wallet-card-item {
@@ -1504,9 +1537,16 @@ p {
 
 .quick-actions-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr));
     gap: var(--spacing-md);
     margin-top: var(--spacing-lg);
+}
+
+@media (max-width: 640px) {
+    .quick-actions-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--spacing-sm);
+    }
 }
 
 .quick-action-btn {
@@ -1797,6 +1837,8 @@ a {
 
 /* Image loading placeholder */
 img {
+    max-width: 100%;
+    height: auto;
     background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
     background-size: 200% 100%;
 }
