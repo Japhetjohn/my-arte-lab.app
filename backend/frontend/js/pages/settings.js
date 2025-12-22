@@ -194,8 +194,19 @@ window.handleProfileUpdate = async function(event) {
         const name = document.getElementById('profileName').value;
         const email = document.getElementById('profileEmail').value;
         const bio = document.getElementById('profileBio').value;
-        const location = document.getElementById('profileLocation').value;
+        const locationString = document.getElementById('profileLocation').value;
         const phone = document.getElementById('profilePhone').value;
+
+        // Parse location string into city and country
+        let location = { city: '', country: '' };
+        if (locationString && locationString.trim()) {
+            const parts = locationString.split(',').map(s => s.trim());
+            if (parts.length === 2) {
+                location = { city: parts[0], country: parts[1] };
+            } else if (parts.length === 1) {
+                location = { city: parts[0], country: '' };
+            }
+        }
 
         const profileData = {
             name,
