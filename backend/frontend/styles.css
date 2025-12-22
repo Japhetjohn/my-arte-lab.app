@@ -795,7 +795,28 @@ p {
     .creators-grid {
         grid-template-columns: 1fr;
         gap: var(--spacing-md);
-        padding: var(--spacing-md);
+        padding: var(--spacing-sm) var(--spacing-xs);
+    }
+
+    .creator-image {
+        height: 200px;
+    }
+
+    .creator-info {
+        padding: var(--spacing-sm);
+    }
+
+    .creator-name {
+        font-size: 18px;
+    }
+
+    .creator-actions {
+        gap: var(--spacing-xs);
+    }
+
+    .creator-actions button {
+        padding: 10px 16px;
+        font-size: 14px;
     }
 }
 
@@ -1089,8 +1110,12 @@ p {
     }
 
     .container {
-        padding: 0 var(--spacing-md);
+        padding: 0 var(--spacing-sm);
         max-width: 100%;
+    }
+
+    .section {
+        padding: var(--spacing-md) 0;
     }
 
     .main-content {
