@@ -2485,3 +2485,142 @@ html {
     }
 }
 
+
+/* ==========================================
+   MOBILE RESPONSIVENESS FIXES
+   ========================================== */
+
+/* Fix for mobile viewport issues */
+html, body {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+/* Ensure all containers are mobile-friendly */
+.container {
+    max-width: 100%;
+    padding-left: var(--spacing-md);
+    padding-right: var(--spacing-md);
+}
+
+/* Fix cards on mobile */
+@media (max-width: 768px) {
+    .creator-card,
+    .card,
+    .modal-content {
+        max-width: 100%;
+        margin-left: 0;
+        margin-right: 0;
+    }
+
+    /* Fix wallet page on mobile */
+    .wallet-section,
+    .bookings-section {
+        padding: var(--spacing-md);
+    }
+
+    /* Ensure text doesn't overflow */
+    h1, h2, h3, h4, h5, h6 {
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+    }
+
+    /* Fix buttons on mobile */
+    .btn-primary,
+    .btn-secondary,
+    .btn-ghost {
+        min-width: auto;
+        padding: 12px 20px;
+    }
+
+    /* Fix form inputs on mobile */
+    .form-input,
+    .form-select,
+    .form-textarea {
+        max-width: 100%;
+        font-size: 16px; /* Prevents zoom on iOS */
+    }
+
+    /* Fix hero section on mobile */
+    .hero-section h1 {
+        font-size: 32px !important;
+    }
+
+    /* Fix navigation on mobile */
+    .nav-bar {
+        max-width: 100%;
+    }
+
+    /* Fix toast notifications on mobile */
+    .toast-notification {
+        left: 10px;
+        right: 10px;
+        max-width: calc(100% - 20px);
+        min-width: auto;
+    }
+
+    /* Fix modals on mobile */
+    .modal {
+        padding: 0;
+    }
+
+    .modal-content {
+        max-width: 100%;
+        max-height: 90vh;
+        overflow-y: auto;
+        margin: 20px 10px;
+    }
+
+    /* Fix profile cards on mobile */
+    .profile-header {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    /* Fix grid layouts on mobile */
+    .creators-grid {
+        grid-template-columns: 1fr !important;
+        gap: 16px;
+    }
+
+    /* Fix category grid */
+    .category-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Prevent horizontal scroll */
+    * {
+        max-width: 100%;
+    }
+
+    img {
+        max-width: 100%;
+        height: auto;
+    }
+
+    /* Fix table overflow */
+    table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+}
+
+/* Extra small devices (phones, less than 376px) */
+@media (max-width: 375px) {
+    .container {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+
+    .hero-section h1 {
+        font-size: 28px !important;
+    }
+
+    .btn-primary,
+    .btn-secondary {
+        font-size: 14px;
+        padding: 10px 16px;
+    }
+}
+

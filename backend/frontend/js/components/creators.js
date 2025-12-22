@@ -1,6 +1,7 @@
 import { appState, addToHistory, setCurrentPage } from '../state.js';
 import { updateBackButton } from '../navigation.js';
 import api from '../services/api.js';
+import { formatLocation } from '../utils/formatters.js';
 
 export function renderCreatorCards(creators) {
     return creators.map(creator => `
@@ -19,7 +20,7 @@ export function renderCreatorCards(creators) {
                         <path d="M7 7.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" stroke="currentColor" stroke-width="1.5"/>
                         <path d="M7 12s4-3 4-6a4 4 0 0 0-8 0c0 3 4 6 4 6z" stroke="currentColor" stroke-width="1.5"/>
                     </svg>
-                    ${creator.location}
+                    ${typeof creator.location === 'object' ? formatLocation(creator.location) : creator.location}
                 </div>
                 <div class="creator-rating">
                     <span class="stars">★★★★★</span>
@@ -191,7 +192,7 @@ export async function renderCreatorProfile(creatorIdOrObject) {
                                 <path d="M8 8.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" stroke="currentColor" stroke-width="1.5"/>
                                 <path d="M8 14s5-4 5-7.5a5 5 0 0 0-10 0C3 10 8 14 8 14z" stroke="currentColor" stroke-width="1.5"/>
                             </svg>
-                            ${creator.location}
+                            ${typeof creator.location === 'object' ? formatLocation(creator.location) : creator.location}
                         </div>
                         <div class="creator-rating mt-sm">
                             <span class="stars">★★★★★</span>
