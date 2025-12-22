@@ -71,11 +71,7 @@ export async function renderCreatorProfile(creatorIdOrObject) {
                     name: apiCreator.name || 'Unknown Creator',
                     avatar: apiCreator.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(apiCreator.name || 'User')}&background=9747FF&color=fff&bold=true`,
                     role: apiCreator.category ? apiCreator.category.charAt(0).toUpperCase() + apiCreator.category.slice(1) : 'Creator',
-                    location: apiCreator.location ?
-                        (typeof apiCreator.location === 'object' ?
-                            `${apiCreator.location.city || ''}${apiCreator.location.city && apiCreator.location.country ? ', ' : ''}${apiCreator.location.country || ''}`.trim()
-                            : apiCreator.location)
-                        : 'Nigeria',
+                    location: formatLocation(apiCreator.location),
                     rating: apiCreator.rating?.average?.toFixed(1) || '0.0',
                     reviewCount: apiCreator.rating?.count || 0,
                     verified: apiCreator.isVerified || false,
@@ -192,7 +188,7 @@ export async function renderCreatorProfile(creatorIdOrObject) {
                                 <path d="M8 8.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" stroke="currentColor" stroke-width="1.5"/>
                                 <path d="M8 14s5-4 5-7.5a5 5 0 0 0-10 0C3 10 8 14 8 14z" stroke="currentColor" stroke-width="1.5"/>
                             </svg>
-                            ${typeof creator.location === 'object' ? formatLocation(creator.location) : creator.location}
+                            ${creator.location}
                         </div>
                         <div class="creator-rating mt-sm">
                             <span class="stars">★★★★★</span>
