@@ -2,6 +2,7 @@ import { appState } from '../state.js';
 import { renderCreatorCards, setupCreatorCardListeners } from '../components/creators.js';
 import api from '../services/api.js';
 import { formatLocation } from '../utils/formatters.js';
+import { showSkeletonLoaders } from '../utils.js';
 
 let creators = [];
 let currentFilters = {
@@ -41,20 +42,7 @@ export async function renderDiscoverPage() {
 
         <div class="section">
             <div class="container">
-                <div class="text-center" style="padding: 60px 20px;">
-                    <div style="margin-bottom: 20px;">
-                        <div style="
-                            border: 4px solid rgba(151, 71, 255, 0.1);
-                            border-left-color: var(--primary);
-                            border-radius: 50%;
-                            width: 50px;
-                            height: 50px;
-                            animation: spin 1s linear infinite;
-                            margin: 0 auto;
-                        "></div>
-                    </div>
-                    <p class="text-secondary">Loading creators...</p>
-                </div>
+                ${showSkeletonLoaders(6)}
             </div>
         </div>
     `;
