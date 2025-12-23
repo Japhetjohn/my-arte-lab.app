@@ -5,7 +5,7 @@ import { formatLocation } from '../utils/formatters.js';
 
 export function renderCreatorCards(creators) {
     return creators.map((creator, index) => `
-        <div class="creator-card card-entrance grid-item-${(index % 6) + 1}" data-creator-id="${creator.id}">
+        <div class="creator-card card-entrance card-lift dynamic-light grid-item-${(index % 6) + 1}" data-creator-id="${creator.id}">
             <img src="${creator.avatar}" alt="${creator.name}" class="creator-image" loading="lazy">
             <button class="creator-quick-favorite" data-creator-id="${creator.id}" aria-label="Add to favorites">
                 <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

@@ -7,7 +7,7 @@ import { renderProfilePage } from './pages/profile.js';
 import { renderSettingsPage } from './pages/settings.js';
 import { renderFavoritesPage } from './pages/favorites.js';
 import { renderNotificationsPage } from './pages/notifications.js';
-import { addPageTransition, initScrollAnimations } from './utils.js';
+import { addPageTransition, initScrollAnimations, init2025Effects } from './utils.js';
 
 export function navigateToPage(page, addToHistoryFlag = true) {
     if (addToHistoryFlag && appState.currentPage !== page) {
@@ -70,6 +70,7 @@ export function navigateToPage(page, addToHistoryFlag = true) {
             mainContent.style.transform = 'translateX(0)';
             addPageTransition();
             initScrollAnimations();
+            init2025Effects();
         });
 
         updateBackButton();

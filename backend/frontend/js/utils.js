@@ -221,3 +221,160 @@ export function addPageTransition() {
         }, 400);
     }
 }
+
+// ===================================
+// 2025 ENHANCED ANIMATIONS & EFFECTS
+// ===================================
+
+// Enhanced Scroll Animations with Dramatic Effects
+export function initEnhancedScrollAnimations() {
+    const observerOptions = {
+        threshold: 0.15,
+        rootMargin: '0px 0px -100px 0px'
+    };
+
+    const dramaticObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+
+                // Add parallax effect to certain elements
+                if (entry.target.classList.contains('bento-item')) {
+                    entry.target.style.animation = 'slideUpBounce 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards';
+                }
+            }
+        });
+    }, observerOptions);
+
+    // Observe all scroll-fade-in elements
+    document.querySelectorAll('.scroll-fade-in, .fade-in-scroll').forEach(el => {
+        dramaticObserver.observe(el);
+    });
+
+    // Parallax effect for hero sections
+    window.addEventListener('scroll', () => {
+        const scrolled = window.pageYOffset;
+        const heroSection = document.querySelector('.hero-section-modern');
+
+        if (heroSection) {
+            const heroContent = heroSection.querySelector('.hero-content-modern');
+            if (heroContent && scrolled < 600) {
+                heroContent.style.transform = `translateY(${scrolled * 0.5}px)`;
+                heroContent.style.opacity = 1 - (scrolled / 600);
+            }
+        }
+    });
+}
+
+// Interactive Cursor Tracking for Dynamic Light Effects
+export function initCursorTracking() {
+    const cards = document.querySelectorAll('.dynamic-light');
+
+    cards.forEach(card => {
+        card.addEventListener('mousemove', (e) => {
+            const rect = card.getBoundingClientRect();
+            const x = ((e.clientX - rect.left) / rect.width) * 100;
+            const y = ((e.clientY - rect.top) / rect.height) * 100;
+
+            card.style.setProperty('--mouse-x', `${x}%`);
+            card.style.setProperty('--mouse-y', `${y}%`);
+        });
+
+        card.addEventListener('mouseleave', () => {
+            card.style.setProperty('--mouse-x', '50%');
+            card.style.setProperty('--mouse-y', '50%');
+        });
+    });
+}
+
+// Scroll Progress Indicator
+export function initScrollProgress() {
+    // Create scroll progress bar if it doesn't exist
+    let progressBar = document.getElementById('scroll-progress');
+
+    if (!progressBar) {
+        progressBar = document.createElement('div');
+        progressBar.id = 'scroll-progress';
+        progressBar.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 0%;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            z-index: 10000;
+            transition: width 0.1s ease-out;
+            box-shadow: 0 0 10px rgba(151, 71, 255, 0.5);
+        `;
+        document.body.appendChild(progressBar);
+    }
+
+    window.addEventListener('scroll', () => {
+        const windowHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+        const scrolled = (window.pageYOffset / windowHeight) * 100;
+        progressBar.style.width = `${scrolled}%`;
+    });
+}
+
+// Magnetic Button Effect (2025 Trend)
+export function initMagneticButtons() {
+    const buttons = document.querySelectorAll('.btn-primary, .btn-secondary');
+
+    buttons.forEach(button => {
+        button.addEventListener('mousemove', (e) => {
+            const rect = button.getBoundingClientRect();
+            const x = e.clientX - rect.left - rect.width / 2;
+            const y = e.clientY - rect.top - rect.height / 2;
+
+            const distance = Math.sqrt(x * x + y * y);
+            const maxDistance = 50;
+
+            if (distance < maxDistance) {
+                const strength = (maxDistance - distance) / maxDistance;
+                const moveX = x * strength * 0.3;
+                const moveY = y * strength * 0.3;
+
+                button.style.transform = `translate(${moveX}px, ${moveY}px) scale(1.05)`;
+            }
+        });
+
+        button.addEventListener('mouseleave', () => {
+            button.style.transform = 'translate(0, 0) scale(1)';
+        });
+    });
+}
+
+// Count Up Animation for Numbers
+export function animateCounter(element, target, duration = 2000) {
+    const start = 0;
+    const increment = target / (duration / 16); // 60fps
+    let current = start;
+
+    const timer = setInterval(() => {
+        current += increment;
+        if (current >= target) {
+            element.textContent = target;
+            clearInterval(timer);
+        } else {
+            element.textContent = Math.floor(current);
+        }
+    }, 16);
+}
+
+// Initialize all 2025 effects
+export function init2025Effects() {
+    // Wait for DOM to be ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            initEnhancedScrollAnimations();
+            initCursorTracking();
+            initScrollProgress();
+            initMagneticButtons();
+        });
+    } else {
+        initEnhancedScrollAnimations();
+        initCursorTracking();
+        initScrollProgress();
+        initMagneticButtons();
+    }
+}
