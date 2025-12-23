@@ -40,12 +40,15 @@ export async function renderDiscoverPage() {
             </div>
         </div>
 
-        <div class="section">
+        <div class="section" id="discoverResults">
             <div class="container">
                 ${showSkeletonLoaders(6)}
             </div>
         </div>
     `;
+
+    setupFilterListeners();
+    setupSearchListener();
 
     await loadCreators();
 }
@@ -112,79 +115,72 @@ async function loadCreators() {
 }
 
 function renderCreatorsList() {
-    const mainContent = document.getElementById('mainContent');
+    const resultsContainer = document.getElementById('discoverResults');
 
-    mainContent.innerHTML = `
-        <div class="discover-header">
-            <div class="container">
-                <div class="search-bar">
-                    <input type="text" class="search-input" placeholder="Search by service, city, style, e.g. wedding photographer Lagos" id="discoverSearch" value="${currentFilters.search}">
-                    <button class="btn-primary" id="searchBtn">Search</button>
-                </div>
-                <div class="filters-row">
-                    <button class="filter-chip ${!currentFilters.category ? 'active' : ''}" data-filter="all">All</button>
-                    <button class="filter-chip ${currentFilters.category === 'photographer' ? 'active' : ''}" data-filter="photographer">Photographers</button>
-                    <button class="filter-chip ${currentFilters.category === 'designer' ? 'active' : ''}" data-filter="designer">Designers</button>
-                    <button class="filter-chip ${currentFilters.category === 'videographer' ? 'active' : ''}" data-filter="videographer">Videographers</button>
-                    <button class="filter-chip ${currentFilters.category === 'illustrator' ? 'active' : ''}" data-filter="illustrator">Illustrators</button>
-                    <button class="filter-chip ${currentFilters.verified ? 'active' : ''}" data-filter="verified">Verified only</button>
-                </div>
-            </div>
-        </div>
+    // Update filter chips active states
+    document.querySelectorAll('.filter-chip').forEach(chip => {
+        chip.classList.remove('active');
+        const filter = chip.dataset.filter;
+        if (filter === 'all' && !currentFilters.category) {
+            chip.classList.add('active');
+        } else if (filter === currentFilters.category) {
+            chip.classList.add('active');
+        } else if (filter === 'verified' && currentFilters.verified) {
+            chip.classList.add('active');
+        }
+    });
 
-        <div class="section">
-            <div class="container">
-                ${creators.length > 0 ? `
-                    <div class="section-header">
-                        <h3>${creators.length} creator${creators.length !== 1 ? 's' : ''} found</h3>
-                        <select class="form-select" style="width: auto;" id="sortSelect">
-                            <option value="relevance" ${currentFilters.sort === 'relevance' ? 'selected' : ''}>Sort by relevance</option>
-                            <option value="rating" ${currentFilters.sort === 'rating' ? 'selected' : ''}>Highest rated</option>
-                            <option value="newest" ${currentFilters.sort === 'newest' ? 'selected' : ''}>Newest</option>
-                        </select>
+    // Update only the results section
+    resultsContainer.innerHTML = `
+        <div class="container">
+            ${creators.length > 0 ? `
+                <div class="section-header">
+                    <h3>${creators.length} creator${creators.length !== 1 ? 's' : ''} found</h3>
+                    <select class="form-select" style="width: auto;" id="sortSelect">
+                        <option value="relevance" ${currentFilters.sort === 'relevance' ? 'selected' : ''}>Sort by relevance</option>
+                        <option value="rating" ${currentFilters.sort === 'rating' ? 'selected' : ''}>Highest rated</option>
+                        <option value="newest" ${currentFilters.sort === 'newest' ? 'selected' : ''}>Newest</option>
+                    </select>
+                </div>
+                <div class="creators-grid" id="discoverGrid">
+                    ${renderCreatorCards(creators)}
+                </div>
+            ` : `
+                <div class="empty-state" style="padding: 80px 20px; text-align: center; animation: fadeIn 0.3s ease-in;">
+                    <div style="background: linear-gradient(135deg, rgba(151, 71, 255, 0.1) 0%, rgba(107, 70, 255, 0.1) 100%); width: 120px; height: 120px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px;">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" style="color: var(--primary);">
+                            <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
+                            <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            <path d="M11 8v3M11 14h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
                     </div>
-                    <div class="creators-grid" id="discoverGrid">
-                        ${renderCreatorCards(creators)}
-                    </div>
-                ` : `
-                    <div class="empty-state" style="padding: 80px 20px; text-align: center; animation: fadeIn 0.3s ease-in;">
-                        <div style="background: linear-gradient(135deg, rgba(151, 71, 255, 0.1) 0%, rgba(107, 70, 255, 0.1) 100%); width: 120px; height: 120px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px;">
-                            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" style="color: var(--primary);">
-                                <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
-                                <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                <path d="M11 8v3M11 14h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <h3 style="font-size: 24px; margin-bottom: 12px; color: var(--text-primary);">No creators found</h3>
+                    <p style="color: var(--text-secondary); font-size: 16px; margin-bottom: 24px; max-width: 400px; margin-left: auto; margin-right: auto;">
+                        We couldn't find any creators matching your search. Try adjusting your filters or explore different categories.
+                    </p>
+                    <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 24px;">
+                        <button class="btn-primary" onclick="window.location.reload()" style="min-width: 140px;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="display: inline; margin-right: 6px; vertical-align: middle;">
+                                <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0118-6l1.5 2M22 12.5a10 10 0 01-18 6l-1.5-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                             </svg>
-                        </div>
-                        <h3 style="font-size: 24px; margin-bottom: 12px; color: var(--text-primary);">No creators found</h3>
-                        <p style="color: var(--text-secondary); font-size: 16px; margin-bottom: 24px; max-width: 400px; margin-left: auto; margin-right: auto;">
-                            We couldn't find any creators matching your search. Try adjusting your filters or explore different categories.
-                        </p>
-                        <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 24px;">
-                            <button class="btn-primary" onclick="window.location.reload()" style="min-width: 140px;">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="display: inline; margin-right: 6px; vertical-align: middle;">
-                                    <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0118-6l1.5 2M22 12.5a10 10 0 01-18 6l-1.5-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                </svg>
-                                Clear filters
-                            </button>
-                            <button class="btn-secondary" onclick="navigateToPage('home')" style="min-width: 140px;">Go to home</button>
-                        </div>
-                        <div style="background: var(--background-alt); padding: 20px; border-radius: 12px; max-width: 500px; margin: 0 auto;">
-                            <p style="font-weight: 600; margin-bottom: 12px; color: var(--text-primary);">Popular searches:</p>
-                            <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;">
-                                <button class="filter-chip" data-filter="photographer" onclick="document.querySelector('[data-filter=photographer]').click()">Photographers</button>
-                                <button class="filter-chip" data-filter="designer" onclick="document.querySelector('[data-filter=designer]').click()">Designers</button>
-                                <button class="filter-chip" data-filter="videographer" onclick="document.querySelector('[data-filter=videographer]').click()">Videographers</button>
-                            </div>
+                            Clear filters
+                        </button>
+                        <button class="btn-secondary" onclick="navigateToPage('home')" style="min-width: 140px;">Go to home</button>
+                    </div>
+                    <div style="background: var(--background-alt); padding: 20px; border-radius: 12px; max-width: 500px; margin: 0 auto;">
+                        <p style="font-weight: 600; margin-bottom: 12px; color: var(--text-primary);">Popular searches:</p>
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;">
+                            <button class="filter-chip" data-filter="photographer" onclick="document.querySelector('[data-filter=photographer]').click()">Photographers</button>
+                            <button class="filter-chip" data-filter="designer" onclick="document.querySelector('[data-filter=designer]').click()">Designers</button>
+                            <button class="filter-chip" data-filter="videographer" onclick="document.querySelector('[data-filter=videographer]').click()">Videographers</button>
                         </div>
                     </div>
-                `}
-            </div>
+                </div>
+            `}
         </div>
     `;
 
     setupCreatorCardListeners();
-    setupFilterListeners();
-    setupSearchListener();
     setupSortListener();
 }
 

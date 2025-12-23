@@ -121,12 +121,37 @@ p {
     cursor: pointer;
     transition: all var(--transition-fast);
     box-shadow: var(--shadow-sm);
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-primary::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.btn-primary:hover::before {
+    width: 300px;
+    height: 300px;
 }
 
 .btn-primary:hover {
     background: var(--secondary);
     transform: translateY(-2px);
     box-shadow: var(--shadow-md);
+}
+
+.btn-primary:active {
+    transform: translateY(0) scale(0.98);
+    box-shadow: var(--shadow-sm);
 }
 
 .btn-primary:focus {
@@ -278,22 +303,58 @@ p {
     cursor: pointer;
     padding: var(--spacing-sm);
     border-radius: var(--radius);
-    transition: all var(--transition-fast);
+    transition: all var(--transition-base);
     flex: 1;
     max-width: 100px;
+    position: relative;
 }
 
 .nav-item span {
     font-size: var(--size-small);
     font-weight: 500;
+    transition: all var(--transition-fast);
 }
 
 .nav-item.active {
     color: var(--primary);
 }
 
+.nav-item.active span {
+    font-weight: 600;
+}
+
+/* Pill indicator under active nav item */
+.nav-item.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary), var(--secondary));
+    border-radius: 2px 2px 0 0;
+    animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
 .nav-item:hover {
     background: var(--background-alt);
+    transform: scale(1.05);
+}
+
+.nav-item:active {
+    transform: scale(0.95);
 }
 
 .nav-item svg {
@@ -1037,14 +1098,16 @@ p {
     font-weight: 600;
 }
 
-/* Modal */
+/* Modal with Glassmorphism */
 .modal {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     z-index: 300;
     display: flex;
     align-items: center;
@@ -1054,14 +1117,18 @@ p {
 }
 
 .modal-content {
-    background: white;
-    border-radius: var(--radius);
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 16px;
     padding: var(--spacing-xl);
     max-width: 500px;
     width: 100%;
     max-height: 90vh;
     overflow-y: auto;
     animation: slideUp var(--transition-base);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15),
+                0 0 0 1px rgba(255, 255, 255, 0.5) inset;
 }
 
 .modal-header {
@@ -2758,4 +2825,252 @@ html, body {
         padding: 10px 16px;
     }
 }
+
+/* ============================================
+   2025 UI/UX ENHANCEMENTS
+   ============================================ */
+
+/* Animated Number Counter */
+@keyframes countUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-counter {
+    animation: countUp 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Success Checkmark Animation */
+@keyframes successPop {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.2);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes checkmarkDraw {
+    0% {
+        stroke-dashoffset: 100;
+    }
+    100% {
+        stroke-dashoffset: 0;
+    }
+}
+
+.success-checkmark {
+    animation: successPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.success-checkmark path {
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+    animation: checkmarkDraw 0.5s ease-out 0.2s forwards;
+}
+
+/* Enhanced Shimmer Effect */
+@keyframes shimmerEnhanced {
+    0% {
+        background-position: -1000px 0;
+    }
+    100% {
+        background-position: 1000px 0;
+    }
+}
+
+.skeleton-enhanced {
+    background: linear-gradient(
+        90deg,
+        #f0f0f0 0%,
+        #f8f8f8 20%,
+        #f0f0f0 40%,
+        #f0f0f0 100%
+    );
+    background-size: 1000px 100%;
+    animation: shimmerEnhanced 2s linear infinite;
+    border-radius: var(--radius);
+}
+
+/* Pulse Glow Effect */
+@keyframes pulseGlow {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(151, 71, 255, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 20px 10px rgba(151, 71, 255, 0);
+    }
+}
+
+.pulse-glow {
+    animation: pulseGlow 2s ease-in-out infinite;
+}
+
+/* Better Focus States for Accessibility */
+*:focus-visible {
+    outline: 3px solid var(--primary);
+    outline-offset: 3px;
+    border-radius: 4px;
+    transition: outline 0.2s ease;
+}
+
+button:focus-visible,
+a:focus-visible {
+    outline: 3px solid var(--primary);
+    outline-offset: 3px;
+}
+
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 0;
+    border-color: var(--primary);
+}
+
+/* Scroll Fade-In Animations */
+@keyframes scrollFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.scroll-fade-in {
+    opacity: 0;
+    animation: scrollFadeIn 0.6s ease-out forwards;
+}
+
+.scroll-fade-in-delay-1 {
+    animation-delay: 0.1s;
+}
+
+.scroll-fade-in-delay-2 {
+    animation-delay: 0.2s;
+}
+
+.scroll-fade-in-delay-3 {
+    animation-delay: 0.3s;
+}
+
+/* Smooth Scale Hover */
+.hover-scale {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hover-scale:hover {
+    transform: scale(1.05);
+}
+
+/* Card Lift Effect */
+.card-lift {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-lift:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+/* Loading Dots Animation */
+@keyframes loadingDots {
+    0%, 20% {
+        opacity: 0.3;
+        transform: scale(0.8);
+    }
+    40% {
+        opacity: 1;
+        transform: scale(1.1);
+    }
+    60%, 100% {
+        opacity: 0.3;
+        transform: scale(0.8);
+    }
+}
+
+.loading-dots span {
+    animation: loadingDots 1.4s infinite;
+}
+
+.loading-dots span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.loading-dots span:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+/* Gradient Text Animation */
+@keyframes gradientShift {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+.gradient-text-animated {
+    background: linear-gradient(
+        45deg,
+        var(--primary),
+        var(--secondary),
+        var(--primary)
+    );
+    background-size: 200% 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: gradientShift 3s ease infinite;
+}
+
+/* Toast Notification Improvements */
+.toast {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Smooth Entrance for Cards */
+@keyframes cardEntrance {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.card-entrance {
+    animation: cardEntrance 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Stagger animation for grid items */
+.grid-item-1 { animation-delay: 0.05s; }
+.grid-item-2 { animation-delay: 0.1s; }
+.grid-item-3 { animation-delay: 0.15s; }
+.grid-item-4 { animation-delay: 0.2s; }
+.grid-item-5 { animation-delay: 0.25s; }
+.grid-item-6 { animation-delay: 0.3s; }
 

@@ -39,7 +39,7 @@ export async function renderHomePage() {
         <div class="section" style="padding: 80px 20px; background: var(--background);">
             <div class="container" style="max-width: 1200px; margin: 0 auto; text-align: center;">
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 40px; margin-top: 40px;">
-                    <div style="padding: 32px; background: var(--surface); border-radius: 16px; box-shadow: var(--shadow-sm);">
+                    <div class="card-lift scroll-fade-in" style="padding: 32px; background: var(--surface); border-radius: 16px; box-shadow: var(--shadow-sm);">
                         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" style="margin: 0 auto 16px; color: var(--primary);">
                             <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                             <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -50,7 +50,7 @@ export async function renderHomePage() {
                         </p>
                     </div>
 
-                    <div style="padding: 32px; background: var(--surface); border-radius: 16px; box-shadow: var(--shadow-sm);">
+                    <div class="card-lift scroll-fade-in scroll-fade-in-delay-1" style="padding: 32px; background: var(--surface); border-radius: 16px; box-shadow: var(--shadow-sm);">
                         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" style="margin: 0 auto 16px; color: var(--primary);">
                             <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
                             <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -61,7 +61,7 @@ export async function renderHomePage() {
                         </p>
                     </div>
 
-                    <div style="padding: 32px; background: var(--surface); border-radius: 16px; box-shadow: var(--shadow-sm);">
+                    <div class="card-lift scroll-fade-in scroll-fade-in-delay-2" style="padding: 32px; background: var(--surface); border-radius: 16px; box-shadow: var(--shadow-sm);">
                         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" style="margin: 0 auto 16px; color: var(--primary);">
                             <path d="M13 2L3 14h8l-1 8 10-12h-8l1-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>

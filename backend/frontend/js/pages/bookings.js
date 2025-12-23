@@ -182,10 +182,30 @@ window.viewBookingDetails = async function(bookingId) {
                                     <div style="color: #78350F; font-size: 14px; margin-bottom: 12px;">
                                         Review this booking request and decide whether to accept, reject, or make a counter proposal.
                                     </div>
-                                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                    <div style="display: flex; gap: 8px; flex-wrap: wrap;" id="actionButtons">
                                         <button class="btn-primary" style="flex: 1; min-width: 120px;" onclick="window.acceptBookingRequest('${booking._id}')">Accept</button>
                                         <button class="btn-secondary" style="flex: 1; min-width: 120px;" onclick="window.showCounterProposalForm('${booking._id}')">Counter Proposal</button>
-                                        <button class="btn-ghost" style="color: #EF4444; flex: 1; min-width: 120px;" onclick="window.rejectBookingRequest('${booking._id}')">Reject</button>
+                                        <button class="btn-ghost" style="color: #EF4444; flex: 1; min-width: 120px;" onclick="window.showRejectForm('${booking._id}')">Reject</button>
+                                    </div>
+                                    <div id="counterProposalForm" style="display: none; margin-top: 16px; padding: 16px; background: rgba(59, 130, 246, 0.05); border-radius: 8px;">
+                                        <div style="font-weight: 600; margin-bottom: 12px; color: #1E40AF;">Enter Counter Proposal Amount</div>
+                                        <div style="display: flex; gap: 8px; align-items: flex-end;">
+                                            <div style="flex: 1;">
+                                                <input type="number" id="counterAmount" class="form-input" placeholder="Enter amount in USDC" step="0.01" min="0" style="margin: 0;">
+                                            </div>
+                                            <button class="btn-primary" onclick="window.submitCounterProposal('${booking._id}', document.getElementById('counterAmount').value)">Submit</button>
+                                            <button class="btn-ghost" onclick="document.getElementById('counterProposalForm').style.display='none'; document.getElementById('actionButtons').style.display='flex';">Cancel</button>
+                                        </div>
+                                    </div>
+                                    <div id="rejectForm" style="display: none; margin-top: 16px; padding: 16px; background: rgba(239, 68, 68, 0.05); border-radius: 8px;">
+                                        <div style="font-weight: 600; margin-bottom: 12px; color: #991B1B;">Reason for Rejection (Optional)</div>
+                                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                                            <textarea id="rejectReason" class="form-input" placeholder="Enter reason..." rows="3" style="margin: 0;"></textarea>
+                                            <div style="display: flex; gap: 8px;">
+                                                <button class="btn-primary" style="background: #EF4444; flex: 1;" onclick="window.submitRejection('${booking._id}', document.getElementById('rejectReason').value)">Reject Booking</button>
+                                                <button class="btn-ghost" onclick="document.getElementById('rejectForm').style.display='none'; document.getElementById('actionButtons').style.display='flex';">Cancel</button>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             ` : ''}
@@ -383,12 +403,15 @@ window.acceptBookingRequest = async function(bookingId) {
     }
 };
 
-window.rejectBookingRequest = async function(bookingId) {
-    const reason = prompt('Reason for rejection (optional):');
-    if (reason === null) return; // User cancelled
+window.showRejectForm = function(bookingId) {
+    document.getElementById('actionButtons').style.display = 'none';
+    document.getElementById('counterProposalForm').style.display = 'none';
+    document.getElementById('rejectForm').style.display = 'block';
+};
 
+window.submitRejection = async function(bookingId, reason) {
     try {
-        const response = await api.rejectBooking(bookingId, reason);
+        const response = await api.rejectBooking(bookingId, reason || '');
 
         if (response.success) {
             closeModal();
@@ -402,18 +425,22 @@ window.rejectBookingRequest = async function(bookingId) {
 };
 
 window.showCounterProposalForm = function(bookingId) {
-    const amount = prompt('Enter your counter proposal amount (USDC):');
-    if (!amount || isNaN(amount) || parseFloat(amount) <= 0) {
-        if (amount !== null) showToast('Please enter a valid amount', 'error');
-        return;
-    }
-
-    window.submitCounterProposal(bookingId, parseFloat(amount));
+    document.getElementById('actionButtons').style.display = 'none';
+    document.getElementById('rejectForm').style.display = 'none';
+    document.getElementById('counterProposalForm').style.display = 'block';
+    setTimeout(() => document.getElementById('counterAmount').focus(), 100);
 };
 
 window.submitCounterProposal = async function(bookingId, amount) {
+    const parsedAmount = parseFloat(amount);
+
+    if (!amount || isNaN(parsedAmount) || parsedAmount <= 0) {
+        showToast('Please enter a valid amount', 'error');
+        return;
+    }
+
     try {
-        const response = await api.counterProposal(bookingId, amount);
+        const response = await api.counterProposal(bookingId, parsedAmount);
 
         if (response.success) {
             closeModal();

@@ -33,8 +33,9 @@ export function navigateToPage(page, addToHistoryFlag = true) {
 
     const mainContent = document.getElementById('mainContent');
 
-    mainContent.style.transition = 'opacity 0.15s ease-out';
+    mainContent.style.transition = 'opacity 0.2s ease-out, transform 0.2s ease-out';
     mainContent.style.opacity = '0';
+    mainContent.style.transform = 'translateX(-20px)';
 
     requestAnimationFrame(() => {
         switch (page) {
@@ -66,6 +67,7 @@ export function navigateToPage(page, addToHistoryFlag = true) {
 
         requestAnimationFrame(() => {
             mainContent.style.opacity = '1';
+            mainContent.style.transform = 'translateX(0)';
             addPageTransition();
             initScrollAnimations();
         });

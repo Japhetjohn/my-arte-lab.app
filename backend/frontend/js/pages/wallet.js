@@ -112,29 +112,23 @@ function renderWalletContent() {
 
                 <div class="balance-card">
                     <div class="balance-label">Available balance</div>
-                    <div class="balance-amount">USDC ${balance.toFixed(2)}</div>
+                    <div class="balance-amount animate-counter">USDC ${balance.toFixed(2)}</div>
                     <div class="balance-actions">
-                        <button class="btn-primary" style="background: white; color: var(--primary);" onclick="window.fundWallet()">
+                        <button class="btn-primary" style="background: white; color: var(--primary); flex: 1;" onclick="window.fundWallet()">
                             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style="margin-right: 8px; vertical-align: middle;">
                                 <path d="M10 6V14M6 10h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                                 <rect x="3" y="2" width="14" height="14" rx="2" stroke="currentColor" stroke-width="2"/>
                             </svg>
-                            Fund Wallet
+                            Fund
                         </button>
-                        <button class="btn-primary" style="background: white; color: var(--primary);" onclick="showWithdrawModal()">
+                        <button class="btn-primary" style="background: white; color: var(--primary); flex: 1;" onclick="showWithdrawModal()">
                             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style="margin-right: 8px; vertical-align: middle;">
                                 <path d="M10 14V6M7 9l3-3 3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                                 <rect x="3" y="2" width="14" height="14" rx="2" stroke="currentColor" stroke-width="2"/>
                             </svg>
                             Withdraw
                         </button>
-                        <button class="btn-primary" style="background: white; color: var(--primary);" onclick="window.showSwapModal()">
-                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style="margin-right: 8px; vertical-align: middle;">
-                                <path d="M7 8l3-3 3 3M7 12l3 3 3-3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                            </svg>
-                            Swap
-                        </button>
-                        <button class="btn-secondary" style="border-color: white; color: white;" onclick="window.location.reload()">
+                        <button class="btn-secondary" style="border-color: white; color: white; flex: 1;" onclick="window.location.reload()">
                             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style="margin-right: 8px; vertical-align: middle;">
                                 <path d="M4 10a6 6 0 1 1 12 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                                 <path d="M4 10l-2-2m2 2l2-2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -145,17 +139,17 @@ function renderWalletContent() {
                 </div>
 
                 <div class="wallet-cards-grid mt-lg">
-                    <div class="wallet-card-item">
+                    <div class="wallet-card-item card-lift scroll-fade-in">
                         <div class="wallet-card-icon" style="background: rgba(151, 71, 255, 0.1);">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                                 <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" stroke="#9747FF" stroke-width="2" stroke-linecap="round"/>
                             </svg>
                         </div>
                         <div class="wallet-card-label">Total earnings</div>
-                        <div class="wallet-card-value">USDC ${totalEarnings.toFixed(2)}</div>
+                        <div class="wallet-card-value animate-counter">USDC ${totalEarnings.toFixed(2)}</div>
                     </div>
 
-                    <div class="wallet-card-item">
+                    <div class="wallet-card-item card-lift scroll-fade-in scroll-fade-in-delay-1">
                         <div class="wallet-card-icon" style="background: rgba(255, 165, 0, 0.1);">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                                 <circle cx="12" cy="12" r="10" stroke="#FFA500" stroke-width="2"/>
@@ -163,67 +157,17 @@ function renderWalletContent() {
                             </svg>
                         </div>
                         <div class="wallet-card-label">Pending</div>
-                        <div class="wallet-card-value" style="color: #FFA500;">USDC ${pendingBalance.toFixed(2)}</div>
+                        <div class="wallet-card-value animate-counter" style="color: #FFA500;">USDC ${pendingBalance.toFixed(2)}</div>
                     </div>
 
-                    <div class="wallet-card-item">
+                    <div class="wallet-card-item card-lift scroll-fade-in scroll-fade-in-delay-2">
                         <div class="wallet-card-icon" style="background: rgba(16, 185, 129, 0.1);">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                                 <path d="M20 6L9 17l-5-5" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                             </svg>
                         </div>
                         <div class="wallet-card-label">Withdrawn</div>
-                        <div class="wallet-card-value" style="color: var(--success);">USDC ${withdrawn.toFixed(2)}</div>
-                    </div>
-                </div>
-
-                <div class="mt-lg">
-                    <h3 class="mb-md">Quick actions</h3>
-                    <div class="quick-actions-grid">
-                        <button class="quick-action-btn" onclick="window.fundWallet()">
-                            <div class="quick-action-icon">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                    <path d="M12 14l-4-4m4 4l4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                </svg>
-                            </div>
-                            <div class="quick-action-label">Fund Wallet</div>
-                        </button>
-                        <button class="quick-action-btn" onclick="showWithdrawModal()">
-                            <div class="quick-action-icon">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                    <path d="M12 2l4 4m-4-4L8 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                </svg>
-                            </div>
-                            <div class="quick-action-label">Withdraw</div>
-                        </button>
-                        <button class="quick-action-btn" onclick="showTransactionHistory()">
-                            <div class="quick-action-icon">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                                    <path d="M3 3v18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                    <path d="M18 17l-5-5-3 3-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                </svg>
-                            </div>
-                            <div class="quick-action-label">History</div>
-                        </button>
-                        <button class="quick-action-btn" onclick="window.location.reload()">
-                            <div class="quick-action-icon">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                                    <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                </svg>
-                            </div>
-                            <div class="quick-action-label">Refresh</div>
-                        </button>
-                        <button class="quick-action-btn" onclick="window.copyWalletAddress()">
-                            <div class="quick-action-icon">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                                    <rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" stroke-width="2"/>
-                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke="currentColor" stroke-width="2"/>
-                                </svg>
-                            </div>
-                            <div class="quick-action-label">Copy Address</div>
-                        </button>
+                        <div class="wallet-card-value animate-counter" style="color: var(--success);">USDC ${withdrawn.toFixed(2)}</div>
                     </div>
                 </div>
 
