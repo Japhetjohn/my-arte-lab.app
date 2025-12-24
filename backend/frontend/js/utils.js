@@ -378,3 +378,165 @@ export function init2025Effects() {
         initMagneticButtons();
     }
 }
+
+// ====================================
+// CREATOR RANKING ALGORITHM
+// Based on Fiverr/Upwork best practices
+// ====================================
+
+/**
+ * Calculate creator quality score (0-100)
+ * Based on: completed jobs, ratings, response time, activity
+ */
+export function calculateCreatorScore(creator) {
+    let totalScore = 0;
+
+    // 1. RATING SCORE (30 points max)
+    // 4.5+ stars = full points, scales down proportionally
+    const rating = parseFloat(creator.rating) || 0;
+    const reviewCount = creator.reviewCount || 0;
+
+    if (reviewCount > 0) {
+        if (rating >= 4.9) totalScore += 30;
+        else if (rating >= 4.7) totalScore += 27;
+        else if (rating >= 4.5) totalScore += 24;
+        else if (rating >= 4.0) totalScore += 15;
+        else if (rating >= 3.5) totalScore += 8;
+    } else {
+        // New creators with no reviews get baseline 15 points
+        totalScore += 15;
+    }
+
+    // 2. COMPLETED JOBS SCORE (25 points max)
+    const completedJobs = creator.completedJobs || 0;
+
+    if (completedJobs >= 50) totalScore += 25;
+    else if (completedJobs >= 25) totalScore += 22;
+    else if (completedJobs >= 10) totalScore += 18;
+    else if (completedJobs >= 5) totalScore += 12;
+    else if (completedJobs >= 1) totalScore += 6;
+    else totalScore += 0; // No completed jobs
+
+    // 3. REVIEW COUNT BONUS (15 points max)
+    // More reviews = more credibility
+    if (reviewCount >= 50) totalScore += 15;
+    else if (reviewCount >= 25) totalScore += 12;
+    else if (reviewCount >= 10) totalScore += 9;
+    else if (reviewCount >= 5) totalScore += 6;
+    else if (reviewCount >= 1) totalScore += 3;
+
+    // 4. VERIFICATION BONUS (10 points)
+    if (creator.verified) {
+        totalScore += 10;
+    }
+
+    // 5. RECENT ACTIVITY BOOST (10 points)
+    // Active in last 30 days gets bonus
+    if (creator.createdAt) {
+        const daysSinceCreation = (Date.now() - new Date(creator.createdAt)) / (1000 * 60 * 60 * 24);
+
+        // Newer creators (< 30 days) get "Rising Talent" boost
+        if (daysSinceCreation <= 30 && completedJobs >= 3 && rating >= 4.5) {
+            totalScore += 10;
+        }
+        // Established creators maintaining activity
+        else if (daysSinceCreation > 30 && completedJobs >= 5) {
+            totalScore += 8;
+        }
+    }
+
+    // 6. PORTFOLIO BONUS (5 points)
+    const portfolioCount = creator.portfolio?.length || 0;
+    if (portfolioCount >= 10) totalScore += 5;
+    else if (portfolioCount >= 5) totalScore += 3;
+    else if (portfolioCount >= 1) totalScore += 1;
+
+    // 7. SERVICES OFFERED BONUS (5 points)
+    const servicesCount = creator.services?.length || 0;
+    if (servicesCount >= 5) totalScore += 5;
+    else if (servicesCount >= 3) totalScore += 3;
+    else if (servicesCount >= 1) totalScore += 1;
+
+    return Math.min(totalScore, 100); // Cap at 100
+}
+
+/**
+ * Determine creator tier/badge based on score
+ */
+export function getCreatorTier(score, creator) {
+    const rating = parseFloat(creator.rating) || 0;
+    const reviewCount = creator.reviewCount || 0;
+    const completedJobs = creator.completedJobs || 0;
+    const daysSinceCreation = creator.createdAt
+        ? (Date.now() - new Date(creator.createdAt)) / (1000 * 60 * 60 * 24)
+        : 999;
+
+    // TOP RATED (95+ score, 4.8+ rating, 50+ jobs)
+    if (score >= 95 && rating >= 4.8 && completedJobs >= 50) {
+        return {
+            tier: 'TOP_RATED',
+            badge: '⭐ Top Rated',
+            color: '#FFD700',
+            description: 'Exceptional quality and reliability'
+        };
+    }
+
+    // RISING TALENT (< 30 days, 3+ jobs, 4.5+ rating)
+    if (daysSinceCreation <= 30 && completedJobs >= 3 && rating >= 4.5) {
+        return {
+            tier: 'RISING_TALENT',
+            badge: '🚀 Rising Talent',
+            color: '#10B981',
+            description: 'New creator with great potential'
+        };
+    }
+
+    // QUALITY SELLER (85+ score, 4.5+ rating, 25+ jobs)
+    if (score >= 85 && rating >= 4.5 && completedJobs >= 25) {
+        return {
+            tier: 'QUALITY_SELLER',
+            badge: '✓ Quality Seller',
+            color: '#6B46FF',
+            description: 'Consistently delivers quality work'
+        };
+    }
+
+    // RELIABLE SELLER (75+ score, 10+ jobs)
+    if (score >= 75 && completedJobs >= 10) {
+        return {
+            tier: 'RELIABLE_SELLER',
+            badge: '✓ Reliable',
+            color: '#3B82F6',
+            description: 'Dependable and experienced'
+        };
+    }
+
+    // ACTIVE SELLER (60+ score, 5+ jobs)
+    if (score >= 60 && completedJobs >= 5) {
+        return {
+            tier: 'ACTIVE_SELLER',
+            badge: '✓ Active',
+            color: '#8B5CF6',
+            description: 'Active on the platform'
+        };
+    }
+
+    // NEW SELLER (default)
+    return {
+        tier: 'NEW_SELLER',
+        badge: '',
+        color: '',
+        description: 'New to the platform'
+    };
+}
+
+/**
+ * Sort creators by quality score (for "Sort by relevance")
+ */
+export function sortCreatorsByRelevance(creators) {
+    return creators.sort((a, b) => {
+        const scoreA = calculateCreatorScore(a);
+        const scoreB = calculateCreatorScore(b);
+        return scoreB - scoreA; // Highest score first
+    });
+}

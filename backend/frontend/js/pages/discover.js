@@ -2,7 +2,7 @@ import { appState } from '../state.js';
 import { renderCreatorCards, setupCreatorCardListeners } from '../components/creators.js';
 import api from '../services/api.js';
 import { formatLocation } from '../utils/formatters.js';
-import { showSkeletonLoaders } from '../utils.js';
+import { showSkeletonLoaders, calculateCreatorScore, getCreatorTier, sortCreatorsByRelevance } from '../utils.js';
 
 let creators = [];
 let currentFilters = {
@@ -68,24 +68,39 @@ async function loadCreators() {
         const response = await api.getCreators(filters);
 
         if (response.success) {
-            let allCreators = (response.data || []).map(creator => ({
-                id: creator._id,
-                name: creator.name || 'Unknown Creator',
-                avatar: creator.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name || 'User')}&background=9747FF&color=fff&bold=true`,
-                role: creator.category ? creator.category.charAt(0).toUpperCase() + creator.category.slice(1) : 'Creator',
-                location: formatLocation(creator.location),
-                rating: creator.rating?.average?.toFixed(1) || '0.0',
-                reviewCount: creator.rating?.count || 0,
-                verified: creator.isVerified || false,
-                price: creator.hourlyRate ? `From $${creator.hourlyRate}/hr` : 'Contact for pricing',
-                bio: creator.bio || 'No bio yet',
-                cover: creator.coverImage,
-                portfolio: creator.portfolio || [],
-                services: creator.services || [],
-                responseTime: creator.responseTime || 'Within a day',
-                completedJobs: creator.completedJobs || 0,
-                createdAt: creator.createdAt
-            }));
+            let allCreators = (response.data || []).map(creator => {
+                const creatorData = {
+                    id: creator._id,
+                    name: creator.name || 'Unknown Creator',
+                    avatar: creator.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name || 'User')}&background=9747FF&color=fff&bold=true`,
+                    role: creator.category ? creator.category.charAt(0).toUpperCase() + creator.category.slice(1) : 'Creator',
+                    location: formatLocation(creator.location),
+                    rating: creator.rating?.average?.toFixed(1) || '0.0',
+                    reviewCount: creator.rating?.count || 0,
+                    verified: creator.isVerified || false,
+                    price: creator.hourlyRate ? `From $${creator.hourlyRate}/hr` : 'Contact for pricing',
+                    bio: creator.bio || 'No bio yet',
+                    cover: creator.coverImage,
+                    portfolio: creator.portfolio || [],
+                    services: creator.services || [],
+                    responseTime: creator.responseTime || 'Within a day',
+                    completedJobs: creator.completedJobs || 0,
+                    createdAt: creator.createdAt
+                };
+
+                // Calculate quality score and tier
+                const qualityScore = calculateCreatorScore(creatorData);
+                const tier = getCreatorTier(qualityScore, creatorData);
+
+                return {
+                    ...creatorData,
+                    qualityScore,
+                    tier: tier.tier,
+                    badge: tier.badge,
+                    badgeColor: tier.color,
+                    tierDescription: tier.description
+                };
+            });
 
             // Apply client-side search filter across all fields
             if (currentFilters.search) {
@@ -292,6 +307,10 @@ function setupSortListener() {
 
 function sortCreators() {
     switch (currentFilters.sort) {
+        case 'relevance':
+            // Sort by quality score (completed jobs + ratings + badges)
+            creators = sortCreatorsByRelevance(creators);
+            break;
         case 'rating':
             creators.sort((a, b) => parseFloat(b.rating || 0) - parseFloat(a.rating || 0));
             break;
@@ -299,6 +318,8 @@ function sortCreators() {
             creators.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
             break;
         default:
+            // Default to relevance
+            creators = sortCreatorsByRelevance(creators);
             break;
     }
 }

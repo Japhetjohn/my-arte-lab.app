@@ -43,7 +43,10 @@ export function renderCreatorCards(creators) {
                 <div class="creator-header">
                     <div>
                         <div class="creator-name">${creator.name}</div>
-                        ${creator.verified ? '<span class="verified-badge">✓ Verified</span>' : ''}
+                        <div style="display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap;">
+                            ${creator.verified ? '<span class="verified-badge">✓ Verified</span>' : ''}
+                            ${creator.badge ? `<span class="tier-badge" style="background: ${creator.badgeColor}15; color: ${creator.badgeColor}; border: 1px solid ${creator.badgeColor}40;">${creator.badge}</span>` : ''}
+                        </div>
                     </div>
                 </div>
                 <div class="creator-role">${creator.role}</div>
