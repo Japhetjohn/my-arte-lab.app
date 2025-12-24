@@ -307,6 +307,9 @@ export async function handleLogout() {
     try {
         await api.logout();
     } catch (error) {
+        // Log error but continue with client-side logout
+        // Server session cleanup failed, but user still gets logged out locally
+        console.error('Logout API call failed:', error);
     } finally {
         if (window.notificationInterval) {
             clearInterval(window.notificationInterval);
@@ -520,6 +523,12 @@ async function updateNotificationBadge() {
             }
         }
     } catch (error) {
+        // Silently fail notification badge updates to avoid spamming console
+        // This is a non-critical UI update that runs every 30 seconds
+        // Only log if there's a network error (not a 401)
+        if (error.message && !error.message.includes('401')) {
+            console.warn('Failed to update notification badge:', error.message);
+        }
     }
 }
 

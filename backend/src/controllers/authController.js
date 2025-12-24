@@ -433,26 +433,27 @@ exports.enable2FA = catchAsync(async (req, res, next) => {
   }
 
   // Generate backup codes (8 codes)
-  const backupCodes = [];
+  // CRITICAL: Generate plain codes first, then hash for storage
+  const plainBackupCodes = [];
+  const hashedBackupCodes = [];
+
   for (let i = 0; i < 8; i++) {
-    const code = crypto.randomBytes(4).toString('hex').toUpperCase();
-    backupCodes.push({
-      code: crypto.createHash('sha256').update(code).digest('hex'),
+    const plainCode = crypto.randomBytes(4).toString('hex').toUpperCase();
+    plainBackupCodes.push(plainCode);
+
+    // Hash the code for secure storage
+    hashedBackupCodes.push({
+      code: crypto.createHash('sha256').update(plainCode).digest('hex'),
       used: false
     });
   }
 
-  // Enable 2FA
+  // Enable 2FA and store hashed backup codes
   user.twoFactorEnabled = true;
-  user.twoFactorBackupCodes = backupCodes;
+  user.twoFactorBackupCodes = hashedBackupCodes;
   await user.save({ validateBeforeSave: false });
 
-  // Return unhashed backup codes to user (only time they'll see them)
-  const plainBackupCodes = [];
-  for (let i = 0; i < 8; i++) {
-    plainBackupCodes.push(crypto.randomBytes(4).toString('hex').toUpperCase());
-  }
-
+  // Return plain backup codes to user (only time they'll see them)
   successResponse(res, 200, 'Two-factor authentication enabled successfully', {
     backupCodes: plainBackupCodes
   });
