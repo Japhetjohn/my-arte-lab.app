@@ -385,6 +385,46 @@ export function init2025Effects() {
 // ====================================
 
 /**
+ * Calculate profile completion percentage (0-100)
+ * Comprehensive scoring across all profile fields
+ */
+export function calculateProfileCompletionScore(creator) {
+    let completionScore = 0;
+    const fields = {
+        // Basic info (30 points total)
+        name: creator.name ? 5 : 0,
+        bio: (creator.bio && creator.bio.length >= 100) ? 10 : (creator.bio ? 5 : 0),
+        avatar: creator.avatar ? 5 : 0,
+        location: creator.location ? 5 : 0,
+        category: creator.role || creator.category ? 5 : 0,
+
+        // Portfolio & work samples (30 points total)
+        portfolio: creator.portfolio?.length >= 10 ? 15 :
+                   creator.portfolio?.length >= 5 ? 10 :
+                   creator.portfolio?.length >= 1 ? 5 : 0,
+        coverImage: creator.cover || creator.coverImage ? 5 : 0,
+        services: creator.services?.length >= 5 ? 10 :
+                  creator.services?.length >= 3 ? 7 :
+                  creator.services?.length >= 1 ? 4 : 0,
+
+        // Pricing & availability (20 points total)
+        hourlyRate: creator.price || creator.hourlyRate ? 10 : 0,
+        responseTime: creator.responseTime ? 10 : 0,
+
+        // Trust signals (20 points total)
+        verified: creator.verified || creator.isVerified ? 10 : 0,
+        completedJobs: creator.completedJobs >= 10 ? 10 :
+                       creator.completedJobs >= 5 ? 7 :
+                       creator.completedJobs >= 1 ? 4 : 0
+    };
+
+    // Sum all field scores
+    completionScore = Object.values(fields).reduce((sum, val) => sum + val, 0);
+
+    return Math.min(completionScore, 100);
+}
+
+/**
  * Calculate creator quality score (0-100)
  * Production-ready algorithm based on Fiverr/Upwork best practices
  * Factors: completion rate, ratings, response time, cancellations, repeat customers, activity
@@ -472,23 +512,47 @@ export function calculateCreatorScore(creator) {
         totalScore += 5;  // Default middle score
     }
 
-    // === 5. REPEAT CUSTOMER RATE (10 points) ===
+    // === 5. REPEAT CUSTOMER RATE (8 points) ===
     // Shows quality - like Fiverr's repeat business metric
     const repeatRate = totalCustomers > 0 ? (repeatCustomers / totalCustomers) * 100 : 0;
 
-    if (repeatRate >= 40) totalScore += 10;        // Exceptional
-    else if (repeatRate >= 30) totalScore += 8;    // Excellent
-    else if (repeatRate >= 20) totalScore += 6;    // Very good
-    else if (repeatRate >= 10) totalScore += 4;    // Good
+    if (repeatRate >= 40) totalScore += 8;        // Exceptional
+    else if (repeatRate >= 30) totalScore += 6;    // Excellent
+    else if (repeatRate >= 20) totalScore += 5;    // Very good
+    else if (repeatRate >= 10) totalScore += 3;    // Good
     else if (repeatRate >= 5) totalScore += 2;     // Some repeats
     // else 0 points
 
-    // === 6. VERIFICATION & TRUST (10 points) ===
+    // === 6. ACCEPTANCE RATE (7 points) ===
+    // Measures responsiveness to booking requests (like Upwork)
+    const acceptedJobs = creator.acceptedJobs || completedJobs;
+    const offeredJobs = creator.offeredJobs || totalJobs;
+    const acceptanceRate = offeredJobs > 0 ? (acceptedJobs / offeredJobs) * 100 : 100;
+
+    if (acceptanceRate >= 90) totalScore += 7;      // Excellent
+    else if (acceptanceRate >= 80) totalScore += 5; // Good
+    else if (acceptanceRate >= 70) totalScore += 3; // Acceptable
+    else if (acceptanceRate >= 60) totalScore += 1; // Low
+    // else 0 points - cherry-picking jobs
+
+    // === 7. ON-TIME DELIVERY RATE (7 points) ===
+    // Critical quality metric on all platforms
+    const onTimeDeliveries = creator.onTimeDeliveries || 0;
+    const onTimeRate = completedJobs > 0 ? (onTimeDeliveries / completedJobs) * 100 : 100;
+
+    if (onTimeRate >= 98) totalScore += 7;       // Exceptional
+    else if (onTimeRate >= 95) totalScore += 6;  // Excellent
+    else if (onTimeRate >= 90) totalScore += 5;  // Very good
+    else if (onTimeRate >= 85) totalScore += 3;  // Good
+    else if (onTimeRate >= 75) totalScore += 1;  // Acceptable
+    // else 0 points - frequently late
+
+    // === 8. VERIFICATION & TRUST (8 points) ===
     if (creator.verified) {
-        totalScore += 10;
+        totalScore += 8;
     }
 
-    // === 7. ACTIVITY & RECENCY (10 points with penalties) ===
+    // === 9. ACTIVITY & RECENCY (10 points with penalties) ===
     if (creator.createdAt) {
         const daysSinceCreation = (Date.now() - new Date(creator.createdAt)) / (1000 * 60 * 60 * 24);
         const lastActiveDate = creator.lastActive ? new Date(creator.lastActive) : new Date(creator.createdAt);
@@ -516,18 +580,19 @@ export function calculateCreatorScore(creator) {
         }
     }
 
-    // === 8. PORTFOLIO & PROFILE COMPLETENESS (5 points) ===
-    const portfolioCount = creator.portfolio?.length || 0;
-    const servicesCount = creator.services?.length || 0;
+    // === 10. PORTFOLIO & PROFILE COMPLETENESS (10 points) ===
+    // Calculate comprehensive profile completion percentage
+    const profileCompletion = calculateProfileCompletionScore(creator);
 
-    let profileScore = 0;
-    if (portfolioCount >= 10 && servicesCount >= 5) profileScore = 5;
-    else if (portfolioCount >= 5 && servicesCount >= 3) profileScore = 3;
-    else if (portfolioCount >= 1 && servicesCount >= 1) profileScore = 1;
+    // Award points based on profile completion percentage
+    if (profileCompletion >= 90) totalScore += 10;       // Excellent profile
+    else if (profileCompletion >= 75) totalScore += 8;   // Very good profile
+    else if (profileCompletion >= 60) totalScore += 6;   // Good profile
+    else if (profileCompletion >= 40) totalScore += 4;   // Basic profile
+    else if (profileCompletion >= 20) totalScore += 2;   // Minimal profile
+    // else 0 points for very incomplete profiles
 
-    totalScore += profileScore;
-
-    // === 9. BONUS: TRENDING/MOMENTUM (up to +5 points) ===
+    // === 11. BONUS: TRENDING/MOMENTUM (up to +5 points) ===
     // Recent performance trending up gets boost (like Fiverr's algorithm)
     if (completedJobs >= 3) {
         const recentJobs = Math.min(completedJobs, 5); // Last 5 jobs
@@ -619,5 +684,65 @@ export function sortCreatorsByRelevance(creators) {
         const scoreA = calculateCreatorScore(a);
         const scoreB = calculateCreatorScore(b);
         return scoreB - scoreA; // Highest score first
+    });
+}
+
+/**
+ * Sort creators by response time (fastest first)
+ */
+export function sortCreatorsByResponseTime(creators) {
+    const responseTimeValue = (timeStr) => {
+        if (!timeStr) return 999; // Unknown goes to end
+        const str = timeStr.toLowerCase();
+        if (str.includes('minute')) return 1;
+        if (str.includes('< 1 hour') || str.includes('1 hour')) return 2;
+        if (str.includes('2 hour') || str.includes('few hour')) return 3;
+        if (str.includes('4 hour')) return 4;
+        if (str.includes('day') || str.includes('24')) return 5;
+        if (str.includes('2 day') || str.includes('48')) return 6;
+        return 7;
+    };
+
+    return creators.sort((a, b) => {
+        const timeA = responseTimeValue(a.responseTime);
+        const timeB = responseTimeValue(b.responseTime);
+        return timeA - timeB; // Faster response first
+    });
+}
+
+/**
+ * Sort creators by rating (highest first)
+ */
+export function sortCreatorsByRating(creators) {
+    return creators.sort((a, b) => {
+        const ratingA = parseFloat(a.rating) || 0;
+        const ratingB = parseFloat(b.rating) || 0;
+        // If ratings are equal, use review count as tiebreaker
+        if (ratingA === ratingB) {
+            return (b.reviewCount || 0) - (a.reviewCount || 0);
+        }
+        return ratingB - ratingA; // Highest rating first
+    });
+}
+
+/**
+ * Sort creators by completed jobs (most experienced first)
+ */
+export function sortCreatorsByExperience(creators) {
+    return creators.sort((a, b) => {
+        const jobsA = a.completedJobs || 0;
+        const jobsB = b.completedJobs || 0;
+        return jobsB - jobsA; // Most jobs first
+    });
+}
+
+/**
+ * Sort creators by recent activity (most recent first)
+ */
+export function sortCreatorsByActivity(creators) {
+    return creators.sort((a, b) => {
+        const lastActiveA = a.lastActive ? new Date(a.lastActive).getTime() : 0;
+        const lastActiveB = b.lastActive ? new Date(b.lastActive).getTime() : 0;
+        return lastActiveB - lastActiveA; // Most recent first
     });
 }
