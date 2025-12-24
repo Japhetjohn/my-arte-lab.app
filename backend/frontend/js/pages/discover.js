@@ -57,11 +57,9 @@ async function loadCreators() {
     try {
         const filters = {};
 
+        // Only send category and verified to API, handle search client-side
         if (currentFilters.category) {
             filters.category = currentFilters.category;
-        }
-        if (currentFilters.search) {
-            filters.search = currentFilters.search;
         }
         if (currentFilters.verified) {
             filters.verified = true;
@@ -70,7 +68,7 @@ async function loadCreators() {
         const response = await api.getCreators(filters);
 
         if (response.success) {
-            creators = (response.data || []).map(creator => ({
+            let allCreators = (response.data || []).map(creator => ({
                 id: creator._id,
                 name: creator.name || 'Unknown Creator',
                 avatar: creator.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name || 'User')}&background=9747FF&color=fff&bold=true`,
@@ -88,6 +86,13 @@ async function loadCreators() {
                 completedJobs: creator.completedJobs || 0,
                 createdAt: creator.createdAt
             }));
+
+            // Apply client-side search filter across all fields
+            if (currentFilters.search) {
+                creators = searchCreators(allCreators, currentFilters.search);
+            } else {
+                creators = allCreators;
+            }
 
             appState.creators = creators;
 
@@ -117,16 +122,32 @@ async function loadCreators() {
 function renderCreatorsList() {
     const resultsContainer = document.getElementById('discoverResults');
 
-    // Update filter chips active states
+    // Update filter chips active states - allow multiple filters to be active
     document.querySelectorAll('.filter-chip').forEach(chip => {
-        chip.classList.remove('active');
         const filter = chip.dataset.filter;
-        if (filter === 'all' && !currentFilters.category) {
-            chip.classList.add('active');
+
+        // Handle verified filter independently
+        if (filter === 'verified') {
+            if (currentFilters.verified) {
+                chip.classList.add('active');
+            } else {
+                chip.classList.remove('active');
+            }
+        }
+        // Handle category filters
+        else if (filter === 'all') {
+            if (!currentFilters.category) {
+                chip.classList.add('active');
+            } else {
+                chip.classList.remove('active');
+            }
         } else if (filter === currentFilters.category) {
             chip.classList.add('active');
-        } else if (filter === 'verified' && currentFilters.verified) {
-            chip.classList.add('active');
+        } else {
+            // Only remove active if it's a category chip (not verified)
+            if (filter !== 'verified') {
+                chip.classList.remove('active');
+            }
         }
     });
 
@@ -190,16 +211,44 @@ function setupFilterListeners() {
             const filter = e.currentTarget.dataset.filter;
 
             if (filter === 'all') {
+                // Clear category filter only, keep verified filter
                 currentFilters.category = '';
                 await loadCreators();
             } else if (filter === 'verified') {
+                // Toggle verified filter independently
                 currentFilters.verified = !currentFilters.verified;
                 await loadCreators();
             } else {
+                // Set category filter, keep verified filter
                 currentFilters.category = filter;
                 await loadCreators();
             }
         });
+    });
+}
+
+// Smart search function that searches across all creator fields
+function searchCreators(allCreators, query) {
+    if (!query || query.trim() === '') {
+        return allCreators;
+    }
+
+    const searchTerms = query.toLowerCase().trim().split(' ').filter(term => term.length > 0);
+
+    return allCreators.filter(creator => {
+        // Build searchable text from all creator fields
+        const searchableText = [
+            creator.name,
+            creator.role,
+            creator.bio,
+            creator.location,
+            ...(creator.services || []),
+            ...(creator.portfolio || []).map(p => p.title || p.description || '').join(' ')
+        ].join(' ').toLowerCase();
+
+        // Check if ALL search terms are found (AND logic)
+        // This allows searches like "photographer lagos" to work
+        return searchTerms.every(term => searchableText.includes(term));
     });
 }
 

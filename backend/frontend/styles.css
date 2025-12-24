@@ -690,13 +690,34 @@ p {
 }
 
 .stars {
-    color: #FFA500;
+    display: inline-flex;
+    gap: 2px;
     font-size: 16px;
+}
+
+.star {
+    display: inline-block;
+}
+
+.star.filled {
+    color: #FFA500;
+}
+
+.star.half {
+    background: linear-gradient(90deg, #FFA500 50%, #DDD 50%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.star.empty {
+    color: #DDD;
 }
 
 .rating-count {
     color: var(--text-secondary);
     font-size: var(--size-caption);
+    font-weight: 500;
 }
 
 .creator-price {
@@ -3263,11 +3284,48 @@ select:focus-visible {
 
 /* Responsive Bento Grid */
 @media (max-width: 768px) {
+    .bento-grid {
+        gap: 20px;
+        grid-template-columns: 1fr;
+    }
+
     .bento-large,
     .bento-medium,
     .bento-stats {
         grid-column: span 12 !important;
         grid-row: span 1 !important;
+        padding: 28px 24px !important;
+    }
+
+    .bento-title {
+        font-size: 20px !important;
+    }
+
+    .bento-description {
+        font-size: 15px !important;
+        line-height: 1.7 !important;
+    }
+
+    .bento-icon-large {
+        width: 64px !important;
+        height: 64px !important;
+        margin-bottom: 20px !important;
+    }
+
+    .bento-icon-large svg {
+        width: 48px !important;
+        height: 48px !important;
+    }
+
+    .bento-icon {
+        width: 56px !important;
+        height: 56px !important;
+        margin-bottom: 16px !important;
+    }
+
+    .bento-icon svg {
+        width: 40px !important;
+        height: 40px !important;
     }
 }
 

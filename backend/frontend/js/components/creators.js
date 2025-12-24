@@ -3,6 +3,33 @@ import { updateBackButton } from '../navigation.js';
 import api from '../services/api.js';
 import { formatLocation } from '../utils/formatters.js';
 
+// Generate star rating HTML based on numeric rating
+function renderStars(rating) {
+    const numRating = parseFloat(rating) || 0;
+    const fullStars = Math.floor(numRating);
+    const hasHalfStar = numRating % 1 >= 0.5;
+    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+
+    let starsHTML = '';
+
+    // Add full stars
+    for (let i = 0; i < fullStars; i++) {
+        starsHTML += '<span class="star filled">★</span>';
+    }
+
+    // Add half star if needed
+    if (hasHalfStar) {
+        starsHTML += '<span class="star half">★</span>';
+    }
+
+    // Add empty stars
+    for (let i = 0; i < emptyStars; i++) {
+        starsHTML += '<span class="star empty">★</span>';
+    }
+
+    return starsHTML;
+}
+
 export function renderCreatorCards(creators) {
     return creators.map((creator, index) => `
         <div class="creator-card card-entrance card-lift dynamic-light grid-item-${(index % 6) + 1}" data-creator-id="${creator.id}">
@@ -28,8 +55,8 @@ export function renderCreatorCards(creators) {
                     ${typeof creator.location === 'object' ? formatLocation(creator.location) : creator.location}
                 </div>
                 <div class="creator-rating">
-                    <span class="stars">★★★★★</span>
-                    <span class="rating-count">${creator.rating} (${creator.reviewCount})</span>
+                    <span class="stars">${renderStars(creator.rating)}</span>
+                    <span class="rating-count">${creator.rating} ${creator.reviewCount > 0 ? `(${creator.reviewCount})` : '(No reviews yet)'}</span>
                 </div>
                 <div class="creator-price">${creator.price}</div>
                 <div class="creator-actions">

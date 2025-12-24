@@ -73,24 +73,6 @@ export async function renderHomePage() {
                             Book creators instantly. Get responses within 24 hours or less.
                         </p>
                     </div>
-
-                    <!-- Stats card -->
-                    <div class="bento-item bento-stats card-lift scroll-fade-in scroll-fade-in-delay-3 dynamic-light">
-                        <div class="stats-grid">
-                            <div class="stat-item">
-                                <div class="stat-number animate-counter">500+</div>
-                                <div class="stat-label">Creators</div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-number animate-counter">1000+</div>
-                                <div class="stat-label">Projects</div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-number animate-counter">98%</div>
-                                <div class="stat-label">Satisfaction</div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
 
                 <div style="margin-top: 60px; text-align: center;">
