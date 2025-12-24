@@ -24,4 +24,11 @@ router.put('/update-profile', validateProfileUpdate, handleValidationErrors, aut
 router.delete('/delete-account', authController.deleteAccount);
 router.post('/resend-verification', authController.resendVerification);
 
+// Two-Factor Authentication routes
+router.post('/2fa/setup', authController.setup2FA);
+router.post('/2fa/enable', authController.enable2FA);
+router.post('/2fa/disable', authController.disable2FA);
+router.get('/2fa/status', authController.get2FAStatus);
+router.post('/2fa/regenerate-backup-codes', authController.regenerateBackupCodes);
+
 module.exports = router;

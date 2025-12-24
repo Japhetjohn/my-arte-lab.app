@@ -358,3 +358,277 @@ exports.resendVerification = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Failed to send verification email', 500));
   }
 });
+
+// ====================================
+// TWO-FACTOR AUTHENTICATION (2FA)
+// ====================================
+
+const speakeasy = require('speakeasy');
+const QRCode = require('qrcode');
+
+/**
+ * Setup 2FA - Generate secret and QR code
+ * @route   POST /api/auth/2fa/setup
+ * @access  Private
+ */
+exports.setup2FA = catchAsync(async (req, res, next) => {
+  const user = await User.findById(req.user._id).select('+twoFactorSecret');
+
+  if (user.twoFactorEnabled) {
+    return next(new ErrorHandler('Two-factor authentication is already enabled', 400));
+  }
+
+  // Generate secret
+  const secret = speakeasy.generateSecret({
+    name: `MyArteLab (${user.email})`,
+    length: 32
+  });
+
+  // Generate QR code
+  const qrCodeUrl = await QRCode.toDataURL(secret.otpauth_url);
+
+  // Save secret temporarily (will be confirmed when user verifies)
+  user.twoFactorSecret = secret.base32;
+  await user.save({ validateBeforeSave: false });
+
+  successResponse(res, 200, '2FA setup initiated', {
+    secret: secret.base32,
+    qrCode: qrCodeUrl,
+    manualEntryKey: secret.base32
+  });
+});
+
+/**
+ * Enable 2FA - Verify code and activate 2FA
+ * @route   POST /api/auth/2fa/enable
+ * @access  Private
+ */
+exports.enable2FA = catchAsync(async (req, res, next) => {
+  const { code } = req.body;
+
+  if (!code || code.length !== 6) {
+    return next(new ErrorHandler('Please provide a valid 6-digit code', 400));
+  }
+
+  const user = await User.findById(req.user._id).select('+twoFactorSecret');
+
+  if (!user.twoFactorSecret) {
+    return next(new ErrorHandler('Please setup 2FA first', 400));
+  }
+
+  if (user.twoFactorEnabled) {
+    return next(new ErrorHandler('Two-factor authentication is already enabled', 400));
+  }
+
+  // Verify the code
+  const verified = speakeasy.totp.verify({
+    secret: user.twoFactorSecret,
+    encoding: 'base32',
+    token: code,
+    window: 2 // Allow 2 time steps before/after for clock skew
+  });
+
+  if (!verified) {
+    return next(new ErrorHandler('Invalid verification code', 400));
+  }
+
+  // Generate backup codes (8 codes)
+  const backupCodes = [];
+  for (let i = 0; i < 8; i++) {
+    const code = crypto.randomBytes(4).toString('hex').toUpperCase();
+    backupCodes.push({
+      code: crypto.createHash('sha256').update(code).digest('hex'),
+      used: false
+    });
+  }
+
+  // Enable 2FA
+  user.twoFactorEnabled = true;
+  user.twoFactorBackupCodes = backupCodes;
+  await user.save({ validateBeforeSave: false });
+
+  // Return unhashed backup codes to user (only time they'll see them)
+  const plainBackupCodes = [];
+  for (let i = 0; i < 8; i++) {
+    plainBackupCodes.push(crypto.randomBytes(4).toString('hex').toUpperCase());
+  }
+
+  successResponse(res, 200, 'Two-factor authentication enabled successfully', {
+    backupCodes: plainBackupCodes
+  });
+});
+
+/**
+ * Disable 2FA
+ * @route   POST /api/auth/2fa/disable
+ * @access  Private
+ */
+exports.disable2FA = catchAsync(async (req, res, next) => {
+  const { password } = req.body;
+
+  if (!password) {
+    return next(new ErrorHandler('Please provide your password', 400));
+  }
+
+  const user = await User.findById(req.user._id).select('+password +twoFactorSecret');
+
+  if (!user.twoFactorEnabled) {
+    return next(new ErrorHandler('Two-factor authentication is not enabled', 400));
+  }
+
+  // Verify password
+  const isPasswordCorrect = await user.comparePassword(password);
+  if (!isPasswordCorrect) {
+    return next(new ErrorHandler('Incorrect password', 401));
+  }
+
+  // Disable 2FA
+  user.twoFactorEnabled = false;
+  user.twoFactorSecret = undefined;
+  user.twoFactorBackupCodes = [];
+  await user.save({ validateBeforeSave: false });
+
+  successResponse(res, 200, 'Two-factor authentication disabled successfully');
+});
+
+/**
+ * Verify 2FA code during login
+ * @route   POST /api/auth/2fa/verify
+ * @access  Public (but requires valid login session)
+ */
+exports.verify2FACode = catchAsync(async (req, res, next) => {
+  const { userId, code } = req.body;
+
+  if (!code || code.length !== 6) {
+    return next(new ErrorHandler('Please provide a valid 6-digit code', 400));
+  }
+
+  const user = await User.findById(userId).select('+twoFactorSecret');
+
+  if (!user || !user.twoFactorEnabled) {
+    return next(new ErrorHandler('Invalid request', 400));
+  }
+
+  // Try to verify with TOTP first
+  const verified = speakeasy.totp.verify({
+    secret: user.twoFactorSecret,
+    encoding: 'base32',
+    token: code,
+    window: 2
+  });
+
+  if (verified) {
+    const token = generateToken(user._id);
+    const refreshToken = generateRefreshToken(user._id);
+
+    user.lastLogin = Date.now();
+    await user.save({ validateBeforeSave: false });
+
+    return successResponse(res, 200, 'Login successful', {
+      token,
+      refreshToken,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        avatar: user.avatar,
+        isEmailVerified: user.isEmailVerified
+      }
+    });
+  }
+
+  // If TOTP fails, try backup codes
+  const hashedCode = crypto.createHash('sha256').update(code).digest('hex');
+  const backupCodeIndex = user.twoFactorBackupCodes.findIndex(
+    bc => bc.code === hashedCode && !bc.used
+  );
+
+  if (backupCodeIndex !== -1) {
+    // Mark backup code as used
+    user.twoFactorBackupCodes[backupCodeIndex].used = true;
+    user.twoFactorBackupCodes[backupCodeIndex].usedAt = Date.now();
+    user.lastLogin = Date.now();
+    await user.save({ validateBeforeSave: false });
+
+    const token = generateToken(user._id);
+    const refreshToken = generateRefreshToken(user._id);
+
+    return successResponse(res, 200, 'Login successful (backup code used)', {
+      token,
+      refreshToken,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        avatar: user.avatar,
+        isEmailVerified: user.isEmailVerified
+      },
+      backupCodesRemaining: user.twoFactorBackupCodes.filter(bc => !bc.used).length
+    });
+  }
+
+  return next(new ErrorHandler('Invalid verification code', 401));
+});
+
+/**
+ * Get 2FA status
+ * @route   GET /api/auth/2fa/status
+ * @access  Private
+ */
+exports.get2FAStatus = catchAsync(async (req, res, next) => {
+  const user = await User.findById(req.user._id);
+
+  successResponse(res, 200, '2FA status retrieved', {
+    enabled: user.twoFactorEnabled,
+    backupCodesRemaining: user.twoFactorEnabled
+      ? user.twoFactorBackupCodes.filter(bc => !bc.used).length
+      : 0
+  });
+});
+
+/**
+ * Regenerate backup codes
+ * @route   POST /api/auth/2fa/regenerate-backup-codes
+ * @access  Private
+ */
+exports.regenerateBackupCodes = catchAsync(async (req, res, next) => {
+  const { password } = req.body;
+
+  if (!password) {
+    return next(new ErrorHandler('Please provide your password', 400));
+  }
+
+  const user = await User.findById(req.user._id).select('+password');
+
+  if (!user.twoFactorEnabled) {
+    return next(new ErrorHandler('Two-factor authentication is not enabled', 400));
+  }
+
+  // Verify password
+  const isPasswordCorrect = await user.comparePassword(password);
+  if (!isPasswordCorrect) {
+    return next(new ErrorHandler('Incorrect password', 401));
+  }
+
+  // Generate new backup codes
+  const backupCodes = [];
+  const plainBackupCodes = [];
+
+  for (let i = 0; i < 8; i++) {
+    const code = crypto.randomBytes(4).toString('hex').toUpperCase();
+    plainBackupCodes.push(code);
+    backupCodes.push({
+      code: crypto.createHash('sha256').update(code).digest('hex'),
+      used: false
+    });
+  }
+
+  user.twoFactorBackupCodes = backupCodes;
+  await user.save({ validateBeforeSave: false });
+
+  successResponse(res, 200, 'Backup codes regenerated successfully', {
+    backupCodes: plainBackupCodes
+  });
+});

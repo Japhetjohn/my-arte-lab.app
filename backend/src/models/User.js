@@ -251,6 +251,27 @@ const userSchema = new mongoose.Schema({
   loginAttempts: { type: Number, default: 0 },
   lockUntil: Date,
 
+  // Two-Factor Authentication
+  twoFactorSecret: {
+    type: String,
+    select: false // Don't include in queries by default for security
+  },
+  twoFactorEnabled: {
+    type: Boolean,
+    default: false
+  },
+  twoFactorBackupCodes: [{
+    code: {
+      type: String,
+      required: true
+    },
+    used: {
+      type: Boolean,
+      default: false
+    },
+    usedAt: Date
+  }],
+
   lastLogin: Date,
   lastActive: Date,
 

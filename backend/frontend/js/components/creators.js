@@ -616,7 +616,7 @@ export function renderCategories(categoryCounts = {}) {
         <div class="category-card ${isClickable ? 'category-card-clickable' : ''}" ${isClickable ? `onclick="window.filterByCategory('${categoryKey}')" style="cursor: pointer;"` : ''}>
             <div class="category-icon">${category.icon}</div>
             <div class="category-name">${category.name}</div>
-            <div class="category-count">${category.count > 0 ? `${category.count.toLocaleString()} creator${category.count !== 1 ? 's' : ''}` : 'Coming soon'}</div>
+            <div class="category-count">${category.count > 0 ? `${category.count.toLocaleString()} creator${category.count !== 1 ? 's' : ''}` : 'No creators yet'}</div>
         </div>
         `;
     }).join('');

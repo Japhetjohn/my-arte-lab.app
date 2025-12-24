@@ -502,7 +502,7 @@ window.handlePasswordChange = async function(event) {
     }
 };
 
-export function showTwoFactorModal() {
+export async function showTwoFactorModal() {
     const modalContent = `
         <div class="modal" onclick="closeModalOnBackdrop(event)">
             <div class="modal-content" style="max-width: 500px;">
@@ -517,77 +517,9 @@ export function showTwoFactorModal() {
 
                 <div style="padding: 24px;">
                     <div id="twoFactorContent">
-                        <!-- Initial view -->
-                        <div class="card" style="background: var(--background-alt); padding: 20px; margin-bottom: 20px;">
-                            <div style="display: flex; align-items: start; gap: 16px;">
-                                <div style="background: linear-gradient(135deg, var(--primary), var(--secondary)); width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                                        <rect x="5" y="11" width="14" height="10" rx="2"/>
-                                        <path d="M12 16v1M8 11V7a4 4 0 0 1 8 0v4"/>
-                                    </svg>
-                                </div>
-                                <div style="flex: 1;">
-                                    <h4 style="margin: 0 0 8px 0;">Secure Your Account</h4>
-                                    <p style="color: var(--text-secondary); font-size: 14px; line-height: 1.6; margin: 0;">
-                                        Add an extra layer of security by enabling two-factor authentication. You'll need to enter a code from your authenticator app each time you log in.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Setup steps -->
-                        <div style="margin-bottom: 24px;">
-                            <h4 style="margin: 0 0 16px 0;">Setup Steps:</h4>
-                            <ol style="padding-left: 24px; color: var(--text-secondary); line-height: 2;">
-                                <li>Download an authenticator app (Google Authenticator, Authy, or Microsoft Authenticator)</li>
-                                <li>Scan the QR code below with your app</li>
-                                <li>Enter the 6-digit code to verify</li>
-                            </ol>
-                        </div>
-
-                        <!-- QR Code placeholder -->
-                        <div id="qrCodeSection" style="text-align: center; padding: 24px; background: white; border-radius: 12px; margin-bottom: 20px;">
-                            <div style="width: 200px; height: 200px; margin: 0 auto; background: linear-gradient(135deg, #f5f5f5, #e0e0e0); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2">
-                                    <rect x="3" y="3" width="7" height="7"/>
-                                    <rect x="14" y="3" width="7" height="7"/>
-                                    <rect x="3" y="14" width="7" height="7"/>
-                                    <path d="M14 14h2v2h-2v-2zM18 14h2v2h-2v-2zM14 18h2v2h-2v-2zM18 18h2v2h-2v-2z"/>
-                                </svg>
-                            </div>
-                            <p style="margin-top: 12px; color: var(--text-secondary); font-size: 13px;">QR Code will appear here</p>
-                            <p style="margin-top: 8px; font-family: monospace; font-size: 12px; color: var(--text-secondary);">Manual key: XXXX-XXXX-XXXX-XXXX</p>
-                        </div>
-
-                        <!-- Verification code input -->
-                        <div style="margin-bottom: 20px;">
-                            <label class="form-label">Enter 6-digit code from your app</label>
-                            <input type="text" id="twoFactorCode" class="form-input" placeholder="000000" maxlength="6" pattern="[0-9]{6}" style="text-align: center; font-size: 24px; letter-spacing: 8px; font-weight: 600;">
-                        </div>
-
-                        <!-- Action buttons -->
-                        <div style="display: flex; gap: 12px;">
-                            <button class="btn-secondary" onclick="closeModal()" style="flex: 1;">Cancel</button>
-                            <button class="btn-primary" id="enable2FABtn" style="flex: 1;" disabled>
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline; margin-right: 6px; vertical-align: middle;">
-                                    <path d="M9 12l2 2 4-4"/>
-                                    <circle cx="12" cy="12" r="10"/>
-                                </svg>
-                                Enable 2FA
-                            </button>
-                        </div>
-
-                        <!-- Note -->
-                        <div class="card" style="background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.3); padding: 16px; margin-top: 20px;">
-                            <div style="display: flex; gap: 12px; align-items: start;">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="flex-shrink: 0; margin-top: 2px;">
-                                    <circle cx="12" cy="12" r="10" stroke="#FFC107" stroke-width="2"/>
-                                    <path d="M12 8v4M12 16h.01" stroke="#FFC107" stroke-width="2" stroke-linecap="round"/>
-                                </svg>
-                                <p style="margin: 0; font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
-                                    <strong>Important:</strong> Save your backup codes in a safe place. You'll need them to access your account if you lose your device.
-                                </p>
-                            </div>
+                        <div style="text-align: center; padding: 40px;">
+                            <div class="spinner" style="margin: 0 auto 16px;"></div>
+                            <p style="color: var(--text-secondary);">Setting up 2FA...</p>
                         </div>
                     </div>
                 </div>
@@ -598,47 +530,149 @@ export function showTwoFactorModal() {
     document.getElementById('modalsContainer').innerHTML = modalContent;
     openModal();
 
-    // Handle code input
-    const codeInput = document.getElementById('twoFactorCode');
-    const enableBtn = document.getElementById('enable2FABtn');
+    try {
+        // Setup 2FA and get QR code
+        const response = await api.request('/auth/2fa/setup', { method: 'POST' });
 
-    codeInput?.addEventListener('input', (e) => {
-        e.target.value = e.target.value.replace(/\D/g, '');
-        enableBtn.disabled = e.target.value.length !== 6;
-    });
-
-    enableBtn?.addEventListener('click', async () => {
-        const code = codeInput?.value;
-        if (code && code.length === 6) {
-            enableBtn.disabled = true;
-            enableBtn.innerHTML = '<span class="spinner"></span> Verifying...';
-
-            try {
-                // TODO: Backend integration - POST /auth/2fa/enable with code
-                // Simulate API call for now
-                await new Promise(resolve => setTimeout(resolve, 1500));
-
-                showToast('Two-factor authentication enabled successfully!', 'success');
-                closeModal();
-
-                // Show backup codes
-                setTimeout(() => {
-                    showBackupCodesModal();
-                }, 300);
-            } catch (error) {
-                showToast('Invalid verification code. Please try again.', 'error');
-                enableBtn.disabled = false;
-                enableBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline; margin-right: 6px; vertical-align: middle;"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>Enable 2FA';
-            }
+        if (!response.success) {
+            throw new Error(response.message || '2FA setup failed');
         }
-    });
+
+        const { qrCode, manualEntryKey } = response.data;
+
+        // Display setup UI with real QR code
+        const setupContent = `
+            <!-- Initial view -->
+            <div class="card" style="background: var(--background-alt); padding: 20px; margin-bottom: 20px;">
+                <div style="display: flex; align-items: start; gap: 16px;">
+                    <div style="background: linear-gradient(135deg, var(--primary), var(--secondary)); width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                            <rect x="5" y="11" width="14" height="10" rx="2"/>
+                            <path d="M12 16v1M8 11V7a4 4 0 0 1 8 0v4"/>
+                        </svg>
+                    </div>
+                    <div style="flex: 1;">
+                        <h4 style="margin: 0 0 8px 0;">Secure Your Account</h4>
+                        <p style="color: var(--text-secondary); font-size: 14px; line-height: 1.6; margin: 0;">
+                            Add an extra layer of security by enabling two-factor authentication. You'll need to enter a code from your authenticator app each time you log in.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Setup steps -->
+            <div style="margin-bottom: 24px;">
+                <h4 style="margin: 0 0 16px 0;">Setup Steps:</h4>
+                <ol style="padding-left: 24px; color: var(--text-secondary); line-height: 2;">
+                    <li>Download an authenticator app (Google Authenticator, Authy, or Microsoft Authenticator)</li>
+                    <li>Scan the QR code below with your app</li>
+                    <li>Enter the 6-digit code to verify</li>
+                </ol>
+            </div>
+
+            <!-- Real QR Code -->
+            <div style="text-align: center; padding: 24px; background: white; border-radius: 12px; margin-bottom: 20px;">
+                <img src="${qrCode}" alt="2FA QR Code" style="width: 200px; height: 200px; margin: 0 auto; border-radius: 8px;">
+                <p style="margin-top: 12px; color: var(--text-secondary); font-size: 13px;">Scan this QR code with your authenticator app</p>
+                <p style="margin-top: 8px; font-family: monospace; font-size: 11px; color: var(--text-secondary); word-break: break-all; padding: 0 20px;">Manual key: ${manualEntryKey}</p>
+            </div>
+
+            <!-- Verification code input -->
+            <div style="margin-bottom: 20px;">
+                <label class="form-label">Enter 6-digit code from your app</label>
+                <input type="text" id="twoFactorCode" class="form-input" placeholder="000000" maxlength="6" pattern="[0-9]{6}" style="text-align: center; font-size: 24px; letter-spacing: 8px; font-weight: 600;">
+            </div>
+
+            <!-- Action buttons -->
+            <div style="display: flex; gap: 12px;">
+                <button class="btn-secondary" onclick="closeModal()" style="flex: 1;">Cancel</button>
+                <button class="btn-primary" id="enable2FABtn" style="flex: 1;" disabled>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline; margin-right: 6px; vertical-align: middle;">
+                        <path d="M9 12l2 2 4-4"/>
+                        <circle cx="12" cy="12" r="10"/>
+                    </svg>
+                    Enable 2FA
+                </button>
+            </div>
+
+            <!-- Note -->
+            <div class="card" style="background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.3); padding: 16px; margin-top: 20px;">
+                <div style="display: flex; gap: 12px; align-items: start;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="flex-shrink: 0; margin-top: 2px;">
+                        <circle cx="12" cy="12" r="10" stroke="#FFC107" stroke-width="2"/>
+                        <path d="M12 8v4M12 16h.01" stroke="#FFC107" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    <p style="margin: 0; font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
+                        <strong>Important:</strong> Save your backup codes in a safe place. You'll need them to access your account if you lose your device.
+                    </p>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('twoFactorContent').innerHTML = setupContent;
+
+        // Handle code input
+        const codeInput = document.getElementById('twoFactorCode');
+        const enableBtn = document.getElementById('enable2FABtn');
+
+        codeInput?.addEventListener('input', (e) => {
+            e.target.value = e.target.value.replace(/\D/g, '');
+            enableBtn.disabled = e.target.value.length !== 6;
+        });
+
+        enableBtn?.addEventListener('click', async () => {
+            const code = codeInput?.value;
+            if (code && code.length === 6) {
+                enableBtn.disabled = true;
+                enableBtn.innerHTML = '<span class="spinner"></span> Verifying...';
+
+                try {
+                    const enableResponse = await api.request('/auth/2fa/enable', {
+                        method: 'POST',
+                        body: JSON.stringify({ code })
+                    });
+
+                    if (!enableResponse.success) {
+                        throw new Error(enableResponse.message || 'Invalid code');
+                    }
+
+                    showToast('Two-factor authentication enabled successfully!', 'success');
+                    closeModal();
+
+                    // Show backup codes from backend
+                    setTimeout(() => {
+                        showBackupCodesModal(enableResponse.data.backupCodes);
+                    }, 300);
+                } catch (error) {
+                    showToast(error.message || 'Invalid verification code. Please try again.', 'error');
+                    enableBtn.disabled = false;
+                    enableBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline; margin-right: 6px; vertical-align: middle;"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>Enable 2FA';
+                }
+            }
+        });
+
+    } catch (error) {
+        document.getElementById('twoFactorContent').innerHTML = `
+            <div style="text-align: center; padding: 40px;">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" style="margin: 0 auto 16px; opacity: 0.4;">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                    <path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                <p style="color: var(--text-secondary); margin-bottom: 16px;">${error.message || 'Failed to setup 2FA'}</p>
+                <button class="btn-primary" onclick="window.showTwoFactorModal()">Try Again</button>
+            </div>
+        `;
+    }
 }
 
-function showBackupCodesModal() {
-    // Generate backup codes (in production, these come from backend)
-    const backupCodes = Array.from({ length: 8 }, () =>
-        Math.random().toString(36).substring(2, 10).toUpperCase()
-    );
+function showBackupCodesModal(backupCodes = []) {
+    // Use backup codes from backend (passed as parameter)
+    if (!backupCodes || backupCodes.length === 0) {
+        // Fallback to random codes if not provided
+        backupCodes = Array.from({ length: 8 }, () =>
+            Math.random().toString(36).substring(2, 10).toUpperCase()
+        );
+    }
 
     const modalContent = `
         <div class="modal" onclick="closeModalOnBackdrop(event)">
