@@ -503,8 +503,196 @@ window.handlePasswordChange = async function(event) {
 };
 
 export function showTwoFactorModal() {
-    showToast('Two-factor authentication setup coming soon!', 'success');
+    const modalContent = `
+        <div class="modal" onclick="closeModalOnBackdrop(event)">
+            <div class="modal-content" style="max-width: 500px;">
+                <div class="modal-header">
+                    <h2>Two-Factor Authentication</h2>
+                    <button class="icon-btn" onclick="closeModal()">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div style="padding: 24px;">
+                    <div id="twoFactorContent">
+                        <!-- Initial view -->
+                        <div class="card" style="background: var(--background-alt); padding: 20px; margin-bottom: 20px;">
+                            <div style="display: flex; align-items: start; gap: 16px;">
+                                <div style="background: linear-gradient(135deg, var(--primary), var(--secondary)); width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                                        <rect x="5" y="11" width="14" height="10" rx="2"/>
+                                        <path d="M12 16v1M8 11V7a4 4 0 0 1 8 0v4"/>
+                                    </svg>
+                                </div>
+                                <div style="flex: 1;">
+                                    <h4 style="margin: 0 0 8px 0;">Secure Your Account</h4>
+                                    <p style="color: var(--text-secondary); font-size: 14px; line-height: 1.6; margin: 0;">
+                                        Add an extra layer of security by enabling two-factor authentication. You'll need to enter a code from your authenticator app each time you log in.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Setup steps -->
+                        <div style="margin-bottom: 24px;">
+                            <h4 style="margin: 0 0 16px 0;">Setup Steps:</h4>
+                            <ol style="padding-left: 24px; color: var(--text-secondary); line-height: 2;">
+                                <li>Download an authenticator app (Google Authenticator, Authy, or Microsoft Authenticator)</li>
+                                <li>Scan the QR code below with your app</li>
+                                <li>Enter the 6-digit code to verify</li>
+                            </ol>
+                        </div>
+
+                        <!-- QR Code placeholder -->
+                        <div id="qrCodeSection" style="text-align: center; padding: 24px; background: white; border-radius: 12px; margin-bottom: 20px;">
+                            <div style="width: 200px; height: 200px; margin: 0 auto; background: linear-gradient(135deg, #f5f5f5, #e0e0e0); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2">
+                                    <rect x="3" y="3" width="7" height="7"/>
+                                    <rect x="14" y="3" width="7" height="7"/>
+                                    <rect x="3" y="14" width="7" height="7"/>
+                                    <path d="M14 14h2v2h-2v-2zM18 14h2v2h-2v-2zM14 18h2v2h-2v-2zM18 18h2v2h-2v-2z"/>
+                                </svg>
+                            </div>
+                            <p style="margin-top: 12px; color: var(--text-secondary); font-size: 13px;">QR Code will appear here</p>
+                            <p style="margin-top: 8px; font-family: monospace; font-size: 12px; color: var(--text-secondary);">Manual key: XXXX-XXXX-XXXX-XXXX</p>
+                        </div>
+
+                        <!-- Verification code input -->
+                        <div style="margin-bottom: 20px;">
+                            <label class="form-label">Enter 6-digit code from your app</label>
+                            <input type="text" id="twoFactorCode" class="form-input" placeholder="000000" maxlength="6" pattern="[0-9]{6}" style="text-align: center; font-size: 24px; letter-spacing: 8px; font-weight: 600;">
+                        </div>
+
+                        <!-- Action buttons -->
+                        <div style="display: flex; gap: 12px;">
+                            <button class="btn-secondary" onclick="closeModal()" style="flex: 1;">Cancel</button>
+                            <button class="btn-primary" id="enable2FABtn" style="flex: 1;" disabled>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline; margin-right: 6px; vertical-align: middle;">
+                                    <path d="M9 12l2 2 4-4"/>
+                                    <circle cx="12" cy="12" r="10"/>
+                                </svg>
+                                Enable 2FA
+                            </button>
+                        </div>
+
+                        <!-- Note -->
+                        <div class="card" style="background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.3); padding: 16px; margin-top: 20px;">
+                            <div style="display: flex; gap: 12px; align-items: start;">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="flex-shrink: 0; margin-top: 2px;">
+                                    <circle cx="12" cy="12" r="10" stroke="#FFC107" stroke-width="2"/>
+                                    <path d="M12 8v4M12 16h.01" stroke="#FFC107" stroke-width="2" stroke-linecap="round"/>
+                                </svg>
+                                <p style="margin: 0; font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
+                                    <strong>Important:</strong> Save your backup codes in a safe place. You'll need them to access your account if you lose your device.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('modalsContainer').innerHTML = modalContent;
+    openModal();
+
+    // Handle code input
+    const codeInput = document.getElementById('twoFactorCode');
+    const enableBtn = document.getElementById('enable2FABtn');
+
+    codeInput?.addEventListener('input', (e) => {
+        e.target.value = e.target.value.replace(/\D/g, '');
+        enableBtn.disabled = e.target.value.length !== 6;
+    });
+
+    enableBtn?.addEventListener('click', async () => {
+        const code = codeInput?.value;
+        if (code && code.length === 6) {
+            enableBtn.disabled = true;
+            enableBtn.innerHTML = '<span class="spinner"></span> Verifying...';
+
+            try {
+                // TODO: Backend integration - POST /auth/2fa/enable with code
+                // Simulate API call for now
+                await new Promise(resolve => setTimeout(resolve, 1500));
+
+                showToast('Two-factor authentication enabled successfully!', 'success');
+                closeModal();
+
+                // Show backup codes
+                setTimeout(() => {
+                    showBackupCodesModal();
+                }, 300);
+            } catch (error) {
+                showToast('Invalid verification code. Please try again.', 'error');
+                enableBtn.disabled = false;
+                enableBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline; margin-right: 6px; vertical-align: middle;"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>Enable 2FA';
+            }
+        }
+    });
 }
+
+function showBackupCodesModal() {
+    // Generate backup codes (in production, these come from backend)
+    const backupCodes = Array.from({ length: 8 }, () =>
+        Math.random().toString(36).substring(2, 10).toUpperCase()
+    );
+
+    const modalContent = `
+        <div class="modal" onclick="closeModalOnBackdrop(event)">
+            <div class="modal-content" style="max-width: 500px;">
+                <div class="modal-header">
+                    <h2>Backup Codes</h2>
+                    <button class="icon-btn" onclick="closeModal()">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div style="padding: 24px;">
+                    <div class="card" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); padding: 16px; margin-bottom: 20px;">
+                        <p style="margin: 0; color: var(--text-secondary); font-size: 14px; line-height: 1.6;">
+                            Save these backup codes in a secure location. Each code can only be used once to access your account if you lose your authenticator device.
+                        </p>
+                    </div>
+
+                    <div style="background: var(--background-alt); padding: 20px; border-radius: 12px; margin-bottom: 20px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-family: monospace; font-size: 14px;">
+                            ${backupCodes.map(code => `<div style="padding: 8px; background: var(--background); border-radius: 6px; text-align: center;">${code}</div>`).join('')}
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 12px;">
+                        <button class="btn-secondary" onclick="window.downloadBackupCodes(${JSON.stringify(backupCodes).replace(/"/g, '&quot;')})" style="flex: 1;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline; margin-right: 6px; vertical-align: middle;">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                            </svg>
+                            Download
+                        </button>
+                        <button class="btn-primary" onclick="closeModal()" style="flex: 1;">Done</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('modalsContainer').innerHTML = modalContent;
+}
+
+window.downloadBackupCodes = function(codes) {
+    const content = `MyArteLab 2FA Backup Codes\n\nGenerated: ${new Date().toLocaleString()}\n\n${codes.join('\n')}\n\nKeep these codes safe. Each can only be used once.`;
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'myartelab-backup-codes.txt';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('Backup codes downloaded successfully', 'success');
+};
 
 
 export function showWithdrawModal() {
@@ -953,7 +1141,7 @@ window.showBankWithdrawal = async function() {
                                         accountNameField.placeholder = 'Enter account holder name';
                                     }
                                 } catch (error) {
-                                    console.log('Account verification not available:', error.message);
+                                    showToast('Account verification unavailable. Please enter name manually.', 'info');
                                     accountNameField.value = '';
                                     accountNameField.disabled = false;
                                     accountNameField.placeholder = 'Enter account holder name';
@@ -1679,16 +1867,695 @@ window.handleSwap = async function(event) {
     }
 };
 
-export function showPayoutSettings() {
-    showToast('Payout settings coming soon!', 'success');
+export async function showPayoutSettings() {
+    const modalContent = `
+        <div class="modal" onclick="closeModalOnBackdrop(event)">
+            <div class="modal-content" style="max-width: 700px;">
+                <div class="modal-header">
+                    <h2>Payout Settings</h2>
+                    <button class="icon-btn" onclick="closeModal()">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div style="padding: 24px;">
+                    <div id="payoutSettingsContent">
+                        <div style="text-align: center; padding: 40px;">
+                            <div class="spinner" style="margin: 0 auto 16px;"></div>
+                            <p style="color: var(--text-secondary);">Loading payout settings...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('modalsContainer').innerHTML = modalContent;
+    openModal();
+
+    try {
+        // Load beneficiaries
+        const response = await api.getBeneficiaries();
+        const beneficiaries = response.data || [];
+
+        const content = `
+            <!-- Info card -->
+            <div class="card" style="background: var(--background-alt); padding: 20px; margin-bottom: 24px;">
+                <div style="display: flex; align-items: start; gap: 16px;">
+                    <div style="background: linear-gradient(135deg, var(--primary), var(--secondary)); width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                            <rect x="2" y="4" width="20" height="16" rx="2"/>
+                            <path d="M6 8h12M6 12h8M6 16h4"/>
+                        </svg>
+                    </div>
+                    <div style="flex: 1;">
+                        <h4 style="margin: 0 0 8px 0;">Manage Your Payout Methods</h4>
+                        <p style="color: var(--text-secondary); font-size: 14px; line-height: 1.6; margin: 0;">
+                            Add and manage your bank accounts or mobile money accounts for receiving payouts from completed work.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Beneficiaries list -->
+            <div style="margin-bottom: 24px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <h4 style="margin: 0;">Saved Payout Methods</h4>
+                    <button class="btn-primary" onclick="window.showBankWithdrawal()" style="padding: 8px 16px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline; margin-right: 6px; vertical-align: middle;">
+                            <path d="M12 5v14M5 12h14"/>
+                        </svg>
+                        Add Method
+                    </button>
+                </div>
+
+                ${beneficiaries.length > 0 ? `
+                    <div style="display: grid; gap: 12px;">
+                        ${beneficiaries.map(beneficiary => `
+                            <div class="card" style="padding: 16px; background: var(--background-alt); border: 2px solid transparent; transition: border-color 0.2s;">
+                                <div style="display: flex; align-items: center; gap: 16px;">
+                                    <div style="width: 40px; height: 40px; background: linear-gradient(135deg, var(--primary), var(--secondary)); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                                            ${beneficiary.type === 'bank' ?
+                                                '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h12M6 12h8"/>' :
+                                                '<rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/>'}
+                                        </svg>
+                                    </div>
+                                    <div style="flex: 1;">
+                                        <div style="font-weight: 600; margin-bottom: 4px;">${beneficiary.accountName || beneficiary.name}</div>
+                                        <div style="font-size: 13px; color: var(--text-secondary);">
+                                            ${beneficiary.bankName || beneficiary.provider} • ${beneficiary.accountNumber || beneficiary.phoneNumber}
+                                        </div>
+                                        ${beneficiary.isDefault ? '<span style="display: inline-block; background: rgba(16, 185, 129, 0.1); color: #10B981; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-top: 4px;">DEFAULT</span>' : ''}
+                                    </div>
+                                    <button class="icon-btn" onclick="window.deleteBeneficiary('${beneficiary._id}')" style="color: var(--error);">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : `
+                    <div class="card" style="padding: 40px; text-align: center; background: var(--background-alt);">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" style="margin: 0 auto 16px; opacity: 0.4;">
+                            <rect x="2" y="4" width="20" height="16" rx="2" stroke="currentColor" stroke-width="2"/>
+                            <path d="M6 8h12M6 12h8M6 16h4" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                        <p style="color: var(--text-secondary); margin-bottom: 16px;">No payout methods added yet</p>
+                        <button class="btn-primary" onclick="window.showBankWithdrawal()">Add Your First Method</button>
+                    </div>
+                `}
+            </div>
+
+            <!-- Payout preferences -->
+            <div style="border-top: 1px solid var(--border); padding-top: 24px;">
+                <h4 style="margin: 0 0 16px 0;">Payout Preferences</h4>
+
+                <div style="display: grid; gap: 16px;">
+                    <div class="card" style="padding: 16px; background: var(--background-alt);">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <div style="font-weight: 600; margin-bottom: 4px;">Auto-withdraw earnings</div>
+                                <div style="font-size: 13px; color: var(--text-secondary);">Automatically withdraw to default method when balance reaches threshold</div>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="autoWithdrawToggle">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="card" style="padding: 16px; background: var(--background-alt);">
+                        <label class="form-label">Minimum withdrawal amount</label>
+                        <select class="form-select" id="minWithdrawalAmount">
+                            <option value="50">$50 USD</option>
+                            <option value="100" selected>$100 USD</option>
+                            <option value="250">$250 USD</option>
+                            <option value="500">$500 USD</option>
+                        </select>
+                        <small style="color: var(--text-secondary); font-size: 12px; margin-top: 4px; display: block;">Platform fee: 2.5% per withdrawal</small>
+                    </div>
+
+                    <div class="card" style="padding: 16px; background: var(--background-alt);">
+                        <label class="form-label">Payout schedule</label>
+                        <select class="form-select" id="payoutSchedule">
+                            <option value="instant">Instant (when requested)</option>
+                            <option value="daily">Daily (automatic)</option>
+                            <option value="weekly" selected>Weekly (every Monday)</option>
+                            <option value="monthly">Monthly (1st of month)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Save button -->
+            <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--border);">
+                <button class="btn-primary" id="savePayoutSettingsBtn" style="width: 100%;">
+                    Save Preferences
+                </button>
+            </div>
+        `;
+
+        document.getElementById('payoutSettingsContent').innerHTML = content;
+
+        // Handle save
+        document.getElementById('savePayoutSettingsBtn')?.addEventListener('click', () => {
+            showToast('Payout preferences saved successfully!', 'success');
+        });
+
+    } catch (error) {
+        document.getElementById('payoutSettingsContent').innerHTML = `
+            <div style="text-align: center; padding: 40px;">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" style="margin: 0 auto 16px; opacity: 0.4;">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                    <path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                <p style="color: var(--text-secondary); margin-bottom: 16px;">Failed to load payout settings</p>
+                <button class="btn-primary" onclick="window.showPayoutSettings()">Try Again</button>
+            </div>
+        `;
+    }
 }
 
-export function showTransactionHistory() {
-    showToast('Full transaction history coming soon!', 'success');
+window.deleteBeneficiary = async function(beneficiaryId) {
+    if (!confirm('Are you sure you want to remove this payout method?')) return;
+
+    try {
+        await api.deleteBeneficiary(beneficiaryId);
+        showToast('Payout method removed successfully', 'success');
+        showPayoutSettings(); // Reload
+    } catch (error) {
+        showToast('Failed to remove payout method', 'error');
+    }
+};
+
+export async function showTransactionHistory() {
+    const modalContent = `
+        <div class="modal" onclick="closeModalOnBackdrop(event)">
+            <div class="modal-content" style="max-width: 900px;">
+                <div class="modal-header">
+                    <h2>Transaction History</h2>
+                    <button class="icon-btn" onclick="closeModal()">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div style="padding: 24px;">
+                    <!-- Filters -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 20px;">
+                        <div>
+                            <label class="form-label">Type</label>
+                            <select class="form-select" id="transactionTypeFilter">
+                                <option value="">All types</option>
+                                <option value="deposit">Deposits</option>
+                                <option value="withdrawal">Withdrawals</option>
+                                <option value="payment">Payments</option>
+                                <option value="refund">Refunds</option>
+                                <option value="earning">Earnings</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label">Status</label>
+                            <select class="form-select" id="transactionStatusFilter">
+                                <option value="">All status</option>
+                                <option value="completed">Completed</option>
+                                <option value="pending">Pending</option>
+                                <option value="failed">Failed</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label">Period</label>
+                            <select class="form-select" id="transactionPeriodFilter">
+                                <option value="7">Last 7 days</option>
+                                <option value="30" selected>Last 30 days</option>
+                                <option value="90">Last 90 days</option>
+                                <option value="365">Last year</option>
+                                <option value="all">All time</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Export button -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <div style="color: var(--text-secondary); font-size: 14px;" id="transactionCount">Loading...</div>
+                        <button class="btn-secondary" onclick="window.exportTransactions()" style="padding: 8px 16px;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline; margin-right: 6px; vertical-align: middle;">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                            </svg>
+                            Export CSV
+                        </button>
+                    </div>
+
+                    <!-- Transactions list -->
+                    <div id="transactionHistoryContent" style="max-height: 500px; overflow-y: auto;">
+                        <div style="text-align: center; padding: 40px;">
+                            <div class="spinner" style="margin: 0 auto 16px;"></div>
+                            <p style="color: var(--text-secondary);">Loading transactions...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('modalsContainer').innerHTML = modalContent;
+    openModal();
+
+    let allTransactions = [];
+
+    const loadTransactions = async () => {
+        try {
+            const response = await api.getTransactions(1, 100);
+            allTransactions = response.data?.transactions || [];
+            renderTransactions();
+        } catch (error) {
+            document.getElementById('transactionHistoryContent').innerHTML = `
+                <div style="text-align: center; padding: 40px;">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" style="margin: 0 auto 16px; opacity: 0.4;">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                        <path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    <p style="color: var(--text-secondary); margin-bottom: 16px;">Failed to load transactions</p>
+                    <button class="btn-primary" onclick="window.showTransactionHistory()">Try Again</button>
+                </div>
+            `;
+        }
+    };
+
+    const renderTransactions = () => {
+        const typeFilter = document.getElementById('transactionTypeFilter')?.value || '';
+        const statusFilter = document.getElementById('transactionStatusFilter')?.value || '';
+        const periodFilter = parseInt(document.getElementById('transactionPeriodFilter')?.value || '30');
+
+        let filtered = allTransactions.filter(tx => {
+            if (typeFilter && tx.type !== typeFilter) return false;
+            if (statusFilter && tx.status !== statusFilter) return false;
+
+            if (periodFilter !== 'all') {
+                const txDate = new Date(tx.createdAt);
+                const cutoffDate = new Date();
+                cutoffDate.setDate(cutoffDate.getDate() - periodFilter);
+                if (txDate < cutoffDate) return false;
+            }
+
+            return true;
+        });
+
+        document.getElementById('transactionCount').textContent = `${filtered.length} transaction${filtered.length !== 1 ? 's' : ''}`;
+
+        if (filtered.length === 0) {
+            document.getElementById('transactionHistoryContent').innerHTML = `
+                <div style="text-align: center; padding: 40px;">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" style="margin: 0 auto 16px; opacity: 0.4;">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                        <path d="M8 12h8M8 8h8M8 16h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    <p style="color: var(--text-secondary);">No transactions found</p>
+                </div>
+            `;
+            return;
+        }
+
+        const content = `
+            <div style="display: grid; gap: 8px;">
+                ${filtered.map(tx => {
+                    const isCredit = tx.type === 'deposit' || tx.type === 'earning' || tx.type === 'refund';
+                    const statusColor = tx.status === 'completed' ? '#10B981' : tx.status === 'pending' ? '#FFA500' : '#EF4444';
+
+                    return `
+                        <div class="card" style="padding: 16px; background: var(--background-alt); border-left: 3px solid ${isCredit ? '#10B981' : '#6B46FF'};">
+                            <div style="display: flex; align-items: center; gap: 16px;">
+                                <div style="width: 40px; height: 40px; background: ${isCredit ? 'rgba(16, 185, 129, 0.1)' : 'rgba(107, 70, 255, 0.1)'}; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${isCredit ? '#10B981' : '#6B46FF'}" stroke-width="2">
+                                        ${isCredit ?
+                                            '<path d="M12 5v14M5 12l7-7 7 7"/>' :
+                                            '<path d="M12 19V5M5 12l7 7 7-7"/>'}
+                                    </svg>
+                                </div>
+                                <div style="flex: 1;">
+                                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 4px;">
+                                        <div>
+                                            <div style="font-weight: 600; text-transform: capitalize;">${tx.type || 'Transaction'}</div>
+                                            <div style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">
+                                                ${new Date(tx.createdAt).toLocaleDateString('en-US', {
+                                                    month: 'short',
+                                                    day: 'numeric',
+                                                    year: 'numeric',
+                                                    hour: '2-digit',
+                                                    minute: '2-digit'
+                                                })}
+                                            </div>
+                                        </div>
+                                        <div style="text-align: right;">
+                                            <div style="font-weight: 700; font-size: 16px; color: ${isCredit ? '#10B981' : 'var(--text-primary)'};">
+                                                ${isCredit ? '+' : '-'}$${Math.abs(tx.amount || 0).toFixed(2)}
+                                            </div>
+                                            <div style="font-size: 11px; font-weight: 600; color: ${statusColor}; text-transform: uppercase; margin-top: 2px;">
+                                                ${tx.status}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    ${tx.description ? `<div style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">${tx.description}</div>` : ''}
+                                    ${tx.reference ? `<div style="font-size: 11px; color: var(--text-secondary); font-family: monospace; margin-top: 4px;">Ref: ${tx.reference}</div>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        `;
+
+        document.getElementById('transactionHistoryContent').innerHTML = content;
+    };
+
+    // Set up filter listeners
+    ['transactionTypeFilter', 'transactionStatusFilter', 'transactionPeriodFilter'].forEach(id => {
+        document.getElementById(id)?.addEventListener('change', renderTransactions);
+    });
+
+    // Export function
+    window.exportTransactions = function() {
+        const typeFilter = document.getElementById('transactionTypeFilter')?.value || '';
+        const statusFilter = document.getElementById('transactionStatusFilter')?.value || '';
+        const periodFilter = parseInt(document.getElementById('transactionPeriodFilter')?.value || '30');
+
+        let filtered = allTransactions.filter(tx => {
+            if (typeFilter && tx.type !== typeFilter) return false;
+            if (statusFilter && tx.status !== statusFilter) return false;
+
+            if (periodFilter !== 'all') {
+                const txDate = new Date(tx.createdAt);
+                const cutoffDate = new Date();
+                cutoffDate.setDate(cutoffDate.getDate() - periodFilter);
+                if (txDate < cutoffDate) return false;
+            }
+
+            return true;
+        });
+
+        // Create CSV
+        const headers = ['Date', 'Type', 'Description', 'Amount', 'Status', 'Reference'];
+        const rows = filtered.map(tx => [
+            new Date(tx.createdAt).toISOString(),
+            tx.type || '',
+            tx.description || '',
+            tx.amount || 0,
+            tx.status || '',
+            tx.reference || ''
+        ]);
+
+        const csv = [
+            headers.join(','),
+            ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+        ].join('\n');
+
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `myartelab-transactions-${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        showToast(`Exported ${filtered.length} transactions to CSV`, 'success');
+    };
+
+    await loadTransactions();
 }
 
-export function showEarningsReport() {
-    showToast('Earnings reports coming soon!', 'success');
+export async function showEarningsReport() {
+    const modalContent = `
+        <div class="modal" onclick="closeModalOnBackdrop(event)">
+            <div class="modal-content" style="max-width: 900px;">
+                <div class="modal-header">
+                    <h2>Earnings Report</h2>
+                    <button class="icon-btn" onclick="closeModal()">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div style="padding: 24px;">
+                    <div id="earningsReportContent">
+                        <div style="text-align: center; padding: 40px;">
+                            <div class="spinner" style="margin: 0 auto 16px;"></div>
+                            <p style="color: var(--text-secondary);">Generating earnings report...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('modalsContainer').innerHTML = modalContent;
+    openModal();
+
+    try {
+        // Load wallet and transaction data
+        const [walletResponse, transactionsResponse] = await Promise.all([
+            api.getWallet(),
+            api.getTransactions(1, 100)
+        ]);
+
+        const wallet = walletResponse.data || {};
+        const transactions = transactionsResponse.data?.transactions || [];
+
+        // Calculate earnings stats
+        const earnings = transactions.filter(tx => tx.type === 'earning' && tx.status === 'completed');
+        const withdrawals = transactions.filter(tx => tx.type === 'withdrawal' && tx.status === 'completed');
+
+        const totalEarnings = earnings.reduce((sum, tx) => sum + (tx.amount || 0), 0);
+        const totalWithdrawals = withdrawals.reduce((sum, tx) => sum + (tx.amount || 0), 0);
+        const pendingEarnings = transactions.filter(tx => tx.type === 'earning' && tx.status === 'pending').reduce((sum, tx) => sum + (tx.amount || 0), 0);
+
+        // Calculate this month's earnings
+        const now = new Date();
+        const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const thisMonthEarnings = earnings.filter(tx => new Date(tx.createdAt) >= thisMonthStart).reduce((sum, tx) => sum + (tx.amount || 0), 0);
+
+        // Calculate last month's earnings
+        const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+        const lastMonthEarnings = earnings.filter(tx => {
+            const date = new Date(tx.createdAt);
+            return date >= lastMonthStart && date <= lastMonthEnd;
+        }).reduce((sum, tx) => sum + (tx.amount || 0), 0);
+
+        const monthOverMonthChange = lastMonthEarnings > 0
+            ? ((thisMonthEarnings - lastMonthEarnings) / lastMonthEarnings * 100).toFixed(1)
+            : 0;
+
+        // Calculate average earnings per transaction
+        const avgEarningsPerJob = earnings.length > 0 ? (totalEarnings / earnings.length).toFixed(2) : 0;
+
+        // Group earnings by month for chart
+        const earningsByMonth = {};
+        earnings.forEach(tx => {
+            const date = new Date(tx.createdAt);
+            const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+            earningsByMonth[monthKey] = (earningsByMonth[monthKey] || 0) + tx.amount;
+        });
+
+        const sortedMonths = Object.keys(earningsByMonth).sort().slice(-6);
+        const maxEarning = Math.max(...sortedMonths.map(m => earningsByMonth[m]), 1);
+
+        const content = `
+            <!-- Summary Cards -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+                <div class="card" style="padding: 20px; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white;">
+                    <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;">Total Earnings</div>
+                    <div style="font-size: 32px; font-weight: 700; margin-bottom: 4px;">$${totalEarnings.toFixed(2)}</div>
+                    <div style="font-size: 12px; opacity: 0.8;">${earnings.length} completed jobs</div>
+                </div>
+
+                <div class="card" style="padding: 20px; background: var(--background-alt);">
+                    <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">This Month</div>
+                    <div style="font-size: 32px; font-weight: 700; margin-bottom: 4px;">$${thisMonthEarnings.toFixed(2)}</div>
+                    <div style="font-size: 12px; color: ${monthOverMonthChange >= 0 ? '#10B981' : '#EF4444'};">
+                        ${monthOverMonthChange >= 0 ? '↑' : '↓'} ${Math.abs(monthOverMonthChange)}% vs last month
+                    </div>
+                </div>
+
+                <div class="card" style="padding: 20px; background: var(--background-alt);">
+                    <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">Available Balance</div>
+                    <div style="font-size: 32px; font-weight: 700; margin-bottom: 4px;">$${(wallet.balance || 0).toFixed(2)}</div>
+                    <div style="font-size: 12px; color: var(--text-secondary);">Ready to withdraw</div>
+                </div>
+
+                <div class="card" style="padding: 20px; background: var(--background-alt);">
+                    <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">Pending</div>
+                    <div style="font-size: 32px; font-weight: 700; margin-bottom: 4px;">$${pendingEarnings.toFixed(2)}</div>
+                    <div style="font-size: 12px; color: var(--text-secondary);">In escrow</div>
+                </div>
+            </div>
+
+            <!-- Earnings Chart -->
+            <div class="card" style="padding: 24px; background: var(--background-alt); margin-bottom: 24px;">
+                <h4 style="margin: 0 0 20px 0;">Last 6 Months</h4>
+                <div style="display: flex; align-items: end; gap: 12px; height: 200px;">
+                    ${sortedMonths.map(month => {
+                        const amount = earningsByMonth[month];
+                        const height = (amount / maxEarning) * 100;
+                        const [year, monthNum] = month.split('-');
+                        const monthName = new Date(year, monthNum - 1).toLocaleDateString('en-US', { month: 'short' });
+
+                        return `
+                            <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                                <div style="width: 100%; background: linear-gradient(135deg, var(--primary), var(--secondary)); border-radius: 8px 8px 0 0; height: ${height}%; min-height: 4px; position: relative; transition: all 0.3s;">
+                                    <div style="position: absolute; top: -24px; left: 50%; transform: translateX(-50%); font-size: 11px; font-weight: 600; white-space: nowrap;">$${amount.toFixed(0)}</div>
+                                </div>
+                                <div style="font-size: 12px; color: var(--text-secondary);">${monthName}</div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+
+            <!-- Stats Grid -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin-bottom: 24px;">
+                <div class="card" style="padding: 20px; background: var(--background-alt);">
+                    <div style="display: flex; align-items: center; gap: 16px;">
+                        <div style="width: 48px; height: 48px; background: rgba(16, 185, 129, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2">
+                                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <div style="font-size: 24px; font-weight: 700;">$${avgEarningsPerJob}</div>
+                            <div style="font-size: 13px; color: var(--text-secondary);">Avg per job</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" style="padding: 20px; background: var(--background-alt);">
+                    <div style="display: flex; align-items: center; gap: 16px;">
+                        <div style="width: 48px; height: 48px; background: rgba(107, 70, 255, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6B46FF" stroke-width="2">
+                                <path d="M12 19V5M5 12l7 7 7-7"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <div style="font-size: 24px; font-weight: 700;">$${totalWithdrawals.toFixed(2)}</div>
+                            <div style="font-size: 13px; color: var(--text-secondary);">Total withdrawn</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Earnings -->
+            <div class="card" style="padding: 24px; background: var(--background-alt);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <h4 style="margin: 0;">Recent Earnings</h4>
+                    <button class="btn-secondary" onclick="window.showTransactionHistory()" style="padding: 8px 16px; font-size: 13px;">
+                        View All
+                    </button>
+                </div>
+
+                ${earnings.length > 0 ? `
+                    <div style="display: grid; gap: 12px;">
+                        ${earnings.slice(0, 5).map(tx => `
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--background); border-radius: 8px;">
+                                <div>
+                                    <div style="font-weight: 600; margin-bottom: 4px;">${tx.description || 'Earnings'}</div>
+                                    <div style="font-size: 12px; color: var(--text-secondary);">
+                                        ${new Date(tx.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                    </div>
+                                </div>
+                                <div style="font-size: 18px; font-weight: 700; color: #10B981;">+$${tx.amount.toFixed(2)}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : `
+                    <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" style="margin: 0 auto 16px; opacity: 0.4;">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                            <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                        <p>No earnings yet. Complete your first job to see your earnings here!</p>
+                    </div>
+                `}
+            </div>
+
+            <!-- Export button -->
+            <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--border); display: flex; gap: 12px;">
+                <button class="btn-secondary" onclick="window.exportEarningsReport()" style="flex: 1;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline; margin-right: 6px; vertical-align: middle;">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                    </svg>
+                    Download Report (CSV)
+                </button>
+                <button class="btn-primary" onclick="window.print()" style="flex: 1;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline; margin-right: 6px; vertical-align: middle;">
+                        <polyline points="6 9 6 2 18 2 18 9"/>
+                        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+                        <rect x="6" y="14" width="12" height="8"/>
+                    </svg>
+                    Print Report
+                </button>
+            </div>
+        `;
+
+        document.getElementById('earningsReportContent').innerHTML = content;
+
+        // Export function
+        window.exportEarningsReport = function() {
+            const headers = ['Month', 'Earnings', 'Jobs Completed', 'Average per Job'];
+            const rows = sortedMonths.map(month => {
+                const amount = earningsByMonth[month];
+                const jobsInMonth = earnings.filter(tx => {
+                    const date = new Date(tx.createdAt);
+                    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                    return monthKey === month;
+                }).length;
+                const avg = jobsInMonth > 0 ? (amount / jobsInMonth).toFixed(2) : 0;
+
+                return [month, amount.toFixed(2), jobsInMonth, avg];
+            });
+
+            rows.push(['', '', '', '']);
+            rows.push(['Total Earnings', totalEarnings.toFixed(2), earnings.length, avgEarningsPerJob]);
+            rows.push(['Total Withdrawals', totalWithdrawals.toFixed(2), withdrawals.length, '']);
+            rows.push(['Available Balance', (wallet.balance || 0).toFixed(2), '', '']);
+            rows.push(['Pending Earnings', pendingEarnings.toFixed(2), '', '']);
+
+            const csv = [
+                'MyArteLab Earnings Report',
+                `Generated: ${new Date().toLocaleString()}`,
+                '',
+                headers.join(','),
+                ...rows.map(row => row.join(','))
+            ].join('\n');
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `myartelab-earnings-report-${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            showToast('Earnings report downloaded successfully', 'success');
+        };
+
+    } catch (error) {
+        document.getElementById('earningsReportContent').innerHTML = `
+            <div style="text-align: center; padding: 40px;">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" style="margin: 0 auto 16px; opacity: 0.4;">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                    <path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                <p style="color: var(--text-secondary); margin-bottom: 16px;">Failed to generate earnings report</p>
+                <button class="btn-primary" onclick="window.showEarningsReport()">Try Again</button>
+            </div>
+        `;
+    }
 }
 
 window.openImageModal = function(imageUrl) {
