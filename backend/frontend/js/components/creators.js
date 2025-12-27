@@ -34,9 +34,13 @@ export function renderCreatorCards(creators) {
     return creators.map((creator, index) => `
         <div class="creator-card card-entrance card-lift dynamic-light grid-item-${(index % 6) + 1}" data-creator-id="${creator.id}">
             <img src="${creator.avatar}" alt="${creator.name}" class="creator-image" loading="lazy">
-            <button class="creator-quick-favorite" data-creator-id="${creator.id}" aria-label="Add to favorites">
-                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
+            <button class="creator-share-btn" data-creator-id="${creator.id}" data-creator-name="${creator.name}" aria-label="Share profile">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="18" cy="5" r="3"/>
+                    <circle cx="6" cy="12" r="3"/>
+                    <circle cx="18" cy="19" r="3"/>
+                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
                 </svg>
             </button>
             <div class="creator-info">
@@ -234,11 +238,15 @@ export async function renderCreatorProfile(creatorIdOrObject) {
 
                 <div class="profile-actions">
                     <button class="btn-primary profile-book-now-btn" data-creator-id="${creator.id}">Book now</button>
-                    <button class="btn-ghost" id="favoriteBtn" data-creator-id="${creator.id}">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="margin-right: 4px;">
-                            <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <button class="btn-ghost profile-share-btn" data-creator-id="${creator.id}" data-creator-name="${creator.name}">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;">
+                            <circle cx="18" cy="5" r="3"/>
+                            <circle cx="6" cy="12" r="3"/>
+                            <circle cx="18" cy="19" r="3"/>
+                            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+                            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
                         </svg>
-                        Save
+                        Share profile
                     </button>
                 </div>
 
@@ -451,87 +459,93 @@ function setupProfileButtonListeners(creator) {
         });
     });
 
-    const favoriteBtn = document.getElementById('favoriteBtn');
-    if (favoriteBtn && appState.user) {
-        checkFavoriteStatus(creator.id, favoriteBtn);
+    // Profile share button
+    const shareBtn = document.querySelector('.profile-share-btn');
+    if (shareBtn) {
+        shareBtn.addEventListener('click', async () => {
+            const creatorId = shareBtn.dataset.creatorId;
+            const creatorName = shareBtn.dataset.creatorName;
+            const profileUrl = `${window.location.origin}${window.location.pathname}#/creator/${creatorId}`;
 
-        favoriteBtn.addEventListener('click', async () => {
             try {
-                const isFavorited = favoriteBtn.classList.contains('favorited');
-
-                if (isFavorited) {
-                    await api.removeFromFavorites(creator.id);
-                    favoriteBtn.classList.remove('favorited');
-                    favoriteBtn.querySelector('svg path').setAttribute('fill', 'none');
-                    window.showToast('Removed from favorites', 'success');
+                // Try native share API first (mobile)
+                if (navigator.share) {
+                    await navigator.share({
+                        title: `${creatorName} - MyArteLab`,
+                        text: `Check out ${creatorName}'s profile on MyArteLab`,
+                        url: profileUrl
+                    });
+                    window.showToast('Profile shared successfully!', 'success');
                 } else {
-                    await api.addToFavorites(creator.id);
-                    favoriteBtn.classList.add('favorited');
-                    favoriteBtn.querySelector('svg path').setAttribute('fill', 'currentColor');
-                    window.showToast('Added to favorites!', 'success');
+                    // Fallback to clipboard
+                    await navigator.clipboard.writeText(profileUrl);
+                    window.showToast('Profile link copied to clipboard!', 'success');
+
+                    // Visual feedback
+                    shareBtn.classList.add('copied');
+                    setTimeout(() => shareBtn.classList.remove('copied'), 2000);
                 }
             } catch (error) {
-                console.error('Error toggling favorite:', error);
-                window.showToast(error.message || 'Failed to update favorite', 'error');
+                if (error.name === 'NotAllowedError' || error.name === 'TypeError') {
+                    const userCopied = prompt('Copy this profile link:', profileUrl);
+                    if (userCopied !== null) {
+                        window.showToast('Link ready to share!', 'info');
+                    }
+                } else {
+                    console.error('Error sharing profile:', error);
+                    window.showToast('Unable to share profile', 'error');
+                }
             }
         });
     }
 }
 
-async function checkFavoriteStatus(creatorId, btn) {
-    try {
-        const response = await api.isFavorited(creatorId);
-        if (response.success && response.data.isFavorited) {
-            btn.classList.add('favorited');
-            btn.querySelector('svg path').setAttribute('fill', 'currentColor');
-        }
-    } catch (error) {
-        console.error('Error checking favorite status:', error);
-    }
-}
+// Favorite functionality removed in favor of share feature
+// Focusing on core marketplace functionality over social features
 
 export function setupCreatorCardListeners() {
-    // Quick favorite buttons
-    document.querySelectorAll('.creator-quick-favorite').forEach(btn => {
+    // Share profile buttons
+    document.querySelectorAll('.creator-share-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             e.stopPropagation();
             const creatorId = btn.dataset.creatorId;
+            const creatorName = btn.dataset.creatorName;
 
-            if (!appState.user) {
-                window.showAuthModal('signin');
-                return;
-            }
+            // Generate profile URL
+            const profileUrl = `${window.location.origin}${window.location.pathname}#/creator/${creatorId}`;
 
             try {
-                const isFavorited = btn.classList.contains('favorited');
-
-                if (isFavorited) {
-                    await api.removeFromFavorites(creatorId);
-                    btn.classList.remove('favorited');
-                    btn.setAttribute('aria-label', 'Add to favorites');
-                    window.showToast('Removed from favorites', 'success');
+                // Try to use native share API if available (mobile devices)
+                if (navigator.share) {
+                    await navigator.share({
+                        title: `${creatorName} - MyArteLab`,
+                        text: `Check out ${creatorName}'s profile on MyArteLab`,
+                        url: profileUrl
+                    });
+                    window.showToast('Profile shared successfully!', 'success');
                 } else {
-                    await api.addToFavorites(creatorId);
-                    btn.classList.add('favorited');
-                    btn.setAttribute('aria-label', 'Remove from favorites');
-                    window.showToast('Added to favorites!', 'success');
+                    // Fallback to clipboard copy
+                    await navigator.clipboard.writeText(profileUrl);
+                    window.showToast('Profile link copied to clipboard!', 'success');
+
+                    // Visual feedback - animate the button
+                    btn.classList.add('copied');
+                    setTimeout(() => btn.classList.remove('copied'), 2000);
                 }
             } catch (error) {
-                console.error('Error toggling favorite:', error);
-                window.showToast(error.message || 'Failed to update favorite', 'error');
+                // If clipboard fails, show the link in a modal
+                if (error.name === 'NotAllowedError' || error.name === 'TypeError') {
+                    // Fallback: show link in prompt
+                    const userCopied = prompt('Copy this profile link:', profileUrl);
+                    if (userCopied !== null) {
+                        window.showToast('Link ready to share!', 'info');
+                    }
+                } else {
+                    console.error('Error sharing profile:', error);
+                    window.showToast('Unable to share profile', 'error');
+                }
             }
         });
-
-        // Check initial favorite status if user is logged in
-        if (appState.user) {
-            const creatorId = btn.dataset.creatorId;
-            api.isFavorited(creatorId).then(response => {
-                if (response.success && response.data.isFavorited) {
-                    btn.classList.add('favorited');
-                    btn.setAttribute('aria-label', 'Remove from favorites');
-                }
-            }).catch(err => console.error('Error checking favorite status:', err));
-        }
     });
 
     document.querySelectorAll('.view-profile-btn').forEach(btn => {

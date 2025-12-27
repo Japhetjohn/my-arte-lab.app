@@ -593,7 +593,7 @@ p {
     transform: scale(1.08);
 }
 
-.creator-quick-favorite {
+.creator-share-btn {
     position: absolute;
     top: 12px;
     right: 12px;
@@ -607,34 +607,36 @@ p {
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all var(--transition-fast);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 10;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.creator-quick-favorite:hover {
+.creator-share-btn:hover {
     transform: scale(1.1);
     background: white;
+    box-shadow: 0 4px 12px rgba(151, 71, 255, 0.2);
 }
 
-.creator-quick-favorite svg {
-    width: 20px;
-    height: 20px;
-    transition: all var(--transition-fast);
-}
-
-.creator-quick-favorite.favorited svg {
-    fill: #EF4444;
-    stroke: #EF4444;
-}
-
-.creator-quick-favorite:not(.favorited) svg {
-    fill: none;
+.creator-share-btn svg {
+    width: 18px;
+    height: 18px;
     stroke: #64748B;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.creator-quick-favorite:hover svg {
+.creator-share-btn:hover svg {
+    stroke: var(--primary);
     transform: scale(1.1);
+}
+
+.creator-share-btn.copied {
+    background: var(--primary);
+    transform: scale(1.05);
+}
+
+.creator-share-btn.copied svg {
+    stroke: white;
 }
 
 .creator-info {
