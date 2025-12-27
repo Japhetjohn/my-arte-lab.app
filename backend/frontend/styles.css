@@ -2246,7 +2246,7 @@ img.loaded {
     border-radius: 50%;
     display: flex;
     align-items: center;
-    justify-center;
+    justify-content: center;
     color: white;
     font-weight: 600;
     flex-shrink: 0;
