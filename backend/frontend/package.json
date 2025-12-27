@@ -16,11 +16,7 @@
   "author": "Japhetjohn",
   "license": "MIT",
   "dependencies": {
-    "@privy-io/react-auth": "^3.8.1",
     "@solana-program/system": "^0.10.0",
-    "@vitejs/plugin-react": "^5.1.2",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
     "vite": "^7.2.7"
   }
 }

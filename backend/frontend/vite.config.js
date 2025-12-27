@@ -1,8 +1,7 @@
 import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [],
   root: '.',
   publicDir: 'public',
   build: {
@@ -10,10 +9,10 @@ export default defineConfig({
     emptyOutDir: true,
     rollupOptions: {
       input: {
-        main: './src/main.jsx'
+        main: './index.html'
       },
       output: {
-        entryFileNames: 'privy-auth.js',
+        entryFileNames: 'assets/[name]-[hash].js',
         format: 'es'
       }
     }
