@@ -1,5 +1,4 @@
 import { appState } from '../state.js';
-import { renderCreatorCards, setupCreatorCardListeners } from '../components/creators.js';
 import api from '../services/api.js';
 import { formatLocation } from '../utils/formatters.js';
 import { showSkeletonLoaders, calculateCreatorScore, getCreatorTier, sortCreatorsByRelevance } from '../utils.js';
@@ -12,6 +11,74 @@ let currentFilters = {
     verified: false,
     sort: 'relevance'
 };
+
+function renderModernCreatorCards(creators) {
+    return creators.map(creator => `
+        <div class="card card-lift scroll-fade-in dynamic-light creator-card-modern" data-creator-id="${creator.id}" style="cursor: pointer; padding: 0; overflow: hidden;">
+            <!-- Creator Cover -->
+            <div style="height: 140px; background: linear-gradient(135deg, #9747FF 0%, #6B46FF 100%); position: relative; overflow: hidden;">
+                ${creator.cover ? `
+                    <img src="${creator.cover}" alt="${creator.name}" style="width: 100%; height: 100%; object-fit: cover;">
+                ` : ''}
+                ${creator.verified ? `
+                    <div style="position: absolute; top: 12px; right: 12px; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); padding: 4px 10px; border-radius: 20px; display: flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: #10b981;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                            <path d="M9 12l2 2 4-4m6-2a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                        Verified
+                    </div>
+                ` : ''}
+            </div>
+
+            <!-- Creator Info -->
+            <div style="padding: 20px;">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <img src="${creator.avatar}"
+                         alt="${creator.name}"
+                         style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                    <div style="flex: 1;">
+                        <h3 style="margin: 0; font-size: 16px; font-weight: 700;">
+                            ${creator.name}
+                        </h3>
+                        <p style="margin: 0; font-size: 13px; color: var(--text-secondary); text-transform: capitalize;">
+                            ${creator.role}
+                        </p>
+                    </div>
+                </div>
+
+                ${creator.location ? `
+                    <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px; color: var(--text-secondary); font-size: 13px;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" stroke="currentColor" stroke-width="2"/>
+                            <circle cx="12" cy="10" r="3" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                        <span>${creator.location}</span>
+                    </div>
+                ` : ''}
+
+                ${parseFloat(creator.rating) > 0 ? `
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <div style="display: flex; gap: 2px;">
+                            ${Array.from({ length: 5 }, (_, i) => `
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="${i < Math.floor(parseFloat(creator.rating)) ? '#F59E0B' : 'none'}" stroke="#F59E0B" stroke-width="2">
+                                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                </svg>
+                            `).join('')}
+                        </div>
+                        <span style="font-size: 13px; font-weight: 600; color: var(--text-primary);">
+                            ${creator.rating}
+                        </span>
+                        ${creator.reviewCount > 0 ? `
+                            <span style="font-size: 12px; color: var(--text-secondary);">
+                                (${creator.reviewCount})
+                            </span>
+                        ` : ''}
+                    </div>
+                ` : ''}
+            </div>
+        </div>
+    `).join('');
+}
 
 export async function renderDiscoverPage() {
     const mainContent = document.getElementById('mainContent');
@@ -178,8 +245,8 @@ function renderCreatorsList() {
                         <option value="newest" ${currentFilters.sort === 'newest' ? 'selected' : ''}>Newest</option>
                     </select>
                 </div>
-                <div class="creators-grid" id="discoverGrid">
-                    ${renderCreatorCards(creators)}
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px;" id="discoverGrid">
+                    ${renderModernCreatorCards(creators)}
                 </div>
             ` : `
                 <div class="empty-state" style="padding: 80px 20px; text-align: center; animation: fadeIn 0.3s ease-in;">
@@ -216,8 +283,20 @@ function renderCreatorsList() {
         </div>
     `;
 
-    setupCreatorCardListeners();
+    setupModernCreatorCardListeners();
     setupSortListener();
+}
+
+function setupModernCreatorCardListeners() {
+    document.querySelectorAll('.creator-card-modern').forEach(card => {
+        card.addEventListener('click', () => {
+            const creatorId = card.dataset.creatorId;
+            const creator = creators.find(c => c.id === creatorId);
+            if (creator) {
+                window.renderCreatorProfile(creator);
+            }
+        });
+    });
 }
 
 function setupFilterListeners() {
