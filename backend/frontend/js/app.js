@@ -5,6 +5,7 @@ import { showToast, closeModal, closeModalOnBackdrop, toggleSwitch } from './uti
 import { checkAndClearCache } from './utils/clearCache.js';
 import { renderCreatorProfile } from './components/creators.js';
 import './utils/serviceManagement.js';
+import './components/projectModals.js';
 import {
     showBookingModal,
     handleBookingSubmit,
