@@ -1,0 +1,391 @@
+const express = require('express');
+const router = express.Router();
+const { authenticateToken, optionalAuth } = require('../middleware/auth');
+const Project = require('../models/Project');
+const Application = require('../models/Application');
+const User = require('../models/User');
+
+// Get all projects (public, with optional filters)
+router.get('/', optionalAuth, async (req, res) => {
+  try {
+    const { category, minBudget, maxBudget, timeline, projectType, search } = req.query;
+
+    let query = { status: 'open', visibility: 'public' };
+
+    if (category) query.category = category;
+    if (projectType) query.projectType = projectType;
+    if (timeline) query.timeline = timeline;
+
+    if (minBudget || maxBudget) {
+      query['budget.min'] = {};
+      if (minBudget) query['budget.min'].$gte = Number(minBudget);
+      if (maxBudget) query['budget.max'].$lte = Number(maxBudget);
+    }
+
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const projects = await Project.find(query)
+      .populate('clientId', 'name avatar email isEmailVerified createdAt')
+      .sort({ createdAt: -1 })
+      .limit(100);
+
+    res.json({
+      success: true,
+      data: { projects }
+    });
+  } catch (error) {
+    console.error('Error fetching projects:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch projects'
+    });
+  }
+});
+
+// Get single project by ID
+router.get('/:id', optionalAuth, async (req, res) => {
+  try {
+    const project = await Project.findById(req.params.id)
+      .populate('clientId', 'name avatar email bio location isEmailVerified createdAt')
+      .populate('selectedCreatorId', 'name avatar category');
+
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: 'Project not found'
+      });
+    }
+
+    // Increment view count
+    await project.incrementViews();
+
+    // Check if current user has applied (if authenticated)
+    let hasApplied = false;
+    if (req.user) {
+      hasApplied = await Application.checkExistingApplication(project._id, req.user.userId);
+    }
+
+    res.json({
+      success: true,
+      data: {
+        project: project.toObject(),
+        hasApplied
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching project:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch project'
+    });
+  }
+});
+
+// Create new project (clients only or any user)
+router.post('/', authenticateToken, async (req, res) => {
+  try {
+    const {
+      title, description, category, budget, timeline, deadline,
+      skillsRequired, deliverables, projectType
+    } = req.body;
+
+    // Validation
+    if (!title || !description || !category || !budget || !timeline) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields'
+      });
+    }
+
+    if (budget.min > budget.max) {
+      return res.status(400).json({
+        success: false,
+        message: 'Minimum budget cannot be greater than maximum budget'
+      });
+    }
+
+    const project = new Project({
+      title,
+      description,
+      category,
+      budget,
+      timeline,
+      deadline: deadline ? new Date(deadline) : null,
+      skillsRequired: skillsRequired || [],
+      deliverables: deliverables || [],
+      projectType: projectType || 'one-time',
+      clientId: req.user.userId
+    });
+
+    await project.save();
+
+    const populatedProject = await Project.findById(project._id)
+      .populate('clientId', 'name avatar email');
+
+    res.status(201).json({
+      success: true,
+      message: 'Project created successfully',
+      data: { project: populatedProject }
+    });
+  } catch (error) {
+    console.error('Error creating project:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create project'
+    });
+  }
+});
+
+// Update project
+router.patch('/:id', authenticateToken, async (req, res) => {
+  try {
+    const project = await Project.findById(req.params.id);
+
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: 'Project not found'
+      });
+    }
+
+    // Check if user owns this project
+    if (project.clientId.toString() !== req.user.userId) {
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized to update this project'
+      });
+    }
+
+    const allowedUpdates = ['title', 'description', 'budget', 'timeline', 'deadline', 'skillsRequired', 'deliverables', 'status'];
+    const updates = Object.keys(req.body);
+    const isValidUpdate = updates.every(update => allowedUpdates.includes(update));
+
+    if (!isValidUpdate) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid updates'
+      });
+    }
+
+    updates.forEach(update => project[update] = req.body[update]);
+    await project.save();
+
+    res.json({
+      success: true,
+      message: 'Project updated successfully',
+      data: { project }
+    });
+  } catch (error) {
+    console.error('Error updating project:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update project'
+    });
+  }
+});
+
+// Get my projects (projects I posted)
+router.get('/my/posted', authenticateToken, async (req, res) => {
+  try {
+    const projects = await Project.find({ clientId: req.user.userId })
+      .populate('selectedCreatorId', 'name avatar')
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      data: { projects }
+    });
+  } catch (error) {
+    console.error('Error fetching my projects:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch projects'
+    });
+  }
+});
+
+// Get applications for a project (project owner only)
+router.get('/:id/applications', authenticateToken, async (req, res) => {
+  try {
+    const project = await Project.findById(req.params.id);
+
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: 'Project not found'
+      });
+    }
+
+    // Check if user owns this project
+    if (project.clientId.toString() !== req.user.userId) {
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized to view applications'
+      });
+    }
+
+    const applications = await Application.findByProject(req.params.id);
+
+    res.json({
+      success: true,
+      data: { applications }
+    });
+  } catch (error) {
+    console.error('Error fetching applications:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch applications'
+    });
+  }
+});
+
+// Apply to project (creators)
+router.post('/:id/apply', authenticateToken, async (req, res) => {
+  try {
+    const { coverLetter, proposedBudget, proposedTimeline, portfolioLinks } = req.body;
+
+    if (!coverLetter || !proposedBudget || !proposedTimeline) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields'
+      });
+    }
+
+    const project = await Project.findById(req.params.id);
+
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: 'Project not found'
+      });
+    }
+
+    if (project.status !== 'open') {
+      return res.status(400).json({
+        success: false,
+        message: 'This project is no longer accepting applications'
+      });
+    }
+
+    // Check if user already applied
+    const hasApplied = await Application.checkExistingApplication(project._id, req.user.userId);
+    if (hasApplied) {
+      return res.status(400).json({
+        success: false,
+        message: 'You have already applied to this project'
+      });
+    }
+
+    const application = new Application({
+      projectId: project._id,
+      creatorId: req.user.userId,
+      coverLetter,
+      proposedBudget,
+      proposedTimeline,
+      portfolioLinks: portfolioLinks || []
+    });
+
+    await application.save();
+    await project.incrementApplications();
+
+    const populatedApplication = await Application.findById(application._id)
+      .populate('creatorId', 'name avatar category');
+
+    res.status(201).json({
+      success: true,
+      message: 'Application submitted successfully',
+      data: { application: populatedApplication }
+    });
+  } catch (error) {
+    console.error('Error applying to project:', error);
+
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        message: 'You have already applied to this project'
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to submit application'
+    });
+  }
+});
+
+// Get my applications (applications I submitted)
+router.get('/my/applications', authenticateToken, async (req, res) => {
+  try {
+    const applications = await Application.findByCreator(req.user.userId);
+
+    res.json({
+      success: true,
+      data: { applications }
+    });
+  } catch (error) {
+    console.error('Error fetching applications:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch applications'
+    });
+  }
+});
+
+// Accept/reject application (project owner only)
+router.patch('/applications/:id', authenticateToken, async (req, res) => {
+  try {
+    const { status, reviewNotes } = req.body;
+
+    if (!['accepted', 'rejected'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid status'
+      });
+    }
+
+    const application = await Application.findById(req.params.id).populate('projectId');
+
+    if (!application) {
+      return res.status(404).json({
+        success: false,
+        message: 'Application not found'
+      });
+    }
+
+    const project = application.projectId;
+
+    // Check if user owns the project
+    if (project.clientId.toString() !== req.user.userId) {
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized'
+      });
+    }
+
+    if (status === 'accepted') {
+      await application.accept(reviewNotes);
+      await project.selectCreator(application.creatorId);
+    } else {
+      await application.reject(reviewNotes);
+    }
+
+    res.json({
+      success: true,
+      message: `Application ${status} successfully`,
+      data: { application }
+    });
+  } catch (error) {
+    console.error('Error updating application:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update application'
+    });
+  }
+});
+
+module.exports = router;

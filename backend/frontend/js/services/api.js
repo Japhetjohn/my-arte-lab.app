@@ -526,6 +526,52 @@ class ApiService {
     async deleteAllReadNotifications() {
         return this.delete('/notifications/read/all');
     }
+
+    // Projects API
+    async getProjects(filters = {}) {
+        const queryParams = new URLSearchParams(filters).toString();
+        const endpoint = queryParams ? `/projects?${queryParams}` : '/projects';
+        return this.get(endpoint);
+    }
+
+    async getProject(projectId) {
+        return this.get(`/projects/${projectId}`);
+    }
+
+    async createProject(projectData) {
+        return this.post('/projects', projectData);
+    }
+
+    async updateProject(projectId, updates) {
+        return this.request(`/projects/${projectId}`, {
+            method: 'PATCH',
+            body: JSON.stringify(updates)
+        });
+    }
+
+    async getMyPostedProjects() {
+        return this.get('/projects/my/posted');
+    }
+
+    async getProjectApplications(projectId) {
+        return this.get(`/projects/${projectId}/applications`);
+    }
+
+    // Applications API
+    async applyToProject(projectId, applicationData) {
+        return this.post(`/projects/${projectId}/apply`, applicationData);
+    }
+
+    async getMyApplications() {
+        return this.get('/projects/my/applications');
+    }
+
+    async updateApplicationStatus(applicationId, status, reviewNotes = '') {
+        return this.request(`/projects/applications/${applicationId}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ status, reviewNotes })
+        });
+    }
 }
 
 export default new ApiService();

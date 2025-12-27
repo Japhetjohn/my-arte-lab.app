@@ -38,6 +38,7 @@ const statsRoutes = require('./routes/statsRoutes');
 const servicesRoutes = require('./routes/servicesRoutes');
 const favoritesRoutes = require('./routes/favoritesRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
+const projectRoutes = require('./routes/projects');
 
 const app = express();
 
@@ -229,6 +230,7 @@ app.use('/api/stats', statsRoutes);
 app.use('/api/services', servicesRoutes);
 app.use('/api/favorites', favoritesRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/projects', projectRoutes);
 
 app.get('/api', (req, res) => {
   res.json({
