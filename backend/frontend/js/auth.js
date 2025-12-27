@@ -811,41 +811,41 @@ export function showHelpSupportModal() {
                 </button>
             </div>
             <div class="modal-body">
-                <div style="text-align: center; margin-bottom: 24px;">
-                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" style="margin: 0 auto 16px; opacity: 0.8;">
+                <div style="text-align: center; margin-bottom: 32px;">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" style="margin: 0 auto 16px; color: #9747FF;">
                         <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
                         <path d="M12 16v-4M12 8h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                     </svg>
-                    <h3 style="margin-bottom: 8px;">We're here to help</h3>
-                    <p style="color: var(--text-secondary);">Get in touch with our support team</p>
+                    <h3 style="margin-bottom: 8px; color: #1a1a1a; font-size: 24px; font-weight: 700;">We're here to help</h3>
+                    <p style="color: #666; font-size: 15px;">Get in touch with our support team</p>
                 </div>
 
-                <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 16px;">
-                    <div style="display: flex; align-items: flex-start; gap: 12px;">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style="flex-shrink: 0; color: var(--primary); margin-top: 2px;">
+                <div style="background: #f8f9fa; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px; margin-bottom: 20px;">
+                    <div style="display: flex; align-items: flex-start; gap: 16px;">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" style="flex-shrink: 0; color: #9747FF; margin-top: 2px;">
                             <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" stroke="currentColor" stroke-width="2"/>
                         </svg>
                         <div style="flex: 1;">
-                            <div style="font-weight: 600; margin-bottom: 4px;">Email Support</div>
-                            <a href="mailto:contact@myartelab.com" style="color: var(--primary); text-decoration: none; word-break: break-all;">
+                            <div style="font-weight: 700; margin-bottom: 8px; color: #1a1a1a; font-size: 16px;">Email Support</div>
+                            <a href="mailto:contact@myartelab.com" style="color: #9747FF; text-decoration: none; word-break: break-all; font-size: 16px; font-weight: 600;">
                                 contact@myartelab.com
                             </a>
-                            <p style="color: var(--text-secondary); font-size: 14px; margin-top: 8px;">
+                            <p style="color: #666; font-size: 14px; margin-top: 10px; margin-bottom: 0;">
                                 We typically respond within 24 hours
                             </p>
                         </div>
                     </div>
                 </div>
 
-                <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px;">
-                    <h4 style="margin-bottom: 12px; font-size: 16px;">Common Questions</h4>
-                    <ul style="list-style: none; padding: 0; margin: 0; color: var(--text-secondary); font-size: 14px;">
-                        <li style="padding: 8px 0; border-bottom: 1px solid var(--border);">How do I get started as a creator?</li>
-                        <li style="padding: 8px 0; border-bottom: 1px solid var(--border);">How do payments work?</li>
-                        <li style="padding: 8px 0; border-bottom: 1px solid var(--border);">How do I withdraw my earnings?</li>
-                        <li style="padding: 8px 0;">How can I verify my account?</li>
+                <div style="background: #f8f9fa; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px;">
+                    <h4 style="margin-bottom: 16px; font-size: 16px; font-weight: 700; color: #1a1a1a;">Common Questions</h4>
+                    <ul style="list-style: none; padding: 0; margin: 0;">
+                        <li style="padding: 12px 0; border-bottom: 1px solid #e5e7eb; color: #444; font-size: 14px;">How do I get started as a creator?</li>
+                        <li style="padding: 12px 0; border-bottom: 1px solid #e5e7eb; color: #444; font-size: 14px;">How do payments work?</li>
+                        <li style="padding: 12px 0; border-bottom: 1px solid #e5e7eb; color: #444; font-size: 14px;">How do I withdraw my earnings?</li>
+                        <li style="padding: 12px 0; color: #444; font-size: 14px;">How can I verify my account?</li>
                     </ul>
-                    <p style="color: var(--text-secondary); font-size: 13px; margin-top: 12px;">
+                    <p style="color: #666; font-size: 13px; margin-top: 16px; margin-bottom: 0;">
                         Send us your questions at the email above and we'll be happy to help!
                     </p>
                 </div>
