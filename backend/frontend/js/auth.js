@@ -399,6 +399,13 @@ export function updateUserMenu() {
                     </svg>
                     My profile
                 </button>
+                <button class="user-dropdown-item" onclick="navigateToPage('discover')">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
+                        <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Discover
+                </button>
                 <button class="user-dropdown-item" onclick="navigateToPage('bookings')">
                     <svg viewBox="0 0 24 24" fill="none">
                         <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
