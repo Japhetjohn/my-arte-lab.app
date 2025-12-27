@@ -804,64 +804,66 @@ function toggleCategoryField() {
 export function showHelpSupportModal() {
     closeUserDropdown();
 
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
-    modal.innerHTML = `
-        <div class="modal">
-            <div class="modal-header">
-                <h2>Help & Support</h2>
-                <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                        <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                    </svg>
-                </button>
-            </div>
-            <div class="modal-body">
+    const modalContent = `
+        <div class="modal" onclick="closeModalOnBackdrop(event)">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Help & Support</h2>
+                    <button class="icon-btn" onclick="closeModal()">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </button>
+                </div>
+
                 <div style="text-align: center; margin-bottom: 32px;">
-                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" style="margin: 0 auto 16px; color: #9747FF;">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" style="margin: 0 auto 16px; color: var(--primary);">
                         <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
                         <path d="M12 16v-4M12 8h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                     </svg>
-                    <h3 style="margin-bottom: 8px; color: #1a1a1a; font-size: 24px; font-weight: 700;">We're here to help</h3>
-                    <p style="color: #666; font-size: 15px;">Get in touch with our support team</p>
+                    <h3 style="margin-bottom: 8px; font-size: 24px; font-weight: 700;">We're here to help</h3>
+                    <p style="color: var(--text-secondary); font-size: 15px;">Get in touch with our support team</p>
                 </div>
 
-                <div style="background: #f8f9fa; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px; margin-bottom: 20px;">
+                <div style="background: #FEF3C7; padding: 20px; border-radius: 12px; margin-bottom: 20px; border-left: 4px solid #F59E0B;">
                     <div style="display: flex; align-items: flex-start; gap: 16px;">
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" style="flex-shrink: 0; color: #9747FF; margin-top: 2px;">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" style="flex-shrink: 0; color: #F59E0B; margin-top: 2px;">
                             <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" stroke="currentColor" stroke-width="2"/>
                         </svg>
                         <div style="flex: 1;">
-                            <div style="font-weight: 700; margin-bottom: 8px; color: #1a1a1a; font-size: 16px;">Email Support</div>
-                            <a href="mailto:contact@myartelab.com" style="color: #9747FF; text-decoration: none; word-break: break-all; font-size: 16px; font-weight: 600;">
+                            <div style="font-weight: 700; margin-bottom: 8px; color: #92400E; font-size: 16px;">Email Support</div>
+                            <a href="mailto:contact@myartelab.com" style="color: var(--primary); text-decoration: none; word-break: break-all; font-size: 16px; font-weight: 600;">
                                 contact@myartelab.com
                             </a>
-                            <p style="color: #666; font-size: 14px; margin-top: 10px; margin-bottom: 0;">
+                            <p style="color: #92400E; font-size: 14px; margin-top: 10px; margin-bottom: 0;">
                                 We typically respond within 24 hours
                             </p>
                         </div>
                     </div>
                 </div>
 
-                <div style="background: #f8f9fa; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px;">
-                    <h4 style="margin-bottom: 16px; font-size: 16px; font-weight: 700; color: #1a1a1a;">Common Questions</h4>
+                <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px;">
+                    <h4 style="margin-bottom: 16px; font-size: 16px; font-weight: 700;">Common Questions</h4>
                     <ul style="list-style: none; padding: 0; margin: 0;">
-                        <li style="padding: 12px 0; border-bottom: 1px solid #e5e7eb; color: #444; font-size: 14px;">How do I get started as a creator?</li>
-                        <li style="padding: 12px 0; border-bottom: 1px solid #e5e7eb; color: #444; font-size: 14px;">How do payments work?</li>
-                        <li style="padding: 12px 0; border-bottom: 1px solid #e5e7eb; color: #444; font-size: 14px;">How do I withdraw my earnings?</li>
-                        <li style="padding: 12px 0; color: #444; font-size: 14px;">How can I verify my account?</li>
+                        <li style="padding: 12px 0; border-bottom: 1px solid var(--border); color: var(--text-primary); font-size: 14px;">How do I get started as a creator?</li>
+                        <li style="padding: 12px 0; border-bottom: 1px solid var(--border); color: var(--text-primary); font-size: 14px;">How do payments work?</li>
+                        <li style="padding: 12px 0; border-bottom: 1px solid var(--border); color: var(--text-primary); font-size: 14px;">How do I withdraw my earnings?</li>
+                        <li style="padding: 12px 0; color: var(--text-primary); font-size: 14px;">How can I verify my account?</li>
                     </ul>
-                    <p style="color: #666; font-size: 13px; margin-top: 16px; margin-bottom: 0;">
+                    <p style="color: var(--text-secondary); font-size: 13px; margin-top: 16px; margin-bottom: 0;">
                         Send us your questions at the email above and we'll be happy to help!
                     </p>
                 </div>
-            </div>
-            <div class="form-actions">
-                <button class="btn-primary" onclick="this.closest('.modal-overlay').remove()">Close</button>
+
+                <div class="form-actions">
+                    <button class="btn-primary" onclick="closeModal()">Close</button>
+                </div>
             </div>
         </div>
     `;
-    document.body.appendChild(modal);
+
+    document.getElementById('modalsContainer').innerHTML = modalContent;
+    openModal();
 }
 
 window.handleEmailVerification = handleEmailVerification;
