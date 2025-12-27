@@ -34,15 +34,6 @@ export function renderCreatorCards(creators) {
     return creators.map((creator, index) => `
         <div class="creator-card card-entrance card-lift dynamic-light grid-item-${(index % 6) + 1}" data-creator-id="${creator.id}">
             <img src="${creator.avatar}" alt="${creator.name}" class="creator-image" loading="lazy">
-            <button class="creator-share-btn" data-creator-id="${creator.id}" data-creator-name="${creator.name}" aria-label="Share profile">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="18" cy="5" r="3"/>
-                    <circle cx="6" cy="12" r="3"/>
-                    <circle cx="18" cy="19" r="3"/>
-                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
-                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-                </svg>
-            </button>
             <div class="creator-info">
                 <div class="creator-header">
                     <div>
@@ -504,49 +495,7 @@ function setupProfileButtonListeners(creator) {
 // Focusing on core marketplace functionality over social features
 
 export function setupCreatorCardListeners() {
-    // Share profile buttons
-    document.querySelectorAll('.creator-share-btn').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            e.stopPropagation();
-            const creatorId = btn.dataset.creatorId;
-            const creatorName = btn.dataset.creatorName;
-
-            // Generate profile URL
-            const profileUrl = `${window.location.origin}${window.location.pathname}#/creator/${creatorId}`;
-
-            try {
-                // Try to use native share API if available (mobile devices)
-                if (navigator.share) {
-                    await navigator.share({
-                        title: `${creatorName} - MyArteLab`,
-                        text: `Check out ${creatorName}'s profile on MyArteLab`,
-                        url: profileUrl
-                    });
-                    window.showToast('Profile shared successfully!', 'success');
-                } else {
-                    // Fallback to clipboard copy
-                    await navigator.clipboard.writeText(profileUrl);
-                    window.showToast('Profile link copied to clipboard!', 'success');
-
-                    // Visual feedback - animate the button
-                    btn.classList.add('copied');
-                    setTimeout(() => btn.classList.remove('copied'), 2000);
-                }
-            } catch (error) {
-                // If clipboard fails, show the link in a modal
-                if (error.name === 'NotAllowedError' || error.name === 'TypeError') {
-                    // Fallback: show link in prompt
-                    const userCopied = prompt('Copy this profile link:', profileUrl);
-                    if (userCopied !== null) {
-                        window.showToast('Link ready to share!', 'info');
-                    }
-                } else {
-                    console.error('Error sharing profile:', error);
-                    window.showToast('Unable to share profile', 'error');
-                }
-            }
-        });
-    });
+    // Share button only on profile pages, not on cards
 
     document.querySelectorAll('.view-profile-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {

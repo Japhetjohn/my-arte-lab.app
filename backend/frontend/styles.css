@@ -593,51 +593,7 @@ p {
     transform: scale(1.08);
 }
 
-.creator-share-btn {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
-    border: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    z-index: 10;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.creator-share-btn:hover {
-    transform: scale(1.1);
-    background: white;
-    box-shadow: 0 4px 12px rgba(151, 71, 255, 0.2);
-}
-
-.creator-share-btn svg {
-    width: 18px;
-    height: 18px;
-    stroke: #64748B;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.creator-share-btn:hover svg {
-    stroke: var(--primary);
-    transform: scale(1.1);
-}
-
-.creator-share-btn.copied {
-    background: var(--primary);
-    transform: scale(1.05);
-}
-
-.creator-share-btn.copied svg {
-    stroke: white;
-}
+/* Share button removed from cards - only in profile pages */
 
 .creator-info {
     padding: 20px;
