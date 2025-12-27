@@ -76,7 +76,10 @@ export async function renderCreatorProfile(creatorIdOrObject) {
     const mainContent = document.getElementById('mainContent');
     let creator;
 
-    if (typeof creatorIdOrObject === 'object' && creatorIdOrObject.id) {
+    // Extract creator ID from string or object
+    const creatorId = typeof creatorIdOrObject === 'string' ? creatorIdOrObject : creatorIdOrObject.id;
+
+    if (creatorId) {
         try {
             mainContent.innerHTML = `
                 <div class="section">
@@ -92,7 +95,7 @@ export async function renderCreatorProfile(creatorIdOrObject) {
                 </div>
             `;
 
-            const response = await api.getCreatorProfile(creatorIdOrObject.id);
+            const response = await api.getCreatorProfile(creatorId);
 
             if (response.success) {
                 const apiCreator = response.data.creator;
@@ -139,9 +142,8 @@ export async function renderCreatorProfile(creatorIdOrObject) {
             `;
             return;
         }
-    } else {
-        creator = creatorIdOrObject;
     }
+
     const avatarUrl = creator.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name || 'User')}&background=9747FF&color=fff&bold=true`;
     const coverImage = creator.cover || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200';
     mainContent.innerHTML = `
