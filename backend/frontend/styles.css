@@ -2778,9 +2778,44 @@ html, body {
     }
 
     /* Fix profile cards on mobile */
+    .profile-cover {
+        height: 180px !important;
+    }
+
     .profile-header {
+        margin-top: -60px !important;
+        padding: 0 16px !important;
+        display: flex;
+        flex-direction: row;
+        align-items: flex-start;
+        gap: 16px;
+        text-align: left;
+    }
+
+    .profile-avatar {
+        width: 100px !important;
+        height: 100px !important;
+        border: 4px solid white !important;
+        flex-shrink: 0;
+    }
+
+    .profile-info {
+        flex: 1;
+        padding: 16px !important;
+    }
+
+    .profile-name-row {
         flex-direction: column;
-        text-align: center;
+        gap: 12px;
+    }
+
+    .profile-actions {
+        flex-direction: column !important;
+        gap: 8px !important;
+    }
+
+    .profile-actions button {
+        width: 100% !important;
     }
 
     /* Fix grid layouts on mobile */
