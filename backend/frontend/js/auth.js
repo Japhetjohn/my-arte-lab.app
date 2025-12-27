@@ -406,6 +406,12 @@ export function updateUserMenu() {
                     </svg>
                     My bookings
                 </button>
+                <button class="user-dropdown-item" onclick="navigateToPage('projects')">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                    Projects
+                </button>
                 <button class="user-dropdown-item" onclick="navigateToPage('wallet')">
                     <svg viewBox="0 0 24 24" fill="none">
                         <path d="M21 12V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5z" stroke="currentColor" stroke-width="2"/>

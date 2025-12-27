@@ -51,40 +51,22 @@ export async function renderProjectsPage() {
                     </div>
 
                     <!-- Filters -->
-                    <div class="card" style="padding: 20px; margin-bottom: 24px;">
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
-                            <div>
-                                <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px;">Category</label>
-                                <select id="categoryFilter" class="form-input" style="width: 100%;">
-                                    <option value="">All Categories</option>
-                                    <option value="photography">Photography</option>
-                                    <option value="videography">Videography</option>
-                                    <option value="design">Design</option>
-                                    <option value="illustration">Illustration</option>
-                                    <option value="content">Content</option>
-                                    <option value="other">Other</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px;">Project Type</label>
-                                <select id="projectTypeFilter" class="form-input" style="width: 100%;">
-                                    <option value="">All Types</option>
-                                    <option value="one-time">One-Time</option>
-                                    <option value="ongoing">Ongoing</option>
-                                    <option value="bounty">Bounty</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px;">Timeline</label>
-                                <select id="timelineFilter" class="form-input" style="width: 100%;">
-                                    <option value="">Any Timeline</option>
-                                    <option value="urgent">Urgent</option>
-                                    <option value="1-week">1 Week</option>
-                                    <option value="2-weeks">2 Weeks</option>
-                                    <option value="1-month">1 Month</option>
-                                    <option value="flexible">Flexible</option>
-                                </select>
-                            </div>
+                    <div style="margin-bottom: 24px;">
+                        <div class="filters-row" style="margin-bottom: 12px;">
+                            <button class="filter-chip active" data-filter="all" data-type="category">All Categories</button>
+                            <button class="filter-chip" data-filter="photography" data-type="category">Photography</button>
+                            <button class="filter-chip" data-filter="videography" data-type="category">Videography</button>
+                            <button class="filter-chip" data-filter="design" data-type="category">Design</button>
+                            <button class="filter-chip" data-filter="illustration" data-type="category">Illustration</button>
+                        </div>
+
+                        <div class="filters-row">
+                            <button class="filter-chip" data-filter="one-time" data-type="projectType">One-Time</button>
+                            <button class="filter-chip" data-filter="ongoing" data-type="projectType">Ongoing</button>
+                            <button class="filter-chip" data-filter="bounty" data-type="projectType">Bounty</button>
+                            <button class="filter-chip" data-filter="urgent" data-type="timeline">Urgent</button>
+                            <button class="filter-chip" data-filter="1-week" data-type="timeline">1 Week</button>
+                            <button class="filter-chip" data-filter="1-month" data-type="timeline">1 Month</button>
                         </div>
                     </div>
 
@@ -227,33 +209,69 @@ function renderEmptyState() {
     `;
 }
 
+let currentFilters = {
+    category: '',
+    projectType: '',
+    timeline: ''
+};
+
 function setupFilterListeners() {
-    const categoryFilter = document.getElementById('categoryFilter');
-    const projectTypeFilter = document.getElementById('projectTypeFilter');
-    const timelineFilter = document.getElementById('timelineFilter');
+    document.querySelectorAll('.filter-chip').forEach(chip => {
+        chip.addEventListener('click', async (e) => {
+            const filter = e.currentTarget.dataset.filter;
+            const filterType = e.currentTarget.dataset.type;
 
-    const applyFilters = async () => {
-        const filters = {};
+            if (filterType === 'category') {
+                // Category filters are mutually exclusive
+                document.querySelectorAll('.filter-chip[data-type="category"]').forEach(c => {
+                    c.classList.remove('active');
+                });
+                e.currentTarget.classList.add('active');
 
-        if (categoryFilter.value) filters.category = categoryFilter.value;
-        if (projectTypeFilter.value) filters.projectType = projectTypeFilter.value;
-        if (timelineFilter.value) filters.timeline = timelineFilter.value;
+                if (filter === 'all') {
+                    currentFilters.category = '';
+                } else {
+                    currentFilters.category = filter;
+                }
+            } else {
+                // Project type and timeline can be toggled
+                const isActive = e.currentTarget.classList.contains('active');
 
-        try {
-            const response = await api.getProjects(filters);
-            const projects = response.data.projects || [];
+                if (isActive) {
+                    e.currentTarget.classList.remove('active');
+                    currentFilters[filterType] = '';
+                } else {
+                    // Remove active from same type filters
+                    document.querySelectorAll(`.filter-chip[data-type="${filterType}"]`).forEach(c => {
+                        c.classList.remove('active');
+                    });
+                    e.currentTarget.classList.add('active');
+                    currentFilters[filterType] = filter;
+                }
+            }
 
-            document.getElementById('projectsGrid').innerHTML = renderProjectCards(projects);
-            setupProjectCardListeners();
-        } catch (error) {
-            console.error('Error filtering projects:', error);
-            window.showToast('Failed to filter projects', 'error');
-        }
-    };
+            await applyFilters();
+        });
+    });
+}
 
-    categoryFilter?.addEventListener('change', applyFilters);
-    projectTypeFilter?.addEventListener('change', applyFilters);
-    timelineFilter?.addEventListener('change', applyFilters);
+async function applyFilters() {
+    const filters = {};
+
+    if (currentFilters.category) filters.category = currentFilters.category;
+    if (currentFilters.projectType) filters.projectType = currentFilters.projectType;
+    if (currentFilters.timeline) filters.timeline = currentFilters.timeline;
+
+    try {
+        const response = await api.getProjects(filters);
+        const projects = response.data.projects || [];
+
+        document.getElementById('projectsGrid').innerHTML = renderProjectCards(projects);
+        setupProjectCardListeners();
+    } catch (error) {
+        console.error('Error filtering projects:', error);
+        window.showToast('Failed to filter projects', 'error');
+    }
 }
 
 function setupProjectCardListeners() {
