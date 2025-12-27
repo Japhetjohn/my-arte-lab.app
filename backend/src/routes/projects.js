@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { authenticateToken, optionalAuth } = require('../middleware/auth');
+const { protect, optionalAuth } = require('../middleware/auth');
 const Project = require('../models/Project');
 const Application = require('../models/Application');
 const User = require('../models/User');
@@ -67,7 +67,7 @@ router.get('/:id', optionalAuth, async (req, res) => {
     // Check if current user has applied (if authenticated)
     let hasApplied = false;
     if (req.user) {
-      hasApplied = await Application.checkExistingApplication(project._id, req.user.userId);
+      hasApplied = await Application.checkExistingApplication(project._id, req.user._id);
     }
 
     res.json({
@@ -87,7 +87,7 @@ router.get('/:id', optionalAuth, async (req, res) => {
 });
 
 // Create new project (clients only or any user)
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', protect, async (req, res) => {
   try {
     const {
       title, description, category, budget, timeline, deadline,
@@ -119,7 +119,7 @@ router.post('/', authenticateToken, async (req, res) => {
       skillsRequired: skillsRequired || [],
       deliverables: deliverables || [],
       projectType: projectType || 'one-time',
-      clientId: req.user.userId
+      clientId: req.user._id
     });
 
     await project.save();
@@ -142,7 +142,7 @@ router.post('/', authenticateToken, async (req, res) => {
 });
 
 // Update project
-router.patch('/:id', authenticateToken, async (req, res) => {
+router.patch('/:id', protect, async (req, res) => {
   try {
     const project = await Project.findById(req.params.id);
 
@@ -154,7 +154,7 @@ router.patch('/:id', authenticateToken, async (req, res) => {
     }
 
     // Check if user owns this project
-    if (project.clientId.toString() !== req.user.userId) {
+    if (project.clientId.toString() !== req.user._id.toString()) {
       return res.status(403).json({
         success: false,
         message: 'Unauthorized to update this project'
@@ -190,9 +190,9 @@ router.patch('/:id', authenticateToken, async (req, res) => {
 });
 
 // Get my projects (projects I posted)
-router.get('/my/posted', authenticateToken, async (req, res) => {
+router.get('/my/posted', protect, async (req, res) => {
   try {
-    const projects = await Project.find({ clientId: req.user.userId })
+    const projects = await Project.find({ clientId: req.user._id })
       .populate('selectedCreatorId', 'name avatar')
       .sort({ createdAt: -1 });
 
@@ -210,7 +210,7 @@ router.get('/my/posted', authenticateToken, async (req, res) => {
 });
 
 // Get applications for a project (project owner only)
-router.get('/:id/applications', authenticateToken, async (req, res) => {
+router.get('/:id/applications', protect, async (req, res) => {
   try {
     const project = await Project.findById(req.params.id);
 
@@ -222,7 +222,7 @@ router.get('/:id/applications', authenticateToken, async (req, res) => {
     }
 
     // Check if user owns this project
-    if (project.clientId.toString() !== req.user.userId) {
+    if (project.clientId.toString() !== req.user._id.toString().toString()) {
       return res.status(403).json({
         success: false,
         message: 'Unauthorized to view applications'
@@ -245,7 +245,7 @@ router.get('/:id/applications', authenticateToken, async (req, res) => {
 });
 
 // Apply to project (creators)
-router.post('/:id/apply', authenticateToken, async (req, res) => {
+router.post('/:id/apply', protect, async (req, res) => {
   try {
     const { coverLetter, proposedBudget, proposedTimeline, portfolioLinks } = req.body;
 
@@ -273,7 +273,7 @@ router.post('/:id/apply', authenticateToken, async (req, res) => {
     }
 
     // Check if user already applied
-    const hasApplied = await Application.checkExistingApplication(project._id, req.user.userId);
+    const hasApplied = await Application.checkExistingApplication(project._id, req.user._id);
     if (hasApplied) {
       return res.status(400).json({
         success: false,
@@ -283,7 +283,7 @@ router.post('/:id/apply', authenticateToken, async (req, res) => {
 
     const application = new Application({
       projectId: project._id,
-      creatorId: req.user.userId,
+      creatorId: req.user._id,
       coverLetter,
       proposedBudget,
       proposedTimeline,
@@ -319,9 +319,9 @@ router.post('/:id/apply', authenticateToken, async (req, res) => {
 });
 
 // Get my applications (applications I submitted)
-router.get('/my/applications', authenticateToken, async (req, res) => {
+router.get('/my/applications', protect, async (req, res) => {
   try {
-    const applications = await Application.findByCreator(req.user.userId);
+    const applications = await Application.findByCreator(req.user._id);
 
     res.json({
       success: true,
@@ -337,7 +337,7 @@ router.get('/my/applications', authenticateToken, async (req, res) => {
 });
 
 // Accept/reject application (project owner only)
-router.patch('/applications/:id', authenticateToken, async (req, res) => {
+router.patch('/applications/:id', protect, async (req, res) => {
   try {
     const { status, reviewNotes } = req.body;
 
@@ -360,7 +360,7 @@ router.patch('/applications/:id', authenticateToken, async (req, res) => {
     const project = application.projectId;
 
     // Check if user owns the project
-    if (project.clientId.toString() !== req.user.userId) {
+    if (project.clientId.toString() !== req.user._id.toString()) {
       return res.status(403).json({
         success: false,
         message: 'Unauthorized'
