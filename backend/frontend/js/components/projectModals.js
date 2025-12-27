@@ -1,5 +1,6 @@
 import api from '../services/api.js';
 import { appState } from '../state.js';
+import { openModal } from '../utils.js';
 
 /**
  * Show Post Project Modal
@@ -10,132 +11,139 @@ export function showPostProjectModal() {
         return;
     }
 
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
-    modal.innerHTML = `
-        <div class="modal" style="max-width: 700px;">
-            <div class="modal-header">
-                <h2>Post a Project</h2>
-                <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                        <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                    </svg>
-                </button>
-            </div>
-            <form id="postProjectForm" class="modal-body" style="max-height: calc(90vh - 180px); overflow-y: auto;">
-                <div class="form-group">
-                    <label class="form-label">Project Title *</label>
-                    <input type="text" name="title" class="form-input" placeholder="e.g., Need product photography for e-commerce store" required maxlength="200">
+    const modalContent = `
+        <div class="modal" onclick="closeModalOnBackdrop(event)">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Post a Project</h2>
+                    <button class="icon-btn" onclick="closeModal()">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </button>
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label">Category *</label>
-                    <select name="category" class="form-input" required>
-                        <option value="">Select category</option>
-                        <option value="photography">Photography</option>
-                        <option value="videography">Videography</option>
-                        <option value="design">Design</option>
-                        <option value="illustration">Illustration</option>
-                        <option value="content">Content Creation</option>
-                        <option value="other">Other</option>
-                    </select>
+                <div style="background: #FEF3C7; padding: 16px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #F59E0B;">
+                    <div style="color: #92400E; font-size: 14px; font-weight: 500; margin-bottom: 8px;">
+                        How it works:
+                    </div>
+                    <ol style="color: #92400E; font-size: 13px; margin: 0; padding-left: 20px; line-height: 1.6;">
+                        <li>Post your project with detailed requirements and budget</li>
+                        <li>Creators browse and apply with their proposals</li>
+                        <li>Review applications and select the best creator</li>
+                        <li>Work begins once you accept their application</li>
+                    </ol>
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label">Project Type *</label>
-                    <select name="projectType" class="form-input" required>
-                        <option value="one-time">One-Time Project</option>
-                        <option value="ongoing">Ongoing Work</option>
-                        <option value="bounty">Bounty (Best submission wins)</option>
-                    </select>
-                    <small style="color: var(--text-secondary); font-size: 12px; margin-top: 4px; display: block;">
-                        One-time: Fixed scope. Ongoing: Retainer-based. Bounty: Competition style.
-                    </small>
-                </div>
+                <form id="postProjectForm">
+                    <div class="form-group">
+                        <label class="form-label">Project Title *</label>
+                        <input type="text" name="title" class="form-input" placeholder="e.g., Need product photography for e-commerce store" required maxlength="200">
+                    </div>
 
-                <div class="form-group">
-                    <label class="form-label">Description *</label>
-                    <textarea name="description" class="form-input" rows="6" placeholder="Describe your project in detail. What are you looking for? What's the scope of work?" required maxlength="5000"></textarea>
-                    <small style="color: var(--text-secondary); font-size: 12px; margin-top: 4px; display: block;">
-                        <span id="descCharCount">0</span>/5000 characters
-                    </small>
-                </div>
+                    <div class="form-group">
+                        <label class="form-label">Category *</label>
+                        <select name="category" class="form-input" required>
+                            <option value="">Select category</option>
+                            <option value="photography">Photography</option>
+                            <option value="videography">Videography</option>
+                            <option value="design">Design</option>
+                            <option value="illustration">Illustration</option>
+                            <option value="content">Content Creation</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
 
-                <div class="form-group">
-                    <label class="form-label">Budget Range (USDC) *</label>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                        <div>
+                    <div class="form-group">
+                        <label class="form-label">Project Type *</label>
+                        <select name="projectType" class="form-input" required>
+                            <option value="one-time">One-Time Project</option>
+                            <option value="ongoing">Ongoing Work</option>
+                            <option value="bounty">Bounty (Best submission wins)</option>
+                        </select>
+                        <div class="caption mt-sm">One-time: Fixed scope. Ongoing: Retainer-based. Bounty: Competition style.</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Description *</label>
+                        <textarea name="description" class="form-textarea" rows="6" placeholder="Describe your project in detail. What are you looking for? What's the scope of work?" required maxlength="5000"></textarea>
+                        <div class="caption mt-sm"><span id="descCharCount">0</span>/5000 characters</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Budget Range (USDC) *</label>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                             <input type="number" name="budgetMin" class="form-input" placeholder="Min $" required min="0" step="1">
-                        </div>
-                        <div>
                             <input type="number" name="budgetMax" class="form-input" placeholder="Max $" required min="0" step="1">
                         </div>
+                        <label style="display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 14px;">
+                            <input type="checkbox" name="negotiable" checked>
+                            <span>Budget is negotiable</span>
+                        </label>
                     </div>
-                    <label style="display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 14px;">
-                        <input type="checkbox" name="negotiable" checked>
-                        <span>Budget is negotiable</span>
-                    </label>
-                </div>
 
-                <div class="form-group">
-                    <label class="form-label">Timeline *</label>
-                    <select name="timeline" class="form-input" required>
-                        <option value="urgent">Urgent (ASAP)</option>
-                        <option value="1-week">1 Week</option>
-                        <option value="2-weeks">2 Weeks</option>
-                        <option value="1-month" selected>1 Month</option>
-                        <option value="2-months">2 Months</option>
-                        <option value="3-months">3 Months</option>
-                        <option value="flexible">Flexible</option>
-                    </select>
-                </div>
+                    <div class="form-group">
+                        <label class="form-label">Start Date *</label>
+                        <input type="date" name="startDate" class="form-input" required min="${new Date().toISOString().split('T')[0]}" onchange="updateProjectEndDateMin()">
+                        <div class="caption mt-sm">When do you want the project to start?</div>
+                    </div>
 
-                <div class="form-group">
-                    <label class="form-label">Deadline (Optional)</label>
-                    <input type="date" name="deadline" class="form-input" min="${new Date().toISOString().split('T')[0]}">
-                </div>
+                    <div class="form-group">
+                        <label class="form-label">Expected Completion Date *</label>
+                        <input type="date" name="deadline" class="form-input" required min="${new Date().toISOString().split('T')[0]}">
+                        <div class="caption mt-sm">When do you need this completed?</div>
+                    </div>
 
-                <div class="form-group">
-                    <label class="form-label">Skills Required</label>
-                    <input type="text" id="skillsInput" class="form-input" placeholder="Type skill and press Enter">
-                    <div id="skillsList" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;"></div>
-                    <small style="color: var(--text-secondary); font-size: 12px; margin-top: 4px; display: block;">
-                        Press Enter to add each skill
-                    </small>
-                </div>
+                    <script>
+                        function updateProjectEndDateMin() {
+                            const startDate = document.querySelector('[name="startDate"]').value;
+                            const endDateInput = document.querySelector('[name="deadline"]');
+                            if (startDate) {
+                                endDateInput.min = startDate;
+                            }
+                        }
+                    </script>
 
-                <div class="form-group">
-                    <label class="form-label">Deliverables Expected</label>
-                    <input type="text" id="deliverablesInput" class="form-input" placeholder="Type deliverable and press Enter">
-                    <div id="deliverablesList" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;"></div>
-                    <small style="color: var(--text-secondary); font-size: 12px; margin-top: 4px; display: block;">
-                        e.g., "50 edited photos", "2-minute video", etc.
-                    </small>
-                </div>
-            </form>
-            <div class="form-actions" style="border-top: 1px solid var(--border); padding: 20px; background: var(--surface);">
-                <button type="button" class="btn-ghost" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
-                <button type="submit" form="postProjectForm" class="btn-primary" id="submitProjectBtn">Post Project</button>
+                    <div class="form-group">
+                        <label class="form-label">Skills Required</label>
+                        <input type="text" id="skillsInput" class="form-input" placeholder="Type skill and press Enter">
+                        <div id="skillsList" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;"></div>
+                        <div class="caption mt-sm">Press Enter to add each skill</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Deliverables Expected</label>
+                        <input type="text" id="deliverablesInput" class="form-input" placeholder="Type deliverable and press Enter">
+                        <div id="deliverablesList" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;"></div>
+                        <div class="caption mt-sm">e.g., "50 edited photos", "2-minute video", etc.</div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn-ghost" onclick="closeModal()">Cancel</button>
+                        <button type="submit" class="btn-primary" id="submitProjectBtn">Post Project</button>
+                    </div>
+                </form>
             </div>
         </div>
     `;
 
-    document.body.appendChild(modal);
+    document.getElementById('modalsContainer').innerHTML = modalContent;
+    openModal();
 
     // Setup form handlers
     const skills = [];
     const deliverables = [];
 
     // Character counter
-    const descTextarea = modal.querySelector('[name="description"]');
-    const charCount = modal.querySelector('#descCharCount');
+    const descTextarea = document.querySelector('[name="description"]');
+    const charCount = document.getElementById('descCharCount');
     descTextarea.addEventListener('input', () => {
         charCount.textContent = descTextarea.value.length;
     });
 
     // Skills input
-    const skillsInput = modal.querySelector('#skillsInput');
-    const skillsList = modal.querySelector('#skillsList');
+    const skillsInput = document.getElementById('skillsInput');
+    const skillsList = document.getElementById('skillsList');
 
     skillsInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
@@ -150,19 +158,27 @@ export function showPostProjectModal() {
     });
 
     function renderSkills() {
-        skillsList.innerHTML = skills.map((skill, index) => `
+        skillsList.innerHTML = skills.map(skill => `
             <span style="background: var(--primary); color: white; padding: 6px 12px; border-radius: 6px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px;">
                 ${skill}
-                <button type="button" onclick="this.parentElement.remove()" style="background: none; border: none; color: white; cursor: pointer; padding: 0; line-height: 1;">
+                <button type="button" onclick="removeSkill('${skill}')" style="background: none; border: none; color: white; cursor: pointer; padding: 0; line-height: 1;">
                     ×
                 </button>
             </span>
         `).join('');
     }
 
+    window.removeSkill = function(skill) {
+        const index = skills.indexOf(skill);
+        if (index > -1) {
+            skills.splice(index, 1);
+            renderSkills();
+        }
+    };
+
     // Deliverables input
-    const deliverablesInput = modal.querySelector('#deliverablesInput');
-    const deliverablesList = modal.querySelector('#deliverablesList');
+    const deliverablesInput = document.getElementById('deliverablesInput');
+    const deliverablesList = document.getElementById('deliverablesList');
 
     deliverablesInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
@@ -177,19 +193,27 @@ export function showPostProjectModal() {
     });
 
     function renderDeliverables() {
-        deliverablesList.innerHTML = deliverables.map((item, index) => `
+        deliverablesList.innerHTML = deliverables.map(item => `
             <span style="background: #10b981; color: white; padding: 6px 12px; border-radius: 6px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px;">
                 ${item}
-                <button type="button" onclick="this.parentElement.remove()" style="background: none; border: none; color: white; cursor: pointer; padding: 0; line-height: 1;">
+                <button type="button" onclick="removeDeliverable('${item}')" style="background: none; border: none; color: white; cursor: pointer; padding: 0; line-height: 1;">
                     ×
                 </button>
             </span>
         `).join('');
     }
 
+    window.removeDeliverable = function(item) {
+        const index = deliverables.indexOf(item);
+        if (index > -1) {
+            deliverables.splice(index, 1);
+            renderDeliverables();
+        }
+    };
+
     // Form submission
-    const form = modal.querySelector('#postProjectForm');
-    const submitBtn = modal.querySelector('#submitProjectBtn');
+    const form = document.getElementById('postProjectForm');
+    const submitBtn = document.getElementById('submitProjectBtn');
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -197,11 +221,26 @@ export function showPostProjectModal() {
         const formData = new FormData(form);
         const budgetMin = Number(formData.get('budgetMin'));
         const budgetMax = Number(formData.get('budgetMax'));
+        const startDate = formData.get('startDate');
+        const deadline = formData.get('deadline');
 
         if (budgetMin > budgetMax) {
             window.showToast('Minimum budget cannot be greater than maximum budget', 'error');
             return;
         }
+
+        // Calculate timeline from dates
+        const start = new Date(startDate);
+        const end = new Date(deadline);
+        const daysDiff = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+
+        let timeline = 'flexible';
+        if (daysDiff <= 2) timeline = 'urgent';
+        else if (daysDiff <= 7) timeline = '1-week';
+        else if (daysDiff <= 14) timeline = '2-weeks';
+        else if (daysDiff <= 30) timeline = '1-month';
+        else if (daysDiff <= 60) timeline = '2-months';
+        else if (daysDiff <= 90) timeline = '3-months';
 
         const projectData = {
             title: formData.get('title'),
@@ -213,8 +252,8 @@ export function showPostProjectModal() {
                 max: budgetMax,
                 negotiable: formData.get('negotiable') === 'on'
             },
-            timeline: formData.get('timeline'),
-            deadline: formData.get('deadline') || null,
+            timeline: timeline,
+            deadline: deadline,
             skillsRequired: skills,
             deliverables: deliverables
         };
@@ -227,8 +266,7 @@ export function showPostProjectModal() {
 
             if (response.success) {
                 window.showToast('Project posted successfully!', 'success');
-                modal.remove();
-                // Refresh projects page
+                window.closeModal();
                 window.navigateToPage('projects');
             } else {
                 throw new Error(response.message || 'Failed to post project');
@@ -247,21 +285,7 @@ export function showPostProjectModal() {
  * Show Project Detail Modal
  */
 export async function showProjectDetail(projectId) {
-    // Show loading modal first
-    const loadingModal = document.createElement('div');
-    loadingModal.className = 'modal-overlay';
-    loadingModal.innerHTML = `
-        <div class="modal" style="max-width: 900px;">
-            <div class="text-center" style="padding: 60px 20px;">
-                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" style="opacity: 0.4; margin-bottom: 16px; animation: spin 1s linear infinite;">
-                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-                    <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2"/>
-                </svg>
-                <p class="text-secondary">Loading project details...</p>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(loadingModal);
+    window.showLoadingSpinner('Loading project details...');
 
     try {
         const response = await api.getProject(projectId);
@@ -273,61 +297,59 @@ export async function showProjectDetail(projectId) {
         const project = response.data.project;
         const hasApplied = response.data.hasApplied;
 
-        loadingModal.remove();
+        window.hideLoadingSpinner();
 
-        const modal = document.createElement('div');
-        modal.className = 'modal-overlay';
-        modal.innerHTML = `
-            <div class="modal" style="max-width: 900px;">
-                <div class="modal-header">
-                    <div>
-                        <span class="badge" style="background: ${getProjectTypeBadgeColor(project.projectType)}; color: white; margin-bottom: 8px;">
-                            ${project.projectType.replace('-', ' ')}
-                        </span>
-                        <h2 style="margin: 0;">${project.title}</h2>
-                    </div>
-                    <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                        </svg>
-                    </button>
-                </div>
-
-                <div class="modal-body" style="max-height: calc(90vh - 200px); overflow-y: auto;">
-                    <!-- Project Info Grid -->
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; padding: 20px; background: var(--surface); border-radius: 12px;">
+        const modalContent = `
+            <div class="modal" onclick="closeModalOnBackdrop(event)">
+                <div class="modal-content" style="max-width: 900px;">
+                    <div class="modal-header">
                         <div>
-                            <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 4px;">Budget</div>
+                            <span class="badge" style="background: ${getProjectTypeBadgeColor(project.projectType)}; color: white; margin-bottom: 8px;">
+                                ${project.projectType.replace('-', ' ')}
+                            </span>
+                            <h2 style="margin: 0;">${project.title}</h2>
+                        </div>
+                        <button class="icon-btn" onclick="closeModal()">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Project Info Grid -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; padding: 20px; background: var(--background-alt); border-radius: var(--radius);">
+                        <div>
+                            <div class="caption">Budget</div>
                             <div style="font-size: 20px; font-weight: 700; color: #10b981;">
                                 $${project.budget.min} - $${project.budget.max}
                             </div>
-                            ${project.budget.negotiable ? '<div style="font-size: 12px; color: var(--text-secondary);">Negotiable</div>' : ''}
+                            ${project.budget.negotiable ? '<div class="caption">Negotiable</div>' : ''}
                         </div>
                         <div>
-                            <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 4px;">Timeline</div>
+                            <div class="caption">Timeline</div>
                             <div style="font-size: 16px; font-weight: 600;">${formatTimeline(project.timeline)}</div>
-                            ${project.deadline ? `<div style="font-size: 12px; color: var(--text-secondary);">Deadline: ${new Date(project.deadline).toLocaleDateString()}</div>` : ''}
+                            ${project.deadline ? `<div class="caption">Deadline: ${new Date(project.deadline).toLocaleDateString()}</div>` : ''}
                         </div>
                         <div>
-                            <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 4px;">Applications</div>
+                            <div class="caption">Applications</div>
                             <div style="font-size: 16px; font-weight: 600;">${project.applicationsCount}</div>
                         </div>
                         <div>
-                            <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 4px;">Posted</div>
+                            <div class="caption">Posted</div>
                             <div style="font-size: 14px;">${formatTimeAgo(project.createdAt)}</div>
                         </div>
                     </div>
 
                     <!-- Description -->
-                    <div style="margin-bottom: 24px;">
-                        <h3 style="margin-bottom: 12px;">Description</h3>
-                        <p style="white-space: pre-wrap; line-height: 1.6; color: var(--text-secondary);">${project.description}</p>
+                    <div class="form-group">
+                        <h3>Description</h3>
+                        <p style="white-space: pre-wrap; line-height: 1.6;">${project.description}</p>
                     </div>
 
                     <!-- Skills Required -->
                     ${project.skillsRequired && project.skillsRequired.length > 0 ? `
-                        <div style="margin-bottom: 24px;">
-                            <h3 style="margin-bottom: 12px;">Skills Required</h3>
+                        <div class="form-group">
+                            <h3>Skills Required</h3>
                             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                                 ${project.skillsRequired.map(skill => `
                                     <span style="background: var(--primary); color: white; padding: 6px 14px; border-radius: 6px; font-size: 14px;">
@@ -340,8 +362,8 @@ export async function showProjectDetail(projectId) {
 
                     <!-- Deliverables -->
                     ${project.deliverables && project.deliverables.length > 0 ? `
-                        <div style="margin-bottom: 24px;">
-                            <h3 style="margin-bottom: 12px;">Deliverables Expected</h3>
+                        <div class="form-group">
+                            <h3>Deliverables Expected</h3>
                             <ul style="list-style: none; padding: 0; margin: 0;">
                                 ${project.deliverables.map(item => `
                                     <li style="padding: 8px 0; display: flex; align-items: center; gap: 8px;">
@@ -356,9 +378,9 @@ export async function showProjectDetail(projectId) {
                     ` : ''}
 
                     <!-- Client Info -->
-                    <div style="border-top: 1px solid var(--border); padding-top: 24px;">
+                    <div style="border-top: 1px solid var(--border); padding-top: 24px; margin-top: 24px;">
                         <h3 style="margin-bottom: 16px;">Posted by</h3>
-                        <div class="card" style="padding: 20px; cursor: pointer;" onclick="window.showClientProfile('${project.clientId._id}')">
+                        <div style="background: var(--background-alt); padding: 20px; border-radius: var(--radius);">
                             <div style="display: flex; align-items: center; gap: 16px;">
                                 <img src="${project.clientId.avatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(project.clientId.name)}"
                                      alt="${project.clientId.name}"
@@ -366,39 +388,36 @@ export async function showProjectDetail(projectId) {
                                 <div style="flex: 1;">
                                     <div style="font-weight: 700; font-size: 18px; margin-bottom: 4px; display: flex; align-items: center; gap: 8px;">
                                         ${project.clientId.name}
-                                        ${project.clientId.isEmailVerified ? '<span style="color: #10b981;">✓ Verified</span>' : ''}
+                                        ${project.clientId.isEmailVerified ? '<span style="color: #10b981;">✓</span>' : ''}
                                     </div>
-                                    <div style="color: var(--text-secondary); font-size: 14px;">${project.clientId.email}</div>
-                                    ${project.clientId.bio ? `<div style="margin-top: 8px; font-size: 14px; color: var(--text-secondary);">${project.clientId.bio}</div>` : ''}
+                                    <div class="caption">${project.clientId.email}</div>
                                 </div>
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style="color: var(--text-secondary);">
-                                    <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                </svg>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="form-actions" style="border-top: 1px solid var(--border); padding: 20px; background: var(--surface);">
-                    ${renderProjectActions(project, hasApplied)}
+                    <div class="form-actions">
+                        ${renderProjectActions(project, hasApplied)}
+                    </div>
                 </div>
             </div>
         `;
 
-        document.body.appendChild(modal);
+        document.getElementById('modalsContainer').innerHTML = modalContent;
+        openModal();
 
     } catch (error) {
         console.error('Error loading project:', error);
-        loadingModal.remove();
+        window.hideLoadingSpinner();
         window.showToast(error.message || 'Failed to load project details', 'error');
     }
 }
 
 function renderProjectActions(project, hasApplied) {
     // If user owns the project
-    if (appState.user && project.clientId._id === appState.user.userId) {
+    if (appState.user && project.clientId._id === appState.user._id) {
         return `
-            <button class="btn-ghost" onclick="this.closest('.modal-overlay').remove()">Close</button>
+            <button class="btn-ghost" onclick="closeModal()">Close</button>
             <button class="btn-primary" onclick="window.viewProjectApplications('${project._id}')">
                 View Applications (${project.applicationsCount})
             </button>
@@ -409,25 +428,25 @@ function renderProjectActions(project, hasApplied) {
     if (appState.user) {
         if (hasApplied) {
             return `
-                <button class="btn-ghost" onclick="this.closest('.modal-overlay').remove()">Close</button>
+                <button class="btn-ghost" onclick="closeModal()">Close</button>
                 <button class="btn-secondary" disabled>Already Applied</button>
             `;
         }
 
-        if (project.status === 'open') {
-            return `
-                <button class="btn-ghost" onclick="this.closest('.modal-overlay').remove()">Close</button>
-                <button class="btn-primary" onclick="window.showApplicationForm('${project._id}')">Apply Now</button>
-            `;
-        }
-
-        return `<button class="btn-primary" onclick="this.closest('.modal-overlay').remove()">Close</button>`;
+        return `
+            <button class="btn-ghost" onclick="closeModal()">Close</button>
+            <button class="btn-primary" onclick="window.showApplicationForm('${project._id}')">
+                Apply to Project
+            </button>
+        `;
     }
 
     // Not logged in
     return `
-        <button class="btn-ghost" onclick="this.closest('.modal-overlay').remove()">Close</button>
-        <button class="btn-primary" onclick="window.showAuthModal('signin')">Sign In to Apply</button>
+        <button class="btn-ghost" onclick="closeModal()">Close</button>
+        <button class="btn-primary" onclick="window.showAuthModal('signin')">
+            Sign In to Apply
+        </button>
     `;
 }
 
@@ -484,72 +503,82 @@ export async function showApplicationForm(projectId) {
         return;
     }
 
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
-    modal.innerHTML = `
-        <div class="modal" style="max-width: 700px;">
-            <div class="modal-header">
-                <h2>Apply to Project</h2>
-                <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                        <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                    </svg>
-                </button>
-            </div>
-            <form id="applicationForm" class="modal-body" style="max-height: calc(90vh - 180px); overflow-y: auto;">
-                <div class="form-group">
-                    <label class="form-label">Cover Letter *</label>
-                    <textarea name="coverLetter" class="form-input" rows="8" placeholder="Explain why you're the best fit for this project. Highlight your relevant experience and how you'll approach the work." required maxlength="2000"></textarea>
-                    <small style="color: var(--text-secondary); font-size: 12px; margin-top: 4px; display: block;">
-                        <span id="coverLetterCount">0</span>/2000 characters
-                    </small>
+    const modalContent = `
+        <div class="modal" onclick="closeModalOnBackdrop(event)">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Apply to Project</h2>
+                    <button class="icon-btn" onclick="closeModal()">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </button>
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label">Your Proposed Budget (USDC) *</label>
-                    <input type="number" name="proposedBudget" class="form-input" placeholder="Enter your price" required min="0" step="1">
-                    <small style="color: var(--text-secondary); font-size: 12px; margin-top: 4px; display: block;">
-                        Based on project scope and your expertise
-                    </small>
+                <div style="background: #FEF3C7; padding: 16px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #F59E0B;">
+                    <div style="color: #92400E; font-size: 14px; font-weight: 500; margin-bottom: 8px;">
+                        Application Tips:
+                    </div>
+                    <ul style="color: #92400E; font-size: 13px; margin: 0; padding-left: 20px; line-height: 1.6;">
+                        <li>Highlight relevant experience and showcase your best work</li>
+                        <li>Be specific about your approach and timeline</li>
+                        <li>Propose a competitive but fair budget</li>
+                    </ul>
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label">Timeline/Delivery Estimate *</label>
-                    <input type="text" name="proposedTimeline" class="form-input" placeholder="e.g., 2 weeks, 5 business days" required maxlength="200">
-                    <small style="color: var(--text-secondary); font-size: 12px; margin-top: 4px; display: block;">
-                        When can you deliver?
-                    </small>
-                </div>
+                <form id="applicationForm">
+                    <div class="form-group">
+                        <label class="form-label">Cover Letter *</label>
+                        <textarea name="coverLetter" class="form-textarea" rows="8" placeholder="Explain why you're the best fit for this project. Highlight your relevant experience and how you'll approach the work." required maxlength="2000"></textarea>
+                        <div class="caption mt-sm"><span id="coverLetterCount">0</span>/2000 characters</div>
+                    </div>
 
-                <div class="form-group">
-                    <label class="form-label">Portfolio Links (Optional)</label>
-                    <input type="text" id="portfolioLinkInput" class="form-input" placeholder="Paste link and press Enter">
-                    <div id="portfolioLinksList" style="margin-top: 12px;"></div>
-                    <small style="color: var(--text-secondary); font-size: 12px; margin-top: 4px; display: block;">
-                        Add relevant work samples or portfolio pieces
-                    </small>
-                </div>
-            </form>
-            <div class="form-actions" style="border-top: 1px solid var(--border); padding: 20px; background: var(--surface);">
-                <button type="button" class="btn-ghost" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
-                <button type="submit" form="applicationForm" class="btn-primary" id="submitApplicationBtn">Submit Application</button>
+                    <div class="form-group">
+                        <label class="form-label">Your Proposed Budget (USDC) *</label>
+                        <input type="number" name="proposedBudget" class="form-input" placeholder="Enter your price" required min="0" step="1">
+                        <div class="caption mt-sm">Based on project scope and your expertise</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Timeline/Delivery Estimate *</label>
+                        <input type="text" name="proposedTimeline" class="form-input" placeholder="e.g., 2 weeks, 5 business days" required maxlength="200">
+                        <div class="caption mt-sm">When can you deliver?</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Portfolio Links (Optional)</label>
+                        <input type="text" id="portfolioLinkInput" class="form-input" placeholder="Paste link and press Enter">
+                        <div id="portfolioLinksList" style="margin-top: 12px;"></div>
+                        <div class="caption mt-sm">Add relevant work samples or portfolio pieces</div>
+                    </div>
+
+                    <div class="alert alert-success">
+                        <strong>Note:</strong> You can edit or withdraw your application before the client reviews it.
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn-ghost" onclick="closeModal()">Cancel</button>
+                        <button type="submit" class="btn-primary" id="submitApplicationBtn">Submit Application</button>
+                    </div>
+                </form>
             </div>
         </div>
     `;
 
-    document.body.appendChild(modal);
+    document.getElementById('modalsContainer').innerHTML = modalContent;
+    openModal();
 
     // Character counter
-    const coverLetterTextarea = modal.querySelector('[name="coverLetter"]');
-    const charCount = modal.querySelector('#coverLetterCount');
+    const coverLetterTextarea = document.querySelector('[name="coverLetter"]');
+    const charCount = document.getElementById('coverLetterCount');
     coverLetterTextarea.addEventListener('input', () => {
         charCount.textContent = coverLetterTextarea.value.length;
     });
 
     // Portfolio links
     const portfolioLinks = [];
-    const portfolioInput = modal.querySelector('#portfolioLinkInput');
-    const portfolioList = modal.querySelector('#portfolioLinksList');
+    const portfolioInput = document.getElementById('portfolioLinkInput');
+    const portfolioList = document.getElementById('portfolioLinksList');
 
     portfolioInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
@@ -567,18 +596,23 @@ export async function showApplicationForm(projectId) {
 
     function renderPortfolioLinks() {
         portfolioList.innerHTML = portfolioLinks.map((link, index) => `
-            <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--surface); border-radius: 8px; margin-bottom: 8px;">
+            <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--background-alt); border-radius: 8px; margin-bottom: 8px;">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="flex-shrink: 0; color: var(--primary);">
                     <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" stroke="currentColor" stroke-width="2"/>
                     <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" stroke="currentColor" stroke-width="2"/>
                 </svg>
                 <a href="${link.url}" target="_blank" style="flex: 1; color: var(--primary); text-decoration: none; font-size: 14px;">${link.url}</a>
-                <button type="button" onclick="this.closest('div').remove()" class="btn-ghost" style="padding: 4px 8px; min-width: auto;">
+                <button type="button" onclick="removePortfolioLink(${index})" class="btn-ghost" style="padding: 4px 8px; min-width: auto;">
                     ×
                 </button>
             </div>
         `).join('');
     }
+
+    window.removePortfolioLink = function(index) {
+        portfolioLinks.splice(index, 1);
+        renderPortfolioLinks();
+    };
 
     function isValidUrl(string) {
         try {
@@ -590,8 +624,8 @@ export async function showApplicationForm(projectId) {
     }
 
     // Form submission
-    const form = modal.querySelector('#applicationForm');
-    const submitBtn = modal.querySelector('#submitApplicationBtn');
+    const form = document.getElementById('applicationForm');
+    const submitBtn = document.getElementById('submitApplicationBtn');
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -615,8 +649,7 @@ export async function showApplicationForm(projectId) {
 
             if (response.success) {
                 window.showToast('Application submitted successfully!', 'success');
-                modal.remove();
-                // Refresh project detail
+                window.closeModal();
                 window.showProjectDetail(projectId);
             } else {
                 throw new Error(response.message || 'Failed to submit application');
@@ -634,20 +667,7 @@ export async function showApplicationForm(projectId) {
  * View Project Applications (for project owner)
  */
 export async function viewProjectApplications(projectId) {
-    const loadingModal = document.createElement('div');
-    loadingModal.className = 'modal-overlay';
-    loadingModal.innerHTML = `
-        <div class="modal" style="max-width: 900px;">
-            <div class="text-center" style="padding: 60px 20px;">
-                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" style="opacity: 0.4; margin-bottom: 16px; animation: spin 1s linear infinite;">
-                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-                    <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2"/>
-                </svg>
-                <p class="text-secondary">Loading applications...</p>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(loadingModal);
+    window.showLoadingSpinner('Loading applications...');
 
     try {
         const response = await api.getProjectApplications(projectId);
@@ -658,21 +678,20 @@ export async function viewProjectApplications(projectId) {
 
         const applications = response.data.applications || [];
 
-        loadingModal.remove();
+        window.hideLoadingSpinner();
 
-        const modal = document.createElement('div');
-        modal.className = 'modal-overlay';
-        modal.innerHTML = `
-            <div class="modal" style="max-width: 1000px;">
-                <div class="modal-header">
-                    <h2>Applications (${applications.length})</h2>
-                    <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                        </svg>
-                    </button>
-                </div>
-                <div class="modal-body" style="max-height: calc(90vh - 150px); overflow-y: auto;">
+        const modalContent = `
+            <div class="modal" onclick="closeModalOnBackdrop(event)">
+                <div class="modal-content" style="max-width: 1000px;">
+                    <div class="modal-header">
+                        <h2>Applications (${applications.length})</h2>
+                        <button class="icon-btn" onclick="closeModal()">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                        </button>
+                    </div>
+
                     ${applications.length > 0 ? renderApplicationsList(applications) : `
                         <div class="empty-state" style="padding: 60px 20px;">
                             <svg width="64" height="64" viewBox="0 0 24 24" fill="none" style="opacity: 0.3; margin-bottom: 16px;">
@@ -681,18 +700,23 @@ export async function viewProjectApplications(projectId) {
                                 <path d="M20 8v6M23 11h-6" stroke="currentColor" stroke-width="2"/>
                             </svg>
                             <h3>No applications yet</h3>
-                            <p style="color: var(--text-secondary);">Check back soon for creator applications</p>
+                            <p class="caption">Check back soon for creator applications</p>
                         </div>
                     `}
+
+                    <div class="form-actions">
+                        <button class="btn-ghost" onclick="closeModal()">Close</button>
+                    </div>
                 </div>
             </div>
         `;
 
-        document.body.appendChild(modal);
+        document.getElementById('modalsContainer').innerHTML = modalContent;
+        openModal();
 
     } catch (error) {
         console.error('Error loading applications:', error);
-        loadingModal.remove();
+        window.hideLoadingSpinner();
         window.showToast(error.message || 'Failed to load applications', 'error');
     }
 }
@@ -708,27 +732,26 @@ function renderApplicationsList(applications) {
                          style="width: 56px; height: 56px; border-radius: 50%; object-fit: cover;">
                     <div>
                         <div style="font-weight: 700; font-size: 18px; margin-bottom: 4px;">${app.creatorId.name}</div>
-                        <div style="color: var(--text-secondary); font-size: 14px;">${app.creatorId.category || 'Creator'}</div>
-                        ${app.creatorId.rating ? `<div style="color: var(--primary); font-size: 14px;">⭐ ${app.creatorId.rating.average?.toFixed(1) || '5.0'}</div>` : ''}
+                        <div class="caption">${app.creatorId.category || 'Creator'}</div>
                     </div>
                 </div>
                 <div style="text-align: right;">
                     <div style="font-size: 24px; font-weight: 700; color: #10b981;">$${app.proposedBudget.amount}</div>
-                    <div style="font-size: 13px; color: var(--text-secondary);">${app.proposedTimeline}</div>
+                    <div class="caption">${app.proposedTimeline}</div>
                 </div>
             </div>
 
             <!-- Cover Letter -->
             <div style="margin-bottom: 16px;">
-                <h4 style="margin-bottom: 8px; font-size: 14px; font-weight: 600; color: var(--text-secondary);">Cover Letter</h4>
-                <p style="white-space: pre-wrap; line-height: 1.6; color: var(--text-primary);">${app.coverLetter}</p>
+                <h4 class="caption">Cover Letter</h4>
+                <p style="white-space: pre-wrap; line-height: 1.6; margin-top: 8px;">${app.coverLetter}</p>
             </div>
 
             <!-- Portfolio Links -->
             ${app.portfolioLinks && app.portfolioLinks.length > 0 ? `
                 <div style="margin-bottom: 16px;">
-                    <h4 style="margin-bottom: 8px; font-size: 14px; font-weight: 600; color: var(--text-secondary);">Portfolio</h4>
-                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                    <h4 class="caption">Portfolio</h4>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;">
                         ${app.portfolioLinks.map(link => `
                             <a href="${link.url}" target="_blank" class="btn-ghost" style="font-size: 13px; padding: 6px 12px;">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style="margin-right: 4px;">
@@ -748,7 +771,7 @@ function renderApplicationsList(applications) {
                     <span style="padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; background: ${getStatusColor(app.status)}20; color: ${getStatusColor(app.status)};">
                         ${app.status.toUpperCase()}
                     </span>
-                    <span style="color: var(--text-secondary); font-size: 13px; margin-left: 12px;">
+                    <span class="caption" style="margin-left: 12px;">
                         Applied ${formatTimeAgo(app.createdAt)}
                     </span>
                 </div>
@@ -793,11 +816,7 @@ export async function handleApplicationAction(applicationId, status) {
 
         if (response.success) {
             window.showToast(`Application ${status} successfully!`, 'success');
-            // Refresh the applications modal
-            const modalOverlay = document.querySelector('.modal-overlay');
-            if (modalOverlay) {
-                modalOverlay.remove();
-            }
+            window.closeModal();
         } else {
             throw new Error(response.message || `Failed to ${action} application`);
         }
@@ -807,18 +826,9 @@ export async function handleApplicationAction(applicationId, status) {
     }
 }
 
-/**
- * Show Client Profile (placeholder - can expand later)
- */
-export function showClientProfile(clientId) {
-    // For now, just show a toast. Can be expanded to show full profile
-    window.showToast('Client profiles coming soon!', 'info');
-}
-
 // Export and make globally available
 window.showPostProjectModal = showPostProjectModal;
 window.showProjectDetail = showProjectDetail;
 window.showApplicationForm = showApplicationForm;
 window.viewProjectApplications = viewProjectApplications;
 window.handleApplicationAction = handleApplicationAction;
-window.showClientProfile = showClientProfile;
