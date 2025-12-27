@@ -52,8 +52,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     await initializeApp();
     setupEventListeners();
 
-    const lastPage = localStorage.getItem('currentPage') || 'home';
-    navigateToPage(lastPage, false);
+    // Handle hash-based routing (for shared links)
+    handleHashRoute();
+
     updateBackButton();
 });
 
@@ -92,6 +93,39 @@ function setupEventListeners() {
             closeUserDropdown();
         }
     });
+
+    // Handle hash changes (for shared links)
+    window.addEventListener('hashchange', handleHashRoute);
+}
+
+/**
+ * Handle hash-based routing for shared profile links
+ * Example: #/creator/507f1f77bcf86cd799439011
+ */
+function handleHashRoute() {
+    const hash = window.location.hash;
+
+    if (!hash || hash === '#') {
+        // No hash, load default page
+        const lastPage = localStorage.getItem('currentPage') || 'home';
+        navigateToPage(lastPage, false);
+        return;
+    }
+
+    // Parse hash route: #/creator/123
+    const match = hash.match(/#\/creator\/([a-f0-9]{24})/i);
+
+    if (match && match[1]) {
+        const creatorId = match[1];
+        console.log('Loading creator profile:', creatorId);
+
+        // Render the creator profile
+        renderCreatorProfile(creatorId);
+    } else {
+        // Invalid hash, go to home
+        console.warn('Invalid hash route:', hash);
+        navigateToPage('home', false);
+    }
 }
 
 export { appState };
