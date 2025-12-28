@@ -464,6 +464,8 @@ userSchema.methods.updateWalletBalance = async function(amount, type = 'add') {
 userSchema.methods.getPublicProfile = function() {
   const obj = this.toObject();
 
+  obj.name = this.name;
+
   delete obj.password;
   delete obj.emailVerificationToken;
   delete obj.emailVerificationExpire;
