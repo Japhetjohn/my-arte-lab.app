@@ -1,7 +1,7 @@
 {
   "name": "myartelab",
   "version": "1.0.0",
-  "description": "Modern creator marketplace platform connecting creators with clients across Africa",
+  "description": "Built for African Creators. Trusted by clients globally.",
   "main": "frontend/index.html",
   "scripts": {
     "dev:frontend": "cd frontend && python3 -m http.server 8000",

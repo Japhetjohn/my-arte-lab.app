@@ -1,7 +1,7 @@
 {
   "name": "myartelab-frontend",
   "version": "1.0.0",
-  "description": "MyArteLab Frontend - Static SPA",
+  "description": "MyArteLab Frontend - Built for African Creators. Trusted by clients globally.",
   "type": "module",
   "scripts": {
     "dev": "vite",

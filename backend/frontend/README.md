@@ -1,6 +1,6 @@
 # MyArteLab Frontend
 
-Modern frontend for MyArteLab - A marketplace connecting clients with creative professionals.
+Modern frontend for MyArteLab - Built for African Creators. Trusted by clients globally.
 
 ## 📁 Structure
 

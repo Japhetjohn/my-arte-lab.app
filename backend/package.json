@@ -1,7 +1,7 @@
 {
   "name": "myartelab-backend",
   "version": "1.0.0",
-  "description": "MyArteLab Backend - Creator Marketplace with Stablecoin Payments",
+  "description": "MyArteLab Backend - Built for African Creators. Trusted by clients globally.",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
