@@ -389,19 +389,21 @@ export function updateUserMenu() {
     }
 
     if (appState.user) {
+        const userName = appState.user.name || `${appState.user.firstName || ''} ${appState.user.lastName || ''}`.trim() || 'User';
+        const userFirstName = appState.user.firstName || appState.user.name?.split(' ')[0] || 'User';
 
         const avatarUrl = getAvatarUrl(appState.user);
         userMenuContainer.innerHTML = `
             <button class="user-avatar-btn" id="userAvatarBtn">
-                <img src="${avatarUrl}" alt="${appState.user.name}" class="avatar avatar-medium">
-                <span>${appState.user.name.split(' ')[0]}</span>
+                <img src="${avatarUrl}" alt="${userName}" class="avatar avatar-medium">
+                <span>${userFirstName}</span>
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                     <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                 </svg>
             </button>
             <div class="user-dropdown" id="userDropdown">
                 <div class="user-dropdown-header">
-                    <div class="user-dropdown-name">${appState.user.name}</div>
+                    <div class="user-dropdown-name">${userName}</div>
                     <div class="user-dropdown-email">${appState.user.email}</div>
                 </div>
                 <button class="user-dropdown-item" onclick="navigateToPage('profile')">

@@ -139,6 +139,56 @@ app.use(cors({
 
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
+
+  // Detailed request/response logging for development
+  app.use((req, res, next) => {
+    const start = Date.now();
+    const originalSend = res.send;
+
+    res.send = function(data) {
+      res.send = originalSend;
+      const duration = Date.now() - start;
+
+      console.log('\n' + '='.repeat(80));
+      console.log(`📥 ${req.method} ${req.originalUrl}`);
+      console.log(`⏱️  Duration: ${duration}ms`);
+      console.log(`📍 Status: ${res.statusCode}`);
+
+      if (req.body && Object.keys(req.body).length > 0) {
+        const sanitizedBody = { ...req.body };
+        if (sanitizedBody.password) sanitizedBody.password = '[REDACTED]';
+        console.log('📦 Request Body:', JSON.stringify(sanitizedBody, null, 2));
+      }
+
+      if (req.query && Object.keys(req.query).length > 0) {
+        console.log('🔍 Query Params:', JSON.stringify(req.query, null, 2));
+      }
+
+      if (res.statusCode >= 400) {
+        try {
+          const responseData = JSON.parse(data);
+          console.log('❌ Error Response:', JSON.stringify(responseData, null, 2));
+        } catch (e) {
+          console.log('❌ Error Response:', data?.toString().substring(0, 500));
+        }
+      } else if (res.statusCode >= 200 && res.statusCode < 300) {
+        try {
+          const responseData = JSON.parse(data);
+          if (responseData.success !== undefined) {
+            console.log('✅ Success:', responseData.success);
+            if (responseData.message) console.log('💬 Message:', responseData.message);
+          }
+        } catch (e) {
+          // Response is not JSON
+        }
+      }
+
+      console.log('='.repeat(80) + '\n');
+      return res.send(data);
+    };
+
+    next();
+  });
 } else {
   app.use(morgan('combined'));
 }
