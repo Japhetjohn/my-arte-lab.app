@@ -264,21 +264,18 @@ export async function handleAuth(event, type) {
             }
 
             const userData = {
-                name: formData.get('name'),
+                firstName: formData.get('firstName'),
+                lastName: formData.get('lastName'),
                 role: formData.get('role') || 'client',
                 email: formData.get('email'),
-                password: password
+                password: password,
+                localArea: formData.get('localArea'),
+                state: formData.get('state'),
+                country: formData.get('country')
             };
 
             if (userData.role === 'creator') {
                 userData.category = formData.get('category') || 'other';
-            }
-
-            const country = formData.get('country');
-            if (country) {
-                userData.location = {
-                    country: country
-                };
             }
 
             const response = await api.register(userData);
