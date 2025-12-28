@@ -24,7 +24,8 @@ exports.getAllCreators = catchAsync(async (req, res, next) => {
   if (search) {
     const escapedSearch = escapeRegex(search);
     query.$or = [
-      { name: { $regex: escapedSearch, $options: 'i' } },
+      { firstName: { $regex: escapedSearch, $options: 'i' } },
+      { lastName: { $regex: escapedSearch, $options: 'i' } },
       { bio: { $regex: escapedSearch, $options: 'i' } },
       { skills: { $in: [new RegExp(escapedSearch, 'i')] } }
     ];
@@ -66,9 +67,15 @@ exports.getAllCreators = catchAsync(async (req, res, next) => {
     .skip(skip)
     .lean();
 
+  // Add name virtual field to each creator
+  const creatorsWithName = creators.map(creator => ({
+    ...creator,
+    name: `${creator.firstName || ''} ${creator.lastName || ''}`.trim()
+  }));
+
   const total = await User.countDocuments(query);
 
-  paginatedResponse(res, 200, 'Creators retrieved successfully', creators, {
+  paginatedResponse(res, 200, 'Creators retrieved successfully', creatorsWithName, {
     page: parseInt(page),
     limit: parseInt(limit),
     total

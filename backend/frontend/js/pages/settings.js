@@ -65,8 +65,13 @@ export function renderSettingsPage() {
                     <!-- Profile Form -->
                     <form onsubmit="handleProfileUpdate(event)">
                         <div class="form-group">
-                            <label class="form-label">Full name</label>
-                            <input type="text" class="form-input" value="${appState.user.name}" id="profileName" required>
+                            <label class="form-label">First name</label>
+                            <input type="text" class="form-input" value="${appState.user.firstName || ''}" id="profileFirstName" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Last name</label>
+                            <input type="text" class="form-input" value="${appState.user.lastName || ''}" id="profileLastName" required>
                         </div>
 
                         <div class="form-group">
@@ -200,18 +205,14 @@ window.handleProfileUpdate = async function(event) {
     event.preventDefault();
 
     try {
-        const name = document.getElementById('profileName').value;
+        const firstName = document.getElementById('profileFirstName').value;
+        const lastName = document.getElementById('profileLastName').value;
         const email = document.getElementById('profileEmail').value;
         const bio = document.getElementById('profileBio').value;
         const localArea = document.getElementById('profileLocalArea').value;
         const state = document.getElementById('profileState').value;
         const country = document.getElementById('profileCountry').value;
         const phone = document.getElementById('profilePhone').value;
-
-        // Parse full name into firstName and lastName
-        const nameParts = name.trim().split(' ');
-        const firstName = nameParts[0] || '';
-        const lastName = nameParts.slice(1).join(' ') || nameParts[0] || '';
 
         const profileData = {
             firstName,
