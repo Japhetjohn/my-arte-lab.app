@@ -17,10 +17,15 @@ exports.handleValidationErrors = (req, res, next) => {
 };
 
 exports.validateRegister = [
-  body('name')
+  body('firstName')
     .trim()
-    .notEmpty().withMessage('Name is required')
-    .isLength({ min: 2, max: 100 }).withMessage('Name must be between 2 and 100 characters'),
+    .notEmpty().withMessage('First name is required')
+    .isLength({ min: 2, max: 50 }).withMessage('First name must be between 2 and 50 characters'),
+
+  body('lastName')
+    .trim()
+    .notEmpty().withMessage('Last name is required')
+    .isLength({ min: 2, max: 50 }).withMessage('Last name must be between 2 and 50 characters'),
 
   body('email')
     .trim()
@@ -32,6 +37,21 @@ exports.validateRegister = [
     .notEmpty().withMessage('Password is required')
     .isLength({ min: 8, max: 128 }).withMessage('Password must be between 8 and 128 characters')
     .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&_\-#])/).withMessage('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&_-#)'),
+
+  body('localArea')
+    .trim()
+    .notEmpty().withMessage('Local area is required')
+    .isLength({ min: 2, max: 100 }).withMessage('Local area must be between 2 and 100 characters'),
+
+  body('state')
+    .trim()
+    .notEmpty().withMessage('State is required')
+    .isLength({ min: 2, max: 100 }).withMessage('State must be between 2 and 100 characters'),
+
+  body('country')
+    .trim()
+    .notEmpty().withMessage('Country is required')
+    .isLength({ min: 2, max: 100 }).withMessage('Country must be between 2 and 100 characters'),
 
   body('role')
     .optional()
@@ -140,20 +160,30 @@ exports.validateWithdrawal = [
 ];
 
 exports.validateProfileUpdate = [
-  body('name')
+  body('firstName')
     .optional()
     .trim()
-    .isLength({ min: 2, max: 100 }).withMessage('Name must be between 2 and 100 characters'),
+    .isLength({ min: 2, max: 50 }).withMessage('First name must be between 2 and 50 characters'),
+
+  body('lastName')
+    .optional()
+    .trim()
+    .isLength({ min: 2, max: 50 }).withMessage('Last name must be between 2 and 50 characters'),
 
   body('bio')
     .optional()
     .trim()
     .isLength({ max: 500 }).withMessage('Bio cannot exceed 500 characters'),
 
-  body('location.city')
+  body('location.localArea')
     .optional()
     .trim()
-    .isLength({ max: 100 }).withMessage('City name cannot exceed 100 characters'),
+    .isLength({ max: 100 }).withMessage('Local area cannot exceed 100 characters'),
+
+  body('location.state')
+    .optional()
+    .trim()
+    .isLength({ max: 100 }).withMessage('State name cannot exceed 100 characters'),
 
   body('location.country')
     .optional()
