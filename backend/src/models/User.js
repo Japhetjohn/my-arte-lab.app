@@ -4,11 +4,18 @@ const { SECURITY, USER_ROLES, CREATOR_CATEGORIES } = require('../utils/constants
 const { formatLocation } = require('../utils/formatters');
 
 const userSchema = new mongoose.Schema({
-  name: {
+  firstName: {
     type: String,
-    required: [true, 'Please provide your name'],
+    required: [true, 'Please provide your first name'],
     trim: true,
-    maxlength: [100, 'Name cannot exceed 100 characters']
+    maxlength: [50, 'First name cannot exceed 50 characters']
+  },
+
+  lastName: {
+    type: String,
+    required: [true, 'Please provide your last name'],
+    trim: true,
+    maxlength: [50, 'Last name cannot exceed 50 characters']
   },
 
   email: {
@@ -66,8 +73,21 @@ const userSchema = new mongoose.Schema({
   },
 
   location: {
-    city: String,
-    country: String
+    localArea: {
+      type: String,
+      required: [true, 'Please provide your local area'],
+      trim: true
+    },
+    state: {
+      type: String,
+      required: [true, 'Please provide your state'],
+      trim: true
+    },
+    country: {
+      type: String,
+      required: [true, 'Please provide your country'],
+      trim: true
+    }
   },
 
   category: {
@@ -353,6 +373,10 @@ userSchema.index({ 'rating.average': -1 });
 userSchema.index({ 'wallet.address': 1 });
 userSchema.index({ email: 1, googleId: 1 });
 userSchema.index({ role: 1, category: 1, 'rating.average': -1 });
+
+userSchema.virtual('name').get(function() {
+  return `${this.firstName} ${this.lastName}`;
+});
 
 userSchema.virtual('formattedLocation').get(function() {
   return formatLocation(this.location);

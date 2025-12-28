@@ -10,7 +10,7 @@ const { escapeHtml } = require('../utils/sanitize');
 const solanaWalletService = require('../services/solanaWalletService');
 
 exports.register = catchAsync(async (req, res, next) => {
-  const { name, email, password, role, category } = req.body;
+  const { firstName, lastName, email, password, role, category, localArea, state, country } = req.body;
 
   const existingUser = await User.findOne({ email });
   if (existingUser) {
@@ -20,11 +20,17 @@ exports.register = catchAsync(async (req, res, next) => {
   const wallet = solanaWalletService.generateWallet();
 
   const user = await User.create({
-    name,
+    firstName,
+    lastName,
     email,
     password,
     role: role || 'client',
     category: role === 'creator' ? category : undefined,
+    location: {
+      localArea,
+      state,
+      country
+    },
     wallet: {
       address: wallet.address,
       encryptedPrivateKey: wallet.encryptedPrivateKey,
@@ -50,7 +56,7 @@ exports.register = catchAsync(async (req, res, next) => {
     to: user.email,
     subject: 'Welcome to MyArteLab! Verify Your Email',
     html: `
-      <h1>Welcome ${escapeHtml(user.name)}!</h1>
+      <h1>Welcome ${escapeHtml(user.firstName)}!</h1>
       <p>Your account has been created successfully with global stablecoin payment support!</p>
       <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
         <p><strong>Payment Wallet:</strong> Deposit from 65 countries, receive USDC instantly!</p>

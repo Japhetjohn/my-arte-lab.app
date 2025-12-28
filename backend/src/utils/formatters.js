@@ -10,8 +10,11 @@ function formatLocation(location) {
   }
 
   const parts = [];
-  if (location.city && location.city.trim()) {
-    parts.push(location.city.trim());
+  if (location.localArea && location.localArea.trim()) {
+    parts.push(location.localArea.trim());
+  }
+  if (location.state && location.state.trim()) {
+    parts.push(location.state.trim());
   }
   if (location.country && location.country.trim()) {
     parts.push(location.country.trim());

@@ -238,7 +238,6 @@ function renderCreatorsList() {
         <div class="container">
             ${creators.length > 0 ? `
                 <div class="section-header">
-                    <h3>${creators.length} creator${creators.length !== 1 ? 's' : ''} found</h3>
                     <select class="form-select" style="width: auto;" id="sortSelect">
                         <option value="relevance" ${currentFilters.sort === 'relevance' ? 'selected' : ''}>Sort by relevance</option>
                         <option value="rating" ${currentFilters.sort === 'rating' ? 'selected' : ''}>Highest rated</option>

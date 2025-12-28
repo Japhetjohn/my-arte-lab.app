@@ -21,8 +21,13 @@ export function showAuthModal(type = 'signin', userType = 'client') {
                 <form onsubmit="handleAuth(event, '${type}')" id="authForm">
                     ${isSignUp ? `
                         <div class="form-group">
-                            <label class="form-label">Full name</label>
-                            <input type="text" name="name" class="form-input" required>
+                            <label class="form-label">First name</label>
+                            <input type="text" name="firstName" class="form-input" required maxlength="50">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Last name</label>
+                            <input type="text" name="lastName" class="form-input" required maxlength="50">
                         </div>
 
                         <div class="form-group">
@@ -105,6 +110,16 @@ export function showAuthModal(type = 'signin', userType = 'client') {
                     ` : ''}
 
                     ${isSignUp ? `
+                        <div class="form-group">
+                            <label class="form-label">Local Area (e.g., Farin Gada, Lekki, Kilimani)</label>
+                            <input type="text" name="localArea" class="form-input" placeholder="Enter your local area" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">State/Province/Region</label>
+                            <input type="text" name="state" class="form-input" placeholder="e.g., Plateau, Lagos, Nairobi" required>
+                        </div>
+
                         <div class="form-group">
                             <label class="form-label">Country</label>
                             <select name="country" class="form-select" required>
