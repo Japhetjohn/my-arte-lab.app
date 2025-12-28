@@ -23,7 +23,6 @@ frontend/
 │   │   └── modals.js
 │   └── pages/             # Page-specific logic
 │       ├── home.js
-│       ├── discover.js
 │       ├── bookings.js
 │       ├── wallet.js
 │       ├── profile.js

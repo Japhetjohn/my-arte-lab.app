@@ -589,5 +589,5 @@ export function renderCategories(categoryCounts = {}) {
 
 window.filterByCategory = function(category) {
     localStorage.setItem('discoverFilter', category);
-    window.navigateToPage('discover');
+    window.navigateToPage('home');
 };

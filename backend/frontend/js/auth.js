@@ -197,7 +197,7 @@ export function showAuthModal(type = 'signin', userType = 'client') {
 
                 ${!isSignUp ? `
                     <div style="margin-top: 8px; text-align: center;">
-                        <button class="btn-ghost" onclick="navigateToPage('discover'); closeModal();">Browse as guest</button>
+                        <button class="btn-ghost" onclick="navigateToPage('home'); closeModal();">Browse as guest</button>
                     </div>
                 ` : ''}
             </div>
@@ -307,7 +307,7 @@ export async function handleAuth(event, type) {
                 updateUserMenu();
                 closeModal();
                 showToast('Welcome back!', 'success');
-                navigateToPage('discover');
+                navigateToPage('home');
             }
         }
     } catch (error) {
@@ -749,7 +749,7 @@ async function handleEmailVerification(event, userRole) {
                 navigateToPage('settings');
                 showToast('Complete your profile to start receiving bookings', 'info');
             } else {
-                navigateToPage('discover');
+                navigateToPage('home');
             }
         } else {
             showToast(response.message || 'Invalid or expired verification code', 'error');
@@ -791,7 +791,7 @@ function skipVerification(userRole) {
         navigateToPage('settings');
         showToast('Complete your profile to start receiving bookings', 'info');
     } else {
-        navigateToPage('discover');
+        navigateToPage('home');
     }
 
     showToast('Remember to verify your email later from settings', 'info');

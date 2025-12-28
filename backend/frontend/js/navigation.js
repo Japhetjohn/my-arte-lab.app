@@ -1,6 +1,5 @@
 import { appState, setCurrentPage, addToHistory, popHistory } from './state.js';
 import { renderHomePage } from './pages/home.js';
-import { renderDiscoverPage } from './pages/discover.js';
 import { renderProjectsPage } from './pages/projects.js';
 import { renderBookingsPage } from './pages/bookings.js';
 import { renderWalletPage } from './pages/wallet.js';
@@ -42,9 +41,6 @@ export function navigateToPage(page, addToHistoryFlag = true) {
         switch (page) {
             case 'home':
                 renderHomePage();
-                break;
-            case 'discover':
-                renderDiscoverPage();
                 break;
             case 'projects':
                 renderProjectsPage();
