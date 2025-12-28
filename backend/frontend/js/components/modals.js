@@ -315,21 +315,31 @@ export async function handleProfileUpdate(event) {
         submitBtn.disabled = true;
         submitBtn.textContent = 'Saving...';
 
-        // Parse full name into firstName and lastName
-        const fullName = document.getElementById('profileName').value;
-        const nameParts = fullName.trim().split(' ');
-        const firstName = nameParts[0] || '';
-        const lastName = nameParts.slice(1).join(' ') || nameParts[0] || '';
+        // Get form values with null checks
+        const firstName = document.getElementById('profileFirstName')?.value;
+        const lastName = document.getElementById('profileLastName')?.value;
+        const email = document.getElementById('profileEmail')?.value;
+        const bio = document.getElementById('profileBio')?.value;
+        const localArea = document.getElementById('profileLocalArea')?.value;
+        const state = document.getElementById('profileState')?.value;
+        const country = document.getElementById('profileCountry')?.value;
+
+        if (!firstName || !lastName || !email) {
+            showToast('First name, last name, and email are required', 'error');
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
+            return;
+        }
 
         const profileData = {
-            firstName,
-            lastName,
-            email: document.getElementById('profileEmail').value,
-            bio: document.getElementById('profileBio').value,
+            firstName: firstName.trim(),
+            lastName: lastName.trim(),
+            email: email.trim(),
+            bio: bio?.trim() || '',
             location: {
-                localArea: document.getElementById('profileLocalArea')?.value || '',
-                state: document.getElementById('profileState')?.value || '',
-                country: document.getElementById('profileCountry')?.value || ''
+                localArea: localArea?.trim() || '',
+                state: state?.trim() || '',
+                country: country?.trim() || ''
             }
         };
 

@@ -205,26 +205,36 @@ window.handleProfileUpdate = async function(event) {
     event.preventDefault();
 
     try {
-        const firstName = document.getElementById('profileFirstName').value;
-        const lastName = document.getElementById('profileLastName').value;
-        const email = document.getElementById('profileEmail').value;
-        const bio = document.getElementById('profileBio').value;
-        const localArea = document.getElementById('profileLocalArea').value;
-        const state = document.getElementById('profileState').value;
-        const country = document.getElementById('profileCountry').value;
-        const phone = document.getElementById('profilePhone').value;
+        const firstName = document.getElementById('profileFirstName')?.value;
+        const lastName = document.getElementById('profileLastName')?.value;
+        const email = document.getElementById('profileEmail')?.value;
+        const bio = document.getElementById('profileBio')?.value;
+        const localArea = document.getElementById('profileLocalArea')?.value;
+        const state = document.getElementById('profileState')?.value;
+        const country = document.getElementById('profileCountry')?.value;
+        const phone = document.getElementById('profilePhone')?.value;
+
+        if (!firstName || !lastName || !email) {
+            showToast('First name, last name, and email are required', 'error');
+            return;
+        }
+
+        if (!localArea || !state || !country) {
+            showToast('Location fields are required (Local Area, State, Country)', 'error');
+            return;
+        }
 
         const profileData = {
-            firstName,
-            lastName,
-            email,
-            bio,
+            firstName: firstName.trim(),
+            lastName: lastName.trim(),
+            email: email.trim(),
+            bio: bio?.trim() || '',
             location: {
-                localArea,
-                state,
-                country
+                localArea: localArea.trim(),
+                state: state.trim(),
+                country: country.trim()
             },
-            phone
+            phone: phone?.trim() || ''
         };
 
         if (appState.user.role === 'creator') {
