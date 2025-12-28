@@ -315,12 +315,21 @@ export async function handleProfileUpdate(event) {
         submitBtn.disabled = true;
         submitBtn.textContent = 'Saving...';
 
+        // Parse full name into firstName and lastName
+        const fullName = document.getElementById('profileName').value;
+        const nameParts = fullName.trim().split(' ');
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.slice(1).join(' ') || nameParts[0] || '';
+
         const profileData = {
-            name: document.getElementById('profileName').value,
+            firstName,
+            lastName,
             email: document.getElementById('profileEmail').value,
             bio: document.getElementById('profileBio').value,
             location: {
-                city: document.getElementById('profileLocation')?.value
+                localArea: document.getElementById('profileLocalArea')?.value || '',
+                state: document.getElementById('profileState')?.value || '',
+                country: document.getElementById('profileCountry')?.value || ''
             }
         };
 

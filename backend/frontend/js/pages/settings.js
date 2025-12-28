@@ -23,11 +23,10 @@ export function renderSettingsPage() {
     const userAvatar = appState.user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(appState.user.name || 'User')}&background=9747FF&color=fff&bold=true&size=200`;
     const userCover = appState.user.coverImage || 'https://images.unsplash.com/photo-1557683316-973673baf926?w=1200&h=400&fit=crop';
 
-    const userLocation = appState.user.location ?
-        (typeof appState.user.location === 'object' ?
-            `${appState.user.location.city || ''}${appState.user.location.city && appState.user.location.country ? ', ' : ''}${appState.user.location.country || ''}`.trim()
-            : appState.user.location)
-        : '';
+    // Extract location fields
+    const userLocalArea = appState.user.location?.localArea || '';
+    const userState = appState.user.location?.state || '';
+    const userCountry = appState.user.location?.country || '';
 
     mainContent.innerHTML = `
         <div class="section">
@@ -82,8 +81,18 @@ export function renderSettingsPage() {
                         </div>
 
                         <div class="form-group">
-                            <label class="form-label">Location</label>
-                            <input type="text" class="form-input" value="${userLocation}" id="profileLocation" placeholder="City, Country">
+                            <label class="form-label">Local Area</label>
+                            <input type="text" class="form-input" value="${userLocalArea}" id="profileLocalArea" placeholder="e.g. Wuye, Maitama" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">State/Region</label>
+                            <input type="text" class="form-input" value="${userState}" id="profileState" placeholder="e.g. Federal Capital Territory" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Country</label>
+                            <input type="text" class="form-input" value="${userCountry}" id="profileCountry" placeholder="e.g. Nigeria" required>
                         </div>
 
                         ${appState.user.role === 'creator' ? `
@@ -194,25 +203,26 @@ window.handleProfileUpdate = async function(event) {
         const name = document.getElementById('profileName').value;
         const email = document.getElementById('profileEmail').value;
         const bio = document.getElementById('profileBio').value;
-        const locationString = document.getElementById('profileLocation').value;
+        const localArea = document.getElementById('profileLocalArea').value;
+        const state = document.getElementById('profileState').value;
+        const country = document.getElementById('profileCountry').value;
         const phone = document.getElementById('profilePhone').value;
 
-        // Parse location string into city and country
-        let location = { city: '', country: '' };
-        if (locationString && locationString.trim()) {
-            const parts = locationString.split(',').map(s => s.trim());
-            if (parts.length === 2) {
-                location = { city: parts[0], country: parts[1] };
-            } else if (parts.length === 1) {
-                location = { city: parts[0], country: '' };
-            }
-        }
+        // Parse full name into firstName and lastName
+        const nameParts = name.trim().split(' ');
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.slice(1).join(' ') || nameParts[0] || '';
 
         const profileData = {
-            name,
+            firstName,
+            lastName,
             email,
             bio,
-            location,
+            location: {
+                localArea,
+                state,
+                country
+            },
             phone
         };
 
