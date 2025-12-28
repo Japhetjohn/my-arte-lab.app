@@ -107,81 +107,53 @@ function renderProjectCards(projects) {
     }
 
     return `
-        <div class="projects-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 24px;">
+        <div class="transaction-list">
             ${projects.map(project => `
-                <div class="card card-lift project-card" data-project-id="${project._id}" style="cursor: pointer; padding: 0; overflow: hidden;">
-                    <!-- Project Header -->
-                    <div style="padding: 20px;">
-                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
-                            <span class="badge" style="background: ${getProjectTypeBadgeColor(project.projectType)}; color: white; text-transform: capitalize;">
-                                ${project.projectType.replace('-', ' ')}
-                            </span>
-                            <span style="font-size: 13px; color: var(--text-secondary);">
-                                ${formatTimeAgo(project.createdAt)}
-                            </span>
-                        </div>
+                <div class="transaction-item project-card" data-project-id="${project._id}" style="cursor: pointer;">
+                    <div style="display: flex; align-items: center; gap: 16px; flex: 1; min-width: 0;">
+                        <img src="${project.clientId?.avatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(project.clientId?.name || 'Client')}"
+                             alt="${project.clientId?.name || 'Client'}"
+                             style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; flex-shrink: 0;">
 
-                        <h3 style="margin-bottom: 12px; font-size: 18px; font-weight: 700; line-height: 1.4;">
-                            ${project.title}
-                        </h3>
-
-                        <p style="color: var(--text-secondary); font-size: 14px; line-height: 1.6; margin-bottom: 16px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">
-                            ${project.description}
-                        </p>
-
-                        <!-- Budget & Timeline -->
-                        <div style="display: flex; gap: 16px; margin-bottom: 16px; flex-wrap: wrap;">
-                            <div style="display: flex; align-items: center; gap: 6px;">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="color: var(--primary);">
-                                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-                                    <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2"/>
-                                </svg>
-                                <span style="font-size: 13px; font-weight: 600;">${formatTimeline(project.timeline)}</span>
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 6px;">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="color: #10b981;">
-                                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" stroke="currentColor" stroke-width="2"/>
-                                </svg>
-                                <span style="font-size: 13px; font-weight: 600; color: #10b981;">
-                                    $${project.budget.min} - $${project.budget.max}
+                        <div class="transaction-info" style="min-width: 0; flex: 1;">
+                            <div class="transaction-title" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                <span>${project.title}</span>
+                                <span class="tag" style="background: ${getProjectTypeBadgeColor(project.projectType)}; color: white; padding: 4px 8px; font-size: 11px; text-transform: capitalize;">
+                                    ${project.projectType.replace('-', ' ')}
                                 </span>
                             </div>
-                        </div>
 
-                        <!-- Skills -->
-                        ${project.skillsRequired && project.skillsRequired.length > 0 ? `
-                            <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px;">
-                                ${project.skillsRequired.slice(0, 3).map(skill => `
-                                    <span style="background: var(--surface); padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500;">
-                                        ${skill}
-                                    </span>
-                                `).join('')}
-                                ${project.skillsRequired.length > 3 ? `
-                                    <span style="background: var(--surface); padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500; color: var(--text-secondary);">
-                                        +${project.skillsRequired.length - 3}
-                                    </span>
-                                ` : ''}
+                            <div class="transaction-date" style="margin-bottom: 8px;">
+                                ${project.clientId?.name || 'Client'} • ${formatTimeAgo(project.createdAt)} • ${formatTimeline(project.timeline)}
                             </div>
-                        ` : ''}
+
+                            <div class="caption" style="color: var(--text-secondary); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 8px;">
+                                ${project.description}
+                            </div>
+
+                            ${project.skillsRequired && project.skillsRequired.length > 0 ? `
+                                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                                    ${project.skillsRequired.slice(0, 4).map(skill => `
+                                        <span style="background: var(--surface); padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; color: var(--text-secondary);">
+                                            ${skill}
+                                        </span>
+                                    `).join('')}
+                                    ${project.skillsRequired.length > 4 ? `
+                                        <span style="background: var(--surface); padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; color: var(--text-secondary);">
+                                            +${project.skillsRequired.length - 4}
+                                        </span>
+                                    ` : ''}
+                                </div>
+                            ` : ''}
+                        </div>
                     </div>
 
-                    <!-- Client Info Footer -->
-                    <div style="border-top: 1px solid var(--border); padding: 16px 20px; background: var(--surface);">
-                        <div style="display: flex; align-items: center; justify-content: space-between;">
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <img src="${project.clientId?.avatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(project.clientId?.name || 'Client')}"
-                                     alt="${project.clientId?.name}"
-                                     style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">
-                                <div>
-                                    <div style="font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 4px;">
-                                        ${project.clientId?.name}
-                                        ${project.clientId?.isEmailVerified ? '<span style="color: #10b981;">✓</span>' : ''}
-                                    </div>
-                                    <div style="font-size: 12px; color: var(--text-secondary);">
-                                        ${project.applicationsCount} ${project.applicationsCount === 1 ? 'application' : 'applications'}
-                                    </div>
-                                </div>
-                            </div>
+                    <div style="text-align: right; flex-shrink: 0;">
+                        <div class="transaction-amount" style="font-size: 20px; font-weight: 700; color: #10b981; margin-bottom: 8px;">
+                            $${project.budget.min} - $${project.budget.max}
+                        </div>
+                        <div style="font-size: 13px; color: var(--text-secondary);">
+                            ${project.applicationsCount || 0} ${project.applicationsCount === 1 ? 'application' : 'applications'}
                         </div>
                     </div>
                 </div>
