@@ -344,7 +344,7 @@ export async function renderProfilePage() {
                         </tr>
                         <tr style="border-bottom: 1px solid var(--border);">
                             <td style="padding: 16px 0; font-weight: 600;">Email Verified</td>
-                            <td style="padding: 16px 0; text-align: right;">${user.isEmailVerified ? '<span style="color: var(--success);">✓ Verified</span>' : '<span style="color: var(--warning);">Not verified</span>'}</td>
+                            <td style="padding: 16px 0; text-align: right;">${user.isEmailVerified ? '<span style="color: var(--success);">✓ Verified</span>' : '<button class="btn-link" style="color: var(--warning); font-weight: 500; cursor: pointer;" onclick="requestEmailVerification()">⚠ Not verified - Click to verify</button>'}</td>
                         </tr>
                         ${user.wallet ? `
                         <tr style="border-bottom: 1px solid var(--border);">
@@ -362,3 +362,25 @@ export async function renderProfilePage() {
         </div>
     `;
 }
+
+async function requestEmailVerification() {
+    try {
+        showToast('Sending verification code...', 'info');
+
+        const response = await api.resendVerification();
+
+        if (response.success) {
+            showToast('Verification code sent to your email!', 'success');
+
+            const { showEmailVerificationModal } = await import('../auth.js');
+            showEmailVerificationModal(appState.user.email, appState.user.role);
+        } else {
+            showToast(response.message || 'Failed to send verification code', 'error');
+        }
+    } catch (error) {
+        console.error('Error requesting verification:', error);
+        showToast(error.message || 'Failed to send verification code. Please try again.', 'error');
+    }
+}
+
+window.requestEmailVerification = requestEmailVerification;
