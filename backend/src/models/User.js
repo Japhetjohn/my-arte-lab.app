@@ -75,18 +75,18 @@ const userSchema = new mongoose.Schema({
   location: {
     localArea: {
       type: String,
-      required: [true, 'Please provide your local area'],
-      trim: true
+      trim: true,
+      default: null
     },
     state: {
       type: String,
-      required: [true, 'Please provide your state'],
-      trim: true
+      trim: true,
+      default: null
     },
     country: {
       type: String,
-      required: [true, 'Please provide your country'],
-      trim: true
+      trim: true,
+      default: null
     }
   },
 
