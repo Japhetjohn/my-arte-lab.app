@@ -462,17 +462,41 @@ export function showChangePasswordModal() {
                 <form onsubmit="handlePasswordChange(event)" style="padding: 20px;">
                     <div class="form-group">
                         <label class="form-label">Current Password</label>
-                        <input type="password" id="currentPassword" class="form-input" required>
+                        <div style="position: relative;">
+                            <input type="password" id="currentPassword" class="form-input" required style="padding-right: 40px;">
+                            <button type="button" onclick="togglePasswordVisibility('currentPassword', this)" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 4px; display: flex; align-items: center; color: var(--text-secondary);">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" class="eye-icon">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
+                        </div>
                     </div>
 
                     <div class="form-group">
                         <label class="form-label">New Password</label>
-                        <input type="password" id="newPassword" class="form-input" required minlength="8">
+                        <div style="position: relative;">
+                            <input type="password" id="newPassword" class="form-input" required minlength="8" style="padding-right: 40px;">
+                            <button type="button" onclick="togglePasswordVisibility('newPassword', this)" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 4px; display: flex; align-items: center; color: var(--text-secondary);">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" class="eye-icon">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
+                        </div>
                     </div>
 
                     <div class="form-group">
                         <label class="form-label">Confirm New Password</label>
-                        <input type="password" id="confirmPassword" class="form-input" required minlength="8">
+                        <div style="position: relative;">
+                            <input type="password" id="confirmPassword" class="form-input" required minlength="8" style="padding-right: 40px;">
+                            <button type="button" onclick="togglePasswordVisibility('confirmPassword', this)" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 4px; display: flex; align-items: center; color: var(--text-secondary);">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" class="eye-icon">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
+                        </div>
                     </div>
 
                     <button type="submit" class="btn-primary" style="width: 100%; margin-top: 16px;">
