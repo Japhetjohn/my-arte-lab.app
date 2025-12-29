@@ -5,6 +5,7 @@ import { showAddFundsModal, showSwapModal } from '../components/modals.js';
 
 let walletData = null;
 let transactions = [];
+let recentBookings = [];
 
 export async function renderWalletPage() {
     const mainContent = document.getElementById('mainContent');
@@ -40,14 +41,16 @@ export async function renderWalletPage() {
     `;
 
     try {
-        const [walletResponse, transactionsResponse] = await Promise.all([
+        const [walletResponse, transactionsResponse, bookingsResponse] = await Promise.all([
             api.getWallet(),
-            api.getTransactions(1, 10)
+            api.getTransactions(1, 10),
+            api.getBookings()
         ]);
 
         if (walletResponse.success) {
             walletData = walletResponse.data.wallet;
             transactions = transactionsResponse.data?.transactions || [];
+            recentBookings = bookingsResponse.data?.bookings || [];
             renderWalletContent();
         }
     } catch (error) {
@@ -170,6 +173,48 @@ function renderWalletContent() {
                         <div class="wallet-card-value animate-counter" style="color: var(--success);">USDC ${withdrawn.toFixed(2)}</div>
                     </div>
                 </div>
+
+                <h2 class="mb-md mt-lg">Recent bookings</h2>
+                ${recentBookings.length > 0 ? `
+                    <div class="transaction-list">
+                        ${recentBookings.slice(0, 5).map(booking => {
+                            const isCreator = appState.user.role === 'creator';
+                            const otherPartyName = isCreator ? booking.client?.name || 'Client' : booking.creator?.name || 'Creator';
+                            const otherPartyAvatar = isCreator
+                                ? booking.client?.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop'
+                                : booking.creator?.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop';
+
+                            return `
+                            <div class="transaction-item" style="cursor: pointer;" onclick="window.location.href='/#/bookings'">
+                                <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
+                                    <img src="${otherPartyAvatar}" alt="${otherPartyName}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                                    <div class="transaction-info">
+                                        <div class="transaction-title">${booking.serviceTitle}</div>
+                                        <div class="transaction-date">${otherPartyName} • ${formatDate(booking.createdAt)}</div>
+                                    </div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <span class="tag" style="background: ${booking.status === 'completed' ? '#10B981' : booking.status === 'in_progress' ? '#3B82F6' : '#FFA500'}; color: white; padding: 4px 10px; font-size: 12px; margin-bottom: 4px;">
+                                        ${booking.status === 'completed' ? 'Completed' : booking.status === 'in_progress' ? 'In Progress' : booking.status === 'confirmed' ? 'Confirmed' : 'Pending'}
+                                    </span>
+                                    <div class="transaction-amount" style="color: var(--primary);">USDC ${booking.amount.toFixed(2)}</div>
+                                </div>
+                            </div>
+                        `}).join('')}
+                    </div>
+                    <div class="text-center mt-md">
+                        <button class="btn-ghost" onclick="window.location.href='/#/bookings'">View all bookings</button>
+                    </div>
+                ` : `
+                    <div class="empty-state" style="padding: 40px 20px;">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" style="opacity: 0.3; margin-bottom: 16px;">
+                            <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
+                            <path d="M3 10h18" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                        <p class="text-secondary">No bookings yet</p>
+                        ${appState.user.role === 'client' ? '<button class="btn-primary" onclick="window.location.href=\'/#/discover\'">Find creators</button>' : ''}
+                    </div>
+                `}
 
                 <h2 class="mb-md mt-lg">Recent transactions</h2>
                 ${transactions.length > 0 ? `
