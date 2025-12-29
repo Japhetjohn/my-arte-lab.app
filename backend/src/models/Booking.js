@@ -197,7 +197,6 @@ bookingSchema.index({ paymentStatus: 1 });
 bookingSchema.index({ status: 1 });
 bookingSchema.index({ createdAt: -1 });
 bookingSchema.index({ _id: 1, status: 1, __v: 1 });
-bookingSchema.index({ idempotencyKey: 1 });
 
 bookingSchema.pre('save', async function(next) {
   if (!this.bookingId) {

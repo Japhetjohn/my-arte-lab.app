@@ -370,7 +370,6 @@ const userSchema = new mongoose.Schema({
 userSchema.index({ role: 1 });
 userSchema.index({ category: 1 });
 userSchema.index({ 'rating.average': -1 });
-userSchema.index({ 'wallet.address': 1 });
 userSchema.index({ email: 1, googleId: 1 });
 userSchema.index({ role: 1, category: 1, 'rating.average': -1 });
 

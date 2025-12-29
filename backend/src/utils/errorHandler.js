@@ -34,8 +34,35 @@ const sendErrorResponse = (err, res) => {
   }
 };
 
-const errorMiddleware = (err, req, res, next) => {
+const errorMiddleware = async (err, req, res, next) => {
   console.error(' Error:', err);
+
+  // Send email notification for critical errors in production
+  if (process.env.NODE_ENV === 'production') {
+    const shouldNotify =
+      !err.isOperational || // Unexpected errors
+      err.statusCode >= 500 || // Server errors
+      err.name === 'MongoError' || // Database errors
+      err.message?.includes('payment') || // Payment-related errors
+      err.message?.includes('wallet') || // Wallet-related errors
+      err.message?.includes('escrow'); // Escrow-related errors
+
+    if (shouldNotify) {
+      try {
+        const emailService = require('../services/emailService');
+        await emailService.sendErrorNotification({
+          error: err,
+          req,
+          additionalInfo: {
+            environment: process.env.NODE_ENV,
+            timestamp: new Date().toISOString()
+          }
+        });
+      } catch (emailError) {
+        console.error('Failed to send error notification:', emailError.message);
+      }
+    }
+  }
 
   if (err.name === 'ValidationError') {
     const message = Object.values(err.errors).map(e => e.message).join(', ');
