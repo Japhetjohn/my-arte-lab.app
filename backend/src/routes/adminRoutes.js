@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { successResponse, errorResponse } = require('../utils/apiResponse');
+const metricsService = require('../services/metricsService');
 
 // Admin cleanup endpoint - protected by admin secret
 router.post('/cleanup-unknown-creators', async (req, res) => {
@@ -92,6 +93,35 @@ router.post('/cleanup-all-except', async (req, res) => {
   } catch (error) {
     console.error('Cleanup error:', error);
     return errorResponse(res, 500, 'Cleanup failed', error.message);
+  }
+});
+
+// Recalculate metrics for all creators
+router.post('/recalculate-metrics', async (req, res) => {
+  try {
+    const { adminSecret } = req.body;
+
+    // Check admin secret
+    if (adminSecret !== process.env.ADMIN_SECRET) {
+      return errorResponse(res, 403, 'Unauthorized - Invalid admin secret');
+    }
+
+    console.log('Starting metrics recalculation for all creators...');
+
+    const results = await metricsService.updateAllCreatorMetrics();
+
+    console.log(`Metrics recalculation complete: ${results.updated} updated, ${results.failed} failed`);
+
+    return successResponse(res, 200, 'Metrics recalculation completed', {
+      total: results.total,
+      updated: results.updated,
+      failed: results.failed,
+      errors: results.errors
+    });
+
+  } catch (error) {
+    console.error('Metrics recalculation error:', error);
+    return errorResponse(res, 500, 'Metrics recalculation failed', error.message);
   }
 });
 

@@ -9,6 +9,7 @@ const adminNotificationService = require('../services/adminNotificationService')
 const { escapeHtml } = require('../utils/sanitize');
 const { v4: uuidv4 } = require('uuid');
 const bookingService = require('../services/bookingService');
+const metricsService = require('../services/metricsService');
 const { isValidBookingAmount } = require('../utils/validators');
 const { PLATFORM_CONFIG } = require('../utils/constants');
 
@@ -203,6 +204,10 @@ exports.completeBooking = catchAsync(async (req, res, next) => {
   }
 
   await booking.markCompleted();
+
+  // Update creator metrics asynchronously (don't wait for it)
+  metricsService.updateCreatorMetrics(booking.creator.toString())
+    .catch(err => console.error('Failed to update creator metrics:', err));
 
   const client = await User.findById(booking.client);
 
