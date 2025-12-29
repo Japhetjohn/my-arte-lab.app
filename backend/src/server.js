@@ -4,6 +4,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const session = require('express-session');
+const MongoStore = require('connect-mongo');
 const crypto = require('crypto');
 
 const connectDatabase = require('./config/database');
@@ -206,6 +207,12 @@ app.use(session({
   secret: process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex'),
   resave: false,
   saveUninitialized: false,
+  store: MongoStore.create({
+    mongoUrl: process.env.MONGODB_URI,
+    collectionName: 'sessions',
+    ttl: 24 * 60 * 60, // 1 day in seconds
+    autoRemove: 'native' // Auto-remove expired sessions
+  }),
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
