@@ -323,6 +323,7 @@ export async function handleProfileUpdate(event) {
         const localArea = document.getElementById('profileLocalArea')?.value;
         const state = document.getElementById('profileState')?.value;
         const country = document.getElementById('profileCountry')?.value;
+        const phoneNumber = document.getElementById('profilePhone')?.value;
 
         if (!firstName || !lastName || !email) {
             showToast('First name, last name, and email are required', 'error');
@@ -336,6 +337,7 @@ export async function handleProfileUpdate(event) {
             lastName: lastName.trim(),
             email: email.trim(),
             bio: bio?.trim() || '',
+            phoneNumber: phoneNumber?.trim() || '',
             location: {
                 localArea: localArea?.trim() || '',
                 state: state?.trim() || '',

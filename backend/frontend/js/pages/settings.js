@@ -115,7 +115,7 @@ export function renderSettingsPage() {
 
                         <div class="form-group">
                             <label class="form-label">Phone number</label>
-                            <input type="tel" class="form-input" value="${appState.user.phone || ''}" id="profilePhone" placeholder="+234 800 000 0000">
+                            <input type="tel" class="form-input" value="${appState.user.phoneNumber || ''}" id="profilePhone" placeholder="+234 800 000 0000">
                         </div>
 
                         <div class="form-actions">
