@@ -137,16 +137,22 @@ exports.deleteBeneficiary = catchAsync(async (req, res, next) => {
  * Get all supported countries for offramp
  */
 exports.getSwitchCountries = catchAsync(async (req, res, next) => {
-  try {
-    const coverage = await switchService.getCoverage('OFFRAMP');
+  // Switch API no longer supports fetching all countries without specifying one
+  // Return hardcoded list of supported African countries
+  const supportedCountries = [
+    { country: 'NG', currency: 'NGN', rails: ['bank_account', 'mobile_money'] },
+    { country: 'KE', currency: 'KES', rails: ['bank_account', 'mobile_money'] },
+    { country: 'GH', currency: 'GHS', rails: ['bank_account', 'mobile_money'] },
+    { country: 'ZA', currency: 'ZAR', rails: ['bank_account'] },
+    { country: 'UG', currency: 'UGX', rails: ['bank_account', 'mobile_money'] },
+    { country: 'TZ', currency: 'TZS', rails: ['bank_account', 'mobile_money'] },
+    { country: 'RW', currency: 'RWF', rails: ['bank_account', 'mobile_money'] }
+  ];
 
-    successResponse(res, 200, 'Countries fetched successfully', {
-      countries: coverage,
-      count: coverage.length
-    });
-  } catch (error) {
-    return next(new ErrorHandler(error.message, 500));
-  }
+  successResponse(res, 200, 'Countries fetched successfully', {
+    countries: supportedCountries,
+    count: supportedCountries.length
+  });
 });
 
 /**
