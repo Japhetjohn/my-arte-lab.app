@@ -60,6 +60,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function initializeApp() {
+    // Initialize theme from localStorage
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+
     checkAndClearCache();
 
     await initAuth();

@@ -127,7 +127,21 @@ export function renderSettingsPage() {
 
                 <!-- Account Settings -->
                 <div class="settings-section mt-lg">
-                    <h3 class="settings-section-title">Account settings</h3>
+                    <h3 class="settings-section-title">Appearance</h3>
+
+                    <div class="settings-item">
+                        <div class="settings-item-info">
+                            <div class="settings-item-label">Dark mode</div>
+                            <div class="settings-item-description">Switch between light and dark theme</div>
+                        </div>
+                        <div class="toggle-switch ${localStorage.getItem('theme') === 'dark' ? 'active' : ''}" id="themeToggle" onclick="handleThemeToggle(this)">
+                            <div class="toggle-switch-slider"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <h3 class="settings-section-title">Notifications</h3>
 
                     <div class="settings-item">
                         <div class="settings-item-info">
@@ -554,4 +568,25 @@ window.handleProfileVisibilityChange = async function(value) {
         console.error('Profile visibility update error:', error);
         showToast(error.message || 'Failed to update visibility', 'error');
     }
+};
+
+window.handleThemeToggle = function(toggleElement) {
+    const currentTheme = localStorage.getItem('theme') || 'light';
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+
+    // Update localStorage
+    localStorage.setItem('theme', newTheme);
+
+    // Update document theme
+    document.documentElement.setAttribute('data-theme', newTheme);
+
+    // Update toggle state
+    if (newTheme === 'dark') {
+        toggleElement.classList.add('active');
+    } else {
+        toggleElement.classList.remove('active');
+    }
+
+    // Show feedback
+    showToast(`${newTheme === 'dark' ? 'Dark' : 'Light'} mode enabled`, 'success');
 };
