@@ -176,9 +176,9 @@ export function renderSettingsPage() {
                             <div class="settings-item-description">Control who can see your profile</div>
                         </div>
                         <select class="form-select" style="width: auto;" onchange="handleProfileVisibilityChange(this.value)">
-                            <option value="public" selected>Public</option>
-                            <option value="private">Private</option>
-                            <option value="clients">Clients only</option>
+                            <option value="public" ${(appState.user.profileVisibility || 'public') === 'public' ? 'selected' : ''}>Public</option>
+                            <option value="private" ${(appState.user.profileVisibility || 'public') === 'private' ? 'selected' : ''}>Private</option>
+                            <option value="clients" ${(appState.user.profileVisibility || 'public') === 'clients' ? 'selected' : ''}>Clients only</option>
                         </select>
                     </div>
                 </div>
@@ -537,5 +537,21 @@ window.handleAccountDeletion = async function(event) {
     } catch (error) {
         console.error('Account deletion error:', error);
         showToast(error.message || 'Failed to delete account', 'error');
+    }
+};
+
+window.handleProfileVisibilityChange = async function(value) {
+    try {
+        const response = await api.updateProfile({ profileVisibility: value });
+
+        if (response.success) {
+            setUser(response.data.user);
+            showToast(`Profile visibility set to ${value}`, 'success');
+        } else {
+            showToast(response.message || 'Failed to update visibility', 'error');
+        }
+    } catch (error) {
+        console.error('Profile visibility update error:', error);
+        showToast(error.message || 'Failed to update visibility', 'error');
     }
 };

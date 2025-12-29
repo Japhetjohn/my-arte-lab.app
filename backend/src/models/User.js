@@ -292,6 +292,12 @@ const userSchema = new mongoose.Schema({
     usedAt: Date
   }],
 
+  profileVisibility: {
+    type: String,
+    enum: ['public', 'private', 'clients'],
+    default: 'public'
+  },
+
   lastLogin: Date,
   lastActive: Date,
 
