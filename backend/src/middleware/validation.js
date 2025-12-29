@@ -39,18 +39,18 @@ exports.validateRegister = [
     .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&_\-#])/).withMessage('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&_-#)'),
 
   body('localArea')
+    .optional()
     .trim()
-    .notEmpty().withMessage('Local area is required')
     .isLength({ min: 2, max: 100 }).withMessage('Local area must be between 2 and 100 characters'),
 
   body('state')
+    .optional()
     .trim()
-    .notEmpty().withMessage('State is required')
     .isLength({ min: 2, max: 100 }).withMessage('State must be between 2 and 100 characters'),
 
   body('country')
+    .optional()
     .trim()
-    .notEmpty().withMessage('Country is required')
     .isLength({ min: 2, max: 100 }).withMessage('Country must be between 2 and 100 characters'),
 
   body('role')
