@@ -90,6 +90,12 @@ const userSchema = new mongoose.Schema({
     }
   },
 
+  phoneNumber: {
+    type: String,
+    trim: true,
+    default: null
+  },
+
   category: {
     type: String,
     enum: Object.values(CREATOR_CATEGORIES),
