@@ -96,6 +96,11 @@ const userSchema = new mongoose.Schema({
     default: null
   },
 
+  phoneNumberVisible: {
+    type: Boolean,
+    default: false
+  },
+
   category: {
     type: String,
     enum: Object.values(CREATOR_CATEGORIES),

@@ -195,6 +195,16 @@ export function renderSettingsPage() {
                             <option value="clients" ${(appState.user.profileVisibility || 'public') === 'clients' ? 'selected' : ''}>Clients only</option>
                         </select>
                     </div>
+
+                    <div class="settings-item">
+                        <div class="settings-item-info">
+                            <div class="settings-item-label">Show phone number on profile</div>
+                            <div class="settings-item-description">Display your phone number publicly on your profile</div>
+                        </div>
+                        <div class="toggle-switch ${appState.user.phoneNumberVisible ? 'active' : ''}" id="phoneVisibilityToggle" onclick="handlePhoneVisibilityToggle(this)">
+                            <div class="toggle-switch-slider"></div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Danger Zone -->
@@ -589,4 +599,30 @@ window.handleThemeToggle = function(toggleElement) {
 
     // Show feedback
     showToast(`${newTheme === 'dark' ? 'Dark' : 'Light'} mode enabled`, 'success');
+};
+
+window.handlePhoneVisibilityToggle = async function(toggleElement) {
+    try {
+        const newValue = !appState.user.phoneNumberVisible;
+
+        const response = await api.updateProfile({ phoneNumberVisible: newValue });
+
+        if (response.success) {
+            setUser(response.data.user);
+
+            // Update toggle state
+            if (newValue) {
+                toggleElement.classList.add('active');
+            } else {
+                toggleElement.classList.remove('active');
+            }
+
+            showToast(`Phone number ${newValue ? 'will be shown' : 'is now hidden'} on your profile`, 'success');
+        } else {
+            showToast(response.message || 'Failed to update phone visibility', 'error');
+        }
+    } catch (error) {
+        console.error('Phone visibility update error:', error);
+        showToast(error.message || 'Failed to update phone visibility', 'error');
+    }
 };

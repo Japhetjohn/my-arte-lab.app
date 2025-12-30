@@ -255,7 +255,7 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
 });
 
 exports.updateProfile = catchAsync(async (req, res, next) => {
-  const allowedFields = ['firstName', 'lastName', 'bio', 'location', 'skills', 'avatar', 'coverImage', 'phoneNumber', 'category', 'portfolio', 'services', 'profileVisibility'];
+  const allowedFields = ['firstName', 'lastName', 'bio', 'location', 'skills', 'avatar', 'coverImage', 'phoneNumber', 'phoneNumberVisible', 'category', 'portfolio', 'services', 'profileVisibility'];
   const updates = {};
 
   Object.keys(req.body).forEach(key => {

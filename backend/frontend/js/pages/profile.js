@@ -126,6 +126,15 @@ export async function renderProfilePage() {
                             </svg>
                             ${userLocation}
                         </div>
+                        ${user.phoneNumber && user.phoneNumberVisible ? `
+                        <div class="creator-location mt-sm">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <rect x="4" y="2" width="8" height="12" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+                                <path d="M8 11h.01" stroke="currentColor" stroke-width="1.5"/>
+                            </svg>
+                            ${user.phoneNumber}
+                        </div>
+                        ` : ''}
                         ${isCreator ? `
                         <div class="creator-rating mt-sm">
                             <span class="stars">★★★★★</span>
