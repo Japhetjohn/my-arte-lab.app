@@ -67,9 +67,31 @@ const webhookLimiter = rateLimit({
   }
 });
 
+const adminLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // Very restrictive - 20 requests per 15 minutes
+  message: 'Too many admin requests from this IP',
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    // Use API key + IP for more granular tracking
+    const apiKey = req.headers['x-admin-api-key'] || 'unknown';
+    return `${req.ip}-${apiKey.substring(0, 8)}`;
+  },
+  handler: (req, res) => {
+    console.warn(`[SECURITY] Admin rate limit exceeded from IP: ${req.ip}`);
+    res.status(429).json({
+      success: false,
+      error: 'Admin rate limit exceeded. Please try again later.',
+      retryAfter: 15
+    });
+  }
+});
+
 module.exports = {
   authLimiter,
   passwordResetLimiter,
   apiLimiter,
-  webhookLimiter
+  webhookLimiter,
+  adminLimiter
 };

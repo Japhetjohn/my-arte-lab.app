@@ -25,8 +25,10 @@ const {
   authLimiter,
   passwordResetLimiter,
   apiLimiter,
-  webhookLimiter
+  webhookLimiter,
+  adminLimiter
 } = require('./config/rateLimiting');
+const { verifyAdminAuth } = require('./middleware/adminAuth');
 
 const authRoutes = require('./routes/authRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
@@ -289,7 +291,7 @@ app.use('/api/services', servicesRoutes);
 app.use('/api/favorites', favoritesRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/projects', projectRoutes);
-app.use('/api/admin', adminRoutes);
+app.use('/api/admin', adminLimiter, verifyAdminAuth, adminRoutes);
 
 app.get('/api', (req, res) => {
   res.json({
