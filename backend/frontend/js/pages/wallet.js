@@ -91,7 +91,7 @@ function renderWalletContent() {
                     <div class="caption" style="margin-bottom: 8px; color: var(--text-secondary);">Your Solana Wallet Address (USDC)</div>
                     ${walletData.address && !walletData.address.startsWith('pending_') ? `
                         <div style="display: flex; align-items: center; gap: 12px;">
-                            <code id="walletAddress" style="flex: 1; background: var(--background); padding: 12px; border-radius: 8px; font-size: 14px; overflow-x: auto; white-space: nowrap;">${walletData.address}</code>
+                            <code id="walletAddress" style="flex: 1; background: var(--background); color: var(--text-primary); padding: 12px; border-radius: 8px; font-size: 14px; overflow-x: auto; white-space: nowrap;">${walletData.address}</code>
                             <button class="btn-secondary" onclick="window.copyWalletAddress()" style="padding: 10px 16px; white-space: nowrap;">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="margin-right: 6px; vertical-align: middle;">
                                     <rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" stroke-width="2"/>
