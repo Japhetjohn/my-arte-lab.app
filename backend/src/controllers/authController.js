@@ -63,15 +63,21 @@ exports.register = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Failed to create user account. Please try again.', 500));
   }
 
+  console.log('🔍 Starting token generation...');
   const token = generateToken(user._id);
   const refreshToken = generateRefreshToken(user._id);
+  console.log('✅ Tokens generated');
 
+  console.log('🔍 Generating verification code...');
   const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
   const hashedCode = crypto.createHash('sha256').update(verificationCode).digest('hex');
 
   user.emailVerificationToken = hashedCode;
   user.emailVerificationExpire = Date.now() + 30 * 60 * 1000; // 30 minutes
+
+  console.log('🔍 Saving verification token...');
   await user.save({ validateBeforeSave: false});
+  console.log('✅ Verification token saved');
 
   emailConfig.sendEmail({
     to: user.email,
@@ -93,14 +99,17 @@ exports.register = catchAsync(async (req, res, next) => {
     `
   }).catch(err => console.error('Welcome email failed:', err));
 
+  console.log('🔍 Sending admin notification...');
   adminNotificationService.notifyNewUserRegistration(user)
     .catch(err => console.error('Admin notification failed:', err));
 
+  console.log('🔍 Sending success response...');
   successResponse(res, 201, 'Registration successful', {
     user: user.getPublicProfile(),
     token,
     refreshToken
   });
+  console.log('✅ Registration completed successfully');
 });
 
 exports.login = catchAsync(async (req, res, next) => {
