@@ -12,35 +12,56 @@ const solanaWalletService = require('../services/solanaWalletService');
 exports.register = catchAsync(async (req, res, next) => {
   const { firstName, lastName, email, password, role, category, localArea, state, country } = req.body;
 
+  // Validate required fields
+  if (!firstName || !lastName || !email || !password) {
+    return next(new ErrorHandler('Please provide all required fields', 400));
+  }
+
   const existingUser = await User.findOne({ email });
   if (existingUser) {
     return next(new ErrorHandler('Email already registered', 400));
   }
 
-  const wallet = solanaWalletService.generateWallet();
+  let wallet;
+  try {
+    wallet = solanaWalletService.generateWallet();
+  } catch (error) {
+    console.error('Wallet generation error:', error);
+    return next(new ErrorHandler('Failed to generate wallet. Please try again.', 500));
+  }
 
-  const user = await User.create({
-    firstName,
-    lastName,
-    email,
-    password,
-    role: role || 'client',
-    category: role === 'creator' ? category : undefined,
-    location: {
-      localArea,
-      state,
-      country
-    },
-    wallet: {
-      address: wallet.address,
-      encryptedPrivateKey: wallet.encryptedPrivateKey,
-      currency: wallet.currency || 'USDC',
-      balance: 0,
-      pendingBalance: 0,
-      totalEarnings: 0,
-      network: 'Solana'
+  let user;
+  try {
+    user = await User.create({
+      firstName,
+      lastName,
+      email,
+      password,
+      role: role || 'client',
+      category: role === 'creator' ? category : undefined,
+      location: {
+        localArea,
+        state,
+        country
+      },
+      wallet: {
+        address: wallet.address,
+        encryptedPrivateKey: wallet.encryptedPrivateKey,
+        currency: wallet.currency || 'USDC',
+        balance: 0,
+        pendingBalance: 0,
+        totalEarnings: 0,
+        network: 'Solana'
+      }
+    });
+  } catch (error) {
+    console.error('User creation error:', error);
+    if (error.name === 'ValidationError') {
+      const message = Object.values(error.errors).map(e => e.message).join(', ');
+      return next(new ErrorHandler(message, 400));
     }
-  });
+    return next(new ErrorHandler('Failed to create user account. Please try again.', 500));
+  }
 
   const token = generateToken(user._id);
   const refreshToken = generateRefreshToken(user._id);
