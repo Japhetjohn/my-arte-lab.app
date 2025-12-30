@@ -248,7 +248,7 @@ window.handleProfileUpdate = async function(event) {
                 state: state.trim(),
                 country: country.trim()
             },
-            phone: phone?.trim() || ''
+            phoneNumber: phone?.trim() || ''
         };
 
         if (appState.user.role === 'creator') {
