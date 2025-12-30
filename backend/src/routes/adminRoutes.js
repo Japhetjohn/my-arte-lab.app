@@ -96,6 +96,45 @@ router.post('/cleanup-all-except', async (req, res) => {
   }
 });
 
+// Delete specific user by email
+router.post('/delete-user', async (req, res) => {
+  try {
+    const { adminSecret, email } = req.body;
+
+    // Check admin secret
+    if (adminSecret !== process.env.ADMIN_SECRET) {
+      return errorResponse(res, 403, 'Unauthorized - Invalid admin secret');
+    }
+
+    if (!email) {
+      return errorResponse(res, 400, 'Email is required');
+    }
+
+    const User = require('../models/User');
+
+    // Find and delete the user
+    const user = await User.findOneAndDelete({ email });
+
+    if (!user) {
+      return errorResponse(res, 404, `User with email ${email} not found`);
+    }
+
+    console.log(`Deleted user: ${user.firstName} ${user.lastName} (${user.email})`);
+
+    return successResponse(res, 200, `Successfully deleted user: ${user.email}`, {
+      deletedUser: {
+        email: user.email,
+        name: `${user.firstName} ${user.lastName}`,
+        role: user.role
+      }
+    });
+
+  } catch (error) {
+    console.error('Delete user error:', error);
+    return errorResponse(res, 500, 'Failed to delete user', error.message);
+  }
+});
+
 // Recalculate metrics for all creators
 router.post('/recalculate-metrics', async (req, res) => {
   try {
