@@ -97,14 +97,10 @@ router.post('/cleanup-all-except', async (req, res) => {
 });
 
 // Delete specific user by email
+// Protected by verifyAdminAuth middleware
 router.post('/delete-user', async (req, res) => {
   try {
-    const { adminSecret, email } = req.body;
-
-    // Check admin secret
-    if (adminSecret !== process.env.ADMIN_SECRET) {
-      return errorResponse(res, 403, 'Unauthorized - Invalid admin secret');
-    }
+    const { email } = req.body;
 
     if (!email) {
       return errorResponse(res, 400, 'Email is required');
@@ -119,7 +115,7 @@ router.post('/delete-user', async (req, res) => {
       return errorResponse(res, 404, `User with email ${email} not found`);
     }
 
-    console.log(`Deleted user: ${user.firstName} ${user.lastName} (${user.email})`);
+    console.log(`[ADMIN] Deleted user: ${user.firstName} ${user.lastName} (${user.email})`);
 
     return successResponse(res, 200, `Successfully deleted user: ${user.email}`, {
       deletedUser: {
@@ -136,14 +132,10 @@ router.post('/delete-user', async (req, res) => {
 });
 
 // Delete specific user by ID
+// Protected by verifyAdminAuth middleware
 router.post('/delete-user-by-id', async (req, res) => {
   try {
-    const { adminSecret, userId } = req.body;
-
-    // Check admin secret
-    if (adminSecret !== process.env.ADMIN_SECRET) {
-      return errorResponse(res, 403, 'Unauthorized - Invalid admin secret');
-    }
+    const { userId } = req.body;
 
     if (!userId) {
       return errorResponse(res, 400, 'User ID is required');
@@ -158,7 +150,7 @@ router.post('/delete-user-by-id', async (req, res) => {
       return errorResponse(res, 404, `User with ID ${userId} not found`);
     }
 
-    console.log(`Deleted user: ${user.firstName} ${user.lastName} (${user.email}) - ID: ${userId}`);
+    console.log(`[ADMIN] Deleted user: ${user.firstName} ${user.lastName} (${user.email}) - ID: ${userId}`);
 
     return successResponse(res, 200, `Successfully deleted user: ${user.email}`, {
       deletedUser: {
