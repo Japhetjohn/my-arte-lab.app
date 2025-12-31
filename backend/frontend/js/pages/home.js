@@ -90,56 +90,6 @@ export async function renderHomePage() {
     }
 
     mainContent.innerHTML = `
-        <!-- Hero Section -->
-        <div class="hero-section">
-            <div class="container" style="max-width: 1200px; margin: 0 auto;">
-                <div class="hero-grid">
-                    <!-- Left: Content -->
-                    <div class="hero-content">
-                        <h1 class="hero-title">
-                            Find Your Perfect Creator
-                        </h1>
-                        <p class="hero-description">
-                            Connect with talented photographers, designers, videographers, and illustrators. Book professional services and bring your creative vision to life.
-                        </p>
-
-                        <!-- How It Works -->
-                        <div class="hero-card">
-                            <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 16px;">How It Works</h3>
-                            <div style="display: flex; flex-direction: column; gap: 12px;">
-                                <div style="display: flex; align-items: start; gap: 12px;">
-                                    <div style="background: var(--primary); color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; flex-shrink: 0;">1</div>
-                                    <div>
-                                        <div style="font-weight: 600; margin-bottom: 4px;">Browse Creators</div>
-                                        <div style="font-size: 14px; color: var(--text-secondary);">Explore profiles and portfolios</div>
-                                    </div>
-                                </div>
-                                <div style="display: flex; align-items: start; gap: 12px;">
-                                    <div style="background: var(--primary); color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; flex-shrink: 0;">2</div>
-                                    <div>
-                                        <div style="font-weight: 600; margin-bottom: 4px;">Book & Pay Securely</div>
-                                        <div style="font-size: 14px; color: var(--text-secondary);">Safe payments with USDC</div>
-                                    </div>
-                                </div>
-                                <div style="display: flex; align-items: start; gap: 12px;">
-                                    <div style="background: var(--primary); color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; flex-shrink: 0;">3</div>
-                                    <div>
-                                        <div style="font-weight: 600; margin-bottom: 4px;">Get Your Work</div>
-                                        <div style="font-size: 14px; color: var(--text-secondary);">Receive high-quality deliverables</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Right: Image -->
-                    <div class="hero-image">
-                        <img src="/image.png" alt="Creative professionals" style="width: 100%; height: auto; border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.1);">
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <div class="discover-header">
             <div class="container">
                 <div class="search-bar">
