@@ -291,8 +291,7 @@ app.use('/api/services', servicesRoutes);
 app.use('/api/favorites', favoritesRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/projects', projectRoutes);
-// Temporarily disable admin auth to delete test accounts - will re-enable after cleanup
-app.use('/api/admin', adminRoutes);
+app.use('/api/admin', adminLimiter, verifyAdminAuth, adminRoutes);
 
 app.get('/api', (req, res) => {
   res.json({
