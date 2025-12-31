@@ -90,6 +90,56 @@ export async function renderHomePage() {
     }
 
     mainContent.innerHTML = `
+        <!-- Hero Section -->
+        <div style="background: linear-gradient(135deg, rgba(151, 71, 255, 0.05) 0%, rgba(107, 70, 255, 0.05) 100%); padding: 60px 20px 40px; position: relative; overflow: hidden;">
+            <div class="container" style="max-width: 1200px; margin: 0 auto;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center;">
+                    <!-- Left: Content -->
+                    <div>
+                        <h1 style="font-size: clamp(32px, 5vw, 48px); font-weight: 700; margin-bottom: 20px; line-height: 1.2;">
+                            Find Your Perfect Creator
+                        </h1>
+                        <p style="font-size: 18px; color: var(--text-secondary); margin-bottom: 32px; line-height: 1.6;">
+                            Connect with talented photographers, designers, videographers, and illustrators. Book professional services and bring your creative vision to life.
+                        </p>
+
+                        <!-- How It Works -->
+                        <div style="background: var(--surface); padding: 24px; border-radius: 12px; border: 1px solid var(--border);">
+                            <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 16px;">How It Works</h3>
+                            <div style="display: flex; flex-direction: column; gap: 12px;">
+                                <div style="display: flex; align-items: start; gap: 12px;">
+                                    <div style="background: var(--primary); color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; flex-shrink: 0;">1</div>
+                                    <div>
+                                        <div style="font-weight: 600; margin-bottom: 4px;">Browse Creators</div>
+                                        <div style="font-size: 14px; color: var(--text-secondary);">Explore profiles and portfolios</div>
+                                    </div>
+                                </div>
+                                <div style="display: flex; align-items: start; gap: 12px;">
+                                    <div style="background: var(--primary); color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; flex-shrink: 0;">2</div>
+                                    <div>
+                                        <div style="font-weight: 600; margin-bottom: 4px;">Book & Pay Securely</div>
+                                        <div style="font-size: 14px; color: var(--text-secondary);">Safe payments with USDC</div>
+                                    </div>
+                                </div>
+                                <div style="display: flex; align-items: start; gap: 12px;">
+                                    <div style="background: var(--primary); color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; flex-shrink: 0;">3</div>
+                                    <div>
+                                        <div style="font-weight: 600; margin-bottom: 4px;">Get Your Work</div>
+                                        <div style="font-size: 14px; color: var(--text-secondary);">Receive high-quality deliverables</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Image -->
+                    <div style="position: relative;">
+                        <img src="/image.png" alt="Creative professionals" style="width: 100%; height: auto; border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.1);">
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="discover-header">
             <div class="container">
                 <div class="search-bar">
