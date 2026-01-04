@@ -92,3 +92,20 @@ exports.deletePortfolioImage = catchAsync(async (req, res, next) => {
     portfolio: user.portfolio
   });
 });
+
+exports.uploadBookingAttachment = catchAsync(async (req, res, next) => {
+  if (!req.file) {
+    return next(new ErrorHandler('Please upload a file', 400));
+  }
+
+  // Reuse the portfolio upload function (it's generic for images/files)
+  const result = await uploadPortfolio(req.file.buffer);
+
+  successResponse(res, 200, 'File uploaded successfully', {
+    url: result.secure_url,
+    cloudinary: {
+      publicId: result.public_id,
+      url: result.secure_url
+    }
+  });
+});

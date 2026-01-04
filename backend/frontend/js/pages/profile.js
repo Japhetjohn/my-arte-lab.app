@@ -191,7 +191,7 @@ export async function renderProfilePage() {
                 <h2 class="mb-md">Portfolio</h2>
                 <div class="portfolio-grid">
                     ${user.portfolio.map((image, index) => `
-                        <div class="portfolio-item" onclick="window.openImageModal('${image}')" style="cursor: pointer;">
+                        <div class="portfolio-item" onclick="window.openImageModal('${image}', ${JSON.stringify(user.portfolio)}, ${index})" style="cursor: pointer;">
                             <img src="${image}" alt="Portfolio ${index + 1}">
                             <div class="portfolio-overlay">
                                 <div>Project ${index + 1}</div>

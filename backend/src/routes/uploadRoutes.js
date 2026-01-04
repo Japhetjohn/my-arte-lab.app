@@ -6,7 +6,8 @@ const {
   uploadAvatar,
   uploadCover,
   uploadPortfolio,
-  deletePortfolioImage
+  deletePortfolioImage,
+  uploadBookingAttachment
 } = require('../controllers/uploadController');
 
 router.use(protect);
@@ -18,5 +19,7 @@ router.post('/cover', upload.single('cover'), uploadCover);
 router.post('/portfolio', upload.single('portfolio'), uploadPortfolio);
 
 router.delete('/portfolio/:index', deletePortfolioImage);
+
+router.post('/booking-attachment', upload.single('file'), uploadBookingAttachment);
 
 module.exports = router;

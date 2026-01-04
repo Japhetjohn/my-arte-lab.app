@@ -184,7 +184,10 @@ export async function showBookingModal(creatorId, serviceIndex = 0) {
 
                     <div class="form-group">
                         <label class="form-label">Attach files (optional)</label>
-                        <input type="file" class="form-input" multiple>
+                        <input type="file" id="bookingAttachments" class="form-input" multiple accept="image/*,.pdf,.doc,.docx">
+                        <div class="small-text" style="margin-top: 8px; color: var(--text-secondary);">
+                            Upload event graphics, reference images, or any relevant files (Max 5 files, 10MB each)
+                        </div>
                     </div>
 
                     <div class="alert alert-success">
@@ -240,6 +243,54 @@ export async function handleBookingSubmit(event, creatorId, serviceIndex) {
 
         const service = creator.services[serviceIndex];
 
+        // Handle file uploads
+        const fileInput = document.getElementById('bookingAttachments');
+        const attachmentUrls = [];
+
+        if (fileInput && fileInput.files.length > 0) {
+            // Validate file count
+            if (fileInput.files.length > 5) {
+                throw new Error('Maximum 5 files allowed');
+            }
+
+            submitBtn.textContent = 'Uploading files...';
+
+            // Upload each file
+            for (let i = 0; i < fileInput.files.length; i++) {
+                const file = fileInput.files[i];
+
+                // Validate file size (10MB)
+                if (file.size > 10 * 1024 * 1024) {
+                    throw new Error(`File "${file.name}" exceeds 10MB limit`);
+                }
+
+                try {
+                    const formData = new FormData();
+                    formData.append('file', file);
+
+                    const uploadResponse = await fetch('/api/upload/booking-attachment', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        },
+                        body: formData
+                    });
+
+                    const uploadResult = await uploadResponse.json();
+
+                    if (!uploadResponse.ok || !uploadResult.success) {
+                        throw new Error(uploadResult.message || 'File upload failed');
+                    }
+
+                    attachmentUrls.push(uploadResult.data.url);
+                } catch (uploadError) {
+                    throw new Error(`Failed to upload "${file.name}": ${uploadError.message}`);
+                }
+            }
+        }
+
+        submitBtn.textContent = 'Creating booking...';
+
         const bookingData = {
             creatorId: creator._id || creator.id,
             serviceTitle: service.title,
@@ -248,7 +299,8 @@ export async function handleBookingSubmit(event, creatorId, serviceIndex) {
             amount: parseFloat(document.getElementById('proposedPrice').value),
             currency: 'USDC',
             startDate: document.getElementById('bookingDate').value,
-            endDate: document.getElementById('endDate').value
+            endDate: document.getElementById('endDate').value,
+            attachments: attachmentUrls
         };
 
         const response = await api.createBooking(bookingData);
@@ -2637,31 +2689,109 @@ export async function showEarningsReport() {
     }
 }
 
-window.openImageModal = function(imageUrl) {
+window.currentGalleryImages = [];
+window.currentGalleryIndex = 0;
+
+window.openImageModal = function(imageUrl, allImages = null, startIndex = 0) {
     const existingModal = document.getElementById('globalImageModal');
     if (existingModal) existingModal.remove();
 
+    // If allImages provided, use gallery mode; otherwise single image mode
+    if (allImages && Array.isArray(allImages)) {
+        window.currentGalleryImages = allImages;
+        window.currentGalleryIndex = startIndex;
+    } else {
+        window.currentGalleryImages = [imageUrl];
+        window.currentGalleryIndex = 0;
+    }
+
     const modal = document.createElement('div');
     modal.id = 'globalImageModal';
+
+    const hasMultipleImages = window.currentGalleryImages.length > 1;
+    const currentImage = window.currentGalleryImages[window.currentGalleryIndex];
+
     modal.innerHTML = `
         <div style="display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 10000; justify-content: center; align-items: center;">
-            <button onclick="window.closeImageModal()" style="position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.1); color: white; border: none; border-radius: 50%; width: 48px; height: 48px; cursor: pointer; font-size: 24px; display: flex; align-items: center; justify-content: center; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">×</button>
-            <img src="${imageUrl}" alt="Full size" style="max-width: 90%; max-height: 90%; object-fit: contain;">
+            <button onclick="window.closeImageModal()" style="position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.1); color: white; border: none; border-radius: 50%; width: 48px; height: 48px; cursor: pointer; font-size: 24px; display: flex; align-items: center; justify-content: center; transition: background 0.2s; z-index: 10001;" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">×</button>
+
+            ${hasMultipleImages ? `
+                <button onclick="window.navigateGallery(-1)" style="position: absolute; left: 20px; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.1); color: white; border: none; border-radius: 50%; width: 48px; height: 48px; cursor: pointer; font-size: 24px; display: flex; align-items: center; justify-content: center; transition: background 0.2s; z-index: 10001;" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">‹</button>
+
+                <button onclick="window.navigateGallery(1)" style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.1); color: white; border: none; border-radius: 50%; width: 48px; height: 48px; cursor: pointer; font-size: 24px; display: flex; align-items: center; justify-content: center; transition: background 0.2s; z-index: 10001;" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">›</button>
+
+                <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.1); color: white; padding: 8px 16px; border-radius: 20px; font-size: 14px; z-index: 10001;">
+                    ${window.currentGalleryIndex + 1} / ${window.currentGalleryImages.length}
+                </div>
+            ` : ''}
+
+            <img id="galleryImage" src="${currentImage}" alt="Full size" style="max-width: 90%; max-height: 90%; object-fit: contain; transition: opacity 0.2s;">
         </div>
     `;
 
-    modal.querySelector('div').addEventListener('click', function(e) {
+    const backdrop = modal.querySelector('div');
+    backdrop.addEventListener('click', function(e) {
         if (e.target === e.currentTarget) {
             window.closeImageModal();
         }
     });
 
+    // Add keyboard navigation
+    const handleKeyPress = function(e) {
+        if (e.key === 'Escape') {
+            window.closeImageModal();
+        } else if (hasMultipleImages && e.key === 'ArrowLeft') {
+            window.navigateGallery(-1);
+        } else if (hasMultipleImages && e.key === 'ArrowRight') {
+            window.navigateGallery(1);
+        }
+    };
+
+    document.addEventListener('keydown', handleKeyPress);
+    modal.dataset.keyHandler = 'true';
+
     document.body.appendChild(modal);
+};
+
+window.navigateGallery = function(direction) {
+    const newIndex = window.currentGalleryIndex + direction;
+
+    // Wrap around
+    if (newIndex < 0) {
+        window.currentGalleryIndex = window.currentGalleryImages.length - 1;
+    } else if (newIndex >= window.currentGalleryImages.length) {
+        window.currentGalleryIndex = 0;
+    } else {
+        window.currentGalleryIndex = newIndex;
+    }
+
+    // Update image with fade effect
+    const img = document.getElementById('galleryImage');
+    if (img) {
+        img.style.opacity = '0';
+        setTimeout(() => {
+            img.src = window.currentGalleryImages[window.currentGalleryIndex];
+            img.style.opacity = '1';
+        }, 100);
+    }
+
+    // Update counter
+    const modal = document.getElementById('globalImageModal');
+    if (modal) {
+        const counter = modal.querySelector('div[style*="bottom: 20px"]');
+        if (counter) {
+            counter.textContent = `${window.currentGalleryIndex + 1} / ${window.currentGalleryImages.length}`;
+        }
+    }
 };
 
 window.closeImageModal = function() {
     const modal = document.getElementById('globalImageModal');
     if (modal) {
+        // Remove keyboard listener
+        document.removeEventListener('keydown', handleKeyPress);
         modal.remove();
     }
+    window.currentGalleryImages = [];
+    window.currentGalleryIndex = 0;
 };

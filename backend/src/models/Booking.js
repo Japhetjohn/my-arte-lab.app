@@ -122,6 +122,10 @@ const bookingSchema = new mongoose.Schema({
   completedAt: Date,
   cancelledAt: Date,
 
+  attachments: [{
+    type: String
+  }],
+
   deliverables: [{
     title: String,
     description: String,

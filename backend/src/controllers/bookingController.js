@@ -24,7 +24,8 @@ exports.createBooking = catchAsync(async (req, res, next) => {
     amount,
     currency,
     startDate,
-    endDate
+    endDate,
+    attachments
   } = req.body;
 
   const validation = isValidBookingAmount(amount);
@@ -44,7 +45,8 @@ exports.createBooking = catchAsync(async (req, res, next) => {
         amount,
         currency,
         startDate,
-        endDate
+        endDate,
+        attachments
       },
       req.user._id,
       idempotencyKey
