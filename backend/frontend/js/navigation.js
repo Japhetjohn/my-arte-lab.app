@@ -71,6 +71,11 @@ export function navigateToPage(page, addToHistoryFlag = true) {
             addPageTransition();
             initScrollAnimations();
             init2025Effects();
+
+            // Update notification badge after page navigation
+            if (window.updateNotificationBadge) {
+                window.updateNotificationBadge();
+            }
         });
 
         updateBackButton();

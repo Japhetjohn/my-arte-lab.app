@@ -254,9 +254,12 @@ p {
     background: white;
     border-bottom: 1px solid var(--border);
     padding: var(--spacing-md) 0;
-    position: sticky;
+    position: fixed;
     top: 0;
-    z-index: 100;
+    left: 0;
+    right: 0;
+    width: 100%;
+    z-index: 1000;
     box-shadow: var(--shadow-sm);
     animation: slideDown var(--transition-base);
 }
@@ -393,6 +396,7 @@ p {
 /* Main Content */
 .main-content {
     min-height: calc(100vh - 140px);
+    padding-top: 72px;
     padding-bottom: 80px;
     animation: fadeIn var(--transition-base);
     width: 100%;

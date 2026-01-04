@@ -167,6 +167,11 @@ window.handleNotificationClick = async function(notificationId, link) {
     try {
         await api.markNotificationAsRead(notificationId);
 
+        // Update badge count immediately
+        if (window.updateNotificationBadge) {
+            window.updateNotificationBadge();
+        }
+
         if (link && link !== '#') {
             window.navigateToPage(link.replace('/', ''));
         } else {
@@ -181,6 +186,12 @@ window.markAllNotificationsRead = async function() {
     try {
         await api.markAllNotificationsAsRead();
         await renderNotificationsPage();
+
+        // Update badge count immediately
+        if (window.updateNotificationBadge) {
+            window.updateNotificationBadge();
+        }
+
         showToast('All notifications marked as read', 'success');
     } catch (error) {
         console.error('Failed to mark all as read:', error);

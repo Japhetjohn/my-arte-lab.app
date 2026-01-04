@@ -551,19 +551,26 @@ export function updateUserMenu() {
 }
 
 async function updateNotificationBadge() {
+    if (!appState.user) return;
+
     try {
         const response = await api.getUnreadNotificationCount();
         if (response.success) {
             const unreadCount = response.data.unreadCount || 0;
             const badge = document.querySelector('.notification-badge');
             if (badge) {
+                console.log('[Notification Badge] Updating count:', unreadCount);
                 if (unreadCount > 0) {
                     badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
                     badge.style.display = 'flex';
                 } else {
                     badge.style.display = 'none';
                 }
+            } else {
+                console.warn('[Notification Badge] Badge element not found');
             }
+        } else {
+            console.warn('[Notification Badge] API response not successful:', response);
         }
     } catch (error) {
         // Silently fail notification badge updates to avoid spamming console
@@ -574,6 +581,9 @@ async function updateNotificationBadge() {
         }
     }
 }
+
+// Make function globally available
+window.updateNotificationBadge = updateNotificationBadge;
 
 /**
  * Validate password requirements and update UI
