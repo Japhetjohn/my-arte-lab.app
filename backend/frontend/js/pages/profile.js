@@ -189,9 +189,9 @@ export async function renderProfilePage() {
         <div class="section">
             <div class="container">
                 <h2 class="mb-md">Portfolio</h2>
-                <div class="portfolio-grid">
+                <div class="portfolio-grid" id="portfolioGrid">
                     ${user.portfolio.map((image, index) => `
-                        <div class="portfolio-item" onclick="window.openImageModal('${image}', ${JSON.stringify(user.portfolio)}, ${index})" style="cursor: pointer;">
+                        <div class="portfolio-item" data-index="${index}" style="cursor: pointer;">
                             <img src="${image}" alt="Portfolio ${index + 1}">
                             <div class="portfolio-overlay">
                                 <div>Project ${index + 1}</div>
@@ -370,6 +370,22 @@ export async function renderProfilePage() {
             </div>
         </div>
     `;
+
+    // Setup portfolio gallery navigation
+    if (isCreator && user.portfolio && user.portfolio.length > 0) {
+        window.currentPortfolio = user.portfolio;
+
+        const portfolioGrid = document.getElementById('portfolioGrid');
+        if (portfolioGrid) {
+            const portfolioItems = portfolioGrid.querySelectorAll('.portfolio-item');
+            portfolioItems.forEach((item) => {
+                item.addEventListener('click', () => {
+                    const index = parseInt(item.dataset.index);
+                    window.openImageModal(window.currentPortfolio[index], window.currentPortfolio, index);
+                });
+            });
+        }
+    }
 }
 
 async function requestEmailVerification() {
