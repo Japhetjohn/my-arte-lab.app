@@ -15,7 +15,7 @@ exports.getNotifications = catchAsync(async (req, res, next) => {
   }
 
   const notifications = await Notification.find(query)
-    .populate('sender', 'name avatar')
+    .populate('sender', 'firstName lastName avatar')
     .sort({ createdAt: -1 })
     .limit(parseInt(limit))
     .skip(parseInt(skip));
