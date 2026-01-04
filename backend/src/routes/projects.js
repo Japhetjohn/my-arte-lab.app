@@ -4,6 +4,7 @@ const { protect, optionalAuth } = require('../middleware/auth');
 const Project = require('../models/Project');
 const Application = require('../models/Application');
 const User = require('../models/User');
+const Notification = require('../models/Notification');
 
 // Get all projects (public, with optional filters)
 router.get('/', optionalAuth, async (req, res) => {
@@ -296,6 +297,27 @@ router.post('/:id/apply', protect, async (req, res) => {
     const populatedApplication = await Application.findById(application._id)
       .populate('creatorId', 'name avatar category');
 
+    // Populate project with client details for notification
+    await project.populate('clientId', 'name email');
+
+    // Create notification for project owner
+    await Notification.createNotification({
+      recipient: project.clientId._id,
+      sender: req.user._id,
+      type: 'project_application_received',
+      title: 'New Project Application',
+      message: `${req.user.name} has applied to your project "${project.title}" with a proposed budget of ${proposedBudget.amount} ${proposedBudget.currency}`,
+      link: `/projects`,
+      project: project._id,
+      metadata: {
+        projectId: project._id,
+        projectTitle: project.title,
+        proposedBudget: proposedBudget.amount,
+        currency: proposedBudget.currency,
+        applicationId: application._id
+      }
+    });
+
     res.status(201).json({
       success: true,
       message: 'Application submitted successfully',
@@ -367,11 +389,64 @@ router.patch('/applications/:id', protect, async (req, res) => {
       });
     }
 
+    // Populate creator details for notification
+    await application.populate('creatorId', 'name email');
+
     if (status === 'accepted') {
       await application.accept(reviewNotes);
-      await project.selectCreator(application.creatorId);
+      await project.selectCreator(application.creatorId._id);
+
+      // Notify creator of acceptance
+      await Notification.createNotification({
+        recipient: application.creatorId._id,
+        sender: req.user._id,
+        type: 'project_application_accepted',
+        title: 'Application Accepted!',
+        message: `Congratulations! Your application for "${project.title}" has been accepted. The project has started.`,
+        link: `/projects`,
+        project: project._id,
+        metadata: {
+          projectId: project._id,
+          projectTitle: project.title,
+          proposedBudget: application.proposedBudget.amount,
+          currency: application.proposedBudget.currency,
+          reviewNotes
+        }
+      });
+
+      // Notify client that project has started
+      await Notification.createNotification({
+        recipient: project.clientId,
+        sender: application.creatorId._id,
+        type: 'project_started',
+        title: 'Project Started',
+        message: `Your project "${project.title}" has started with ${application.creatorId.name}`,
+        link: `/projects`,
+        project: project._id,
+        metadata: {
+          projectId: project._id,
+          projectTitle: project.title,
+          creatorName: application.creatorId.name
+        }
+      });
     } else {
       await application.reject(reviewNotes);
+
+      // Notify creator of rejection
+      await Notification.createNotification({
+        recipient: application.creatorId._id,
+        sender: req.user._id,
+        type: 'project_application_rejected',
+        title: 'Application Not Selected',
+        message: `Your application for "${project.title}" was not selected.${reviewNotes ? ` Feedback: ${reviewNotes}` : ''}`,
+        link: `/projects`,
+        project: project._id,
+        metadata: {
+          projectId: project._id,
+          projectTitle: project.title,
+          reviewNotes
+        }
+      });
     }
 
     res.json({

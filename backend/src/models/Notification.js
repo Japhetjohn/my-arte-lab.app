@@ -29,7 +29,15 @@ const notificationSchema = new mongoose.Schema({
       'counter_proposal',
       'insufficient_balance',
       'message',
-      'system'
+      'system',
+      // Project notifications
+      'project_created',
+      'project_application_received',
+      'project_application_accepted',
+      'project_application_rejected',
+      'project_started',
+      'project_completed',
+      'project_cancelled'
     ],
     required: true
   },
@@ -51,6 +59,11 @@ const notificationSchema = new mongoose.Schema({
   booking: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Booking'
+  },
+
+  project: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Project'
   },
 
   metadata: {
