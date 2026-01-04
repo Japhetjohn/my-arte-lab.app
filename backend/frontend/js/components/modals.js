@@ -2691,10 +2691,16 @@ export async function showEarningsReport() {
 
 window.currentGalleryImages = [];
 window.currentGalleryIndex = 0;
+window.galleryKeyHandler = null;
 
 window.openImageModal = function(imageUrl, allImages = null, startIndex = 0) {
     const existingModal = document.getElementById('globalImageModal');
     if (existingModal) existingModal.remove();
+
+    // Remove old key handler if exists
+    if (window.galleryKeyHandler) {
+        document.removeEventListener('keydown', window.galleryKeyHandler);
+    }
 
     // If allImages provided, use gallery mode; otherwise single image mode
     if (allImages && Array.isArray(allImages)) {
@@ -2736,8 +2742,8 @@ window.openImageModal = function(imageUrl, allImages = null, startIndex = 0) {
         }
     });
 
-    // Add keyboard navigation
-    const handleKeyPress = function(e) {
+    // Add keyboard navigation - store handler globally so we can remove it
+    window.galleryKeyHandler = function(e) {
         if (e.key === 'Escape') {
             window.closeImageModal();
         } else if (hasMultipleImages && e.key === 'ArrowLeft') {
@@ -2747,8 +2753,7 @@ window.openImageModal = function(imageUrl, allImages = null, startIndex = 0) {
         }
     };
 
-    document.addEventListener('keydown', handleKeyPress);
-    modal.dataset.keyHandler = 'true';
+    document.addEventListener('keydown', window.galleryKeyHandler);
 
     document.body.appendChild(modal);
 };
@@ -2788,9 +2793,12 @@ window.navigateGallery = function(direction) {
 window.closeImageModal = function() {
     const modal = document.getElementById('globalImageModal');
     if (modal) {
-        // Remove keyboard listener
-        document.removeEventListener('keydown', handleKeyPress);
         modal.remove();
+    }
+    // Remove keyboard listener
+    if (window.galleryKeyHandler) {
+        document.removeEventListener('keydown', window.galleryKeyHandler);
+        window.galleryKeyHandler = null;
     }
     window.currentGalleryImages = [];
     window.currentGalleryIndex = 0;

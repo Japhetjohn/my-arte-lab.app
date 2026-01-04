@@ -220,10 +220,10 @@ export async function renderProfilePage() {
                         ${services.map((service, index) => `
                             <div class="card" style="padding: 24px; border: 1px solid var(--border);">
                                 ${service.images && service.images.length > 0 ? `
-                                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-bottom: 16px;">
+                                    <div class="service-images-grid" data-service-id="${service._id}" data-service-index="${index}" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-bottom: 16px;">
                                         ${service.images.slice(0, 5).map((img, idx) => `
                                             <div style="position: relative;">
-                                                <img src="${img}" alt="${service.title}" style="width: 100%; height: 120px; object-fit: cover; border-radius: 8px; cursor: pointer;" onclick="window.openImageModal('${img}')">
+                                                <img src="${img}" alt="${service.title}" class="service-image-item" data-index="${idx}" style="width: 100%; height: 120px; object-fit: cover; border-radius: 8px; cursor: pointer;">
                                                 <button onclick="event.stopPropagation(); window.deleteServiceImage('${service._id}', ${idx})" style="position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,0.7); color: white; border: none; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px;">×</button>
                                             </div>
                                         `).join('')}
@@ -385,6 +385,25 @@ export async function renderProfilePage() {
                 });
             });
         }
+    }
+
+    // Setup service image gallery navigation
+    if (isCreator && services.length > 0) {
+        const serviceGrids = document.querySelectorAll('.service-images-grid');
+        serviceGrids.forEach((grid) => {
+            const serviceIndex = parseInt(grid.dataset.serviceIndex);
+            const service = services[serviceIndex];
+
+            if (service && service.images) {
+                const imageItems = grid.querySelectorAll('.service-image-item');
+                imageItems.forEach((item) => {
+                    item.addEventListener('click', () => {
+                        const index = parseInt(item.dataset.index);
+                        window.openImageModal(service.images[index], service.images, index);
+                    });
+                });
+            }
+        });
     }
 }
 
