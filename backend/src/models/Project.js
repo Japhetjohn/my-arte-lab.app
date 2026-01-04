@@ -147,12 +147,12 @@ projectSchema.methods.selectCreator = function(creatorId) {
 // Statics
 projectSchema.statics.findOpenProjects = function(filters = {}) {
   const query = { status: 'open', visibility: 'public', ...filters };
-  return this.find(query).populate('clientId', 'name avatar email isEmailVerified').sort({ createdAt: -1 });
+  return this.find(query).populate('clientId', 'firstName lastName avatar email isEmailVerified').sort({ createdAt: -1 });
 };
 
 projectSchema.statics.findByCategory = function(category) {
   return this.find({ category, status: 'open', visibility: 'public' })
-    .populate('clientId', 'name avatar email isEmailVerified')
+    .populate('clientId', 'firstName lastName avatar email isEmailVerified')
     .sort({ createdAt: -1 });
 };
 

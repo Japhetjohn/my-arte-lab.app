@@ -31,7 +31,7 @@ router.get('/', optionalAuth, async (req, res) => {
     }
 
     const projects = await Project.find(query)
-      .populate('clientId', 'name avatar email isEmailVerified createdAt')
+      .populate('clientId', 'firstName lastName avatar email isEmailVerified createdAt')
       .sort({ createdAt: -1 })
       .limit(100);
 
@@ -52,8 +52,8 @@ router.get('/', optionalAuth, async (req, res) => {
 router.get('/:id', optionalAuth, async (req, res) => {
   try {
     const project = await Project.findById(req.params.id)
-      .populate('clientId', 'name avatar email bio location isEmailVerified createdAt')
-      .populate('selectedCreatorId', 'name avatar category');
+      .populate('clientId', 'firstName lastName avatar email bio location isEmailVerified createdAt')
+      .populate('selectedCreatorId', 'firstName lastName avatar category');
 
     if (!project) {
       return res.status(404).json({
@@ -126,7 +126,7 @@ router.post('/', protect, async (req, res) => {
     await project.save();
 
     const populatedProject = await Project.findById(project._id)
-      .populate('clientId', 'name avatar email');
+      .populate('clientId', 'firstName lastName avatar email');
 
     res.status(201).json({
       success: true,
@@ -194,7 +194,7 @@ router.patch('/:id', protect, async (req, res) => {
 router.get('/my/posted', protect, async (req, res) => {
   try {
     const projects = await Project.find({ clientId: req.user._id })
-      .populate('selectedCreatorId', 'name avatar')
+      .populate('selectedCreatorId', 'firstName lastName avatar')
       .sort({ createdAt: -1 });
 
     res.json({
@@ -295,10 +295,10 @@ router.post('/:id/apply', protect, async (req, res) => {
     await project.incrementApplications();
 
     const populatedApplication = await Application.findById(application._id)
-      .populate('creatorId', 'name avatar category');
+      .populate('creatorId', 'firstName lastName avatar category');
 
     // Populate project with client details for notification
-    await project.populate('clientId', 'name email');
+    await project.populate('clientId', 'firstName lastName email');
 
     // Create notification for project owner
     await Notification.createNotification({
@@ -390,7 +390,7 @@ router.patch('/applications/:id', protect, async (req, res) => {
     }
 
     // Populate creator details for notification
-    await application.populate('creatorId', 'name email');
+    await application.populate('creatorId', 'firstName lastName email');
 
     if (status === 'accepted') {
       await application.accept(reviewNotes);
