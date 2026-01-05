@@ -108,8 +108,15 @@ function renderProjectCards(projects) {
 
     return `
         <div class="transaction-list">
-            ${projects.map(project => `
-                <div class="transaction-item project-card" data-project-id="${project._id}" style="cursor: pointer;">
+            ${projects.map(project => {
+                const cardHtml = `
+                <div class="transaction-item project-card" data-project-id="${project._id}" style="cursor: pointer; ${project.coverImage ? 'display: grid; grid-template-columns: auto 1fr auto; gap: 16px; align-items: center;' : ''}">
+                    ${project.coverImage ? `
+                        <img src="${project.coverImage}"
+                             alt="${project.title}"
+                             style="width: 140px; height: 90px; border-radius: 8px; object-fit: cover; flex-shrink: 0;"
+                             onerror="this.style.display='none'">
+                    ` : ''}
                     <div style="display: flex; align-items: center; gap: 16px; flex: 1; min-width: 0;">
                         <img src="${project.clientId?.avatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(project.clientId?.name || 'Client')}"
                              alt="${project.clientId?.name || 'Client'}"
@@ -157,7 +164,9 @@ function renderProjectCards(projects) {
                         </div>
                     </div>
                 </div>
-            `).join('')}
+                `;
+                return cardHtml;
+            }).join('')}
         </div>
     `;
 }

@@ -357,6 +357,14 @@ export async function showProjectDetail(projectId) {
                         </button>
                     </div>
 
+                    <!-- Project Cover Image -->
+                    ${project.coverImage ? `
+                        <img src="${project.coverImage}"
+                             alt="${project.title}"
+                             style="width: 100%; max-height: 400px; object-fit: cover; border-radius: var(--radius); margin-bottom: 24px; cursor: pointer;"
+                             onclick="window.openImageModal('${project.coverImage}')">
+                    ` : ''}
+
                     <!-- Project Info Grid -->
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; padding: 20px; background: var(--background-alt); border-radius: var(--radius);">
                         <div>
