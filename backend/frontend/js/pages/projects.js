@@ -110,11 +110,12 @@ function renderProjectCards(projects) {
         <div class="transaction-list">
             ${projects.map(project => {
                 const cardHtml = `
-                <div class="transaction-item project-card" data-project-id="${project._id}" style="cursor: pointer; ${project.coverImage ? 'display: grid; grid-template-columns: auto 1fr auto; gap: 16px; align-items: center;' : ''}">
+                <div class="transaction-item project-card ${project.coverImage ? 'has-cover-image' : ''}" data-project-id="${project._id}" style="cursor: pointer;">
                     ${project.coverImage ? `
                         <img src="${project.coverImage}"
                              alt="${project.title}"
-                             style="width: 140px; height: 90px; border-radius: 8px; object-fit: cover; flex-shrink: 0;"
+                             class="project-cover-image"
+                             style="width: 100%; max-width: 100%; height: 180px; border-radius: 8px; object-fit: cover; margin-bottom: 16px;"
                              onerror="this.style.display='none'">
                     ` : ''}
                     <div style="display: flex; align-items: center; gap: 16px; flex: 1; min-width: 0;">
