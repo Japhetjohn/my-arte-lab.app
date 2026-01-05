@@ -79,7 +79,9 @@ function isValidBookingAmount(amount) {
     };
   }
 
-  if (amount % 0.01 !== 0) {
+  // Check decimal places (handle floating point precision)
+  const decimalPlaces = (amount.toString().split('.')[1] || '').length;
+  if (decimalPlaces > 2) {
     return {
       valid: false,
       error: 'Amount can have at most 2 decimal places'
