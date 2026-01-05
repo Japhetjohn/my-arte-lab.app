@@ -5,6 +5,7 @@ const Project = require('../models/Project');
 const Application = require('../models/Application');
 const User = require('../models/User');
 const Notification = require('../models/Notification');
+const projectService = require('../services/projectService');
 
 // Get all projects (public, with optional filters)
 router.get('/', optionalAuth, async (req, res) => {
@@ -92,7 +93,7 @@ router.post('/', protect, async (req, res) => {
   try {
     const {
       title, description, category, budget, timeline, deadline,
-      skillsRequired, deliverables, projectType
+      skillsRequired, deliverables, projectType, coverImage
     } = req.body;
 
     // Validation
@@ -120,6 +121,7 @@ router.post('/', protect, async (req, res) => {
       skillsRequired: skillsRequired || [],
       deliverables: deliverables || [],
       projectType: projectType || 'one-time',
+      coverImage: coverImage || null,
       clientId: req.user._id
     });
 
@@ -190,10 +192,17 @@ router.patch('/:id', protect, async (req, res) => {
   }
 });
 
-// Get my projects (projects I posted)
+// Get my projects (projects I posted AND projects where I'm the creator)
 router.get('/my/posted', protect, async (req, res) => {
   try {
-    const projects = await Project.find({ clientId: req.user._id })
+    // Get projects I posted OR projects where I'm the selected creator
+    const projects = await Project.find({
+      $or: [
+        { clientId: req.user._id },
+        { selectedCreatorId: req.user._id }
+      ]
+    })
+      .populate('clientId', 'firstName lastName avatar email')
       .populate('selectedCreatorId', 'firstName lastName avatar')
       .sort({ createdAt: -1 });
 
@@ -370,66 +379,99 @@ router.patch('/applications/:id', protect, async (req, res) => {
       });
     }
 
-    const application = await Application.findById(req.params.id).populate('projectId');
-
-    if (!application) {
-      return res.status(404).json({
-        success: false,
-        message: 'Application not found'
-      });
-    }
-
-    const project = application.projectId;
-
-    // Check if user owns the project
-    if (project.clientId.toString() !== req.user._id.toString()) {
-      return res.status(403).json({
-        success: false,
-        message: 'Unauthorized'
-      });
-    }
-
-    // Populate creator details for notification
-    await application.populate('creatorId', 'firstName lastName email');
-
     if (status === 'accepted') {
-      await application.accept(reviewNotes);
-      await project.selectCreator(application.creatorId._id);
+      // Use projectService for payment/escrow transaction
+      try {
+        const result = await projectService.acceptApplicationWithTransaction(
+          req.params.id,
+          req.user._id
+        );
 
-      // Notify creator of acceptance
-      await Notification.createNotification({
-        recipient: application.creatorId._id,
-        sender: req.user._id,
-        type: 'project_application_accepted',
-        title: 'Application Accepted!',
-        message: `Congratulations! Your application for "${project.title}" has been accepted. The project has started.`,
-        link: `/projects`,
-        project: project._id,
-        metadata: {
-          projectId: project._id,
-          projectTitle: project.title,
-          proposedBudget: application.proposedBudget.amount,
-          currency: application.proposedBudget.currency,
-          reviewNotes
-        }
-      });
+        const { application, project } = result;
 
-      // Notify client that project has started
-      await Notification.createNotification({
-        recipient: project.clientId,
-        sender: application.creatorId._id,
-        type: 'project_started',
-        title: 'Project Started',
-        message: `Your project "${project.title}" has started with ${application.creatorId.name}`,
-        link: `/projects`,
-        project: project._id,
-        metadata: {
-          projectId: project._id,
-          projectTitle: project.title,
-          creatorName: application.creatorId.name
+        // Populate creator details for notifications
+        await application.populate('creatorId', 'firstName lastName email name');
+
+        // Notify creator of acceptance
+        await Notification.createNotification({
+          recipient: application.creatorId._id,
+          sender: req.user._id,
+          type: 'project_application_accepted',
+          title: 'Application Accepted!',
+          message: `Congratulations! Your application for "${project.title}" has been accepted. The project has started.`,
+          link: `/projects`,
+          project: project._id,
+          metadata: {
+            projectId: project._id,
+            projectTitle: project.title,
+            proposedBudget: application.proposedBudget.amount,
+            currency: application.proposedBudget.currency,
+            reviewNotes
+          }
+        });
+
+        // Notify client that project has started
+        await Notification.createNotification({
+          recipient: project.clientId,
+          sender: application.creatorId._id,
+          type: 'project_started',
+          title: 'Project Started',
+          message: `Your project "${project.title}" has started with ${application.creatorId.name}. Payment has been held in escrow.`,
+          link: `/projects`,
+          project: project._id,
+          metadata: {
+            projectId: project._id,
+            projectTitle: project.title,
+            creatorName: application.creatorId.name,
+            amount: application.proposedBudget.amount
+          }
+        });
+
+        res.json({
+          success: true,
+          message: 'Application accepted successfully. Payment has been deducted and held in escrow.',
+          data: { application, project }
+        });
+      } catch (error) {
+        console.error('Error accepting application:', error);
+
+        // Handle specific errors
+        if (error.statusCode === 400 && error.message.includes('Insufficient balance')) {
+          return res.status(400).json({
+            success: false,
+            message: error.message
+          });
         }
-      });
+
+        return res.status(error.statusCode || 500).json({
+          success: false,
+          message: error.message || 'Failed to accept application'
+        });
+      }
     } else {
+      // Rejection flow (no payment involved)
+      const application = await Application.findById(req.params.id).populate('projectId');
+
+      if (!application) {
+        return res.status(404).json({
+          success: false,
+          message: 'Application not found'
+        });
+      }
+
+      const project = application.projectId;
+
+      // Check if user owns the project
+      if (project.clientId.toString() !== req.user._id.toString()) {
+        return res.status(403).json({
+          success: false,
+          message: 'Unauthorized'
+        });
+      }
+
+      // Populate creator details for notification
+      await application.populate('creatorId', 'firstName lastName email name');
+
       await application.reject(reviewNotes);
 
       // Notify creator of rejection
@@ -447,13 +489,13 @@ router.patch('/applications/:id', protect, async (req, res) => {
           reviewNotes
         }
       });
-    }
 
-    res.json({
-      success: true,
-      message: `Application ${status} successfully`,
-      data: { application }
-    });
+      res.json({
+        success: true,
+        message: 'Application rejected successfully',
+        data: { application }
+      });
+    }
   } catch (error) {
     console.error('Error updating application:', error);
     res.status(500).json({

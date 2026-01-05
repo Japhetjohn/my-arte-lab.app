@@ -63,6 +63,11 @@ const projectSchema = new mongoose.Schema({
     trim: true
   }],
 
+  coverImage: {
+    type: String,
+    default: null
+  },
+
   clientId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

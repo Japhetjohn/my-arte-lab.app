@@ -5,6 +5,7 @@ const Transaction = require('../models/Transaction');
 const Notification = require('../models/Notification');
 const { ErrorHandler } = require('../utils/errorHandler');
 const { BOOKING_LIMITS, PLATFORM_CONFIG } = require('../utils/constants');
+const { getPlatformFeeDestination } = require('../utils/platformWallet');
 
 class BookingService {
   async acceptBookingWithTransaction(bookingId, creatorId, idempotencyKey = null) {
@@ -177,6 +178,9 @@ class BookingService {
         { session }
       );
 
+      // Get platform fee destination (temp wallet)
+      const platformWalletInfo = getPlatformFeeDestination(booking._id.toString());
+
       await Transaction.create(
         [
           {
@@ -197,7 +201,13 @@ class BookingService {
             currency: booking.currency,
             status: 'completed',
             booking: booking._id,
+            toAddress: platformWalletInfo.address,
             description: `Platform fee for ${booking.bookingId}`,
+            metadata: {
+              isTempWallet: platformWalletInfo.isTemp,
+              mainPlatformWallet: platformWalletInfo.mainWallet,
+              tempWallet: platformWalletInfo.isTemp ? platformWalletInfo.address : null
+            },
             completedAt: new Date()
           }
         ],

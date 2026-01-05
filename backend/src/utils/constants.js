@@ -10,7 +10,9 @@ const PLATFORM_CONFIG = {
   MINIMUM_WITHDRAWAL: parseFloat(process.env.MINIMUM_WITHDRAWAL) || 20,
   SUPPORTED_CURRENCIES: ['USDC', 'DAI'],
   DEFAULT_CURRENCY: 'USDC',
-  DEFAULT_NETWORK: 'Solana'
+  DEFAULT_NETWORK: 'Solana',
+  PLATFORM_WALLET_ADDRESS: process.env.PLATFORM_WALLET_ADDRESS || null,
+  USE_TEMP_WALLETS: true // Use temporary wallets for platform fees before forwarding
 };
 
 const RATE_LIMITS = {

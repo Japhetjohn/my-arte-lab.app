@@ -118,6 +118,12 @@ export function showPostProjectModal() {
                         <div class="caption mt-sm">e.g., "50 edited photos", "2-minute video", etc.</div>
                     </div>
 
+                    <div class="form-group">
+                        <label class="form-label">Project Image (Optional)</label>
+                        <input type="file" id="projectImage" class="form-input" accept="image/*">
+                        <div class="caption mt-sm">Upload a reference image or visual for your project (Max 10MB)</div>
+                    </div>
+
                     <div class="form-actions">
                         <button type="button" class="btn-ghost" onclick="closeModal()">Cancel</button>
                         <button type="submit" class="btn-primary" id="submitProjectBtn">Post Project</button>
@@ -242,26 +248,61 @@ export function showPostProjectModal() {
         else if (daysDiff <= 60) timeline = '2-months';
         else if (daysDiff <= 90) timeline = '3-months';
 
-        const projectData = {
-            title: formData.get('title'),
-            description: formData.get('description'),
-            category: formData.get('category'),
-            projectType: formData.get('projectType'),
-            budget: {
-                min: budgetMin,
-                max: budgetMax,
-                negotiable: formData.get('negotiable') === 'on'
-            },
-            timeline: timeline,
-            deadline: deadline,
-            skillsRequired: skills,
-            deliverables: deliverables
-        };
-
         submitBtn.disabled = true;
         submitBtn.textContent = 'Posting...';
 
         try {
+            // Upload project image if provided
+            let coverImageUrl = null;
+            const projectImageInput = document.getElementById('projectImage');
+            if (projectImageInput.files && projectImageInput.files[0]) {
+                const file = projectImageInput.files[0];
+
+                // Validate file size (max 10MB)
+                if (file.size > 10 * 1024 * 1024) {
+                    throw new Error('Image file exceeds 10MB limit');
+                }
+
+                submitBtn.textContent = 'Uploading image...';
+
+                const imageFormData = new FormData();
+                imageFormData.append('file', file);
+
+                const uploadResponse = await fetch('/api/upload/booking-attachment', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: imageFormData
+                });
+
+                const uploadData = await uploadResponse.json();
+
+                if (!uploadData.success) {
+                    throw new Error('Failed to upload image');
+                }
+
+                coverImageUrl = uploadData.data.url;
+                submitBtn.textContent = 'Creating project...';
+            }
+
+            const projectData = {
+                title: formData.get('title'),
+                description: formData.get('description'),
+                category: formData.get('category'),
+                projectType: formData.get('projectType'),
+                budget: {
+                    min: budgetMin,
+                    max: budgetMax,
+                    negotiable: formData.get('negotiable') === 'on'
+                },
+                timeline: timeline,
+                deadline: deadline,
+                skillsRequired: skills,
+                deliverables: deliverables,
+                coverImage: coverImageUrl
+            };
+
             const response = await api.createProject(projectData);
 
             if (response.success) {

@@ -553,6 +553,11 @@ class ApiService {
         return this.get('/projects/my/posted');
     }
 
+    async getMyProjects() {
+        // Get both posted projects and accepted applications
+        return this.get('/projects/my/posted');
+    }
+
     async getProjectApplications(projectId) {
         return this.get(`/projects/${projectId}/applications`);
     }

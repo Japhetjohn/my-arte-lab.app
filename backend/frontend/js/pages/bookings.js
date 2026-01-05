@@ -37,12 +37,29 @@ export async function renderBookingsPage() {
     `;
 
     try {
-        const response = await api.getBookings();
+        // Fetch both bookings and projects
+        const [bookingsResp, projectsResp] = await Promise.all([
+            api.getBookings(),
+            api.getMyProjects()
+        ]);
 
-        if (response.success) {
-            bookings = response.data.bookings || [];
-            renderBookingsList();
-        }
+        // Combine bookings and accepted projects
+        const regularBookings = bookingsResp.success ? (bookingsResp.data.bookings || []) : [];
+        const myProjects = projectsResp.success ? (projectsResp.data.projects || []) : [];
+
+        // Filter projects to only show in_progress and completed ones (accepted projects)
+        const activeProjects = myProjects.filter(p => ['in_progress', 'completed'].includes(p.status));
+
+        // Mark projects with a type so we can render them differently
+        const projectsAsJobs = activeProjects.map(p => ({
+            ...p,
+            _type: 'project',
+            serviceTitle: p.title,
+            status: p.status === 'in_progress' ? 'confirmed' : p.status
+        }));
+
+        bookings = [...regularBookings, ...projectsAsJobs];
+        renderBookingsList();
     } catch (error) {
         console.error('Failed to load bookings:', error);
         mainContent.innerHTML = `
