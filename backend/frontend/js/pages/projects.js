@@ -110,15 +110,16 @@ function renderProjectCards(projects) {
         <div class="transaction-list">
             ${projects.map(project => {
                 const cardHtml = `
-                <div class="transaction-item project-card ${project.coverImage ? 'has-cover-image' : ''}" data-project-id="${project._id}" style="cursor: pointer;">
+                <div class="transaction-item project-card ${project.coverImage ? 'has-cover-image' : ''}" data-project-id="${project._id}"
+                     style="cursor: pointer; display: grid; grid-template-columns: ${project.coverImage ? '200px 1fr auto' : '1fr auto'}; gap: 20px; align-items: start;">
                     ${project.coverImage ? `
                         <img src="${project.coverImage}"
                              alt="${project.title}"
                              class="project-cover-image"
-                             style="width: 100%; max-width: 100%; height: 180px; border-radius: 8px; object-fit: cover; margin-bottom: 16px;"
-                             onerror="this.style.display='none'">
+                             style="width: 200px; height: 140px; border-radius: 8px; object-fit: cover; flex-shrink: 0;"
+                             onerror="this.parentElement.style.gridTemplateColumns='1fr auto'; this.style.display='none';">
                     ` : ''}
-                    <div style="display: flex; align-items: center; gap: 16px; flex: 1; min-width: 0;">
+                    <div style="display: flex; align-items: start; gap: 16px; min-width: 0;">
                         <img src="${project.clientId?.avatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(project.clientId?.name || 'Client')}"
                              alt="${project.clientId?.name || 'Client'}"
                              style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; flex-shrink: 0;">

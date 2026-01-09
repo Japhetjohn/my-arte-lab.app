@@ -55,7 +55,10 @@ export async function renderBookingsPage() {
             ...p,
             _type: 'project',
             serviceTitle: p.title,
-            status: p.status === 'in_progress' ? 'confirmed' : p.status
+            status: p.status === 'in_progress' ? 'confirmed' : p.status,
+            amount: p.budget?.min || 0,  // Use min budget as amount for display
+            client: p.clientId,
+            creator: p.selectedCreatorId
         }));
 
         bookings = [...regularBookings, ...projectsAsJobs];

@@ -3640,3 +3640,17 @@ select:focus-visible {
     }
 }
 
+
+/* Project Card Responsive Layout */
+@media (max-width: 768px) {
+    .project-card.has-cover-image {
+        display: flex !important;
+        flex-direction: column !important;
+    }
+    
+    .project-card.has-cover-image .project-cover-image {
+        width: 100% !important;
+        height: 180px !important;
+        margin-bottom: 16px !important;
+    }
+}
