@@ -206,13 +206,13 @@ exports.createFiatChannel = catchAsync(async (req, res, next) => {
 
   // Map currency to country code if not provided
   const currencyCountryMap = {
-    'NGN': { country: 'NG', defaultMethod: 'BANK_TRANSFER', defaultType: 'COLLECTION' },
-    'KES': { country: 'KE', defaultMethod: 'BANK_TRANSFER', defaultType: 'COLLECTION' },
-    'GHS': { country: 'GH', defaultMethod: 'BANK_TRANSFER', defaultType: 'COLLECTION' },
-    'ZAR': { country: 'ZA', defaultMethod: 'BANK_TRANSFER', defaultType: 'COLLECTION' },
-    'TZS': { country: 'TZ', defaultMethod: 'BANK_TRANSFER', defaultType: 'COLLECTION' },
-    'UGX': { country: 'UG', defaultMethod: 'BANK_TRANSFER', defaultType: 'COLLECTION' },
-    'ZMW': { country: 'ZM', defaultMethod: 'BANK_TRANSFER', defaultType: 'COLLECTION' }
+    'NGN': { country: 'NG', defaultMethod: 'BANK_TRANSFER', defaultType: 'BANK_TRANSFER' },
+    'KES': { country: 'KE', defaultMethod: 'BANK_TRANSFER', defaultType: 'BANK_TRANSFER' },
+    'GHS': { country: 'GH', defaultMethod: 'BANK_TRANSFER', defaultType: 'BANK_TRANSFER' },
+    'ZAR': { country: 'ZA', defaultMethod: 'BANK_TRANSFER', defaultType: 'BANK_TRANSFER' },
+    'TZS': { country: 'TZ', defaultMethod: 'BANK_TRANSFER', defaultType: 'BANK_TRANSFER' },
+    'UGX': { country: 'UG', defaultMethod: 'BANK_TRANSFER', defaultType: 'BANK_TRANSFER' },
+    'ZMW': { country: 'ZM', defaultMethod: 'BANK_TRANSFER', defaultType: 'BANK_TRANSFER' }
   };
 
   const countryInfo = currencyCountryMap[currency];

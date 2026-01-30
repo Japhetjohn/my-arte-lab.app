@@ -139,6 +139,15 @@ function renderWalletContent() {
                             </svg>
                             Withdraw
                         </button>
+                        <!--
+                        <button class="btn-primary" style="background: white; color: var(--primary); flex: 1;" onclick="window.showSwapModal()">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style="margin-right: 8px; vertical-align: middle;">
+                                <path d="M16 3H8a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z" stroke="currentColor" stroke-width="2"/>
+                                <path d="M10 10l-4 4m4-4l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                            Swap
+                        </button>
+                        -->
                         <button class="btn-secondary" style="border-color: white; color: white; flex: 1;" onclick="window.location.reload()">
                             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style="margin-right: 8px; vertical-align: middle;">
                                 <path d="M4 10a6 6 0 1 1 12 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>

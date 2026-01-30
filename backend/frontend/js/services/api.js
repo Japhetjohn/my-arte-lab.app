@@ -304,6 +304,7 @@ class ApiService {
         return this.post('/hostfi/assets/swap', data);
     }
 
+    /*
     async getHostfiExchangeRates(fromCurrency, toCurrency) {
         return this.get(`/hostfi/rates/exchange?from=${fromCurrency}&to=${toCurrency}`);
     }
@@ -315,6 +316,7 @@ class ApiService {
     async swapAssets(data) {
         return this.post('/hostfi/assets/swap', data);
     }
+    */
 
     async getHostfiWallet() {
         return this.get('/hostfi/wallet');

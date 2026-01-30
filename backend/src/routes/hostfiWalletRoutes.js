@@ -145,7 +145,9 @@ router.delete('/beneficiaries/:id', protect, hostfiWalletController.removeBenefi
  * @desc    Swap assets
  * @access  Private
  */
+/*
 router.post('/assets/swap', protect, hostfiWalletController.swapAssets);
+*/
 
 // ============================================
 // RATES & FEES ROUTES
