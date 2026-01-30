@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const rateLimit = require('express-rate-limit');
-const walletController = require('../controllers/walletController');
+const hostfiWalletController = require('../controllers/hostfiWalletController');
 const { protect, authorize } = require('../middleware/auth');
 const {
   validateWithdrawal,
@@ -17,35 +17,31 @@ const publicWalletLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-router.get('/switch/countries', publicWalletLimiter, walletController.getSwitchCountries);
-router.get('/switch/banks/:country', publicWalletLimiter, walletController.getSwitchBanksByCountry);
-router.get('/switch/requirements', publicWalletLimiter, walletController.getSwitchRequirements);
-router.post('/switch/quote/offramp', publicWalletLimiter, walletController.getSwitchOfframpQuote);
-router.post('/switch/quote/onramp', publicWalletLimiter, walletController.getSwitchOnrampQuote);
-router.post('/switch/quote/swap', publicWalletLimiter, walletController.getSwitchSwapQuote);
-router.post('/switch/verify-account', publicWalletLimiter, walletController.verifySwitchBankAccount);
+// Public endpoints (with rate limiting)
+router.get('/banks/:countryCode', publicWalletLimiter, hostfiWalletController.getBanksList);
+router.post('/verify-account', publicWalletLimiter, hostfiWalletController.verifyBankAccount);
 
+// Protected endpoints
 router.use(protect);
 
-router.get('/', walletController.getWallet);
-router.get('/transactions', validatePagination, handleValidationErrors, walletController.getTransactions);
-router.get('/balance-summary', walletController.getBalanceSummary);
+// Wallet information
+router.get('/', hostfiWalletController.getWallet);
+router.get('/transactions', validatePagination, handleValidationErrors, hostfiWalletController.getTransactions);
+router.get('/balance-summary', hostfiWalletController.getBalanceSummary);
+router.get('/transactions/:reference', hostfiWalletController.getTransactionByReference);
 
-router.post(
-  '/withdraw',
-  authorize('creator'),
-  validateWithdrawal,
-  handleValidationErrors,
-  walletController.requestWithdrawal
-);
+// Deposits (ON-RAMP)
+router.post('/deposit/channel', hostfiWalletController.createDepositChannel);
+router.get('/deposit/channels', hostfiWalletController.getDepositChannels);
 
-router.post('/switch/onramp', walletController.requestSwitchOnramp);
-router.post('/switch/offramp', walletController.requestSwitchOfframp);
-router.post('/switch/swap', walletController.requestSwitchSwap);
-router.get('/switch/status/:reference', walletController.getSwitchTransactionStatus);
+// Withdrawals (OFF-RAMP)
+router.get('/withdrawal/methods', hostfiWalletController.getWithdrawalMethods);
+router.post('/withdrawal/initiate', hostfiWalletController.initiateWithdrawal);
+router.get('/withdrawal/status/:reference', hostfiWalletController.getWithdrawalStatus);
 
-router.get('/beneficiaries', walletController.getBeneficiaries);
-router.post('/beneficiaries', walletController.addBeneficiary);
-router.delete('/beneficiaries/:id', walletController.deleteBeneficiary);
+// Beneficiaries
+router.get('/beneficiaries', hostfiWalletController.getBeneficiaries);
+router.post('/beneficiaries', hostfiWalletController.addBeneficiary);
+router.delete('/beneficiaries/:id', hostfiWalletController.removeBeneficiary);
 
 module.exports = router;

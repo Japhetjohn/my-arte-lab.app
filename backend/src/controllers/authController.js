@@ -4,10 +4,9 @@ const { successResponse, errorResponse } = require('../utils/apiResponse');
 const { ErrorHandler, catchAsync } = require('../utils/errorHandler');
 const emailConfig = require('../config/email');
 const adminNotificationService = require('../services/adminNotificationService');
-const walletController = require('./walletController');
 const crypto = require('crypto');
 const { escapeHtml } = require('../utils/sanitize');
-const solanaWalletService = require('../services/solanaWalletService');
+// Wallet initialization moved to HostFi - wallets are created on first access
 
 exports.register = catchAsync(async (req, res, next) => {
   const { firstName, lastName, email, password, role, category, localArea, state, country } = req.body;
@@ -22,14 +21,7 @@ exports.register = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Email already registered', 400));
   }
 
-  let wallet;
-  try {
-    wallet = solanaWalletService.generateWallet();
-  } catch (error) {
-    console.error('Wallet generation error:', error);
-    return next(new ErrorHandler('Failed to generate wallet. Please try again.', 500));
-  }
-
+  // HostFi wallets are initialized automatically when user first accesses wallet
   let user;
   try {
     user = await User.create({
@@ -45,13 +37,12 @@ exports.register = catchAsync(async (req, res, next) => {
         country
       },
       wallet: {
-        address: wallet.address,
-        encryptedPrivateKey: wallet.encryptedPrivateKey,
-        currency: wallet.currency || 'USDC',
+        hostfiWalletAssets: [],
+        currency: 'NGN',
         balance: 0,
         pendingBalance: 0,
         totalEarnings: 0,
-        network: 'Solana'
+        network: 'HostFi'
       }
     });
   } catch (error) {

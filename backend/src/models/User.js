@@ -181,16 +181,35 @@ const userSchema = new mongoose.Schema({
   },
 
   wallet: {
+    // HostFi Integration
+    hostfiWalletAssets: [{
+      assetId: String,        // HostFi wallet asset ID
+      currency: String,       // Currency code (NGN, USD, USDC, etc.)
+      assetType: {
+        type: String,
+        enum: ['FIAT', 'CRYPTO']
+      },
+      balance: {
+        type: Number,
+        default: 0
+      },
+      lastSynced: Date
+    }],
+
+    // Legacy Solana wallet (deprecated - will be removed)
     address: {
       type: String,
-      required: true, // Required - manually generated
-      unique: true
+      required: false, // No longer required
+      unique: true,
+      sparse: true
     },
     encryptedPrivateKey: {
       type: String,
-      required: true, // Required - manually generated
-      select: false // Don't include in queries by default for security
+      required: false, // No longer required
+      select: false
     },
+
+    // Balance tracking (synced from HostFi)
     balance: {
       type: Number,
       default: 0,
@@ -208,18 +227,19 @@ const userSchema = new mongoose.Schema({
     },
     currency: {
       type: String,
-      enum: ['USDC', 'DAI'],
-      default: 'USDC'
+      enum: ['USDC', 'DAI', 'NGN', 'USD'],
+      default: 'NGN'
     },
     network: {
       type: String,
-      default: 'Solana'
+      default: 'HostFi'
     },
     lastUpdated: {
       type: Date,
       default: Date.now
     },
 
+    // Beneficiaries for withdrawals
     beneficiaries: [{
       id: {
         type: String,

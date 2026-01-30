@@ -9,7 +9,7 @@ const crypto = require('crypto');
 
 const connectDatabase = require('./config/database');
 const emailConfig = require('./config/email');
-const switchConfig = require('./config/switch');
+const hostfiConfig = require('./config/hostfi');
 const { errorMiddleware } = require('./utils/errorHandler');
 const {
   preventNoSQLInjection,
@@ -18,7 +18,6 @@ const {
   securityLogger
 } = require('./middleware/security');
 const {
-  verifySwitchWebhookSignature,
   preventWebhookReplay
 } = require('./middleware/webhookSecurity');
 const {
@@ -33,6 +32,7 @@ const { verifyAdminAuth } = require('./middleware/adminAuth');
 const authRoutes = require('./routes/authRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
 const walletRoutes = require('./routes/walletRoutes');
+const hostfiWalletRoutes = require('./routes/hostfiWalletRoutes');
 const creatorRoutes = require('./routes/creatorRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
 const webhookRoutes = require('./routes/webhookRoutes');
@@ -53,7 +53,8 @@ const requiredEnvVars = [
   'JWT_SECRET',
   'PLATFORM_WALLET_ADDRESS',
   'WALLET_ENCRYPTION_KEY',
-  'SWITCH_WEBHOOK_SECRET'
+  'HOSTFI_CLIENT_ID',
+  'HOSTFI_SECRET_KEY'
 ];
 
 const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
@@ -279,10 +280,11 @@ app.get('/health', async (req, res) => {
   res.status(statusCode).json(health);
 });
 
-app.use('/api/webhooks', verifySwitchWebhookSignature, preventWebhookReplay, webhookLimiter, webhookRoutes);
+app.use('/api/webhooks', preventWebhookReplay, webhookLimiter, webhookRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/wallet', walletRoutes);
+app.use('/api/hostfi', hostfiWalletRoutes);
 app.use('/api/creators', creatorRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/upload', uploadRoutes);

@@ -1,12 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const webhookController = require('../controllers/webhookController');
+const hostfiWebhookController = require('../controllers/hostfiWebhookController');
 
-router.post('/switch/onramp', webhookController.handleSwitchOnrampWebhook);
-router.post('/switch/offramp', webhookController.handleSwitchOfframpWebhook);
+// HostFi webhooks
+router.post('/hostfi/deposit', hostfiWebhookController.handleFiatDeposit);
+router.post('/hostfi/withdrawal', hostfiWebhookController.handleFiatWithdrawal);
 
+// Test webhook endpoint (development only)
 if (process.env.NODE_ENV !== 'production') {
-  router.post('/test', webhookController.testWebhook);
+  router.post('/test', hostfiWebhookController.testWebhook);
 }
 
 module.exports = router;
