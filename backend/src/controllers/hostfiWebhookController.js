@@ -1,243 +1,422 @@
-const Transaction = require('../models/Transaction');
 const User = require('../models/User');
+const Transaction = require('../models/Transaction');
 const WebhookEvent = require('../models/WebhookEvent');
 const hostfiService = require('../services/hostfiService');
 const hostfiWalletService = require('../services/hostfiWalletService');
-const notificationService = require('../services/notificationService');
 const { catchAsync } = require('../utils/errorHandler');
 
 /**
- * Handle HostFi Fiat Deposit Webhook
- * Event: FIAT_DEPOSIT
+ * Handle Address Generated Webhook
+ * Triggered when a new collection address is created
  */
-exports.handleFiatDeposit = catchAsync(async (req, res, next) => {
-  const { event, data } = req.body;
+exports.handleAddressGenerated = catchAsync(async (req, res) => {
+  const payload = req.body;
 
-  console.log('HostFi Fiat Deposit Webhook received:', { event, reference: data.reference });
-
-  // Check for duplicate webhook
-  const existingEvent = await WebhookEvent.findOne({
-    eventId: data.reference,
-    provider: 'hostfi',
-    eventType: 'FIAT_DEPOSIT'
-  });
-
-  if (existingEvent) {
-    console.log(`Duplicate webhook detected for reference ${data.reference}`);
-    return res.status(200).json({ message: 'Webhook already processed' });
+  // Verify webhook signature
+  const signature = req.headers['x-hostfi-signature'];
+  if (!hostfiService.verifyWebhookSignature(signature, payload)) {
+    return res.status(401).json({ success: false, error: 'Invalid signature' });
   }
 
-  // Store webhook event
-  await WebhookEvent.create({
-    eventId: data.reference,
-    provider: 'hostfi',
-    eventType: 'FIAT_DEPOSIT',
-    payload: req.body,
-    signature: req.headers['x-webhook-signature']
-  });
+  // Record webhook event
+  try {
+    await WebhookEvent.recordWebhook({
+      eventId: payload.id || payload.reference,
+      provider: 'hostfi',
+      eventType: 'address_generated',
+      payload,
+      signature
+    });
+  } catch (error) {
+    if (error.message.includes('Duplicate')) {
+      return res.status(200).json({ success: true, message: 'Event already processed' });
+    }
+  }
+
+  console.log('Address generated webhook received:', payload);
+
+  // Update transaction record if needed
+  if (payload.customId && payload.address) {
+    await Transaction.updateOne(
+      { reference: payload.id, user: payload.customId },
+      {
+        $set: {
+          'paymentDetails.walletAddress': payload.address,
+          'paymentDetails.qrCode': payload.qrCode,
+          processedAt: new Date()
+        }
+      }
+    );
+  }
+
+  res.status(200).json({ success: true, message: 'Webhook processed' });
+});
+
+/**
+ * Handle Fiat Deposit Received Webhook
+ * Triggered when user sends fiat money to collection channel
+ */
+exports.handleFiatDeposit = catchAsync(async (req, res) => {
+  const payload = req.body;
+
+  // Verify webhook signature
+  const signature = req.headers['x-hostfi-signature'];
+  if (!hostfiService.verifyWebhookSignature(signature, payload)) {
+    return res.status(401).json({ success: false, error: 'Invalid signature' });
+  }
+
+  // Record webhook event
+  try {
+    await WebhookEvent.recordWebhook({
+      eventId: payload.id || payload.reference,
+      provider: 'hostfi',
+      eventType: 'fiat_deposit',
+      payload,
+      signature
+    });
+  } catch (error) {
+    if (error.message.includes('Duplicate')) {
+      return res.status(200).json({ success: true, message: 'Event already processed' });
+    }
+  }
+
+  console.log('Fiat deposit webhook received:', payload);
+
+  // Calculate platform fee (1%)
+  const amount = payload.amount || 0;
+  const feeBreakdown = hostfiService.calculatePlatformFee(amount);
+
+  // Find user by customId
+  const user = await User.findById(payload.customId);
+  if (!user) {
+    console.error(`User not found for deposit: ${payload.customId}`);
+    return res.status(404).json({ success: false, error: 'User not found' });
+  }
 
   try {
-    // Find transaction by reference
-    const transaction = await Transaction.findOne({ reference: data.reference });
+    // Credit user wallet (after platform fee)
+    user.wallet.balance += feeBreakdown.amountAfterFee;
+    user.wallet.totalEarnings += feeBreakdown.amountAfterFee;
+    user.wallet.lastUpdated = new Date();
+    await user.save();
 
-    if (!transaction) {
-      console.error(`Transaction not found for reference ${data.reference}`);
-      return res.status(404).json({ message: 'Transaction not found' });
-    }
-
-    const user = await User.findById(transaction.user);
-    if (!user) {
-      console.error(`User not found for transaction ${data.reference}`);
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    if (data.status === 'SUCCESS') {
-      // Update transaction
-      transaction.status = 'completed';
-      transaction.amount = data.amount.value;
-      transaction.currency = data.amount.currency;
-      transaction.completedAt = new Date();
-      transaction.metadata = {
-        ...transaction.metadata,
-        hostfiData: data
-      };
-      await transaction.save();
-
-      // Credit user wallet
-      await hostfiWalletService.updateBalance(
-        user._id,
-        data.amount.currency,
-        data.amount.value,
-        'credit'
-      );
-
-      // Send notification
-      await notificationService.createNotification({
-        user: user._id,
-        type: 'deposit_completed',
-        title: 'Deposit Successful',
-        message: `Your deposit of ${data.amount.currency} ${data.amount.value} has been credited to your wallet.`,
-        metadata: {
-          transactionId: transaction.transactionId,
-          amount: data.amount.value,
-          currency: data.amount.currency
+    // Create or update transaction record
+    await Transaction.findOneAndUpdate(
+      { reference: payload.channelId || payload.id },
+      {
+        $set: {
+          amount: payload.amount,
+          status: 'completed',
+          platformFee: feeBreakdown.platformFee,
+          netAmount: feeBreakdown.amountAfterFee,
+          completedAt: new Date(),
+          'paymentDetails.actualAmount': payload.amount,
+          'paymentDetails.platformFee': feeBreakdown.platformFee,
+          'metadata.feeBreakdown': feeBreakdown
         }
-      });
+      },
+      { upsert: true, new: true }
+    );
 
-      console.log(`Fiat deposit completed for user ${user._id}: ${data.amount.value} ${data.amount.currency}`);
-    } else if (data.status === 'FAILED') {
-      // Update transaction as failed
-      transaction.status = 'failed';
-      transaction.errorMessage = data.memo || 'Deposit failed';
-      transaction.failedAt = new Date();
-      await transaction.save();
+    // Sync wallet balances
+    await hostfiWalletService.syncWalletBalances(user._id);
 
-      // Notify user
-      await notificationService.createNotification({
-        user: user._id,
-        type: 'deposit_failed',
-        title: 'Deposit Failed',
-        message: `Your deposit has failed. ${data.memo || 'Please try again.'}`,
-        metadata: {
-          transactionId: transaction.transactionId
-        }
-      });
+    console.log(`Fiat deposit credited: User ${user._id}, Amount: ${feeBreakdown.amountAfterFee} (after ${feeBreakdown.platformFee} fee)`);
 
-      console.log(`Fiat deposit failed for user ${user._id}: ${data.reference}`);
-    }
+    await WebhookEvent.markProcessed(payload.id || payload.reference, 'hostfi');
 
-    res.status(200).json({ message: 'Webhook processed successfully' });
+    res.status(200).json({ success: true, message: 'Deposit processed successfully' });
   } catch (error) {
-    console.error('Error processing fiat deposit webhook:', error);
-    res.status(500).json({ message: 'Error processing webhook', error: error.message });
+    console.error('Error processing fiat deposit:', error);
+    await WebhookEvent.markProcessed(payload.id || payload.reference, 'hostfi', error.message);
+    res.status(500).json({ success: false, error: 'Processing failed' });
   }
 });
 
 /**
- * Handle HostFi Fiat Withdrawal Webhook
- * Event: FIAT_WITHDRAWAL
+ * Handle Crypto Deposit Received Webhook
+ * Triggered when user sends crypto to collection address
  */
-exports.handleFiatWithdrawal = catchAsync(async (req, res, next) => {
-  const { event, data } = req.body;
+exports.handleCryptoDeposit = catchAsync(async (req, res) => {
+  const payload = req.body;
 
-  console.log('HostFi Fiat Withdrawal Webhook received:', { event, reference: data.reference });
-
-  // Check for duplicate webhook
-  const existingEvent = await WebhookEvent.findOne({
-    eventId: data.reference,
-    provider: 'hostfi',
-    eventType: 'FIAT_WITHDRAWAL'
-  });
-
-  if (existingEvent) {
-    console.log(`Duplicate webhook detected for reference ${data.reference}`);
-    return res.status(200).json({ message: 'Webhook already processed' });
+  // Verify webhook signature
+  const signature = req.headers['x-hostfi-signature'];
+  if (!hostfiService.verifyWebhookSignature(signature, payload)) {
+    return res.status(401).json({ success: false, error: 'Invalid signature' });
   }
 
-  // Store webhook event
-  await WebhookEvent.create({
-    eventId: data.reference,
-    provider: 'hostfi',
-    eventType: 'FIAT_WITHDRAWAL',
-    payload: req.body,
-    signature: req.headers['x-webhook-signature']
-  });
+  // Record webhook event
+  try {
+    await WebhookEvent.recordWebhook({
+      eventId: payload.id || payload.txHash,
+      provider: 'hostfi',
+      eventType: 'crypto_deposit',
+      payload,
+      signature
+    });
+  } catch (error) {
+    if (error.message.includes('Duplicate')) {
+      return res.status(200).json({ success: true, message: 'Event already processed' });
+    }
+  }
+
+  console.log('Crypto deposit webhook received:', payload);
+
+  // Calculate platform fee (1%)
+  const amount = payload.amount || 0;
+  const feeBreakdown = hostfiService.calculatePlatformFee(amount);
+
+  // Find user by customId
+  const user = await User.findById(payload.customId);
+  if (!user) {
+    console.error(`User not found for crypto deposit: ${payload.customId}`);
+    return res.status(404).json({ success: false, error: 'User not found' });
+  }
 
   try {
-    // Find transaction by client reference
-    const transaction = await Transaction.findOne({ reference: data.clientReference });
+    // Credit user wallet (after platform fee)
+    user.wallet.balance += feeBreakdown.amountAfterFee;
+    user.wallet.totalEarnings += feeBreakdown.amountAfterFee;
+    user.wallet.lastUpdated = new Date();
+    await user.save();
 
-    if (!transaction) {
-      console.error(`Transaction not found for reference ${data.clientReference}`);
-      return res.status(404).json({ message: 'Transaction not found' });
+    // Create or update transaction record
+    await Transaction.findOneAndUpdate(
+      { reference: payload.addressId || payload.id },
+      {
+        $set: {
+          amount: payload.amount,
+          currency: payload.currency,
+          status: 'completed',
+          platformFee: feeBreakdown.platformFee,
+          netAmount: feeBreakdown.amountAfterFee,
+          transactionHash: payload.txHash,
+          blockchainNetwork: payload.network,
+          confirmations: payload.confirmations || 0,
+          completedAt: new Date(),
+          'paymentDetails.txHash': payload.txHash,
+          'paymentDetails.network': payload.network,
+          'paymentDetails.platformFee': feeBreakdown.platformFee,
+          'metadata.feeBreakdown': feeBreakdown
+        }
+      },
+      { upsert: true, new: true }
+    );
+
+    // Sync wallet balances
+    await hostfiWalletService.syncWalletBalances(user._id);
+
+    console.log(`Crypto deposit credited: User ${user._id}, Amount: ${feeBreakdown.amountAfterFee} ${payload.currency} (after ${feeBreakdown.platformFee} fee)`);
+
+    await WebhookEvent.markProcessed(payload.id || payload.txHash, 'hostfi');
+
+    res.status(200).json({ success: true, message: 'Crypto deposit processed successfully' });
+  } catch (error) {
+    console.error('Error processing crypto deposit:', error);
+    await WebhookEvent.markProcessed(payload.id || payload.txHash, 'hostfi', error.message);
+    res.status(500).json({ success: false, error: 'Processing failed' });
+  }
+});
+
+/**
+ * Handle Fiat Payout Webhook
+ * Triggered when withdrawal to bank account completes
+ */
+exports.handleFiatPayout = catchAsync(async (req, res) => {
+  const payload = req.body;
+
+  // Verify webhook signature
+  const signature = req.headers['x-hostfi-signature'];
+  if (!hostfiService.verifyWebhookSignature(signature, payload)) {
+    return res.status(401).json({ success: false, error: 'Invalid signature' });
+  }
+
+  // Record webhook event
+  try {
+    await WebhookEvent.recordWebhook({
+      eventId: payload.id || payload.reference,
+      provider: 'hostfi',
+      eventType: 'fiat_payout',
+      payload,
+      signature
+    });
+  } catch (error) {
+    if (error.message.includes('Duplicate')) {
+      return res.status(200).json({ success: true, message: 'Event already processed' });
     }
+  }
 
+  console.log('Fiat payout webhook received:', payload);
+
+  // Find transaction by reference
+  const transaction = await Transaction.findOne({ reference: payload.clientReference });
+  if (!transaction) {
+    console.error(`Transaction not found for payout: ${payload.clientReference}`);
+    return res.status(404).json({ success: false, error: 'Transaction not found' });
+  }
+
+  try {
     const user = await User.findById(transaction.user);
     if (!user) {
-      console.error(`User not found for transaction ${data.clientReference}`);
-      return res.status(404).json({ message: 'User not found' });
+      throw new Error('User not found');
     }
 
-    if (data.status === 'WITHDRAWAL_SUCCESS') {
-      // Update transaction
-      transaction.status = 'completed';
-      transaction.completedAt = new Date();
-      transaction.metadata = {
-        ...transaction.metadata,
-        hostfiData: data,
-        fees: data.fees
-      };
-      await transaction.save();
-
-      // Remove from pending balance
-      if (user.wallet.pendingBalance >= transaction.amount) {
-        user.wallet.pendingBalance -= transaction.amount;
-        user.wallet.lastUpdated = new Date();
-        await user.save();
-      }
-
-      // Send notification
-      await notificationService.createNotification({
-        user: user._id,
-        type: 'withdrawal_completed',
-        title: 'Withdrawal Successful',
-        message: `Your withdrawal of ${data.amount.currency} ${data.amount.value} has been processed successfully.`,
-        metadata: {
-          transactionId: transaction.transactionId,
-          amount: data.amount.value,
-          currency: data.amount.currency,
-          recipientAccount: data.recipient.accountNumber,
-          recipientName: data.recipient.accountName
-        }
-      });
-
-      console.log(`Fiat withdrawal completed for user ${user._id}: ${data.amount.value} ${data.amount.currency}`);
-    } else if (data.status === 'WITHDRAWAL_FAILED') {
-      // Update transaction as failed
-      transaction.status = 'failed';
-      transaction.errorMessage = data.memo || 'Withdrawal failed';
-      transaction.failedAt = new Date();
-      await transaction.save();
-
-      // Refund to balance
-      user.wallet.balance += transaction.amount;
+    if (payload.status === 'COMPLETED' || payload.status === 'SUCCESS') {
+      // Withdrawal successful - remove from pending
       user.wallet.pendingBalance -= transaction.amount;
-      user.wallet.lastUpdated = new Date();
       await user.save();
 
-      // Notify user
-      await notificationService.createNotification({
-        user: user._id,
-        type: 'withdrawal_failed',
-        title: 'Withdrawal Failed',
-        message: `Your withdrawal has failed and the amount has been refunded to your wallet. ${data.memo || ''}`,
-        metadata: {
-          transactionId: transaction.transactionId,
-          amount: transaction.amount,
-          currency: transaction.currency
-        }
-      });
-
-      console.log(`Fiat withdrawal failed for user ${user._id}: ${data.clientReference}, amount refunded`);
-    } else if (data.status === 'WITHDRAWAL_PENDING' || data.status === 'WITHDRAWAL_IN_PROGRESS') {
-      // Update status
-      transaction.status = 'processing';
+      // Update transaction
+      transaction.status = 'completed';
+      transaction.completedAt = new Date();
+      transaction.metadata.hostfiStatus = payload.status;
       await transaction.save();
 
-      console.log(`Fiat withdrawal in progress for user ${user._id}: ${data.clientReference}`);
+      console.log(`Fiat payout completed: User ${user._id}, Amount: ${transaction.amount}`);
+    } else if (payload.status === 'FAILED' || payload.status === 'REJECTED') {
+      // Withdrawal failed - refund balance
+      user.wallet.balance += transaction.amount;
+      user.wallet.pendingBalance -= transaction.amount;
+      await user.save();
+
+      // Update transaction
+      transaction.status = 'failed';
+      transaction.failedAt = new Date();
+      transaction.errorMessage = payload.reason || 'Payout failed';
+      transaction.metadata.hostfiStatus = payload.status;
+      await transaction.save();
+
+      console.log(`Fiat payout failed: User ${user._id}, Amount refunded: ${transaction.amount}`);
+    } else {
+      // Processing status
+      transaction.status = 'processing';
+      transaction.processedAt = new Date();
+      transaction.metadata.hostfiStatus = payload.status;
+      await transaction.save();
     }
 
-    res.status(200).json({ message: 'Webhook processed successfully' });
+    // Sync wallet balances
+    await hostfiWalletService.syncWalletBalances(user._id);
+
+    await WebhookEvent.markProcessed(payload.id || payload.reference, 'hostfi');
+
+    res.status(200).json({ success: true, message: 'Payout webhook processed successfully' });
   } catch (error) {
-    console.error('Error processing fiat withdrawal webhook:', error);
-    res.status(500).json({ message: 'Error processing webhook', error: error.message });
+    console.error('Error processing fiat payout:', error);
+    await WebhookEvent.markProcessed(payload.id || payload.reference, 'hostfi', error.message);
+    res.status(500).json({ success: false, error: 'Processing failed' });
   }
 });
 
 /**
- * Test webhook endpoint (for development)
+ * Handle Crypto Payout Webhook
+ * Triggered when crypto withdrawal completes
  */
-exports.testWebhook = catchAsync(async (req, res, next) => {
-  console.log('Test webhook received:', req.body);
-  res.status(200).json({ message: 'Test webhook received successfully', data: req.body });
+exports.handleCryptoPayout = catchAsync(async (req, res) => {
+  const payload = req.body;
+
+  // Verify webhook signature
+  const signature = req.headers['x-hostfi-signature'];
+  if (!hostfiService.verifyWebhookSignature(signature, payload)) {
+    return res.status(401).json({ success: false, error: 'Invalid signature' });
+  }
+
+  // Record webhook event
+  try {
+    await WebhookEvent.recordWebhook({
+      eventId: payload.id || payload.txHash,
+      provider: 'hostfi',
+      eventType: 'crypto_payout',
+      payload,
+      signature
+    });
+  } catch (error) {
+    if (error.message.includes('Duplicate')) {
+      return res.status(200).json({ success: true, message: 'Event already processed' });
+    }
+  }
+
+  console.log('Crypto payout webhook received:', payload);
+
+  // Find transaction by reference
+  const transaction = await Transaction.findOne({ reference: payload.clientReference });
+  if (!transaction) {
+    console.error(`Transaction not found for crypto payout: ${payload.clientReference}`);
+    return res.status(404).json({ success: false, error: 'Transaction not found' });
+  }
+
+  try {
+    const user = await User.findById(transaction.user);
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    if (payload.status === 'COMPLETED' || payload.status === 'SUCCESS') {
+      // Withdrawal successful - remove from pending
+      user.wallet.pendingBalance -= transaction.amount;
+      await user.save();
+
+      // Update transaction
+      transaction.status = 'completed';
+      transaction.completedAt = new Date();
+      transaction.transactionHash = payload.txHash;
+      transaction.blockchainNetwork = payload.network;
+      transaction.metadata.hostfiStatus = payload.status;
+      await transaction.save();
+
+      console.log(`Crypto payout completed: User ${user._id}, Amount: ${transaction.amount}`);
+    } else if (payload.status === 'FAILED' || payload.status === 'REJECTED') {
+      // Withdrawal failed - refund balance
+      user.wallet.balance += transaction.amount;
+      user.wallet.pendingBalance -= transaction.amount;
+      await user.save();
+
+      // Update transaction
+      transaction.status = 'failed';
+      transaction.failedAt = new Date();
+      transaction.errorMessage = payload.reason || 'Crypto payout failed';
+      transaction.metadata.hostfiStatus = payload.status;
+      await transaction.save();
+
+      console.log(`Crypto payout failed: User ${user._id}, Amount refunded: ${transaction.amount}`);
+    } else {
+      // Processing status
+      transaction.status = 'processing';
+      transaction.processedAt = new Date();
+      transaction.metadata.hostfiStatus = payload.status;
+      await transaction.save();
+    }
+
+    // Sync wallet balances
+    await hostfiWalletService.syncWalletBalances(user._id);
+
+    await WebhookEvent.markProcessed(payload.id || payload.txHash, 'hostfi');
+
+    res.status(200).json({ success: true, message: 'Crypto payout webhook processed successfully' });
+  } catch (error) {
+    console.error('Error processing crypto payout:', error);
+    await WebhookEvent.markProcessed(payload.id || payload.txHash, 'hostfi', error.message);
+    res.status(500).json({ success: false, error: 'Processing failed' });
+  }
+});
+
+/**
+ * Test webhook endpoint (development only)
+ */
+exports.testWebhook = catchAsync(async (req, res) => {
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(403).json({ success: false, error: 'Test endpoint not available in production' });
+  }
+
+  const { type, payload } = req.body;
+
+  console.log(`Test webhook received: ${type}`, payload);
+
+  res.status(200).json({
+    success: true,
+    message: 'Test webhook received',
+    type,
+    payload
+  });
 });

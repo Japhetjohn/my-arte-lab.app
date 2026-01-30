@@ -18,9 +18,6 @@ const {
   securityLogger
 } = require('./middleware/security');
 const {
-  preventWebhookReplay
-} = require('./middleware/webhookSecurity');
-const {
   authLimiter,
   passwordResetLimiter,
   apiLimiter,
@@ -254,7 +251,7 @@ app.get('/health', async (req, res) => {
   }
 
   try {
-    if (!switchConfig.serviceKey) {
+    if (!hostfiConfig.clientId || !hostfiConfig.secretKey) {
       health.checks.paymentGateway = 'not_configured';
       health.status = 'DEGRADED';
     } else {
@@ -280,7 +277,7 @@ app.get('/health', async (req, res) => {
   res.status(statusCode).json(health);
 });
 
-app.use('/api/webhooks', preventWebhookReplay, webhookLimiter, webhookRoutes);
+app.use('/api/webhooks', webhookLimiter, webhookRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/wallet', walletRoutes);
@@ -357,7 +354,7 @@ const server = app.listen(PORT, () => {
   console.log(`║  Port: ${PORT}`);
   console.log(`║  Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`║  API: http://localhost:${PORT}/api`);
-  console.log(`║  Payment Gateway: Switch`);
+  console.log(`║  Payment Gateway: HostFi`);
   console.log('╚════════════════════════════════════════════════════════╝\n');
 });
 

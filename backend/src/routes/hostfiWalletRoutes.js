@@ -37,26 +37,47 @@ router.get('/wallet/balance-summary', protect, hostfiWalletController.getBalance
  */
 router.get('/wallet/transactions/:reference', protect, hostfiWalletController.getTransactionByReference);
 
+/**
+ * @route   GET /api/hostfi/currencies/supported
+ * @desc    Get all supported currencies
+ * @access  Private
+ */
+router.get('/currencies/supported', protect, hostfiWalletController.getSupportedCurrencies);
+
 // ============================================
-// DEPOSIT / ON-RAMP ROUTES
+// COLLECTIONS (ON-RAMP) - User Receives Money
 // ============================================
 
 /**
- * @route   POST /api/hostfi/deposit/channel
- * @desc    Create fiat collection channel (bank account for deposits)
+ * @route   POST /api/hostfi/collections/crypto/address
+ * @desc    Create crypto collection address (Solana, etc.)
  * @access  Private
  */
-router.post('/deposit/channel', protect, hostfiWalletController.createDepositChannel);
+router.post('/collections/crypto/address', protect, hostfiWalletController.createCryptoAddress);
 
 /**
- * @route   GET /api/hostfi/deposit/channels
- * @desc    Get deposit channels for user
+ * @route   GET /api/hostfi/collections/crypto/addresses
+ * @desc    Get user's crypto collection addresses
  * @access  Private
  */
-router.get('/deposit/channels', protect, hostfiWalletController.getDepositChannels);
+router.get('/collections/crypto/addresses', protect, hostfiWalletController.getCryptoAddresses);
+
+/**
+ * @route   POST /api/hostfi/collections/fiat/channel
+ * @desc    Create fiat collection channel (bank account)
+ * @access  Private
+ */
+router.post('/collections/fiat/channel', protect, hostfiWalletController.createFiatChannel);
+
+/**
+ * @route   GET /api/hostfi/collections/fiat/channels
+ * @desc    Get user's fiat collection channels
+ * @access  Private
+ */
+router.get('/collections/fiat/channels', protect, hostfiWalletController.getFiatChannels);
 
 // ============================================
-// WITHDRAWAL / OFF-RAMP ROUTES
+// PAYMENTS (OFF-RAMP) - User Sends Money Out
 // ============================================
 
 /**
@@ -82,7 +103,7 @@ router.post('/withdrawal/verify-account', protect, hostfiWalletController.verify
 
 /**
  * @route   POST /api/hostfi/withdrawal/initiate
- * @desc    Initiate withdrawal to bank account
+ * @desc    Initiate withdrawal to bank account (with 1% platform fee)
  * @access  Private
  */
 router.post('/withdrawal/initiate', protect, hostfiWalletController.initiateWithdrawal);
@@ -120,118 +141,65 @@ router.post('/beneficiaries', protect, hostfiWalletController.addBeneficiary);
 router.delete('/beneficiaries/:id', protect, hostfiWalletController.removeBeneficiary);
 
 // ============================================
-// CRYPTO ON-RAMP ROUTES (Fiat to Crypto)
+// RATES & FEES ROUTES
 // ============================================
 
 /**
- * @route   POST /api/hostfi/onramp/quote
- * @desc    Get crypto on-ramp quote (buy crypto with fiat)
+ * @route   GET /api/hostfi/rates/exchange
+ * @desc    Get exchange rates for currency pair
  * @access  Private
  */
-router.post('/onramp/quote', protect, hostfiWalletController.getCryptoOnrampQuote);
+router.get('/rates/exchange', protect, hostfiWalletController.getExchangeRates);
 
 /**
- * @route   GET /api/hostfi/onramp/countries
- * @desc    Get supported on-ramp countries
+ * @route   GET /api/hostfi/fees/exchange
+ * @desc    Get exchange fees
  * @access  Private
  */
-router.get('/onramp/countries', protect, hostfiWalletController.getOnrampCountries);
-
-/**
- * @route   GET /api/hostfi/onramp/payment-methods
- * @desc    Get supported payment methods for on-ramp
- * @access  Private
- */
-router.get('/onramp/payment-methods', protect, hostfiWalletController.getOnrampPaymentMethods);
-
-/**
- * @route   POST /api/hostfi/onramp/initiate
- * @desc    Initiate crypto on-ramp transaction
- * @access  Private
- */
-router.post('/onramp/initiate', protect, hostfiWalletController.initiateCryptoOnramp);
-
-/**
- * @route   GET /api/hostfi/onramp/status/:reference
- * @desc    Get crypto on-ramp transaction status
- * @access  Private
- */
-router.get('/onramp/status/:reference', protect, hostfiWalletController.getCryptoOnrampStatus);
-
-// ============================================
-// CRYPTO OFF-RAMP ROUTES (Crypto to Fiat)
-// ============================================
-
-/**
- * @route   POST /api/hostfi/offramp/quote
- * @desc    Get crypto off-ramp quote (sell crypto for fiat)
- * @access  Private
- */
-router.post('/offramp/quote', protect, hostfiWalletController.getCryptoOfframpQuote);
-
-/**
- * @route   GET /api/hostfi/offramp/countries
- * @desc    Get supported off-ramp countries
- * @access  Private
- */
-router.get('/offramp/countries', protect, hostfiWalletController.getOfframpCountries);
-
-/**
- * @route   POST /api/hostfi/offramp/initiate
- * @desc    Initiate crypto off-ramp transaction
- * @access  Private
- */
-router.post('/offramp/initiate', protect, hostfiWalletController.initiateCryptoOfframp);
-
-/**
- * @route   GET /api/hostfi/offramp/status/:reference
- * @desc    Get crypto off-ramp transaction status
- * @access  Private
- */
-router.get('/offramp/status/:reference', protect, hostfiWalletController.getCryptoOfframpStatus);
-
-/**
- * @route   GET /api/hostfi/offramp/deposit-address
- * @desc    Get deposit address for crypto off-ramp
- * @access  Private
- */
-router.get('/offramp/deposit-address', protect, hostfiWalletController.getCryptoOfframpDepositAddress);
+router.get('/fees/exchange', protect, hostfiWalletController.getExchangeFees);
 
 // ============================================
 // WEBHOOK ROUTES (Public - validated by signature)
 // ============================================
 
 /**
- * @route   POST /api/hostfi/webhooks/deposit
+ * @route   POST /api/hostfi/webhooks/address-generated
+ * @desc    Handle address generated webhook from HostFi
+ * @access  Public (Webhook)
+ */
+router.post('/webhooks/address-generated', hostfiWebhookController.handleAddressGenerated);
+
+/**
+ * @route   POST /api/hostfi/webhooks/fiat-deposit
  * @desc    Handle fiat deposit webhook from HostFi
  * @access  Public (Webhook)
  */
-router.post('/webhooks/deposit', hostfiWebhookController.handleFiatDeposit);
+router.post('/webhooks/fiat-deposit', hostfiWebhookController.handleFiatDeposit);
 
 /**
- * @route   POST /api/hostfi/webhooks/withdrawal
- * @desc    Handle fiat withdrawal webhook from HostFi
+ * @route   POST /api/hostfi/webhooks/crypto-deposit
+ * @desc    Handle crypto deposit webhook from HostFi
  * @access  Public (Webhook)
  */
-router.post('/webhooks/withdrawal', hostfiWebhookController.handleFiatWithdrawal);
+router.post('/webhooks/crypto-deposit', hostfiWebhookController.handleCryptoDeposit);
 
 /**
- * @route   POST /api/hostfi/webhooks/onramp
- * @desc    Handle crypto on-ramp webhook from HostFi
+ * @route   POST /api/hostfi/webhooks/fiat-payout
+ * @desc    Handle fiat payout webhook from HostFi
  * @access  Public (Webhook)
  */
-router.post('/webhooks/onramp', hostfiWebhookController.handleCryptoOnramp);
+router.post('/webhooks/fiat-payout', hostfiWebhookController.handleFiatPayout);
 
 /**
- * @route   POST /api/hostfi/webhooks/offramp
- * @desc    Handle crypto off-ramp webhook from HostFi
+ * @route   POST /api/hostfi/webhooks/crypto-payout
+ * @desc    Handle crypto payout webhook from HostFi
  * @access  Public (Webhook)
  */
-router.post('/webhooks/offramp', hostfiWebhookController.handleCryptoOfframp);
+router.post('/webhooks/crypto-payout', hostfiWebhookController.handleCryptoPayout);
 
 /**
  * @route   POST /api/hostfi/webhooks/test
- * @desc    Test webhook endpoint
+ * @desc    Test webhook endpoint (development only)
  * @access  Public
  */
 router.post('/webhooks/test', hostfiWebhookController.testWebhook);

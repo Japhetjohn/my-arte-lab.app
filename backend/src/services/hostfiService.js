@@ -43,7 +43,7 @@ class HostFiService {
   }
 
   /**
-   * Calculate platform fee
+   * Calculate platform fee (1% on on-ramp and off-ramp)
    * @param {number} amount - Transaction amount
    * @returns {Object} Fee breakdown
    */
@@ -112,8 +112,17 @@ class HostFiService {
       const response = await this.api.request(config);
       return response.data;
     } catch (error) {
-      console.error(`HostFi API ${method} ${url} failed:`, error.response?.data || error.message);
-      throw new Error(error.response?.data?.message || `HostFi API request failed`);
+      const errorData = error.response?.data;
+      console.error(`HostFi API ${method} ${url} failed:`, JSON.stringify(errorData, null, 2) || error.message);
+
+      // Preserve the full error details
+      if (errorData) {
+        const errorMsg = errorData.message || errorData.error || 'HostFi API request failed';
+        const err = new Error(errorMsg);
+        err.hostfiError = errorData; // Preserve full error for debugging
+        throw err;
+      }
+      throw new Error(error.message || 'HostFi API request failed');
     }
   }
 
@@ -155,9 +164,9 @@ class HostFiService {
   }
 
   /**
-   * Get wallet asset address for deposits
+   * Get wallet asset address for deposits (crypto)
    * @param {string} assetId - Wallet asset ID
-   * @param {string} network - Network (for crypto): ERC20, TRC20, BEP20
+   * @param {string} network - Network (for crypto): Solana, Ethereum, etc.
    * @returns {Promise<Object>} Wallet address details
    */
   async getWalletAddress(assetId, network = null) {
@@ -174,7 +183,7 @@ class HostFiService {
   }
 
   /**
-   * Get wallet transactions
+   * Get wallet transactions for a specific asset
    * @param {string} assetId - Wallet asset ID
    * @param {Object} filters - Query filters (pageNumber, pageSize, fromDate, toDate, status, etc.)
    * @returns {Promise<Object>} Paginated transactions
@@ -219,30 +228,113 @@ class HostFiService {
     }
   }
 
+  /**
+   * Swap user assets (convert between currencies)
+   * @param {Object} params - Swap parameters
+   * @returns {Promise<Object>} Swap result
+   */
+  async swapAssets(params) {
+    try {
+      const response = await this.makeRequest('POST', '/v1/assets/swap', params);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to swap assets:', error.message);
+      throw error;
+    }
+  }
+
   // ============================================
-  // DEPOSITS / ON-RAMP (Fiat Collection)
+  // COLLECTIONS (ON-RAMP) - Receiving Payments
   // ============================================
 
   /**
-   * Create fiat collection channel (bank account for receiving deposits)
+   * Create crypto collection address (for receiving crypto deposits)
+   * @param {Object} params - Collection address parameters
+   * @param {string} params.assetId - Wallet asset ID
+   * @param {string} params.currency - Currency code (USDC, etc.)
+   * @param {string} params.network - Blockchain network (Solana, etc.)
+   * @param {string} params.customId - Your internal user/resource ID
+   * @returns {Promise<Object>} Crypto collection address
+   */
+  async createCryptoCollectionAddress({ assetId, currency, network, customId }) {
+    try {
+      const payload = { assetId, currency, network, customId };
+
+      console.log('Creating crypto collection address with payload:', JSON.stringify(payload, null, 2));
+
+      const response = await this.makeRequest('POST', '/v1/collections/crypto/addresses', payload);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to create crypto collection address:', error.message);
+      if (error.hostfiError) {
+        console.error('HostFi error details:', JSON.stringify(error.hostfiError, null, 2));
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Get crypto collection addresses
+   * @param {Object} filters - Optional filters
+   * @returns {Promise<Array>} List of crypto collection addresses
+   */
+  async getCryptoCollectionAddresses(filters = {}) {
+    try {
+      const response = await this.makeRequest('GET', '/v1/collections/crypto/addresses', null, filters);
+      return response.data || [];
+    } catch (error) {
+      console.error('Failed to get crypto collection addresses:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Get crypto collection address by ID
+   * @param {string} addressId - Collection address ID
+   * @returns {Promise<Object>} Collection address details
+   */
+  async getCryptoCollectionAddress(addressId) {
+    try {
+      const response = await this.makeRequest('GET', `/v1/collections/crypto/addresses/${addressId}`);
+      return response.data;
+    } catch (error) {
+      console.error(`Failed to get crypto collection address ${addressId}:`, error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Create fiat collection channel (bank account for receiving fiat deposits)
    * @param {Object} params - Collection channel parameters
    * @param {string} params.assetId - Wallet asset ID to credit
-   * @param {string} params.currency - Currency code (NGN, USD, etc.)
+   * @param {string} params.currency - Currency code (NGN, KES, etc.)
    * @param {string} params.customId - Your internal user/resource ID
+   * @param {string} params.type - Channel type ('payment' or 'collection')
+   * @param {string} params.method - Payment method ('bank_transfer', 'mobile_money', etc.)
+   * @param {string} params.countryCode - Country code (NG, KE, etc.)
    * @returns {Promise<Object>} Bank account details for deposits
    */
-  async createFiatCollectionChannel({ assetId, currency, customId }) {
+  async createFiatCollectionChannel({ assetId, currency, customId, type, method, countryCode }) {
     try {
+      // Updated based on API docs: both type and method should be "BANK_TRANSFER"
       const payload = {
         assetId,
         currency,
-        customId
+        customId,
+        type,          // "BANK_TRANSFER" based on API docs
+        method,        // "BANK_TRANSFER" per HostFi support
+        countryCode
       };
+
+      console.log('Creating fiat collection channel with payload:', JSON.stringify(payload, null, 2));
 
       const response = await this.makeRequest('POST', '/v1/collections/fiat/channels', payload);
       return response.data;
     } catch (error) {
       console.error('Failed to create fiat collection channel:', error.message);
+      if (error.hostfiError) {
+        console.error('HostFi error details:', JSON.stringify(error.hostfiError, null, 2));
+      }
       throw error;
     }
   }
@@ -278,7 +370,7 @@ class HostFiService {
   }
 
   // ============================================
-  // WITHDRAWALS / OFF-RAMP (Fiat Payout)
+  // PAYMENTS (OFF-RAMP) - Sending Payments/Withdrawals
   // ============================================
 
   /**
@@ -333,6 +425,7 @@ class HostFiService {
 
   /**
    * Initiate withdrawal (bank transfer or mobile money)
+   * Automatically deducts 1% platform fee
    * @param {Object} params - Withdrawal parameters
    * @param {string} params.walletAssetId - Source wallet asset ID
    * @param {number} params.amount - Amount to withdraw
@@ -340,23 +433,38 @@ class HostFiService {
    * @param {string} params.methodId - Payment method (BANK_TRANSFER, MOMO)
    * @param {Object} params.recipient - Recipient details
    * @param {string} params.clientReference - Your unique reference
-   * @returns {Promise<Object>} Withdrawal response
+   * @returns {Promise<Object>} Withdrawal response with fee details
    */
   async initiateWithdrawal({ walletAssetId, amount, currency, methodId, recipient, clientReference }) {
     try {
+      // Calculate platform fee (1%)
+      const feeBreakdown = this.calculatePlatformFee(amount);
+
       const payload = {
         walletAssetId,
-        amount,
+        amount: feeBreakdown.amountAfterFee, // Send amount after fee deduction
         currency,
         methodId,
         recipient,
         clientReference
       };
 
-      console.log('Initiating HostFi withdrawal:', { clientReference, amount, currency, methodId });
+      console.log('Initiating HostFi withdrawal:', {
+        clientReference,
+        originalAmount: amount,
+        platformFee: feeBreakdown.platformFee,
+        amountAfterFee: feeBreakdown.amountAfterFee,
+        currency,
+        methodId
+      });
 
       const response = await this.makeRequest('POST', '/v1/payout/transactions', payload);
-      return response.data;
+
+      // Return response with fee breakdown
+      return {
+        ...response.data,
+        feeBreakdown
+      };
     } catch (error) {
       console.error('Withdrawal initiation failed:', error.message);
       throw error;
@@ -380,7 +488,7 @@ class HostFiService {
 
   /**
    * Get list of banks for a country
-   * @param {string} countryCode - ISO country code (NG, US, etc.)
+   * @param {string} countryCode - ISO country code (NG, KE, etc.)
    * @returns {Promise<Array>} List of banks
    */
   async getBanksList(countryCode) {
@@ -403,11 +511,7 @@ class HostFiService {
    */
   async lookupBankAccount({ country, bankId, accountNumber }) {
     try {
-      const payload = {
-        country,
-        bankId,
-        accountNumber
-      };
+      const payload = { country, bankId, accountNumber };
 
       const response = await this.makeRequest('POST', '/v1/payout/accounts/lookup', payload);
       return response.data;
@@ -456,6 +560,21 @@ class HostFiService {
     }
   }
 
+  /**
+   * Get supported payment currencies
+   * @returns {Promise<Array>} List of supported currencies
+   */
+  async getSupportedCurrencies() {
+    try {
+      // Get payment currencies which includes crypto networks info
+      const response = await this.makeRequest('GET', '/v1/pay/currencies');
+      return response.data || [];
+    } catch (error) {
+      console.error('Failed to get supported currencies:', error.message);
+      throw error;
+    }
+  }
+
   // ============================================
   // WEBHOOKS
   // ============================================
@@ -478,267 +597,6 @@ class HostFiService {
     const expectedSignature = hmac.digest('hex');
 
     return signature === expectedSignature;
-  }
-
-  // ============================================
-  // CRYPTO ON-RAMP (Fiat to Crypto)
-  // ============================================
-
-  /**
-   * Get crypto on-ramp quote (Buy crypto with fiat)
-   * @param {Object} params - Quote parameters
-   * @param {string} params.sourceCurrency - Fiat currency (NGN, KES, GHS, etc.)
-   * @param {string} params.targetCurrency - Crypto currency (USDC, SOL, etc.)
-   * @param {number} params.sourceAmount - Fiat amount to spend
-   * @param {string} params.network - Blockchain network (Solana, Ethereum, etc.)
-   * @param {string} params.country - Country code (NG, KE, etc.)
-   * @returns {Promise<Object>} Quote with exchange rate and fees
-   */
-  async getCryptoOnrampQuote({ sourceCurrency, targetCurrency, sourceAmount, network = 'Solana', country }) {
-    try {
-      const payload = {
-        sourceCurrency,
-        targetCurrency,
-        sourceAmount,
-        network,
-        country,
-        type: 'CRYPTO_ONRAMP'
-      };
-
-      const response = await this.makeRequest('POST', '/v1/onramp/quote', payload);
-      return response.data;
-    } catch (error) {
-      console.error('Failed to get crypto onramp quote:', error.message);
-      throw error;
-    }
-  }
-
-  /**
-   * Initiate crypto on-ramp transaction (Buy crypto with fiat)
-   * @param {Object} params - On-ramp parameters
-   * @param {string} params.walletAssetId - Target crypto wallet asset ID
-   * @param {string} params.sourceCurrency - Fiat currency
-   * @param {string} params.targetCurrency - Crypto currency (USDC, SOL)
-   * @param {number} params.sourceAmount - Fiat amount to spend
-   * @param {string} params.network - Blockchain network (Solana)
-   * @param {string} params.country - Country code
-   * @param {string} params.paymentMethod - Payment method (BANK_TRANSFER, MOBILE_MONEY, CARD)
-   * @param {string} params.walletAddress - User's destination crypto wallet address
-   * @param {string} params.clientReference - Your unique reference
-   * @returns {Promise<Object>} On-ramp transaction with payment instructions
-   */
-  async initiateCryptoOnramp({
-    walletAssetId,
-    sourceCurrency,
-    targetCurrency,
-    sourceAmount,
-    network = 'Solana',
-    country,
-    paymentMethod,
-    walletAddress,
-    clientReference
-  }) {
-    try {
-      const payload = {
-        walletAssetId,
-        sourceCurrency,
-        targetCurrency,
-        sourceAmount,
-        network,
-        country,
-        paymentMethod,
-        destination: {
-          address: walletAddress,
-          network
-        },
-        clientReference
-      };
-
-      console.log('Initiating HostFi crypto onramp:', { clientReference, sourceAmount, sourceCurrency, targetCurrency });
-
-      const response = await this.makeRequest('POST', '/v1/onramp/transactions', payload);
-      return response.data;
-    } catch (error) {
-      console.error('Crypto onramp initiation failed:', error.message);
-      throw error;
-    }
-  }
-
-  /**
-   * Get crypto on-ramp transaction status
-   * @param {string} reference - Transaction reference
-   * @returns {Promise<Object>} Transaction details
-   */
-  async getCryptoOnrampStatus(reference) {
-    try {
-      const response = await this.makeRequest('GET', `/v1/onramp/transactions/${reference}`);
-      return response.data;
-    } catch (error) {
-      console.error(`Failed to get crypto onramp status ${reference}:`, error.message);
-      throw error;
-    }
-  }
-
-  /**
-   * Get list of supported on-ramp countries
-   * @returns {Promise<Array>} List of countries with payment methods
-   */
-  async getOnrampCountries() {
-    try {
-      const response = await this.makeRequest('GET', '/v1/onramp/countries');
-      return response.data || [];
-    } catch (error) {
-      console.error('Failed to get onramp countries:', error.message);
-      throw error;
-    }
-  }
-
-  /**
-   * Get supported payment methods for on-ramp
-   * @param {string} country - Country code
-   * @param {string} currency - Currency code
-   * @returns {Promise<Array>} Available payment methods
-   */
-  async getOnrampPaymentMethods(country, currency) {
-    try {
-      const params = { country, currency };
-      const response = await this.makeRequest('GET', '/v1/onramp/payment-methods', null, params);
-      return response.data || [];
-    } catch (error) {
-      console.error('Failed to get onramp payment methods:', error.message);
-      throw error;
-    }
-  }
-
-  // ============================================
-  // CRYPTO OFF-RAMP (Crypto to Fiat)
-  // ============================================
-
-  /**
-   * Get crypto off-ramp quote (Sell crypto for fiat)
-   * @param {Object} params - Quote parameters
-   * @param {string} params.sourceCurrency - Crypto currency (USDC, SOL, etc.)
-   * @param {string} params.targetCurrency - Fiat currency (NGN, KES, GHS, etc.)
-   * @param {number} params.sourceAmount - Crypto amount to sell
-   * @param {string} params.network - Blockchain network (Solana, Ethereum, etc.)
-   * @param {string} params.country - Country code (NG, KE, etc.)
-   * @returns {Promise<Object>} Quote with exchange rate and fees
-   */
-  async getCryptoOfframpQuote({ sourceCurrency, targetCurrency, sourceAmount, network = 'Solana', country }) {
-    try {
-      const payload = {
-        sourceCurrency,
-        targetCurrency,
-        sourceAmount,
-        network,
-        country,
-        type: 'CRYPTO_OFFRAMP'
-      };
-
-      const response = await this.makeRequest('POST', '/v1/offramp/quote', payload);
-      return response.data;
-    } catch (error) {
-      console.error('Failed to get crypto offramp quote:', error.message);
-      throw error;
-    }
-  }
-
-  /**
-   * Initiate crypto off-ramp transaction (Sell crypto for fiat)
-   * @param {Object} params - Off-ramp parameters
-   * @param {string} params.walletAssetId - Source crypto wallet asset ID
-   * @param {string} params.sourceCurrency - Crypto currency (USDC, SOL)
-   * @param {string} params.targetCurrency - Fiat currency
-   * @param {number} params.sourceAmount - Crypto amount to sell
-   * @param {string} params.network - Blockchain network (Solana)
-   * @param {string} params.country - Country code
-   * @param {Object} params.recipient - Bank account details
-   * @param {string} params.clientReference - Your unique reference
-   * @returns {Promise<Object>} Off-ramp transaction with deposit address
-   */
-  async initiateCryptoOfframp({
-    walletAssetId,
-    sourceCurrency,
-    targetCurrency,
-    sourceAmount,
-    network = 'Solana',
-    country,
-    recipient,
-    clientReference
-  }) {
-    try {
-      const payload = {
-        walletAssetId,
-        sourceCurrency,
-        targetCurrency,
-        sourceAmount,
-        network,
-        country,
-        recipient: {
-          accountNumber: recipient.accountNumber,
-          accountName: recipient.accountName,
-          bankId: recipient.bankId,
-          bankName: recipient.bankName,
-          country: recipient.country || country
-        },
-        clientReference
-      };
-
-      console.log('Initiating HostFi crypto offramp:', { clientReference, sourceAmount, sourceCurrency, targetCurrency });
-
-      const response = await this.makeRequest('POST', '/v1/offramp/transactions', payload);
-      return response.data;
-    } catch (error) {
-      console.error('Crypto offramp initiation failed:', error.message);
-      throw error;
-    }
-  }
-
-  /**
-   * Get crypto off-ramp transaction status
-   * @param {string} reference - Transaction reference
-   * @returns {Promise<Object>} Transaction details
-   */
-  async getCryptoOfframpStatus(reference) {
-    try {
-      const response = await this.makeRequest('GET', `/v1/offramp/transactions/${reference}`);
-      return response.data;
-    } catch (error) {
-      console.error(`Failed to get crypto offramp status ${reference}:`, error.message);
-      throw error;
-    }
-  }
-
-  /**
-   * Get HostFi's deposit address for crypto off-ramp
-   * User sends crypto to this address to initiate off-ramp
-   * @param {string} currency - Crypto currency (USDC, SOL)
-   * @param {string} network - Blockchain network (Solana)
-   * @returns {Promise<Object>} Deposit address and instructions
-   */
-  async getCryptoOfframpDepositAddress(currency, network = 'Solana') {
-    try {
-      const params = { currency, network };
-      const response = await this.makeRequest('GET', '/v1/offramp/deposit-address', null, params);
-      return response.data;
-    } catch (error) {
-      console.error('Failed to get crypto offramp deposit address:', error.message);
-      throw error;
-    }
-  }
-
-  /**
-   * Get list of supported off-ramp countries
-   * @returns {Promise<Array>} List of countries with payout methods
-   */
-  async getOfframpCountries() {
-    try {
-      const response = await this.makeRequest('GET', '/v1/offramp/countries');
-      return response.data || [];
-    } catch (error) {
-      console.error('Failed to get offramp countries:', error.message);
-      throw error;
-    }
   }
 
   // ============================================
@@ -768,14 +626,14 @@ class HostFiService {
   getCountryName(code) {
     const countries = {
       'NG': 'Nigeria',
-      'US': 'United States',
-      'GB': 'United Kingdom',
       'KE': 'Kenya',
       'GH': 'Ghana',
       'ZA': 'South Africa',
       'TZ': 'Tanzania',
       'UG': 'Uganda',
       'ZM': 'Zambia',
+      'US': 'United States',
+      'GB': 'United Kingdom',
       'IN': 'India',
       'BR': 'Brazil',
       'CA': 'Canada',
