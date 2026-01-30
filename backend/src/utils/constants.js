@@ -23,7 +23,7 @@ const RATE_LIMITS = {
   },
   API: {
     WINDOW_MS: 15 * 60 * 1000,
-    MAX_REQUESTS: 100
+    MAX_REQUESTS: 1000 // Increased for development (was 100)
   },
   WEBHOOK: {
     WINDOW_MS: 1 * 60 * 1000,

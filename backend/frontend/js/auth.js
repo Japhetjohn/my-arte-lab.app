@@ -140,45 +140,13 @@ export function showAuthModal(type = 'signin', userType = 'client') {
                             <label class="form-label">Country</label>
                             <select name="country" class="form-select" required>
                                 <option value="">Select your country</option>
-                                <option>Andorra</option>
-                                <option>Austria</option>
-                                <option>Belgium</option>
-                                <option>Brazil</option>
-                                <option>Congo</option>
-                                <option>Croatia</option>
-                                <option>Cyprus</option>
-                                <option>Czech Republic</option>
-                                <option>Denmark</option>
-                                <option>Estonia</option>
-                                <option>Finland</option>
-                                <option>France</option>
-                                <option>Germany</option>
                                 <option>Ghana</option>
-                                <option>Greece</option>
-                                <option>Hungary</option>
-                                <option>Italy</option>
                                 <option>Kenya</option>
-                                <option>Latvia</option>
-                                <option>Lithuania</option>
-                                <option>Luxembourg</option>
-                                <option>Malawi</option>
-                                <option>Malta</option>
-                                <option>Mexico</option>
-                                <option>Netherlands</option>
                                 <option>Nigeria</option>
-                                <option>Norway</option>
-                                <option>Philippines</option>
-                                <option>Poland</option>
-                                <option>Portugal</option>
-                                <option>Romania</option>
-                                <option>Slovakia</option>
-                                <option>Slovenia</option>
-                                <option>Spain</option>
-                                <option>Sweden</option>
+                                <option>South Africa</option>
+                                <option>Tanzania</option>
                                 <option>Uganda</option>
-                                <option>United Arab Emirates</option>
-                                <option>United Kingdom</option>
-                                <option>United States</option>
+                                <option>Zambia</option>
                             </select>
                         </div>
 
@@ -922,7 +890,7 @@ window.validatePasswordMatch = validatePasswordMatch;
 window.showHelpSupportModal = showHelpSupportModal;
 
 // Toggle password visibility
-window.togglePasswordVisibility = function(inputId, button) {
+window.togglePasswordVisibility = function (inputId, button) {
     const input = document.getElementById(inputId);
     const icon = button.querySelector('.eye-icon');
 

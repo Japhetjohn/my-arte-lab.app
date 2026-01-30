@@ -31,7 +31,7 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: false,
     validate: {
-      validator: function(value) {
+      validator: function (value) {
         if (!value || value === 'OAUTH_USER_NO_PASSWORD') {
           return true;
         }
@@ -104,7 +104,7 @@ const userSchema = new mongoose.Schema({
   category: {
     type: String,
     enum: Object.values(CREATOR_CATEGORIES),
-    required: function() { return this.role === USER_ROLES.CREATOR; }
+    required: function () { return this.role === USER_ROLES.CREATOR; }
   },
 
   skills: [{
@@ -133,7 +133,7 @@ const userSchema = new mongoose.Schema({
     images: [{
       type: String,
       validate: {
-        validator: function(v) {
+        validator: function (v) {
           return this.images.length <= 5;
         },
         message: 'Maximum 5 images allowed per service'
@@ -193,6 +193,8 @@ const userSchema = new mongoose.Schema({
         type: Number,
         default: 0
       },
+      colAddress: String,     // Collection address (for crypto/fiat deposits)
+      colNetwork: String,     // Network for the collection address
       lastSynced: Date
     }],
 
@@ -200,8 +202,7 @@ const userSchema = new mongoose.Schema({
     address: {
       type: String,
       required: false, // No longer required
-      unique: true,
-      sparse: true
+      sparse: true  // Removed unique: true to allow multiple null values
     },
     encryptedPrivateKey: {
       type: String,
@@ -243,7 +244,7 @@ const userSchema = new mongoose.Schema({
     beneficiaries: [{
       id: {
         type: String,
-        default: function() { return require('uuid').v4(); }
+        default: function () { return require('uuid').v4(); }
       },
       type: {
         type: String,
@@ -412,15 +413,15 @@ userSchema.index({ 'rating.average': -1 });
 userSchema.index({ email: 1, googleId: 1 });
 userSchema.index({ role: 1, category: 1, 'rating.average': -1 });
 
-userSchema.virtual('name').get(function() {
+userSchema.virtual('name').get(function () {
   return `${this.firstName} ${this.lastName}`;
 });
 
-userSchema.virtual('formattedLocation').get(function() {
+userSchema.virtual('formattedLocation').get(function () {
   return formatLocation(this.location);
 });
 
-userSchema.pre('save', async function(next) {
+userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) {
     return next();
   }
@@ -438,7 +439,7 @@ userSchema.pre('save', async function(next) {
   }
 });
 
-userSchema.methods.comparePassword = async function(candidatePassword) {
+userSchema.methods.comparePassword = async function (candidatePassword) {
   try {
     return await bcrypt.compare(candidatePassword, this.password);
   } catch (error) {
@@ -446,11 +447,11 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
   }
 };
 
-userSchema.methods.isLocked = function() {
+userSchema.methods.isLocked = function () {
   return !!(this.lockUntil && this.lockUntil > Date.now());
 };
 
-userSchema.methods.incLoginAttempts = async function() {
+userSchema.methods.incLoginAttempts = async function () {
   if (this.lockUntil && this.lockUntil < Date.now()) {
     return await this.updateOne({
       $set: { loginAttempts: 1 },
@@ -467,14 +468,14 @@ userSchema.methods.incLoginAttempts = async function() {
   return await this.updateOne(updates);
 };
 
-userSchema.methods.resetLoginAttempts = async function() {
+userSchema.methods.resetLoginAttempts = async function () {
   return await this.updateOne({
     $set: { loginAttempts: 0 },
     $unset: { lockUntil: 1 }
   });
 };
 
-userSchema.methods.updateWalletBalance = async function(amount, type = 'add') {
+userSchema.methods.updateWalletBalance = async function (amount, type = 'add') {
   const amountChange = type === 'add' ? amount : -amount;
 
   const result = await this.constructor.findOneAndUpdate(
@@ -499,7 +500,7 @@ userSchema.methods.updateWalletBalance = async function(amount, type = 'add') {
   return result;
 };
 
-userSchema.methods.getPublicProfile = function() {
+userSchema.methods.getPublicProfile = function () {
   const obj = this.toObject();
 
   obj.name = this.name;
