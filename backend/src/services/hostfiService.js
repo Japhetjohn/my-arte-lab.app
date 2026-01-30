@@ -34,7 +34,7 @@ class HostFiService {
       retryDelay: axiosRetry.exponentialDelay,
       retryCondition: (error) => {
         return axiosRetry.isNetworkOrIdempotentRequestError(error) ||
-               (error.response && error.response.status >= 500);
+          (error.response && error.response.status >= 500);
       },
       onRetry: (retryCount, error, requestConfig) => {
         console.warn(`HostFi API retry attempt ${retryCount} for ${requestConfig.url}`);
@@ -235,7 +235,8 @@ class HostFiService {
    */
   async swapAssets(params) {
     try {
-      const response = await this.makeRequest('POST', '/v1/assets/swap', params);
+      console.log('Swapping assets:', JSON.stringify(params, null, 2));
+      const response = await this.makeRequest('POST', '/v1/assets/convert', params);
       return response.data;
     } catch (error) {
       console.error('Failed to swap assets:', error.message);
@@ -258,6 +259,9 @@ class HostFiService {
    */
   async createCryptoCollectionAddress({ assetId, currency, network, customId }) {
     try {
+      // Enforce USDC on Solana
+      currency = 'USDC';
+      network = 'Solana';
       const payload = { assetId, currency, network, customId };
 
       console.log('Creating crypto collection address with payload:', JSON.stringify(payload, null, 2));

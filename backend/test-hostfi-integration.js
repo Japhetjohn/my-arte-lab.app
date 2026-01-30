@@ -61,7 +61,7 @@ async function runTests() {
       if (!process.env.HOSTFI_SECRET_KEY) throw new Error('HOSTFI_SECRET_KEY not set');
       if (!process.env.HOSTFI_API_URL) throw new Error('HOSTFI_API_URL not set');
 
-      log(`Client ID: ${process.env.HOSTFI_CLIENT_ID}`, 'info');
+      log(`Client ID: ${process.env.HOSTFI_CLIENT_ID.substring(0, 5)}...`, 'info');
       log(`API URL: ${process.env.HOSTFI_API_URL}`, 'info');
       testResult('Environment variables configured', true);
     } catch (error) {
@@ -101,7 +101,8 @@ async function runTests() {
             balance: 0,
             pendingBalance: 0,
             totalEarnings: 0,
-            network: 'HostFi'
+            network: 'HostFi',
+            address: `TEST-ADDR-${Date.now()}` // Avoid unique index collision
           }
         });
         log('Test user created', 'success');
@@ -186,7 +187,10 @@ async function runTests() {
         const channel = await hostfiService.createFiatCollectionChannel({
           assetId: ngnAsset.assetId,
           currency: 'NGN',
-          customId: testUser._id.toString()
+          customId: testUser._id.toString(),
+          type: 'COLLECTION',
+          method: 'BANK_TRANSFER',
+          countryCode: 'NG'
         });
 
         if (!channel.accountNumber) throw new Error('No account number in response');
@@ -200,7 +204,11 @@ async function runTests() {
       } else {
         testResult('Create deposit channel', false, 'Skipped - wallet initialization failed');
       }
+
     } catch (error) {
+      if (error.hostfiError) {
+        log(`HostFi Error Details: ${JSON.stringify(error.hostfiError)}`, 'error');
+      }
       testResult('Create deposit channel', false, error.message);
     }
 
@@ -270,7 +278,7 @@ async function runTests() {
         reference: `REF-${Date.now()}`,
         metadata: {
           provider: 'hostfi',
-          test: true
+          notes: 'Test transaction'
         }
       });
 

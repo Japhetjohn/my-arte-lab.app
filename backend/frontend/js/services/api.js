@@ -260,66 +260,50 @@ class ApiService {
     }
 
 
-    async getSwitchOnrampQuote(data) {
-        return this.post('/wallet/switch/quote/onramp', data);
+    // ==========================================
+    // HOSTFI INTEGRATION
+    // ==========================================
+
+    async getHostfiSupportedCurrencies() {
+        return this.get('/hostfi/currencies/supported');
     }
 
-    async requestSwitchOnramp(data) {
-        return this.post('/wallet/switch/onramp', data);
+    async getHostfiBanks(countryCode) {
+        return this.get(`/hostfi/banks/${countryCode}`);
     }
 
-
-    async getSwitchOfframpQuote(data) {
-        return this.post('/wallet/switch/quote/offramp', data);
+    async verifyHostfiBankAccount(data) {
+        return this.post('/hostfi/withdrawal/verify-account', data);
     }
 
-    async requestSwitchOfframp(data) {
-        return this.post('/wallet/switch/offramp', data);
+    async initiateHostfiWithdrawal(withdrawalData) {
+        return this.post('/hostfi/withdrawal/initiate', withdrawalData);
     }
 
-    async verifySwitchBankAccount(data) {
-        return this.post('/wallet/switch/verify-account', data);
+    async getHostfiWithdrawalStatus(reference) {
+        return this.get(`/hostfi/withdrawal/status/${reference}`);
     }
 
-
-    async getBeneficiaries() {
-        return this.get('/wallet/beneficiaries');
+    async createHostfiFiatChannel(data) {
+        return this.post('/hostfi/collections/fiat/channel', data);
     }
 
-    async addBeneficiary(beneficiaryData) {
-        return this.post('/wallet/beneficiaries', beneficiaryData);
+    async getHostfiFiatChannels() {
+        return this.get('/hostfi/collections/fiat/channels');
     }
 
-    async deleteBeneficiary(beneficiaryId) {
-        return this.delete(`/wallet/beneficiaries/${beneficiaryId}`);
+    async createHostfiCryptoAddress(data) {
+        return this.post('/hostfi/collections/crypto/address', data);
     }
 
-
-    async getSwitchCountries() {
-        return this.get('/wallet/switch/countries');
+    async getHostfiCryptoAddresses() {
+        return this.get('/hostfi/collections/crypto/addresses');
     }
 
-    async getSwitchBanks(country) {
-        return this.get(`/wallet/switch/banks/${country}`);
+    async getHostfiWallet() {
+        return this.get('/hostfi/wallet');
     }
 
-    async getSwitchRequirements(country, type = 'INDIVIDUAL') {
-        return this.get(`/wallet/switch/requirements?country=${country}&type=${type}`);
-    }
-
-
-    async getSwitchSwapQuote(data) {
-        return this.post('/wallet/switch/quote/swap', data);
-    }
-
-    async requestSwitchSwap(data) {
-        return this.post('/wallet/switch/swap', data);
-    }
-
-
-    async getSwitchTransactionStatus(reference) {
-        return this.get(`/wallet/switch/status/${reference}`);
-    }
 
 
     async getReviews(creatorId) {

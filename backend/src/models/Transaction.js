@@ -117,7 +117,7 @@ const transactionSchema = new mongoose.Schema({
       default: 'hostfi'
     },
     country: String,
-    type: String
+    recordType: String
   },
 
   processedAt: Date,
@@ -140,7 +140,7 @@ transactionSchema.index({ reference: 1 });
 transactionSchema.index({ 'metadata.hostfiReference': 1 });
 transactionSchema.index({ 'metadata.provider': 1 });
 
-transactionSchema.pre('save', async function(next) {
+transactionSchema.pre('save', async function (next) {
   if (!this.transactionId) {
     const timestamp = Date.now().toString(36).toUpperCase();
     const random = Math.random().toString(36).substring(2, 10).toUpperCase();
@@ -154,7 +154,7 @@ transactionSchema.pre('save', async function(next) {
   next();
 });
 
-transactionSchema.methods.markCompleted = async function(transactionHash) {
+transactionSchema.methods.markCompleted = async function (transactionHash) {
   this.status = 'completed';
   this.completedAt = new Date();
   if (transactionHash) {
@@ -163,7 +163,7 @@ transactionSchema.methods.markCompleted = async function(transactionHash) {
   return await this.save();
 };
 
-transactionSchema.methods.markFailed = async function(errorMessage, errorCode) {
+transactionSchema.methods.markFailed = async function (errorMessage, errorCode) {
   this.status = 'failed';
   this.failedAt = new Date();
   this.errorMessage = errorMessage;
@@ -171,13 +171,13 @@ transactionSchema.methods.markFailed = async function(errorMessage, errorCode) {
   return await this.save();
 };
 
-transactionSchema.methods.markProcessing = async function() {
+transactionSchema.methods.markProcessing = async function () {
   this.status = 'processing';
   this.processedAt = new Date();
   return await this.save();
 };
 
-transactionSchema.statics.getUserTransactions = async function(userId, limit = 20, skip = 0) {
+transactionSchema.statics.getUserTransactions = async function (userId, limit = 20, skip = 0) {
   return await this.find({ user: userId })
     .sort({ createdAt: -1 })
     .limit(limit)
@@ -186,7 +186,7 @@ transactionSchema.statics.getUserTransactions = async function(userId, limit = 2
     .lean();
 };
 
-transactionSchema.statics.getUserBalanceSummary = async function(userId) {
+transactionSchema.statics.getUserBalanceSummary = async function (userId) {
   const result = await this.aggregate([
     {
       $match: {
@@ -219,7 +219,7 @@ transactionSchema.statics.getUserBalanceSummary = async function(userId) {
   return result;
 };
 
-transactionSchema.statics.getPlatformEarnings = async function(startDate, endDate) {
+transactionSchema.statics.getPlatformEarnings = async function (startDate, endDate) {
   const match = {
     type: 'platform_fee',
     status: 'completed'

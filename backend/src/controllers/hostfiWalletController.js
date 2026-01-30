@@ -116,7 +116,9 @@ exports.getSupportedCurrencies = catchAsync(async (req, res, next) => {
  * User gets a Solana address to receive USDC
  */
 exports.createCryptoAddress = catchAsync(async (req, res, next) => {
-  const { currency = 'USDC', network = 'SOL' } = req.body;
+  // Enforce USDC on Solana
+  const currency = 'USDC';
+  const network = 'Solana';
 
   // Get wallet asset ID for the crypto
   const assetId = await hostfiWalletService.getWalletAssetId(req.user._id, currency);
@@ -131,6 +133,10 @@ exports.createCryptoAddress = catchAsync(async (req, res, next) => {
     network,
     customId: req.user._id.toString()
   });
+
+  if (!address || !address.address) {
+    throw new Error('Failed to generate address: No address returned from provider');
+  }
 
   // Create pending transaction record
   const transaction = await Transaction.create({
@@ -200,13 +206,13 @@ exports.createFiatChannel = catchAsync(async (req, res, next) => {
 
   // Map currency to country code if not provided
   const currencyCountryMap = {
-    'NGN': { country: 'NG', defaultMethod: 'BANK_TRANSFER', defaultType: 'BANK_TRANSFER' },
-    'KES': { country: 'KE', defaultMethod: 'BANK_TRANSFER', defaultType: 'BANK_TRANSFER' },
-    'GHS': { country: 'GH', defaultMethod: 'BANK_TRANSFER', defaultType: 'BANK_TRANSFER' },
-    'ZAR': { country: 'ZA', defaultMethod: 'BANK_TRANSFER', defaultType: 'BANK_TRANSFER' },
-    'TZS': { country: 'TZ', defaultMethod: 'BANK_TRANSFER', defaultType: 'BANK_TRANSFER' },
-    'UGX': { country: 'UG', defaultMethod: 'BANK_TRANSFER', defaultType: 'BANK_TRANSFER' },
-    'ZMW': { country: 'ZM', defaultMethod: 'BANK_TRANSFER', defaultType: 'BANK_TRANSFER' }
+    'NGN': { country: 'NG', defaultMethod: 'BANK_TRANSFER', defaultType: 'COLLECTION' },
+    'KES': { country: 'KE', defaultMethod: 'BANK_TRANSFER', defaultType: 'COLLECTION' },
+    'GHS': { country: 'GH', defaultMethod: 'BANK_TRANSFER', defaultType: 'COLLECTION' },
+    'ZAR': { country: 'ZA', defaultMethod: 'BANK_TRANSFER', defaultType: 'COLLECTION' },
+    'TZS': { country: 'TZ', defaultMethod: 'BANK_TRANSFER', defaultType: 'COLLECTION' },
+    'UGX': { country: 'UG', defaultMethod: 'BANK_TRANSFER', defaultType: 'COLLECTION' },
+    'ZMW': { country: 'ZM', defaultMethod: 'BANK_TRANSFER', defaultType: 'COLLECTION' }
   };
 
   const countryInfo = currencyCountryMap[currency];

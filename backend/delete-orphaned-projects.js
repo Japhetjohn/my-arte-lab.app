@@ -1,9 +1,14 @@
+require('dotenv').config();
 const mongoose = require('mongoose');
 
 async function deleteOrphanedProjects() {
   try {
-    await mongoose.connect('mongodb+srv://japhetjohnk:5ppeVm6cT0KQNwP4@myartelab-new.dmjg1gv.mongodb.net/myartelab');
-    console.log('✅ Connected to production MongoDB\n');
+    const mongoUri = process.env.MONGODB_URI;
+    if (!mongoUri) {
+      throw new Error('MONGODB_URI not set in environment variables');
+    }
+    await mongoose.connect(mongoUri);
+    console.log('✅ Connected to MongoDB');
 
     const db = mongoose.connection.db;
     const projectsCollection = db.collection('projects');
