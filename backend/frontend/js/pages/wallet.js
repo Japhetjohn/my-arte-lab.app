@@ -78,116 +78,132 @@ export async function renderWalletPage() {
     }
 }
 
+function renderWalletAddress(wallet) {
+    if (!wallet.address || wallet.address.startsWith('pending_')) {
+        return `
+            <div class="wallet-address-card">
+                <div class="wallet-address-label">Solana Wallet Address</div>
+                <div class="wallet-address-status">
+                    <span class="status-badge pending">Initializing...</span>
+                    <p class="text-secondary">Your Solana USDC wallet is being created</p>
+                </div>
+            </div>
+        `;
+    }
+
+    return `
+        <div class="wallet-address-card">
+            <div class="wallet-address-label">
+                <span>Your Solana Address (USDC)</span>
+                <span class="network-badge">Solana</span>
+            </div>
+            <div class="wallet-address-display">
+                <code class="wallet-address" id="walletAddress">${wallet.address}</code>
+                <button class="copy-btn" onclick="window.copyWalletAddress()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" stroke-width="2"/>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                    Copy
+                </button>
+            </div>
+            <p class="wallet-address-hint">Send USDC on Solana network to this address to fund your wallet</p>
+        </div>
+    `;
+}
+
 function renderWalletContent() {
     const mainContent = document.getElementById('mainContent');
 
     const balance = walletData.balance || 0;
     const pendingBalance = walletData.pendingBalance || 0;
     const totalEarnings = walletData.totalEarnings || 0;
-    const withdrawn = totalEarnings - balance - pendingBalance;
+
+    // Calculate USD value (USDC is 1:1 with USD)
+    const usdValue = balance * 1.0;
 
     mainContent.innerHTML = `
         <div class="section">
             <div class="container">
-                <h1 class="mb-lg">Wallet</h1>
+                <h1 class="mb-lg">My Wallet</h1>
 
-                <!-- Wallet Address Card -->
-                <div style="background: var(--surface); border-radius: 16px; padding: 20px; margin-bottom: 24px; border: 1px solid var(--border);">
-                    <div class="caption" style="margin-bottom: 8px; color: var(--text-secondary);">Your Solana Wallet Address (USDC)</div>
-                    ${walletData.address && !walletData.address.startsWith('pending_') ? `
-                        <div style="display: flex; align-items: center; gap: 12px;">
-                            <code id="walletAddress" style="flex: 1; background: #F8FAFC; color: #0F1724; padding: 12px; border-radius: 8px; font-size: 14px; overflow-x: auto; white-space: nowrap; border: 1px solid #E2E8F0;">${walletData.address}</code>
-                            <button class="btn-secondary" onclick="window.copyWalletAddress()" style="padding: 10px 16px; white-space: nowrap;">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="margin-right: 6px; vertical-align: middle;">
-                                    <rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" stroke-width="2"/>
-                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke="currentColor" stroke-width="2"/>
-                                </svg>
-                                Copy
-                            </button>
-                        </div>
-                        <div class="caption" style="margin-top: 8px; color: var(--text-secondary);">
-                            Network: ${walletData.network || 'Solana'} • Send USDC to this address to fund your wallet
-                        </div>
-                    ` : `
-                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px;">
-                            <div>
-                                <div style="color: #92400E; font-weight: 600; margin-bottom: 4px;">HostFi Wallet</div>
-                                <div style="color: #78350F; font-size: 14px;">
-                                    Click "Fund" to create a deposit channel (Bank Transfer or Crypto)
-                                </div>
-                            </div>
-                            <button class="btn-secondary" onclick="window.fundWallet()">Create Wallet</button>
-                        </div>
-                    `}
-                </div>
-
-                <div class="balance-card">
-                    <div class="balance-label">Available balance</div>
-                    <div class="balance-amount animate-counter">USDC ${balance.toFixed(2)}</div>
-                    <div class="balance-actions">
-                        <button class="btn-primary" style="background: white; color: var(--primary); flex: 1;" onclick="window.fundWallet()">
-                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style="margin-right: 8px; vertical-align: middle;">
-                                <path d="M10 6V14M6 10h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                <rect x="3" y="2" width="14" height="14" rx="2" stroke="currentColor" stroke-width="2"/>
+                <!-- Spot Balance Card -->
+                <div class="spot-balance-card">
+                    <div class="balance-header">
+                        <span class="balance-label">Spot Balance</span>
+                        <button class="icon-btn" onclick="window.location.reload()" title="Refresh balance">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                <path d="M4 12a8 8 0 1 1 16 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                <path d="M4 12l-2-2m2 2l2-2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                             </svg>
-                            Fund
                         </button>
-                        <button class="btn-primary" style="background: white; color: var(--primary); flex: 1;" onclick="window.showBankWithdrawal()">
-                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style="margin-right: 8px; vertical-align: middle;">
-                                <path d="M10 14V6M7 9l3-3 3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                <rect x="3" y="2" width="14" height="14" rx="2" stroke="currentColor" stroke-width="2"/>
+                    </div>
+
+                    <div class="balance-main">
+                        <div class="balance-amount">
+                            <span class="amount-value">${balance.toFixed(2)}</span>
+                            <span class="currency-symbol">$</span>
+                        </div>
+                        <div class="balance-usd">≈ $${usdValue.toFixed(2)} USD</div>
+                    </div>
+
+                    <div class="balance-actions">
+                        <button class="action-btn primary" onclick="window.fundWallet()">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                                <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                            Deposit
+                        </button>
+                        <button class="action-btn" onclick="window.showBankWithdrawal()">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                                <path d="M12 19V5M5 12l7-7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                             </svg>
                             Withdraw
                         </button>
-                        <!--
-                        <button class="btn-primary" style="background: white; color: var(--primary); flex: 1;" onclick="window.showSwapModal()">
-                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style="margin-right: 8px; vertical-align: middle;">
-                                <path d="M16 3H8a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z" stroke="currentColor" stroke-width="2"/>
-                                <path d="M10 10l-4 4m4-4l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        <button class="action-btn" onclick="window.location.href='#/transactions'">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                                <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
+                                <path d="M3 9h18" stroke="currentColor" stroke-width="2"/>
                             </svg>
-                            Swap
-                        </button>
-                        -->
-                        <button class="btn-secondary" style="border-color: white; color: white; flex: 1;" onclick="window.location.reload()">
-                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style="margin-right: 8px; vertical-align: middle;">
-                                <path d="M4 10a6 6 0 1 1 12 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                <path d="M4 10l-2-2m2 2l2-2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                            </svg>
-                            Refresh
+                            History
                         </button>
                     </div>
                 </div>
 
-                <div class="wallet-cards-grid mt-lg">
-                    <div class="wallet-card-item card-lift scroll-fade-in">
-                        <div class="wallet-card-icon" style="background: rgba(151, 71, 255, 0.1);">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" stroke="#9747FF" stroke-width="2" stroke-linecap="round"/>
-                            </svg>
-                        </div>
-                        <div class="wallet-card-label">Total earnings</div>
-                        <div class="wallet-card-value animate-counter">USDC ${totalEarnings.toFixed(2)}</div>
-                    </div>
+                <!-- USDC Asset Card -->
+                <div class="crypto-assets-section">
+                    <h2 class="section-title">Assets</h2>
 
-                    <div class="wallet-card-item card-lift scroll-fade-in scroll-fade-in-delay-1">
-                        <div class="wallet-card-icon" style="background: rgba(255, 165, 0, 0.1);">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                                <circle cx="12" cy="12" r="10" stroke="#FFA500" stroke-width="2"/>
-                                <path d="M12 6v6l4 2" stroke="#FFA500" stroke-width="2" stroke-linecap="round"/>
+                    <div class="crypto-asset-item">
+                        <div class="asset-icon">
+                            <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                                <circle cx="16" cy="16" r="16" fill="#2775CA"/>
+                                <text x="50%" y="50%" text-anchor="middle" dy=".3em" fill="white" font-size="14" font-weight="600">$</text>
                             </svg>
                         </div>
-                        <div class="wallet-card-label">Pending</div>
-                        <div class="wallet-card-value animate-counter" style="color: #FFA500;">USDC ${pendingBalance.toFixed(2)}</div>
+                        <div class="asset-info">
+                            <div class="asset-name">USDC</div>
+                            <div class="asset-network">Solana</div>
+                        </div>
+                        <div class="asset-balance">
+                            <div class="balance-value">${balance.toFixed(4)}</div>
+                            <div class="balance-usd">$${usdValue.toFixed(2)}</div>
+                        </div>
                     </div>
+                </div>
 
-                    <div class="wallet-card-item card-lift scroll-fade-in scroll-fade-in-delay-2">
-                        <div class="wallet-card-icon" style="background: rgba(16, 185, 129, 0.1);">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                                <path d="M20 6L9 17l-5-5" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </div>
-                        <div class="wallet-card-label">Withdrawn</div>
-                        <div class="wallet-card-value animate-counter" style="color: var(--success);">USDC ${withdrawn.toFixed(2)}</div>
+                <!-- Wallet Address Section -->
+                ${renderWalletAddress(walletData)}
+
+                <!-- Stats Cards -->
+                <div class="wallet-stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">Total Earnings</div>
+                        <div class="stat-value">$${totalEarnings.toFixed(2)}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Pending</div>
+                        <div class="stat-value">$${pendingBalance.toFixed(2)}</div>
                     </div>
                 </div>
 

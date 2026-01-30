@@ -65,6 +65,36 @@ exports.register = catchAsync(async (req, res, next) => {
 
   await user.save({ validateBeforeSave: false});
 
+  // Initialize HostFi wallets and create Solana USDC address
+  try {
+    const hostfiWalletService = require('../services/hostfiWalletService');
+    const hostfiService = require('../services/hostfiService');
+
+    // Initialize all HostFi wallet assets
+    await hostfiWalletService.initializeUserWallets(user._id);
+
+    // Auto-create Solana USDC collection address
+    const assetId = await hostfiWalletService.getWalletAssetId(user._id, 'USDC');
+    if (assetId) {
+      const cryptoAddress = await hostfiService.createCryptoCollectionAddress({
+        assetId,
+        currency: 'USDC',
+        network: 'Solana',
+        customId: user._id.toString()
+      });
+
+      // Store the address reference in user wallet
+      user.wallet.address = cryptoAddress.address;
+      user.wallet.network = 'Solana';
+      await user.save({ validateBeforeSave: false });
+
+      console.log(`Solana USDC wallet created for ${user.email}: ${cryptoAddress.address}`);
+    }
+  } catch (walletError) {
+    console.error('Wallet initialization failed during registration:', walletError);
+    // Don't fail registration if wallet creation fails - it will retry on first access
+  }
+
   emailConfig.sendEmail({
     to: user.email,
     subject: 'Welcome to MyArteLab! Verify Your Email',

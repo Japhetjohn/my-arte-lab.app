@@ -29,44 +29,109 @@ export async function renderProjectsPage() {
         const projects = response.data.projects || [];
 
         mainContent.innerHTML = `
-            <div class="section" style="padding-top: 80px;">
+            <div class="section">
                 <div class="container">
-                    <!-- Header with Post Project Button -->
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; flex-wrap: wrap; gap: 16px;">
-                        <div>
-                            <h1 style="margin-bottom: 8px;">Browse Projects</h1>
-                            <p style="color: var(--text-secondary); font-size: 15px;">
-                                Find opportunities and apply to projects from clients worldwide
-                            </p>
-                        </div>
-                        ${appState.user ? `
-                            <button class="btn-primary" onclick="window.showPostProjectModal()" style="white-space: nowrap;">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="margin-right: 8px;">
-                                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-                                    <path d="M12 8v8M8 12h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <!-- Modern Projects Header -->
+                    <div class="projects-header-modern">
+                        <div class="projects-header-content">
+                            <div class="projects-icon-modern">
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="2"/>
                                 </svg>
-                                Post Project
-                            </button>
-                        ` : ''}
+                            </div>
+                            <div class="projects-header-text">
+                                <h1 class="projects-title-modern">Browse Projects</h1>
+                                <p class="projects-subtitle-modern">Find opportunities and apply to projects from clients worldwide</p>
+                            </div>
+                            ${appState.user ? `
+                                <button class="btn-primary-modern post-project-btn" onclick="window.showPostProjectModal()">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                                        <path d="M12 8v8M8 12h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                    </svg>
+                                    Post Project
+                                </button>
+                            ` : ''}
+                        </div>
                     </div>
 
-                    <!-- Filters -->
-                    <div style="margin-bottom: 24px;">
-                        <div class="filters-row" style="margin-bottom: 12px;">
-                            <button class="filter-chip active" data-filter="all" data-type="category">All Categories</button>
-                            <button class="filter-chip" data-filter="photography" data-type="category">Photography</button>
-                            <button class="filter-chip" data-filter="videography" data-type="category">Videography</button>
-                            <button class="filter-chip" data-filter="design" data-type="category">Design</button>
-                            <button class="filter-chip" data-filter="illustration" data-type="category">Illustration</button>
+                    <!-- Stats Overview -->
+                    <div class="projects-stats-grid">
+                        <div class="stat-card-project">
+                            <div class="stat-icon-project total">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+                            </div>
+                            <div class="stat-details-project">
+                                <div class="stat-label-project">Total Projects</div>
+                                <div class="stat-value-project">${projects.length}</div>
+                            </div>
+                        </div>
+                        <div class="stat-card-project">
+                            <div class="stat-icon-project active">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                                    <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+                            </div>
+                            <div class="stat-details-project">
+                                <div class="stat-label-project">Active Projects</div>
+                                <div class="stat-value-project">${projects.filter(p => p.status === 'open').length}</div>
+                            </div>
+                        </div>
+                        <div class="stat-card-project">
+                            <div class="stat-icon-project categories">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                    <rect x="3" y="3" width="7" height="7" stroke="currentColor" stroke-width="2"/>
+                                    <rect x="14" y="3" width="7" height="7" stroke="currentColor" stroke-width="2"/>
+                                    <rect x="14" y="14" width="7" height="7" stroke="currentColor" stroke-width="2"/>
+                                    <rect x="3" y="14" width="7" height="7" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+                            </div>
+                            <div class="stat-details-project">
+                                <div class="stat-label-project">Categories</div>
+                                <div class="stat-value-project">${new Set(projects.map(p => p.category)).size}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Filters Section -->
+                    <div class="projects-filters-section">
+                        <div class="filter-group">
+                            <label class="filter-label">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                    <rect x="3" y="3" width="7" height="7" stroke="currentColor" stroke-width="2"/>
+                                    <rect x="14" y="3" width="7" height="7" stroke="currentColor" stroke-width="2"/>
+                                    <rect x="14" y="14" width="7" height="7" stroke="currentColor" stroke-width="2"/>
+                                    <rect x="3" y="14" width="7" height="7" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+                                Categories
+                            </label>
+                            <div class="filters-row">
+                                <button class="filter-chip active" data-filter="all" data-type="category">All</button>
+                                <button class="filter-chip" data-filter="photography" data-type="category">Photography</button>
+                                <button class="filter-chip" data-filter="videography" data-type="category">Videography</button>
+                                <button class="filter-chip" data-filter="design" data-type="category">Design</button>
+                                <button class="filter-chip" data-filter="illustration" data-type="category">Illustration</button>
+                            </div>
                         </div>
 
-                        <div class="filters-row">
-                            <button class="filter-chip" data-filter="one-time" data-type="projectType">One-Time</button>
-                            <button class="filter-chip" data-filter="ongoing" data-type="projectType">Ongoing</button>
-                            <button class="filter-chip" data-filter="bounty" data-type="projectType">Bounty</button>
-                            <button class="filter-chip" data-filter="urgent" data-type="timeline">Urgent</button>
-                            <button class="filter-chip" data-filter="1-week" data-type="timeline">1 Week</button>
-                            <button class="filter-chip" data-filter="1-month" data-type="timeline">1 Month</button>
+                        <div class="filter-group">
+                            <label class="filter-label">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+                                Type & Timeline
+                            </label>
+                            <div class="filters-row">
+                                <button class="filter-chip" data-filter="one-time" data-type="projectType">One-Time</button>
+                                <button class="filter-chip" data-filter="ongoing" data-type="projectType">Ongoing</button>
+                                <button class="filter-chip" data-filter="bounty" data-type="projectType">Bounty</button>
+                                <button class="filter-chip" data-filter="urgent" data-type="timeline">Urgent</button>
+                                <button class="filter-chip" data-filter="1-week" data-type="timeline">1 Week</button>
+                                <button class="filter-chip" data-filter="1-month" data-type="timeline">1 Month</button>
+                            </div>
                         </div>
                     </div>
 
@@ -107,68 +172,79 @@ function renderProjectCards(projects) {
     }
 
     return `
-        <div class="transaction-list">
-            ${projects.map(project => {
-                const cardHtml = `
-                <div class="transaction-item project-card ${project.coverImage ? 'has-cover-image' : ''}" data-project-id="${project._id}"
-                     style="cursor: pointer; display: grid; grid-template-columns: ${project.coverImage ? '200px 1fr auto' : '1fr auto'}; gap: 20px; align-items: start;">
+        <div class="projects-grid-modern">
+            ${projects.map(project => `
+                <div class="project-card-modern" data-project-id="${project._id}">
                     ${project.coverImage ? `
-                        <img src="${project.coverImage}"
-                             alt="${project.title}"
-                             class="project-cover-image"
-                             style="width: 200px; height: 140px; border-radius: 8px; object-fit: cover; flex-shrink: 0;"
-                             onerror="this.parentElement.style.gridTemplateColumns='1fr auto'; this.style.display='none';">
+                        <div class="project-cover-modern">
+                            <img src="${project.coverImage}" alt="${project.title}" onerror="this.parentElement.remove();">
+                            <div class="project-type-badge-modern" style="background: ${getProjectTypeBadgeColor(project.projectType)};">
+                                ${project.projectType.replace('-', ' ')}
+                            </div>
+                        </div>
                     ` : ''}
-                    <div style="display: flex; align-items: start; gap: 16px; min-width: 0;">
-                        <img src="${project.clientId?.avatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(project.clientId?.name || 'Client')}"
-                             alt="${project.clientId?.name || 'Client'}"
-                             style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; flex-shrink: 0;">
 
-                        <div class="transaction-info" style="min-width: 0; flex: 1;">
-                            <div class="transaction-title" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                                <span>${project.title}</span>
-                                <span class="tag" style="background: ${getProjectTypeBadgeColor(project.projectType)}; color: white; padding: 4px 8px; font-size: 11px; text-transform: capitalize;">
+                    <div class="project-card-content">
+                        <div class="project-card-header">
+                            <div class="project-client-info">
+                                <img src="${project.clientId?.avatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(project.clientId?.name || 'Client')}"
+                                     alt="${project.clientId?.name || 'Client'}"
+                                     class="project-client-avatar">
+                                <div>
+                                    <div class="project-client-name">${project.clientId?.name || 'Client'}</div>
+                                    <div class="project-posted-time">${formatTimeAgo(project.createdAt)}</div>
+                                </div>
+                            </div>
+                            ${!project.coverImage ? `
+                                <div class="project-type-badge-inline" style="background: ${getProjectTypeBadgeColor(project.projectType)};">
                                     ${project.projectType.replace('-', ' ')}
-                                </span>
-                            </div>
-
-                            <div class="transaction-date" style="margin-bottom: 8px;">
-                                ${project.clientId?.name || 'Client'} • ${formatTimeAgo(project.createdAt)} • ${formatTimeline(project.timeline)}
-                            </div>
-
-                            <div class="caption" style="color: var(--text-secondary); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 8px;">
-                                ${project.description}
-                            </div>
-
-                            ${project.skillsRequired && project.skillsRequired.length > 0 ? `
-                                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                                    ${project.skillsRequired.slice(0, 4).map(skill => `
-                                        <span style="background: var(--surface); padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; color: var(--text-secondary);">
-                                            ${skill}
-                                        </span>
-                                    `).join('')}
-                                    ${project.skillsRequired.length > 4 ? `
-                                        <span style="background: var(--surface); padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; color: var(--text-secondary);">
-                                            +${project.skillsRequired.length - 4}
-                                        </span>
-                                    ` : ''}
                                 </div>
                             ` : ''}
                         </div>
-                    </div>
 
-                    <div style="text-align: right; flex-shrink: 0;">
-                        <div class="transaction-amount" style="font-size: 20px; font-weight: 700; color: #10b981; margin-bottom: 8px;">
-                            $${project.budget.min} - $${project.budget.max}
-                        </div>
-                        <div style="font-size: 13px; color: var(--text-secondary);">
-                            ${project.applicationsCount || 0} ${project.applicationsCount === 1 ? 'application' : 'applications'}
+                        <h3 class="project-card-title">${project.title}</h3>
+
+                        <p class="project-card-description">${project.description}</p>
+
+                        ${project.skillsRequired && project.skillsRequired.length > 0 ? `
+                            <div class="project-skills">
+                                ${project.skillsRequired.slice(0, 3).map(skill => `
+                                    <span class="skill-tag">${skill}</span>
+                                `).join('')}
+                                ${project.skillsRequired.length > 3 ? `
+                                    <span class="skill-tag more">+${project.skillsRequired.length - 3}</span>
+                                ` : ''}
+                            </div>
+                        ` : ''}
+
+                        <div class="project-card-footer">
+                            <div class="project-budget">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+                                <span class="budget-amount">$${project.budget.min} - $${project.budget.max}</span>
+                            </div>
+                            <div class="project-meta-info">
+                                <div class="project-timeline">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                                        <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2"/>
+                                    </svg>
+                                    ${formatTimeline(project.timeline)}
+                                </div>
+                                <div class="project-applications">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2"/>
+                                        <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
+                                        <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" stroke-width="2"/>
+                                    </svg>
+                                    ${project.applicationsCount || 0} ${project.applicationsCount === 1 ? 'application' : 'applications'}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-                `;
-                return cardHtml;
-            }).join('')}
+            `).join('')}
         </div>
     `;
 }

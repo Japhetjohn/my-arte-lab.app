@@ -3,6 +3,7 @@ import { formatDate, formatStatus, getStatusColor } from '../utils.js';
 import api from '../services/api.js';
 
 let bookings = [];
+let currentFilter = 'all'; // all, active, completed
 
 export async function renderBookingsPage() {
     const mainContent = document.getElementById('mainContent');
@@ -89,42 +90,110 @@ function renderBookingsList() {
     const activeBookings = bookings.filter(b => !['completed', 'cancelled'].includes(b.status));
     const completedBookings = bookings.filter(b => ['completed', 'cancelled'].includes(b.status));
 
+    // Calculate stats
+    const totalEarnings = bookings
+        .filter(b => b.status === 'completed')
+        .reduce((sum, b) => sum + (b.amount || 0), 0);
+
+    // Filter bookings based on current filter
+    let displayBookings = bookings;
+    if (currentFilter === 'active') {
+        displayBookings = activeBookings;
+    } else if (currentFilter === 'completed') {
+        displayBookings = completedBookings;
+    }
+
     mainContent.innerHTML = `
         <div class="section">
             <div class="container">
-                <h1 class="mb-lg">Bookings</h1>
+                <!-- Header -->
+                <div class="bookings-header-modern">
+                    <div>
+                        <h1 class="page-title-modern">Bookings</h1>
+                        <p class="page-subtitle-modern">Manage all your bookings and track project progress</p>
+                    </div>
+                </div>
 
-                <h2 class="mb-md">Active bookings</h2>
-                ${activeBookings.length > 0 ? `
-                    <div class="transaction-list mb-lg">
-                        ${activeBookings.map(booking => renderBookingCard(booking)).join('')}
+                <!-- Stats Cards -->
+                <div class="bookings-stats-grid">
+                    <div class="stat-card-booking">
+                        <div class="stat-icon-booking" style="background: rgba(151, 71, 255, 0.1); color: var(--primary);">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
+                                <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <div class="stat-details-booking">
+                            <div class="stat-label-booking">Total Bookings</div>
+                            <div class="stat-value-booking">${bookings.length}</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card-booking">
+                        <div class="stat-icon-booking" style="background: rgba(59, 130, 246, 0.1); color: #3B82F6;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                                <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <div class="stat-details-booking">
+                            <div class="stat-label-booking">Active</div>
+                            <div class="stat-value-booking">${activeBookings.length}</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card-booking">
+                        <div class="stat-icon-booking" style="background: rgba(16, 185, 129, 0.1); color: #10B981;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <div class="stat-details-booking">
+                            <div class="stat-label-booking">Completed</div>
+                            <div class="stat-value-booking">${completedBookings.length}</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card-booking">
+                        <div class="stat-icon-booking" style="background: rgba(16, 185, 129, 0.1); color: #10B981;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <div class="stat-details-booking">
+                            <div class="stat-label-booking">Total Earnings</div>
+                            <div class="stat-value-booking">$${totalEarnings.toFixed(2)}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div class="bookings-filters-modern">
+                    <button class="filter-btn-booking ${currentFilter === 'all' ? 'active' : ''}" onclick="window.filterBookings('all')">
+                        All (${bookings.length})
+                    </button>
+                    <button class="filter-btn-booking ${currentFilter === 'active' ? 'active' : ''}" onclick="window.filterBookings('active')">
+                        Active (${activeBookings.length})
+                    </button>
+                    <button class="filter-btn-booking ${currentFilter === 'completed' ? 'active' : ''}" onclick="window.filterBookings('completed')">
+                        Completed (${completedBookings.length})
+                    </button>
+                </div>
+
+                <!-- Bookings List -->
+                ${displayBookings.length > 0 ? `
+                    <div class="bookings-grid-modern">
+                        ${displayBookings.map(booking => renderModernBookingCard(booking)).join('')}
                     </div>
                 ` : `
-                    <div class="empty-state">
-                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" style="opacity: 0.4; margin-bottom: 16px;">
+                    <div class="empty-state-modern">
+                        <svg width="80" height="80" viewBox="0 0 24 24" fill="none">
                             <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
-                            <path d="M3 10h18" stroke="currentColor" stroke-width="2"/>
+                            <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                         </svg>
-                        <h3>No active bookings</h3>
-                        <p>Your active jobs will appear here</p>
-                        ${appState.user.role === 'client' ? '<button class="btn-primary" onclick="navigateToPage(\'discover\')">Find creators</button>' : ''}
-                    </div>
-                `}
-
-                <h2 class="mb-md mt-lg">Booking history</h2>
-                ${completedBookings.length > 0 ? `
-                    <div class="transaction-list">
-                        ${completedBookings.map(booking => renderBookingCard(booking)).join('')}
-                    </div>
-                ` : `
-                    <div class="empty-state">
-                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" style="opacity: 0.4; margin-bottom: 16px;">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="2"/>
-                            <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                        </svg>
-                        <h3>No booking history yet</h3>
-                        <p>Your completed jobs will appear here</p>
-                        ${appState.user.role === 'client' ? '<button class="btn-primary" onclick="navigateToPage(\'discover\')">Find creators</button>' : ''}
+                        <h3>No ${currentFilter === 'all' ? '' : currentFilter} bookings</h3>
+                        <p>${currentFilter === 'active' ? 'Your active jobs will appear here' : currentFilter === 'completed' ? 'Your completed jobs will appear here' : 'Your bookings will appear here'}</p>
+                        ${appState.user.role === 'client' && currentFilter !== 'completed' ? '<button class="btn-primary" onclick="navigateToPage(\'discover\')">Find Creators</button>' : ''}
                     </div>
                 `}
             </div>
@@ -132,44 +201,69 @@ function renderBookingsList() {
     `;
 }
 
-function renderBookingCard(booking) {
+function renderModernBookingCard(booking) {
     const isCreator = appState.user.role === 'creator';
     const otherPartyName = isCreator ? booking.client?.name || 'Client' : booking.creator?.name || 'Creator';
     const otherPartyAvatar = isCreator
         ? booking.client?.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop'
         : booking.creator?.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop';
 
+    const statusColor = getStatusColor(booking.status);
+
     return `
-        <div class="transaction-item" style="cursor: pointer;" onclick="window.viewBookingDetails('${booking._id}')">
-            <div style="display: flex; align-items: center; gap: 16px; flex: 1;">
-                <img src="${otherPartyAvatar}" alt="${otherPartyName}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">
-                <div class="transaction-info">
-                    <div class="transaction-title">${booking.serviceTitle}</div>
-                    <div class="transaction-date">${otherPartyName} • ${formatDate(booking.startDate)}</div>
-                    ${booking.bookingId ? `<div class="caption" style="color: var(--text-secondary);">${booking.bookingId}</div>` : ''}
+        <div class="booking-card-modern" onclick="window.viewBookingDetails('${booking._id}')">
+            <div class="booking-card-header">
+                <div class="booking-user-info">
+                    <img src="${otherPartyAvatar}" alt="${otherPartyName}" class="booking-avatar">
+                    <div>
+                        <div class="booking-name">${otherPartyName}</div>
+                        <div class="booking-role">${isCreator ? 'Client' : 'Creator'}</div>
+                    </div>
                 </div>
-            </div>
-            <div style="text-align: right;">
-                <div style="display: flex; flex-direction: column; gap: 8px; align-items: flex-end; margin-bottom: 12px;">
-                    <span class="tag" style="background: ${getStatusColor(booking.status)}; color: white; padding: 6px 12px;">
+                <div class="booking-status-badges">
+                    <span class="status-badge-modern" style="background: ${statusColor};">
                         ${formatStatus(booking.status)}
                     </span>
                     ${booking.paymentStatus === 'pending' ? `
-                        <span class="tag" style="background: #FFA500; color: white; padding: 6px 12px;">
-                            Payment Pending
-                        </span>
-                    ` : ''}
-                    ${booking.paymentStatus === 'paid' ? `
-                        <span class="tag" style="background: #10B981; color: white; padding: 6px 12px;">
-                            Paid
-                        </span>
+                        <span class="payment-badge-modern pending">Payment Pending</span>
+                    ` : booking.paymentStatus === 'paid' ? `
+                        <span class="payment-badge-modern paid">Paid</span>
                     ` : ''}
                 </div>
-                <div class="transaction-amount" style="font-size: 18px; font-weight: 700;">USDC ${booking.amount.toFixed(2)}</div>
+            </div>
+
+            <div class="booking-card-body">
+                <h3 class="booking-title">${booking.serviceTitle}</h3>
+                ${booking.bookingId ? `<div class="booking-id">ID: ${booking.bookingId}</div>` : ''}
+                <div class="booking-date">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                        <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
+                        <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    ${formatDate(booking.startDate || booking.createdAt)}
+                </div>
+            </div>
+
+            <div class="booking-card-footer">
+                <div class="booking-amount">
+                    <div class="amount-label">Amount</div>
+                    <div class="amount-value">USDC ${booking.amount.toFixed(2)}</div>
+                </div>
+                <button class="view-details-btn" onclick="event.stopPropagation(); window.viewBookingDetails('${booking._id}')">
+                    View Details
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
             </div>
         </div>
     `;
 }
+
+window.filterBookings = function(filter) {
+    currentFilter = filter;
+    renderBookingsList();
+};
 
 window.viewBookingDetails = async function(bookingId) {
     try {

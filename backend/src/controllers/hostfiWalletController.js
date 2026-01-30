@@ -126,6 +126,31 @@ exports.createCryptoAddress = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler(`Wallet for currency ${currency} not found`, 404));
   }
 
+  // Check if user already has a crypto address for this currency (idempotency check)
+  try {
+    const existingAddresses = await hostfiService.getCryptoCollectionAddresses({
+      currency,
+      network
+    });
+
+    if (existingAddresses && existingAddresses.length > 0) {
+      const existingAddress = existingAddresses[0];
+      return successResponse(res, 200, 'Crypto address already exists', {
+        address: {
+          address: existingAddress.address,
+          currency: existingAddress.currency,
+          network: existingAddress.network,
+          qrCode: existingAddress.qrCode || null,
+          reference: existingAddress.id,
+          instructions: `Send ${currency} on ${network} network to this address. Your wallet will be credited automatically after 1% platform fee.`
+        }
+      });
+    }
+  } catch (err) {
+    console.log('Error checking existing addresses:', err.message);
+    // Continue to create new address if check fails
+  }
+
   // Create crypto collection address
   const address = await hostfiService.createCryptoCollectionAddress({
     assetId,

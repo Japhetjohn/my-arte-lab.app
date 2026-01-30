@@ -31,16 +31,39 @@ export function renderSettingsPage() {
     mainContent.innerHTML = `
         <div class="section">
             <div class="container">
-                <h1 class="mb-lg">Profile & Settings</h1>
+                <!-- Modern Header -->
+                <div class="settings-header-modern">
+                    <div class="settings-header-content">
+                        <div class="settings-icon-modern">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                                <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+                                <path d="M12 1v3M12 20v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M1 12h3M20 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h1 class="settings-title-modern">Settings</h1>
+                            <p class="settings-subtitle-modern">Manage your account preferences and profile</p>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- Profile Edit Section -->
                 <div class="profile-edit-section">
-                    <h2 class="mb-lg">Edit profile</h2>
+                    <div class="section-header-with-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                        <h2>Profile Information</h2>
+                    </div>
 
                     <!-- Cover Image Upload -->
                     <div class="cover-image-upload" onclick="handleCoverUpload()">
                         <img src="${userCover}" alt="Cover image" id="coverPreview">
                         <div class="cover-image-overlay">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" style="margin-bottom: 8px;">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
                             <span>Click to change cover image</span>
                         </div>
                     </div>
@@ -55,10 +78,10 @@ export function renderSettingsPage() {
                                 </svg>
                             </button>
                         </div>
-                        <div>
+                        <div class="profile-user-info-modern">
                             <h3>${appState.user.name}</h3>
-                            <p class="caption">${appState.user.email}</p>
-                            <p class="caption mt-sm">${appState.user.role === 'creator' ? 'Creator Account' : 'Client Account'}</p>
+                            <p class="user-email-modern">${appState.user.email}</p>
+                            <span class="user-role-badge">${appState.user.role === 'creator' ? 'Creator Account' : 'Client Account'}</span>
                         </div>
                     </div>
 
@@ -125,71 +148,144 @@ export function renderSettingsPage() {
                     </form>
                 </div>
 
-                <!-- Account Settings -->
-                <div class="settings-section mt-lg">
-                    <h3 class="settings-section-title">Appearance</h3>
+                <!-- Appearance Settings -->
+                <div class="settings-section">
+                    <div class="settings-section-header">
+                        <div class="section-header-with-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                <circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="2"/>
+                                <path d="M12 1v3M12 20v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M1 12h3M20 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                            <h3 class="settings-section-title">Appearance</h3>
+                        </div>
+                    </div>
 
                     <div class="settings-item">
-                        <div class="settings-item-info">
-                            <div class="settings-item-label">Dark mode</div>
-                            <div class="settings-item-description">Switch between light and dark theme</div>
+                        <div class="settings-item-with-icon">
+                            <div class="settings-icon-wrapper">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <div class="settings-item-label">
+                                <div class="settings-item-title">Dark mode</div>
+                                <div class="settings-item-description">Switch between light and dark theme</div>
+                            </div>
                         </div>
-                        <div class="toggle-switch ${localStorage.getItem('theme') === 'dark' ? 'active' : ''}" id="themeToggle" onclick="handleThemeToggle(this)">
-                            <div class="toggle-switch-slider"></div>
-                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" ${localStorage.getItem('theme') === 'dark' ? 'checked' : ''} onchange="handleThemeToggle(this)">
+                            <span class="toggle-slider"></span>
+                        </label>
                     </div>
                 </div>
 
+                <!-- Notification Settings -->
                 <div class="settings-section">
-                    <h3 class="settings-section-title">Notifications</h3>
-
-                    <div class="settings-item">
-                        <div class="settings-item-info">
-                            <div class="settings-item-label">Email notifications</div>
-                            <div class="settings-item-description">Receive updates about your bookings and messages</div>
-                        </div>
-                        <div class="toggle-switch active" onclick="toggleSwitch(this)">
-                            <div class="toggle-switch-slider"></div>
+                    <div class="settings-section-header">
+                        <div class="section-header-with-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <h3 class="settings-section-title">Notifications</h3>
                         </div>
                     </div>
 
                     <div class="settings-item">
-                        <div class="settings-item-info">
-                            <div class="settings-item-label">Marketing emails</div>
-                            <div class="settings-item-description">Receive tips, updates, and special offers</div>
+                        <div class="settings-item-with-icon">
+                            <div class="settings-icon-wrapper">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="m22 6-10 7L2 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <div class="settings-item-label">
+                                <div class="settings-item-title">Email notifications</div>
+                                <div class="settings-item-description">Receive updates about your bookings and messages</div>
+                            </div>
                         </div>
-                        <div class="toggle-switch active" onclick="toggleSwitch(this)">
-                            <div class="toggle-switch-slider"></div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" checked onchange="toggleSwitch(this, 'Email notifications')">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="settings-item">
+                        <div class="settings-item-with-icon">
+                            <div class="settings-icon-wrapper">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M7 7h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <div class="settings-item-label">
+                                <div class="settings-item-title">Marketing emails</div>
+                                <div class="settings-item-description">Receive tips, updates, and special offers</div>
+                            </div>
                         </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" checked onchange="toggleSwitch(this, 'Marketing emails')">
+                            <span class="toggle-slider"></span>
+                        </label>
                     </div>
                 </div>
 
                 <!-- Privacy & Security -->
                 <div class="settings-section">
-                    <h3 class="settings-section-title">Privacy & Security</h3>
-
-                    <div class="settings-item">
-                        <div class="settings-item-info">
-                            <div class="settings-item-label">Change password</div>
-                            <div class="settings-item-description">Update your account password</div>
+                    <div class="settings-section-header">
+                        <div class="section-header-with-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <h3 class="settings-section-title">Privacy & Security</h3>
                         </div>
-                        <button class="btn-secondary" onclick="showChangePasswordModal()">Change</button>
                     </div>
 
                     <div class="settings-item">
-                        <div class="settings-item-info">
-                            <div class="settings-item-label">Two-factor authentication</div>
-                            <div class="settings-item-description">Add an extra layer of security to your account</div>
+                        <div class="settings-item-with-icon">
+                            <div class="settings-icon-wrapper">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <div class="settings-item-label">
+                                <div class="settings-item-title">Change password</div>
+                                <div class="settings-item-description">Update your account password</div>
+                            </div>
                         </div>
-                        <button class="btn-secondary" onclick="showTwoFactorModal()">Enable</button>
+                        <button class="btn-secondary-modern" onclick="showChangePasswordModal()">Change</button>
                     </div>
 
                     <div class="settings-item">
-                        <div class="settings-item-info">
-                            <div class="settings-item-label">Profile visibility</div>
-                            <div class="settings-item-description">Control who can see your profile</div>
+                        <div class="settings-item-with-icon">
+                            <div class="settings-icon-wrapper">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <div class="settings-item-label">
+                                <div class="settings-item-title">Two-factor authentication</div>
+                                <div class="settings-item-description">Add an extra layer of security to your account</div>
+                            </div>
                         </div>
-                        <select class="form-select" style="width: auto;" onchange="handleProfileVisibilityChange(this.value)">
+                        <button class="btn-secondary-modern" onclick="showTwoFactorModal()">Enable</button>
+                    </div>
+
+                    <div class="settings-item">
+                        <div class="settings-item-with-icon">
+                            <div class="settings-icon-wrapper">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <div class="settings-item-label">
+                                <div class="settings-item-title">Profile visibility</div>
+                                <div class="settings-item-description">Control who can see your profile</div>
+                            </div>
+                        </div>
+                        <select class="form-select-modern" onchange="handleProfileVisibilityChange(this.value)">
                             <option value="public" ${(appState.user.profileVisibility || 'public') === 'public' ? 'selected' : ''}>Public</option>
                             <option value="private" ${(appState.user.profileVisibility || 'public') === 'private' ? 'selected' : ''}>Private</option>
                             <option value="clients" ${(appState.user.profileVisibility || 'public') === 'clients' ? 'selected' : ''}>Clients only</option>
@@ -197,26 +293,52 @@ export function renderSettingsPage() {
                     </div>
 
                     <div class="settings-item">
-                        <div class="settings-item-info">
-                            <div class="settings-item-label">Show phone number on profile</div>
-                            <div class="settings-item-description">Display your phone number publicly on your profile</div>
+                        <div class="settings-item-with-icon">
+                            <div class="settings-icon-wrapper">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <div class="settings-item-label">
+                                <div class="settings-item-title">Show phone number on profile</div>
+                                <div class="settings-item-description">Display your phone number publicly on your profile</div>
+                            </div>
                         </div>
-                        <div class="toggle-switch ${appState.user.phoneNumberVisible ? 'active' : ''}" id="phoneVisibilityToggle" onclick="handlePhoneVisibilityToggle(this)">
-                            <div class="toggle-switch-slider"></div>
-                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" ${appState.user.phoneNumberVisible ? 'checked' : ''} onchange="handlePhoneVisibilityToggleNew(this)">
+                            <span class="toggle-slider"></span>
+                        </label>
                     </div>
                 </div>
 
                 <!-- Danger Zone -->
-                <div class="settings-section">
-                    <h3 class="settings-section-title" style="color: var(--error);">Danger zone</h3>
+                <div class="settings-section danger-zone">
+                    <div class="settings-section-header">
+                        <div class="section-header-with-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--error)">
+                                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <line x1="12" y1="9" x2="12" y2="13" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <line x1="12" y1="17" x2="12.01" y2="17" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <h3 class="settings-section-title" style="color: var(--error);">Danger Zone</h3>
+                        </div>
+                    </div>
 
                     <div class="settings-item">
-                        <div class="settings-item-info">
-                            <div class="settings-item-label" style="color: var(--error);">Delete account</div>
-                            <div class="settings-item-description">Permanently delete your account and all data</div>
+                        <div class="settings-item-with-icon">
+                            <div class="settings-icon-wrapper danger">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                    <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <line x1="10" y1="11" x2="10" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <line x1="14" y1="11" x2="14" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <div class="settings-item-label">
+                                <div class="settings-item-title" style="color: var(--error);">Delete account</div>
+                                <div class="settings-item-description">Permanently delete your account and all data</div>
+                            </div>
                         </div>
-                        <button class="btn-secondary" style="border-color: var(--error); color: var(--error);" onclick="showDeleteAccountModal()">Delete</button>
+                        <button class="btn-danger-modern" onclick="showDeleteAccountModal()">Delete</button>
                     </div>
                 </div>
             </div>
@@ -362,11 +484,8 @@ window.handleCoverUpload = function() {
     input.click();
 };
 
-window.toggleSwitch = function(element) {
-    element.classList.toggle('active');
-    const isActive = element.classList.contains('active');
-    const label = element.previousElementSibling.querySelector('.settings-item-label').textContent;
-
+window.toggleSwitch = function(checkbox, label) {
+    const isActive = checkbox.checked;
     showToast(`${label} ${isActive ? 'enabled' : 'disabled'}`, 'success');
 };
 
@@ -580,9 +699,8 @@ window.handleProfileVisibilityChange = async function(value) {
     }
 };
 
-window.handleThemeToggle = function(toggleElement) {
-    const currentTheme = localStorage.getItem('theme') || 'light';
-    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+window.handleThemeToggle = function(checkbox) {
+    const newTheme = checkbox.checked ? 'dark' : 'light';
 
     // Update localStorage
     localStorage.setItem('theme', newTheme);
@@ -590,38 +708,27 @@ window.handleThemeToggle = function(toggleElement) {
     // Update document theme
     document.documentElement.setAttribute('data-theme', newTheme);
 
-    // Update toggle state
-    if (newTheme === 'dark') {
-        toggleElement.classList.add('active');
-    } else {
-        toggleElement.classList.remove('active');
-    }
-
     // Show feedback
     showToast(`${newTheme === 'dark' ? 'Dark' : 'Light'} mode enabled`, 'success');
 };
 
-window.handlePhoneVisibilityToggle = async function(toggleElement) {
+window.handlePhoneVisibilityToggleNew = async function(checkbox) {
     try {
-        const newValue = !appState.user.phoneNumberVisible;
+        const newValue = checkbox.checked;
 
         const response = await api.updateProfile({ phoneNumberVisible: newValue });
 
         if (response.success) {
             setUser(response.data.user);
-
-            // Update toggle state
-            if (newValue) {
-                toggleElement.classList.add('active');
-            } else {
-                toggleElement.classList.remove('active');
-            }
-
             showToast(`Phone number ${newValue ? 'will be shown' : 'is now hidden'} on your profile`, 'success');
         } else {
+            // Revert checkbox if API call failed
+            checkbox.checked = !newValue;
             showToast(response.message || 'Failed to update phone visibility', 'error');
         }
     } catch (error) {
+        // Revert checkbox if API call failed
+        checkbox.checked = !newValue;
         console.error('Phone visibility update error:', error);
         showToast(error.message || 'Failed to update phone visibility', 'error');
     }

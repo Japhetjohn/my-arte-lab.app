@@ -51,24 +51,53 @@ export async function renderProfilePage() {
     const reviewCount = user.rating?.count || 0;
 
     mainContent.innerHTML = `
-        <div class="profile-cover" style="background-image: url('${coverImage}'); background-size: cover; background-position: center;"></div>
+        <!-- Modern Profile Hero -->
+        <div class="profile-hero-modern">
+            <div class="profile-cover-modern" style="background-image: url('${coverImage}');"></div>
 
-        <div class="profile-header">
-            <img src="${avatarUrl}" alt="${user.name}" class="profile-avatar">
+            <div class="container">
+                <div class="profile-header-modern">
+                    <div class="profile-avatar-wrapper">
+                        <img src="${avatarUrl}" alt="${user.name}" class="profile-avatar-modern">
+                        ${user.verified ? '<div class="verified-badge-modern">✓</div>' : ''}
+                    </div>
 
-            <div class="profile-info">
-                <div class="profile-name-row">
-                    <div>
-                        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-                            <h1>${user.name}</h1>
-                            ${user.verified ? '<span class="verified-badge">✓ Verified</span>' : ''}
+                    <div class="profile-info-modern">
+                        <h1 class="profile-name-modern">${user.name}</h1>
+                        <div class="profile-role-modern">${isCreator ? (user.category ? user.category.charAt(0).toUpperCase() + user.category.slice(1) : 'Creator') : 'Client'}</div>
+
+                        <div class="profile-meta-modern">
+                            <div class="profile-meta-item">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                    <path d="M8 8.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" stroke="currentColor" stroke-width="1.5"/>
+                                    <path d="M8 14s5-4 5-7.5a5 5 0 0 0-10 0C3 10 8 14 8 14z" stroke="currentColor" stroke-width="1.5"/>
+                                </svg>
+                                ${userLocation}
+                            </div>
+                            ${isCreator ? `
+                                <div class="profile-meta-item">
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                        <path d="M8 1l2 4 4.5.5-3 3 1 4.5L8 11l-4.5 2 1-4.5-3-3L6 5l2-4z" fill="currentColor"/>
+                                    </svg>
+                                    ${userRating} (${reviewCount} reviews)
+                                </div>
+                            ` : ''}
+                            ${user.phoneNumber && user.phoneNumberVisible ? `
+                                <div class="profile-meta-item">
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                        <rect x="4" y="2" width="8" height="12" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+                                        <path d="M8 11h.01" stroke="currentColor" stroke-width="1.5"/>
+                                    </svg>
+                                    ${user.phoneNumber}
+                                </div>
+                            ` : ''}
                         </div>
 
-                        <!-- Trust Verification Badges -->
+                        <!-- Verification Badges -->
                         ${(user.isEmailVerified || user.isPhoneVerified || user.isIdVerified) ? `
-                            <div style="display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;">
+                            <div class="verification-badges-modern">
                                 ${user.isEmailVerified ? `
-                                    <span style="display: inline-flex; align-items: center; gap: 4px; background: #DCFCE7; color: #166534; padding: 4px 10px; border-radius: 6px; font-size: 13px; font-weight: 500;">
+                                    <span class="badge-modern badge-success">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                                             <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" stroke="currentColor" stroke-width="2"/>
                                         </svg>
@@ -76,7 +105,7 @@ export async function renderProfilePage() {
                                     </span>
                                 ` : ''}
                                 ${user.isPhoneVerified ? `
-                                    <span style="display: inline-flex; align-items: center; gap: 4px; background: #DCFCE7; color: #166534; padding: 4px 10px; border-radius: 6px; font-size: 13px; font-weight: 500;">
+                                    <span class="badge-modern badge-success">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                                             <rect x="5" y="2" width="14" height="20" rx="2" stroke="currentColor" stroke-width="2"/>
                                             <path d="M12 18h.01" stroke="currentColor" stroke-width="2"/>
@@ -85,7 +114,7 @@ export async function renderProfilePage() {
                                     </span>
                                 ` : ''}
                                 ${user.isIdVerified ? `
-                                    <span style="display: inline-flex; align-items: center; gap: 4px; background: #DCFCE7; color: #166534; padding: 4px 10px; border-radius: 6px; font-size: 13px; font-weight: 500;">
+                                    <span class="badge-modern badge-success">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                                             <path d="M21 10H3M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2" stroke="currentColor" stroke-width="2"/>
                                             <rect x="3" y="6" width="18" height="14" rx="2" stroke="currentColor" stroke-width="2"/>
@@ -98,7 +127,7 @@ export async function renderProfilePage() {
 
                         <!-- Achievement Badges -->
                         ${user.badges && user.badges.length > 0 ? `
-                            <div style="display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;">
+                            <div class="achievement-badges-modern">
                                 ${user.badges.map(badge => {
                                     const badgeInfo = {
                                         'top_rated': { icon: '⭐', label: 'Top Rated', color: '#FEF3C7', textColor: '#92400E' },
@@ -110,262 +139,273 @@ export async function renderProfilePage() {
                                     };
                                     const info = badgeInfo[badge.type] || { icon: '🏆', label: badge.type, color: '#F3F4F6', textColor: '#374151' };
                                     return `
-                                        <span style="display: inline-flex; align-items: center; gap: 4px; background: ${info.color}; color: ${info.textColor}; padding: 4px 10px; border-radius: 6px; font-size: 13px; font-weight: 500;">
+                                        <span class="badge-modern" style="background: ${info.color}; color: ${info.textColor};">
                                             ${info.icon} ${info.label}
                                         </span>
                                     `;
                                 }).join('')}
                             </div>
                         ` : ''}
-
-                        <div class="creator-role mt-sm">${isCreator ? (user.category ? user.category.charAt(0).toUpperCase() + user.category.slice(1) : 'Creator') : 'Client'}</div>
-                        <div class="creator-location mt-sm">
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                <path d="M8 8.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" stroke="currentColor" stroke-width="1.5"/>
-                                <path d="M8 14s5-4 5-7.5a5 5 0 0 0-10 0C3 10 8 14 8 14z" stroke="currentColor" stroke-width="1.5"/>
-                            </svg>
-                            ${userLocation}
-                        </div>
-                        ${user.phoneNumber && user.phoneNumberVisible ? `
-                        <div class="creator-location mt-sm">
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                <rect x="4" y="2" width="8" height="12" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
-                                <path d="M8 11h.01" stroke="currentColor" stroke-width="1.5"/>
-                            </svg>
-                            ${user.phoneNumber}
-                        </div>
-                        ` : ''}
-                        ${isCreator ? `
-                        <div class="creator-rating mt-sm">
-                            <span class="stars">★★★★★</span>
-                            <span class="rating-count">${userRating} (${reviewCount} reviews)</span>
-                        </div>
-                        ` : ''}
                     </div>
-                </div>
 
-                <div class="profile-actions">
-                    <button class="btn-primary" onclick="navigateToPage('settings')">Edit Profile</button>
-                    ${isCreator ? '<button class="btn-secondary" onclick="navigateToPage(\'bookings\')">View Bookings</button>' : ''}
-                    ${user.wallet ? '<button class="btn-ghost" onclick="navigateToPage(\'wallet\')">Manage Wallet</button>' : ''}
-                </div>
-
-                <div class="mt-lg">
-                    <h3 class="mb-sm">About</h3>
-                    <p>${user.bio || 'No bio added yet. Click Edit Profile to add your bio.'}</p>
-
-                    ${isCreator ? `
-                    <!-- Performance Metrics -->
-                    <div class="mt-md" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px;">
-                        <div style="text-align: center; padding: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px;">
-                            <div class="small-text">Response Rate</div>
-                            <div style="font-weight: 600; font-size: 24px; color: var(--primary); margin-top: 4px;">${user.metrics?.responseRate || 100}%</div>
-                        </div>
-                        <div style="text-align: center; padding: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px;">
-                            <div class="small-text">On-Time Delivery</div>
-                            <div style="font-weight: 600; font-size: 24px; color: var(--primary); margin-top: 4px;">${user.metrics?.onTimeDeliveryRate || 100}%</div>
-                        </div>
-                        <div style="text-align: center; padding: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px;">
-                            <div class="small-text">Completed Jobs</div>
-                            <div style="font-weight: 600; font-size: 24px; color: var(--primary); margin-top: 4px;">${user.completedBookings || 0}</div>
-                        </div>
-                        <div style="text-align: center; padding: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px;">
-                            <div class="small-text">Repeat Clients</div>
-                            <div style="font-weight: 600; font-size: 24px; color: var(--primary); margin-top: 4px;">${user.metrics?.repeatClientRate || 0}%</div>
-                        </div>
+                    <div class="profile-actions-modern">
+                        <button class="btn-primary" onclick="navigateToPage('settings')">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            Edit Profile
+                        </button>
+                        ${isCreator ? '<button class="btn-secondary" onclick="navigateToPage(\'bookings\')">View Bookings</button>' : ''}
+                        ${user.wallet ? '<button class="btn-ghost" onclick="navigateToPage(\'wallet\')">Wallet</button>' : ''}
                     </div>
-                    ` : ''}
                 </div>
             </div>
         </div>
 
+        <!-- Main Content -->
         <div class="section">
             <div class="container">
                 ${renderProfileCompletionWidget(user)}
-            </div>
-        </div>
 
-        ${isCreator && user.portfolio && user.portfolio.length > 0 ? `
-        <div class="section">
-            <div class="container">
-                <h2 class="mb-md">Portfolio</h2>
-                <div class="portfolio-grid" id="portfolioGrid">
-                    ${user.portfolio.map((image, index) => `
-                        <div class="portfolio-item" data-index="${index}" style="cursor: pointer;">
-                            <img src="${image}" alt="Portfolio ${index + 1}">
-                            <div class="portfolio-overlay">
-                                <div>Project ${index + 1}</div>
+                <!-- About Section -->
+                <div class="profile-card-modern">
+                    <h2 class="card-title-modern">About</h2>
+                    <p class="about-text-modern">${user.bio || 'No bio added yet. Click Edit Profile to add your bio.'}</p>
+                </div>
+
+                ${isCreator ? `
+                <!-- Performance Metrics -->
+                <div class="profile-card-modern">
+                    <h2 class="card-title-modern">Performance Metrics</h2>
+                    <div class="metrics-grid-modern">
+                        <div class="metric-card-modern">
+                            <div class="metric-icon-modern" style="background: rgba(151, 71, 255, 0.1); color: var(--primary);">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                    <path d="M22 12h-4l-3 9L9 3l-3 9H2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
                             </div>
+                            <div class="metric-label-modern">Response Rate</div>
+                            <div class="metric-value-modern">${user.metrics?.responseRate || 100}%</div>
                         </div>
-                    `).join('')}
+                        <div class="metric-card-modern">
+                            <div class="metric-icon-modern" style="background: rgba(16, 185, 129, 0.1); color: #10B981;">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                                    <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                </svg>
+                            </div>
+                            <div class="metric-label-modern">On-Time Delivery</div>
+                            <div class="metric-value-modern">${user.metrics?.onTimeDeliveryRate || 100}%</div>
+                        </div>
+                        <div class="metric-card-modern">
+                            <div class="metric-icon-modern" style="background: rgba(59, 130, 246, 0.1); color: #3B82F6;">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                    <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <div class="metric-label-modern">Completed Jobs</div>
+                            <div class="metric-value-modern">${user.completedBookings || 0}</div>
+                        </div>
+                        <div class="metric-card-modern">
+                            <div class="metric-icon-modern" style="background: rgba(255, 165, 0, 0.1); color: #FFA500;">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                    <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
+                                    <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                </svg>
+                            </div>
+                            <div class="metric-label-modern">Repeat Clients</div>
+                            <div class="metric-value-modern">${user.metrics?.repeatClientRate || 0}%</div>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
-        ` : ''}
+                ` : ''}
 
-        ${isCreator ? `
-        <div class="section">
-            <div class="container">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                    <h2>My Services</h2>
-                    <button class="btn-primary" onclick="window.showAddServiceModal()" style="display: flex; align-items: center; gap: 8px;">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                            <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                        </svg>
-                        Add Service
-                    </button>
-                </div>
-                ${services.length > 0 ? `
-                    <div style="display: grid; gap: 24px;">
-                        ${services.map((service, index) => `
-                            <div class="card" style="padding: 24px; border: 1px solid var(--border);">
-                                ${service.images && service.images.length > 0 ? `
-                                    <div class="service-images-grid" data-service-id="${service._id}" data-service-index="${index}" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-bottom: 16px;">
-                                        ${service.images.slice(0, 5).map((img, idx) => `
-                                            <div style="position: relative;">
-                                                <img src="${img}" alt="${service.title}" class="service-image-item" data-index="${idx}" style="width: 100%; height: 120px; object-fit: cover; border-radius: 8px; cursor: pointer;">
-                                                <button onclick="event.stopPropagation(); window.deleteServiceImage('${service._id}', ${idx})" style="position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,0.7); color: white; border: none; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px;">×</button>
-                                            </div>
-                                        `).join('')}
-                                        ${service.images.length < 5 ? `
-                                            <button onclick="window.uploadServiceImage('${service._id}')" style="width: 100%; height: 120px; border: 2px dashed var(--border); border-radius: 8px; background: var(--surface); cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--primary);">
-                                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
-                                                    <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                                </svg>
-                                            </button>
-                                        ` : ''}
-                                    </div>
-                                ` : `
-                                    <button onclick="window.uploadServiceImage('${service._id}')" style="width: 100%; padding: 40px; border: 2px dashed var(--border); border-radius: 8px; background: var(--surface); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--primary); margin-bottom: 16px;">
-                                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" style="margin-bottom: 8px;">
-                                            <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
-                                            <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/>
-                                            <path d="M21 15l-5-5L5 21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                        </svg>
-                                        <span>Add Images (max 5)</span>
-                                    </button>
-                                `}
-                                <div style="margin-bottom: 16px;">
-                                    <h3 style="font-size: 20px; font-weight: 600; margin-bottom: 8px;">${service.title}</h3>
-                                    <p style="color: var(--text-secondary); line-height: 1.6;">${service.description}</p>
-                                </div>
-                                ${service.directLink ? `
-                                    <div style="margin-bottom: 16px;">
-                                        <a href="${service.directLink}" target="_blank" rel="noopener noreferrer" style="color: var(--primary); text-decoration: none; font-size: 14px; display: inline-flex; align-items: center; gap: 4px;">
-                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                            </svg>
-                                            View More Details
-                                        </a>
-                                    </div>
-                                ` : ''}
-                                <!-- Service Packages -->
-                                ${service.packages && service.packages.length > 0 ? `
-                                    <div style="margin-bottom: 16px;">
-                                        <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 12px;">Service Packages</h4>
-                                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
-                                            ${service.packages.map(pkg => `
-                                                <div style="border: ${pkg.popular ? '2px solid var(--primary)' : '1px solid var(--border)'}; border-radius: 8px; padding: 16px; position: relative; background: var(--surface);">
-                                                    ${pkg.popular ? `<span style="position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: var(--primary); color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600;">POPULAR</span>` : ''}
-                                                    <div style="font-weight: 600; font-size: 18px; margin-bottom: 8px;">${pkg.name}</div>
-                                                    <div style="color: var(--primary); font-size: 24px; font-weight: 700; margin-bottom: 12px;">$${pkg.suggestedPrice || 0}</div>
-                                                    <div style="color: var(--text-secondary); font-size: 14px; margin-bottom: 12px;">${pkg.description || ''}</div>
-                                                    <div style="display: flex; gap: 16px; margin-bottom: 12px; font-size: 13px;">
-                                                        <div>
-                                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style="display: inline; margin-right: 4px; vertical-align: middle;">
-                                                                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-                                                                <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                                            </svg>
-                                                            ${pkg.deliveryDays} days
-                                                        </div>
-                                                        <div>
-                                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style="display: inline; margin-right: 4px; vertical-align: middle;">
-                                                                <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0118-6l1.5 2M22 12.5a10 10 0 01-18 6l-1.5-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                            </svg>
-                                                            ${pkg.revisions} revisions
-                                                        </div>
-                                                    </div>
-                                                    ${pkg.features && pkg.features.length > 0 ? `
-                                                        <ul style="list-style: none; padding: 0; margin: 0; font-size: 13px;">
-                                                            ${pkg.features.slice(0, 5).map(feature => `
-                                                                <li style="padding: 4px 0; color: var(--text-secondary);">
-                                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style="display: inline; margin-right: 6px; vertical-align: middle; color: var(--primary);">
-                                                                        <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                                    </svg>
-                                                                    ${feature}
-                                                                </li>
-                                                            `).join('')}
-                                                        </ul>
-                                                    ` : ''}
-                                                </div>
-                                            `).join('')}
-                                        </div>
-                                    </div>
-                                ` : ''}
-                                <div style="display: flex; gap: 8px; margin-top: 16px;">
-                                    <button class="btn-secondary" onclick="window.editService('${service._id}')" style="flex: 1;">Edit</button>
-                                    <button class="btn-ghost" onclick="window.deleteService('${service._id}')" style="flex: 1; color: var(--error); border-color: var(--error);">Delete</button>
+                ${isCreator && user.portfolio && user.portfolio.length > 0 ? `
+                <!-- Portfolio Section -->
+                <div class="profile-card-modern">
+                    <h2 class="card-title-modern">Portfolio</h2>
+                    <div class="portfolio-grid-modern" id="portfolioGrid">
+                        ${user.portfolio.map((image, index) => `
+                            <div class="portfolio-item-modern" data-index="${index}">
+                                <img src="${image}" alt="Portfolio ${index + 1}">
+                                <div class="portfolio-overlay-modern">
+                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                                        <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
                                 </div>
                             </div>
                         `).join('')}
                     </div>
-                ` : `
-                    <div class="card" style="text-align: center; padding: 40px;">
-                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" style="opacity: 0.3; margin: 0 auto 16px;">
-                            <rect x="3" y="6" width="18" height="12" rx="2" stroke="currentColor" stroke-width="2"/>
-                            <path d="M7 10h10M7 14h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                        </svg>
-                        <h3 style="margin-bottom: 8px;">No Services Yet</h3>
-                        <p class="text-secondary">Add your first service to start receiving bookings</p>
-                        <button class="btn-primary mt-md" onclick="window.showAddServiceModal()">Add Your First Service</button>
-                    </div>
-                `}
-            </div>
-        </div>
+                </div>
+                ` : ''}
 
-        <div class="section">
-            <div class="container">
-                <h2 class="mb-md">Reviews</h2>
-                <div class="card">
-                    <div class="creator-rating mb-md">
-                        <span class="stars" style="font-size: 24px;">★★★★★</span>
-                        <span style="font-size: 24px; font-weight: 600; margin-left: 8px;">${userRating}</span>
-                        <span class="rating-count">(${reviewCount} reviews)</span>
+                ${isCreator ? `
+                <!-- Services Section -->
+                <div class="profile-card-modern">
+                    <div class="card-header-modern">
+                        <h2 class="card-title-modern">My Services</h2>
+                        <button class="btn-primary" onclick="window.showAddServiceModal()">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                                <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                            Add Service
+                        </button>
+                    </div>
+
+                    ${services.length > 0 ? `
+                        <div class="services-grid-modern">
+                            ${services.map((service, index) => `
+                                <div class="service-card-modern">
+                                    ${service.images && service.images.length > 0 ? `
+                                        <div class="service-images-grid" data-service-id="${service._id}" data-service-index="${index}">
+                                            ${service.images.slice(0, 5).map((img, idx) => `
+                                                <div class="service-image-wrapper">
+                                                    <img src="${img}" alt="${service.title}" class="service-image-item" data-index="${idx}">
+                                                    <button class="delete-image-btn" onclick="event.stopPropagation(); window.deleteServiceImage('${service._id}', ${idx})">×</button>
+                                                </div>
+                                            `).join('')}
+                                            ${service.images.length < 5 ? `
+                                                <button class="add-image-btn" onclick="window.uploadServiceImage('${service._id}')">
+                                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                                        <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                                    </svg>
+                                                </button>
+                                            ` : ''}
+                                        </div>
+                                    ` : `
+                                        <button class="upload-service-image-btn" onclick="window.uploadServiceImage('${service._id}')">
+                                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                                                <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
+                                                <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/>
+                                                <path d="M21 15l-5-5L5 21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                            </svg>
+                                            <span>Add Images (max 5)</span>
+                                        </button>
+                                    `}
+
+                                    <div class="service-content">
+                                        <h3 class="service-title-modern">${service.title}</h3>
+                                        <p class="service-description-modern">${service.description}</p>
+
+                                        ${service.directLink ? `
+                                            <a href="${service.directLink}" target="_blank" rel="noopener noreferrer" class="service-link-modern">
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                </svg>
+                                                View More Details
+                                            </a>
+                                        ` : ''}
+
+                                        ${service.packages && service.packages.length > 0 ? `
+                                            <div class="service-packages">
+                                                <h4 class="packages-title">Service Packages</h4>
+                                                <div class="packages-grid">
+                                                    ${service.packages.map(pkg => `
+                                                        <div class="package-card ${pkg.popular ? 'popular' : ''}">
+                                                            ${pkg.popular ? '<span class="popular-badge">POPULAR</span>' : ''}
+                                                            <div class="package-name">${pkg.name}</div>
+                                                            <div class="package-price">$${pkg.suggestedPrice || 0}</div>
+                                                            <div class="package-description">${pkg.description || ''}</div>
+                                                            <div class="package-meta">
+                                                                <span>
+                                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                                                                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                                                                        <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                                                    </svg>
+                                                                    ${pkg.deliveryDays} days
+                                                                </span>
+                                                                <span>
+                                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                                                                        <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0118-6l1.5 2M22 12.5a10 10 0 01-18 6l-1.5-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                                    </svg>
+                                                                    ${pkg.revisions} revisions
+                                                                </span>
+                                                            </div>
+                                                            ${pkg.features && pkg.features.length > 0 ? `
+                                                                <ul class="package-features">
+                                                                    ${pkg.features.slice(0, 5).map(feature => `
+                                                                        <li>
+                                                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                                                                                <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                                            </svg>
+                                                                            ${feature}
+                                                                        </li>
+                                                                    `).join('')}
+                                                                </ul>
+                                                            ` : ''}
+                                                        </div>
+                                                    `).join('')}
+                                                </div>
+                                            </div>
+                                        ` : ''}
+
+                                        <div class="service-actions">
+                                            <button class="btn-secondary" onclick="window.editService('${service._id}')">Edit</button>
+                                            <button class="btn-ghost" onclick="window.deleteService('${service._id}')" style="color: var(--error); border-color: var(--error);">Delete</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : `
+                        <div class="empty-state-modern">
+                            <svg width="64" height="64" viewBox="0 0 24 24" fill="none">
+                                <rect x="3" y="6" width="18" height="12" rx="2" stroke="currentColor" stroke-width="2"/>
+                                <path d="M7 10h10M7 14h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                            <h3>No Services Yet</h3>
+                            <p>Add your first service to start receiving bookings</p>
+                            <button class="btn-primary mt-md" onclick="window.showAddServiceModal()">Add Your First Service</button>
+                        </div>
+                    `}
+                </div>
+
+                <!-- Reviews Section -->
+                <div class="profile-card-modern">
+                    <h2 class="card-title-modern">Reviews</h2>
+                    <div class="reviews-summary-modern">
+                        <div class="reviews-rating-modern">
+                            <span class="rating-stars-modern">★★★★★</span>
+                            <span class="rating-number-modern">${userRating}</span>
+                        </div>
+                        <div class="reviews-count-modern">${reviewCount} reviews</div>
                     </div>
                     <p class="text-secondary">Reviews will be displayed here after clients complete their bookings and leave feedback.</p>
                 </div>
-            </div>
-        </div>
-        ` : ''}
+                ` : ''}
 
-        <div class="section">
-            <div class="container">
-                <h2 class="mb-md">Account Information</h2>
-                <div class="card">
-                    <table style="width: 100%; border-collapse: collapse;">
-                        <tr style="border-bottom: 1px solid var(--border);">
-                            <td style="padding: 16px 0; font-weight: 600;">Email</td>
-                            <td style="padding: 16px 0; text-align: right;">${user.email}</td>
-                        </tr>
-                        <tr style="border-bottom: 1px solid var(--border);">
-                            <td style="padding: 16px 0; font-weight: 600;">Account Type</td>
-                            <td style="padding: 16px 0; text-align: right;">${isCreator ? 'Creator Account' : 'Client Account'}</td>
-                        </tr>
-                        <tr style="border-bottom: 1px solid var(--border);">
-                            <td style="padding: 16px 0; font-weight: 600;">Email Verified</td>
-                            <td style="padding: 16px 0; text-align: right;">${user.isEmailVerified ? '<span style="color: var(--success);">✓ Verified</span>' : '<button class="btn-link" style="color: var(--warning); font-weight: 500; cursor: pointer;" onclick="requestEmailVerification()">⚠ Not verified - Click to verify</button>'}</td>
-                        </tr>
+                <!-- Account Information -->
+                <div class="profile-card-modern">
+                    <h2 class="card-title-modern">Account Information</h2>
+                    <div class="account-info-grid">
+                        <div class="account-info-item">
+                            <span class="info-label">Email</span>
+                            <span class="info-value">${user.email}</span>
+                        </div>
+                        <div class="account-info-item">
+                            <span class="info-label">Account Type</span>
+                            <span class="info-value">${isCreator ? 'Creator Account' : 'Client Account'}</span>
+                        </div>
+                        <div class="account-info-item">
+                            <span class="info-label">Email Verified</span>
+                            ${user.isEmailVerified ?
+                                '<span class="info-value" style="color: var(--success);">✓ Verified</span>' :
+                                '<button class="btn-link" style="color: var(--warning); font-weight: 500;" onclick="requestEmailVerification()">⚠ Not verified - Click to verify</button>'
+                            }
+                        </div>
                         ${user.wallet ? `
-                        <tr style="border-bottom: 1px solid var(--border);">
-                            <td style="padding: 16px 0; font-weight: 600;">Wallet Balance</td>
-                            <td style="padding: 16px 0; text-align: right; font-weight: 600; color: var(--primary);">USDC ${(user.wallet.balance || 0).toFixed(2)}</td>
-                        </tr>
+                        <div class="account-info-item">
+                            <span class="info-label">Wallet Balance</span>
+                            <span class="info-value" style="font-weight: 600; color: var(--primary);">USDC ${(user.wallet.balance || 0).toFixed(2)}</span>
+                        </div>
                         ` : ''}
-                        <tr>
-                            <td style="padding: 16px 0; font-weight: 600;">Member Since</td>
-                            <td style="padding: 16px 0; text-align: right;">${user.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long' }) : 'N/A'}</td>
-                        </tr>
-                    </table>
+                        <div class="account-info-item">
+                            <span class="info-label">Member Since</span>
+                            <span class="info-value">${user.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long' }) : 'N/A'}</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -377,7 +417,7 @@ export async function renderProfilePage() {
 
         const portfolioGrid = document.getElementById('portfolioGrid');
         if (portfolioGrid) {
-            const portfolioItems = portfolioGrid.querySelectorAll('.portfolio-item');
+            const portfolioItems = portfolioGrid.querySelectorAll('.portfolio-item-modern');
             portfolioItems.forEach((item) => {
                 item.addEventListener('click', () => {
                     const index = parseInt(item.dataset.index);
