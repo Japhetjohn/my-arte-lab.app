@@ -76,23 +76,11 @@ const transactionSchema = new mongoose.Schema({
 
   netAmount: Number,
 
-  tsaraPaymentId: String,
-  tsaraPaymentStatus: String,
-
-  breadTransactionId: String,        // Transaction ID from bread.africa
-  breadQuoteId: String,              // Quote ID for offramp transactions
-  breadWalletId: String,             // Wallet ID used for the transaction
-  breadBeneficiaryId: String,        // Beneficiary ID for offramp transactions
-  fiatAmount: Number,                // Amount in fiat (NGN)
-  fiatCurrency: {
-    type: String,
-    enum: ['NGN', ''],
-    default: 'NGN'
-  },
-  exchangeRate: Number,              // Crypto to fiat exchange rate
+  // HostFi-specific fields
+  reference: String,                 // Unique reference for the transaction
   paymentMethod: {
     type: String,
-    enum: ['bank_transfer', 'virtual_account', 'crypto', ''],
+    enum: ['bank_transfer', 'mobile_money', 'crypto', 'card', ''],
     default: ''
   },
   paymentDetails: {
@@ -106,6 +94,15 @@ const transactionSchema = new mongoose.Schema({
     beneficiaryBankName: String,
     beneficiaryBankCode: String,
 
+    targetCurrency: String,
+    targetAmount: Number,
+    exchangeRate: Number,
+    network: String,
+    walletAddress: String,
+    paymentInstructions: mongoose.Schema.Types.Mixed,
+    depositAddress: String,
+    depositInstructions: mongoose.Schema.Types.Mixed,
+
     reference: String,
     expiresAt: Date
   },
@@ -113,7 +110,14 @@ const transactionSchema = new mongoose.Schema({
   metadata: {
     ipAddress: String,
     userAgent: String,
-    notes: String
+    notes: String,
+    hostfiReference: String,
+    provider: {
+      type: String,
+      default: 'hostfi'
+    },
+    country: String,
+    type: String
   },
 
   processedAt: Date,
@@ -132,9 +136,9 @@ transactionSchema.index({ type: 1, status: 1 });
 transactionSchema.index({ status: 1 });
 transactionSchema.index({ booking: 1 });
 transactionSchema.index({ transactionHash: 1 });
-transactionSchema.index({ tsaraPaymentId: 1 });
-transactionSchema.index({ breadTransactionId: 1 });
-transactionSchema.index({ breadWalletId: 1 });
+transactionSchema.index({ reference: 1 });
+transactionSchema.index({ 'metadata.hostfiReference': 1 });
+transactionSchema.index({ 'metadata.provider': 1 });
 
 transactionSchema.pre('save', async function(next) {
   if (!this.transactionId) {

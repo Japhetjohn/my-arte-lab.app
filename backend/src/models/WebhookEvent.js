@@ -12,7 +12,7 @@ const webhookEventSchema = new mongoose.Schema({
   provider: {
     type: String,
     required: true,
-    enum: ['switch', 'other']
+    enum: ['hostfi', 'other']
   },
 
   eventType: {

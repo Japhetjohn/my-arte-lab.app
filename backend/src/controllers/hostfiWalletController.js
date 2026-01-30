@@ -434,3 +434,366 @@ exports.getTransactionByReference = catchAsync(async (req, res, next) => {
     transaction
   });
 });
+
+// ============================================
+// CRYPTO ON-RAMP (Fiat to Crypto)
+// ============================================
+
+/**
+ * Get crypto on-ramp quote
+ */
+exports.getCryptoOnrampQuote = catchAsync(async (req, res, next) => {
+  const {
+    sourceCurrency,
+    targetCurrency = 'USDC',
+    sourceAmount,
+    network = 'Solana',
+    country
+  } = req.body;
+
+  if (!sourceCurrency || !sourceAmount || !country) {
+    return next(new ErrorHandler('Source currency, amount, and country are required', 400));
+  }
+
+  if (sourceAmount <= 0) {
+    return next(new ErrorHandler('Amount must be greater than zero', 400));
+  }
+
+  const quote = await hostfiService.getCryptoOnrampQuote({
+    sourceCurrency,
+    targetCurrency,
+    sourceAmount,
+    network,
+    country
+  });
+
+  successResponse(res, 200, 'Crypto on-ramp quote retrieved successfully', {
+    quote
+  });
+});
+
+/**
+ * Get supported on-ramp countries
+ */
+exports.getOnrampCountries = catchAsync(async (req, res, next) => {
+  const countries = await hostfiService.getOnrampCountries();
+
+  successResponse(res, 200, 'On-ramp countries retrieved successfully', {
+    countries
+  });
+});
+
+/**
+ * Get supported payment methods for on-ramp
+ */
+exports.getOnrampPaymentMethods = catchAsync(async (req, res, next) => {
+  const { country, currency } = req.query;
+
+  if (!country || !currency) {
+    return next(new ErrorHandler('Country and currency are required', 400));
+  }
+
+  const methods = await hostfiService.getOnrampPaymentMethods(country, currency);
+
+  successResponse(res, 200, 'On-ramp payment methods retrieved successfully', {
+    methods
+  });
+});
+
+/**
+ * Initiate crypto on-ramp (Buy crypto with fiat)
+ */
+exports.initiateCryptoOnramp = catchAsync(async (req, res, next) => {
+  const {
+    sourceCurrency,
+    targetCurrency = 'USDC',
+    sourceAmount,
+    network = 'Solana',
+    country,
+    paymentMethod,
+    walletAddress
+  } = req.body;
+
+  // Validation
+  if (!sourceCurrency || !sourceAmount || !country || !paymentMethod) {
+    return next(new ErrorHandler('Source currency, amount, country, and payment method are required', 400));
+  }
+
+  if (sourceAmount <= 0) {
+    return next(new ErrorHandler('Amount must be greater than zero', 400));
+  }
+
+  if (!walletAddress) {
+    return next(new ErrorHandler('Wallet address is required', 400));
+  }
+
+  // Validate Solana address format
+  const solanaAddressRegex = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+  if (network === 'Solana' && !solanaAddressRegex.test(walletAddress)) {
+    return next(new ErrorHandler('Invalid Solana wallet address', 400));
+  }
+
+  // Get wallet asset ID for the crypto
+  const assetId = await hostfiWalletService.getWalletAssetId(req.user._id, targetCurrency);
+  if (!assetId) {
+    return next(new ErrorHandler(`Wallet for currency ${targetCurrency} not found`, 404));
+  }
+
+  // Generate unique reference
+  const clientReference = `ONR-${uuidv4()}`;
+
+  // Initiate on-ramp with HostFi
+  const onramp = await hostfiService.initiateCryptoOnramp({
+    walletAssetId: assetId,
+    sourceCurrency,
+    targetCurrency,
+    sourceAmount,
+    network,
+    country,
+    paymentMethod,
+    walletAddress,
+    clientReference
+  });
+
+  // Create transaction record
+  const transaction = await Transaction.create({
+    transactionId: `ONR-${uuidv4()}`,
+    user: req.user._id,
+    type: 'onramp',
+    amount: sourceAmount,
+    currency: sourceCurrency,
+    status: 'pending',
+    paymentMethod: paymentMethod.toLowerCase(),
+    paymentDetails: {
+      targetCurrency,
+      targetAmount: onramp.targetAmount || 0,
+      exchangeRate: onramp.exchangeRate,
+      network,
+      walletAddress,
+      paymentInstructions: onramp.paymentInstructions,
+      reference: clientReference
+    },
+    reference: clientReference,
+    metadata: {
+      hostfiReference: onramp.reference,
+      provider: 'hostfi',
+      country,
+      type: 'crypto_onramp'
+    }
+  });
+
+  successResponse(res, 201, 'Crypto on-ramp initiated successfully', {
+    onramp: {
+      reference: clientReference,
+      sourceAmount,
+      sourceCurrency,
+      targetAmount: onramp.targetAmount,
+      targetCurrency,
+      exchangeRate: onramp.exchangeRate,
+      network,
+      status: 'pending',
+      paymentInstructions: onramp.paymentInstructions
+    },
+    transaction: {
+      id: transaction._id,
+      transactionId: transaction.transactionId
+    }
+  });
+});
+
+/**
+ * Get crypto on-ramp status
+ */
+exports.getCryptoOnrampStatus = catchAsync(async (req, res, next) => {
+  const { reference } = req.params;
+
+  const onramp = await hostfiService.getCryptoOnrampStatus(reference);
+
+  successResponse(res, 200, 'Crypto on-ramp status retrieved successfully', {
+    onramp
+  });
+});
+
+// ============================================
+// CRYPTO OFF-RAMP (Crypto to Fiat)
+// ============================================
+
+/**
+ * Get crypto off-ramp quote
+ */
+exports.getCryptoOfframpQuote = catchAsync(async (req, res, next) => {
+  const {
+    sourceCurrency = 'USDC',
+    targetCurrency,
+    sourceAmount,
+    network = 'Solana',
+    country
+  } = req.body;
+
+  if (!targetCurrency || !sourceAmount || !country) {
+    return next(new ErrorHandler('Target currency, amount, and country are required', 400));
+  }
+
+  if (sourceAmount <= 0) {
+    return next(new ErrorHandler('Amount must be greater than zero', 400));
+  }
+
+  const quote = await hostfiService.getCryptoOfframpQuote({
+    sourceCurrency,
+    targetCurrency,
+    sourceAmount,
+    network,
+    country
+  });
+
+  successResponse(res, 200, 'Crypto off-ramp quote retrieved successfully', {
+    quote
+  });
+});
+
+/**
+ * Get supported off-ramp countries
+ */
+exports.getOfframpCountries = catchAsync(async (req, res, next) => {
+  const countries = await hostfiService.getOfframpCountries();
+
+  successResponse(res, 200, 'Off-ramp countries retrieved successfully', {
+    countries
+  });
+});
+
+/**
+ * Initiate crypto off-ramp (Sell crypto for fiat)
+ */
+exports.initiateCryptoOfframp = catchAsync(async (req, res, next) => {
+  const {
+    sourceCurrency = 'USDC',
+    targetCurrency,
+    sourceAmount,
+    network = 'Solana',
+    country,
+    recipient
+  } = req.body;
+
+  // Validation
+  if (!targetCurrency || !sourceAmount || !country || !recipient) {
+    return next(new ErrorHandler('Target currency, amount, country, and recipient are required', 400));
+  }
+
+  if (sourceAmount <= 0) {
+    return next(new ErrorHandler('Amount must be greater than zero', 400));
+  }
+
+  if (!recipient.accountNumber || !recipient.accountName) {
+    return next(new ErrorHandler('Recipient account details are required', 400));
+  }
+
+  const user = await User.findById(req.user._id);
+
+  // Get wallet asset ID for the crypto
+  const assetId = await hostfiWalletService.getWalletAssetId(req.user._id, sourceCurrency);
+  if (!assetId) {
+    return next(new ErrorHandler(`Wallet for currency ${sourceCurrency} not found`, 404));
+  }
+
+  // Generate unique reference
+  const clientReference = `OFR-${uuidv4()}`;
+
+  // Initiate off-ramp with HostFi
+  const offramp = await hostfiService.initiateCryptoOfframp({
+    walletAssetId: assetId,
+    sourceCurrency,
+    targetCurrency,
+    sourceAmount,
+    network,
+    country,
+    recipient: {
+      accountNumber: recipient.accountNumber,
+      accountName: recipient.accountName,
+      bankId: recipient.bankId,
+      bankName: recipient.bankName,
+      country: recipient.country || country
+    },
+    clientReference
+  });
+
+  // Create transaction record
+  const transaction = await Transaction.create({
+    transactionId: `OFR-${uuidv4()}`,
+    user: req.user._id,
+    type: 'offramp',
+    amount: sourceAmount,
+    currency: sourceCurrency,
+    status: 'pending',
+    paymentMethod: 'bank_transfer',
+    paymentDetails: {
+      targetCurrency,
+      targetAmount: offramp.targetAmount || 0,
+      exchangeRate: offramp.exchangeRate,
+      network,
+      beneficiaryAccountNumber: recipient.accountNumber,
+      beneficiaryAccountName: recipient.accountName,
+      beneficiaryBankName: recipient.bankName,
+      beneficiaryBankCode: recipient.bankId,
+      depositAddress: offramp.depositAddress,
+      reference: clientReference
+    },
+    reference: clientReference,
+    metadata: {
+      hostfiReference: offramp.reference,
+      provider: 'hostfi',
+      country,
+      type: 'crypto_offramp'
+    }
+  });
+
+  successResponse(res, 201, 'Crypto off-ramp initiated successfully', {
+    offramp: {
+      reference: clientReference,
+      sourceAmount,
+      sourceCurrency,
+      targetAmount: offramp.targetAmount,
+      targetCurrency,
+      exchangeRate: offramp.exchangeRate,
+      network,
+      status: 'pending',
+      depositAddress: offramp.depositAddress,
+      depositInstructions: offramp.depositInstructions,
+      recipient: {
+        accountName: recipient.accountName,
+        accountNumber: recipient.accountNumber,
+        bankName: recipient.bankName
+      }
+    },
+    transaction: {
+      id: transaction._id,
+      transactionId: transaction.transactionId
+    }
+  });
+});
+
+/**
+ * Get crypto off-ramp status
+ */
+exports.getCryptoOfframpStatus = catchAsync(async (req, res, next) => {
+  const { reference } = req.params;
+
+  const offramp = await hostfiService.getCryptoOfframpStatus(reference);
+
+  successResponse(res, 200, 'Crypto off-ramp status retrieved successfully', {
+    offramp
+  });
+});
+
+/**
+ * Get crypto off-ramp deposit address
+ */
+exports.getCryptoOfframpDepositAddress = catchAsync(async (req, res, next) => {
+  const { currency = 'USDC', network = 'Solana' } = req.query;
+
+  const address = await hostfiService.getCryptoOfframpDepositAddress(currency, network);
+
+  successResponse(res, 200, 'Crypto off-ramp deposit address retrieved successfully', {
+    address
+  });
+});
