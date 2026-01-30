@@ -3957,6 +3957,40 @@ select:focus-visible {
     color: var(--text-primary);
 }
 
+.stat-card-content-with-icon {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.stat-icon-wrapper {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.stat-icon-wrapper.earnings {
+    background: rgba(34, 197, 94, 0.1);
+    color: #22c55e;
+}
+
+.stat-icon-wrapper.pending {
+    background: rgba(251, 146, 60, 0.1);
+    color: #fb923c;
+}
+
+.stat-icon-wrapper svg {
+    stroke: currentColor;
+}
+
+.stat-details {
+    flex: 1;
+}
+
 /* Responsive Design for Wallet */
 
 @media (max-width: 768px) {
