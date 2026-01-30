@@ -590,6 +590,39 @@ exports.getExchangeRates = catchAsync(async (req, res, next) => {
   });
 });
 
+exports.swapAssets = catchAsync(async (req, res, next) => {
+  const { fromAsset, toAsset, amount } = req.body;
+
+  if (!fromAsset || !toAsset || !amount || amount <= 0) {
+    return next(new ErrorHandler('From asset, to asset and valid amount are required', 400));
+  }
+
+  // Parse asset strings like "solana:usdc"
+  const [fromNetwork, fromCurrency] = fromAsset.split(':');
+  const [toNetwork, toCurrency] = toAsset.split(':');
+
+  if (!fromCurrency || !toCurrency) {
+    return next(new ErrorHandler('Invalid asset format. Use network:currency (e.g. solana:usdc)', 400));
+  }
+
+  const fromAssetId = await hostfiWalletService.getWalletAssetId(req.user._id, fromCurrency.toUpperCase());
+  const toAssetId = await hostfiWalletService.getWalletAssetId(req.user._id, toCurrency.toUpperCase());
+
+  if (!fromAssetId) return next(new ErrorHandler(`Source wallet for ${fromCurrency} not found`, 404));
+  if (!toAssetId) return next(new ErrorHandler(`Destination wallet for ${toCurrency} not found`, 404));
+
+  const result = await hostfiService.swapAssets({
+    fromAssetId,
+    toAssetId,
+    amount,
+    customId: req.user._id.toString()
+  });
+
+  successResponse(res, 200, 'Swap initiated successfully', {
+    swap: result
+  });
+});
+
 /**
  * Get exchange fees
  */

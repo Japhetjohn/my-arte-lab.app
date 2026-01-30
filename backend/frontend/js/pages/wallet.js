@@ -41,14 +41,19 @@ export async function renderWalletPage() {
     `;
 
     try {
-        const [walletResponse, transactionsResponse, bookingsResponse] = await Promise.all([
+        const [walletResponse, transactionsResponse, bookingsResponse, addressResponse] = await Promise.all([
             api.getWallet(),
             api.getTransactions(1, 10),
-            api.getBookings()
+            api.getBookings(),
+            api.getHostfiCryptoAddresses()
         ]);
 
         if (walletResponse.success) {
             walletData = walletResponse.data.wallet;
+            if (addressResponse.success && addressResponse.data.addresses && addressResponse.data.addresses.length > 0) {
+                walletData.address = addressResponse.data.addresses[0].address;
+                walletData.network = addressResponse.data.addresses[0].network;
+            }
             transactions = transactionsResponse.data?.transactions || [];
             recentBookings = bookingsResponse.data?.bookings || [];
             renderWalletContent();
@@ -104,11 +109,14 @@ function renderWalletContent() {
                             Network: ${walletData.network || 'Solana'} • Send USDC to this address to fund your wallet
                         </div>
                     ` : `
-                        <div style="background: #FEF3C7; padding: 16px; border-radius: 8px; border-left: 4px solid #F59E0B;">
-                            <div style="color: #92400E; font-weight: 600; margin-bottom: 4px;">Wallet Being Created</div>
-                            <div style="color: #78350F; font-size: 14px;">
-                                Your Solana wallet is being set up. This usually takes a few moments. Please refresh the page in a minute.
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px;">
+                            <div>
+                                <div style="color: #92400E; font-weight: 600; margin-bottom: 4px;">HostFi Wallet</div>
+                                <div style="color: #78350F; font-size: 14px;">
+                                    Click "Fund" to create a deposit channel (Bank Transfer or Crypto)
+                                </div>
                             </div>
+                            <button class="btn-secondary" onclick="window.fundWallet()">Create Wallet</button>
                         </div>
                     `}
                 </div>
@@ -124,7 +132,7 @@ function renderWalletContent() {
                             </svg>
                             Fund
                         </button>
-                        <button class="btn-primary" style="background: white; color: var(--primary); flex: 1;" onclick="showWithdrawModal()">
+                        <button class="btn-primary" style="background: white; color: var(--primary); flex: 1;" onclick="window.showBankWithdrawal()">
                             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style="margin-right: 8px; vertical-align: middle;">
                                 <path d="M10 14V6M7 9l3-3 3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                                 <rect x="3" y="2" width="14" height="14" rx="2" stroke="currentColor" stroke-width="2"/>
@@ -178,13 +186,13 @@ function renderWalletContent() {
                 ${recentBookings.length > 0 ? `
                     <div class="transaction-list">
                         ${recentBookings.slice(0, 5).map(booking => {
-                            const isCreator = appState.user.role === 'creator';
-                            const otherPartyName = isCreator ? booking.client?.name || 'Client' : booking.creator?.name || 'Creator';
-                            const otherPartyAvatar = isCreator
-                                ? booking.client?.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop'
-                                : booking.creator?.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop';
+        const isCreator = appState.user.role === 'creator';
+        const otherPartyName = isCreator ? booking.client?.name || 'Client' : booking.creator?.name || 'Creator';
+        const otherPartyAvatar = isCreator
+            ? booking.client?.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop'
+            : booking.creator?.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop';
 
-                            return `
+        return `
                             <div class="transaction-item" style="cursor: pointer;" onclick="window.location.href='/#/bookings'">
                                 <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
                                     <img src="${otherPartyAvatar}" alt="${otherPartyName}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
@@ -220,11 +228,11 @@ function renderWalletContent() {
                 ${transactions.length > 0 ? `
                     <div class="transaction-list">
                         ${transactions.slice(0, 5).map(transaction => {
-                            const isCredit = ['deposit', 'earning', 'bonus', 'refund'].includes(transaction.type);
-                            const icon = isCredit ? '↓' : '↑';
-                            const color = isCredit ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)';
+            const isCredit = ['deposit', 'earning', 'bonus', 'refund'].includes(transaction.type);
+            const icon = isCredit ? '↓' : '↑';
+            const color = isCredit ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)';
 
-                            return `
+            return `
                             <div class="transaction-item">
                                 <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
                                     <div style="width: 40px; height: 40px; border-radius: 50%; background: ${color}; display: flex; align-items: center; justify-content: center; font-size: 20px;">
@@ -268,17 +276,17 @@ function renderWalletContent() {
     `;
 }
 
-window.fundWallet = function() {
+window.fundWallet = function () {
     showAddFundsModal();
 };
 
-window.showSwapModal = function() {
+window.showSwapModal = function () {
     showSwapModal();
 };
 
 window.walletData = walletData;
 
-window.copyWalletAddress = async function() {
+window.copyWalletAddress = async function () {
     const address = walletData?.address;
     if (!address) return;
 
@@ -304,7 +312,7 @@ window.copyWalletAddress = async function() {
     }
 };
 
-window.checkTransactionStatus = async function(reference) {
+window.checkTransactionStatus = async function (reference) {
     if (!reference) {
         showToast('No reference ID available', 'error');
         return;
@@ -313,32 +321,25 @@ window.checkTransactionStatus = async function(reference) {
     try {
         showToast('Checking transaction status...', 'info');
 
-        const response = await api.getSwitchTransactionStatus(reference);
+        const response = await api.getHostfiWithdrawalStatus(reference);
 
         if (!response.success) {
             throw new Error(response.message || 'Failed to get status');
         }
 
-        const status = response.data;
-        const statusMap = {
-            'PENDING': { color: '#FFA500', text: 'Pending' },
-            'PROCESSING': { color: '#3B82F6', text: 'Processing' },
-            'COMPLETED': { color: '#10B981', text: 'Completed' },
-            'FAILED': { color: '#EF4444', text: 'Failed' },
-            'AWAITING_DEPOSIT': { color: '#F59E0B', text: 'Awaiting Deposit' }
-        };
+        // HostFi returns { withdrawal } in data
+        const withdrawal = response.data.withdrawal;
+        if (!withdrawal) throw new Error('No status data returned');
 
-        const statusInfo = statusMap[status.status] || { color: '#6B7280', text: status.status };
+        const status = withdrawal.status ? withdrawal.status.toUpperCase() : 'UNKNOWN';
+        const startCaseStatus = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
 
         showToast(
-            `Transaction Status: ${statusInfo.text}\n` +
-            `Type: ${status.type || 'N/A'}\n` +
-            `Amount: ${status.source?.amount || 'N/A'} ${status.source?.currency || ''}\n` +
-            `${status.finalized ? 'Finalized: Yes' : 'Confirmed: ' + (status.confirmed ? 'Yes' : 'No')}`,
-            status.status === 'COMPLETED' ? 'success' : status.status === 'FAILED' ? 'error' : 'info'
+            `Status: ${startCaseStatus}\nAmount: ${withdrawal.amount} ${withdrawal.currency || 'USDC'}`,
+            ['COMPLETED', 'SUCCESS'].includes(status) ? 'success' : (['FAILED', 'REVERSED'].includes(status) ? 'error' : 'info')
         );
 
-        if (status.status === 'COMPLETED' && status.finalized) {
+        if (['COMPLETED', 'SUCCESS', 'FAILED', 'REVERSED'].includes(status)) {
             setTimeout(() => window.location.reload(), 2000);
         }
     } catch (error) {

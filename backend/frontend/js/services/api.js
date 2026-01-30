@@ -300,6 +300,22 @@ class ApiService {
         return this.get('/hostfi/collections/crypto/addresses');
     }
 
+    async swapAssets(data) {
+        return this.post('/hostfi/assets/swap', data);
+    }
+
+    async getHostfiExchangeRates(fromCurrency, toCurrency) {
+        return this.get(`/hostfi/rates/exchange?from=${fromCurrency}&to=${toCurrency}`);
+    }
+
+    async getHostfiExchangeFees(fromCurrency, toCurrency) {
+        return this.get(`/hostfi/fees/exchange?from=${fromCurrency}&to=${toCurrency}`);
+    }
+
+    async swapAssets(data) {
+        return this.post('/hostfi/assets/swap', data);
+    }
+
     async getHostfiWallet() {
         return this.get('/hostfi/wallet');
     }

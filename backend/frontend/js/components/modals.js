@@ -5,10 +5,10 @@ import { navigateToPage } from '../navigation.js';
 import api from '../services/api.js';
 
 
-window.showLoadingSpinner = function(message = 'Loading...') {
+window.showLoadingSpinner = function (message = 'Loading...') {
     const existingSpinner = document.getElementById('globalLoadingSpinner');
     if (existingSpinner) existingSpinner.remove();
-    
+
     const spinner = document.createElement('div');
     spinner.id = 'globalLoadingSpinner';
     spinner.innerHTML = `
@@ -38,7 +38,7 @@ window.showLoadingSpinner = function(message = 'Loading...') {
     document.body.appendChild(spinner);
 };
 
-window.hideLoadingSpinner = function() {
+window.hideLoadingSpinner = function () {
     const spinner = document.getElementById('globalLoadingSpinner');
     if (spinner) spinner.remove();
 };
@@ -208,7 +208,7 @@ export async function showBookingModal(creatorId, serviceIndex = 0) {
 
     const bookingForm = document.getElementById('bookingForm');
     if (bookingForm) {
-        bookingForm.addEventListener('submit', function(e) {
+        bookingForm.addEventListener('submit', function (e) {
             e.preventDefault();
             e.stopPropagation();
             const creatorId = this.dataset.creatorId;
@@ -563,7 +563,7 @@ export function showChangePasswordModal() {
     openModal();
 }
 
-window.handlePasswordChange = async function(event) {
+window.handlePasswordChange = async function (event) {
     event.preventDefault();
 
     const currentPassword = document.getElementById('currentPassword').value;
@@ -813,7 +813,7 @@ function showBackupCodesModal(backupCodes = []) {
     document.getElementById('modalsContainer').innerHTML = modalContent;
 }
 
-window.downloadBackupCodes = function(codes) {
+window.downloadBackupCodes = function (codes) {
     const content = `MyArteLab 2FA Backup Codes\n\nGenerated: ${new Date().toLocaleString()}\n\n${codes.join('\n')}\n\nKeep these codes safe. Each can only be used once.`;
     const blob = new Blob([content], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
@@ -883,45 +883,38 @@ export function showWithdrawModal() {
     openModal();
 }
 
-window.showBankWithdrawal = async function() {
+
+window.showBankWithdrawal = async function () {
     try {
-        window.showLoadingSpinner('Loading withdrawal form...');
+        window.showLoadingSpinner('Loading withdrawal options...');
 
-        const response = await api.getSwitchCountries();
+        const response = await api.getHostfiSupportedCurrencies();
 
-        if (!response.success || !response.data) {
-            showToast('Failed to load countries', 'error');
+        if (!response.success) {
+            showToast('Failed to load currencies', 'error');
+            window.hideLoadingSpinner();
             return;
         }
 
-        const countries = response.data.countries || [];
+        const currencies = response.data.currencies || ['NGN', 'USD', 'KES', 'GHS', 'ZAR'];
         window.hideLoadingSpinner();
 
-        const popularCountries = ['NG', 'US', 'GB', 'KE', 'GH', 'ZA', 'CA'];
-        const sortedCountries = countries.sort((a, b) => {
-            const aIndex = popularCountries.indexOf(a.country);
-            const bIndex = popularCountries.indexOf(b.country);
-            if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
-            if (aIndex !== -1) return -1;
-            if (bIndex !== -1) return 1;
-            return (a.country || '').localeCompare(b.country || '');
-        });
-
-        const countryNames = {
-            'NG': 'Nigeria', 'US': 'United States', 'GB': 'United Kingdom', 'KE': 'Kenya',
-            'GH': 'Ghana', 'ZA': 'South Africa', 'CA': 'Canada', 'BR': 'Brazil', 'MX': 'Mexico',
-            'AR': 'Argentina', 'PE': 'Peru', 'CL': 'Chile', 'CO': 'Colombia', 'AE': 'UAE',
-            'SA': 'Saudi Arabia', 'QA': 'Qatar', 'IL': 'Israel', 'EG': 'Egypt', 'JO': 'Jordan',
-            'TZ': 'Tanzania', 'UG': 'Uganda', 'MW': 'Malawi', 'ET': 'Ethiopia', 'CG': 'Congo',
-            'FR': 'France', 'DE': 'Germany', 'IT': 'Italy', 'ES': 'Spain', 'NL': 'Netherlands',
-            'BE': 'Belgium', 'PT': 'Portugal', 'PL': 'Poland', 'AT': 'Austria', 'SE': 'Sweden',
-            'DK': 'Denmark', 'NO': 'Norway', 'FI': 'Finland', 'IE': 'Ireland', 'CH': 'Switzerland'
+        // Map Currency to Country Code for Bank Fetch
+        // HostFi often uses ISO-2 country codes for fetching banks
+        const currencyCountryMap = {
+            'NGN': 'NG',
+            'KES': 'KE',
+            'GHS': 'GH',
+            'ZAR': 'ZA',
+            'TZS': 'TZ',
+            'UGX': 'UG',
+            'ZMW': 'ZM',
+            'EUR': 'FR', // Generic Euro
+            'GBP': 'GB',
+            'USD': 'US'
         };
 
-        const countryOptions = sortedCountries.map(c => {
-            const displayName = countryNames[c.country] || c.country;
-            return `<option value="${c.country}">${displayName} (${c.country})</option>`;
-        }).join('');
+        const currencyOptions = currencies.map(c => `<option value="${c}">${c}</option>`).join('');
 
         const modalContent = `
             <div class="modal" onclick="closeModalOnBackdrop(event)">
@@ -936,54 +929,40 @@ window.showBankWithdrawal = async function() {
                     </div>
 
                     <div style="padding: 20px;">
-                        <div style="background: #EEF2FF; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
-                            <p style="color: #4338CA; font-weight: 600; margin-bottom: 8px;">Global Withdrawals Available</p>
-                            <p style="color: #4338CA; font-size: 14px;">
-                                Withdraw to bank accounts in 65 countries!
-                            </p>
-                        </div>
-
-                        <form id="offrampForm" onsubmit="window.handleSwitchOfframp(event)">
+                        <form id="hostfiWithdrawForm">
                             <div class="form-group">
-                                <label class="form-label">Select Your Country</label>
-                                <select id="offrampCountry" class="form-select" required>
-                                    <option value="">Choose a country...</option>
-                                    ${countryOptions}
+                                <label class="form-label">Select Currency</label>
+                                <select id="withdrawCurrency" class="form-select" required>
+                                    <option value="">Choose currency...</option>
+                                    ${currencyOptions}
                                 </select>
                             </div>
 
                             <div class="form-group" id="bankSelectGroup" style="display: none;">
-                                <label class="form-label">Select Bank/Payment Method</label>
-                                <input type="text" id="bankSearch" class="form-input" placeholder="Search banks..." style="margin-bottom: 8px; display: none;">
-                                <select id="offrampBank" class="form-select">
+                                <label class="form-label">Select Bank</label>
+                                <select id="withdrawBank" class="form-select" required>
                                     <option value="">Loading banks...</option>
                                 </select>
                             </div>
 
                             <div class="form-group">
-                                <label class="form-label">Amount (USDC)</label>
-                                <input type="number" id="offrampAmount" class="form-input" required min="1" step="0.01" placeholder="Enter amount">
-                                <small id="offrampQuoteDisplay" style="color: var(--text-secondary); margin-top: 4px; display: none;">
-                                    You'll receive: <span style="font-weight: 600;"><span id="offrampEstimate">0.00</span></span>
-                                    <span id="offrampEstimateLoading" style="display: none; margin-left: 8px; color: var(--primary);">
-                                        Calculating...
-                                    </span>
-                                </small>
+                                <label class="form-label">Account Number</label>
+                                <input type="text" id="withdrawAccountNumber" class="form-input" placeholder="Enter account number" required disabled>
                             </div>
 
-                            <div id="dynamicFieldsContainer" style="display: none;">
-                                <!-- Dynamic form fields based on country requirements will be inserted here -->
+                            <div class="form-group">
+                                <label class="form-label">Account Name</label>
+                                <input type="text" id="withdrawAccountName" class="form-input" placeholder="Verifying..." disabled readonly>
                             </div>
 
-                            <div style="background: var(--background-alt); padding: 12px; border-radius: 8px; margin-bottom: 16px;">
-                                <small style="color: var(--text-secondary); display: block; line-height: 1.5;">
-                                    Minimum withdrawal: $1 USDC<br>
-                                    Processing time: Usually within minutes
-                                </small>
+                            <div class="form-group">
+                                <label class="form-label">Amount</label>
+                                <input type="number" id="withdrawAmount" class="form-input" placeholder="Enter amount" min="1" step="0.01" required>
+                                <small style="color: var(--text-secondary);">Fee: 1%</small>
                             </div>
 
-                            <button type="submit" class="btn-primary" style="width: 100%;" id="offrampSubmitBtn" disabled>
-                                Complete Withdrawal
+                            <button type="submit" id="withdrawSubmitBtn" class="btn-primary" style="width: 100%;" disabled>
+                                Withdraw Funds
                             </button>
                         </form>
                     </div>
@@ -994,380 +973,138 @@ window.showBankWithdrawal = async function() {
         document.getElementById('modalsContainer').innerHTML = modalContent;
         openModal();
 
-        const countrySelect = document.getElementById('offrampCountry');
+        const currencySelect = document.getElementById('withdrawCurrency');
         const bankSelectGroup = document.getElementById('bankSelectGroup');
-        const bankSelect = document.getElementById('offrampBank');
-        const amountInput = document.getElementById('offrampAmount');
-        const submitBtn = document.getElementById('offrampSubmitBtn');
-        const dynamicFieldsContainer = document.getElementById('dynamicFieldsContainer');
-        const quoteDisplay = document.getElementById('offrampQuoteDisplay');
-        const estimateSpan = document.getElementById('offrampEstimate');
-        const estimateLoading = document.getElementById('offrampEstimateLoading');
+        const bankSelect = document.getElementById('withdrawBank');
+        const accountInput = document.getElementById('withdrawAccountNumber');
+        const nameInput = document.getElementById('withdrawAccountName');
+        const amountInput = document.getElementById('withdrawAmount');
+        const submitBtn = document.getElementById('withdrawSubmitBtn');
 
-        let debounceTimer;
-        let selectedCountry = null;
-        let selectedBank = null;
+        let selectedBankCode = null;
+        let isVerified = false;
 
-        countrySelect.addEventListener('change', async () => {
-            const country = countrySelect.value;
-            selectedCountry = country;
-
-            if (!country) {
+        currencySelect.addEventListener('change', async () => {
+            const currency = currencySelect.value;
+            if (!currency) {
                 bankSelectGroup.style.display = 'none';
-                dynamicFieldsContainer.style.display = 'none';
-                submitBtn.disabled = true;
+                accountInput.disabled = true;
                 return;
             }
 
-            window.showLoadingSpinner('Loading banks...');
-            bankSelect.innerHTML = '<option value="">Loading banks...</option>';
+            const countryCode = currencyCountryMap[currency];
+            if (!countryCode) {
+                showToast(`Bank withdrawals not supported for ${currency} yet.`, 'info');
+                return;
+            }
+
             bankSelectGroup.style.display = 'block';
+            bankSelect.innerHTML = '<option value="">Loading banks...</option>';
+            accountInput.disabled = true;
 
             try {
-                const banksResponse = await api.getSwitchBanks(country);
-
-                if (banksResponse.success && banksResponse.data && banksResponse.data.banks) {
-                    const banks = banksResponse.data.banks;
-
-                    if (banks.length === 0) {
-                        bankSelectGroup.style.display = 'none';
-                        selectedBank = 'DIRECT'; // Mark as selected so fields can load
-                        window.hideLoadingSpinner();
-
-                        dynamicFieldsContainer.innerHTML = '<p style="color: var(--text-secondary);">Loading form fields...</p>';
-                        dynamicFieldsContainer.style.display = 'block';
-
-                        try {
-                            const reqResponse = await api.getSwitchRequirements(selectedCountry, 'INDIVIDUAL');
-
-                            if (reqResponse.success && reqResponse.data && reqResponse.data.requirements) {
-                                const requirements = reqResponse.data.requirements;
-
-                                const fieldLabels = {
-                                    'bank_code': 'Bank Code',
-                                    'account_number': 'Account Number',
-                                    'routing_number': 'Routing Number',
-                                    'account_name': 'Account Name',
-                                    'holder_name': 'Account Holder Name',
-                                    'holder_street': 'Street Address',
-                                    'holder_city': 'City',
-                                    'holder_state': 'State',
-                                    'holder_postal_code': 'Postal Code',
-                                    'phone_number': 'Phone Number',
-                                    'document_number': 'Document Number',
-                                    'cpf': 'CPF',
-                                    'rfc': 'RFC',
-                                    'clabe': 'CLABE',
-                                    'sort_code': 'Sort Code',
-                                    'bsb_code': 'BSB Code',
-                                    'ifsc_code': 'IFSC Code'
-                                };
-
-                                let fieldsHTML = '';
-                                requirements.forEach(req => {
-                                    const fieldName = req.path;
-
-                                    if (fieldName === 'bank_code' || fieldName === 'holder_type') return;
-
-                                    const fieldId = `dynamic_${fieldName}`;
-                                    const label = fieldLabels[fieldName] || fieldName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                                    const placeholder = req.example || `Enter ${label}`;
-
-                                    if (req.option && req.option.length > 0) {
-                                        fieldsHTML += `
-                                            <div class="form-group">
-                                                <label class="form-label">${label} *</label>
-                                                <select id="${fieldId}" name="${fieldName}" class="form-select dynamic-field" required data-field="${fieldName}">
-                                                    <option value="">Select ${label}...</option>
-                                                    ${req.option.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
-                                                </select>
-                                                ${req.example ? `<small style="color: var(--text-secondary); display: block; margin-top: 4px;">Example: ${req.example}</small>` : ''}
-                                            </div>
-                                        `;
-                                    } else {
-                                        fieldsHTML += `
-                                            <div class="form-group">
-                                                <label class="form-label">${label} *</label>
-                                                <input type="text" id="${fieldId}" name="${fieldName}"
-                                                       class="form-input dynamic-field" required
-                                                       placeholder="${placeholder}"
-                                                       pattern="${req.regex || ''}"
-                                                       data-field="${fieldName}">
-                                                ${req.example ? `<small style="color: var(--text-secondary); display: block; margin-top: 4px;">Example: ${req.example}</small>` : ''}
-                                            </div>
-                                        `;
-                                    }
-                                });
-
-                                dynamicFieldsContainer.innerHTML = fieldsHTML;
-
-                                document.querySelectorAll('.dynamic-field').forEach(field => {
-                                    field.addEventListener('input', checkFormValid);
-                                    field.addEventListener('change', checkFormValid);
-                                });
-
-                                checkFormValid();
-                            }
-                        } catch (error) {
-                            console.error('Failed to load requirements:', error);
-                            dynamicFieldsContainer.innerHTML = '<p style="color: var(--danger);">Failed to load form fields</p>';
-                        }
-
-                        return; // Exit early, no need to show bank selector
-                    }
-
-                    const bankSearch = document.getElementById('bankSearch');
-
-                    if (banks.length > 10) {
-                        bankSearch.style.display = 'block';
-                    }
-
-                    window.renderBanks = (filter = '') => {
-                        bankSelect.innerHTML = '<option value="">Select bank...</option>';
-                        const filtered = filter
-                            ? banks.filter(b => b.name.toLowerCase().includes(filter.toLowerCase()))
-                            : banks;
-
-                        filtered.forEach(bank => {
-                            const option = document.createElement('option');
-                            option.value = bank.code || bank.id;
-                            option.textContent = bank.name;
-                            option.dataset.rail = bank.rail || '';
-                            bankSelect.appendChild(option);
-                        });
-
-                        if (filtered.length === 0) {
-                            bankSelect.innerHTML = '<option value="">No banks found</option>';
-                        }
-                    };
-
-                    bankSearch.addEventListener('input', (e) => {
-                        window.renderBanks(e.target.value);
-                    });
-
-                    window.renderBanks();
-                    window.hideLoadingSpinner();
+                const res = await api.getHostfiBanks(countryCode);
+                if (res.success && res.data && res.data.banks) {
+                    bankSelect.innerHTML = '<option value="">Select bank...</option>' +
+                        res.data.banks.map(b => `<option value="${b.code}">${b.name}</option>`).join('');
                 } else {
-                    bankSelect.innerHTML = '<option value="">No banks available</option>';
-                    window.hideLoadingSpinner();
+                    bankSelect.innerHTML = '<option value="">No banks found</option>';
                 }
-            } catch (error) {
-                console.error('Failed to load banks:', error);
-                window.hideLoadingSpinner();
+            } catch (err) {
+                console.error(err);
                 bankSelect.innerHTML = '<option value="">Failed to load banks</option>';
             }
         });
 
-        bankSelect.addEventListener('change', async () => {
-            selectedBank = bankSelect.value;
-
-            if (!selectedBank || !selectedCountry) {
-                dynamicFieldsContainer.style.display = 'none';
-                checkFormValid();
-                return;
-            }
-
-            dynamicFieldsContainer.innerHTML = '<p style="color: var(--text-secondary);">Loading form fields...</p>';
-            dynamicFieldsContainer.style.display = 'block';
-
-            try {
-                const reqResponse = await api.getSwitchRequirements(selectedCountry, 'INDIVIDUAL');
-
-                if (reqResponse.success && reqResponse.data && reqResponse.data.requirements && reqResponse.data.requirements.length > 0) {
-                    const requirements = reqResponse.data.requirements;
-
-                    const fieldLabels = {
-                        'bank_code': 'Bank Code',
-                        'account_number': 'Account Number',
-                        'routing_number': 'Routing Number',
-                        'account_name': 'Account Name',
-                        'phone_number': 'Phone Number',
-                        'document_number': 'Document Number',
-                        'cpf': 'CPF',
-                        'rfc': 'RFC',
-                        'clabe': 'CLABE',
-                        'sort_code': 'Sort Code',
-                        'bsb_code': 'BSB Code',
-                        'ifsc_code': 'IFSC Code'
-                    };
-
-                    let fieldsHTML = '';
-                    requirements.forEach(req => {
-                        const fieldName = req.path;
-                        
-                        if (fieldName === 'bank_code') return;
-                        
-                        const fieldId = `dynamic_${fieldName}`;
-                        const label = fieldLabels[fieldName] || fieldName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                        const placeholder = req.example || `Enter ${label}`;
-
-                        fieldsHTML += `
-                            <div class="form-group">
-                                <label class="form-label">${label} *</label>
-                                <input type="text" id="${fieldId}" name="${fieldName}"
-                                       class="form-input dynamic-field" required
-                                       placeholder="${placeholder}"
-                                       pattern="${req.regex || ''}"
-                                       data-field="${fieldName}">
-                                ${req.example ? `<small style="color: var(--text-secondary); display: block; margin-top: 4px;">Example: ${req.example}</small>` : ''}
-                            </div>
-                        `;
-                    });
-
-                    dynamicFieldsContainer.innerHTML = fieldsHTML;
-
-                    document.querySelectorAll('.dynamic-field').forEach(field => {
-                        field.addEventListener('input', checkFormValid);
-                    });
-                } else {
-                    dynamicFieldsContainer.innerHTML = `
-                        <div class="form-group">
-                            <label class="form-label">Account Number *</label>
-                            <input type="text" id="dynamic_account_number" name="account_number"
-                                   class="form-input dynamic-field" required
-                                   placeholder="Enter account number">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Account Holder Name *</label>
-                            <input type="text" id="dynamic_account_name" name="account_name"
-                                   class="form-input dynamic-field" required
-                                   placeholder="Enter account holder name">
-                        </div>
-                    `;
-
-                    document.querySelectorAll('.dynamic-field').forEach(field => {
-                        field.addEventListener('input', checkFormValid);
-                    });
-                }
-
-                const accountNumberField = document.getElementById('dynamic_account_number');
-                const accountNameField = document.getElementById('dynamic_account_name');
-
-                if (accountNumberField && accountNameField && selectedBank) {
-                    let verificationTimeout;
-
-                    accountNumberField.addEventListener('input', () => {
-                        clearTimeout(verificationTimeout);
-                        const accountNumber = accountNumberField.value.trim();
-
-                        if (accountNumber.length >= 10) {
-                            verificationTimeout = setTimeout(async () => {
-                                accountNameField.value = 'Verifying...';
-                                accountNameField.disabled = true;
-
-                                try {
-                                    const result = await api.verifySwitchBankAccount({
-                                        country: selectedCountry,
-                                        bankCode: selectedBank,
-                                        accountNumber
-                                    });
-
-                                    if (result.success && result.data?.accountName) {
-                                        accountNameField.value = result.data.accountName;
-                                        accountNameField.disabled = true; // Keep it readonly
-                                        showToast('Account verified successfully', 'success');
-                                    } else {
-                                        accountNameField.value = '';
-                                        accountNameField.disabled = false;
-                                        accountNameField.placeholder = 'Enter account holder name';
-                                    }
-                                } catch (error) {
-                                    showToast('Account verification unavailable. Please enter name manually.', 'info');
-                                    accountNameField.value = '';
-                                    accountNameField.disabled = false;
-                                    accountNameField.placeholder = 'Enter account holder name';
-                                }
-                            }, 800); // Debounce for 800ms
-                        }
-                    });
-
-                    accountNameField.addEventListener('focus', () => {
-                        if (accountNameField.value === 'Verifying...') {
-                            accountNameField.value = '';
-                        }
-                    });
-                }
-
-                checkFormValid();
-
-            } catch (error) {
-                console.error('Failed to load requirements:', error);
-                dynamicFieldsContainer.innerHTML = '<p style="color: var(--danger);">Failed to load form fields</p>';
+        bankSelect.addEventListener('change', () => {
+            selectedBankCode = bankSelect.value;
+            accountInput.disabled = !selectedBankCode;
+            if (selectedBankCode) {
+                accountInput.focus();
             }
         });
 
-        amountInput.addEventListener('input', async () => {
-            clearTimeout(debounceTimer);
-            const amount = parseFloat(amountInput.value);
+        let verifyTimeout;
+        accountInput.addEventListener('input', () => {
+            clearTimeout(verifyTimeout);
+            nameInput.value = 'Verifying...';
+            isVerified = false;
+            submitBtn.disabled = true;
 
-            if (amount >= 1 && selectedCountry) {
-                estimateLoading.style.display = 'inline';
-                quoteDisplay.style.display = 'block';
-
-                debounceTimer = setTimeout(async () => {
+            const accNum = accountInput.value;
+            if (accNum.length >= 10 && selectedBankCode) {
+                verifyTimeout = setTimeout(async () => {
                     try {
-                        const currencyMap = {
-                            'NG': 'NGN', 'GH': 'GHS', 'KE': 'KES', 'ZA': 'ZAR', 'UG': 'UGX',
-                            'US': 'USD', 'GB': 'GBP', 'AE': 'AED', 'BR': 'BRL', 'PH': 'PHP',
-                            'MX': 'MXN', 'PL': 'PLN', 'RO': 'RON', 'CZ': 'CZK', 'HU': 'HUF',
-                            'NO': 'NOK', 'SE': 'SEK', 'DK': 'DKK'
-                        };
-                        const euroCountries = ['AD', 'AT', 'BE', 'HR', 'CY', 'EE', 'FI', 'FR', 'DE',
-                                              'GR', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PT', 'SK', 'SI', 'ES'];
-                        const currency = euroCountries.includes(selectedCountry) ? 'EUR' : (currencyMap[selectedCountry] || 'USD');
-
-                        const quoteResponse = await api.getSwitchOfframpQuote({
-                            amount,
-                            country: selectedCountry,
-                            currency,
-                            asset: 'solana:usdc'
+                        const res = await api.verifyHostfiBankAccount({
+                            bankCode: selectedBankCode,
+                            accountNumber: accNum,
+                            currency: currencySelect.value
                         });
 
-                        estimateLoading.style.display = 'none';
-
-                        if (quoteResponse.success && quoteResponse.data) {
-                            const quote = quoteResponse.data;
-                            estimateSpan.textContent = `${quote.destination?.amount || 0} ${quote.destination?.currency || ''}`;
+                        if (res.success && res.data) {
+                            nameInput.value = res.data.accountName;
+                            isVerified = true;
+                            checkForm();
+                            showToast('Account verified', 'success');
                         } else {
-                            estimateSpan.textContent = 'N/A';
+                            nameInput.value = 'Verification failed';
                         }
-                    } catch (error) {
-                        console.error('Failed to get quote:', error);
-                        estimateLoading.style.display = 'none';
-                        estimateSpan.textContent = 'N/A';
+                    } catch (err) {
+                        nameInput.value = 'Could not verify';
                     }
-                }, 500);
-            } else {
-                quoteDisplay.style.display = 'none';
+                }, 800);
             }
-
-            checkFormValid();
         });
 
-        function checkFormValid() {
-            const hasCountry = !!selectedCountry;
-            const hasBank = !!selectedBank;
-            const hasAmount = amountInput.value && parseFloat(amountInput.value) >= 1;
+        const checkForm = () => {
+            if (isVerified && amountInput.value && parseFloat(amountInput.value) > 0) {
+                submitBtn.disabled = false;
+            } else {
+                submitBtn.disabled = true;
+            }
+        };
 
-            const dynamicFields = document.querySelectorAll('.dynamic-field');
-            const allDynamicFieldsFilled = Array.from(dynamicFields).every(field => {
-                if (field.required) {
-                    return field.value.trim() !== '';
+        amountInput.addEventListener('input', checkForm);
+
+        document.getElementById('hostfiWithdrawForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!isVerified) return;
+
+            try {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Processing...';
+
+                const res = await api.initiateHostfiWithdrawal({
+                    amount: parseFloat(amountInput.value),
+                    currency: currencySelect.value,
+                    bankCode: selectedBankCode,
+                    accountNumber: accountInput.value,
+                    accountName: nameInput.value,
+                    narration: 'Withdrawal'
+                });
+
+                if (res.success) {
+                    closeModal();
+                    showToast('Withdrawal initiated successfully!', 'success');
+                    setTimeout(() => window.location.reload(), 1500);
+                } else {
+                    throw new Error(res.message);
                 }
-                return true;
-            });
-
-            submitBtn.disabled = !(hasCountry && hasBank && hasAmount && allDynamicFieldsFilled);
-        }
+            } catch (error) {
+                showToast(error.message || 'Withdrawal failed', 'error');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Withdraw Funds';
+            }
+        });
 
     } catch (error) {
         console.error('Failed to load withdrawal modal:', error);
-        showToast(error.message || 'Failed to load withdrawal form', 'error');
+        showToast(error.message || 'Failed to load withdrawal options', 'error');
     }
 };
 
 
-window.showCryptoWithdrawal = function() {
+window.showCryptoWithdrawal = function () {
     const modalContent = `
         <div class="modal" onclick="closeModalOnBackdrop(event)">
             <div class="modal-content" style="max-width: 550px;">
@@ -1420,67 +1157,9 @@ window.showCryptoWithdrawal = function() {
     openModal();
 };
 
-window.handleSwitchOfframp = async function(event) {
-    event.preventDefault();
 
-    const country = document.getElementById('offrampCountry').value;
-    const bankElement = document.getElementById('offrampBank');
-    const bank = bankElement.value || 'DIRECT'; // Use 'DIRECT' for countries without banks
-    const amount = parseFloat(document.getElementById('offrampAmount').value);
 
-    if (!country || !amount || amount < 1) {
-        showToast('Please fill in all required fields', 'error');
-        return;
-    }
-
-    const bankSelectGroup = document.getElementById('bankSelectGroup');
-    if (bankSelectGroup.style.display !== 'none' && !bankElement.value) {
-        showToast('Please select a bank', 'error');
-        return;
-    }
-
-    const dynamicFields = document.querySelectorAll('.dynamic-field');
-    const beneficiaryDetails = {};
-
-    dynamicFields.forEach(field => {
-        const fieldName = field.dataset.field || field.name;
-        beneficiaryDetails[fieldName] = field.value;
-    });
-
-    if (Object.keys(beneficiaryDetails).length === 0) {
-        showToast('Please fill in all beneficiary details', 'error');
-        return;
-    }
-
-    const submitBtn = event.target.querySelector('button[type="submit"]');
-    const originalText = submitBtn.textContent;
-
-    try {
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Processing withdrawal...';
-
-        const response = await api.requestSwitchOfframp({
-            amount,
-            country,
-            bank,
-            asset: 'solana:usdc',
-            beneficiaryDetails
-        });
-
-        if (response.success) {
-            closeModal();
-            showToast('Withdrawal request submitted successfully!', 'success');
-            setTimeout(() => window.location.reload(), 1500);
-        }
-    } catch (error) {
-        showToast(error.message || 'Failed to process withdrawal', 'error');
-    } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = originalText;
-    }
-};
-
-window.handleWithdrawal = async function(event) {
+window.handleWithdrawal = async function (event) {
     event.preventDefault();
 
     const amount = parseFloat(document.getElementById('withdrawAmount').value);
@@ -1523,40 +1202,34 @@ export async function showAddFundsModal() {
     try {
         window.showLoadingSpinner('Loading deposit options...');
 
-        const response = await api.getSwitchCountries();
+        // Fetch supported currencies from HostFi
+        const response = await api.getHostfiSupportedCurrencies();
 
-        if (!response.success || !response.data) {
-            showToast('Failed to load countries', 'error');
+        if (!response.success) {
+            showToast('Failed to load currencies', 'error');
+            window.hideLoadingSpinner();
             return;
         }
 
-        const countries = response.data.countries || [];
+        const currencies = response.data.currencies || ['NGN', 'USD', 'KES', 'GHS', 'ZAR']; // Fallback
         window.hideLoadingSpinner();
 
-        const popularCountries = ['NG', 'US', 'GB', 'KE', 'GH', 'ZA', 'CA'];
-        const sortedCountries = countries.sort((a, b) => {
-            const aIndex = popularCountries.indexOf(a.country);
-            const bIndex = popularCountries.indexOf(b.country);
-            if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
-            if (aIndex !== -1) return -1;
-            if (bIndex !== -1) return 1;
-            return (a.country || '').localeCompare(b.country || '');
-        });
-
-        const countryNames = {
-            'NG': 'Nigeria', 'US': 'United States', 'GB': 'United Kingdom', 'KE': 'Kenya',
-            'GH': 'Ghana', 'ZA': 'South Africa', 'CA': 'Canada', 'BR': 'Brazil', 'MX': 'Mexico',
-            'AR': 'Argentina', 'PE': 'Peru', 'CL': 'Chile', 'CO': 'Colombia', 'AE': 'UAE',
-            'SA': 'Saudi Arabia', 'QA': 'Qatar', 'IL': 'Israel', 'EG': 'Egypt', 'JO': 'Jordan',
-            'TZ': 'Tanzania', 'UG': 'Uganda', 'MW': 'Malawi', 'ET': 'Ethiopia', 'CG': 'Congo',
-            'FR': 'France', 'DE': 'Germany', 'IT': 'Italy', 'ES': 'Spain', 'NL': 'Netherlands',
-            'BE': 'Belgium', 'PT': 'Portugal', 'PL': 'Poland', 'AT': 'Austria', 'SE': 'Sweden',
-            'DK': 'Denmark', 'NO': 'Norway', 'FI': 'Finland', 'IE': 'Ireland', 'CH': 'Switzerland'
+        const currencyNames = {
+            'NGN': 'Nigerian Naira',
+            'USD': 'US Dollar',
+            'KES': 'Kenyan Shilling',
+            'GHS': 'Ghanaian Cedi',
+            'ZAR': 'South African Rand',
+            'TZS': 'Tanzanian Shilling',
+            'UGX': 'Ugandan Shilling',
+            'ZMW': 'Zambian Kwacha',
+            'EUR': 'Euro',
+            'GBP': 'British Pound'
         };
 
-        const countryOptions = sortedCountries.map(c => {
-            const displayName = countryNames[c.country] || c.country;
-            return `<option value="${c.country}">${displayName} (${c.country})</option>`;
+        const currencyOptions = currencies.map(c => {
+            const name = currencyNames[c] || c;
+            return `<option value="${c}">${name} (${c})</option>`;
         }).join('');
 
         const modalContent = `
@@ -1573,52 +1246,28 @@ export async function showAddFundsModal() {
 
                     <div style="padding: 20px;">
                         <div style="background: #EEF2FF; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
-                            <p style="color: #4338CA; font-weight: 600; margin-bottom: 8px;">Global Deposits Available</p>
+                            <p style="color: #4338CA; font-weight: 600; margin-bottom: 8px;">Direct Bank Deposit</p>
                             <p style="color: #4338CA; font-size: 14px;">
-                                Deposit fiat from 65 countries and receive USDC instantly!
+                                Deposit local currency and receive funds in your wallet instantly.
                             </p>
                         </div>
 
                         <div id="onrampFormContainer">
                             <div class="form-group" style="margin-bottom: 16px;">
-                                <label>Select Your Country</label>
-                                <select id="onrampCountry" class="form-input" required>
-                                    <option value="">Choose a country...</option>
-                                    ${countryOptions}
+                                <label class="form-label">Select Currency</label>
+                                <select id="onrampCurrency" class="form-select" required>
+                                    <option value="">Choose currency...</option>
+                                    ${currencyOptions}
                                 </select>
                             </div>
 
-                            <div class="form-group" style="margin-bottom: 16px;">
-                                <label>Amount to Deposit</label>
-                                <input type="number" id="onrampAmount" class="form-input"
-                                       placeholder="Enter amount" min="1" step="0.01" required />
-                                <small class="caption" style="color: var(--text-secondary);">
-                                    Minimum: $1 USD equivalent
-                                </small>
-                            </div>
-
-                            <div id="quoteDisplay" style="display: none; background: var(--background-alt); padding: 16px; border-radius: 8px; margin-bottom: 16px; border: 2px solid var(--primary);">
-                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                                    <span style="color: var(--text-secondary);">You send:</span>
-                                    <span id="quoteFiatAmount" style="font-weight: 600;"></span>
-                                </div>
-                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                                    <span style="color: var(--text-secondary);">You receive:</span>
-                                    <span id="quoteCryptoAmount" style="font-weight: 600; color: var(--primary);"></span>
-                                </div>
-                                <div style="display: flex; justify-content: space-between;">
-                                    <span style="color: var(--text-secondary);">Exchange rate:</span>
-                                    <span id="quoteRate" style="font-weight: 600;"></span>
-                                </div>
-                            </div>
-
-                            <button id="getQuoteBtn" class="btn-primary" style="width: 100%;" disabled>
-                                Get Quote
+                            <button id="generateAccountBtn" class="btn-primary" style="width: 100%;" disabled>
+                                Get Deposit Account
                             </button>
+                        </div>
 
-                            <div id="virtualAccountDisplay" style="display: none; margin-top: 20px;">
-                                <!-- Virtual account details will be shown here after getting quote -->
-                            </div>
+                        <div id="accountDisplay" style="display: none; margin-top: 20px;">
+                            <!-- Account details will be shown here -->
                         </div>
                     </div>
                 </div>
@@ -1628,167 +1277,92 @@ export async function showAddFundsModal() {
         document.getElementById('modalsContainer').innerHTML = modalContent;
         openModal();
 
-        const countrySelect = document.getElementById('onrampCountry');
-        const amountInput = document.getElementById('onrampAmount');
-        const getQuoteBtn = document.getElementById('getQuoteBtn');
-        const quoteDisplay = document.getElementById('quoteDisplay');
+        const currencySelect = document.getElementById('onrampCurrency');
+        const generateBtn = document.getElementById('generateAccountBtn');
+        const accountDisplay = document.getElementById('accountDisplay');
+        const formContainer = document.getElementById('onrampFormContainer');
 
-        const checkFormValid = () => {
-            getQuoteBtn.disabled = !countrySelect.value || !amountInput.value || parseFloat(amountInput.value) < 1;
-        };
+        currencySelect.addEventListener('change', () => {
+            generateBtn.disabled = !currencySelect.value;
+        });
 
-        countrySelect.addEventListener('change', checkFormValid);
-        amountInput.addEventListener('input', checkFormValid);
-
-        getQuoteBtn.addEventListener('click', async () => {
-            const country = countrySelect.value;
-            const amount = parseFloat(amountInput.value);
-
-            if (!country || amount < 1) {
-                showToast('Please select a country and enter a valid amount', 'error');
-                return;
-            }
-
-            getQuoteBtn.disabled = true;
-            getQuoteBtn.textContent = 'Getting quote...';
-            window.showLoadingSpinner('Getting deposit quote...');
+        generateBtn.addEventListener('click', async () => {
+            const currency = currencySelect.value;
+            if (!currency) return;
 
             try {
-                const currencyMap = {
-                    'NG': 'NGN', 'GH': 'GHS', 'KE': 'KES', 'ZA': 'ZAR', 'UG': 'UGX',
-                    'US': 'USD', 'GB': 'GBP', 'AE': 'AED', 'BR': 'BRL', 'PH': 'PHP',
-                    'MX': 'MXN', 'PL': 'PLN', 'RO': 'RON', 'CZ': 'CZK', 'HU': 'HUF',
-                    'NO': 'NOK', 'SE': 'SEK', 'DK': 'DKK'
-                };
-                const euroCountries = ['AD', 'AT', 'BE', 'HR', 'CY', 'EE', 'FI', 'FR', 'DE',
-                                      'GR', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PT', 'SK', 'SI', 'ES'];
-                const currency = euroCountries.includes(country) ? 'EUR' : (currencyMap[country] || 'USD');
+                generateBtn.disabled = true;
+                generateBtn.textContent = 'Generating...';
 
-                const quoteResponse = await api.getSwitchOnrampQuote({
-                    amount,
-                    country,
-                    currency,
-                    asset: 'solana:usdc'
-                });
+                const result = await api.createHostfiFiatChannel({ currency });
 
-                if (!quoteResponse.success) {
-                    throw new Error(quoteResponse.message || 'Failed to get quote');
+                if (result.success && result.data) {
+                    const channel = result.data;
+
+                    accountDisplay.innerHTML = `
+                        <div style="background: var(--background-alt); padding: 20px; border-radius: 8px; border: 2px solid var(--success);">
+                             <div style="text-align: center; margin-bottom: 20px;">
+                                <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">
+                                    Account Number
+                                </div>
+                                <div style="font-size: 32px; font-weight: 700; color: var(--primary); letter-spacing: 2px; margin-bottom: 8px;">
+                                    ${channel.accountNumber}
+                                </div>
+                                <button onclick="navigator.clipboard.writeText('${channel.accountNumber}'); showToast('Copied!', 'success');"
+                                        style="background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 12px;">
+                                    Copy Number
+                                </button>
+                            </div>
+
+                            <div style="border-top: 1px solid var(--border); padding-top: 16px; margin-top: 16px;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                                    <span style="color: var(--text-secondary);">Bank Name:</span>
+                                    <span style="font-weight: 600;">${channel.bankName}</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                                    <span style="color: var(--text-secondary);">Account Name:</span>
+                                    <span style="font-weight: 600;">${channel.accountName}</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span style="color: var(--text-secondary);">Currency:</span>
+                                    <span style="font-weight: 600;">${channel.currency}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="background: #FEF3C7; padding: 16px; border-radius: 8px; margin-top: 16px; border-left: 4px solid #F59E0B;">
+                            <div style="color: #92400E; font-size: 14px; font-weight: 600; margin-bottom: 12px;">
+                                Instructions:
+                            </div>
+                            <ol style="color: #92400E; font-size: 13px; margin: 0; padding-left: 20px; line-height: 1.8;">
+                                <li>Transfer any amount to the account above.</li>
+                                <li>Funds will be credited to your wallet automatically.</li>
+                                <li><strong>1% Platform fee</strong> applies to all deposits.</li>
+                            </ol>
+                        </div>
+                         
+                        <button onclick="closeModal()" class="btn-primary" style="width: 100%; margin-top: 16px;">
+                            Done
+                        </button>
+                    `;
+
+                    formContainer.style.display = 'none';
+                    accountDisplay.style.display = 'block';
+                } else {
+                    throw new Error(result.message || 'Failed to generate account');
                 }
-
-                const quote = quoteResponse.data;
-
-                document.getElementById('quoteFiatAmount').textContent =
-                    `${quote.source?.amount || amount} ${quote.source?.currency || 'Local'}`;
-                document.getElementById('quoteCryptoAmount').textContent =
-                    `${quote.destination?.amount || 0} USDC`;
-                document.getElementById('quoteRate').textContent =
-                    `1 USDC = ${quote.rate || 'N/A'} ${quote.source?.currency || ''}`;
-                quoteDisplay.style.display = 'block';
-
-                window.hideLoadingSpinner();
-
-                getQuoteBtn.textContent = 'Proceed to Deposit';
-                getQuoteBtn.onclick = async () => {
-                    getQuoteBtn.disabled = true;
-                    getQuoteBtn.textContent = 'Creating deposit account...';
-                    window.showLoadingSpinner('Creating deposit account...');
-
-                    try {
-                        const onrampResponse = await api.requestSwitchOnramp({
-                            amount,
-                            country,
-                            asset: 'solana:usdc'
-                        });
-
-                        if (!onrampResponse.success) {
-                            throw new Error(onrampResponse.message || 'Failed to create deposit');
-                        }
-
-                        const { virtualAccount, quote: finalQuote, instructions } = onrampResponse.data;
-
-                        document.getElementById('virtualAccountDisplay').innerHTML = `
-                            <div style="background: var(--background-alt); padding: 20px; border-radius: 8px; border: 2px solid var(--success);">
-                                <div style="text-align: center; margin-bottom: 20px;">
-                                    <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">
-                                        Account Number
-                                    </div>
-                                    <div style="font-size: 32px; font-weight: 700; color: var(--primary); letter-spacing: 2px; margin-bottom: 8px;">
-                                        ${virtualAccount.account_number || virtualAccount.accountNumber || 'N/A'}
-                                    </div>
-                                    <button onclick="navigator.clipboard.writeText('${virtualAccount.account_number || virtualAccount.accountNumber}'); window.showToast('Copied!', 'success');"
-                                            style="background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 12px;">
-                                        Copy Account Number
-                                    </button>
-                                </div>
-
-                                <div style="border-top: 1px solid var(--border); padding-top: 16px; margin-top: 16px;">
-                                    ${virtualAccount.bank_name || virtualAccount.bankName ? `
-                                        <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
-                                            <span style="color: var(--text-secondary);">Bank Name:</span>
-                                            <span style="font-weight: 600;">${virtualAccount.bank_name || virtualAccount.bankName}</span>
-                                        </div>
-                                    ` : ''}
-                                    ${virtualAccount.account_name || virtualAccount.accountName ? `
-                                        <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
-                                            <span style="color: var(--text-secondary);">Account Name:</span>
-                                            <span style="font-weight: 600;">${virtualAccount.account_name || virtualAccount.accountName}</span>
-                                        </div>
-                                    ` : ''}
-                                    <div style="display: flex; justify-content: space-between;">
-                                        <span style="color: var(--text-secondary);">Amount to Send:</span>
-                                        <span style="font-weight: 600; color: var(--primary);">${finalQuote?.fiatAmount || amount} ${finalQuote?.fiatCurrency || quote.source?.currency || ''}</span>
-                                    </div>
-                                    <div style="display: flex; justify-content: space-between; margin-top: 8px;">
-                                        <span style="color: var(--text-secondary);">You'll Receive:</span>
-                                        <span style="font-weight: 600; color: var(--success);">${finalQuote?.cryptoAmount || quote.destination?.amount || 0} USDC</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div style="background: #FEF3C7; padding: 16px; border-radius: 8px; margin-top: 16px; border-left: 4px solid #F59E0B;">
-                                <div style="color: #92400E; font-size: 14px; font-weight: 600; margin-bottom: 12px;">
-                                    Instructions:
-                                </div>
-                                <ol style="color: #92400E; font-size: 13px; margin: 0; padding-left: 20px; line-height: 1.8;">
-                                    <li>Transfer the exact amount to the account above</li>
-                                    <li>Use the exact account number provided</li>
-                                    <li>Your wallet will be credited automatically within minutes</li>
-                                </ol>
-                            </div>
-
-                            <button onclick="closeModal()" class="btn-primary" style="width: 100%; margin-top: 16px;">
-                                Done
-                            </button>
-                        `;
-                        document.getElementById('virtualAccountDisplay').style.display = 'block';
-                        document.getElementById('onrampFormContainer').style.display = 'none';
-
-                        window.hideLoadingSpinner();
-                        showToast('Deposit account created! Transfer funds to the account above.', 'success');
-
-                    } catch (error) {
-                        console.error('Onramp execution failed:', error);
-                        window.hideLoadingSpinner();
-                        showToast(error.message || 'Failed to create deposit', 'error');
-                        getQuoteBtn.disabled = false;
-                        getQuoteBtn.textContent = 'Proceed to Deposit';
-                    }
-                };
-                getQuoteBtn.disabled = false;
-
             } catch (error) {
-                console.error('Quote failed:', error);
-                window.hideLoadingSpinner();
-                showToast(error.message || 'Failed to get quote', 'error');
-                getQuoteBtn.disabled = false;
-                getQuoteBtn.textContent = 'Get Quote';
+                console.error('Failed to generate account:', error);
+                showToast(error.message || 'Failed to generate account', 'error');
+                generateBtn.disabled = false;
+                generateBtn.textContent = 'Get Deposit Account';
             }
         });
 
     } catch (error) {
         console.error('Failed to load add funds modal:', error);
         window.hideLoadingSpinner();
-        showToast(error.message || 'Failed to load deposit form', 'error');
+        showToast(error.message || 'Failed to load deposit options', 'error');
     }
 }
 
@@ -1925,20 +1499,28 @@ export function showSwapModal() {
             getQuoteBtn.disabled = true;
             getQuoteBtn.textContent = 'Loading...';
 
-            const quoteResponse = await api.getSwitchSwapQuote({
-                amount,
-                fromAsset,
-                toAsset
-            });
+            const [fromNet, fromCur] = fromAsset.split(':');
+            const [toNet, toCur] = toAsset.split(':');
 
-            if (!quoteResponse.success) {
-                throw new Error(quoteResponse.message || 'Failed to get quote');
+            const [rateResponse, feesResponse] = await Promise.all([
+                api.getHostfiExchangeRates(fromCur.toUpperCase(), toCur.toUpperCase()),
+                api.getHostfiExchangeFees(fromCur.toUpperCase(), toCur.toUpperCase())
+            ]);
+
+            if (!rateResponse.success) {
+                throw new Error(rateResponse.message || 'Failed to get quote');
             }
 
-            const quote = quoteResponse.data;
-            document.getElementById('swapEstimate').textContent = `${quote.destination?.amount || 0} ${quote.destination?.currency || ''}`;
-            document.getElementById('swapRate').textContent = `1 ${quote.source?.currency || ''} = ${(quote.destination?.amount / quote.source?.amount).toFixed(4)} ${quote.destination?.currency || ''}`;
-            document.getElementById('swapFee').textContent = `${quote.fee?.amount || 0} ${quote.fee?.currency || ''}`;
+            const rates = rateResponse.data.rates;
+            const rate = rates.rate || (rates[toCur.toUpperCase()] / rates[fromCur.toUpperCase()]) || 1;
+            const estimatedAmount = amount * rate;
+
+            const fees = feesResponse.success ? feesResponse.data.fees : { amount: 0, currency: fromCur.toUpperCase() };
+
+            document.getElementById('swapEstimate').textContent = `${estimatedAmount.toFixed(4)} ${toCur.toUpperCase()}`;
+            document.getElementById('swapRate').textContent = `1 ${fromCur.toUpperCase()} = ${rate.toFixed(4)} ${toCur.toUpperCase()}`;
+            // Adjust fee display based on response (HostFi fees usually in quote or separate)
+            document.getElementById('swapFee').textContent = feesResponse.data?.platformFee ? `${feesResponse.data.platformFee.percent}%` : '1%';
             document.getElementById('swapQuoteDisplay').style.display = 'block';
 
             submitBtn.disabled = false;
@@ -1955,7 +1537,7 @@ export function showSwapModal() {
     });
 }
 
-window.handleSwap = async function(event) {
+window.handleSwap = async function (event) {
     event.preventDefault();
 
     const fromAsset = document.getElementById('swapFromAsset').value;
@@ -1979,7 +1561,7 @@ window.handleSwap = async function(event) {
         submitBtn.disabled = true;
         submitBtn.textContent = 'Processing swap...';
 
-        const response = await api.requestSwitchSwap({
+        const response = await api.swapAssets({
             amount,
             fromAsset,
             toAsset
@@ -2070,8 +1652,8 @@ export async function showPayoutSettings() {
                                     <div style="width: 40px; height: 40px; background: linear-gradient(135deg, var(--primary), var(--secondary)); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
                                             ${beneficiary.type === 'bank' ?
-                                                '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h12M6 12h8"/>' :
-                                                '<rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/>'}
+                '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h12M6 12h8"/>' :
+                '<rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/>'}
                                         </svg>
                                     </div>
                                     <div style="flex: 1;">
@@ -2172,7 +1754,7 @@ export async function showPayoutSettings() {
     }
 }
 
-window.deleteBeneficiary = async function(beneficiaryId) {
+window.deleteBeneficiary = async function (beneficiaryId) {
     if (!confirm('Are you sure you want to remove this payout method?')) return;
 
     try {
@@ -2316,17 +1898,17 @@ export async function showTransactionHistory() {
         const content = `
             <div style="display: grid; gap: 8px;">
                 ${filtered.map(tx => {
-                    const isCredit = tx.type === 'deposit' || tx.type === 'earning' || tx.type === 'refund';
-                    const statusColor = tx.status === 'completed' ? '#10B981' : tx.status === 'pending' ? '#FFA500' : '#EF4444';
+            const isCredit = tx.type === 'deposit' || tx.type === 'earning' || tx.type === 'refund';
+            const statusColor = tx.status === 'completed' ? '#10B981' : tx.status === 'pending' ? '#FFA500' : '#EF4444';
 
-                    return `
+            return `
                         <div class="card" style="padding: 16px; background: var(--background-alt); border-left: 3px solid ${isCredit ? '#10B981' : '#6B46FF'};">
                             <div style="display: flex; align-items: center; gap: 16px;">
                                 <div style="width: 40px; height: 40px; background: ${isCredit ? 'rgba(16, 185, 129, 0.1)' : 'rgba(107, 70, 255, 0.1)'}; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${isCredit ? '#10B981' : '#6B46FF'}" stroke-width="2">
                                         ${isCredit ?
-                                            '<path d="M12 5v14M5 12l7-7 7 7"/>' :
-                                            '<path d="M12 19V5M5 12l7 7 7-7"/>'}
+                    '<path d="M12 5v14M5 12l7-7 7 7"/>' :
+                    '<path d="M12 19V5M5 12l7 7 7-7"/>'}
                                     </svg>
                                 </div>
                                 <div style="flex: 1;">
@@ -2335,12 +1917,12 @@ export async function showTransactionHistory() {
                                             <div style="font-weight: 600; text-transform: capitalize;">${tx.type || 'Transaction'}</div>
                                             <div style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">
                                                 ${new Date(tx.createdAt).toLocaleDateString('en-US', {
-                                                    month: 'short',
-                                                    day: 'numeric',
-                                                    year: 'numeric',
-                                                    hour: '2-digit',
-                                                    minute: '2-digit'
-                                                })}
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    })}
                                             </div>
                                         </div>
                                         <div style="text-align: right;">
@@ -2358,7 +1940,7 @@ export async function showTransactionHistory() {
                             </div>
                         </div>
                     `;
-                }).join('')}
+        }).join('')}
             </div>
         `;
 
@@ -2371,7 +1953,7 @@ export async function showTransactionHistory() {
     });
 
     // Export function
-    window.exportTransactions = function() {
+    window.exportTransactions = function () {
         const typeFilter = document.getElementById('transactionTypeFilter')?.value || '';
         const statusFilter = document.getElementById('transactionStatusFilter')?.value || '';
         const periodFilter = parseInt(document.getElementById('transactionPeriodFilter')?.value || '30');
@@ -2532,12 +2114,12 @@ export async function showEarningsReport() {
                 <h4 style="margin: 0 0 20px 0;">Last 6 Months</h4>
                 <div style="display: flex; align-items: end; gap: 12px; height: 200px;">
                     ${sortedMonths.map(month => {
-                        const amount = earningsByMonth[month];
-                        const height = (amount / maxEarning) * 100;
-                        const [year, monthNum] = month.split('-');
-                        const monthName = new Date(year, monthNum - 1).toLocaleDateString('en-US', { month: 'short' });
+            const amount = earningsByMonth[month];
+            const height = (amount / maxEarning) * 100;
+            const [year, monthNum] = month.split('-');
+            const monthName = new Date(year, monthNum - 1).toLocaleDateString('en-US', { month: 'short' });
 
-                        return `
+            return `
                             <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px;">
                                 <div style="width: 100%; background: linear-gradient(135deg, var(--primary), var(--secondary)); border-radius: 8px 8px 0 0; height: ${height}%; min-height: 4px; position: relative; transition: all 0.3s;">
                                     <div style="position: absolute; top: -24px; left: 50%; transform: translateX(-50%); font-size: 11px; font-weight: 600; white-space: nowrap;">$${amount.toFixed(0)}</div>
@@ -2545,7 +2127,7 @@ export async function showEarningsReport() {
                                 <div style="font-size: 12px; color: var(--text-secondary);">${monthName}</div>
                             </div>
                         `;
-                    }).join('')}
+        }).join('')}
                 </div>
             </div>
 
@@ -2636,7 +2218,7 @@ export async function showEarningsReport() {
         document.getElementById('earningsReportContent').innerHTML = content;
 
         // Export function
-        window.exportEarningsReport = function() {
+        window.exportEarningsReport = function () {
             const headers = ['Month', 'Earnings', 'Jobs Completed', 'Average per Job'];
             const rows = sortedMonths.map(month => {
                 const amount = earningsByMonth[month];
@@ -2693,7 +2275,7 @@ window.currentGalleryImages = [];
 window.currentGalleryIndex = 0;
 window.galleryKeyHandler = null;
 
-window.openImageModal = function(imageUrl, allImages = null, startIndex = 0) {
+window.openImageModal = function (imageUrl, allImages = null, startIndex = 0) {
     const existingModal = document.getElementById('globalImageModal');
     if (existingModal) existingModal.remove();
 
@@ -2736,14 +2318,14 @@ window.openImageModal = function(imageUrl, allImages = null, startIndex = 0) {
     `;
 
     const backdrop = modal.querySelector('div');
-    backdrop.addEventListener('click', function(e) {
+    backdrop.addEventListener('click', function (e) {
         if (e.target === e.currentTarget) {
             window.closeImageModal();
         }
     });
 
     // Add keyboard navigation - store handler globally so we can remove it
-    window.galleryKeyHandler = function(e) {
+    window.galleryKeyHandler = function (e) {
         if (e.key === 'Escape') {
             window.closeImageModal();
         } else if (hasMultipleImages && e.key === 'ArrowLeft') {
@@ -2758,7 +2340,7 @@ window.openImageModal = function(imageUrl, allImages = null, startIndex = 0) {
     document.body.appendChild(modal);
 };
 
-window.navigateGallery = function(direction) {
+window.navigateGallery = function (direction) {
     const newIndex = window.currentGalleryIndex + direction;
 
     // Wrap around
@@ -2790,7 +2372,7 @@ window.navigateGallery = function(direction) {
     }
 };
 
-window.closeImageModal = function() {
+window.closeImageModal = function () {
     const modal = document.getElementById('globalImageModal');
     if (modal) {
         modal.remove();

@@ -140,6 +140,13 @@ router.post('/beneficiaries', protect, hostfiWalletController.addBeneficiary);
  */
 router.delete('/beneficiaries/:id', protect, hostfiWalletController.removeBeneficiary);
 
+/**
+ * @route   POST /api/hostfi/assets/swap
+ * @desc    Swap assets
+ * @access  Private
+ */
+router.post('/assets/swap', protect, hostfiWalletController.swapAssets);
+
 // ============================================
 // RATES & FEES ROUTES
 // ============================================
