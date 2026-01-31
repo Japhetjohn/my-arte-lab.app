@@ -690,12 +690,28 @@ class HostFiService {
       'TZ': 'Tanzania',
       'UG': 'Uganda',
       'ZM': 'Zambia',
+      'RW': 'Rwanda',
+      'SN': 'Senegal',
+      'CM': 'Cameroon',
+      'EG': 'Egypt',
+      'MA': 'Morocco',
+      'TN': 'Tunisia',
+      'DZ': 'Algeria',
+      'ET': 'Ethiopia',
       'US': 'United States',
       'GB': 'United Kingdom',
+      'EU': 'Europe',
+      'FR': 'France',
+      'DE': 'Germany',
       'IN': 'India',
       'BR': 'Brazil',
       'CA': 'Canada',
-      'AE': 'United Arab Emirates'
+      'JP': 'Japan',
+      'CN': 'China',
+      'AE': 'United Arab Emirates',
+      'SA': 'Saudi Arabia',
+      'AU': 'Australia',
+      'NZ': 'New Zealand'
     };
 
     return countries[code] || code;

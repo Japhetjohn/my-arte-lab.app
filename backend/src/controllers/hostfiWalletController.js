@@ -17,39 +17,34 @@ exports.getWallet = catchAsync(async (req, res, next) => {
   // Initialize or sync HostFi wallets
   const user = await hostfiWalletService.syncWalletBalances(req.user._id);
 
-  // Fetch exchange rates for USD equivalent
-  let ngnToUsd = 0;
-  try {
-    const rateData = await hostfiService.getCurrencyRates('NGN', 'USD');
-    ngnToUsd = rateData.rate || rateData.data?.rate || 0;
-  } catch (error) {
-    console.error('Failed to fetch NGN/USD rate:', error.message);
-  }
-
-  const assetsWithUsd = user.wallet.hostfiWalletAssets.map(asset => {
+  // Fetch exchange rates for all non-USD assets to get total USD equivalent
+  const assetsWithUsd = await Promise.all(user.wallet.hostfiWalletAssets.map(async (asset) => {
     let usdEquivalent = 0;
-    if (asset.currency === 'USD' || asset.currency === 'USDC' || asset.currency === 'USDT') {
+    const currency = asset.currency.toUpperCase();
+
+    if (['USD', 'USDC', 'USDT', 'DAI', 'BUSD'].includes(currency)) {
       usdEquivalent = asset.balance;
-    } else if (asset.currency === 'NGN' && ngnToUsd) {
-      // HostFi conversion rate is usually 1 NGN = X USD (e.g. 0.00067)
-      // If it returns 1 USD = 1500 NGN, we would divide.
-      // Given the screenshot, MULTIPLICATION is more likely to match the expectation
-      // of 1 NGN = small decimal USD.
-      usdEquivalent = asset.balance * ngnToUsd;
+    } else {
+      try {
+        // Fetch rate dynamically for the asset's currency
+        const rateData = await hostfiService.getCurrencyRates(currency, 'USD');
+        const rate = rateData.rate || rateData.data?.rate || 0;
+        usdEquivalent = asset.balance * rate;
+      } catch (error) {
+        console.error(`Failed to fetch ${currency}/USD rate:`, error.message);
+        // If it's NGN and we fail, we could have a hardcoded fallback if desired, 
+        // but better to just skip if the rate API is down
+      }
     }
+
     return {
       ...asset.toObject(),
       usdEquivalent: parseFloat(usdEquivalent.toFixed(2))
     };
-  });
+  }));
 
-  // Calculate total USD balance including both assets and legacy balance
-  let totalBalanceUsd = assetsWithUsd.reduce((sum, asset) => sum + asset.usdEquivalent, 0);
-
-  // Fallback: If totalBalanceUsd is 0 but there is a legacy balance, calculate it manually
-  if (totalBalanceUsd === 0 && user.wallet.balance > 0 && ngnToUsd > 0) {
-    totalBalanceUsd = user.wallet.balance * ngnToUsd;
-  }
+  // Calculate total USD balance
+  const totalBalanceUsd = assetsWithUsd.reduce((sum, asset) => sum + asset.usdEquivalent, 0);
 
   successResponse(res, 200, 'Wallet retrieved successfully', {
     wallet: {
@@ -98,33 +93,30 @@ exports.getBalanceSummary = catchAsync(async (req, res, next) => {
   const user = await hostfiWalletService.syncWalletBalances(req.user._id);
   const summary = await Transaction.getUserBalanceSummary(user._id);
 
-  // Fetch exchange rates for USD equivalent
-  let ngnToUsd = 0;
-  try {
-    const rateData = await hostfiService.getCurrencyRates('NGN', 'USD');
-    ngnToUsd = rateData.rate || rateData.data?.rate || 0;
-  } catch (error) {
-    console.error('Failed to fetch NGN/USD rate:', error.message);
-  }
-
-  const assetsWithUsd = user.wallet.hostfiWalletAssets.map(asset => {
+  // Fetch exchange rates for all non-USD assets
+  const assetsWithUsd = await Promise.all(user.wallet.hostfiWalletAssets.map(async (asset) => {
     let usdEquivalent = 0;
-    if (asset.currency === 'USD' || asset.currency === 'USDC' || asset.currency === 'USDT') {
+    const currency = asset.currency.toUpperCase();
+
+    if (['USD', 'USDC', 'USDT', 'DAI', 'BUSD'].includes(currency)) {
       usdEquivalent = asset.balance;
-    } else if (asset.currency === 'NGN' && ngnToUsd) {
-      usdEquivalent = asset.balance * ngnToUsd;
+    } else {
+      try {
+        const rateData = await hostfiService.getCurrencyRates(currency, 'USD');
+        const rate = rateData.rate || rateData.data?.rate || 0;
+        usdEquivalent = asset.balance * rate;
+      } catch (error) {
+        console.error(`Failed to fetch ${currency}/USD rate:`, error.message);
+      }
     }
+
     return {
       ...asset.toObject(),
       usdEquivalent: parseFloat(usdEquivalent.toFixed(2))
     };
-  });
+  }));
 
-  let totalBalanceUsd = assetsWithUsd.reduce((sum, asset) => sum + asset.usdEquivalent, 0);
-
-  if (totalBalanceUsd === 0 && user.wallet.balance > 0 && ngnToUsd > 0) {
-    totalBalanceUsd = user.wallet.balance * ngnToUsd;
-  }
+  const totalBalanceUsd = assetsWithUsd.reduce((sum, asset) => sum + asset.usdEquivalent, 0);
 
   successResponse(res, 200, 'Balance summary retrieved successfully', {
     wallet: {
@@ -390,7 +382,7 @@ exports.createFiatChannel = catchAsync(async (req, res, next) => {
       'NZD': 'NZ', // New Zealand Dollar
     };
 
-    const countryCode = currencyToCountry[currency] || 'US'; // Default to US if unknown
+    const countryCode = currencyToCountry[currency] || 'NG'; // Default to NG, but currency choice drives this
 
     channel = await hostfiService.createFiatCollectionChannel({
       assetId,
@@ -614,7 +606,7 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
         accountName: (recipient.accountName === 'undefined' || !recipient.accountName) ? 'Verified Recipient' : recipient.accountName,
         bankId: recipient.bankId,
         bankName: recipient.bankName,
-        country: recipient.country || 'NG',
+        country: recipient.country,
         currency: targetCurrency || currency
       },
       clientReference
@@ -646,7 +638,7 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
         provider: 'hostfi',
         methodId,
         feeBreakdown: feeBreakdown,
-        country: recipient.country || 'NG'
+        country: recipient.country
       }
     });
 

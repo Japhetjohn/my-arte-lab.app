@@ -1019,13 +1019,13 @@ window.showBankWithdrawal = async function () {
                             </div>
 
                             <div class="form-group">
-                                <label class="form-label">Amount (NGN)</label>
+                                <label class="form-label">Amount (${window.walletData?.currency || 'NGN'})</label>
                                 <div style="position: relative;">
                                     <input type="number" id="withdrawAmount" class="form-input" placeholder="0.00" min="1000" step="1" required>
                                     <button type="button" id="withdrawMaxBtn" class="btn-text" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 12px; color: var(--primary-color);">Use Max</button>
                                 </div>
-                                <small style="color: var(--text-secondary); display: block; margin-top: 4px;">Minimum withdrawal: 1,000 NGN</small>
-                                <small style="color: var(--text-secondary);">Available: <span id="availableBalance">0.00</span> | Fee: 1%</small>
+                                <small style="color: var(--text-secondary); display: block; margin-top: 4px;">Minimum withdrawal: 1,000 ${window.walletData?.currency || 'NGN'}</small>
+                                <small style="color: var(--text-secondary);">Available: <span id="availableBalance">0.00</span> ${window.walletData?.currency || 'NGN'} | Fee: 1%</small>
                             </div>
 
                             <button type="submit" id="withdrawSubmitBtn" class="btn-primary" style="width: 100%;" disabled>
@@ -1202,7 +1202,7 @@ window.showBankWithdrawal = async function () {
 
                 const res = await api.initiateHostfiWithdrawal({
                     amount: parseFloat(amountInput.value),
-                    currency: 'NGN', // Source currency in wallet (NGN balance)
+                    currency: window.walletData?.currency || 'NGN',
                     targetCurrency: currencySelect.value,
                     methodId: 'BANK_TRANSFER',
                     recipient: {
