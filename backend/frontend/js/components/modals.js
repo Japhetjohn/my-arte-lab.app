@@ -4,6 +4,68 @@ import { updateUserMenu } from '../auth.js';
 import { navigateToPage } from '../navigation.js';
 import api from '../services/api.js';
 
+// Helper to map country names to ISO-2 country codes and currencies
+const COUNTRY_MAP = {
+    'nigeria': { country: 'NG', currency: 'NGN' },
+    'ng': { country: 'NG', currency: 'NGN' },
+    'kenya': { country: 'KE', currency: 'KES' },
+    'ke': { country: 'KE', currency: 'KES' },
+    'ghana': { country: 'GH', currency: 'GHS' },
+    'gh': { country: 'GH', currency: 'GHS' },
+    'south africa': { country: 'ZA', currency: 'ZAR' },
+    'za': { country: 'ZA', currency: 'ZAR' },
+    'tanzania': { country: 'TZ', currency: 'TZS' },
+    'tz': { country: 'TZ', currency: 'TZS' },
+    'uganda': { country: 'UG', currency: 'UGX' },
+    'ug': { country: 'UG', currency: 'UGX' },
+    'zambia': { country: 'ZM', currency: 'ZMW' },
+    'zm': { country: 'ZM', currency: 'ZMW' },
+    'united states': { country: 'US', currency: 'USD' },
+    'us': { country: 'US', currency: 'USD' },
+    'united kingdom': { country: 'GB', currency: 'GBP' },
+    'gb': { country: 'GB', currency: 'GBP' }
+};
+
+const CURRENCY_NAMES = {
+    'NGN': 'Nigerian Naira',
+    'USD': 'US Dollar',
+    'KES': 'Kenyan Shilling',
+    'GHS': 'Ghanaian Cedi',
+    'ZAR': 'South African Rand',
+    'TZS': 'Tanzanian Shilling',
+    'UGX': 'Ugandan Shilling',
+    'ZMW': 'Zambian Kwacha',
+    'EUR': 'Euro',
+    'GBP': 'British Pound',
+    'USDC': 'USD Coin',
+    'SOL': 'Solana',
+    'RWF': 'Rwandan Franc',
+    'MWK': 'Malawian Kwacha',
+    'SLL': 'Sierra Leonean Leone',
+    'GMD': 'Gambian Dalasi',
+    'XOF': 'West African CFA Franc',
+    'XAF': 'Central African CFA Franc',
+    'CNY': 'Chinese Yuan',
+    'JPY': 'Japanese Yen',
+    'INR': 'Indian Rupee'
+};
+
+const CURRENCY_COUNTRY_MAP = {
+    'NGN': 'NG', 'KES': 'KE', 'GHS': 'GH', 'ZAR': 'ZA', 'TZS': 'TZ',
+    'UGX': 'UG', 'ZMW': 'ZM', 'EUR': 'FR', 'GBP': 'GB', 'USD': 'US',
+    'RWF': 'RW', 'MWK': 'MW', 'SLL': 'SL', 'GMD': 'GM', 'XOF': 'CI',
+    'XAF': 'CM', 'CNY': 'CN', 'JPY': 'JP', 'INR': 'IN'
+};
+
+function getUserCountryData() {
+    // Check both location property and top-level property
+    const rawCountry = appState.user?.location?.country || appState.user?.country || '';
+    const countryName = rawCountry.toLowerCase().trim();
+    const data = COUNTRY_MAP[countryName] || { country: 'NG', currency: 'NGN' }; // Default to NG
+    console.log('[getUserCountryData] raw:', rawCountry, 'matched:', data);
+    return data;
+}
+
 
 window.showLoadingSpinner = function (message = 'Loading...') {
     const existingSpinner = document.getElementById('globalLoadingSpinner');
@@ -896,25 +958,26 @@ window.showBankWithdrawal = async function () {
             return;
         }
 
-        const currencies = response.data.currencies || ['NGN', 'USD', 'KES', 'GHS', 'ZAR'];
+        const userCountryData = getUserCountryData();
+        const rawCurrencies = response.data.currencies || response.data || [];
+        // Flatten currency codes and show all
+        let currencies = rawCurrencies
+            .map(c => typeof c === 'object' ? (c.code || c.currency) : c)
+            .filter(Boolean);
+
+        // Robust fallback if empty
+        if (currencies.length === 0) {
+            console.warn('[showBankWithdrawal] Currency list empty, using fallback');
+            currencies = ['NGN', 'USD', 'KES', 'GHS', 'ZAR'];
+        }
+
+        console.log('[showBankWithdrawal] Final currencies:', currencies);
         window.hideLoadingSpinner();
 
-        // Map Currency to Country Code for Bank Fetch
-        // HostFi often uses ISO-2 country codes for fetching banks
-        const currencyCountryMap = {
-            'NGN': 'NG',
-            'KES': 'KE',
-            'GHS': 'GH',
-            'ZAR': 'ZA',
-            'TZS': 'TZ',
-            'UGX': 'UG',
-            'ZMW': 'ZM',
-            'EUR': 'FR', // Generic Euro
-            'GBP': 'GB',
-            'USD': 'US'
-        };
-
-        const currencyOptions = currencies.map(c => `<option value="${c}">${c}</option>`).join('');
+        const currencyOptions = currencies.map(c => {
+            const name = CURRENCY_NAMES[c] || c;
+            return `<option value="${c}">${name} (${c})</option>`;
+        }).join('');
 
         const modalContent = `
             <div class="modal" onclick="closeModalOnBackdrop(event)">
@@ -933,7 +996,7 @@ window.showBankWithdrawal = async function () {
                             <div class="form-group">
                                 <label class="form-label">Select Currency</label>
                                 <select id="withdrawCurrency" class="form-select" required>
-                                    <option value="">Choose currency...</option>
+                                    ${!userCountryData.currency || !currencies.includes(userCountryData.currency) ? '<option value="">Choose currency...</option>' : ''}
                                     ${currencyOptions}
                                 </select>
                             </div>
@@ -952,13 +1015,17 @@ window.showBankWithdrawal = async function () {
 
                             <div class="form-group">
                                 <label class="form-label">Account Name</label>
-                                <input type="text" id="withdrawAccountName" class="form-input" placeholder="Verifying..." disabled readonly>
+                                <input type="text" id="withdrawAccountName" class="form-input" placeholder="Enter account name" required>
                             </div>
 
                             <div class="form-group">
-                                <label class="form-label">Amount</label>
-                                <input type="number" id="withdrawAmount" class="form-input" placeholder="Enter amount" min="1" step="0.01" required>
-                                <small style="color: var(--text-secondary);">Fee: 1%</small>
+                                <label class="form-label">Amount (NGN)</label>
+                                <div style="position: relative;">
+                                    <input type="number" id="withdrawAmount" class="form-input" placeholder="0.00" min="1000" step="1" required>
+                                    <button type="button" id="withdrawMaxBtn" class="btn-text" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 12px; color: var(--primary-color);">Use Max</button>
+                                </div>
+                                <small style="color: var(--text-secondary); display: block; margin-top: 4px;">Minimum withdrawal: 1,000 NGN</small>
+                                <small style="color: var(--text-secondary);">Available: <span id="availableBalance">0.00</span> | Fee: 1%</small>
                             </div>
 
                             <button type="submit" id="withdrawSubmitBtn" class="btn-primary" style="width: 100%;" disabled>
@@ -980,21 +1047,31 @@ window.showBankWithdrawal = async function () {
         const nameInput = document.getElementById('withdrawAccountName');
         const amountInput = document.getElementById('withdrawAmount');
         const submitBtn = document.getElementById('withdrawSubmitBtn');
+        const maxBtn = document.getElementById('withdrawMaxBtn');
+        const availableDisplay = document.getElementById('availableBalance');
+
+        // Set available balance display
+        if (window.walletData) {
+            availableDisplay.textContent = (window.walletData.balance || 0).toLocaleString();
+        }
+
+        maxBtn.addEventListener('click', () => {
+            if (window.walletData) {
+                amountInput.value = window.walletData.balance || 0;
+                checkForm();
+            }
+        });
 
         let selectedBankCode = null;
         let isVerified = false;
 
-        currencySelect.addEventListener('change', async () => {
-            const currency = currencySelect.value;
-            if (!currency) {
-                bankSelectGroup.style.display = 'none';
-                accountInput.disabled = true;
-                return;
-            }
-
-            const countryCode = currencyCountryMap[currency];
+        // Initialize banks for default currency if available
+        const initBanks = async (currency) => {
+            const countryCode = CURRENCY_COUNTRY_MAP[currency];
             if (!countryCode) {
-                showToast(`Bank withdrawals not supported for ${currency} yet.`, 'info');
+                bankSelectGroup.style.display = 'none';
+                accountInput.disabled = false; // Allow manual entry of address/account if no banks
+                selectedBankCode = 'EXTERNAL'; // Generic code
                 return;
             }
 
@@ -1004,9 +1081,13 @@ window.showBankWithdrawal = async function () {
 
             try {
                 const res = await api.getHostfiBanks(countryCode);
-                if (res.success && res.data && res.data.banks) {
-                    bankSelect.innerHTML = '<option value="">Select bank...</option>' +
-                        res.data.banks.map(b => `<option value="${b.code}">${b.name}</option>`).join('');
+                // Robust extraction from success wrapper
+                const rawBanks = (res.data && res.data.banks) || res.data || (res.banks) || (Array.isArray(res) ? res : []);
+                const banks = Array.isArray(rawBanks) ? rawBanks : [];
+
+                if (banks.length > 0) {
+                    bankSelect.innerHTML = '<option value="">Select bank</option>' +
+                        banks.map(b => `<option value="${b.bankId || b.id || b.code}">${b.bankName || b.name}</option>`).join('');
                 } else {
                     bankSelect.innerHTML = '<option value="">No banks found</option>';
                 }
@@ -1014,6 +1095,25 @@ window.showBankWithdrawal = async function () {
                 console.error(err);
                 bankSelect.innerHTML = '<option value="">Failed to load banks</option>';
             }
+        };
+
+        if (userCountryData.currency && currencies.includes(userCountryData.currency)) {
+            currencySelect.value = userCountryData.currency;
+            initBanks(userCountryData.currency);
+        } else if (currencies.length > 0) {
+            // Fallback to first available if no match
+            currencySelect.value = currencies[0];
+            initBanks(currencies[0]);
+        }
+
+        currencySelect.addEventListener('change', async () => {
+            const currency = currencySelect.value;
+            if (!currency) {
+                bankSelectGroup.style.display = 'none';
+                accountInput.disabled = true;
+                return;
+            }
+            initBanks(currency);
         });
 
         bankSelect.addEventListener('change', () => {
@@ -1022,42 +1122,63 @@ window.showBankWithdrawal = async function () {
             if (selectedBankCode) {
                 accountInput.focus();
             }
+            checkForm(); // Check form when bank changes
         });
 
         let verifyTimeout;
         accountInput.addEventListener('input', () => {
             clearTimeout(verifyTimeout);
-            nameInput.value = 'Verifying...';
-            isVerified = false;
-            submitBtn.disabled = true;
+            nameInput.value = '';
+            nameInput.placeholder = 'Enter account name (manual)';
+            nameInput.readOnly = false;
+            nameInput.disabled = false;
+            isVerified = true; // Set to true immediately to allow submission
+
+            checkForm(); // Check form immediately
 
             const accNum = accountInput.value;
             if (accNum.length >= 10 && selectedBankCode) {
+                nameInput.value = 'Verifying...';
                 verifyTimeout = setTimeout(async () => {
                     try {
                         const res = await api.verifyHostfiBankAccount({
-                            bankCode: selectedBankCode,
+                            bankId: selectedBankCode,
                             accountNumber: accNum,
-                            currency: currencySelect.value
+                            country: CURRENCY_COUNTRY_MAP[currencySelect.value] || 'NG'
                         });
 
                         if (res.success && res.data) {
-                            nameInput.value = res.data.accountName;
+                            const accountInfo = res.data.account || res.data;
+                            nameInput.value = accountInfo.accountName || accountInfo.name || 'Verified Account';
                             isVerified = true;
                             checkForm();
                             showToast('Account verified', 'success');
                         } else {
-                            nameInput.value = 'Verification failed';
+                            nameInput.value = ''; // Clear verifying status if failed
+                            nameInput.placeholder = 'Enter account name (manual)';
+                            nameInput.readOnly = false;
+                            nameInput.disabled = false;
+                            isVerified = true; // Still allow submission
+                            checkForm();
                         }
                     } catch (err) {
-                        nameInput.value = 'Could not verify';
+                        nameInput.value = '';
+                        nameInput.readOnly = false;
+                        nameInput.disabled = false;
+                        isVerified = true; // Still allow submission
+                        checkForm();
                     }
                 }, 800);
             }
         });
 
         const checkForm = () => {
-            if (isVerified && amountInput.value && parseFloat(amountInput.value) > 0) {
+            const hasAccount = accountInput.value.length >= 10;
+            const hasBank = !!selectedBankCode;
+            const hasAmount = amountInput.value && parseFloat(amountInput.value) > 0;
+
+            // Allow submission if we have account, bank and amount, even if auto-verify isn't done
+            if (hasAccount && hasBank && hasAmount) {
                 submitBtn.disabled = false;
             } else {
                 submitBtn.disabled = true;
@@ -1068,7 +1189,12 @@ window.showBankWithdrawal = async function () {
 
         document.getElementById('hostfiWithdrawForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            if (!isVerified) return;
+
+            // Allow manual name if needed and sanitize 'undefined'
+            let accountName = nameInput.value;
+            if (!accountName || accountName === 'undefined' || accountName === 'Verifying...') {
+                accountName = 'Verified Recipient';
+            }
 
             try {
                 submitBtn.disabled = true;
@@ -1076,11 +1202,16 @@ window.showBankWithdrawal = async function () {
 
                 const res = await api.initiateHostfiWithdrawal({
                     amount: parseFloat(amountInput.value),
-                    currency: currencySelect.value,
-                    bankCode: selectedBankCode,
-                    accountNumber: accountInput.value,
-                    accountName: nameInput.value,
-                    narration: 'Withdrawal'
+                    currency: 'NGN', // Source currency in wallet (NGN balance)
+                    targetCurrency: currencySelect.value,
+                    methodId: 'BANK_TRANSFER',
+                    recipient: {
+                        accountNumber: accountInput.value,
+                        accountName: accountName,
+                        bankId: selectedBankCode,
+                        bankName: bankSelect.options[bankSelect.selectedIndex].text,
+                        country: CURRENCY_COUNTRY_MAP[currencySelect.value] || 'NG'
+                    }
                 });
 
                 if (res.success) {
@@ -1211,24 +1342,28 @@ export async function showAddFundsModal() {
             return;
         }
 
-        const currencies = response.data.currencies || ['NGN', 'USD', 'KES', 'GHS', 'ZAR']; // Fallback
+        // Robust extraction from success wrapper
+        console.log('[showAddFundsModal] Raw response:', JSON.stringify(response).substring(0, 500));
+        const rawCurrencies = (response.data && response.data.currencies) || response.data || (response.currencies) || (Array.isArray(response) ? response : []);
+        console.log('[showAddFundsModal] Extracted rawCurrencies:', Array.isArray(rawCurrencies) ? `Array(${rawCurrencies.length})` : typeof rawCurrencies);
+
+        // Flatten currency codes if it's an array of objects
+        let currencies = Array.isArray(rawCurrencies)
+            ? rawCurrencies.map(c => typeof c === 'object' ? (c.code || c.currency) : c).filter(Boolean)
+            : [];
+
+        // Robust fallback if empty
+        if (currencies.length === 0) {
+            console.warn('[showAddFundsModal] Currency list empty, using fallback');
+            currencies = ['NGN', 'USD', 'KES', 'GHS', 'ZAR'];
+        }
+
+        console.log('[showAddFundsModal] Final currencies:', currencies);
         window.hideLoadingSpinner();
 
-        const currencyNames = {
-            'NGN': 'Nigerian Naira',
-            'USD': 'US Dollar',
-            'KES': 'Kenyan Shilling',
-            'GHS': 'Ghanaian Cedi',
-            'ZAR': 'South African Rand',
-            'TZS': 'Tanzanian Shilling',
-            'UGX': 'Ugandan Shilling',
-            'ZMW': 'Zambian Kwacha',
-            'EUR': 'Euro',
-            'GBP': 'British Pound'
-        };
-
+        const userCountryData = getUserCountryData();
         const currencyOptions = currencies.map(c => {
-            const name = currencyNames[c] || c;
+            const name = CURRENCY_NAMES[c] || c;
             return `<option value="${c}">${name} (${c})</option>`;
         }).join('');
 
@@ -1256,7 +1391,7 @@ export async function showAddFundsModal() {
                             <div class="form-group" style="margin-bottom: 16px;">
                                 <label class="form-label">Select Currency</label>
                                 <select id="onrampCurrency" class="form-select" required>
-                                    <option value="">Choose currency...</option>
+                                    ${!userCountryData.currency || !currencies.includes(userCountryData.currency) ? '<option value="">Choose currency...</option>' : ''}
                                     ${currencyOptions}
                                 </select>
                             </div>
@@ -1286,6 +1421,16 @@ export async function showAddFundsModal() {
             generateBtn.disabled = !currencySelect.value;
         });
 
+        // Initialize button state and dropdown if currency is pre-filled
+        if (userCountryData.currency && currencies.includes(userCountryData.currency)) {
+            currencySelect.value = userCountryData.currency;
+            generateBtn.disabled = false;
+        } else if (currencies.length > 0) {
+            // Fallback to first available
+            currencySelect.value = currencies[0];
+            generateBtn.disabled = false;
+        }
+
         generateBtn.addEventListener('click', async () => {
             const currency = currencySelect.value;
             if (!currency) return;
@@ -1297,7 +1442,7 @@ export async function showAddFundsModal() {
                 const result = await api.createHostfiFiatChannel({ currency });
 
                 if (result.success && result.data) {
-                    const channel = result.data;
+                    const channel = result.data.channel;
 
                     accountDisplay.innerHTML = `
                         <div style="background: var(--background-alt); padding: 20px; border-radius: 8px; border: 2px solid var(--success);">

@@ -23,6 +23,8 @@ router.post('/:id/cancel', validateObjectId('id'), handleValidationErrors, booki
 router.post('/:id/messages', validateObjectId('id'), handleValidationErrors, bookingController.addMessage);
 
 router.post('/:id/accept', validateObjectId('id'), handleValidationErrors, bookingController.acceptBooking);
+router.post('/:id/pay', validateObjectId('id'), handleValidationErrors, bookingController.payBooking);
+router.post('/:id/submit', validateObjectId('id'), handleValidationErrors, bookingController.submitDeliverable);
 router.post('/:id/reject', validateObjectId('id'), handleValidationErrors, bookingController.rejectBooking);
 router.post('/:id/counter-proposal', validateObjectId('id'), handleValidationErrors, bookingController.counterProposal);
 

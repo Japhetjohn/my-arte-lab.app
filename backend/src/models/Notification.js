@@ -30,6 +30,7 @@ const notificationSchema = new mongoose.Schema({
       'insufficient_balance',
       'message',
       'system',
+      'work_delivered',
       // Project notifications
       'project_created',
       'project_application_received',
@@ -85,7 +86,7 @@ const notificationSchema = new mongoose.Schema({
 
 notificationSchema.index({ recipient: 1, read: 1, createdAt: -1 });
 
-notificationSchema.methods.markAsRead = async function() {
+notificationSchema.methods.markAsRead = async function () {
   if (!this.read) {
     this.read = true;
     this.readAt = new Date();
@@ -94,7 +95,7 @@ notificationSchema.methods.markAsRead = async function() {
   return this;
 };
 
-notificationSchema.statics.createNotification = async function(data) {
+notificationSchema.statics.createNotification = async function (data) {
   try {
     const notification = await this.create(data);
     return notification;
@@ -104,14 +105,14 @@ notificationSchema.statics.createNotification = async function(data) {
   }
 };
 
-notificationSchema.statics.markAllAsRead = async function(userId) {
+notificationSchema.statics.markAllAsRead = async function (userId) {
   return this.updateMany(
     { recipient: userId, read: false },
     { $set: { read: true, readAt: new Date() } }
   );
 };
 
-notificationSchema.statics.getUnreadCount = async function(userId) {
+notificationSchema.statics.getUnreadCount = async function (userId) {
   return this.countDocuments({ recipient: userId, read: false });
 };
 

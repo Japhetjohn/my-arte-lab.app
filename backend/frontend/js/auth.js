@@ -3,6 +3,7 @@ import { navigateToPage } from './navigation.js';
 import { showToast, closeModal, openModal } from './utils.js';
 import api from './services/api.js';
 import { getAvatarUrl } from './utils/avatar.js';
+import { COUNTRIES_ALPHABETICAL } from './data/countries.js';
 
 export function showAuthModal(type = 'signin', userType = 'client') {
     const isSignUp = type === 'signup';
@@ -138,15 +139,9 @@ export function showAuthModal(type = 'signin', userType = 'client') {
 
                         <div class="form-group">
                             <label class="form-label">Country</label>
-                            <select name="country" class="form-select" required>
+                            <select name="country" id="countrySelect" class="form-select" required>
                                 <option value="">Select your country</option>
-                                <option>Ghana</option>
-                                <option>Kenya</option>
-                                <option>Nigeria</option>
-                                <option>South Africa</option>
-                                <option>Tanzania</option>
-                                <option>Uganda</option>
-                                <option>Zambia</option>
+                                <!-- Countries will be populated by JavaScript -->
                             </select>
                         </div>
 
@@ -190,6 +185,19 @@ export function showAuthModal(type = 'signin', userType = 'client') {
 
     document.getElementById('modalsContainer').innerHTML = modalContent;
     openModal();
+
+    // Populate countries dropdown for signup
+    if (isSignUp) {
+        const countrySelect = document.getElementById('countrySelect');
+        if (countrySelect) {
+            COUNTRIES_ALPHABETICAL.forEach(country => {
+                const option = document.createElement('option');
+                option.value = country.name;
+                option.textContent = `${country.flag} ${country.name}`;
+                countrySelect.appendChild(option);
+            });
+        }
+    }
 }
 
 export async function handleAuth(event, type) {

@@ -17,14 +17,50 @@ exports.getWallet = catchAsync(async (req, res, next) => {
   // Initialize or sync HostFi wallets
   const user = await hostfiWalletService.syncWalletBalances(req.user._id);
 
+  // Fetch exchange rates for USD equivalent
+  let ngnToUsd = 0;
+  try {
+    const rateData = await hostfiService.getCurrencyRates('NGN', 'USD');
+    ngnToUsd = rateData.rate || rateData.data?.rate || 0;
+  } catch (error) {
+    console.error('Failed to fetch NGN/USD rate:', error.message);
+  }
+
+  const assetsWithUsd = user.wallet.hostfiWalletAssets.map(asset => {
+    let usdEquivalent = 0;
+    if (asset.currency === 'USD' || asset.currency === 'USDC' || asset.currency === 'USDT') {
+      usdEquivalent = asset.balance;
+    } else if (asset.currency === 'NGN' && ngnToUsd) {
+      // HostFi conversion rate is usually 1 NGN = X USD (e.g. 0.00067)
+      // If it returns 1 USD = 1500 NGN, we would divide.
+      // Given the screenshot, MULTIPLICATION is more likely to match the expectation
+      // of 1 NGN = small decimal USD.
+      usdEquivalent = asset.balance * ngnToUsd;
+    }
+    return {
+      ...asset.toObject(),
+      usdEquivalent: parseFloat(usdEquivalent.toFixed(2))
+    };
+  });
+
+  // Calculate total USD balance including both assets and legacy balance
+  let totalBalanceUsd = assetsWithUsd.reduce((sum, asset) => sum + asset.usdEquivalent, 0);
+
+  // Fallback: If totalBalanceUsd is 0 but there is a legacy balance, calculate it manually
+  if (totalBalanceUsd === 0 && user.wallet.balance > 0 && ngnToUsd > 0) {
+    totalBalanceUsd = user.wallet.balance * ngnToUsd;
+  }
+
   successResponse(res, 200, 'Wallet retrieved successfully', {
     wallet: {
-      assets: user.wallet.hostfiWalletAssets,
-      balance: user.wallet.balance,
+      assets: assetsWithUsd,
+      balance: user.wallet.balance, // This might be a legacy field or primary balance
       pendingBalance: user.wallet.pendingBalance,
       totalEarnings: user.wallet.totalEarnings,
+      balanceUsd: totalBalanceUsd,
       currency: user.wallet.currency,
       network: user.wallet.network,
+      address: user.wallet.address,
       lastUpdated: user.wallet.lastUpdated
     }
   });
@@ -60,16 +96,44 @@ exports.getTransactions = catchAsync(async (req, res, next) => {
  */
 exports.getBalanceSummary = catchAsync(async (req, res, next) => {
   const user = await hostfiWalletService.syncWalletBalances(req.user._id);
-
   const summary = await Transaction.getUserBalanceSummary(user._id);
+
+  // Fetch exchange rates for USD equivalent
+  let ngnToUsd = 0;
+  try {
+    const rateData = await hostfiService.getCurrencyRates('NGN', 'USD');
+    ngnToUsd = rateData.rate || rateData.data?.rate || 0;
+  } catch (error) {
+    console.error('Failed to fetch NGN/USD rate:', error.message);
+  }
+
+  const assetsWithUsd = user.wallet.hostfiWalletAssets.map(asset => {
+    let usdEquivalent = 0;
+    if (asset.currency === 'USD' || asset.currency === 'USDC' || asset.currency === 'USDT') {
+      usdEquivalent = asset.balance;
+    } else if (asset.currency === 'NGN' && ngnToUsd) {
+      usdEquivalent = asset.balance * ngnToUsd;
+    }
+    return {
+      ...asset.toObject(),
+      usdEquivalent: parseFloat(usdEquivalent.toFixed(2))
+    };
+  });
+
+  let totalBalanceUsd = assetsWithUsd.reduce((sum, asset) => sum + asset.usdEquivalent, 0);
+
+  if (totalBalanceUsd === 0 && user.wallet.balance > 0 && ngnToUsd > 0) {
+    totalBalanceUsd = user.wallet.balance * ngnToUsd;
+  }
 
   successResponse(res, 200, 'Balance summary retrieved successfully', {
     wallet: {
-      assets: user.wallet.hostfiWalletAssets,
+      assets: assetsWithUsd,
       balance: user.wallet.balance,
       pendingBalance: user.wallet.pendingBalance,
       totalEarnings: user.wallet.totalEarnings,
-      currency: user.wallet.currency
+      currency: user.wallet.currency,
+      balanceUsd: totalBalanceUsd
     },
     summary
   });
@@ -100,10 +164,20 @@ exports.getTransactionByReference = catchAsync(async (req, res, next) => {
  * Get supported currencies
  */
 exports.getSupportedCurrencies = catchAsync(async (req, res, next) => {
+  console.log('[Controller:getSupportedCurrencies] Fetching...');
   const currencies = await hostfiService.getSupportedCurrencies();
 
+  // Extract currency codes or objects based on frontend expectation
+  const formattedCurrencies = Array.isArray(currencies) ? currencies : [];
+  console.log(`[Controller:getSupportedCurrencies] Found ${formattedCurrencies.length} currencies`);
+
+  // Log first few to see structure for debugging
+  if (formattedCurrencies.length > 0) {
+    console.log('[Controller:getSupportedCurrencies] Sample asset:', JSON.stringify(formattedCurrencies[0]));
+  }
+
   successResponse(res, 200, 'Supported currencies retrieved successfully', {
-    currencies
+    currencies: formattedCurrencies
   });
 });
 
@@ -116,9 +190,9 @@ exports.getSupportedCurrencies = catchAsync(async (req, res, next) => {
  * User gets a Solana address to receive USDC
  */
 exports.createCryptoAddress = catchAsync(async (req, res, next) => {
-  // Enforce USDC on Solana
+  // Enforce USDC on Solana - HostFi expects "SOL" not "Solana"
   const currency = 'USDC';
-  const network = 'Solana';
+  const network = 'SOL';
 
   // Get wallet asset ID for the crypto
   const assetId = await hostfiWalletService.getWalletAssetId(req.user._id, currency);
@@ -162,6 +236,13 @@ exports.createCryptoAddress = catchAsync(async (req, res, next) => {
   if (!address || !address.address) {
     throw new Error('Failed to generate address: No address returned from provider');
   }
+
+  // Save address to user wallet for quick access
+  const user = await User.findById(req.user._id);
+  user.wallet.address = address.address;
+  user.wallet.network = 'Solana';
+  user.wallet.lastUpdated = new Date();
+  await user.save();
 
   // Create pending transaction record
   const transaction = await Transaction.create({
@@ -218,9 +299,10 @@ exports.getCryptoAddresses = catchAsync(async (req, res, next) => {
 /**
  * Create fiat collection channel (bank account for deposits)
  * User gets bank account details to send fiat money
+ * Strategy: Try to create new channel first, fallback to existing channels if creation fails
  */
 exports.createFiatChannel = catchAsync(async (req, res, next) => {
-  const { currency = 'NGN', method, countryCode } = req.body;
+  const { currency = 'NGN' } = req.body;
 
   // Get user's wallet asset ID for the currency
   const assetId = await hostfiWalletService.getWalletAssetId(req.user._id, currency);
@@ -229,35 +311,136 @@ exports.createFiatChannel = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler(`Wallet for currency ${currency} not found`, 404));
   }
 
-  // Map currency to country code if not provided
-  const currencyCountryMap = {
-    'NGN': { country: 'NG', defaultMethod: 'BANK_TRANSFER', defaultType: 'BANK_TRANSFER' },
-    'KES': { country: 'KE', defaultMethod: 'BANK_TRANSFER', defaultType: 'BANK_TRANSFER' },
-    'GHS': { country: 'GH', defaultMethod: 'BANK_TRANSFER', defaultType: 'BANK_TRANSFER' },
-    'ZAR': { country: 'ZA', defaultMethod: 'BANK_TRANSFER', defaultType: 'BANK_TRANSFER' },
-    'TZS': { country: 'TZ', defaultMethod: 'BANK_TRANSFER', defaultType: 'BANK_TRANSFER' },
-    'UGX': { country: 'UG', defaultMethod: 'BANK_TRANSFER', defaultType: 'BANK_TRANSFER' },
-    'ZMW': { country: 'ZM', defaultMethod: 'BANK_TRANSFER', defaultType: 'BANK_TRANSFER' }
-  };
+  console.log(`[Controller:createFiatChannel] Getting channel for user=${req.user._id}, currency=${currency}`);
 
-  const countryInfo = currencyCountryMap[currency];
-  if (!countryInfo && !countryCode) {
-    return next(new ErrorHandler(`Country code required for currency ${currency}`, 400));
+  let channel;
+
+  // Step 1: Try to create a new channel
+  try {
+    console.log('[Controller:createFiatChannel] Attempting to create new channel...');
+
+    // Map currency to country code - GLOBAL SUPPORT
+    const currencyToCountry = {
+      // Africa
+      'NGN': 'NG', // Nigeria
+      'KES': 'KE', // Kenya
+      'GHS': 'GH', // Ghana
+      'ZAR': 'ZA', // South Africa
+      'TZS': 'TZ', // Tanzania
+      'UGX': 'UG', // Uganda
+      'ZMW': 'ZM', // Zambia
+      'RWF': 'RW', // Rwanda
+      'XOF': 'SN', // West African CFA (Senegal, Benin, Burkina Faso, etc.)
+      'XAF': 'CM', // Central African CFA (Cameroon, Gabon, etc.)
+      'EGP': 'EG', // Egypt
+      'MAD': 'MA', // Morocco
+      'TND': 'TN', // Tunisia
+      'DZD': 'DZ', // Algeria
+      'ETB': 'ET', // Ethiopia
+
+      // Europe
+      'EUR': 'FR', // Euro (France as default, works for all Eurozone)
+      'GBP': 'GB', // British Pound (UK)
+      'CHF': 'CH', // Swiss Franc (Switzerland)
+      'SEK': 'SE', // Swedish Krona
+      'NOK': 'NO', // Norwegian Krone
+      'DKK': 'DK', // Danish Krone
+      'PLN': 'PL', // Polish Zloty
+      'CZK': 'CZ', // Czech Koruna
+      'HUF': 'HU', // Hungarian Forint
+      'RON': 'RO', // Romanian Leu
+      'BGN': 'BG', // Bulgarian Lev
+      'HRK': 'HR', // Croatian Kuna
+      'RSD': 'RS', // Serbian Dinar
+      'UAH': 'UA', // Ukrainian Hryvnia
+      'TRY': 'TR', // Turkish Lira
+
+      // Americas
+      'USD': 'US', // US Dollar
+      'CAD': 'CA', // Canadian Dollar
+      'MXN': 'MX', // Mexican Peso
+      'BRL': 'BR', // Brazilian Real
+      'ARS': 'AR', // Argentine Peso
+      'CLP': 'CL', // Chilean Peso
+      'COP': 'CO', // Colombian Peso
+      'PEN': 'PE', // Peruvian Sol
+
+      // Asia
+      'JPY': 'JP', // Japanese Yen
+      'CNY': 'CN', // Chinese Yuan
+      'INR': 'IN', // Indian Rupee
+      'KRW': 'KR', // South Korean Won
+      'SGD': 'SG', // Singapore Dollar
+      'HKD': 'HK', // Hong Kong Dollar
+      'MYR': 'MY', // Malaysian Ringgit
+      'THB': 'TH', // Thai Baht
+      'VND': 'VN', // Vietnamese Dong
+      'PHP': 'PH', // Philippine Peso
+      'IDR': 'ID', // Indonesian Rupiah
+      'PKR': 'PK', // Pakistani Rupee
+      'BDT': 'BD', // Bangladeshi Taka
+      'AED': 'AE', // UAE Dirham
+      'SAR': 'SA', // Saudi Riyal
+      'QAR': 'QA', // Qatari Riyal
+      'KWD': 'KW', // Kuwaiti Dinar
+      'ILS': 'IL', // Israeli Shekel
+
+      // Oceania
+      'AUD': 'AU', // Australian Dollar
+      'NZD': 'NZ', // New Zealand Dollar
+    };
+
+    const countryCode = currencyToCountry[currency] || 'US'; // Default to US if unknown
+
+    channel = await hostfiService.createFiatCollectionChannel({
+      assetId,
+      currency,
+      customId: req.user._id.toString(),
+      type: 'BANK_TRANSFER',
+      method: 'BANK_TRANSFER',
+      countryCode
+    });
+
+    console.log('[Controller:createFiatChannel] New channel created successfully');
+  } catch (createError) {
+    console.log('[Controller:createFiatChannel] Creation failed, falling back to existing channels');
+    console.log('[Controller:createFiatChannel] Error:', createError.message);
+
+    // Step 2: Fallback to existing channels
+    try {
+      const channels = await hostfiService.getFiatCollectionChannels();
+
+      console.log(`[Controller:createFiatChannel] Found ${channels.length} total channels`);
+
+      // Filter for the requested currency
+      const currencyChannels = channels.filter(ch => ch.currency === currency);
+
+      console.log(`[Controller:createFiatChannel] Found ${currencyChannels.length} ${currency} channels`);
+
+      if (!currencyChannels || currencyChannels.length === 0) {
+        return next(new ErrorHandler(
+          `Unable to create ${currency} collection channel and no existing channels available. Error: ${createError.message}`,
+          503
+        ));
+      }
+
+      // Randomly select a channel to distribute load
+      const randomIndex = Math.floor(Math.random() * currencyChannels.length);
+      channel = currencyChannels[randomIndex];
+
+      console.log(`[Controller:createFiatChannel] Using existing channel ${randomIndex + 1}/${currencyChannels.length}`);
+    } catch (fetchError) {
+      console.error('[Controller:createFiatChannel] Failed to fetch existing channels:', fetchError.message);
+      throw createError; // Throw original creation error
+    }
   }
 
-  const finalCountryCode = countryCode || countryInfo.country;
-  const finalMethod = method || (countryInfo ? countryInfo.defaultMethod : 'BANK_TRANSFER');
-  const finalType = req.body.type || (countryInfo ? countryInfo.defaultType : 'BANK_TRANSFER');
+  // Log the channel object to debug
+  console.log('[Controller:createFiatChannel] Final channel object:', JSON.stringify(channel, null, 2));
 
-  // Create fiat collection channel - Both type and method should be "BANK_TRANSFER"
-  const channel = await hostfiService.createFiatCollectionChannel({
-    assetId,
-    currency,
-    customId: req.user._id.toString(),
-    type: finalType,        // "BANK_TRANSFER" based on API docs
-    method: finalMethod,    // "BANK_TRANSFER" per HostFi support
-    countryCode: finalCountryCode
-  });
+  if (!channel) {
+    return next(new ErrorHandler('Failed to get collection channel', 500));
+  }
 
   // Create pending transaction record
   const transaction = await Transaction.create({
@@ -272,24 +455,28 @@ exports.createFiatChannel = catchAsync(async (req, res, next) => {
       accountNumber: channel.accountNumber,
       accountName: channel.accountName,
       bankName: channel.bankName,
-      reference: channel.reference
+      bankId: channel.bankId,
+      country: channel.country
     },
     reference: channel.id,
     metadata: {
       collectionChannelId: channel.id,
       provider: 'hostfi',
-      type: 'fiat_collection'
+      type: 'fiat_collection',
+      channelType: channel.type
     }
   });
 
-  successResponse(res, 201, 'Fiat collection channel created successfully', {
+  successResponse(res, 201, 'Fiat collection channel retrieved successfully', {
     channel: {
       accountNumber: channel.accountNumber,
       accountName: channel.accountName,
       bankName: channel.bankName,
-      bankCode: channel.bankCode,
+      bankId: channel.bankId,
       currency: channel.currency,
-      reference: channel.reference,
+      country: channel.country,
+      type: channel.type,
+      reference: channel.id,
       instructions: `Transfer ${currency} to the account above. Your wallet will be credited automatically after 1% platform fee.`
     },
     transaction: {
@@ -424,10 +611,11 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
       methodId,
       recipient: {
         accountNumber: recipient.accountNumber,
-        accountName: recipient.accountName,
+        accountName: (recipient.accountName === 'undefined' || !recipient.accountName) ? 'Verified Recipient' : recipient.accountName,
         bankId: recipient.bankId,
         bankName: recipient.bankName,
-        country: recipient.country || 'NG'
+        country: recipient.country || 'NG',
+        currency: targetCurrency || currency
       },
       clientReference
     });

@@ -7,6 +7,7 @@ const Notification = require('../models/Notification');
 const { ErrorHandler } = require('../utils/errorHandler');
 const { PLATFORM_CONFIG } = require('../utils/constants');
 const { getPlatformFeeDestination } = require('../utils/platformWallet');
+const notificationService = require('./notificationService');
 
 class ProjectService {
   /**
@@ -18,7 +19,6 @@ class ProjectService {
     session.startTransaction();
 
     try {
-      // Find application and populate necessary fields
       const application = await Application.findById(applicationId)
         .populate('projectId')
         .populate('creatorId', 'firstName lastName email name')
@@ -30,46 +30,80 @@ class ProjectService {
 
       const project = application.projectId;
 
-      // Verify client owns the project
       if (project.clientId.toString() !== clientId.toString()) {
         throw new ErrorHandler('Unauthorized to accept this application', 403);
       }
 
-      // Verify application is still pending
       if (application.status !== 'pending') {
         throw new ErrorHandler('Application has already been processed', 400);
       }
 
-      // Get client
-      const client = await User.findById(clientId).session(session);
-      if (!client) {
-        throw new ErrorHandler('Client not found', 404);
+      application.status = 'accepted';
+      application.acceptedAt = new Date();
+      await application.save({ session });
+
+      project.selectedCreatorId = application.creatorId._id;
+      project.status = 'awaiting_payment';
+      await project.save({ session });
+
+      // Notify creator that application was accepted
+      await notificationService.createNotification({
+        recipient: application.creatorId._id,
+        type: 'project_application_accepted',
+        title: 'Application Accepted',
+        message: `Your application for "${project.title}" has been accepted! Please wait for the client to make the escrow payment.`,
+        project: project._id,
+        link: `/#/bookings`
+      });
+
+      await session.commitTransaction();
+
+      return {
+        application,
+        project
+      };
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      session.endSession();
+    }
+  }
+
+  async processProjectPayment(projectId, clientId) {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      const project = await Project.findOne({
+        _id: projectId,
+        clientId: clientId,
+        status: 'awaiting_payment'
+      }).session(session);
+
+      if (!project) {
+        throw new ErrorHandler('Project not found or not in awaiting payment status', 404);
       }
 
+      const application = await Application.findOne({
+        projectId: project._id,
+        status: 'accepted'
+      }).session(session);
+
+      if (!application) {
+        throw new ErrorHandler('Accepted application not found', 400);
+      }
+
+      const client = await User.findById(clientId).session(session);
       const projectAmount = application.proposedBudget.amount;
 
-      // Check if client has sufficient balance
       if (client.wallet.balance < projectAmount) {
-        await session.abortTransaction();
-
-        // Create insufficient balance notification
-        await Notification.createNotification({
-          recipient: clientId,
-          sender: application.creatorId._id,
-          type: 'insufficient_balance',
-          title: 'Insufficient Balance',
-          message: `Cannot accept application. Required: ${projectAmount} USDC, Available: ${client.wallet.balance} USDC. Please fund your wallet.`,
-          link: `/wallet`,
-          project: project._id
-        });
-
         throw new ErrorHandler(
           `Insufficient balance. Required: ${projectAmount} USDC, Available: ${client.wallet.balance} USDC`,
           400
         );
       }
 
-      // Deduct from client's balance and move to pending balance (escrow)
       const clientUpdate = await User.findOneAndUpdate(
         {
           _id: client._id,
@@ -93,59 +127,48 @@ class ProjectService {
       );
 
       if (!clientUpdate) {
-        await session.abortTransaction();
         throw new ErrorHandler('Concurrent modification detected or insufficient balance', 409);
       }
 
-      // Create payment transaction
       await Transaction.create(
         [
           {
             user: client._id,
-            type: 'payment',
+            type: 'escrow',
             amount: projectAmount,
             currency: application.proposedBudget.currency || 'USDC',
             status: 'completed',
             project: project._id,
-            description: `Payment for project "${project.title}"`,
+            description: `Escrow payment for project "${project.title}"`,
             completedAt: new Date()
           }
         ],
         { session }
       );
 
-      // Update application status
-      application.status = 'accepted';
-      application.acceptedAt = new Date();
-      await application.save({ session });
-
-      // Update project status and select creator
-      project.selectedCreatorId = application.creatorId._id;
       project.status = 'in_progress';
+      project.paymentStatus = 'paid';
+      project.paidAt = new Date();
+
+      // Calculate and store fee info on project
+      project.platformFee = (projectAmount * project.platformCommission) / 100;
+      project.creatorAmount = projectAmount - project.platformFee;
+
       await project.save({ session });
 
-      // Commit the transaction
-      await session.commitTransaction();
-
-      // Create payment deducted notification
-      await Notification.createNotification({
-        recipient: client._id,
-        sender: application.creatorId._id,
-        type: 'payment_deducted',
-        title: 'Payment Held in Escrow',
-        message: `${projectAmount} USDC has been deducted from your wallet and held in escrow for project "${project.title}"`,
-        link: `/wallet`,
+      // Notify creator that payment was received
+      await notificationService.createNotification({
+        recipient: project.selectedCreatorId,
+        type: 'payment_received',
+        title: 'Project Payment Received',
+        message: `Client has paid for project "${project.title}". Funds are held in escrow. You can now start working!`,
         project: project._id,
-        metadata: {
-          amount: projectAmount,
-          currency: application.proposedBudget.currency || 'USDC',
-          projectId: project._id,
-          projectTitle: project.title
-        }
+        link: `/#/bookings`
       });
 
+      await session.commitTransaction();
+
       return {
-        application,
         project,
         client: clientUpdate
       };
@@ -155,6 +178,39 @@ class ProjectService {
     } finally {
       session.endSession();
     }
+  }
+
+  async submitProjectDeliverable(projectId, creatorId, deliverableData) {
+    const project = await Project.findOne({
+      _id: projectId,
+      selectedCreatorId: creatorId,
+      status: 'in_progress'
+    });
+
+    if (!project) {
+      throw new ErrorHandler('Project not found or not in a state to submit work', 404);
+    }
+
+    project.attachments.push({
+      ...deliverableData,
+      uploadedAt: new Date()
+    });
+
+    project.status = 'delivered';
+    project.lastSubmissionDate = new Date();
+    await project.save();
+
+    // Notify client that work was delivered
+    await notificationService.createNotification({
+      recipient: project.clientId,
+      type: 'work_delivered',
+      title: 'Project Deliverables Submitted',
+      message: `Creator has submitted deliverables for "${project.title}". Please review and approve to release funds.`,
+      project: project._id,
+      link: `/#/bookings`
+    });
+
+    return project;
   }
 
   /**
@@ -178,8 +234,8 @@ class ProjectService {
         throw new ErrorHandler('Project not found', 404);
       }
 
-      if (project.status !== 'completed') {
-        throw new ErrorHandler('Project must be completed before releasing funds', 400);
+      if (project.status !== 'delivered' && project.status !== 'completed') {
+        throw new ErrorHandler('Project must be delivered before releasing funds', 400);
       }
 
       // Get the accepted application to find the amount
@@ -194,10 +250,9 @@ class ProjectService {
 
       const projectAmount = application.proposedBudget.amount;
 
-      // Calculate platform fee
-      const platformCommission = PLATFORM_CONFIG.COMMISSION_RATE;
-      const platformFee = (projectAmount * platformCommission) / 100;
-      const creatorAmount = projectAmount - platformFee;
+      // Use stored fee info or calculate on the fly
+      const platformFee = project.platformFee || (projectAmount * project.platformCommission) / 100;
+      const creatorAmount = project.creatorAmount || (projectAmount - platformFee);
 
       const creator = await User.findById(project.selectedCreatorId._id).session(session);
 
@@ -274,6 +329,26 @@ class ProjectService {
         ],
         { session }
       );
+
+      // Notify both parties
+      await Promise.all([
+        notificationService.createNotification({
+          recipient: creator._id,
+          type: 'project_completed',
+          title: 'Project Funds Released',
+          message: `Funds have been released for project "${project.title}". The project is now complete!`,
+          project: project._id,
+          link: `/#/wallet`
+        }),
+        notificationService.createNotification({
+          recipient: clientId,
+          type: 'project_completed',
+          title: 'Project Completed',
+          message: `You have approved the work for project "${project.title}". The project is now completed.`,
+          project: project._id,
+          link: `/#/bookings`
+        })
+      ]);
 
       await session.commitTransaction();
 

@@ -44,10 +44,13 @@ class HostFiWalletService {
         lastSynced: new Date()
       }));
 
-      // Set primary currency balance (prefer NGN for Nigerian users)
+      // Set primary currency (prefer NGN for Nigerian users)
       const primaryAsset = walletAssets.find(a => a.currency.code === 'NGN') || walletAssets[0];
-      user.wallet.balance = primaryAsset.balance || 0;
-      user.wallet.currency = primaryAsset.currency.code;  // Store currency code
+      // Only set currency, don't overwrite balance (we track it ourselves)
+      if (!user.wallet.currency) {
+        user.wallet.currency = primaryAsset.currency.code;  // Store currency code
+      }
+      // Don't set balance - we track it based on transactions, not HostFi
       user.wallet.network = 'HostFi';
       user.wallet.lastUpdated = new Date();
 
@@ -80,34 +83,58 @@ class HostFiWalletService {
 
       console.log(`Syncing wallet balances for user ${userId}...`);
 
-      // Fetch latest balances from HostFi
-      const walletAssets = await hostfiService.getUserWallets();
+      // Fetch latest balances and collection addresses from HostFi
+      const [walletAssets, cryptoAddresses] = await Promise.all([
+        hostfiService.getUserWallets(),
+        hostfiService.getCryptoCollectionAddresses({ customId: userId.toString() }).catch(err => {
+          console.warn(`[Sync] Failed to fetch crypto addresses for ${userId}:`, err.message);
+          return [];
+        })
+      ]);
 
-      // Update stored balances
+      // Update stored assets and balances
       for (const asset of walletAssets) {
-        const storedAsset = user.wallet.hostfiWalletAssets.find(a => a.assetId === asset.id);
-        if (storedAsset) {
-          storedAsset.balance = asset.balance || 0;
-          storedAsset.lastSynced = new Date();
-        } else {
+        let storedAsset = user.wallet.hostfiWalletAssets.find(a => a.assetId === asset.id);
+
+        if (!storedAsset) {
           // New asset appeared, add it
           user.wallet.hostfiWalletAssets.push({
             assetId: asset.id,
-            currency: asset.currency.code,  // Store currency code
+            currency: asset.currency.code || asset.currency,
             assetType: asset.type,
             balance: asset.balance || 0,
             lastSynced: new Date()
           });
+          storedAsset = user.wallet.hostfiWalletAssets[user.wallet.hostfiWalletAssets.length - 1];
+        } else {
+          storedAsset.balance = asset.balance || 0;
+          storedAsset.lastSynced = new Date();
+        }
+
+        // Sync collection address if available
+        if (asset.type === 'CRYPTO') {
+          const addrInfo = cryptoAddresses.find(a => a.assetId === asset.id || a.currency === (asset.currency.code || asset.currency));
+          if (addrInfo) {
+            storedAsset.colAddress = addrInfo.address;
+            storedAsset.colNetwork = addrInfo.network;
+
+            // Also update legacy address if it's for Solana/USDC
+            if ((addrInfo.network === 'SOL' || addrInfo.network === 'Solana') &&
+              (!user.wallet.address || user.wallet.address.startsWith('pending_'))) {
+              user.wallet.address = addrInfo.address;
+              user.wallet.network = 'Solana';
+            }
+          }
         }
       }
 
-      // Update primary balance (NGN or first asset)
-      const primaryAsset = user.wallet.hostfiWalletAssets.find(a => a.currency === 'NGN') ||
-                          user.wallet.hostfiWalletAssets[0];
-
-      if (primaryAsset) {
-        user.wallet.balance = primaryAsset.balance;
-        user.wallet.currency = primaryAsset.currency;
+      // Update primary balance currency if not set
+      if (!user.wallet.currency) {
+        const primaryAsset = user.wallet.hostfiWalletAssets.find(a => a.currency === 'NGN') ||
+          user.wallet.hostfiWalletAssets[0];
+        if (primaryAsset) {
+          user.wallet.currency = primaryAsset.currency;
+        }
       }
 
       user.wallet.lastUpdated = new Date();

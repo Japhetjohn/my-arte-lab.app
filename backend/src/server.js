@@ -147,7 +147,7 @@ if (process.env.NODE_ENV === 'development') {
     const start = Date.now();
     const originalSend = res.send;
 
-    res.send = function(data) {
+    res.send = function (data) {
       res.send = originalSend;
       const duration = Date.now() - start;
 
@@ -356,6 +356,14 @@ const server = app.listen(PORT, () => {
   console.log(`║  API: http://localhost:${PORT}/api`);
   console.log(`║  Payment Gateway: HostFi`);
   console.log('╚════════════════════════════════════════════════════════╝\n');
+
+  // Start automatic deposit detection
+  const depositPollingService = require('./services/depositPollingService');
+  depositPollingService.start();
+
+  // Start escrow monitoring for auto-refunds
+  const escrowMonitoringService = require('./services/escrowMonitoringService');
+  escrowMonitoringService.start();
 });
 
 process.on('unhandledRejection', (err) => {
@@ -369,6 +377,12 @@ process.on('uncaughtException', (err) => {
 });
 
 process.on('SIGTERM', () => {
+  // Stop background services
+  const depositPollingService = require('./services/depositPollingService');
+  depositPollingService.stop();
+  const escrowMonitoringService = require('./services/escrowMonitoringService');
+  escrowMonitoringService.stop();
+
   server.close(async () => {
     try {
       const mongoose = require('mongoose');

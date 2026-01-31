@@ -54,7 +54,8 @@
 }
 
 /* Light Mode (explicit for better clarity) */
-[data-theme="light"], :root {
+[data-theme="light"],
+:root {
     --surface: #FFFFFF;
     --surface-hover: #F8FAFC;
 }
@@ -88,8 +89,8 @@ body {
 *::before,
 *::after {
     transition: background-color var(--transition-base),
-                border-color var(--transition-base),
-                box-shadow var(--transition-base);
+        border-color var(--transition-base),
+        box-shadow var(--transition-base);
 }
 
 /* Typography */
@@ -269,6 +270,7 @@ p {
         transform: translateY(-100%);
         opacity: 0;
     }
+
     to {
         transform: translateY(0);
         opacity: 1;
@@ -373,6 +375,7 @@ p {
         opacity: 0;
         transform: translateX(-50%) translateY(4px);
     }
+
     to {
         opacity: 1;
         transform: translateX(-50%) translateY(0);
@@ -409,6 +412,7 @@ p {
         opacity: 0;
         transform: translateY(20px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -456,6 +460,7 @@ p {
     0% {
         transform: translate(0, 0);
     }
+
     100% {
         transform: translate(50px, 50px);
     }
@@ -478,6 +483,7 @@ p {
         opacity: 0;
         transform: translateY(30px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -533,6 +539,7 @@ p {
         opacity: 0;
         transform: translateY(20px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -1134,37 +1141,38 @@ p {
     font-weight: 600;
 }
 
-/* Modal with Glassmorphism */
-.modal {
+/* Standardized Modal System */
+.modal,
+.modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
-    z-index: 300;
+    z-index: 10000;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: var(--spacing-md);
-    animation: fadeIn var(--transition-fast);
+    animation: modalFadeIn 0.3s ease-out;
 }
 
 .modal-content {
-    background: rgba(255, 255, 255, 0.98);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-radius: 16px;
+    background: var(--background);
+    border-radius: 20px;
     padding: var(--spacing-xl);
-    max-width: 500px;
+    max-width: 550px;
     width: 100%;
     max-height: 90vh;
     overflow-y: auto;
-    animation: slideUp var(--transition-base);
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15),
-                0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+    position: relative;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.3);
+    animation: modalSlideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    display: flex;
+    flex-direction: column;
 }
 
 .modal-header {
@@ -1235,6 +1243,7 @@ p {
     0% {
         background-position: 200% 0;
     }
+
     100% {
         background-position: -200% 0;
     }
@@ -1360,7 +1369,7 @@ p {
         max-width: 100%;
     }
 
-    .nav-content > div:first-child {
+    .nav-content>div:first-child {
         gap: 8px !important;
     }
 
@@ -1955,7 +1964,9 @@ p {
 }
 
 @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .btn-primary.loading,
@@ -1987,9 +1998,12 @@ p {
 }
 
 @keyframes pulse {
-    0%, 100% {
+
+    0%,
+    100% {
         opacity: 1;
     }
+
     50% {
         opacity: 0.8;
         transform: scale(1.05);
@@ -2305,6 +2319,7 @@ img.loaded {
     from {
         transform: rotate(0deg);
     }
+
     to {
         transform: rotate(360deg);
     }
@@ -2320,6 +2335,7 @@ img.loaded {
         transform: translateX(400px);
         opacity: 0;
     }
+
     to {
         transform: translateX(0);
         opacity: 1;
@@ -2331,6 +2347,7 @@ img.loaded {
         transform: translateX(0);
         opacity: 1;
     }
+
     to {
         transform: translateX(400px);
         opacity: 0;
@@ -2347,6 +2364,7 @@ img.loaded {
         opacity: 0;
         transform: translateY(20px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -2356,13 +2374,13 @@ img.loaded {
 /* Card Hover Effects with Image Zoom */
 .creator-card {
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-                box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     overflow: hidden;
 }
 
 .creator-card:hover {
     transform: translateY(-8px);
-    box-shadow: 0 20px 40px rgba(0,0,0,0.15), 0 0 0 1px rgba(151, 71, 255, 0.1);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(151, 71, 255, 0.1);
 }
 
 .creator-card img,
@@ -2376,7 +2394,9 @@ img.loaded {
 }
 
 /* Button Ripple Effect */
-.btn-primary, .btn-secondary, .btn-ghost {
+.btn-primary,
+.btn-secondary,
+.btn-ghost {
     position: relative;
     overflow: hidden;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -2413,12 +2433,10 @@ img.loaded {
 
 /* Skeleton Loaders */
 .skeleton {
-    background: linear-gradient(
-        90deg,
-        var(--surface) 0%,
-        rgba(151, 71, 255, 0.05) 50%,
-        var(--surface) 100%
-    );
+    background: linear-gradient(90deg,
+            var(--surface) 0%,
+            rgba(151, 71, 255, 0.05) 50%,
+            var(--surface) 100%);
     background-size: 200% 100%;
     animation: shimmer 1.5s infinite;
     border-radius: 8px;
@@ -2428,6 +2446,7 @@ img.loaded {
     0% {
         background-position: -200% 0;
     }
+
     100% {
         background-position: 200% 0;
     }
@@ -2470,7 +2489,7 @@ img.loaded {
     opacity: 0;
     transform: translateY(30px);
     transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1),
-                transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .fade-in-scroll.visible {
@@ -2483,18 +2502,36 @@ img.loaded {
     animation: fadeInStagger 0.5s cubic-bezier(0.4, 0, 0.2, 1) backwards;
 }
 
-.creators-grid .creator-card:nth-child(1) { animation-delay: 0.05s; }
-.creators-grid .creator-card:nth-child(2) { animation-delay: 0.1s; }
-.creators-grid .creator-card:nth-child(3) { animation-delay: 0.15s; }
-.creators-grid .creator-card:nth-child(4) { animation-delay: 0.2s; }
-.creators-grid .creator-card:nth-child(5) { animation-delay: 0.25s; }
-.creators-grid .creator-card:nth-child(6) { animation-delay: 0.3s; }
+.creators-grid .creator-card:nth-child(1) {
+    animation-delay: 0.05s;
+}
+
+.creators-grid .creator-card:nth-child(2) {
+    animation-delay: 0.1s;
+}
+
+.creators-grid .creator-card:nth-child(3) {
+    animation-delay: 0.15s;
+}
+
+.creators-grid .creator-card:nth-child(4) {
+    animation-delay: 0.2s;
+}
+
+.creators-grid .creator-card:nth-child(5) {
+    animation-delay: 0.25s;
+}
+
+.creators-grid .creator-card:nth-child(6) {
+    animation-delay: 0.3s;
+}
 
 @keyframes fadeInStagger {
     from {
         opacity: 0;
         transform: translateY(20px) scale(0.95);
     }
+
     to {
         opacity: 1;
         transform: translateY(0) scale(1);
@@ -2520,9 +2557,12 @@ img.loaded {
 }
 
 @keyframes float {
-    0%, 100% {
+
+    0%,
+    100% {
         transform: translateY(0px);
     }
+
     50% {
         transform: translateY(-6px);
     }
@@ -2550,6 +2590,7 @@ img.loaded {
     from {
         opacity: 0;
     }
+
     to {
         opacity: 1;
     }
@@ -2560,6 +2601,7 @@ img.loaded {
         transform: translateY(50px) scale(0.95);
         opacity: 0;
     }
+
     to {
         transform: translateY(0) scale(1);
         opacity: 1;
@@ -2572,9 +2614,12 @@ img.loaded {
 }
 
 @keyframes pulse {
-    0%, 100% {
+
+    0%,
+    100% {
         opacity: 1;
     }
+
     50% {
         opacity: 0.5;
     }
@@ -2585,6 +2630,7 @@ img.loaded {
     0% {
         stroke-dashoffset: 100;
     }
+
     100% {
         stroke-dashoffset: 0;
     }
@@ -2618,9 +2664,12 @@ html {
 }
 
 @keyframes badgePulse {
-    0%, 100% {
+
+    0%,
+    100% {
         box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
     }
+
     50% {
         box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
     }
@@ -2647,6 +2696,7 @@ html {
         opacity: 0;
         transform: translateY(-10px) scale(0.95);
     }
+
     to {
         opacity: 1;
         transform: translateY(0) scale(1);
@@ -2665,11 +2715,9 @@ html {
     opacity: 0;
     transition: opacity 0.3s;
     pointer-events: none;
-    background: radial-gradient(
-        600px circle at var(--mouse-x) var(--mouse-y),
-        rgba(151, 71, 255, 0.1),
-        transparent 40%
-    );
+    background: radial-gradient(600px circle at var(--mouse-x) var(--mouse-y),
+            rgba(151, 71, 255, 0.1),
+            transparent 40%);
 }
 
 .creator-card:hover::after {
@@ -2700,9 +2748,11 @@ html {
     0% {
         transform: scale(0.95);
     }
+
     50% {
         transform: scale(1.05);
     }
+
     100% {
         transform: scale(1);
     }
@@ -2730,7 +2780,8 @@ html {
    ========================================== */
 
 /* Fix for mobile viewport issues */
-html, body {
+html,
+body {
     max-width: 100%;
     overflow-x: hidden;
 }
@@ -2744,6 +2795,7 @@ html, body {
 
 /* Fix cards on mobile */
 @media (max-width: 768px) {
+
     .creator-card,
     .card,
     .modal-content {
@@ -2759,7 +2811,12 @@ html, body {
     }
 
     /* Ensure text doesn't overflow */
-    h1, h2, h3, h4, h5, h6 {
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
         word-wrap: break-word;
         overflow-wrap: break-word;
     }
@@ -2777,7 +2834,8 @@ html, body {
     .form-select,
     .form-textarea {
         max-width: 100%;
-        font-size: 16px; /* Prevents zoom on iOS */
+        font-size: 16px;
+        /* Prevents zoom on iOS */
     }
 
     /* Fix hero section on mobile */
@@ -2912,6 +2970,7 @@ html, body {
         opacity: 0;
         transform: translateY(20px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -2928,9 +2987,11 @@ html, body {
         transform: scale(0);
         opacity: 0;
     }
+
     50% {
         transform: scale(1.2);
     }
+
     100% {
         transform: scale(1);
         opacity: 1;
@@ -2941,6 +3002,7 @@ html, body {
     0% {
         stroke-dashoffset: 100;
     }
+
     100% {
         stroke-dashoffset: 0;
     }
@@ -2961,19 +3023,18 @@ html, body {
     0% {
         background-position: -1000px 0;
     }
+
     100% {
         background-position: 1000px 0;
     }
 }
 
 .skeleton-enhanced {
-    background: linear-gradient(
-        90deg,
-        #f0f0f0 0%,
-        #f8f8f8 20%,
-        #f0f0f0 40%,
-        #f0f0f0 100%
-    );
+    background: linear-gradient(90deg,
+            #f0f0f0 0%,
+            #f8f8f8 20%,
+            #f0f0f0 40%,
+            #f0f0f0 100%);
     background-size: 1000px 100%;
     animation: shimmerEnhanced 2s linear infinite;
     border-radius: var(--radius);
@@ -2981,9 +3042,12 @@ html, body {
 
 /* Pulse Glow Effect */
 @keyframes pulseGlow {
-    0%, 100% {
+
+    0%,
+    100% {
         box-shadow: 0 0 0 0 rgba(151, 71, 255, 0.4);
     }
+
     50% {
         box-shadow: 0 0 20px 10px rgba(151, 71, 255, 0);
     }
@@ -3021,6 +3085,7 @@ select:focus-visible {
         opacity: 0;
         transform: translateY(30px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -3065,15 +3130,20 @@ select:focus-visible {
 
 /* Loading Dots Animation */
 @keyframes loadingDots {
-    0%, 20% {
+
+    0%,
+    20% {
         opacity: 0.3;
         transform: scale(0.8);
     }
+
     40% {
         opacity: 1;
         transform: scale(1.1);
     }
-    60%, 100% {
+
+    60%,
+    100% {
         opacity: 0.3;
         transform: scale(0.8);
     }
@@ -3096,21 +3166,21 @@ select:focus-visible {
     0% {
         background-position: 0% 50%;
     }
+
     50% {
         background-position: 100% 50%;
     }
+
     100% {
         background-position: 0% 50%;
     }
 }
 
 .gradient-text-animated {
-    background: linear-gradient(
-        45deg,
-        var(--primary),
-        var(--secondary),
-        var(--primary)
-    );
+    background: linear-gradient(45deg,
+            var(--primary),
+            var(--secondary),
+            var(--primary));
     background-size: 200% 200%;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -3132,6 +3202,7 @@ select:focus-visible {
         opacity: 0;
         transform: translateY(20px) scale(0.95);
     }
+
     to {
         opacity: 1;
         transform: translateY(0) scale(1);
@@ -3143,12 +3214,29 @@ select:focus-visible {
 }
 
 /* Stagger animation for grid items */
-.grid-item-1 { animation-delay: 0.05s; }
-.grid-item-2 { animation-delay: 0.1s; }
-.grid-item-3 { animation-delay: 0.15s; }
-.grid-item-4 { animation-delay: 0.2s; }
-.grid-item-5 { animation-delay: 0.25s; }
-.grid-item-6 { animation-delay: 0.3s; }
+.grid-item-1 {
+    animation-delay: 0.05s;
+}
+
+.grid-item-2 {
+    animation-delay: 0.1s;
+}
+
+.grid-item-3 {
+    animation-delay: 0.15s;
+}
+
+.grid-item-4 {
+    animation-delay: 0.2s;
+}
+
+.grid-item-5 {
+    animation-delay: 0.25s;
+}
+
+.grid-item-6 {
+    animation-delay: 0.3s;
+}
 
 /* ===========================
    2025 MODERN DESIGN PATTERNS
@@ -3158,7 +3246,7 @@ select:focus-visible {
 .hero-section-modern {
     position: relative;
     background: linear-gradient(135deg, rgba(151, 71, 255, 0.95) 0%, rgba(107, 70, 255, 0.95) 100%),
-                url('/image.png');
+        url('/image.png');
     background-size: cover;
     background-position: center;
     background-blend-mode: multiply;
@@ -3207,12 +3295,16 @@ select:focus-visible {
 }
 
 @keyframes float {
-    0%, 100% {
+
+    0%,
+    100% {
         transform: translate(0, 0) scale(1);
     }
+
     33% {
         transform: translate(30px, -30px) scale(1.1);
     }
+
     66% {
         transform: translate(-20px, 20px) scale(0.9);
     }
@@ -3282,6 +3374,7 @@ select:focus-visible {
         opacity: 0;
         transform: translateY(30px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -3293,10 +3386,12 @@ select:focus-visible {
         opacity: 0;
         transform: translateY(50px) scale(0.9);
     }
+
     60% {
         opacity: 1;
         transform: translateY(-10px) scale(1.02);
     }
+
     100% {
         opacity: 1;
         transform: translateY(0) scale(1);
@@ -3485,11 +3580,9 @@ select:focus-visible {
     right: 0;
     bottom: 0;
     border-radius: inherit;
-    background: radial-gradient(
-        600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
-        rgba(151, 71, 255, 0.08),
-        transparent 40%
-    );
+    background: radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+            rgba(151, 71, 255, 0.08),
+            transparent 40%);
     opacity: 0;
     transition: opacity 0.3s;
     pointer-events: none;
@@ -3500,7 +3593,7 @@ select:focus-visible {
     opacity: 1;
 }
 
-.dynamic-light > * {
+.dynamic-light>* {
     position: relative;
     z-index: 2;
 }
@@ -3518,6 +3611,7 @@ select:focus-visible {
 
 /* Interactive Cursor - 2025 Trend */
 @media (hover: hover) {
+
     .bento-item:hover,
     .creator-card:hover {
         cursor: pointer;
@@ -3529,7 +3623,7 @@ select:focus-visible {
 .card-lift:hover {
     transform: translateY(-8px) scale(1.02);
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15),
-                0 0 0 1px rgba(151, 71, 255, 0.1);
+        0 0 0 1px rgba(151, 71, 255, 0.1);
 }
 
 /* Smooth Transitions for All Interactive Elements */
@@ -3647,7 +3741,7 @@ select:focus-visible {
         display: flex !important;
         flex-direction: column !important;
     }
-    
+
     .project-card.has-cover-image .project-cover-image {
         width: 100% !important;
         height: 180px !important;
@@ -3711,15 +3805,36 @@ select:focus-visible {
 }
 
 .amount-value {
-    font-size: 48px;
-    font-weight: 700;
+    font-size: 64px;
+    font-weight: 900;
     line-height: 1;
+    color: #ffffff !important;
+    text-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    letter-spacing: -2px;
 }
 
 .currency-symbol {
-    font-size: 28px;
-    font-weight: 600;
-    opacity: 0.9;
+    font-size: 36px;
+    font-weight: 800;
+    color: #ffffff !important;
+    opacity: 1 !important;
+    margin-right: 4px;
+}
+
+#withdrawMaxBtn {
+    color: var(--primary) !important;
+    font-weight: 700;
+    background: none;
+    border: none;
+    text-decoration: underline;
+    padding: 0;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+#withdrawMaxBtn:hover {
+    color: var(--secondary) !important;
+    transform: translateY(-1px);
 }
 
 .balance-usd {
@@ -4049,7 +4164,7 @@ select:focus-visible {
     left: 0;
     right: 0;
     height: 120px;
-    background: linear-gradient(to top, rgba(255,255,255,1), transparent);
+    background: linear-gradient(to top, rgba(255, 255, 255, 1), transparent);
 }
 
 [data-theme="dark"] .profile-cover-modern::after {
@@ -4960,11 +5075,11 @@ select:focus-visible {
     transition: all 0.3s;
 }
 
-.toggle-switch input:checked + .toggle-slider {
+.toggle-switch input:checked+.toggle-slider {
     background: var(--primary);
 }
 
-.toggle-switch input:checked + .toggle-slider:before {
+.toggle-switch input:checked+.toggle-slider:before {
     transform: translateX(22px);
 }
 
@@ -5249,6 +5364,7 @@ select:focus-visible {
         opacity: 0;
         transform: translateY(20px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -5259,6 +5375,7 @@ select:focus-visible {
     from {
         opacity: 0;
     }
+
     to {
         opacity: 1;
     }
@@ -6611,47 +6728,41 @@ select:focus-visible {
    Modern Modal Styles
    =================================== */
 
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+.modal-close,
+.icon-btn.close-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: var(--background-alt);
+    border: 1px solid var(--border);
+    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 9999;
-    padding: 20px;
-    animation: modalFadeIn 0.2s ease-out;
+    transition: all 0.2s;
+    color: var(--text-secondary);
+    flex-shrink: 0;
 }
 
-.modal {
-    background: var(--background);
-    border-radius: 20px;
-    max-width: 600px;
-    width: 100%;
-    max-height: 90vh;
-    overflow: hidden;
-    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.3);
-    animation: modalSlideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+/* Modal Elements */
+.modal-header {
     display: flex;
-    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 20px;
+    flex-shrink: 0;
 }
 
-.modal-content {
-    background: var(--background);
-    border-radius: 20px;
-    max-width: 600px;
-    width: 100%;
-    max-height: 90vh;
-    overflow: hidden;
-    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.3);
-    animation: modalSlideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+.modal-header h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-primary);
     display: flex;
-    flex-direction: column;
+    align-items: center;
+    gap: 12px;
 }
 
 .modal-header {
@@ -6752,6 +6863,7 @@ select:focus-visible {
     from {
         opacity: 0;
     }
+
     to {
         opacity: 1;
     }
@@ -6762,6 +6874,7 @@ select:focus-visible {
         opacity: 0;
         transform: translateY(40px) scale(0.95);
     }
+
     to {
         opacity: 1;
         transform: translateY(0) scale(1);
@@ -6925,6 +7038,7 @@ select:focus-visible {
     from {
         transform: translateY(100%);
     }
+
     to {
         transform: translateY(0);
     }
@@ -7276,6 +7390,7 @@ select:focus-visible {
         opacity: 0;
         transform: translateY(20px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -7572,9 +7687,12 @@ select:focus-visible {
 }
 
 @keyframes iconBounce {
-    0%, 100% {
+
+    0%,
+    100% {
         transform: translateY(0);
     }
+
     50% {
         transform: translateY(-8px);
     }
@@ -7585,10 +7703,13 @@ select:focus-visible {
 }
 
 @keyframes iconPulse {
-    0%, 100% {
+
+    0%,
+    100% {
         transform: scale(1);
         opacity: 1;
     }
+
     50% {
         transform: scale(1.1);
         opacity: 0.8;
@@ -7603,6 +7724,7 @@ select:focus-visible {
     from {
         transform: rotate(0deg);
     }
+
     to {
         transform: rotate(360deg);
     }
@@ -7775,4 +7897,3 @@ select.form-select-modern:hover {
 .rounded-full {
     border-radius: 9999px;
 }
-

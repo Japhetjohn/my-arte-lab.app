@@ -77,9 +77,34 @@ const projectSchema = new mongoose.Schema({
 
   status: {
     type: String,
-    enum: ['open', 'in_review', 'in_progress', 'completed', 'cancelled'],
+    enum: ['open', 'in_review', 'awaiting_payment', 'in_progress', 'delivered', 'completed', 'cancelled'],
     default: 'open',
     index: true
+  },
+
+  paymentStatus: {
+    type: String,
+    enum: ['pending', 'paid', 'released', 'refunded', 'failed'],
+    default: 'pending'
+  },
+
+  paidAt: Date,
+  lastSubmissionDate: Date,
+
+  platformCommission: {
+    type: Number,
+    required: true,
+    default: 10
+  },
+
+  platformFee: {
+    type: Number,
+    required: false
+  },
+
+  creatorAmount: {
+    type: Number,
+    required: false
   },
 
   selectedCreatorId: {
@@ -125,6 +150,18 @@ projectSchema.index({ category: 1, status: 1 });
 projectSchema.index({ clientId: 1, status: 1 });
 projectSchema.index({ 'budget.min': 1, 'budget.max': 1 });
 
+projectSchema.pre('save', async function (next) {
+  // If budget max is set and platform fee isn't calculated, do it
+  // For projects, we use the agreed amount (budget.max usually represents the cap or agreed amount in applications)
+  // However, the actual agreed amount comes from the Application.
+  // We'll calculate this when the creator is selected or payment is processed.
+  if (this.isModified('budget.max') || (this.budget.max && !this.platformFee)) {
+    this.platformFee = (this.budget.max * this.platformCommission) / 100;
+    this.creatorAmount = this.budget.max - this.platformFee;
+  }
+  next();
+});
+
 // Virtual for applications
 projectSchema.virtual('applications', {
   ref: 'Application',
@@ -133,29 +170,29 @@ projectSchema.virtual('applications', {
 });
 
 // Methods
-projectSchema.methods.incrementViews = function() {
+projectSchema.methods.incrementViews = function () {
   this.viewsCount += 1;
   return this.save();
 };
 
-projectSchema.methods.incrementApplications = function() {
+projectSchema.methods.incrementApplications = function () {
   this.applicationsCount += 1;
   return this.save();
 };
 
-projectSchema.methods.selectCreator = function(creatorId) {
+projectSchema.methods.selectCreator = function (creatorId) {
   this.selectedCreatorId = creatorId;
   this.status = 'in_progress';
   return this.save();
 };
 
 // Statics
-projectSchema.statics.findOpenProjects = function(filters = {}) {
+projectSchema.statics.findOpenProjects = function (filters = {}) {
   const query = { status: 'open', visibility: 'public', ...filters };
   return this.find(query).populate('clientId', 'firstName lastName avatar email isEmailVerified').sort({ createdAt: -1 });
 };
 
-projectSchema.statics.findByCategory = function(category) {
+projectSchema.statics.findByCategory = function (category) {
   return this.find({ category, status: 'open', visibility: 'public' })
     .populate('clientId', 'firstName lastName avatar email isEmailVerified')
     .sort({ createdAt: -1 });

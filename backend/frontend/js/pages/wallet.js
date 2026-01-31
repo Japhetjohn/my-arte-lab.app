@@ -41,19 +41,23 @@ export async function renderWalletPage() {
     `;
 
     try {
-        const [walletResponse, transactionsResponse, bookingsResponse, addressResponse] = await Promise.all([
-            api.getWallet(),
-            api.getTransactions(1, 10),
-            api.getBookings(),
-            api.getHostfiCryptoAddresses()
+        const [walletResponse, transactionsResponse, bookingsResponse] = await Promise.all([
+            api.getHostfiWallet(), // Changed from api.getWallet() to use HostFi wallet
+            api.getHostfiTransactions(1, 10), // Changed to use HostFi transactions
+            api.getBookings()
         ]);
 
         if (walletResponse.success) {
             walletData = walletResponse.data.wallet;
-            if (addressResponse.success && addressResponse.data.addresses && addressResponse.data.addresses.length > 0) {
-                walletData.address = addressResponse.data.addresses[0].address;
-                walletData.network = addressResponse.data.addresses[0].network;
-            }
+            window.walletData = walletData; // Make available globally
+            // Debug logging
+            console.log('Wallet data loaded:', {
+                balance: walletData.balance,
+                currency: walletData.currency,
+                address: walletData.address,
+                totalEarnings: walletData.totalEarnings
+            });
+            // Address is now included in wallet response
             transactions = transactionsResponse.data?.transactions || [];
             recentBookings = bookingsResponse.data?.bookings || [];
             renderWalletContent();
@@ -79,7 +83,10 @@ export async function renderWalletPage() {
 }
 
 function renderWalletAddress(wallet) {
-    if (!wallet.address || wallet.address.startsWith('pending_')) {
+    // Debug logging
+    console.log('Rendering wallet address:', wallet.address);
+
+    if (!wallet || !wallet.address || wallet.address.startsWith('pending_')) {
         return `
             <div class="wallet-address-card">
                 <div class="wallet-address-label">Solana Wallet Address</div>
@@ -118,9 +125,31 @@ function renderWalletContent() {
     const balance = walletData.balance || 0;
     const pendingBalance = walletData.pendingBalance || 0;
     const totalEarnings = walletData.totalEarnings || 0;
+    const currency = walletData.currency || 'NGN';
 
-    // Calculate USD value (USDC is 1:1 with USD)
-    const usdValue = balance * 1.0;
+    // Get currency symbol - define at top so transactions can use it too
+    const currencySymbols = {
+        'NGN': '₦',
+        'USD': '$',
+        'EUR': '€',
+        'GBP': '£',
+        'KES': 'KSh',
+        'GHS': 'GH₵',
+        'ZAR': 'R',
+        'JPY': '¥',
+        'CNY': '¥',
+        'INR': '₹',
+        'AED': 'د.إ',
+        'USDC': '$',
+        'USDT': '$'
+    };
+    const currencySymbol = currencySymbols[currency] || '$';
+
+    // Map assets for rendering - show only USDC as requested
+    const assets = walletData.assets || [];
+    const cryptoAssets = assets.filter(a => a.currency === 'USDC');
+
+    // NGN balance is the primary balance from walletData.balance
 
     mainContent.innerHTML = `
         <div class="section">
@@ -130,7 +159,7 @@ function renderWalletContent() {
                 <!-- Spot Balance Card -->
                 <div class="spot-balance-card">
                     <div class="balance-header">
-                        <span class="balance-label">Spot Balance</span>
+                        <span class="balance-label">Total Balance</span>
                         <button class="icon-btn" onclick="window.location.reload()" title="Refresh balance">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                                 <path d="M4 12a8 8 0 1 1 16 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -141,10 +170,12 @@ function renderWalletContent() {
 
                     <div class="balance-main">
                         <div class="balance-amount">
-                            <span class="amount-value">${balance.toFixed(2)}</span>
                             <span class="currency-symbol">$</span>
+                            <span class="amount-value">${(walletData.balanceUsd || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                         </div>
-                        <div class="balance-usd">≈ $${usdValue.toFixed(2)} USD</div>
+                        <div class="balance-secondary">
+                            ≈ ${currencySymbol}${balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}
+                        </div>
                     </div>
 
                     <div class="balance-actions">
@@ -170,26 +201,29 @@ function renderWalletContent() {
                     </div>
                 </div>
 
-                <!-- USDC Asset Card -->
+                <!-- Crypto Assets Section -->
                 <div class="crypto-assets-section">
-                    <h2 class="section-title">Assets</h2>
-
-                    <div class="crypto-asset-item">
-                        <div class="asset-icon">
-                            <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-                                <circle cx="16" cy="16" r="16" fill="#2775CA"/>
-                                <text x="50%" y="50%" text-anchor="middle" dy=".3em" fill="white" font-size="14" font-weight="600">$</text>
-                            </svg>
+                    <h2 class="section-title">Crypto Assets</h2>
+                    ${cryptoAssets.length > 0 ? cryptoAssets.map(asset => `
+                        <div class="crypto-asset-item">
+                            <div class="asset-icon">
+                                <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                                    <circle cx="16" cy="16" r="16" fill="${asset.currency === 'USDC' ? '#2775CA' : '#26A17B'}"/>
+                                    <text x="50%" y="50%" text-anchor="middle" dy=".3em" fill="white" font-size="14" font-weight="600">${asset.currency[0]}</text>
+                                </svg>
+                            </div>
+                            <div class="asset-info">
+                                <div class="asset-name">${asset.currency}</div>
+                                <div class="asset-network">${asset.colNetwork || 'HostFi'}</div>
+                            </div>
+                            <div class="asset-balance">
+                                <div class="balance-value">${(asset.balance || 0).toFixed(4)}</div>
+                                <div class="balance-usd">$${(asset.balance || 0).toFixed(2)}</div>
+                            </div>
                         </div>
-                        <div class="asset-info">
-                            <div class="asset-name">USDC</div>
-                            <div class="asset-network">Solana</div>
-                        </div>
-                        <div class="asset-balance">
-                            <div class="balance-value">${balance.toFixed(4)}</div>
-                            <div class="balance-usd">$${usdValue.toFixed(2)}</div>
-                        </div>
-                    </div>
+                    `).join('') : `
+                        <div class="text-secondary text-center" style="padding: 20px;">No crypto assets found</div>
+                    `}
                 </div>
 
                 <!-- Wallet Address Section -->
@@ -219,7 +253,7 @@ function renderWalletContent() {
                                 </svg>
                             </div>
                             <div class="stat-details">
-                                <div class="stat-label">Pending</div>
+                                <div class="stat-label">In Escrow</div>
                                 <div class="stat-value">$${pendingBalance.toFixed(2)}</div>
                             </div>
                         </div>
@@ -292,7 +326,7 @@ function renderWalletContent() {
                                     ${transaction.status === 'processing' ? `<div class="caption" style="color: #3B82F6; margin-bottom: 4px;">Processing</div>` : ''}
                                     ${transaction.status === 'failed' ? `<div class="caption" style="color: #EF4444; margin-bottom: 4px;">Failed</div>` : ''}
                                     <div class="transaction-amount ${isCredit ? 'positive' : 'negative'}">
-                                        ${isCredit ? '+' : '-'}USDC ${Math.abs(transaction.amount).toFixed(2)}
+                                        ${isCredit ? '+' : '-'}${currencySymbols[transaction.currency] || transaction.currency} ${Math.abs(transaction.amount).toFixed(2)}
                                     </div>
                                     ${(transaction.status === 'pending' || transaction.status === 'processing') && transaction.reference ? `
                                         <button class="btn-ghost" style="font-size: 12px; padding: 4px 8px; margin-top: 4px;" onclick="window.checkTransactionStatus('${transaction.reference}')">

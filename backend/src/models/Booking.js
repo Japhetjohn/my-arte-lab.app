@@ -105,7 +105,7 @@ const bookingSchema = new mongoose.Schema({
 
   status: {
     type: String,
-    enum: ['pending', 'confirmed', 'in_progress', 'completed', 'cancelled', 'disputed'],
+    enum: ['pending', 'awaiting_payment', 'confirmed', 'in_progress', 'delivered', 'completed', 'cancelled', 'disputed'],
     default: 'pending'
   },
 
@@ -185,6 +185,8 @@ const bookingSchema = new mongoose.Schema({
   platformFeePaidAt: Date,
   platformFeeTransactionHash: String,
 
+  lastSubmissionDate: Date,
+
   metadata: {
     clientIP: String,
     userAgent: String,
@@ -202,7 +204,7 @@ bookingSchema.index({ status: 1 });
 bookingSchema.index({ createdAt: -1 });
 bookingSchema.index({ _id: 1, status: 1, __v: 1 });
 
-bookingSchema.pre('save', async function(next) {
+bookingSchema.pre('save', async function (next) {
   if (!this.bookingId) {
     const timestamp = Date.now().toString(36).toUpperCase();
     const random = Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -217,11 +219,11 @@ bookingSchema.pre('save', async function(next) {
   next();
 });
 
-bookingSchema.methods.canBeCancelled = function() {
+bookingSchema.methods.canBeCancelled = function () {
   return ['pending', 'confirmed'].includes(this.status);
 };
 
-bookingSchema.methods.canReleaseFunds = function() {
+bookingSchema.methods.canReleaseFunds = function () {
   return (
     this.status === 'completed' &&
     this.paymentStatus === 'paid' &&
@@ -229,13 +231,13 @@ bookingSchema.methods.canReleaseFunds = function() {
   );
 };
 
-bookingSchema.methods.markCompleted = async function() {
+bookingSchema.methods.markCompleted = async function () {
   this.status = 'completed';
   this.completedAt = new Date();
   return await this.save();
 };
 
-bookingSchema.methods.releaseFunds = async function() {
+bookingSchema.methods.releaseFunds = async function () {
   if (!this.canReleaseFunds()) {
     throw new Error('Funds cannot be released for this booking');
   }
@@ -247,7 +249,7 @@ bookingSchema.methods.releaseFunds = async function() {
   return await this.save();
 };
 
-bookingSchema.methods.addMessage = async function(senderId, message) {
+bookingSchema.methods.addMessage = async function (senderId, message) {
   this.messages.push({
     sender: senderId,
     message,
@@ -256,7 +258,7 @@ bookingSchema.methods.addMessage = async function(senderId, message) {
   return await this.save();
 };
 
-bookingSchema.methods.addDeliverable = async function(deliverable) {
+bookingSchema.methods.addDeliverable = async function (deliverable) {
   this.deliverables.push({
     ...deliverable,
     uploadedAt: new Date()

@@ -8,7 +8,10 @@ export function formatDate(dateString) {
 export function formatStatus(status) {
     const statusMap = {
         'pending': 'Pending',
-        'in_progress': 'In progress',
+        'awaiting_payment': 'Awaiting Payment',
+        'confirmed': 'Confirmed',
+        'in_progress': 'In Progress',
+        'delivered': 'Delivered',
         'completed': 'Completed',
         'cancelled': 'Cancelled'
     };
@@ -18,7 +21,10 @@ export function formatStatus(status) {
 export function getStatusColor(status) {
     const colorMap = {
         'pending': '#FFA500',
+        'awaiting_payment': '#F59E0B',
+        'confirmed': '#3B82F6',
         'in_progress': '#6B46FF',
+        'delivered': '#10B981',
         'completed': '#10B981',
         'cancelled': '#EF4444'
     };
@@ -202,7 +208,7 @@ export function addButtonRipple(button, e) {
 export function loadImageProgressively(img) {
     const src = img.dataset.src || img.src;
     img.classList.add('progressive-image');
-    
+
     const tempImg = new Image();
     tempImg.onload = () => {
         img.src = src;
@@ -400,12 +406,12 @@ export function calculateProfileCompletionScore(creator) {
 
         // Portfolio & work samples (30 points total)
         portfolio: creator.portfolio?.length >= 10 ? 15 :
-                   creator.portfolio?.length >= 5 ? 10 :
-                   creator.portfolio?.length >= 1 ? 5 : 0,
+            creator.portfolio?.length >= 5 ? 10 :
+                creator.portfolio?.length >= 1 ? 5 : 0,
         coverImage: creator.cover || creator.coverImage ? 5 : 0,
         services: creator.services?.length >= 5 ? 10 :
-                  creator.services?.length >= 3 ? 7 :
-                  creator.services?.length >= 1 ? 4 : 0,
+            creator.services?.length >= 3 ? 7 :
+                creator.services?.length >= 1 ? 4 : 0,
 
         // Pricing & availability (20 points total)
         hourlyRate: creator.price || creator.hourlyRate ? 10 : 0,
@@ -414,8 +420,8 @@ export function calculateProfileCompletionScore(creator) {
         // Trust signals (20 points total)
         verified: creator.verified || creator.isVerified ? 10 : 0,
         completedJobs: creator.completedJobs >= 10 ? 10 :
-                       creator.completedJobs >= 5 ? 7 :
-                       creator.completedJobs >= 1 ? 4 : 0
+            creator.completedJobs >= 5 ? 7 :
+                creator.completedJobs >= 1 ? 4 : 0
     };
 
     // Sum all field scores

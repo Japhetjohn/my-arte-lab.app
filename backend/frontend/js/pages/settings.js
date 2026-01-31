@@ -347,7 +347,7 @@ export function renderSettingsPage() {
 }
 
 
-window.handleProfileUpdate = async function(event) {
+window.handleProfileUpdate = async function (event) {
     event.preventDefault();
 
     try {
@@ -410,12 +410,12 @@ window.handleProfileUpdate = async function(event) {
     }
 };
 
-window.handleAvatarUpload = function() {
+window.handleAvatarUpload = function () {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
 
-    input.onchange = async function(e) {
+    input.onchange = async function (e) {
         const file = e.target.files[0];
         if (!file) return;
 
@@ -447,12 +447,12 @@ window.handleAvatarUpload = function() {
     input.click();
 };
 
-window.handleCoverUpload = function() {
+window.handleCoverUpload = function () {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
 
-    input.onchange = async function(e) {
+    input.onchange = async function (e) {
         const file = e.target.files[0];
         if (!file) return;
 
@@ -484,12 +484,12 @@ window.handleCoverUpload = function() {
     input.click();
 };
 
-window.toggleSwitch = function(checkbox, label) {
+window.toggleSwitch = function (checkbox, label) {
     const isActive = checkbox.checked;
     showToast(`${label} ${isActive ? 'enabled' : 'disabled'}`, 'success');
 };
 
-window.handleProfileVisibilityChange = function(value) {
+window.handleProfileVisibilityChange = function (value) {
     const visibilityLabels = {
         'public': 'Public',
         'private': 'Private',
@@ -499,11 +499,11 @@ window.handleProfileVisibilityChange = function(value) {
     showToast(`Profile visibility set to ${visibilityLabels[value]}`, 'success');
 };
 
-window.showChangePasswordModal = function() {
+window.showChangePasswordModal = function () {
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
     modal.innerHTML = `
-        <div class="modal">
+        <div class="modal-content">
             <div class="modal-header">
                 <h2>Change password</h2>
                 <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">
@@ -536,7 +536,7 @@ window.showChangePasswordModal = function() {
     document.body.appendChild(modal);
 };
 
-window.handlePasswordChange = async function(event) {
+window.handlePasswordChange = async function (event) {
     event.preventDefault();
 
     const currentPassword = document.getElementById('currentPassword').value;
@@ -567,11 +567,11 @@ window.handlePasswordChange = async function(event) {
     }
 };
 
-window.showTwoFactorModal = function() {
+window.showTwoFactorModal = function () {
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
     modal.innerHTML = `
-        <div class="modal">
+        <div class="modal-content">
             <div class="modal-header">
                 <h2>Two-factor authentication</h2>
                 <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">
@@ -592,14 +592,14 @@ window.showTwoFactorModal = function() {
     document.body.appendChild(modal);
 };
 
-window.showDeleteAccountModal = function() {
+window.showDeleteAccountModal = function () {
     const user = appState.user;
     const isOAuthUser = !!user?.googleId;
 
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
     modal.innerHTML = `
-        <div class="modal">
+        <div class="modal-content">
             <div class="modal-header">
                 <h2 style="color: var(--error);">Delete account</h2>
                 <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">
@@ -640,7 +640,7 @@ window.showDeleteAccountModal = function() {
     document.body.appendChild(modal);
 };
 
-window.handleAccountDeletion = async function(event) {
+window.handleAccountDeletion = async function (event) {
     event.preventDefault();
 
     const user = appState.user;
@@ -683,7 +683,7 @@ window.handleAccountDeletion = async function(event) {
     }
 };
 
-window.handleProfileVisibilityChange = async function(value) {
+window.handleProfileVisibilityChange = async function (value) {
     try {
         const response = await api.updateProfile({ profileVisibility: value });
 
@@ -699,7 +699,7 @@ window.handleProfileVisibilityChange = async function(value) {
     }
 };
 
-window.handleThemeToggle = function(checkbox) {
+window.handleThemeToggle = function (checkbox) {
     const newTheme = checkbox.checked ? 'dark' : 'light';
 
     // Update localStorage
@@ -712,7 +712,7 @@ window.handleThemeToggle = function(checkbox) {
     showToast(`${newTheme === 'dark' ? 'Dark' : 'Light'} mode enabled`, 'success');
 };
 
-window.handlePhoneVisibilityToggleNew = async function(checkbox) {
+window.handlePhoneVisibilityToggleNew = async function (checkbox) {
     try {
         const newValue = checkbox.checked;
 

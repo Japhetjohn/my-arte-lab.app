@@ -118,6 +118,7 @@ class HostFiService {
       // Preserve the full error details
       if (errorData) {
         const errorMsg = errorData.message || errorData.error || 'HostFi API request failed';
+        console.error(`[HostFi Error] ${method} ${url}:`, JSON.stringify(errorData, null, 2));
         const err = new Error(errorMsg);
         err.hostfiError = errorData; // Preserve full error for debugging
         throw err;
@@ -141,7 +142,7 @@ class HostFiService {
       if (type) params.type = type;
 
       const response = await this.makeRequest('GET', '/v1/assets', null, params);
-      return response.assets || response.data || [];
+      return response.assets || response.data || (Array.isArray(response) ? response : []);
     } catch (error) {
       console.error('Failed to get user wallets:', error.message);
       throw error;
@@ -156,7 +157,7 @@ class HostFiService {
   async getWalletAsset(assetId) {
     try {
       const response = await this.makeRequest('GET', `/v1/assets/${assetId}`);
-      return response.data;
+      return response;
     } catch (error) {
       console.error(`Failed to get wallet asset ${assetId}:`, error.message);
       throw error;
@@ -175,7 +176,7 @@ class HostFiService {
       if (network) params.network = network;
 
       const response = await this.makeRequest('GET', `/v1/assets/${assetId}/address`, null, params);
-      return response.data;
+      return response;
     } catch (error) {
       console.error(`Failed to get wallet address for ${assetId}:`, error.message);
       throw error;
@@ -191,7 +192,7 @@ class HostFiService {
   async getWalletTransactions(assetId, filters = {}) {
     try {
       const response = await this.makeRequest('GET', `/v1/assets/${assetId}/transactions`, null, filters);
-      return response.data;
+      return response;
     } catch (error) {
       console.error(`Failed to get wallet transactions for ${assetId}:`, error.message);
       throw error;
@@ -206,7 +207,7 @@ class HostFiService {
   async getAllTransactions(filters = {}) {
     try {
       const response = await this.makeRequest('GET', '/v1/assets/transactions', null, filters);
-      return response.data;
+      return response;
     } catch (error) {
       console.error('Failed to get all transactions:', error.message);
       throw error;
@@ -221,7 +222,7 @@ class HostFiService {
   async getTransactionByReference(reference) {
     try {
       const response = await this.makeRequest('GET', `/v1/assets/transactions/${reference}`);
-      return response.data;
+      return response;
     } catch (error) {
       console.error(`Failed to get transaction ${reference}:`, error.message);
       throw error;
@@ -237,7 +238,7 @@ class HostFiService {
     try {
       console.log('Swapping assets:', JSON.stringify(params, null, 2));
       const response = await this.makeRequest('POST', '/v1/assets/convert', params);
-      return response.data;
+      return response;
     } catch (error) {
       console.error('Failed to swap assets:', error.message);
       throw error;
@@ -259,15 +260,16 @@ class HostFiService {
    */
   async createCryptoCollectionAddress({ assetId, currency, network, customId }) {
     try {
-      // Enforce USDC on Solana
-      currency = 'USDC';
-      network = 'Solana';
+      // Default to USDC on Solana if not specified
+      currency = currency || 'USDC';
+      network = network || 'SOL';  // HostFi expects "SOL" not "Solana"
+
       const payload = { assetId, currency, network, customId };
 
       console.log('Creating crypto collection address with payload:', JSON.stringify(payload, null, 2));
 
       const response = await this.makeRequest('POST', '/v1/collections/crypto/addresses', payload);
-      return response.data;
+      return response;
     } catch (error) {
       console.error('Failed to create crypto collection address:', error.message);
       if (error.hostfiError) {
@@ -285,7 +287,7 @@ class HostFiService {
   async getCryptoCollectionAddresses(filters = {}) {
     try {
       const response = await this.makeRequest('GET', '/v1/collections/crypto/addresses', null, filters);
-      return response.data || [];
+      return response.records || response.addresses || response.data || (Array.isArray(response) ? response : []);
     } catch (error) {
       console.error('Failed to get crypto collection addresses:', error.message);
       throw error;
@@ -300,7 +302,7 @@ class HostFiService {
   async getCryptoCollectionAddress(addressId) {
     try {
       const response = await this.makeRequest('GET', `/v1/collections/crypto/addresses/${addressId}`);
-      return response.data;
+      return response;
     } catch (error) {
       console.error(`Failed to get crypto collection address ${addressId}:`, error.message);
       throw error;
@@ -320,20 +322,19 @@ class HostFiService {
    */
   async createFiatCollectionChannel({ assetId, currency, customId, type, method, countryCode }) {
     try {
-      // Updated based on API docs: both type and method should be "BANK_TRANSFER"
       const payload = {
         assetId,
         currency,
         customId,
-        type,          // "BANK_TRANSFER" based on API docs
-        method,        // "BANK_TRANSFER" per HostFi support
+        type: type || 'BANK_TRANSFER',
+        method: method || 'BANK_TRANSFER',
         countryCode
       };
 
-      console.log('Creating fiat collection channel with payload:', JSON.stringify(payload, null, 2));
+      console.log('[HostFi Service] Creating fiat collection channel with payload:', JSON.stringify(payload, null, 2));
 
       const response = await this.makeRequest('POST', '/v1/collections/fiat/channels', payload);
-      return response.data;
+      return response;
     } catch (error) {
       console.error('Failed to create fiat collection channel:', error.message);
       if (error.hostfiError) {
@@ -350,10 +351,19 @@ class HostFiService {
    */
   async getFiatCollectionChannels(filters = {}) {
     try {
+      console.log('[HostFi Service] Fetching fiat collection channels with filters:', JSON.stringify(filters));
       const response = await this.makeRequest('GET', '/v1/collections/fiat/channels', null, filters);
-      return response.data || [];
+
+      console.log('[HostFi Service] Raw response keys:', Object.keys(response));
+
+      // HostFi returns channels in 'records' array
+      const channels = response.records || response.channels || response.data || (Array.isArray(response) ? response : []);
+
+      console.log(`[HostFi Service] Extracted ${channels.length} channels`);
+
+      return channels;
     } catch (error) {
-      console.error('Failed to get fiat collection channels:', error.message);
+      console.error('[HostFi Service] Failed to get fiat collection channels:', error.message);
       throw error;
     }
   }
@@ -366,7 +376,7 @@ class HostFiService {
   async getCollectionTransaction(transactionId) {
     try {
       const response = await this.makeRequest('GET', `/v1/collections/transactions/${transactionId}`);
-      return response.data;
+      return response;
     } catch (error) {
       console.error(`Failed to get collection transaction ${transactionId}:`, error.message);
       throw error;
@@ -387,7 +397,11 @@ class HostFiService {
     try {
       const params = { sourceCurrency, targetCurrency };
       const response = await this.makeRequest('GET', '/v1/payout/methods', null, params);
-      return response.data || [];
+      // Hanle direct array or nested methods property
+      if (Array.isArray(response)) return response;
+      if (response && response.methods && Array.isArray(response.methods)) return response.methods;
+      if (response && response.data && Array.isArray(response.data)) return response.data;
+      return [];
     } catch (error) {
       console.error('Failed to get withdrawal methods:', error.message);
       throw error;
@@ -405,7 +419,7 @@ class HostFiService {
       if (type) params.type = type;
 
       const response = await this.makeRequest('GET', '/v1/payout/accounts', null, params);
-      return response.data || [];
+      return response.accounts || response.data || (Array.isArray(response) ? response : []);
     } catch (error) {
       console.error('Failed to get saved withdrawal accounts:', error.message);
       throw error;
@@ -420,7 +434,7 @@ class HostFiService {
   async getWithdrawalTransactions(filters = {}) {
     try {
       const response = await this.makeRequest('GET', '/v1/payout/transactions', null, filters);
-      return response.data;
+      return response;
     } catch (error) {
       console.error('Failed to get withdrawal transactions:', error.message);
       throw error;
@@ -445,12 +459,24 @@ class HostFiService {
       const feeBreakdown = this.calculatePlatformFee(amount);
 
       const payload = {
-        walletAssetId,
-        amount: feeBreakdown.amountAfterFee, // Send amount after fee deduction
+        assetId: walletAssetId,
+        amount: feeBreakdown.amountAfterFee,
         currency,
         methodId,
-        recipient,
-        clientReference
+        clientReference,
+        memo: `Withdrawal of ${amount} ${currency}`,
+        recipient: {
+          type: methodId === 'BANK_TRANSFER' ? 'BANK' : (methodId === 'MOBILE_MONEY' ? 'MOMO' : 'CRYPTO'),
+          method: methodId,
+          currency: recipient.currency || currency,
+          accountNumber: recipient.accountNumber,
+          accountName: recipient.accountName || 'Verified Recipient',
+          bankId: recipient.bankId,
+          bankName: recipient.bankName,
+          country: recipient.country || 'NG',
+          accountType: 'SAVINGS',
+          beneficiaryType: 'INDIVIDUAL'
+        }
       };
 
       console.log('Initiating HostFi withdrawal:', {
@@ -461,6 +487,7 @@ class HostFiService {
         currency,
         methodId
       });
+      console.log('HostFi Withdrawal Payload:', JSON.stringify(payload, null, 2));
 
       const response = await this.makeRequest('POST', '/v1/payout/transactions', payload);
 
@@ -483,7 +510,7 @@ class HostFiService {
   async getWithdrawalByReference(reference) {
     try {
       const response = await this.makeRequest('GET', `/v1/payout/transactions/${reference}`);
-      return response.data;
+      return response;
     } catch (error) {
       console.error(`Failed to get withdrawal ${reference}:`, error.message);
       throw error;
@@ -498,7 +525,11 @@ class HostFiService {
   async getBanksList(countryCode) {
     try {
       const response = await this.makeRequest('GET', `/v1/payout/banks/${countryCode}/list`);
-      return response.data || [];
+      // Handle direct array or nested banks property
+      if (Array.isArray(response)) return response;
+      if (response && response.banks && Array.isArray(response.banks)) return response.banks;
+      if (response && response.data && Array.isArray(response.data)) return response.data;
+      return [];
     } catch (error) {
       console.error(`Failed to get banks list for ${countryCode}:`, error.message);
       throw error;
@@ -518,7 +549,7 @@ class HostFiService {
       const payload = { country, bankId, accountNumber };
 
       const response = await this.makeRequest('POST', '/v1/payout/accounts/lookup', payload);
-      return response.data;
+      return response;
     } catch (error) {
       console.error('Bank account lookup failed:', error.message);
       throw new Error(error.message || 'Invalid account details');
@@ -539,7 +570,7 @@ class HostFiService {
     try {
       const params = { fromCurrency, toCurrency };
       const response = await this.makeRequest('GET', '/v1/conversions', null, params);
-      return response.data;
+      return response;
     } catch (error) {
       console.error('Failed to get currency rates:', error.message);
       throw error;
@@ -557,22 +588,45 @@ class HostFiService {
     try {
       const params = { sourceCurrency, targetCurrency, type };
       const response = await this.makeRequest('GET', '/v1/fees', null, params);
-      return response.data;
+      return response;
     } catch (error) {
       console.error('Failed to get exchange fees:', error.message);
       throw error;
     }
   }
 
-  /**
-   * Get supported payment currencies
-   * @returns {Promise<Array>} List of supported currencies
-   */
   async getSupportedCurrencies() {
     try {
       // Get payment currencies which includes crypto networks info
-      const response = await this.makeRequest('GET', '/v1/pay/currencies');
-      return response.data || [];
+      let response = await this.makeRequest('GET', '/v1/pay/currencies');
+      console.log(`[HostFi Service:getSupportedCurrencies] Response type: ${Array.isArray(response) ? 'array' : typeof response}`);
+
+      let currencies = [];
+      if (Array.isArray(response)) {
+        currencies = response;
+      } else if (response && response.currencies && Array.isArray(response.currencies)) {
+        currencies = response.currencies;
+      } else if (response && response.data && Array.isArray(response.data)) {
+        currencies = response.data;
+      } else if (response && response.data && response.data.currencies && Array.isArray(response.data.currencies)) {
+        currencies = response.data.currencies;
+      }
+
+      // Secondary fallback to assets list if pay currencies is empty
+      if (currencies.length === 0) {
+        console.log('[HostFi Service:getSupportedCurrencies] Pay currencies empty, trying /v1/assets fallback...');
+        const assetsResponse = await this.makeRequest('GET', '/v1/assets');
+        if (Array.isArray(assetsResponse)) {
+          currencies = assetsResponse;
+        } else if (assetsResponse && assetsResponse.assets && Array.isArray(assetsResponse.assets)) {
+          currencies = assetsResponse.assets;
+        } else if (assetsResponse && assetsResponse.data && Array.isArray(assetsResponse.data)) {
+          currencies = assetsResponse.data;
+        }
+      }
+
+      console.log(`[HostFi Service:getSupportedCurrencies] Final count: ${currencies.length}`);
+      return currencies;
     } catch (error) {
       console.error('Failed to get supported currencies:', error.message);
       throw error;

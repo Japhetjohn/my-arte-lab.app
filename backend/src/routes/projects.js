@@ -429,7 +429,7 @@ router.patch('/applications/:id', protect, async (req, res) => {
 
         res.json({
           success: true,
-          message: 'Application accepted successfully. Payment has been deducted and held in escrow.',
+          message: 'Application accepted successfully. Please proceed to payment to start the project.',
           data: { application, project }
         });
       } catch (error) {
@@ -501,6 +501,129 @@ router.patch('/applications/:id', protect, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to update application'
+    });
+  }
+});
+
+// Pay for project (clients only)
+router.post('/:id/pay', protect, async (req, res) => {
+  try {
+    const result = await projectService.processProjectPayment(req.params.id, req.user._id);
+    const { project, client } = result;
+
+    // Notify creator that payment is received and work can start
+    await Notification.createNotification({
+      recipient: project.selectedCreatorId,
+      sender: client._id,
+      type: 'project_started',
+      title: 'Project Payment Received',
+      message: `${client.firstName} ${client.lastName} has paid for project "${project.title}". You can now start the work.`,
+      link: `/projects`,
+      project: project._id,
+      metadata: {
+        projectId: project._id,
+        projectTitle: project.title,
+        amount: project.amount
+      }
+    });
+
+    res.json({
+      success: true,
+      message: 'Payment successful. Project is now in progress.',
+      data: { project }
+    });
+  } catch (error) {
+    console.error('Error processing project payment:', error);
+    res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || 'Failed to process payment'
+    });
+  }
+});
+
+// Submit project deliverable (creators only)
+router.post('/:id/submit', protect, async (req, res) => {
+  try {
+    const { url, message } = req.body;
+
+    if (!url) {
+      return res.status(400).json({
+        success: false,
+        message: 'Deliverable URL is required'
+      });
+    }
+
+    const project = await projectService.submitProjectDeliverable(
+      req.params.id,
+      req.user._id,
+      { url, filename: 'Deliverable', uploadedAt: new Date() }
+    );
+
+    // Notify client that work has been delivered
+    await Notification.createNotification({
+      recipient: project.clientId,
+      sender: req.user._id,
+      type: 'project_delivered',
+      title: 'Project Work Delivered',
+      message: `${req.user.name} has submitted deliverables for project "${project.title}". Please review it.`,
+      link: `/projects`,
+      project: project._id,
+      metadata: {
+        projectId: project._id,
+        projectTitle: project.title
+      }
+    });
+
+    res.json({
+      success: true,
+      message: 'Deliverable submitted successfully',
+      data: { project }
+    });
+  } catch (error) {
+    console.error('Error submitting project deliverable:', error);
+    res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || 'Failed to submit deliverable'
+    });
+  }
+});
+
+// Release funds for project (clients only)
+router.post('/:id/release-funds', protect, async (req, res) => {
+  try {
+    const result = await projectService.releaseFundsWithTransaction(
+      req.params.id,
+      req.user._id
+    );
+
+    const { project, creator, amount } = result;
+
+    // Notify creator that funds are released
+    await Notification.createNotification({
+      recipient: creator._id,
+      sender: req.user._id,
+      type: 'payment_received',
+      title: 'Payment Released',
+      message: `Payment of ${amount} USDC for project "${project.title}" has been released to your wallet.`,
+      link: `/wallet`,
+      project: project._id,
+      metadata: {
+        projectId: project._id,
+        projectTitle: project.title,
+        amount
+      }
+    });
+
+    res.json({
+      success: true,
+      message: 'Funds released successfully',
+      data: { project }
+    });
+  } catch (error) {
+    console.error('Error releasing project funds:', error);
+    res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || 'Failed to release funds'
     });
   }
 });

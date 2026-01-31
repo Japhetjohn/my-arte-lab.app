@@ -3,6 +3,7 @@ const Booking = require('../models/Booking');
 const User = require('../models/User');
 const Transaction = require('../models/Transaction');
 const Notification = require('../models/Notification');
+const notificationService = require('./notificationService');
 const { ErrorHandler } = require('../utils/errorHandler');
 const { BOOKING_LIMITS, PLATFORM_CONFIG } = require('../utils/constants');
 const { getPlatformFeeDestination } = require('../utils/platformWallet');
@@ -34,13 +35,57 @@ class BookingService {
         throw new ErrorHandler('Booking not found or cannot be accepted', 404);
       }
 
-      const client = await User.findById(booking.client).session(session);
+      booking.status = 'awaiting_payment';
+      if (idempotencyKey) {
+        booking.idempotencyKey = idempotencyKey;
+      }
+      await booking.save({ session });
+
+      // Notify client that booking was accepted
+      await notificationService.createNotification({
+        recipient: booking.client,
+        type: 'booking_accepted',
+        title: 'Booking Accepted',
+        message: `Creator has accepted your booking request for "${booking.serviceTitle}". Please proceed to payment to start the project.`,
+        booking: booking._id,
+        link: `/#/bookings`
+      });
+
+      await session.commitTransaction();
+
+      return {
+        booking,
+        alreadyProcessed: false
+      };
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      session.endSession();
+    }
+  }
+
+  async processBookingPayment(bookingId, clientId) {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      const booking = await Booking.findOne({
+        _id: bookingId,
+        client: clientId,
+        status: 'awaiting_payment'
+      }).session(session);
+
+      if (!booking) {
+        throw new ErrorHandler('Booking not found or not in awaiting payment status', 404);
+      }
+
+      const client = await User.findById(clientId).session(session);
       if (!client) {
         throw new ErrorHandler('Client not found', 404);
       }
 
       if (client.wallet.balance < booking.amount) {
-        await session.abortTransaction();
         throw new ErrorHandler(
           `Insufficient balance. Required: ${booking.amount} USDC, Available: ${client.wallet.balance} USDC`,
           400
@@ -70,7 +115,6 @@ class BookingService {
       );
 
       if (!clientUpdate) {
-        await session.abortTransaction();
         throw new ErrorHandler('Concurrent modification detected or insufficient balance', 409);
       }
 
@@ -78,32 +122,39 @@ class BookingService {
         [
           {
             user: client._id,
-            type: 'payment',
+            type: 'escrow', // Changed to escrow to indicate held funds
             amount: booking.amount,
             currency: booking.currency,
             status: 'completed',
             booking: booking._id,
-            description: `Payment for ${booking.serviceTitle}`,
+            description: `Escrow payment for ${booking.serviceTitle}`,
             completedAt: new Date()
           }
         ],
         { session }
       );
 
-      booking.status = 'confirmed';
+      booking.status = 'confirmed'; // Ready to start work
       booking.paymentStatus = 'paid';
       booking.paidAt = new Date();
-      if (idempotencyKey) {
-        booking.idempotencyKey = idempotencyKey;
-      }
+      booking.escrowWallet.balance = booking.amount;
       await booking.save({ session });
+
+      // Notify creator that payment was received
+      await notificationService.createNotification({
+        recipient: booking.creator,
+        type: 'payment_received',
+        title: 'Payment Received',
+        message: `Client has paid for "${booking.serviceTitle}". Funds are held in escrow. You can now start working!`,
+        booking: booking._id,
+        link: `/#/bookings`
+      });
 
       await session.commitTransaction();
 
       return {
         booking,
-        client: clientUpdate,
-        alreadyProcessed: false
+        client: clientUpdate
       };
     } catch (error) {
       await session.abortTransaction();
@@ -111,6 +162,39 @@ class BookingService {
     } finally {
       session.endSession();
     }
+  }
+
+  async submitBookingDeliverable(bookingId, creatorId, deliverableData) {
+    const booking = await Booking.findOne({
+      _id: bookingId,
+      creator: creatorId,
+      status: { $in: ['confirmed', 'in_progress'] }
+    });
+
+    if (!booking) {
+      throw new ErrorHandler('Booking not found or not in a state to submit work', 404);
+    }
+
+    booking.deliverables.push({
+      ...deliverableData,
+      uploadedAt: new Date()
+    });
+
+    booking.status = 'delivered';
+    booking.lastSubmissionDate = new Date();
+    await booking.save();
+
+    // Notify client that work was delivered
+    await notificationService.createNotification({
+      recipient: booking.client,
+      type: 'work_delivered',
+      title: 'Work Delivered',
+      message: `Creator has submitted deliverables for "${booking.serviceTitle}". Please review and approve to release funds.`,
+      booking: booking._id,
+      link: `/#/bookings`
+    });
+
+    return booking;
   }
 
   async releaseFundsWithTransaction(bookingId, clientId) {
@@ -130,8 +214,8 @@ class BookingService {
         throw new ErrorHandler('Booking not found', 404);
       }
 
-      if (!booking.canReleaseFunds()) {
-        throw new ErrorHandler('Funds cannot be released for this booking', 400);
+      if (booking.status !== 'delivered' && booking.status !== 'completed') {
+        throw new ErrorHandler('Deliverables must be submitted before funds can be released', 400);
       }
 
       if (booking.escrowWallet.balance < booking.amount) {
@@ -221,6 +305,26 @@ class BookingService {
       booking.platformFeePaidAt = new Date();
       booking.escrowWallet.balance = 0;
       await booking.save({ session });
+
+      // Notify both parties
+      await Promise.all([
+        notificationService.createNotification({
+          recipient: creator._id,
+          type: 'booking_completed',
+          title: 'Funds Released',
+          message: `Funds have been released for "${booking.serviceTitle}". The project is now complete!`,
+          booking: booking._id,
+          link: `/#/wallet`
+        }),
+        notificationService.createNotification({
+          recipient: clientId,
+          type: 'booking_completed',
+          title: 'Project Completed',
+          message: `You have approved the work for "${booking.serviceTitle}". The project is now completed.`,
+          booking: booking._id,
+          link: `/#/bookings`
+        })
+      ]);
 
       await session.commitTransaction();
 

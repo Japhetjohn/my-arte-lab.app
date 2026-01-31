@@ -174,7 +174,7 @@ export function showPostProjectModal() {
         `).join('');
     }
 
-    window.removeSkill = function(skill) {
+    window.removeSkill = function (skill) {
         const index = skills.indexOf(skill);
         if (index > -1) {
             skills.splice(index, 1);
@@ -209,7 +209,7 @@ export function showPostProjectModal() {
         `).join('');
     }
 
-    window.removeDeliverable = function(item) {
+    window.removeDeliverable = function (item) {
         const index = deliverables.indexOf(item);
         if (index > -1) {
             deliverables.splice(index, 1);
@@ -658,7 +658,7 @@ export async function showApplicationForm(projectId) {
         `).join('');
     }
 
-    window.removePortfolioLink = function(index) {
+    window.removePortfolioLink = function (index) {
         portfolioLinks.splice(index, 1);
         renderPortfolioLinks();
     };
@@ -864,8 +864,15 @@ export async function handleApplicationAction(applicationId, status) {
         const response = await api.updateApplicationStatus(applicationId, status);
 
         if (response.success) {
-            window.showToast(`Application ${status} successfully!`, 'success');
+            const successMsg = status === 'accepted'
+                ? 'Application accepted! Please go to "Bookings" to proceed with payment and start the project.'
+                : 'Application rejected successfully.';
+            window.showToast(successMsg, 'success');
             window.closeModal();
+            // Optional: navigate to bookings if accepted
+            if (status === 'accepted') {
+                window.navigateToPage('bookings');
+            }
         } else {
             throw new Error(response.message || `Failed to ${action} application`);
         }

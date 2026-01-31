@@ -322,7 +322,9 @@ class ApiService {
         return this.get('/hostfi/wallet');
     }
 
-
+    async getHostfiTransactions(page = 1, limit = 10) {
+        return this.get(`/hostfi/wallet/transactions?page=${page}&limit=${limit}`);
+    }
 
     async getReviews(creatorId) {
         return this.get(`${API_ENDPOINTS.reviews}?creator=${creatorId}`, { auth: false });
@@ -476,6 +478,14 @@ class ApiService {
         return this.post(`/bookings/${bookingId}/counter-proposal`, { amount });
     }
 
+    async payBooking(bookingId) {
+        return this.post(`/bookings/${bookingId}/pay`);
+    }
+
+    async submitBookingDeliverable(bookingId, deliverableData) {
+        return this.post(`/bookings/${bookingId}/submit`, deliverableData);
+    }
+
 
     async getPlatformStats() {
         return this.get('/stats/platform', { auth: false });
@@ -578,6 +588,18 @@ class ApiService {
             method: 'PATCH',
             body: JSON.stringify({ status, reviewNotes })
         });
+    }
+
+    async payProject(projectId) {
+        return this.post(`/projects/${projectId}/pay`);
+    }
+
+    async submitProjectDeliverable(projectId, deliverableData) {
+        return this.post(`/projects/${projectId}/submit`, deliverableData);
+    }
+
+    async releaseProjectFunds(projectId) {
+        return this.post(`/projects/${projectId}/release-funds`);
     }
 }
 

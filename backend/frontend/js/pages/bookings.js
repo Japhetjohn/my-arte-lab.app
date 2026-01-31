@@ -56,8 +56,9 @@ export async function renderBookingsPage() {
             ...p,
             _type: 'project',
             serviceTitle: p.title,
-            status: p.status === 'in_progress' ? 'confirmed' : p.status,
-            amount: p.budget?.min || 0,  // Use min budget as amount for display
+            // Keep actual status for projects as they are now aligned with bookings
+            status: p.status,
+            amount: p.budget?.min || 0,
             client: p.clientId,
             creator: p.selectedCreatorId
         }));
@@ -260,12 +261,12 @@ function renderModernBookingCard(booking) {
     `;
 }
 
-window.filterBookings = function(filter) {
+window.filterBookings = function (filter) {
     currentFilter = filter;
     renderBookingsList();
 };
 
-window.viewBookingDetails = async function(bookingId) {
+window.viewBookingDetails = async function (bookingId) {
     try {
         const response = await api.getBookingDetails(bookingId);
 
@@ -384,6 +385,62 @@ window.viewBookingDetails = async function(bookingId) {
                                 </div>
                             ` : ''}
 
+                            <!-- Multi-step Flow Actions -->
+                            
+                            <!-- 1. Payment Step (Client) -->
+                            ${booking.status === 'awaiting_payment' && !isCreator ? `
+                                <div style="background: #EFF6FF; padding: 16px; border-radius: 12px; margin: 20px 0; border: 1px solid #BFDBFE;">
+                                    <div style="font-weight: 600; color: #1E40AF; margin-bottom: 8px;">Waiting for Payment</div>
+                                    <div style="font-size: 14px; color: #1E3A8A; margin-bottom: 12px;">
+                                        The creator has accepted your request. Please pay the amount to hold it in escrow and start the job.
+                                    </div>
+                                    <button class="btn-primary" style="width: 100%;" onclick="window.processBookingPayment('${booking._id}', '${booking._type}')">
+                                        Proceed to Payment (USDC ${booking.amount.toFixed(2)})
+                                    </button>
+                                </div>
+                            ` : ''}
+
+                            <!-- 2. Submission Step (Creator) -->
+                            ${booking.status === 'in_progress' && isCreator ? `
+                                <div style="background: #F0FDF4; padding: 16px; border-radius: 12px; margin: 20px 0; border: 1px solid #BBF7D0;">
+                                    <div style="font-weight: 600; color: #166534; margin-bottom: 8px;">Submit Your Work</div>
+                                    <div style="font-size: 14px; color: #14532D; margin-bottom: 12px;">
+                                        The client has paid. You can now start the work. Once finished, submit the link to your deliverables below.
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 12px;">
+                                        <input type="url" id="deliverableUrl" class="form-input" placeholder="Link to deliverables (Google Drive, Dropbox, etc.)" style="margin: 0;">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 12px;">
+                                        <textarea id="deliverableNotes" class="form-input" placeholder="Any notes for the client..." rows="2" style="margin: 0;"></textarea>
+                                    </div>
+                                    <button class="btn-primary" style="width: 100%;" onclick="window.submitDeliverable('${booking._id}', '${booking._type}')">
+                                        Submit Work
+                                    </button>
+                                </div>
+                            ` : ''}
+
+                            <!-- 3. Approval / Release Step (Client) -->
+                            ${booking.status === 'delivered' && !isCreator ? `
+                                <div style="background: #F0FDF4; padding: 16px; border-radius: 12px; margin: 20px 0; border: 1px solid #BBF7D0;">
+                                    <div style="font-weight: 600; color: #166534; margin-bottom: 8px;">Review Deliverables</div>
+                                    <div style="font-size: 14px; color: #14532D; margin-bottom: 12px;">
+                                        The creator has submitted their work. Please review it and approve to release the funds.
+                                    </div>
+                                    ${booking.attachments && booking.attachments.length > 0 ? `
+                                        <div style="margin-bottom: 12px;">
+                                            <strong>Deliverables:</strong><br>
+                                            <a href="${booking.attachments[booking.attachments.length - 1].url}" target="_blank" class="btn-ghost" style="display: inline-flex; align-items: center; gap: 8px; margin-top: 8px;">
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 15V3m0 12l-4-4m4 4l4-4M2 17l.621 2.485A2 2 0 0 0 4.561 21h14.878a2 2 0 0 0 1.94-1.515L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                                View Deliverable
+                                            </a>
+                                        </div>
+                                    ` : ''}
+                                    <button class="btn-primary" style="width: 100%;" onclick="window.releasePayment('${booking._id}', '${booking._type}')">
+                                        Approve and Release Funds
+                                    </button>
+                                </div>
+                            ` : ''}
+
                             <!-- Messages Section -->
                             <div style="margin: 24px 0;">
                                 <h3 style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
@@ -394,9 +451,9 @@ window.viewBookingDetails = async function(bookingId) {
                                 </h3>
                                 <div id="messagesContainer" style="background: var(--surface); border-radius: 12px; padding: 16px; max-height: 300px; overflow-y: auto; margin-bottom: 12px;">
                                     ${booking.messages && booking.messages.length > 0 ?
-                                        booking.messages.map(msg => {
-                                            const isMine = msg.sender.toString() === appState.user._id;
-                                            return `
+                    booking.messages.map(msg => {
+                        const isMine = msg.sender.toString() === appState.user._id;
+                        return `
                                                 <div style="display: flex; justify-content: ${isMine ? 'flex-end' : 'flex-start'}; margin-bottom: 12px;">
                                                     <div style="max-width: 70%; background: ${isMine ? 'var(--primary)' : '#f5f5f5'}; color: ${isMine ? 'white' : 'inherit'}; padding: 10px 14px; border-radius: 12px;">
                                                         <div style="font-size: 14px;">${msg.message}</div>
@@ -404,28 +461,15 @@ window.viewBookingDetails = async function(bookingId) {
                                                     </div>
                                                 </div>
                                             `;
-                                        }).join('')
-                                        : '<div class="text-secondary" style="text-align: center; padding: 20px;">No messages yet</div>'
-                                    }
+                    }).join('')
+                    : '<div class="text-secondary" style="text-align: center; padding: 20px;">No messages yet</div>'
+                }
                                 </div>
                                 <form onsubmit="window.sendBookingMessage(event, '${booking._id}')" style="display: flex; gap: 8px;">
                                     <input type="text" id="messageInput" class="form-input" placeholder="Type a message..." required style="flex: 1;">
                                     <button type="submit" class="btn-primary" style="padding: 10px 20px;">Send</button>
                                 </form>
                             </div>
-
-                            <!-- Action Buttons -->
-                            ${isCreator && booking.status === 'in_progress' ? `
-                                <button class="btn-primary" style="width: 100%; margin-top: 16px;" onclick="window.completeBooking('${booking._id}')">
-                                    Mark as Completed
-                                </button>
-                            ` : ''}
-
-                            ${!isCreator && booking.status === 'completed' && !booking.fundsReleased ? `
-                                <button class="btn-primary" style="width: 100%; margin-top: 16px;" onclick="window.releasePayment('${booking._id}')">
-                                    Release Payment to Creator
-                                </button>
-                            ` : ''}
                         </div>
                     </div>
                 </div>
@@ -445,7 +489,7 @@ window.viewBookingDetails = async function(bookingId) {
     }
 };
 
-window.completeBooking = async function(bookingId) {
+window.completeBooking = async function (bookingId) {
     if (!confirm('Are you sure you want to mark this booking as completed?')) return;
 
     try {
@@ -462,11 +506,16 @@ window.completeBooking = async function(bookingId) {
     }
 };
 
-window.releasePayment = async function(bookingId) {
-    if (!confirm('Are you sure you want to release payment to the creator?')) return;
+window.releasePayment = async function (bookingId, type = 'booking') {
+    if (!confirm('Are you sure you want to approve this work and release payment to the creator?')) return;
 
     try {
-        const response = await api.releasePayment(bookingId);
+        let response;
+        if (type === 'project') {
+            response = await api.releaseProjectFunds(bookingId);
+        } else {
+            response = await api.releasePayment(bookingId);
+        }
 
         if (response.success) {
             closeModal();
@@ -479,7 +528,57 @@ window.releasePayment = async function(bookingId) {
     }
 };
 
-window.sendBookingMessage = async function(event, bookingId) {
+window.processBookingPayment = async function (bookingId, type = 'booking') {
+    try {
+        showToast('Processing payment...', 'info');
+
+        let response;
+        if (type === 'project') {
+            response = await api.payProject(bookingId);
+        } else {
+            response = await api.payBooking(bookingId);
+        }
+
+        if (response.success) {
+            closeModal();
+            await renderBookingsPage();
+            showToast('Payment successful! The creator can now start the work.', 'success');
+        }
+    } catch (error) {
+        console.error('Failed to process payment:', error);
+        showToast(error.message || 'Failed to process payment. Please ensure you have enough balance.', 'error');
+    }
+};
+
+window.submitDeliverable = async function (bookingId, type = 'booking') {
+    const url = document.getElementById('deliverableUrl').value.trim();
+    const message = document.getElementById('deliverableNotes').value.trim();
+
+    if (!url) {
+        showToast('Please provide a link to the deliverables', 'error');
+        return;
+    }
+
+    try {
+        let response;
+        if (type === 'project') {
+            response = await api.submitProjectDeliverable(bookingId, { url, message });
+        } else {
+            response = await api.submitBookingDeliverable(bookingId, { url, message });
+        }
+
+        if (response.success) {
+            closeModal();
+            await renderBookingsPage();
+            showToast('Deliverables submitted successfully!', 'success');
+        }
+    } catch (error) {
+        console.error('Failed to submit deliverable:', error);
+        showToast(error.message || 'Failed to submit deliverable', 'error');
+    }
+};
+
+window.sendBookingMessage = async function (event, bookingId) {
     event.preventDefault();
     const messageInput = document.getElementById('messageInput');
     const message = messageInput.value.trim();
@@ -500,7 +599,7 @@ window.sendBookingMessage = async function(event, bookingId) {
     }
 };
 
-window.acceptBookingRequest = async function(bookingId) {
+window.acceptBookingRequest = async function (bookingId) {
     if (!confirm('Accept this booking request?')) return;
 
     try {
@@ -517,13 +616,13 @@ window.acceptBookingRequest = async function(bookingId) {
     }
 };
 
-window.showRejectForm = function(bookingId) {
+window.showRejectForm = function (bookingId) {
     document.getElementById('actionButtons').style.display = 'none';
     document.getElementById('counterProposalForm').style.display = 'none';
     document.getElementById('rejectForm').style.display = 'block';
 };
 
-window.submitRejection = async function(bookingId, reason) {
+window.submitRejection = async function (bookingId, reason) {
     try {
         const response = await api.rejectBooking(bookingId, reason || '');
 
@@ -538,14 +637,14 @@ window.submitRejection = async function(bookingId, reason) {
     }
 };
 
-window.showCounterProposalForm = function(bookingId) {
+window.showCounterProposalForm = function (bookingId) {
     document.getElementById('actionButtons').style.display = 'none';
     document.getElementById('rejectForm').style.display = 'none';
     document.getElementById('counterProposalForm').style.display = 'block';
     setTimeout(() => document.getElementById('counterAmount').focus(), 100);
 };
 
-window.submitCounterProposal = async function(bookingId, amount) {
+window.submitCounterProposal = async function (bookingId, amount) {
     const parsedAmount = parseFloat(amount);
 
     if (!amount || isNaN(parsedAmount) || parsedAmount <= 0) {

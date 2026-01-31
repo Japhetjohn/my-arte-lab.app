@@ -11,7 +11,7 @@ const PLATFORM_CONFIG = {
   SUPPORTED_CURRENCIES: ['USDC', 'DAI'],
   DEFAULT_CURRENCY: 'USDC',
   DEFAULT_NETWORK: 'Solana',
-  PLATFORM_WALLET_ADDRESS: process.env.PLATFORM_WALLET_ADDRESS || null,
+  PLATFORM_WALLET_ADDRESS: process.env.PLATFORM_WALLET_ADDRESS || 'Bqc5Cf9UAr1rM27HgDDYERSHJAcgfzVH2MnBn7sSdkTg',
   USE_TEMP_WALLETS: true // Use temporary wallets for platform fees before forwarding
 };
 

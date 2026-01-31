@@ -386,7 +386,7 @@ exports.acceptBooking = catchAsync(async (req, res, next) => {
       sender: booking.creator._id,
       type: 'booking_accepted',
       title: 'Booking Accepted',
-      message: `${booking.creator.name} has accepted your booking for "${booking.serviceTitle}". Payment of ${booking.amount} ${booking.currency} has been deducted from your wallet and held in escrow.`,
+      message: `${booking.creator.name} has accepted your booking for "${booking.serviceTitle}". Please proceed to payment to start the job.`,
       link: `/bookings`,
       booking: booking._id,
       metadata: {
@@ -396,35 +396,20 @@ exports.acceptBooking = catchAsync(async (req, res, next) => {
       }
     });
 
-    await Notification.createNotification({
-      recipient: client._id,
-      type: 'payment_deducted',
-      title: 'Payment Deducted',
-      message: `${booking.amount} ${booking.currency} has been deducted from your wallet for booking ${booking.bookingId}`,
-      link: `/wallet`,
-      booking: booking._id,
-      metadata: {
-        amount: booking.amount,
-        currency: booking.currency,
-        newBalance: client.wallet.balance
-      }
-    });
-
     emailConfig.sendEmail({
       to: booking.client.email,
-      subject: 'Booking Accepted and Payment Processed',
+      subject: 'Booking Accepted - Payment Required',
       html: `
         <h1>Booking Accepted!</h1>
         <p>Hi ${booking.client.name},</p>
         <p>${booking.creator.name} has accepted your booking request for "${booking.serviceTitle}".</p>
         <p><strong>Amount:</strong> ${booking.amount} ${booking.currency}</p>
-        <p><strong>Payment Status:</strong> Payment has been automatically deducted from your wallet and is being held in escrow.</p>
-        <p>The funds will be released to the creator once the job is completed and you approve.</p>
+        <p>Please log in to your account and proceed to payment to start the job.</p>
         <p>Best regards,<br/>MyArteLab Team</p>
       `
     }).catch(err => console.error('Email failed:', err));
 
-    successResponse(res, 200, 'Booking accepted and payment processed successfully', {
+    successResponse(res, 200, 'Booking accepted successfully. Waiting for client payment.', {
       booking
     });
   } catch (error) {
@@ -579,4 +564,58 @@ exports.counterProposal = catchAsync(async (req, res, next) => {
   }).catch(err => console.error('Email failed:', err));
 
   successResponse(res, 200, 'Counter proposal sent successfully', { booking });
+});
+exports.payBooking = catchAsync(async (req, res, next) => {
+  const result = await bookingService.processBookingPayment(req.params.id, req.user._id);
+  const { booking, client } = result;
+
+  await booking.populate('creator', 'name email');
+
+  await Notification.createNotification({
+    recipient: booking.creator._id,
+    sender: client._id,
+    type: 'payment_received',
+    title: 'Payment Received (Escrow)',
+    message: `${client.name} has paid ${booking.amount} ${booking.currency} for "${booking.serviceTitle}". You can now start the work.`,
+    link: `/bookings`,
+    booking: booking._id,
+    metadata: {
+      amount: booking.amount,
+      currency: booking.currency,
+      bookingId: booking.bookingId
+    }
+  });
+
+  successResponse(res, 200, 'Payment successful. Funds held in escrow.', { booking });
+});
+
+exports.submitDeliverable = catchAsync(async (req, res, next) => {
+  const { message, url } = req.body;
+
+  if (!url) {
+    return next(new ErrorHandler('Deliverable URL is required', 400));
+  }
+
+  const booking = await bookingService.submitBookingDeliverable(
+    req.params.id,
+    req.user._id,
+    { message, url }
+  );
+
+  await booking.populate('client', 'name email');
+
+  await Notification.createNotification({
+    recipient: booking.client._id,
+    sender: req.user._id,
+    type: 'booking_delivered',
+    title: 'Work Delivered',
+    message: `${req.user.name} has submitted work for your booking "${booking.serviceTitle}". Please review it.`,
+    link: `/bookings`,
+    booking: booking._id,
+    metadata: {
+      bookingId: booking.bookingId
+    }
+  });
+
+  successResponse(res, 200, 'Deliverable submitted successfully', { booking });
 });
