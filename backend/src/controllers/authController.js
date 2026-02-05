@@ -65,15 +65,41 @@ exports.register = catchAsync(async (req, res, next) => {
 
   await user.save({ validateBeforeSave: false});
 
-  // Initialize HostFi wallets in background (non-blocking)
+  // Initialize HostFi wallets and create Solana USDC address in background (non-blocking)
   setImmediate(async () => {
     try {
       const hostfiWalletService = require('../services/hostfiWalletService');
+      const hostfiService = require('../services/hostfiService');
+
       console.log(`[Background] Initializing HostFi wallet for ${user.email}...`);
 
       // Initialize HostFi wallet assets - this fetches all available currencies
       await hostfiWalletService.initializeUserWallets(user._id);
-      console.log(`[Background] HostFi wallet initialized successfully for ${user.email}`);
+      console.log(`[Background] HostFi wallet initialized for ${user.email}`);
+
+      // Create Solana USDC collection address for deposits
+      try {
+        const assetId = await hostfiWalletService.getWalletAssetId(user._id, 'USDC');
+        if (assetId) {
+          const cryptoAddress = await hostfiService.createCryptoCollectionAddress({
+            assetId,
+            currency: 'USDC',
+            network: 'Solana',
+            customId: user._id.toString()
+          });
+
+          // Update user wallet with the address
+          const updatedUser = await User.findById(user._id);
+          if (updatedUser) {
+            updatedUser.wallet.address = cryptoAddress.address;
+            updatedUser.wallet.network = 'Solana';
+            await updatedUser.save({ validateBeforeSave: false });
+            console.log(`[Background] Solana USDC wallet created: ${cryptoAddress.address.substring(0, 10)}...`);
+          }
+        }
+      } catch (addressError) {
+        console.error(`[Background] Failed to create wallet address for ${user.email}:`, addressError.message);
+      }
     } catch (walletError) {
       console.error(`[Background] Wallet initialization failed for ${user.email}:`, walletError.message);
       // Wallet will be automatically initialized on first wallet access
