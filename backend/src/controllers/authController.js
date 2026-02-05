@@ -3,10 +3,10 @@ const { generateToken, generateRefreshToken } = require('../utils/jwtUtils');
 const { successResponse, errorResponse } = require('../utils/apiResponse');
 const { ErrorHandler, catchAsync } = require('../utils/errorHandler');
 const emailConfig = require('../config/email');
+const emailTemplates = require('../utils/emailTemplates');
 const adminNotificationService = require('../services/adminNotificationService');
 const crypto = require('crypto');
 const { escapeHtml } = require('../utils/sanitize');
-// Wallet initialization moved to HostFi - wallets are created on first access
 
 exports.register = catchAsync(async (req, res, next) => {
   const { firstName, lastName, email, password, role, category, localArea, state, country } = req.body;
@@ -65,54 +65,26 @@ exports.register = catchAsync(async (req, res, next) => {
 
   await user.save({ validateBeforeSave: false});
 
-  // Initialize HostFi wallets and create Solana USDC address
-  try {
-    const hostfiWalletService = require('../services/hostfiWalletService');
-    const hostfiService = require('../services/hostfiService');
+  // Initialize HostFi wallets in background (non-blocking)
+  setImmediate(async () => {
+    try {
+      const hostfiWalletService = require('../services/hostfiWalletService');
+      console.log(`[Background] Initializing HostFi wallet for ${user.email}...`);
 
-    // Initialize all HostFi wallet assets
-    await hostfiWalletService.initializeUserWallets(user._id);
-
-    // Auto-create Solana USDC collection address
-    const assetId = await hostfiWalletService.getWalletAssetId(user._id, 'USDC');
-    if (assetId) {
-      const cryptoAddress = await hostfiService.createCryptoCollectionAddress({
-        assetId,
-        currency: 'USDC',
-        network: 'Solana',
-        customId: user._id.toString()
-      });
-
-      // Store the address reference in user wallet
-      user.wallet.address = cryptoAddress.address;
-      user.wallet.network = 'Solana';
-      await user.save({ validateBeforeSave: false });
-
-      console.log(`Solana USDC wallet created for ${user.email}: ${cryptoAddress.address}`);
+      // Initialize HostFi wallet assets - this fetches all available currencies
+      await hostfiWalletService.initializeUserWallets(user._id);
+      console.log(`[Background] HostFi wallet initialized successfully for ${user.email}`);
+    } catch (walletError) {
+      console.error(`[Background] Wallet initialization failed for ${user.email}:`, walletError.message);
+      // Wallet will be automatically initialized on first wallet access
     }
-  } catch (walletError) {
-    console.error('Wallet initialization failed during registration:', walletError);
-    // Don't fail registration if wallet creation fails - it will retry on first access
-  }
+  });
 
+  // Send professional branded welcome email with verification code
   emailConfig.sendEmail({
     to: user.email,
     subject: 'Welcome to MyArteLab! Verify Your Email',
-    html: `
-      <h1>Welcome ${escapeHtml(user.firstName)}!</h1>
-      <p>Your account has been created successfully with global stablecoin payment support!</p>
-      <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
-        <p><strong>Payment Wallet:</strong> Deposit from 65 countries, receive USDC instantly!</p>
-        <p>Once you verify your email, you can fund your wallet from any supported country.</p>
-      </div>
-      <p>Please verify your email address using the code below:</p>
-      <div style="background: #f9f9f9; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0;">
-        <h2 style="font-size: 32px; letter-spacing: 8px; margin: 0; color: #FF6B35;">${escapeHtml(verificationCode)}</h2>
-      </div>
-      <p>This code will expire in 30 minutes.</p>
-      <p>You can now start ${user.role === 'creator' ? 'offering your services' : 'booking creative services'}!</p>
-      <p>Best regards,<br/>MyArteLab Team</p>
-    `
+    html: emailTemplates.welcome(user.firstName, verificationCode)
   }).catch(err => console.error('Welcome email failed:', err));
 
   adminNotificationService.notifyNewUserRegistration(user)
@@ -226,15 +198,8 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
   try {
     await emailConfig.sendEmail({
       to: user.email,
-      subject: 'Password Reset Request',
-      html: `
-        <h1>Password Reset</h1>
-        <p>You requested a password reset for your MyArteLab account.</p>
-        <p>Click the link below to reset your password (valid for 30 minutes):</p>
-        <a href="${resetUrl}" style="display: inline-block; padding: 10px 20px; background: #FF6B35; color: white; text-decoration: none; border-radius: 5px;">Reset Password</a>
-        <p>If you didn't request this, please ignore this email.</p>
-        <p>Best regards,<br/>MyArteLab Team</p>
-      `
+      subject: 'Reset Your MyArteLab Password',
+      html: emailTemplates.passwordReset(resetUrl)
     });
 
     successResponse(res, 200, 'Password reset email sent');
@@ -385,17 +350,7 @@ exports.resendVerification = catchAsync(async (req, res, next) => {
     await emailConfig.sendEmail({
       to: user.email,
       subject: 'Verify Your Email - MyArteLab',
-      html: `
-        <h1>Verify Your Email</h1>
-        <p>Hi ${user.name},</p>
-        <p>Please verify your email address using the code below:</p>
-        <div style="background: #f9f9f9; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0;">
-          <h2 style="font-size: 32px; letter-spacing: 8px; margin: 0; color: #FF6B35;">${verificationCode}</h2>
-        </div>
-        <p>This code will expire in 30 minutes.</p>
-        <p>If you didn't request this, please ignore this email.</p>
-        <p>Best regards,<br/>MyArteLab Team</p>
-      `
+      html: emailTemplates.verificationCode(user.firstName, verificationCode)
     });
 
     successResponse(res, 200, 'Verification email sent successfully');
