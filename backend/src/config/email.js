@@ -22,6 +22,26 @@ const createTransporter = () => {
         pass: process.env.EMAIL_PASSWORD,
       },
     });
+  } else if (emailService === 'zoho') {
+    return nodemailer.createTransport({
+      host: process.env.SMTP_HOST || 'smtp.zoho.com',
+      port: parseInt(process.env.SMTP_PORT || '465'),
+      secure: true, // use SSL
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASSWORD,
+      },
+    });
+  } else if (emailService === 'smtp') {
+    return nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: parseInt(process.env.SMTP_PORT || '587'),
+      secure: process.env.SMTP_SECURE === 'true',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASSWORD,
+      },
+    });
   } else if (emailService === 'sendgrid') {
     initializeSendGrid();
     return null; // We don't need nodemailer for SendGrid
