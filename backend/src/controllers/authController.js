@@ -84,7 +84,7 @@ exports.register = catchAsync(async (req, res, next) => {
           const cryptoAddress = await hostfiService.createCryptoCollectionAddress({
             assetId,
             currency: 'USDC',
-            network: 'Solana',
+            network: 'SOL',
             customId: user._id.toString()
           });
 
@@ -92,7 +92,7 @@ exports.register = catchAsync(async (req, res, next) => {
           const updatedUser = await User.findById(user._id);
           if (updatedUser) {
             updatedUser.wallet.address = cryptoAddress.address;
-            updatedUser.wallet.network = 'Solana';
+            updatedUser.wallet.network = 'SOL';
             await updatedUser.save({ validateBeforeSave: false });
             console.log(`[Background] Solana USDC wallet created: ${cryptoAddress.address.substring(0, 10)}...`);
           }

@@ -55,14 +55,14 @@ async function initializeExistingWallets() {
               const cryptoAddress = await hostfiService.createCryptoCollectionAddress({
                 assetId,
                 currency: 'USDC',
-                network: 'Solana',
+                network: 'SOL',  // HostFi expects 'SOL' not 'Solana'
                 customId: user._id.toString()
               });
 
               // Update user with wallet address
               const updatedUser = await User.findById(user._id);
               updatedUser.wallet.address = cryptoAddress.address;
-              updatedUser.wallet.network = 'Solana';
+              updatedUser.wallet.network = 'SOL';
               await updatedUser.save({ validateBeforeSave: false });
 
               addressCreated++;
