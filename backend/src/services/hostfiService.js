@@ -14,8 +14,8 @@ class HostFiService {
     this.secretKey = hostfiConfig.secretKey;
     this.webhookSecret = hostfiConfig.webhookSecret;
 
-    // Platform fee configuration (1% on on-ramp and off-ramp)
-    this.platformFeePercent = 1;
+    // Platform fee configuration (read from env, default 10%)
+    this.platformFeePercent = parseInt(process.env.PLATFORM_COMMISSION) || 10;
     this.platformWalletAddress = process.env.PLATFORM_WALLET_ADDRESS;
 
     // Token cache
@@ -43,7 +43,7 @@ class HostFiService {
   }
 
   /**
-   * Calculate platform fee (1% on on-ramp and off-ramp)
+   * Calculate platform fee (configurable via PLATFORM_COMMISSION env)
    * @param {number} amount - Transaction amount
    * @returns {Object} Fee breakdown
    */
