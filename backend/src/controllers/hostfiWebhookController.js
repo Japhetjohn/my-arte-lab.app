@@ -82,9 +82,8 @@ exports.handleFiatDeposit = catchAsync(async (req, res) => {
 
   console.log('Fiat deposit webhook received:', payload);
 
-  // Calculate platform fee (1%)
+  // No platform fee on deposits - users get full amount
   const amount = payload.amount || 0;
-  const feeBreakdown = hostfiService.calculatePlatformFee(amount);
 
   // Find user by customId
   const user = await User.findById(payload.customId);
@@ -94,9 +93,9 @@ exports.handleFiatDeposit = catchAsync(async (req, res) => {
   }
 
   try {
-    // Credit user wallet (after platform fee)
-    user.wallet.balance += feeBreakdown.amountAfterFee;
-    user.wallet.totalEarnings += feeBreakdown.amountAfterFee;
+    // Credit user wallet (full amount - no fees on deposits)
+    user.wallet.balance += amount;
+    user.wallet.totalEarnings += amount;
     user.wallet.lastUpdated = new Date();
     await user.save();
 
@@ -107,12 +106,10 @@ exports.handleFiatDeposit = catchAsync(async (req, res) => {
         $set: {
           amount: payload.amount,
           status: 'completed',
-          platformFee: feeBreakdown.platformFee,
-          netAmount: feeBreakdown.amountAfterFee,
+          platformFee: 0,
+          netAmount: payload.amount,
           completedAt: new Date(),
-          'paymentDetails.actualAmount': payload.amount,
-          'paymentDetails.platformFee': feeBreakdown.platformFee,
-          'metadata.feeBreakdown': feeBreakdown
+          'paymentDetails.actualAmount': payload.amount
         }
       },
       { upsert: true, new: true }
@@ -121,7 +118,7 @@ exports.handleFiatDeposit = catchAsync(async (req, res) => {
     // Sync wallet balances
     await hostfiWalletService.syncWalletBalances(user._id);
 
-    console.log(`Fiat deposit credited: User ${user._id}, Amount: ${feeBreakdown.amountAfterFee} (after ${feeBreakdown.platformFee} fee)`);
+    console.log(`Fiat deposit credited: User ${user._id}, Amount: ${amount} (no fees on deposits)`);
 
     await WebhookEvent.markProcessed(payload.id || payload.reference, 'hostfi');
 
@@ -163,9 +160,8 @@ exports.handleCryptoDeposit = catchAsync(async (req, res) => {
 
   console.log('Crypto deposit webhook received:', payload);
 
-  // Calculate platform fee (1%)
+  // No platform fee on deposits - users get full amount
   const amount = payload.amount || 0;
-  const feeBreakdown = hostfiService.calculatePlatformFee(amount);
 
   // Find user by customId
   const user = await User.findById(payload.customId);
@@ -175,9 +171,9 @@ exports.handleCryptoDeposit = catchAsync(async (req, res) => {
   }
 
   try {
-    // Credit user wallet (after platform fee)
-    user.wallet.balance += feeBreakdown.amountAfterFee;
-    user.wallet.totalEarnings += feeBreakdown.amountAfterFee;
+    // Credit user wallet (full amount - no fees on deposits)
+    user.wallet.balance += amount;
+    user.wallet.totalEarnings += amount;
     user.wallet.lastUpdated = new Date();
     await user.save();
 
@@ -189,16 +185,14 @@ exports.handleCryptoDeposit = catchAsync(async (req, res) => {
           amount: payload.amount,
           currency: payload.currency,
           status: 'completed',
-          platformFee: feeBreakdown.platformFee,
-          netAmount: feeBreakdown.amountAfterFee,
+          platformFee: 0,
+          netAmount: payload.amount,
           transactionHash: payload.txHash,
           blockchainNetwork: payload.network,
           confirmations: payload.confirmations || 0,
           completedAt: new Date(),
           'paymentDetails.txHash': payload.txHash,
-          'paymentDetails.network': payload.network,
-          'paymentDetails.platformFee': feeBreakdown.platformFee,
-          'metadata.feeBreakdown': feeBreakdown
+          'paymentDetails.network': payload.network
         }
       },
       { upsert: true, new: true }
@@ -207,7 +201,7 @@ exports.handleCryptoDeposit = catchAsync(async (req, res) => {
     // Sync wallet balances
     await hostfiWalletService.syncWalletBalances(user._id);
 
-    console.log(`Crypto deposit credited: User ${user._id}, Amount: ${feeBreakdown.amountAfterFee} ${payload.currency} (after ${feeBreakdown.platformFee} fee)`);
+    console.log(`Crypto deposit credited: User ${user._id}, Amount: ${amount} ${payload.currency} (no fees on deposits)`);
 
     await WebhookEvent.markProcessed(payload.id || payload.txHash, 'hostfi');
 
