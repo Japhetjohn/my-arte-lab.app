@@ -1,6 +1,6 @@
 /**
  * Professional Email Templates for MyArteLab
- * Brand Colors: Primary #FF6B35, Dark #2C3E50
+ * Brand Colors: Primary #9747FF, Dark #2C3E50
  */
 
 const emailTemplate = (content, preheader = '') => `
@@ -35,7 +35,7 @@ const emailTemplate = (content, preheader = '') => `
             margin: 0 auto;
         }
         .header {
-            background: linear-gradient(135deg, #FF6B35 0%, #FF8C5A 100%);
+            background: linear-gradient(135deg, #9747FF 0%, #6B46FF 100%);
             padding: 30px 20px;
             text-align: center;
         }
@@ -51,7 +51,7 @@ const emailTemplate = (content, preheader = '') => `
         }
         .code-box {
             background: #f9f9f9;
-            border: 2px dashed #FF6B35;
+            border: 2px dashed #9747FF;
             padding: 25px;
             text-align: center;
             border-radius: 10px;
@@ -61,13 +61,13 @@ const emailTemplate = (content, preheader = '') => `
             font-size: 36px;
             font-weight: bold;
             letter-spacing: 10px;
-            color: #FF6B35;
+            color: #9747FF;
             font-family: 'Courier New', monospace;
         }
         .button {
             display: inline-block;
             padding: 15px 35px;
-            background-color: #FF6B35;
+            background-color: #9747FF;
             color: #ffffff !important;
             text-decoration: none;
             border-radius: 5px;
@@ -75,11 +75,11 @@ const emailTemplate = (content, preheader = '') => `
             margin: 20px 0;
         }
         .button:hover {
-            background-color: #E55A2B;
+            background-color: #6B46FF;
         }
         .info-box {
             background: #f0f7ff;
-            border-left: 4px solid #FF6B35;
+            border-left: 4px solid #9747FF;
             padding: 15px 20px;
             margin: 20px 0;
             border-radius: 5px;
@@ -92,7 +92,7 @@ const emailTemplate = (content, preheader = '') => `
             font-size: 14px;
         }
         .footer a {
-            color: #FF6B35;
+            color: #9747FF;
             text-decoration: none;
         }
         h1 {
@@ -225,7 +225,7 @@ const emailTemplates = {
     </div>
 
     <p class="text-small">Or copy and paste this link into your browser:<br>
-        <a href="${resetUrl}" style="color: #FF6B35; word-break: break-all;">${resetUrl}</a>
+        <a href="${resetUrl}" style="color: #9747FF; word-break: break-all;">${resetUrl}</a>
     </p>
 
     <div class="info-box">
