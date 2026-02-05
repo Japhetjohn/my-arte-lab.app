@@ -312,6 +312,23 @@ app.get('/api', (req, res) => {
 
 const path = require('path');
 
+// Serve uploaded images
+app.use('/uploads', express.static(path.join(__dirname, '../uploads'), {
+  maxAge: '7d', // Cache images for 7 days
+  setHeaders: (res, filepath) => {
+    // Set proper content types for images
+    if (filepath.endsWith('.jpg') || filepath.endsWith('.jpeg')) {
+      res.setHeader('Content-Type', 'image/jpeg');
+    } else if (filepath.endsWith('.png')) {
+      res.setHeader('Content-Type', 'image/png');
+    } else if (filepath.endsWith('.gif')) {
+      res.setHeader('Content-Type', 'image/gif');
+    } else if (filepath.endsWith('.webp')) {
+      res.setHeader('Content-Type', 'image/webp');
+    }
+  }
+}));
+
 app.use('/dist', express.static(path.join(__dirname, '../frontend/dist'), {
   setHeaders: (res, filepath) => {
     if (filepath.endsWith('.js')) {

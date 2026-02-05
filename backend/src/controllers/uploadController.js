@@ -8,7 +8,7 @@ exports.uploadAvatar = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Please upload an image', 400));
   }
 
-  const result = await uploadAvatar(req.file.buffer);
+  const result = await uploadAvatar(req.file.buffer, req.file.originalname);
 
   const user = await User.findById(req.user._id);
   user.avatar = result.secure_url;
@@ -16,10 +16,8 @@ exports.uploadAvatar = catchAsync(async (req, res, next) => {
 
   successResponse(res, 200, 'Avatar uploaded successfully', {
     avatar: result.secure_url,
-    cloudinary: {
-      publicId: result.public_id,
-      url: result.secure_url
-    }
+    publicId: result.public_id,
+    url: result.secure_url
   });
 });
 
@@ -28,7 +26,7 @@ exports.uploadCover = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Please upload an image', 400));
   }
 
-  const result = await uploadCover(req.file.buffer);
+  const result = await uploadCover(req.file.buffer, req.file.originalname);
 
   const user = await User.findById(req.user._id);
   user.coverImage = result.secure_url;
@@ -36,10 +34,8 @@ exports.uploadCover = catchAsync(async (req, res, next) => {
 
   successResponse(res, 200, 'Cover image uploaded successfully', {
     coverImage: result.secure_url,
-    cloudinary: {
-      publicId: result.public_id,
-      url: result.secure_url
-    }
+    publicId: result.public_id,
+    url: result.secure_url
   });
 });
 
@@ -54,7 +50,7 @@ exports.uploadPortfolio = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Only creators can upload portfolio images', 403));
   }
 
-  const result = await uploadPortfolio(req.file.buffer);
+  const result = await uploadPortfolio(req.file.buffer, req.file.originalname);
 
   const portfolioItem = {
     title: req.body.title || 'Portfolio Image',
@@ -99,13 +95,10 @@ exports.uploadBookingAttachment = catchAsync(async (req, res, next) => {
   }
 
   // Reuse the portfolio upload function (it's generic for images/files)
-  const result = await uploadPortfolio(req.file.buffer);
+  const result = await uploadPortfolio(req.file.buffer, req.file.originalname);
 
   successResponse(res, 200, 'File uploaded successfully', {
     url: result.secure_url,
-    cloudinary: {
-      publicId: result.public_id,
-      url: result.secure_url
-    }
+    publicId: result.public_id
   });
 });
