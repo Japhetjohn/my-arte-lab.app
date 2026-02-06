@@ -90,12 +90,8 @@ export async function renderHomePage() {
     }
 
     mainContent.innerHTML = `
-        <div class="discover-header">
+        <div style="padding: 24px 0 16px;">
             <div class="container">
-                <div class="search-bar">
-                    <input type="text" class="search-input" placeholder="Search by service, city, style, e.g. wedding photographer Lagos" id="homeSearch">
-                    <button class="btn-primary" id="searchBtn">Search</button>
-                </div>
                 <div class="filters-row">
                     <button class="filter-chip active" data-filter="all">All</button>
                     <button class="filter-chip" data-filter="photographer">Photographers</button>
@@ -115,7 +111,6 @@ export async function renderHomePage() {
     `;
 
     setupFilterListeners();
-    setupSearchListener();
 
     await loadCreators();
 }

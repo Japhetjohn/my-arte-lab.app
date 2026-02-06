@@ -399,7 +399,7 @@ p {
 /* Main Content */
 .main-content {
     min-height: calc(100vh - 140px);
-    padding-top: 72px;
+    padding-top: 90px;
     padding-bottom: 80px;
     animation: fadeIn var(--transition-base);
     width: 100%;
@@ -1289,6 +1289,7 @@ p {
 
     .main-content {
         padding: var(--spacing-md);
+        padding-top: 80px !important;
         padding-bottom: 100px !important;
         margin-left: 0 !important;
     }
