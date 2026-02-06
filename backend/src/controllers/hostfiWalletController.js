@@ -388,8 +388,7 @@ exports.createFiatChannel = catchAsync(async (req, res, next) => {
       assetId,
       currency,
       customId: req.user._id.toString(),
-      type: 'BANK_TRANSFER',
-      method: 'BANK_TRANSFER',
+      method: 'bank_transfer',  // Lowercase per HostFi API spec
       countryCode
     });
 
