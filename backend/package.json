@@ -1,7 +1,7 @@
 {
   "name": "myartelab-backend",
   "version": "1.0.0",
-  "description": "MyArteLab Backend - Built for African Creators. Trusted by clients globally.",
+  "description": "MyArteLab Backend - Built for African Creators. Trusted by Global Clients.",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",

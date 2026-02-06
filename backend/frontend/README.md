@@ -1,6 +1,6 @@
 # MyArteLab Frontend
 
-Modern frontend for MyArteLab - Built for African Creators. Trusted by clients globally.
+Modern frontend for MyArteLab - Built for African Creators. Trusted by Global Clients.
 
 ## 📁 Structure
 
