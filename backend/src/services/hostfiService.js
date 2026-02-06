@@ -373,8 +373,8 @@ class HostFiService {
         assetId,
         currency,
         customId,
-        type: type || 'BANK_TRANSFER',
-        method: method || 'BANK_TRANSFER',
+        type: 'collection',  // HostFi requires 'collection' for on-ramp channels
+        method: method || 'bank_transfer',  // Lowercase per HostFi API spec
         countryCode
       };
 
