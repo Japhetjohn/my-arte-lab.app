@@ -89,6 +89,13 @@ export async function renderHomePage() {
         localStorage.removeItem('homeFilter');
     }
 
+    // Check for pending search from global search overlay
+    const pendingSearch = localStorage.getItem('pendingSearch');
+    if (pendingSearch) {
+        currentFilters.search = pendingSearch;
+        localStorage.removeItem('pendingSearch');
+    }
+
     mainContent.innerHTML = `
         <div style="padding: 24px 0 16px;">
             <div class="container">

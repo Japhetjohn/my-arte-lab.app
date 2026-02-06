@@ -83,6 +83,22 @@ function setupEventListeners() {
     document.getElementById('searchBtn')?.addEventListener('click', openSearchOverlay);
     document.getElementById('closeSearchBtn')?.addEventListener('click', closeSearchOverlay);
 
+    // Global search functionality
+    const globalSearchInput = document.getElementById('globalSearch');
+    globalSearchInput?.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            const searchQuery = globalSearchInput.value.trim();
+            if (searchQuery) {
+                // Store search query in localStorage
+                localStorage.setItem('pendingSearch', searchQuery);
+                // Navigate to home page which will pick up the search
+                navigateToPage('home');
+                closeSearchOverlay();
+                globalSearchInput.value = '';
+            }
+        }
+    });
+
     updateUserMenu();
 
     document.getElementById('searchOverlay')?.addEventListener('click', (e) => {
