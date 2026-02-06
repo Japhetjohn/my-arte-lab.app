@@ -585,8 +585,8 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
   // Generate unique reference
   const clientReference = `WD-${uuidv4()}`;
 
-  // Calculate platform fee (1%)
-  const feeBreakdown = hostfiService.calculatePlatformFee(amount);
+  // Calculate platform fee (1% for off-ramp)
+  const feeBreakdown = hostfiService.calculateOffRampFee(amount);
 
   // Deduct from balance and add to pending
   user.wallet.balance -= amount;

@@ -44,6 +44,7 @@ class HostFiService {
 
   /**
    * Calculate platform fee (configurable via PLATFORM_COMMISSION env)
+   * Used for bookings only (10%)
    * @param {number} amount - Transaction amount
    * @returns {Object} Fee breakdown
    */
@@ -57,6 +58,46 @@ class HostFiService {
       platformFeePercent: this.platformFeePercent,
       amountAfterFee,
       platformWallet: this.platformWalletAddress
+    };
+  }
+
+  /**
+   * Calculate on-ramp fee (1% - charged when users deposit)
+   * @param {number} amount - Deposit amount
+   * @returns {Object} Fee breakdown
+   */
+  calculateOnRampFee(amount) {
+    const feePercent = 1; // 1% for on-ramp
+    const fee = (amount * feePercent) / 100;
+    const amountAfterFee = amount - fee;
+
+    return {
+      originalAmount: amount,
+      platformFee: fee,
+      platformFeePercent: feePercent,
+      amountAfterFee,
+      platformWallet: this.platformWalletAddress,
+      feeType: 'on-ramp'
+    };
+  }
+
+  /**
+   * Calculate off-ramp fee (1% - charged when users withdraw)
+   * @param {number} amount - Withdrawal amount
+   * @returns {Object} Fee breakdown
+   */
+  calculateOffRampFee(amount) {
+    const feePercent = 1; // 1% for off-ramp
+    const fee = (amount * feePercent) / 100;
+    const amountAfterFee = amount - fee;
+
+    return {
+      originalAmount: amount,
+      platformFee: fee,
+      platformFeePercent: feePercent,
+      amountAfterFee,
+      platformWallet: this.platformWalletAddress,
+      feeType: 'off-ramp'
     };
   }
 
@@ -113,14 +154,20 @@ class HostFiService {
       return response.data;
     } catch (error) {
       const errorData = error.response?.data;
-      console.error(`HostFi API ${method} ${url} failed:`, JSON.stringify(errorData, null, 2) || error.message);
+      const statusCode = error.response?.status;
+      const statusText = error.response?.statusText;
+
+      console.error(`[HostFi Error] ${method} ${url} failed:`);
+      console.error(`  Status: ${statusCode} ${statusText}`);
+      console.error(`  Response:`, JSON.stringify(errorData, null, 2));
+      console.error(`  Request payload:`, JSON.stringify(data, null, 2));
 
       // Preserve the full error details
       if (errorData) {
-        const errorMsg = errorData.message || errorData.error || 'HostFi API request failed';
-        console.error(`[HostFi Error] ${method} ${url}:`, JSON.stringify(errorData, null, 2));
+        const errorMsg = errorData.message || errorData.error || errorData.msg || `HostFi API ${statusCode} error`;
         const err = new Error(errorMsg);
-        err.hostfiError = errorData; // Preserve full error for debugging
+        err.hostfiError = errorData;
+        err.statusCode = statusCode;
         throw err;
       }
       throw new Error(error.message || 'HostFi API request failed');
