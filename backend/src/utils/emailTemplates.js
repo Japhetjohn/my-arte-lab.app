@@ -124,7 +124,7 @@ const emailTemplate = (content, preheader = '') => `
                         <td class="header">
                             <a href="https://app.myartelab.com" class="logo">MyArteLab</a>
                             <p style="color: #ffffff; margin: 10px 0 0 0; font-size: 14px;">
-                                Built for African Creators. Trusted globally.
+                                Trusted by Global Clients.
                             </p>
                         </td>
                     </tr>

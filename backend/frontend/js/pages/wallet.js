@@ -29,12 +29,16 @@ export async function renderWalletPage() {
         <div class="section">
             <div class="container">
                 <h1 class="mb-lg">Wallet</h1>
-                <div class="text-center" style="padding: 60px 20px;">
-                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" style="opacity: 0.4; margin-bottom: 16px;">
-                        <path d="M21 12V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5z" stroke="currentColor" stroke-width="2"/>
-                        <path d="M18 12h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                    </svg>
-                    <p class="text-secondary">Loading wallet data...</p>
+
+                <!-- Skeleton loader for balance card -->
+                <div class="skeleton-loader" style="height: 200px; border-radius: 16px; margin-bottom: 24px;"></div>
+
+                <!-- Skeleton loaders for transaction items -->
+                <div style="margin-top: 32px;">
+                    <div class="skeleton-loader" style="height: 32px; width: 150px; margin-bottom: 16px;"></div>
+                    <div class="skeleton-loader" style="height: 80px; border-radius: 12px; margin-bottom: 12px;"></div>
+                    <div class="skeleton-loader" style="height: 80px; border-radius: 12px; margin-bottom: 12px;"></div>
+                    <div class="skeleton-loader" style="height: 80px; border-radius: 12px;"></div>
                 </div>
             </div>
         </div>
