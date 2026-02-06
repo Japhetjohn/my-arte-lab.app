@@ -97,7 +97,7 @@ export async function renderHomePage() {
     }
 
     mainContent.innerHTML = `
-        <div style="padding: 24px 0 16px;">
+        <div class="discover-header">
             <div class="container">
                 <div class="filters-row">
                     <button class="filter-chip active" data-filter="all">All</button>
