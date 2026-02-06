@@ -369,12 +369,11 @@ class HostFiService {
    */
   async createFiatCollectionChannel({ assetId, currency, customId, type, method, countryCode }) {
     try {
-      // HostFi API: type="BANK", method="BANK_TRANSFER" (confirmed by dev)
+      // HostFi API rejects 'type' param - only send method, assetId, currency, customId, countryCode
       const payload = {
         assetId,
         currency,
         customId,
-        type: type || 'BANK',
         method: method || 'BANK_TRANSFER',
         countryCode
       };
