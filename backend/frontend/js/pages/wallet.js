@@ -125,31 +125,14 @@ function renderWalletContent() {
     const balance = walletData.balance || 0;
     const pendingBalance = walletData.pendingBalance || 0;
     const totalEarnings = walletData.totalEarnings || 0;
-    const currency = walletData.currency || 'NGN';
 
-    // Get currency symbol - define at top so transactions can use it too
-    const currencySymbols = {
-        'NGN': '₦',
-        'USD': '$',
-        'EUR': '€',
-        'GBP': '£',
-        'KES': 'KSh',
-        'GHS': 'GH₵',
-        'ZAR': 'R',
-        'JPY': '¥',
-        'CNY': '¥',
-        'INR': '₹',
-        'AED': 'د.إ',
-        'USDC': '$',
-        'USDT': '$'
-    };
-    const currencySymbol = currencySymbols[currency] || '$';
+    // Always use USD for display
+    const currency = 'USD';
+    const currencySymbol = '$';
 
     // Map assets for rendering - show only USDC as requested
     const assets = walletData.assets || [];
     const cryptoAssets = assets.filter(a => a.currency === 'USDC');
-
-    // NGN balance is the primary balance from walletData.balance
 
     mainContent.innerHTML = `
         <div class="section">
@@ -171,10 +154,7 @@ function renderWalletContent() {
                     <div class="balance-main">
                         <div class="balance-amount">
                             <span class="currency-symbol">$</span>
-                            <span class="amount-value">${(walletData.balanceUsd || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                        </div>
-                        <div class="balance-secondary">
-                            ≈ ${currencySymbol}${balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}
+                            <span class="amount-value">${balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                         </div>
                     </div>
 
