@@ -50,28 +50,62 @@ class DepositPollingService {
    */
   async checkForDeposits() {
     try {
-      // Get all wallet assets
-      const assets = await hostfiService.getUserWallets();
-
-      // Check BOTH fiat AND crypto assets for deposits
-      // This covers all currencies globally: NGN, USD, EUR, GBP, KES, USDC, BTC, etc.
-      const allAssets = assets.filter(a => a.type === 'FIAT' || a.type === 'CRYPTO');
-
-      for (const asset of allAssets) {
-        await this.checkAssetDeposits(asset);
-      }
+      // Check BOTH fiat collection transactions AND crypto wallet deposits
+      await this.checkFiatCollections();
+      await this.checkCryptoDeposits();
     } catch (error) {
       console.error('[Deposit Polling] Error:', error.message);
     }
   }
 
   /**
-   * Check deposits for a specific asset
+   * Check for fiat collection transactions (NGN, KES, etc. bank deposits)
+   */
+  async checkFiatCollections() {
+    try {
+      // Get recent fiat collection transactions
+      const response = await hostfiService.getFiatCollectionTransactions({
+        pageSize: 20,
+        status: 'SUCCESSFUL'
+      });
+
+      const transactions = response.records || response.transactions || response.data || [];
+
+      for (const txn of transactions) {
+        await this.processFiatCollection(txn);
+      }
+    } catch (error) {
+      // Silently handle - endpoint might not exist or return errors
+      console.error('[Deposit Polling] Fiat collections check failed:', error.message);
+    }
+  }
+
+  /**
+   * Check for crypto deposits on wallet assets
+   */
+  async checkCryptoDeposits() {
+    try {
+      // Get all wallet assets
+      const assets = await hostfiService.getUserWallets();
+
+      // Check crypto assets for deposits (USDC, BTC, ETH, SOL, etc.)
+      const cryptoAssets = assets.filter(a => a.type === 'CRYPTO');
+
+      for (const asset of cryptoAssets) {
+        await this.checkAssetDeposits(asset);
+      }
+    } catch (error) {
+      console.error('[Deposit Polling] Crypto deposits check failed:', error.message);
+    }
+  }
+
+  /**
+   * Check deposits for a specific crypto asset
    */
   async checkAssetDeposits(asset) {
     try {
-      // Get recent transactions for this asset
-      const transactions = await hostfiService.getAssetTransactions(asset.id, {
+      // Get recent transactions for this asset (fixed method name!)
+      const transactions = await hostfiService.getWalletTransactions(asset.id, {
         type: 'DEPOSIT',
         pageSize: 20 // Check last 20 transactions
       });
@@ -83,6 +117,162 @@ class DepositPollingService {
       }
     } catch (error) {
       // Silently handle - asset might not have transactions endpoint
+    }
+  }
+
+  /**
+   * Process a fiat collection transaction (NGN/KES bank deposit)
+   * Must convert fiat to USDC before crediting user
+   */
+  async processFiatCollection(txn) {
+    try {
+      // Skip if not successful
+      if (txn.status !== 'SUCCESSFUL' && txn.status !== 'successful' && txn.status !== 'completed') {
+        return;
+      }
+
+      // Skip if already processed
+      const txnId = txn.id || txn.reference;
+      if (this.processedTransactions.has(txnId)) {
+        return;
+      }
+
+      // Check if already in database
+      const existing = await Transaction.findOne({ reference: txnId });
+      if (existing && existing.status === 'completed') {
+        this.processedTransactions.add(txnId);
+        return;
+      }
+
+      // Extract customId (user ID) from transaction
+      const userId = txn.customId || txn.metadata?.customId;
+      if (!userId) {
+        console.log(`[Deposit Polling] No userId found for fiat collection ${txnId}`);
+        return;
+      }
+
+      const user = await User.findById(userId);
+      if (!user) {
+        console.log(`[Deposit Polling] User not found: ${userId}`);
+        return;
+      }
+
+      const fiatAmount = parseFloat(txn.amount || 0);
+      const fiatCurrency = txn.currency || 'NGN';
+
+      console.log(`\n💵 [Deposit Polling] NEW FIAT COLLECTION DETECTED!`);
+      console.log(`   User: ${user.firstName} ${user.lastName}`);
+      console.log(`   Fiat Amount: ${fiatAmount} ${fiatCurrency}`);
+      console.log(`   Converting to USDC...`);
+
+      // Get all wallet assets to find source (NGN) and target (USDC) asset IDs
+      const assets = await hostfiService.getUserWallets();
+
+      const fiatAsset = assets.find(a => a.currency?.code === fiatCurrency || a.currency === fiatCurrency);
+      const usdcAsset = assets.find(a => a.currency?.code === 'USDC' || a.currency === 'USDC');
+
+      if (!fiatAsset || !usdcAsset) {
+        console.error(`[Deposit Polling] Cannot find asset IDs for conversion: ${fiatCurrency} → USDC`);
+        return;
+      }
+
+      // Trigger conversion from NGN to USDC
+      try {
+        const swapResult = await hostfiService.swapAssets({
+          fromAssetId: fiatAsset.id,
+          toAssetId: usdcAsset.id,
+          amount: fiatAmount,
+          currency: fiatCurrency
+        });
+
+        const usdcAmount = parseFloat(swapResult.toAmount || swapResult.amount || 0);
+
+        console.log(`   ✅ Converted ${fiatAmount} ${fiatCurrency} → ${usdcAmount} USDC`);
+        console.log(`   Exchange rate: ${swapResult.rate || 'N/A'}`);
+
+        // Now credit the USDC amount to user wallet
+        const platformFee = 0; // No fee for deposits
+        const netAmount = usdcAmount;
+
+        user.wallet.balance += netAmount;
+        user.wallet.totalEarnings += netAmount;
+
+        // Update specific HostFi asset balance
+        if (user.wallet.hostfiWalletAssets && user.wallet.hostfiWalletAssets.length > 0) {
+          const storedAsset = user.wallet.hostfiWalletAssets.find(a => a.assetId === usdcAsset.id || a.currency === 'USDC');
+          if (storedAsset) {
+            storedAsset.balance += netAmount;
+            storedAsset.lastSynced = new Date();
+          }
+        }
+
+        user.wallet.lastUpdated = new Date();
+        await user.save();
+
+        // Create transaction record
+        await Transaction.findOneAndUpdate(
+          { reference: txnId },
+          {
+            $set: {
+              user: userId,
+              transactionId: txn.reference || txnId,
+              type: 'deposit',
+              amount: usdcAmount,
+              currency: 'USDC',
+              status: 'completed',
+              description: `Bank deposit - ${fiatAmount} ${fiatCurrency} → ${usdcAmount} USDC`,
+              platformFee: platformFee,
+              netAmount: netAmount,
+              paymentMethod: 'bank_transfer',
+              completedAt: new Date(),
+              paymentDetails: {
+                actualAmount: fiatAmount,
+                fiatCurrency: fiatCurrency,
+                usdcAmount: usdcAmount,
+                exchangeRate: swapResult.rate,
+                platformFee: platformFee,
+                bankName: txn.metadata?.bankName,
+                accountNumber: txn.metadata?.accountNumber,
+                reference: txnId
+              },
+              metadata: {
+                provider: 'hostfi',
+                type: 'fiat_collection',
+                assetType: 'FIAT',
+                autoProcessed: true,
+                autoConverted: true,
+                processedAt: new Date(),
+                conversionDetails: {
+                  fromAmount: fiatAmount,
+                  fromCurrency: fiatCurrency,
+                  toAmount: usdcAmount,
+                  toCurrency: 'USDC',
+                  rate: swapResult.rate
+                },
+                feeBreakdown: {
+                  grossAmount: usdcAmount,
+                  platformFee: platformFee,
+                  amountAfterFee: netAmount
+                }
+              }
+            }
+          },
+          { upsert: true, new: true }
+        );
+
+        console.log(`   ✅ Credited ${netAmount.toFixed(2)} USDC to wallet!`);
+        console.log(`   🎉 New balance: ${user.wallet.balance} ${user.wallet.currency}\n`);
+
+        // Mark as processed
+        this.processedTransactions.add(txnId);
+
+      } catch (swapError) {
+        console.error(`[Deposit Polling] Failed to convert ${fiatCurrency} to USDC:`, swapError.message);
+        // Don't mark as processed so we can retry later
+      }
+
+    } catch (error) {
+      console.error('[Deposit Polling] Error processing fiat collection:', error.message);
     }
   }
 

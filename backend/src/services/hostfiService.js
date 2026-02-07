@@ -432,6 +432,36 @@ class HostFiService {
     }
   }
 
+  /**
+   * Get all collection transactions (fiat and crypto deposits)
+   * @param {Object} filters - Optional filters (status, currency, pageSize, pageNumber, etc.)
+   * @returns {Promise<Object>} Paginated collection transactions
+   */
+  async getCollectionTransactions(filters = {}) {
+    try {
+      const response = await this.makeRequest('GET', '/v1/collections/transactions', null, filters);
+      return response;
+    } catch (error) {
+      console.error('Failed to get collection transactions:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Get fiat collection transactions (bank deposits)
+   * @param {Object} filters - Optional filters
+   * @returns {Promise<Object>} Paginated fiat collection transactions
+   */
+  async getFiatCollectionTransactions(filters = {}) {
+    try {
+      const response = await this.makeRequest('GET', '/v1/collections/fiat/transactions', null, filters);
+      return response;
+    } catch (error) {
+      console.error('Failed to get fiat collection transactions:', error.message);
+      throw error;
+    }
+  }
+
   // ============================================
   // PAYMENTS (OFF-RAMP) - Sending Payments/Withdrawals
   // ============================================
