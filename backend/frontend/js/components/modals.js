@@ -1482,7 +1482,6 @@ export async function showAddFundsModal() {
                             <ol style="color: #92400E; font-size: 13px; margin: 0; padding-left: 20px; line-height: 1.8;">
                                 <li>Transfer any amount to the account above.</li>
                                 <li>Funds will be credited to your wallet automatically.</li>
-                                <li><strong>1% Platform fee</strong> applies to all deposits.</li>
                             </ol>
                         </div>
                          
@@ -1650,7 +1649,6 @@ export async function showPayoutSettings() {
                             <option value="250">$250 USD</option>
                             <option value="500">$500 USD</option>
                         </select>
-                        <small style="color: var(--text-secondary); font-size: 12px; margin-top: 4px; display: block;">Platform fee: 2.5% per withdrawal</small>
                     </div>
 
                     <div class="card" style="padding: 16px; background: var(--background-alt);">
