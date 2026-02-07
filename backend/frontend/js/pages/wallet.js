@@ -3,6 +3,24 @@ import { formatDate, showToast } from '../utils.js';
 import api from '../services/api.js';
 import { showAddFundsModal, showSwapModal } from '../components/modals.js';
 
+// Currency symbols mapping
+const currencySymbols = {
+    'USD': '$',
+    'USDC': '$',
+    'USDT': '$',
+    'NGN': '₦',
+    'GHS': '₵',
+    'KES': 'KSh',
+    'ZAR': 'R',
+    'EUR': '€',
+    'GBP': '£',
+    'BTC': '₿',
+    'ETH': 'Ξ',
+    'SOL': '◎',
+    'BNB': 'BNB',
+    'DAI': 'DAI'
+};
+
 let walletData = null;
 let transactions = [];
 let recentBookings = [];
