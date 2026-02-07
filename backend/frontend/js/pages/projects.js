@@ -334,7 +334,7 @@ async function applyFilters() {
 }
 
 function setupProjectCardListeners() {
-    document.querySelectorAll('.project-card').forEach(card => {
+    document.querySelectorAll('.project-card-modern').forEach(card => {
         card.addEventListener('click', () => {
             const projectId = card.dataset.projectId;
             window.showProjectDetail(projectId);
