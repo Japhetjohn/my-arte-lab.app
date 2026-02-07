@@ -67,7 +67,7 @@ class HostFiService {
    * @returns {Object} Fee breakdown
    */
   calculateOnRampFee(amount) {
-    const feePercent = 1; // 1% for on-ramp
+    const feePercent = 0; // No fee for deposits
     const fee = (amount * feePercent) / 100;
     const amountAfterFee = amount - fee;
 
@@ -82,12 +82,12 @@ class HostFiService {
   }
 
   /**
-   * Calculate off-ramp fee (1% - charged when users withdraw)
+   * Calculate off-ramp fee (no fee for withdrawals)
    * @param {number} amount - Withdrawal amount
    * @returns {Object} Fee breakdown
    */
   calculateOffRampFee(amount) {
-    const feePercent = 1; // 1% for off-ramp
+    const feePercent = 0; // No fee for withdrawals
     const fee = (amount * feePercent) / 100;
     const amountAfterFee = amount - fee;
 
