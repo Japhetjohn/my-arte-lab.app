@@ -370,12 +370,12 @@ class HostFiService {
   async createFiatCollectionChannel({ assetId, currency, customId, type, method, countryCode }) {
     try {
       // Per HostFi: type="STATIC" or "DYNAMIC", method="BANK_TRANSFER"
-      // STATIC = Fixed bank account for deposits
+      // DYNAMIC = Temporary account (no KYC), STATIC = Fixed account (requires KYC)
       const payload = {
         assetId,
         currency,
         customId,
-        type: type || 'STATIC',
+        type: type || 'DYNAMIC',
         method: method || 'BANK_TRANSFER',
         countryCode
       };

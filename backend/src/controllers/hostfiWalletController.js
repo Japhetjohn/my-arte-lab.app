@@ -388,7 +388,7 @@ exports.createFiatChannel = catchAsync(async (req, res, next) => {
       assetId,
       currency,
       customId: req.user._id.toString(),
-      type: 'STATIC',
+      type: 'DYNAMIC',
       method: 'BANK_TRANSFER',
       countryCode
     });
