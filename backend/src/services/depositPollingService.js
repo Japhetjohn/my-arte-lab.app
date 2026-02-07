@@ -122,10 +122,10 @@ class DepositPollingService {
         return;
       }
 
-      // Calculate platform fee (1%)
+      // Calculate platform fee (0% - no fees on deposits)
       const amount = parseFloat(txn.amount || 0);
-      const platformFee = amount * 0.01;
-      const netAmount = amount - platformFee;
+      const platformFee = 0; // No fee for deposits
+      const netAmount = amount; // Full amount credited
 
       const currencyCode = asset.currency?.code || asset.currency;
       const assetType = asset.type === 'CRYPTO' ? '🪙 CRYPTO' : '💵 FIAT';
@@ -133,7 +133,7 @@ class DepositPollingService {
       console.log(`\n💰 [Deposit Polling] NEW ${assetType} DEPOSIT DETECTED!`);
       console.log(`   User: ${user.firstName} ${user.lastName}`);
       console.log(`   Amount: ${amount} ${currencyCode}`);
-      console.log(`   Platform Fee (1%): ${platformFee.toFixed(2)} ${currencyCode}`);
+      console.log(`   Platform Fee: ${platformFee.toFixed(2)} ${currencyCode} (0% - No fees!)`);
       console.log(`   Net Amount: ${netAmount.toFixed(2)} ${currencyCode}`);
 
       // Credit user wallet
