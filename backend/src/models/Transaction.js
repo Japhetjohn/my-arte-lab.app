@@ -137,6 +137,7 @@ transactionSchema.index({ status: 1 });
 transactionSchema.index({ booking: 1 });
 transactionSchema.index({ transactionHash: 1 });
 transactionSchema.index({ reference: 1 });
+transactionSchema.index({ user: 1, reference: 1 });
 transactionSchema.index({ 'metadata.hostfiReference': 1 });
 transactionSchema.index({ 'metadata.provider': 1 });
 

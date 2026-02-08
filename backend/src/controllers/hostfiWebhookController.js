@@ -94,15 +94,24 @@ exports.handleFiatDeposit = catchAsync(async (req, res) => {
   }
 
   try {
-    // Credit user wallet (amount after 1% platform fee)
-    user.wallet.balance += feeBreakdown.amountAfterFee;
-    user.wallet.totalEarnings += feeBreakdown.amountAfterFee;
-    user.wallet.lastUpdated = new Date();
-    await user.save();
+    // Credit user wallet (amount after 1% platform fee) - USE SERVICE FOR CONVERSION
+    await hostfiWalletService.updateBalance(
+      user._id,
+      payload.currency || 'NGN',
+      feeBreakdown.amountAfterFee,
+      'credit'
+    );
 
-    // Create or update transaction record
+    // Create or update transaction record - SCOPE BY USER
     await Transaction.findOneAndUpdate(
-      { reference: payload.channelId || payload.id },
+      {
+        user: user._id,
+        $or: [
+          { reference: payload.channelId },
+          { reference: payload.id },
+          { 'metadata.collectionChannelId': payload.channelId }
+        ]
+      },
       {
         $set: {
           amount: depositAmount,
@@ -110,7 +119,8 @@ exports.handleFiatDeposit = catchAsync(async (req, res) => {
           platformFee: feeBreakdown.platformFee,
           netAmount: feeBreakdown.amountAfterFee,
           completedAt: new Date(),
-          'paymentDetails.actualAmount': depositAmount
+          'paymentDetails.actualAmount': depositAmount,
+          'metadata.hostfiReference': payload.id
         }
       },
       { upsert: true, new: true }
@@ -173,15 +183,24 @@ exports.handleCryptoDeposit = catchAsync(async (req, res) => {
   }
 
   try {
-    // Credit user wallet (amount after 1% platform fee)
-    user.wallet.balance += feeBreakdown.amountAfterFee;
-    user.wallet.totalEarnings += feeBreakdown.amountAfterFee;
-    user.wallet.lastUpdated = new Date();
-    await user.save();
+    // Credit user wallet (amount after 1% platform fee) - USE SERVICE FOR CONVERSION
+    await hostfiWalletService.updateBalance(
+      user._id,
+      payload.currency,
+      feeBreakdown.amountAfterFee,
+      'credit'
+    );
 
-    // Create or update transaction record
+    // Create or update transaction record - SCOPE BY USER
     await Transaction.findOneAndUpdate(
-      { reference: payload.addressId || payload.id },
+      {
+        user: user._id,
+        $or: [
+          { reference: payload.addressId },
+          { reference: payload.id },
+          { 'paymentDetails.walletAddress': payload.address }
+        ]
+      },
       {
         $set: {
           amount: depositAmount,
@@ -194,7 +213,8 @@ exports.handleCryptoDeposit = catchAsync(async (req, res) => {
           confirmations: payload.confirmations || 0,
           completedAt: new Date(),
           'paymentDetails.txHash': payload.txHash,
-          'paymentDetails.network': payload.network
+          'paymentDetails.network': payload.network,
+          'metadata.hostfiReference': payload.id
         }
       },
       { upsert: true, new: true }
@@ -271,8 +291,13 @@ exports.handleFiatPayout = catchAsync(async (req, res) => {
 
       console.log(`Fiat payout completed: User ${user._id}, Amount: ${transaction.amount}`);
     } else if (payload.status === 'FAILED' || payload.status === 'REJECTED') {
-      // Withdrawal failed - refund balance
-      user.wallet.balance += transaction.amount;
+      // Withdrawal failed - refund balance - USE SERVICE FOR CONVERSION
+      await hostfiWalletService.updateBalance(
+        user._id,
+        transaction.currency,
+        transaction.amount,
+        'credit'
+      );
       user.wallet.pendingBalance -= transaction.amount;
       await user.save();
 
@@ -363,8 +388,13 @@ exports.handleCryptoPayout = catchAsync(async (req, res) => {
 
       console.log(`Crypto payout completed: User ${user._id}, Amount: ${transaction.amount}`);
     } else if (payload.status === 'FAILED' || payload.status === 'REJECTED') {
-      // Withdrawal failed - refund balance
-      user.wallet.balance += transaction.amount;
+      // Withdrawal failed - refund balance - USE SERVICE FOR CONVERSION
+      await hostfiWalletService.updateBalance(
+        user._id,
+        transaction.currency,
+        transaction.amount,
+        'credit'
+      );
       user.wallet.pendingBalance -= transaction.amount;
       await user.save();
 

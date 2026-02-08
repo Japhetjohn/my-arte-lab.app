@@ -38,9 +38,9 @@ class HostFiWalletService {
       // Store wallet asset IDs in user document
       user.wallet.hostfiWalletAssets = walletAssets.map(asset => ({
         assetId: asset.id,
-        currency: asset.currency.code,  // Store currency code, not full object
+        currency: asset.currency.code || asset.currency,  // Store currency code
         assetType: asset.type,
-        balance: asset.balance || 0,
+        balance: 0, // Initialize with 0, we track this locally
         lastSynced: new Date()
       }));
 
@@ -102,12 +102,13 @@ class HostFiWalletService {
             assetId: asset.id,
             currency: asset.currency.code || asset.currency,
             assetType: asset.type,
-            balance: asset.balance || 0,
+            balance: 0, // Initialize with 0, we track this locally via transactions
             lastSynced: new Date()
           });
           storedAsset = user.wallet.hostfiWalletAssets[user.wallet.hostfiWalletAssets.length - 1];
         } else {
-          storedAsset.balance = asset.balance || 0;
+          // DO NOT overwrite balance from HostFi as it might be platform-wide
+          // storedAsset.balance = asset.balance || 0; 
           storedAsset.lastSynced = new Date();
         }
 
@@ -223,14 +224,40 @@ class HostFiWalletService {
         throw new Error(`Wallet for currency ${currency} not found`);
       }
 
-      // Update balance
+      // Update balance - CONVERT TO PRIMARY CURRENCY IF DIFFERENT
       if (type === 'credit') {
         asset.balance += amount;
-        user.wallet.balance += amount;
-        user.wallet.totalEarnings += amount;
+
+        // Convert to primary currency for aggregate balance
+        let amountInPrimary = amount;
+        if (currency !== user.wallet.currency) {
+          try {
+            const rateData = await hostfiService.getCurrencyRates(currency, user.wallet.currency);
+            const rate = rateData.rate || rateData.data?.rate || 0;
+            amountInPrimary = amount * rate;
+          } catch (error) {
+            console.error(`Balance update conversion failed (${currency} to ${user.wallet.currency}):`, error.message);
+            // Fallback: stay with 1:1 if rate fails (better than nothing or crashing, 
+            // but log clearly)
+          }
+        }
+
+        user.wallet.balance += amountInPrimary;
+        user.wallet.totalEarnings += amountInPrimary;
       } else {
         asset.balance -= amount;
-        user.wallet.balance -= amount;
+
+        let amountInPrimary = amount;
+        if (currency !== user.wallet.currency) {
+          try {
+            const rateData = await hostfiService.getCurrencyRates(currency, user.wallet.currency);
+            const rate = rateData.rate || rateData.data?.rate || 0;
+            amountInPrimary = amount * rate;
+          } catch (error) {
+            console.error(`Balance update conversion failed (${currency} to ${user.wallet.currency}):`, error.message);
+          }
+        }
+        user.wallet.balance -= amountInPrimary;
       }
 
       asset.lastSynced = new Date();

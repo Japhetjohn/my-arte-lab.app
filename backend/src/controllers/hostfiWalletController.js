@@ -196,7 +196,8 @@ exports.createCryptoAddress = catchAsync(async (req, res, next) => {
   try {
     const existingAddresses = await hostfiService.getCryptoCollectionAddresses({
       currency,
-      network
+      network,
+      customId: req.user._id.toString()
     });
 
     if (existingAddresses && existingAddresses.length > 0) {
@@ -395,34 +396,31 @@ exports.createFiatChannel = catchAsync(async (req, res, next) => {
 
     console.log('[Controller:createFiatChannel] New channel created successfully');
   } catch (createError) {
-    console.log('[Controller:createFiatChannel] Creation failed, falling back to existing channels');
+    console.log('[Controller:createFiatChannel] Creation failed, checking for existing channel assigned to user');
     console.log('[Controller:createFiatChannel] Error:', createError.message);
 
-    // Step 2: Fallback to existing channels
+    // Step 2: Fallback to finding a channel ALREADY assigned to THIS user
     try {
-      const channels = await hostfiService.getFiatCollectionChannels();
+      const channels = await hostfiService.getFiatCollectionChannels({
+        customId: req.user._id.toString(),
+        currency: currency
+      });
 
-      console.log(`[Controller:createFiatChannel] Found ${channels.length} total channels`);
+      console.log(`[Controller:createFiatChannel] Found ${channels.length} channels for user`);
 
-      // Filter for the requested currency
-      const currencyChannels = channels.filter(ch => ch.currency === currency);
-
-      console.log(`[Controller:createFiatChannel] Found ${currencyChannels.length} ${currency} channels`);
-
-      if (!currencyChannels || currencyChannels.length === 0) {
+      if (!channels || channels.length === 0) {
         return next(new ErrorHandler(
-          `Unable to create ${currency} collection channel and no existing channels available. Error: ${createError.message}`,
+          `Unable to create ${currency} collection channel and no existing channel for user. Error: ${createError.message}`,
           503
         ));
       }
 
-      // Randomly select a channel to distribute load
-      const randomIndex = Math.floor(Math.random() * currencyChannels.length);
-      channel = currencyChannels[randomIndex];
+      // Use the first available channel assigned to this user
+      channel = channels[0];
 
-      console.log(`[Controller:createFiatChannel] Using existing channel ${randomIndex + 1}/${currencyChannels.length}`);
+      console.log(`[Controller:createFiatChannel] Using user's existing channel`);
     } catch (fetchError) {
-      console.error('[Controller:createFiatChannel] Failed to fetch existing channels:', fetchError.message);
+      console.error('[Controller:createFiatChannel] Failed to fetch user channels:', fetchError.message);
       throw createError; // Throw original creation error
     }
   }
@@ -571,9 +569,22 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
 
   const user = await User.findById(req.user._id);
 
-  // Check balance
-  if (user.wallet.balance < amount) {
-    return next(new ErrorHandler('Insufficient balance', 400));
+  // Convert withdrawal amount to primary currency for balance check
+  let amountInPrimary = amount;
+  if (currency !== user.wallet.currency) {
+    try {
+      const rateData = await hostfiService.getCurrencyRates(currency, user.wallet.currency);
+      const rate = rateData.rate || rateData.data?.rate || 0;
+      amountInPrimary = amount * rate;
+    } catch (error) {
+      console.error(`Withdrawal conversion failed (${currency} to ${user.wallet.currency}):`, error.message);
+      return next(new ErrorHandler(`Unable to verify balance for ${currency}`, 500));
+    }
+  }
+
+  // Check balance using the primary currency equivalent
+  if (user.wallet.balance < amountInPrimary) {
+    return next(new ErrorHandler(`Insufficient balance. You need approx ${amountInPrimary.toFixed(2)} ${user.wallet.currency}`, 400));
   }
 
   // Get wallet asset ID
@@ -588,9 +599,9 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
   // Calculate platform fee (1% for off-ramp)
   const feeBreakdown = hostfiService.calculateOffRampFee(amount);
 
-  // Deduct from balance and add to pending
-  user.wallet.balance -= amount;
-  user.wallet.pendingBalance += amount;
+  // Deduct from balance and add to pending (using converted amounts where appropriate)
+  user.wallet.balance -= amountInPrimary;
+  user.wallet.pendingBalance += amountInPrimary;
   user.wallet.lastUpdated = new Date();
   await user.save();
 
