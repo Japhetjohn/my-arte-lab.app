@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const Transaction = require('../models/Transaction');
 const hostfiService = require('./hostfiService');
+const hostfiWalletService = require('./hostfiWalletService');
 
 class DepositPollingService {
   constructor() {
@@ -190,24 +191,16 @@ class DepositPollingService {
         console.log(`   ✅ Converted ${fiatAmount} ${fiatCurrency} → ${usdcAmount} USDC`);
         console.log(`   Exchange rate: ${swapResult.rate || 'N/A'}`);
 
-        // Now credit the USDC amount to user wallet
+        // Now credit the USDC amount to user wallet using service (handles conversion)
         const platformFee = 0; // No fee for deposits
         const netAmount = usdcAmount;
 
-        user.wallet.balance += netAmount;
-        user.wallet.totalEarnings += netAmount;
-
-        // Update specific HostFi asset balance
-        if (user.wallet.hostfiWalletAssets && user.wallet.hostfiWalletAssets.length > 0) {
-          const storedAsset = user.wallet.hostfiWalletAssets.find(a => a.assetId === usdcAsset.id || a.currency === 'USDC');
-          if (storedAsset) {
-            storedAsset.balance += netAmount;
-            storedAsset.lastSynced = new Date();
-          }
-        }
-
-        user.wallet.lastUpdated = new Date();
-        await user.save();
+        await hostfiWalletService.updateBalance(
+          user._id,
+          'USDC',
+          netAmount,
+          'credit'
+        );
 
         // Create transaction record
         await Transaction.findOneAndUpdate(
@@ -326,21 +319,14 @@ class DepositPollingService {
       console.log(`   Platform Fee: ${platformFee.toFixed(2)} ${currencyCode} (0% - No fees!)`);
       console.log(`   Net Amount: ${netAmount.toFixed(2)} ${currencyCode}`);
 
-      // Credit user wallet
-      user.wallet.balance += netAmount;
-      user.wallet.totalEarnings += netAmount;
-
-      // Update specific HostFi asset balance for USD conversion consistency
-      if (user.wallet.hostfiWalletAssets && user.wallet.hostfiWalletAssets.length > 0) {
-        const storedAsset = user.wallet.hostfiWalletAssets.find(a => a.assetId === asset.id || a.currency === currencyCode);
-        if (storedAsset) {
-          storedAsset.balance += netAmount;
-          storedAsset.lastSynced = new Date();
-        }
-      }
-
-      user.wallet.lastUpdated = new Date();
-      await user.save();
+      // Credit user wallet using service (handles conversion to primary currency)
+      // This FIXES the bug where 0.001 BTC was added as 0.001 NGN
+      await hostfiWalletService.updateBalance(
+        user._id,
+        currencyCode,
+        netAmount,
+        'credit'
+      );
 
       const isCrypto = asset.type === 'CRYPTO';
       const paymentMethod = isCrypto ? 'crypto' : 'bank_transfer';
