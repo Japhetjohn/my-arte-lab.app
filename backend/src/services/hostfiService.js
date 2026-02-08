@@ -735,12 +735,17 @@ class HostFiService {
       return true;
     }
 
-    const crypto = require('crypto');
-    const hmac = crypto.createHmac('sha256', this.webhookSecret);
-    hmac.update(JSON.stringify(payload));
-    const expectedSignature = hmac.digest('hex');
+    // Check for x-auth-secret header
+    // HostFi sends the configured secret in this header
+    const authSecret = req.headers['x-auth-secret'] || signature; // signature arg might contain the header value depending on controller
 
-    return signature === expectedSignature;
+    if (!this.webhookSecret) {
+      console.warn('HostFi webhook secret not configured, skipping verification');
+      return true;
+    }
+
+    // Simple string comparison as per HostFi docs
+    return authSecret === this.webhookSecret;
   }
 
   // ============================================
