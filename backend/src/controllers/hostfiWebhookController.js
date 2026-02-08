@@ -12,10 +12,10 @@ const { catchAsync } = require('../utils/errorHandler');
 exports.handleAddressGenerated = catchAsync(async (req, res) => {
   const payload = req.body;
 
-  // Verify webhook signature
-  const signature = req.headers['x-hostfi-signature'];
-  if (!hostfiService.verifyWebhookSignature(signature, payload)) {
-    return res.status(401).json({ success: false, error: 'Invalid signature' });
+  // Verify webhook signature (using x-auth-secret)
+  const authSecret = req.headers['x-auth-secret'];
+  if (!hostfiService.verifyWebhookSignature(authSecret, payload)) {
+    return res.status(401).json({ success: false, error: 'Invalid secret' });
   }
 
   // Record webhook event
@@ -59,10 +59,10 @@ exports.handleAddressGenerated = catchAsync(async (req, res) => {
 exports.handleFiatDeposit = catchAsync(async (req, res) => {
   const payload = req.body;
 
-  // Verify webhook signature
-  const signature = req.headers['x-hostfi-signature'];
-  if (!hostfiService.verifyWebhookSignature(signature, payload)) {
-    return res.status(401).json({ success: false, error: 'Invalid signature' });
+  // Verify webhook signature (using x-auth-secret)
+  const authSecret = req.headers['x-auth-secret'];
+  if (!hostfiService.verifyWebhookSignature(authSecret, payload)) {
+    return res.status(401).json({ success: false, error: 'Invalid secret' });
   }
 
   // Record webhook event
@@ -148,10 +148,10 @@ exports.handleFiatDeposit = catchAsync(async (req, res) => {
 exports.handleCryptoDeposit = catchAsync(async (req, res) => {
   const payload = req.body;
 
-  // Verify webhook signature
-  const signature = req.headers['x-hostfi-signature'];
-  if (!hostfiService.verifyWebhookSignature(signature, payload)) {
-    return res.status(401).json({ success: false, error: 'Invalid signature' });
+  // Verify webhook signature (using x-auth-secret)
+  const authSecret = req.headers['x-auth-secret'];
+  if (!hostfiService.verifyWebhookSignature(authSecret, payload)) {
+    return res.status(401).json({ success: false, error: 'Invalid secret' });
   }
 
   // Record webhook event
@@ -242,10 +242,10 @@ exports.handleCryptoDeposit = catchAsync(async (req, res) => {
 exports.handleFiatPayout = catchAsync(async (req, res) => {
   const payload = req.body;
 
-  // Verify webhook signature
-  const signature = req.headers['x-hostfi-signature'];
-  if (!hostfiService.verifyWebhookSignature(signature, payload)) {
-    return res.status(401).json({ success: false, error: 'Invalid signature' });
+  // Verify webhook signature (using x-auth-secret)
+  const authSecret = req.headers['x-auth-secret'];
+  if (!hostfiService.verifyWebhookSignature(authSecret, payload)) {
+    return res.status(401).json({ success: false, error: 'Invalid secret' });
   }
 
   // Record webhook event
@@ -337,10 +337,10 @@ exports.handleFiatPayout = catchAsync(async (req, res) => {
 exports.handleCryptoPayout = catchAsync(async (req, res) => {
   const payload = req.body;
 
-  // Verify webhook signature
-  const signature = req.headers['x-hostfi-signature'];
-  if (!hostfiService.verifyWebhookSignature(signature, payload)) {
-    return res.status(401).json({ success: false, error: 'Invalid signature' });
+  // Verify webhook signature (using x-auth-secret)
+  const authSecret = req.headers['x-auth-secret'];
+  if (!hostfiService.verifyWebhookSignature(authSecret, payload)) {
+    return res.status(401).json({ success: false, error: 'Invalid secret' });
   }
 
   // Record webhook event

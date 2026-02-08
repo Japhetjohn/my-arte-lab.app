@@ -1,6 +1,5 @@
 require('dotenv').config();
 const axios = require('axios');
-const crypto = require('crypto');
 const mongoose = require('mongoose');
 const User = require('./src/models/User');
 
@@ -25,18 +24,12 @@ async function simulateWebhook() {
 
     // --- HELPER FUNCTION TO SEND WEBHOOK ---
     async function sendWebhook(endpoint, type, payload) {
-        // Calculate Signature
-        const hmac = crypto.createHmac('sha256', webhookSecret);
-        hmac.update(JSON.stringify(payload));
-        const signature = hmac.digest('hex');
-
         console.log(`\n🚀 Sending Simulated [${type}] Webhook...`);
-        // console.log(`   Payload: ${JSON.stringify(payload, null, 2)}`);
 
         try {
             const response = await axios.post(`http://localhost:5000/api/hostfi/webhooks/${endpoint}`, payload, {
                 headers: {
-                    'x-hostfi-signature': signature,
+                    'x-auth-secret': webhookSecret, // NEW: Standard Header per instructions
                     'Content-Type': 'application/json'
                 }
             });
@@ -69,16 +62,15 @@ async function simulateWebhook() {
     await sendWebhook('fiat-deposit', 'FIAT DEPOSIT', fiatPayload);
 
     // 2. TEST CRYPTO DEPOSIT (0.001 BTC)
-    // This is the critical one that was losing money before
     const cryptoPayload = {
         id: `TEST-CRYPTO-${Date.now()}`,
-        type: 'crypto_deposit', // HostFi sends this type
+        type: 'crypto_deposit',
         amount: 0.001,
         currency: 'BTC',
         customId: userId,
         txHash: `0xHASH${Date.now()}`,
         network: 'BTC',
-        status: 'completed', // or successful
+        status: 'completed',
         timestamp: new Date().toISOString()
     };
     await sendWebhook('crypto-deposit', 'CRYPTO DEPOSIT', cryptoPayload);
