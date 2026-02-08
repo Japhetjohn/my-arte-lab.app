@@ -235,7 +235,7 @@ class HostFiWalletService {
             // Try direct conversion first
             let rateData;
             try {
-              rateData = await hostfiService.getCurrencyRates(currency, user.wallet.currency);
+              rateData = await hostfiService.getCurrencyRates(currency, user.wallet.currency, true);
             } catch (directError) {
               // If target is USD/NGN, try USDT as bridge if direct fails
               if (['USD', 'NGN'].includes(user.wallet.currency)) {

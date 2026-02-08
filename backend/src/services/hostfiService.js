@@ -137,7 +137,7 @@ class HostFiService {
    * @param {Object} data - Request payload
    * @param {Object} params - Query parameters
    */
-  async makeRequest(method, url, data = null, params = null) {
+  async makeRequest(method, url, data = null, params = null, silent = false) {
     const token = await this.getAccessToken();
 
     const config = {
@@ -157,10 +157,15 @@ class HostFiService {
       const statusCode = error.response?.status;
       const statusText = error.response?.statusText;
 
-      console.error(`[HostFi Error] ${method} ${url} failed:`);
-      console.error(`  Status: ${statusCode} ${statusText}`);
-      console.error(`  Response:`, JSON.stringify(errorData, null, 2));
-      console.error(`  Request payload:`, JSON.stringify(data, null, 2));
+      if (!silent) {
+        console.error(`[HostFi Error] ${method} ${url} failed:`);
+        console.error(`  Status: ${statusCode} ${statusText}`);
+        console.error(`  Response:`, JSON.stringify(errorData, null, 2));
+        console.error(`  Request payload:`, JSON.stringify(data, null, 2));
+      } else if (process.env.NODE_ENV === 'development') {
+        // In dev, still show a one-liner
+        console.warn(`[HostFi] Silent failure: ${method} ${url} - ${statusCode}`);
+      }
 
       // Preserve the full error details
       if (errorData) {
@@ -645,13 +650,15 @@ class HostFiService {
    * @param {string} toCurrency - Target currency
    * @returns {Promise<Object>} Exchange rate info
    */
-  async getCurrencyRates(fromCurrency, toCurrency) {
+  async getCurrencyRates(fromCurrency, toCurrency, silent = false) {
     try {
       const params = { fromCurrency, toCurrency };
-      const response = await this.makeRequest('GET', '/v1/conversions', null, params);
+      const response = await this.makeRequest('GET', '/v1/conversions', null, params, silent);
       return response;
     } catch (error) {
-      console.error('Failed to get currency rates:', error.message);
+      if (!silent) {
+        console.error('Failed to get currency rates:', error.message);
+      }
       throw error;
     }
   }

@@ -29,7 +29,7 @@ exports.getWallet = catchAsync(async (req, res, next) => {
         // Try fetching rate dynamically. If USD fails, try USDT/USDC as bridge
         let rateData;
         try {
-          rateData = await hostfiService.getCurrencyRates(currency, 'USD');
+          rateData = await hostfiService.getCurrencyRates(currency, 'USD', true);
         } catch (usdError) {
           // Fallback to USDT which usually exists for all crypto
           rateData = await hostfiService.getCurrencyRates(currency, 'USDT');
@@ -112,7 +112,7 @@ exports.getBalanceSummary = catchAsync(async (req, res, next) => {
       try {
         let rateData;
         try {
-          rateData = await hostfiService.getCurrencyRates(currency, 'USD');
+          rateData = await hostfiService.getCurrencyRates(currency, 'USD', true);
         } catch (usdError) {
           rateData = await hostfiService.getCurrencyRates(currency, 'USDT');
         }
@@ -591,7 +591,7 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
     try {
       let rateData;
       try {
-        rateData = await hostfiService.getCurrencyRates(currency, user.wallet.currency);
+        rateData = await hostfiService.getCurrencyRates(currency, user.wallet.currency, true);
       } catch (directError) {
         // Fallback to USDT bridge
         console.log(`[Withdrawal] Direct rate ${currency}/${user.wallet.currency} failed, trying USDT bridge...`);
