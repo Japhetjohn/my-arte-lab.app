@@ -376,8 +376,8 @@ const server = app.listen(PORT, () => {
   console.log('╚════════════════════════════════════════════════════════╝\n');
 
   // Start automatic deposit detection
-  const depositPollingService = require('./services/depositPollingService');
-  depositPollingService.start();
+  // const depositPollingService = require('./services/depositPollingService');
+  // depositPollingService.start();
 
   // Start escrow monitoring for auto-refunds
   const escrowMonitoringService = require('./services/escrowMonitoringService');
