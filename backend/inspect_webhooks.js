@@ -15,10 +15,14 @@ async function manageWebhooks() {
             clientSecret: SECRET_KEY
         });
 
-        const token = authResponse.data.accessToken || authResponse.data.token || authResponse.data.data?.accessToken;
+        // Check for different token fields just in case
+        const token = authResponse.data.accessToken ||
+            authResponse.data.token ||
+            authResponse.data.data?.accessToken ||
+            authResponse.data.data?.token;
 
         if (!token) {
-            console.error('❌ Failed to get access token.', authResponse.data);
+            console.error('❌ Failed to get access token.', JSON.stringify(authResponse.data, null, 2));
             return;
         }
         console.log('✅ Authenticated.');
@@ -32,14 +36,25 @@ async function manageWebhooks() {
         console.log('📡 Fetching Existing Webhooks...');
         try {
             const webhookResponse = await axios.get(`${API_URL}/api/v1/webhooks`, { headers });
-            const webhooks = webhookResponse.data.data || webhookResponse.data.records || [];
-            console.log(`✅ Found ${webhooks.length} webhooks.`);
-            console.log(JSON.stringify(webhooks, null, 2));
+            // console.log('Raw Response:', JSON.stringify(webhookResponse.data, null, 2));
 
-            // If no webhooks, we might need to create one?
-            // But first let's just see what exists.
+            const webhooks = webhookResponse.data.data || webhookResponse.data.records || [];
+
+            if (Array.isArray(webhooks)) {
+                console.log(`✅ Found ${webhooks.length} webhooks.`);
+                webhooks.forEach(wh => {
+                    console.log(`   - ID: ${wh.id}`);
+                    console.log(`     URL: ${wh.url || wh.endpoint}`);
+                    console.log(`     Events: ${wh.events?.join(', ')}`);
+                    console.log(`     Secret: ${wh.secret || '******'}`); // Often masked
+                });
+            } else {
+                console.log('⚠️ Unexpected response format:', webhookResponse.data);
+            }
+
         } catch (err) {
-            console.warn(`⚠️ Fetch failed: ${err.response?.status} - ${JSON.stringify(err.response?.data)}`);
+            console.warn(`⚠️ Fetch failed: ${err.response?.status}`);
+            if (err.response?.data) console.warn(JSON.stringify(err.response.data, null, 2));
         }
 
     } catch (error) {
