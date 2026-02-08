@@ -735,14 +735,8 @@ class HostFiService {
       return true;
     }
 
-    // Check for x-auth-secret header
-    // HostFi sends the configured secret in this header
-    const authSecret = req.headers['x-auth-secret'] || signature; // signature arg might contain the header value depending on controller
-
-    if (!this.webhookSecret) {
-      console.warn('HostFi webhook secret not configured, skipping verification');
-      return true;
-    }
+    // The signature argument contains the x-auth-secret from the controller
+    const authSecret = signature;
 
     // Simple string comparison as per HostFi docs
     return authSecret === this.webhookSecret;
