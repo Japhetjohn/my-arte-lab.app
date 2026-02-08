@@ -26,14 +26,22 @@ exports.getWallet = catchAsync(async (req, res, next) => {
       usdEquivalent = asset.balance;
     } else {
       try {
-        // Fetch rate dynamically for the asset's currency
-        const rateData = await hostfiService.getCurrencyRates(currency, 'USD');
+        // Try fetching rate dynamically. If USD fails, try USDT/USDC as bridge
+        let rateData;
+        try {
+          rateData = await hostfiService.getCurrencyRates(currency, 'USD');
+        } catch (usdError) {
+          // Fallback to USDT which usually exists for all crypto
+          rateData = await hostfiService.getCurrencyRates(currency, 'USDT');
+        }
+
         const rate = rateData.rate || rateData.data?.rate || 0;
         usdEquivalent = asset.balance * rate;
       } catch (error) {
-        console.error(`Failed to fetch ${currency}/USD rate:`, error.message);
-        // If it's NGN and we fail, we could have a hardcoded fallback if desired, 
-        // but better to just skip if the rate API is down
+        // Only log once to avoid flooding
+        if (process.env.NODE_ENV === 'development') {
+          console.warn(`[Wallet] Optional rate fetch failed for ${currency}: ${error.message}`);
+        }
       }
     }
 
@@ -102,11 +110,19 @@ exports.getBalanceSummary = catchAsync(async (req, res, next) => {
       usdEquivalent = asset.balance;
     } else {
       try {
-        const rateData = await hostfiService.getCurrencyRates(currency, 'USD');
+        let rateData;
+        try {
+          rateData = await hostfiService.getCurrencyRates(currency, 'USD');
+        } catch (usdError) {
+          rateData = await hostfiService.getCurrencyRates(currency, 'USDT');
+        }
+
         const rate = rateData.rate || rateData.data?.rate || 0;
         usdEquivalent = asset.balance * rate;
       } catch (error) {
-        console.error(`Failed to fetch ${currency}/USD rate:`, error.message);
+        if (process.env.NODE_ENV === 'development') {
+          console.warn(`[BalanceSummary] Optional rate fetch failed for ${currency}: ${error.message}`);
+        }
       }
     }
 
@@ -573,12 +589,26 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
   let amountInPrimary = amount;
   if (currency !== user.wallet.currency) {
     try {
-      const rateData = await hostfiService.getCurrencyRates(currency, user.wallet.currency);
+      let rateData;
+      try {
+        rateData = await hostfiService.getCurrencyRates(currency, user.wallet.currency);
+      } catch (directError) {
+        // Fallback to USDT bridge
+        console.log(`[Withdrawal] Direct rate ${currency}/${user.wallet.currency} failed, trying USDT bridge...`);
+        const bridgeRateData = await hostfiService.getCurrencyRates(currency, 'USDT');
+        const toFinalRateData = await hostfiService.getCurrencyRates('USDT', user.wallet.currency);
+
+        const bridgeRate = bridgeRateData.rate || bridgeRateData.data?.rate || 0;
+        const toFinalRate = toFinalRateData.rate || toFinalRateData.data?.rate || 0;
+
+        rateData = { rate: bridgeRate * toFinalRate };
+      }
+
       const rate = rateData.rate || rateData.data?.rate || 0;
       amountInPrimary = amount * rate;
     } catch (error) {
       console.error(`Withdrawal conversion failed (${currency} to ${user.wallet.currency}):`, error.message);
-      return next(new ErrorHandler(`Unable to verify balance for ${currency}`, 500));
+      return next(new ErrorHandler(`Unable to verify balance for ${currency}. Rate API error.`, 500));
     }
   }
 

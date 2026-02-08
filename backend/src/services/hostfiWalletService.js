@@ -232,13 +232,32 @@ class HostFiWalletService {
         let amountInPrimary = amount;
         if (currency !== user.wallet.currency) {
           try {
-            const rateData = await hostfiService.getCurrencyRates(currency, user.wallet.currency);
+            // Try direct conversion first
+            let rateData;
+            try {
+              rateData = await hostfiService.getCurrencyRates(currency, user.wallet.currency);
+            } catch (directError) {
+              // If target is USD/NGN, try USDT as bridge if direct fails
+              if (['USD', 'NGN'].includes(user.wallet.currency)) {
+                const bridgeCurrency = user.wallet.currency === 'NGN' ? 'USDC' : 'USDT';
+                console.log(`[Balance Update] Direct rate ${currency}/${user.wallet.currency} failed, trying ${bridgeCurrency} bridge...`);
+
+                const bridgeRateData = await hostfiService.getCurrencyRates(currency, bridgeCurrency);
+                const toFinalRateData = await hostfiService.getCurrencyRates(bridgeCurrency, user.wallet.currency);
+
+                const bridgeRate = bridgeRateData.rate || bridgeRateData.data?.rate || 0;
+                const toFinalRate = toFinalRateData.rate || toFinalRateData.data?.rate || 0;
+
+                rateData = { rate: bridgeRate * toFinalRate };
+              } else {
+                throw directError;
+              }
+            }
+
             const rate = rateData.rate || rateData.data?.rate || 0;
             amountInPrimary = amount * rate;
           } catch (error) {
             console.error(`Balance update conversion failed (${currency} to ${user.wallet.currency}):`, error.message);
-            // Fallback: stay with 1:1 if rate fails (better than nothing or crashing, 
-            // but log clearly)
           }
         }
 
