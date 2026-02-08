@@ -704,9 +704,10 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
       }
     });
   } catch (error) {
-    // Refund balance on failure
-    user.wallet.balance += amount;
-    user.wallet.pendingBalance -= amount;
+    // Refund balance on failure - USE CONVERTED AMOUNT
+    console.error(`[Withdrawal Failed] Refunding ${amountInPrimary} ${user.wallet.currency} to user ${user._id}`);
+    user.wallet.balance += amountInPrimary;
+    user.wallet.pendingBalance -= amountInPrimary;
     await user.save();
 
     throw error;
