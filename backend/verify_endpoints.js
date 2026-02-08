@@ -8,7 +8,14 @@ async function verifyAllEndpoints() {
     await mongoose.connect(process.env.MONGODB_URI);
     console.log('✅ Connected.');
 
-    const userId = '67a783da397576c94411135c'; // Real user ID from previous step
+    // Dynamic User Lookup
+    const user = await User.findOne({ email: 'japhetjohnk@gmail.com' });
+    if (!user) {
+        console.error('❌ Test user not found! Cannot verify wallet-specific endpoints.');
+        process.exit(1);
+    }
+    const userId = user._id.toString();
+    console.log(`👤 Using User: ${user.email} (${userId})`);
 
     console.log('\n🔍 --- STARTING COMPREHENSIVE ENDPOINT VERIFICATION --- 🔍\n');
 
@@ -70,7 +77,7 @@ async function verifyAllEndpoints() {
         const channels = await hostfiService.getFiatCollectionChannels();
         console.log(`   ✅ Success! Retrieved ${channels.length} collection channels.`);
     } catch (e) {
-        // This is often empty or restricted, so failure is not critical but good to know
+        // This is often empty or restricted
         console.warn(`   ⚠️  Note: ${e.message}`);
     }
 
