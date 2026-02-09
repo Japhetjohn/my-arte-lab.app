@@ -114,7 +114,12 @@ class HostFiWalletService {
 
         // Sync collection address if available
         if (asset.type === 'CRYPTO') {
-          const addrInfo = cryptoAddresses.find(a => a.assetId === asset.id || a.currency === (asset.currency.code || asset.currency));
+          const currencyCode = asset.currency.code || asset.currency;
+          const addrInfo = cryptoAddresses.find(a =>
+            a.assetId === asset.id ||
+            (a.currency === currencyCode && a.network === asset.network)
+          );
+
           if (addrInfo) {
             storedAsset.colAddress = addrInfo.address;
             storedAsset.colNetwork = addrInfo.network;
@@ -240,46 +245,39 @@ class HostFiWalletService {
         throw new Error('User not found');
       }
 
+      // Initialize wallets if empty
+      if (!user.wallet.hostfiWalletAssets || user.wallet.hostfiWalletAssets.length === 0) {
+        await this.initializeUserWallets(userId);
+      }
+
       // Find the asset
-      const asset = user.wallet.hostfiWalletAssets.find(a => a.currency === currency);
+      let asset = user.wallet.hostfiWalletAssets.find(a => a.currency === currency);
       if (!asset) {
-        throw new Error(`Wallet for currency ${currency} not found`);
+        // One more try: sync
+        await this.syncWalletBalances(userId);
+        asset = user.wallet.hostfiWalletAssets.find(a => a.currency === currency);
+      }
+
+      if (!asset) {
+        throw new Error(`Wallet for currency ${currency} not found even after sync`);
       }
 
       // Update balance - CONVERT TO PRIMARY CURRENCY IF DIFFERENT
-      if (type === 'credit') {
+      const isCredit = type === 'credit' || type === 'earning' || type === 'deposit';
+
+      if (isCredit) {
         asset.balance += amount;
 
         // Convert to primary currency for aggregate balance
         let amountInPrimary = amount;
         if (currency !== user.wallet.currency) {
           try {
-            // Try direct conversion first
-            let rateData;
-            try {
-              rateData = await hostfiService.getCurrencyRates(currency, user.wallet.currency, true);
-            } catch (directError) {
-              // If target is USD/NGN, try USDT as bridge if direct fails
-              if (['USD', 'NGN'].includes(user.wallet.currency)) {
-                const bridgeCurrency = user.wallet.currency === 'NGN' ? 'USDC' : 'USDT';
-                console.log(`[Balance Update] Direct rate ${currency}/${user.wallet.currency} failed, trying ${bridgeCurrency} bridge...`);
-
-                const bridgeRateData = await hostfiService.getCurrencyRates(currency, bridgeCurrency);
-                const toFinalRateData = await hostfiService.getCurrencyRates(bridgeCurrency, user.wallet.currency);
-
-                const bridgeRate = bridgeRateData.rate || bridgeRateData.data?.rate || 0;
-                const toFinalRate = toFinalRateData.rate || toFinalRateData.data?.rate || 0;
-
-                rateData = { rate: bridgeRate * toFinalRate };
-              } else {
-                throw directError;
-              }
-            }
-
+            const rateData = await hostfiService.getCurrencyRates(currency, user.wallet.currency, true);
             const rate = rateData.rate || rateData.data?.rate || 0;
             amountInPrimary = amount * rate;
           } catch (error) {
             console.error(`Balance update conversion failed (${currency} to ${user.wallet.currency}):`, error.message);
+            // Fallback: value it at 0 in primary or keep previous if we can't get rate
           }
         }
 

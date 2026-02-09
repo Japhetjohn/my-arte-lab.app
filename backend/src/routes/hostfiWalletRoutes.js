@@ -172,6 +172,13 @@ router.get('/fees/exchange', protect, hostfiWalletController.getExchangeFees);
 // ============================================
 
 /**
+ * @route   POST /api/hostfi/webhooks
+ * @desc    Unified HostFi Webhook Handler
+ * @access  Public (Webhook)
+ */
+router.post('/webhooks', hostfiWebhookController.handleWebhook);
+
+/**
  * @route   POST /api/hostfi/webhooks/address-generated
  * @desc    Handle address generated webhook from HostFi
  * @access  Public (Webhook)

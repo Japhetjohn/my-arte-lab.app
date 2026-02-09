@@ -671,18 +671,22 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
     // Initiate withdrawal with HostFi (automatically deducts 1% fee)
     const withdrawal = await hostfiService.initiateWithdrawal({
       walletAssetId: assetId,
-      amount, // Full amount - fee will be deducted by service
+      amount, // Full amount - fee will be deducted by service or added for management
       currency,
-      methodId,
+      methodId: methodId,
       recipient: {
+        type: recipient.type || (methodId === 'BANK_TRANSFER' ? 'BANK' : (methodId === 'MOBILE_MONEY' ? 'MOMO' : 'CRYPTO')),
+        method: methodId,
+        currency: recipient.currency || targetCurrency || currency,
         accountNumber: recipient.accountNumber,
         accountName: (recipient.accountName === 'undefined' || !recipient.accountName) ? 'Verified Recipient' : recipient.accountName,
         bankId: recipient.bankId,
         bankName: recipient.bankName,
-        country: recipient.country,
-        currency: targetCurrency || currency
+        country: recipient.country || 'NG',
+        accountType: recipient.accountType || 'SAVINGS'
       },
-      clientReference
+      clientReference,
+      memo: `Withdrawal of ${amount} ${currency} to ${recipient.accountName || 'beneficiary'}`
     });
 
     // Create transaction record with fee details

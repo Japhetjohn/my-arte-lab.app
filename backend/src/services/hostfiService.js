@@ -102,6 +102,50 @@ class HostFiService {
   }
 
   /**
+   * Parse HostFi webhook payload into a normalized object
+   * @param {Object} payload - Raw webhook payload
+   * @returns {Object} Normalized data
+   */
+  parseWebhookData(payload) {
+    const data = payload.data || payload;
+    const event = payload.event || payload.type || '';
+
+    // Extract metadata as a map for easier lookup if it's an array
+    let metadataMap = {};
+    if (Array.isArray(data.metadata)) {
+      data.metadata.forEach(item => {
+        if (item.key && item.value) {
+          metadataMap[item.key] = item.value;
+        }
+      });
+    } else if (data.metadata && typeof data.metadata === 'object') {
+      metadataMap = data.metadata;
+    }
+
+    // Amount can be direct value or object { value, currency }
+    const amountVal = data.amount?.value !== undefined ? parseFloat(data.amount.value) : (typeof data.amount === 'number' ? data.amount : (data.amount ? parseFloat(data.amount) : 0));
+    const currencyVal = data.amount?.currency || data.currency || metadataMap.currency || (data.asset?.currency?.code || data.asset?.currency) || 'NGN';
+
+    // Status mapping (standardize to HostFi's or ours)
+    const rawStatus = (data.status || '').toUpperCase();
+
+    return {
+      event,
+      data,
+      metadata: metadataMap,
+      id: data.id || payload.id || data.reference,
+      status: rawStatus,
+      amount: amountVal,
+      currency: currencyVal,
+      reference: data.reference,
+      clientReference: data.clientReference || metadataMap.clientReference,
+      customId: data.customId || metadataMap.customId || metadataMap.userId,
+      network: data.network || metadataMap.network,
+      txHash: data.txHash || data.transactionId || metadataMap.transactionId
+    };
+  }
+
+  /**
    * Get or refresh access token
    * @returns {Promise<string>} Access token
    */
@@ -119,8 +163,10 @@ class HostFiService {
         clientSecret: this.secretKey
       });
 
-      this.accessToken = response.data.token || response.data.data?.access_token;
-      this.tokenExpiry = Date.now() + (3600 * 1000); // 1 hour
+      // HostFi doc says: { "token": "...", "expiresIn": 3600 }
+      this.accessToken = response.data.token;
+      const expiresIn = response.data.expiresIn || 3600;
+      this.tokenExpiry = Date.now() + (expiresIn * 1000);
 
       console.log('HostFi access token obtained successfully');
       return this.accessToken;
@@ -312,15 +358,21 @@ class HostFiService {
    */
   async createCryptoCollectionAddress({ assetId, currency, network, customId }) {
     try {
-      // Default to USDC on Solana if not specified
+      // Default to USDC on SOL if not specified
       currency = currency || 'USDC';
-      network = network || 'SOL';  // HostFi expects "SOL" not "Solana"
+      network = network || 'SOL';
 
-      const payload = { assetId, currency, network, customId };
+      const payload = {
+        assetId,
+        currency,
+        network,
+        customId: customId.toString()
+      };
 
       console.log('Creating crypto collection address with payload:', JSON.stringify(payload, null, 2));
 
       const response = await this.makeRequest('POST', '/v1/collections/crypto/addresses', payload);
+      // Response structure: { "id": "uuid", "address": "...", "network": "...", "currency": "...", "qrCode": "..." }
       return response;
     } catch (error) {
       console.error('Failed to create crypto collection address:', error.message);
@@ -375,14 +427,14 @@ class HostFiService {
   async createFiatCollectionChannel({ assetId, currency, customId, type, method, countryCode }) {
     try {
       // Per HostFi: type="STATIC" or "DYNAMIC", method="BANK_TRANSFER"
-      // DYNAMIC = Temporary account (no KYC), STATIC = Fixed account (requires KYC)
+      // DYNAMIC = Temporary account (no KYC required in payload)
       const payload = {
-        assetId,
-        currency,
-        customId,
         type: type || 'DYNAMIC',
         method: method || 'BANK_TRANSFER',
-        countryCode
+        assetId,
+        customId: customId.toString(),
+        currency: currency || 'NGN',
+        countryCode: countryCode || 'NG'
       };
 
       console.log('[HostFi Service] Creating fiat collection channel with payload:', JSON.stringify(payload, null, 2));
@@ -537,29 +589,28 @@ class HostFiService {
    * @param {string} params.clientReference - Your unique reference
    * @returns {Promise<Object>} Withdrawal response with fee details
    */
-  async initiateWithdrawal({ walletAssetId, amount, currency, methodId, recipient, clientReference }) {
+  async initiateWithdrawal({ walletAssetId, amount, currency, methodId, recipient, clientReference, memo }) {
     try {
-      // Calculate platform fee (1%)
-      const feeBreakdown = this.calculatePlatformFee(amount);
+      // Calculate platform fee (1% for off-ramp)
+      const feeBreakdown = this.calculateOffRampFee(amount);
 
       const payload = {
         assetId: walletAssetId,
-        amount: feeBreakdown.amountAfterFee,
+        amount: amount, // Send full amount, HostFi deducts fees if applicable or we manage them
         currency,
-        methodId,
+        methodId: methodId || 'BANK_TRANSFER',
+        memo: memo || `Withdrawal of ${amount} ${currency}`,
         clientReference,
-        memo: `Withdrawal of ${amount} ${currency}`,
         recipient: {
-          type: methodId === 'BANK_TRANSFER' ? 'BANK' : (methodId === 'MOBILE_MONEY' ? 'MOMO' : 'CRYPTO'),
-          method: methodId,
+          type: recipient.type || (methodId === 'BANK_TRANSFER' ? 'BANK' : (methodId === 'MOBILE_MONEY' ? 'MOMO' : 'CRYPTO')),
+          method: methodId || 'BANK_TRANSFER',
           currency: recipient.currency || currency,
           accountNumber: recipient.accountNumber,
           accountName: recipient.accountName || 'Verified Recipient',
           bankId: recipient.bankId,
           bankName: recipient.bankName,
           country: recipient.country || 'NG',
-          accountType: 'SAVINGS',
-          beneficiaryType: 'INDIVIDUAL'
+          accountType: recipient.accountType || 'SAVINGS'
         }
       };
 
@@ -577,7 +628,7 @@ class HostFiService {
 
       // Return response with fee breakdown
       return {
-        ...response.data,
+        ...response,
         feeBreakdown
       };
     } catch (error) {
@@ -735,11 +786,8 @@ class HostFiService {
       return true;
     }
 
-    // The signature argument contains the x-auth-secret from the controller
-    const authSecret = signature;
-
-    // Simple string comparison as per HostFi docs
-    return authSecret === this.webhookSecret;
+    // signature should be x-auth-secret from header
+    return signature === this.webhookSecret;
   }
 
   // ============================================
