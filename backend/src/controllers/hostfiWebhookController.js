@@ -86,8 +86,13 @@ exports.handleFiatDeposit = catchAsync(async (req, res) => {
   const depositAmount = payload.amount || 0;
   const feeBreakdown = hostfiService.calculateOnRampFee(depositAmount);
 
-  // Find user by customId
-  const user = await User.findById(payload.customId);
+  // Find user by customId (strip -FIAT suffix if present)
+  let userId = payload.customId;
+  if (userId && userId.endsWith('-FIAT')) {
+    userId = userId.replace('-FIAT', '');
+  }
+
+  const user = await User.findById(userId);
   if (!user) {
     console.error(`User not found for deposit: ${payload.customId}`);
     return res.status(404).json({ success: false, error: 'User not found' });
