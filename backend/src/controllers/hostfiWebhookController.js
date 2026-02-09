@@ -11,21 +11,22 @@ const { catchAsync } = require('../utils/errorHandler');
  */
 exports.handleAddressGenerated = catchAsync(async (req, res) => {
   const payload = req.body;
+  const data = payload.data || payload;
 
   // Verify webhook signature (using x-auth-secret)
   const authSecret = req.headers['x-auth-secret'];
-  if (!hostfiService.verifyWebhookSignature(authSecret, payload)) {
+  if (!hostfiService.verifyWebhookSignature(authSecret, req.body)) {
     return res.status(401).json({ success: false, error: 'Invalid secret' });
   }
 
   // Record webhook event
   try {
     await WebhookEvent.recordWebhook({
-      eventId: payload.id || payload.reference,
+      eventId: data.id || payload.id || data.reference,
       provider: 'hostfi',
       eventType: 'address_generated',
-      payload,
-      signature
+      payload: req.body,
+      signature: authSecret
     });
   } catch (error) {
     if (error.message.includes('Duplicate')) {
@@ -33,16 +34,16 @@ exports.handleAddressGenerated = catchAsync(async (req, res) => {
     }
   }
 
-  console.log('Address generated webhook received:', payload);
+  console.log('Address generated webhook received:', JSON.stringify(data, null, 2));
 
   // Update transaction record if needed
-  if (payload.customId && payload.address) {
+  if (data.customId && data.address) {
     await Transaction.updateOne(
-      { reference: payload.id, user: payload.customId },
+      { reference: data.id || payload.id, user: data.customId },
       {
         $set: {
-          'paymentDetails.walletAddress': payload.address,
-          'paymentDetails.qrCode': payload.qrCode,
+          'paymentDetails.walletAddress': data.address,
+          'paymentDetails.qrCode': data.qrCode,
           processedAt: new Date()
         }
       }
@@ -58,21 +59,22 @@ exports.handleAddressGenerated = catchAsync(async (req, res) => {
  */
 exports.handleFiatDeposit = catchAsync(async (req, res) => {
   const payload = req.body;
+  const data = payload.data || payload;
 
   // Verify webhook signature (using x-auth-secret)
   const authSecret = req.headers['x-auth-secret'];
-  if (!hostfiService.verifyWebhookSignature(authSecret, payload)) {
+  if (!hostfiService.verifyWebhookSignature(authSecret, req.body)) {
     return res.status(401).json({ success: false, error: 'Invalid secret' });
   }
 
   // Record webhook event
   try {
     await WebhookEvent.recordWebhook({
-      eventId: payload.id || payload.reference,
+      eventId: data.id || payload.id || data.reference,
       provider: 'hostfi',
       eventType: 'fiat_deposit',
-      payload,
-      signature
+      payload: req.body,
+      signature: authSecret
     });
   } catch (error) {
     if (error.message.includes('Duplicate')) {
@@ -80,21 +82,21 @@ exports.handleFiatDeposit = catchAsync(async (req, res) => {
     }
   }
 
-  console.log('Fiat deposit webhook received:', payload);
+  console.log('Fiat deposit webhook received:', JSON.stringify(data, null, 2));
 
   // Apply 1% platform fee on deposits (on-ramp)
-  const depositAmount = payload.amount || 0;
+  const depositAmount = data.amount || 0;
   const feeBreakdown = hostfiService.calculateOnRampFee(depositAmount);
 
   // Find user by customId (strip -FIAT suffix if present)
-  let userId = payload.customId;
-  if (userId && userId.endsWith('-FIAT')) {
+  let userId = data.customId;
+  if (userId && typeof userId === 'string' && userId.endsWith('-FIAT')) {
     userId = userId.replace('-FIAT', '');
   }
 
   const user = await User.findById(userId);
   if (!user) {
-    console.error(`User not found for deposit: ${payload.customId}`);
+    console.error(`User not found for deposit: ${data.customId}`);
     return res.status(404).json({ success: false, error: 'User not found' });
   }
 
@@ -102,7 +104,7 @@ exports.handleFiatDeposit = catchAsync(async (req, res) => {
     // Credit user wallet (amount after 1% platform fee) - USE SERVICE FOR CONVERSION
     await hostfiWalletService.updateBalance(
       user._id,
-      payload.currency || 'NGN',
+      data.currency || 'NGN',
       feeBreakdown.amountAfterFee,
       'credit'
     );
@@ -112,20 +114,21 @@ exports.handleFiatDeposit = catchAsync(async (req, res) => {
       {
         user: user._id,
         $or: [
-          { reference: payload.channelId },
-          { reference: payload.id },
-          { 'metadata.collectionChannelId': payload.channelId }
+          { reference: data.channelId },
+          { reference: data.id },
+          { 'metadata.collectionChannelId': data.channelId }
         ]
       },
       {
         $set: {
           amount: depositAmount,
+          currency: data.currency || 'NGN',
           status: 'completed',
           platformFee: feeBreakdown.platformFee,
           netAmount: feeBreakdown.amountAfterFee,
           completedAt: new Date(),
           'paymentDetails.actualAmount': depositAmount,
-          'metadata.hostfiReference': payload.id
+          'metadata.hostfiReference': data.id
         }
       },
       { upsert: true, new: true }
@@ -134,9 +137,9 @@ exports.handleFiatDeposit = catchAsync(async (req, res) => {
     // Sync wallet balances
     await hostfiWalletService.syncWalletBalances(user._id);
 
-    console.log(`Fiat deposit credited: User ${user._id}, Gross: ${depositAmount}, Fee: ${feeBreakdown.platformFee} (1%), Net: ${feeBreakdown.amountAfterFee}`);
+    console.log(`Fiat deposit credited: User ${user._id}, Gross: ${depositAmount} ${data.currency || 'NGN'}, Fee: ${feeBreakdown.platformFee} (1%), Net: ${feeBreakdown.amountAfterFee}`);
 
-    await WebhookEvent.markProcessed(payload.id || payload.reference, 'hostfi');
+    await WebhookEvent.markProcessed(data.id || payload.id || data.reference, 'hostfi');
 
     res.status(200).json({ success: true, message: 'Deposit processed successfully' });
   } catch (error) {
@@ -235,9 +238,9 @@ exports.handleCryptoDeposit = catchAsync(async (req, res) => {
     // Sync wallet balances
     await hostfiWalletService.syncWalletBalances(user._id);
 
-    console.log(`Crypto deposit credited: User ${user._id}, Gross: ${depositAmount} ${payload.currency}, Fee: ${feeBreakdown.platformFee} (1%), Net: ${feeBreakdown.amountAfterFee}`);
+    console.log(`Crypto deposit credited: User ${user._id}, Gross: ${depositAmount} ${data.currency}, Fee: ${feeBreakdown.platformFee} (1%), Net: ${feeBreakdown.amountAfterFee}`);
 
-    await WebhookEvent.markProcessed(payload.id || payload.txHash, 'hostfi');
+    await WebhookEvent.markProcessed(data.id || payload.id || data.txHash, 'hostfi');
 
     res.status(200).json({ success: true, message: 'Crypto deposit processed successfully' });
   } catch (error) {
@@ -253,21 +256,22 @@ exports.handleCryptoDeposit = catchAsync(async (req, res) => {
  */
 exports.handleFiatPayout = catchAsync(async (req, res) => {
   const payload = req.body;
+  const data = payload.data || payload;
 
   // Verify webhook signature (using x-auth-secret)
   const authSecret = req.headers['x-auth-secret'];
-  if (!hostfiService.verifyWebhookSignature(authSecret, payload)) {
+  if (!hostfiService.verifyWebhookSignature(authSecret, req.body)) {
     return res.status(401).json({ success: false, error: 'Invalid secret' });
   }
 
   // Record webhook event
   try {
     await WebhookEvent.recordWebhook({
-      eventId: payload.id || payload.reference,
+      eventId: data.id || payload.id || data.reference,
       provider: 'hostfi',
       eventType: 'fiat_payout',
-      payload,
-      signature
+      payload: req.body,
+      signature: authSecret
     });
   } catch (error) {
     if (error.message.includes('Duplicate')) {
@@ -275,12 +279,12 @@ exports.handleFiatPayout = catchAsync(async (req, res) => {
     }
   }
 
-  console.log('Fiat payout webhook received:', payload);
+  console.log('Fiat payout webhook received:', JSON.stringify(data, null, 2));
 
   // Find transaction by reference
-  const transaction = await Transaction.findOne({ reference: payload.clientReference });
+  const transaction = await Transaction.findOne({ reference: data.clientReference });
   if (!transaction) {
-    console.error(`Transaction not found for payout: ${payload.clientReference}`);
+    console.error(`Transaction not found for payout: ${data.clientReference}`);
     return res.status(404).json({ success: false, error: 'Transaction not found' });
   }
 
@@ -290,7 +294,7 @@ exports.handleFiatPayout = catchAsync(async (req, res) => {
       throw new Error('User not found');
     }
 
-    if (payload.status === 'COMPLETED' || payload.status === 'SUCCESS') {
+    if (data.status === 'COMPLETED' || data.status === 'SUCCESS') {
       // Withdrawal successful - remove from pending
       user.wallet.pendingBalance -= transaction.amount;
       await user.save();
@@ -298,11 +302,11 @@ exports.handleFiatPayout = catchAsync(async (req, res) => {
       // Update transaction
       transaction.status = 'completed';
       transaction.completedAt = new Date();
-      transaction.metadata.hostfiStatus = payload.status;
+      transaction.metadata.hostfiStatus = data.status;
       await transaction.save();
 
       console.log(`Fiat payout completed: User ${user._id}, Amount: ${transaction.amount}`);
-    } else if (payload.status === 'FAILED' || payload.status === 'REJECTED') {
+    } else if (data.status === 'FAILED' || data.status === 'REJECTED') {
       // Withdrawal failed - refund balance - USE SERVICE FOR CONVERSION
       await hostfiWalletService.updateBalance(
         user._id,
@@ -316,8 +320,8 @@ exports.handleFiatPayout = catchAsync(async (req, res) => {
       // Update transaction
       transaction.status = 'failed';
       transaction.failedAt = new Date();
-      transaction.errorMessage = payload.reason || 'Payout failed';
-      transaction.metadata.hostfiStatus = payload.status;
+      transaction.errorMessage = data.reason || 'Payout failed';
+      transaction.metadata.hostfiStatus = data.status;
       await transaction.save();
 
       console.log(`Fiat payout failed: User ${user._id}, Amount refunded: ${transaction.amount}`);
@@ -325,14 +329,14 @@ exports.handleFiatPayout = catchAsync(async (req, res) => {
       // Processing status
       transaction.status = 'processing';
       transaction.processedAt = new Date();
-      transaction.metadata.hostfiStatus = payload.status;
+      transaction.metadata.hostfiStatus = data.status;
       await transaction.save();
     }
 
     // Sync wallet balances
     await hostfiWalletService.syncWalletBalances(user._id);
 
-    await WebhookEvent.markProcessed(payload.id || payload.reference, 'hostfi');
+    await WebhookEvent.markProcessed(data.id || payload.id || data.reference, 'hostfi');
 
     res.status(200).json({ success: true, message: 'Payout webhook processed successfully' });
   } catch (error) {
@@ -348,21 +352,22 @@ exports.handleFiatPayout = catchAsync(async (req, res) => {
  */
 exports.handleCryptoPayout = catchAsync(async (req, res) => {
   const payload = req.body;
+  const data = payload.data || payload;
 
   // Verify webhook signature (using x-auth-secret)
   const authSecret = req.headers['x-auth-secret'];
-  if (!hostfiService.verifyWebhookSignature(authSecret, payload)) {
+  if (!hostfiService.verifyWebhookSignature(authSecret, req.body)) {
     return res.status(401).json({ success: false, error: 'Invalid secret' });
   }
 
   // Record webhook event
   try {
     await WebhookEvent.recordWebhook({
-      eventId: payload.id || payload.txHash,
+      eventId: data.id || payload.id || data.txHash,
       provider: 'hostfi',
       eventType: 'crypto_payout',
-      payload,
-      signature
+      payload: req.body,
+      signature: authSecret
     });
   } catch (error) {
     if (error.message.includes('Duplicate')) {
@@ -370,12 +375,12 @@ exports.handleCryptoPayout = catchAsync(async (req, res) => {
     }
   }
 
-  console.log('Crypto payout webhook received:', payload);
+  console.log('Crypto payout webhook received:', JSON.stringify(data, null, 2));
 
   // Find transaction by reference
-  const transaction = await Transaction.findOne({ reference: payload.clientReference });
+  const transaction = await Transaction.findOne({ reference: data.clientReference });
   if (!transaction) {
-    console.error(`Transaction not found for crypto payout: ${payload.clientReference}`);
+    console.error(`Transaction not found for crypto payout: ${data.clientReference}`);
     return res.status(404).json({ success: false, error: 'Transaction not found' });
   }
 
@@ -385,7 +390,7 @@ exports.handleCryptoPayout = catchAsync(async (req, res) => {
       throw new Error('User not found');
     }
 
-    if (payload.status === 'COMPLETED' || payload.status === 'SUCCESS') {
+    if (data.status === 'COMPLETED' || data.status === 'SUCCESS') {
       // Withdrawal successful - remove from pending
       user.wallet.pendingBalance -= transaction.amount;
       await user.save();
@@ -393,13 +398,13 @@ exports.handleCryptoPayout = catchAsync(async (req, res) => {
       // Update transaction
       transaction.status = 'completed';
       transaction.completedAt = new Date();
-      transaction.transactionHash = payload.txHash;
-      transaction.blockchainNetwork = payload.network;
-      transaction.metadata.hostfiStatus = payload.status;
+      transaction.transactionHash = data.txHash;
+      transaction.blockchainNetwork = data.network;
+      transaction.metadata.hostfiStatus = data.status;
       await transaction.save();
 
       console.log(`Crypto payout completed: User ${user._id}, Amount: ${transaction.amount}`);
-    } else if (payload.status === 'FAILED' || payload.status === 'REJECTED') {
+    } else if (data.status === 'FAILED' || data.status === 'REJECTED') {
       // Withdrawal failed - refund balance - USE SERVICE FOR CONVERSION
       await hostfiWalletService.updateBalance(
         user._id,
@@ -413,8 +418,8 @@ exports.handleCryptoPayout = catchAsync(async (req, res) => {
       // Update transaction
       transaction.status = 'failed';
       transaction.failedAt = new Date();
-      transaction.errorMessage = payload.reason || 'Crypto payout failed';
-      transaction.metadata.hostfiStatus = payload.status;
+      transaction.errorMessage = data.reason || 'Crypto payout failed';
+      transaction.metadata.hostfiStatus = data.status;
       await transaction.save();
 
       console.log(`Crypto payout failed: User ${user._id}, Amount refunded: ${transaction.amount}`);
@@ -422,14 +427,14 @@ exports.handleCryptoPayout = catchAsync(async (req, res) => {
       // Processing status
       transaction.status = 'processing';
       transaction.processedAt = new Date();
-      transaction.metadata.hostfiStatus = payload.status;
+      transaction.metadata.hostfiStatus = data.status;
       await transaction.save();
     }
 
     // Sync wallet balances
     await hostfiWalletService.syncWalletBalances(user._id);
 
-    await WebhookEvent.markProcessed(payload.id || payload.txHash, 'hostfi');
+    await WebhookEvent.markProcessed(data.id || payload.id || data.txHash, 'hostfi');
 
     res.status(200).json({ success: true, message: 'Crypto payout webhook processed successfully' });
   } catch (error) {
