@@ -401,10 +401,13 @@ exports.createFiatChannel = catchAsync(async (req, res, next) => {
 
     const countryCode = currencyToCountry[currency] || 'NG'; // Default to NG, but currency choice drives this
 
+    // Use namespaced customId to avoid collision with crypto addresses
+    const fiatCustomId = `${req.user._id.toString()}-FIAT`;
+
     channel = await hostfiService.createFiatCollectionChannel({
       assetId,
       currency,
-      customId: req.user._id.toString(),
+      customId: fiatCustomId,
       type: 'DYNAMIC',
       method: 'BANK_TRANSFER',
       countryCode
@@ -417,22 +420,14 @@ exports.createFiatChannel = catchAsync(async (req, res, next) => {
 
     // Step 2: Fallback to finding a channel ALREADY assigned to THIS user
     try {
-      console.log(`[Controller:createFiatChannel] Attempting to fetch existing channel for customId: ${req.user._id}`);
+      // Use namespaced customId to avoid collision with crypto addresses
+      const fiatCustomId = `${req.user._id.toString()}-FIAT`;
+      console.log(`[Controller:createFiatChannel] Attempting to fetch existing channel for customId: ${fiatCustomId}`);
 
-      // Try with standard camelCase
       let channels = await hostfiService.getFiatCollectionChannels({
-        customId: req.user._id.toString(),
+        customId: fiatCustomId,
         currency: currency
       });
-
-      // If that failed, try snake_case custom_id (API inconsistency potential)
-      if (!channels || channels.length === 0) {
-        console.log('[Controller:createFiatChannel] Retrying fetch with snake_case custom_id...');
-        channels = await hostfiService.getFiatCollectionChannels({
-          custom_id: req.user._id.toString(),
-          currency: currency
-        });
-      }
 
       console.log(`[Controller:createFiatChannel] Found ${channels ? channels.length : 0} channels for user`);
 
