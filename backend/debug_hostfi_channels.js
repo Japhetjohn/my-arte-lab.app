@@ -47,9 +47,32 @@ async function debugChannels() {
         const cryptoAddresses = await hostfiService.getCryptoCollectionAddresses({ customId });
         console.log(`Found Crypto Addresses: ${cryptoAddresses.length}`);
         if (cryptoAddresses.length > 0) console.log(JSON.stringify(cryptoAddresses[0], null, 2));
-    } catch (error) {
-        console.error('❌ Crypto Error:', error.message);
-    }
-}
+        async function checkTransactions() {
+            // User ID from logs: 6984f82a2398198b0598ba50
+            const userId = '6984f82a2398198b0598ba50';
+            console.log(`🔍 Checking Transactions for User: ${userId}`);
 
-debugChannels();
+            try {
+                const transactions = await Transaction.find({ user: userId })
+                    .sort({ createdAt: -1 })
+                    .limit(5);
+
+                console.log(`Found ${transactions.length} recent transactions`);
+                transactions.forEach(t => {
+                    console.log(`- [${t.status}] ${t.type} ${t.amount} ${t.currency} (Ref: ${t.reference}) Time: ${t.createdAt}`);
+                    if (t.metadata) console.log('  Metadata:', t.metadata);
+                });
+
+                // Also check User Balance
+                const user = await User.findById(userId);
+                if (user) {
+                    console.log(`\nUser Balance: ${user.wallet.balance} ${user.wallet.currency}`);
+                    console.log(`Pending Balance: ${user.wallet.pendingBalance} ${user.wallet.currency}`);
+                }
+
+            } catch (error) {
+                console.error('❌ Error:', error.message);
+            }
+        }
+
+        debugChannels();
