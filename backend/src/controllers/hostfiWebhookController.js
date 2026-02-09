@@ -140,7 +140,11 @@ exports.handleFiatDeposit = catchAsync(async (req, res) => {
 
     res.status(200).json({ success: true, message: 'Deposit processed successfully' });
   } catch (error) {
-    console.error('Error processing fiat deposit:', error);
+    console.error('❌ CRITICAL ERROR in handleFiatDeposit:', error);
+    console.error('Stack:', error.stack);
+    // Log detailed payload if possible (careful with secrets)
+    console.error('Payload causing crash:', JSON.stringify(payload));
+
     await WebhookEvent.markProcessed(payload.id || payload.reference, 'hostfi', error.message);
     res.status(500).json({ success: false, error: 'Processing failed' });
   }
