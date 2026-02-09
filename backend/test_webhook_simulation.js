@@ -48,18 +48,18 @@ async function simulateWebhook() {
         }
     }
 
-    // 1. TEST FIAT DEPOSIT (5000 NGN)
-    const fiatPayload = {
-        id: `TEST-FIAT-${Date.now()}`,
+    // 1. TEST FIAT    // Payload for Fiat Deposit (Simulating the missing transaction)
+    const payload = {
+        id: `MANUAL-RECOVERY-${Date.now()}`,
         type: 'fiat_deposit',
-        amount: 5000,
+        amount: 1000, // The missing amount
         currency: 'NGN',
-        customId: userId,
-        reference: `REF-FIAT-${Date.now()}`,
+        customId: '6984f82a2398198b0598ba50-FIAT', // Matching the new namespaced format
+        reference: `REF-RECOVERY-${Date.now()}`,
         status: 'successful',
         timestamp: new Date().toISOString()
     };
-    await sendWebhook('fiat-deposit', 'FIAT DEPOSIT', fiatPayload);
+    await sendWebhook('fiat-deposit', 'FIAT DEPOSIT', payload);
 
     // 2. TEST CRYPTO DEPOSIT (0.001 BTC)
     const cryptoPayload = {

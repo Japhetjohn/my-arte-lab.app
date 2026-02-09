@@ -1,9 +1,13 @@
 require('dotenv').config();
 const hostfiService = require('./src/services/hostfiService');
-// Service is already instantiated in export if it is formatted like 'module.exports = new HostFiService()'
-// Or if it exports the class: 'const HostFiService = require(...); const service = new HostFiService();'
-// Based on view_file below, I'll adjust. Let's assume standard class export for now but check file first.
+const Transaction = require('./src/models/Transaction');
+const User = require('./src/models/User');
+const mongoose = require('mongoose');
 
+// Connect to MongoDB
+mongoose.connect(process.env.MONGODB_URI)
+    .then(() => console.log('MongoDB Connected'))
+    .catch(err => console.error('MongoDB Connection Error:', err));
 
 async function debugChannels() {
     const customId = '6984f82a2398198b0598ba50-FIAT'; // UPDATED: The FAILING user ID from logs
@@ -16,7 +20,7 @@ async function debugChannels() {
         console.log(`Found: ${channels1.length}`);
         if (channels1.length > 0) console.log(JSON.stringify(channels1[0], null, 2));
 
-        // 2. Try snake_case with currency (Exact Controller Match)
+        // 2. Try snake_case with currency (Exact Controller Match - BEFORE FIX)
         console.log('\n--- Attempt 2: custom_id (snake_case) + currency ---');
         const channels2 = await hostfiService.getFiatCollectionChannels({
             custom_id: customId,
@@ -24,8 +28,15 @@ async function debugChannels() {
         });
         console.log(`Found: ${channels2.length}`);
 
-        // 3. Try fetching ALL and filtering manually
-        console.log('\n--- Attempt 3: Fetch All & Filter ---');
+        // 3. Try snake_case WITHOUT currency (AFTER FIX)
+        console.log('\n--- Attempt 3: custom_id (snake_case) ONLY ---');
+        const channels3 = await hostfiService.getFiatCollectionChannels({
+            custom_id: customId
+        });
+        console.log(`Found: ${channels3.length}`);
+
+        // 4. Try fetching ALL and filtering manually
+        console.log('\n--- Attempt 4: Fetch All & Filter ---');
         const allChannels = await hostfiService.getFiatCollectionChannels({ limit: 100 });
         console.log(`Fetched Total: ${allChannels.length}`);
 
@@ -44,38 +55,39 @@ async function debugChannels() {
         console.error('❌ Error:', error.message);
         if (error.response) console.error(error.response.data);
     }
+}
+
+async function checkTransactions() {
+    // User ID from logs: 6984f82a2398198b0598ba50
+    const userId = '6984f82a2398198b0598ba50';
+    console.log(`🔍 Checking Transactions for User: ${userId}`);
 
     try {
-        console.log('\n--- Checking Crypto Addresses ---');
-        const cryptoAddresses = await hostfiService.getCryptoCollectionAddresses({ customId });
-        console.log(`Found Crypto Addresses: ${cryptoAddresses.length}`);
-        if (cryptoAddresses.length > 0) console.log(JSON.stringify(cryptoAddresses[0], null, 2));
-        async function checkTransactions() {
-            // User ID from logs: 6984f82a2398198b0598ba50
-            const userId = '6984f82a2398198b0598ba50';
-            console.log(`🔍 Checking Transactions for User: ${userId}`);
+        const transactions = await Transaction.find({ user: userId })
+            .sort({ createdAt: -1 })
+            .limit(5);
 
-            try {
-                const transactions = await Transaction.find({ user: userId })
-                    .sort({ createdAt: -1 })
-                    .limit(5);
+        console.log(`Found ${transactions.length} recent transactions`);
+        transactions.forEach(t => {
+            console.log(`- [${t.status}] ${t.type} ${t.amount} ${t.currency} (Ref: ${t.reference}) Time: ${t.createdAt}`);
+            if (t.metadata) console.log('  Metadata:', t.metadata);
+        });
 
-                console.log(`Found ${transactions.length} recent transactions`);
-                transactions.forEach(t => {
-                    console.log(`- [${t.status}] ${t.type} ${t.amount} ${t.currency} (Ref: ${t.reference}) Time: ${t.createdAt}`);
-                    if (t.metadata) console.log('  Metadata:', t.metadata);
-                });
-
-                // Also check User Balance
-                const user = await User.findById(userId);
-                if (user) {
-                    console.log(`\nUser Balance: ${user.wallet.balance} ${user.wallet.currency}`);
-                    console.log(`Pending Balance: ${user.wallet.pendingBalance} ${user.wallet.currency}`);
-                }
-
-            } catch (error) {
-                console.error('❌ Error:', error.message);
-            }
+        // Also check User Balance
+        const user = await User.findById(userId);
+        if (user) {
+            console.log(`\nUser Balance: ${user.wallet.balance} ${user.wallet.currency}`);
+            console.log(`Pending Balance: ${user.wallet.pendingBalance} ${user.wallet.currency}`);
         }
 
-        debugChannels();
+    } catch (error) {
+        console.error('❌ Error:', error.message);
+    }
+}
+
+// Run sequentially
+(async () => {
+    await debugChannels();
+    await checkTransactions();
+    mongoose.disconnect();
+})();
