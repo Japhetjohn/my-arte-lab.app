@@ -1,6 +1,9 @@
 require('dotenv').config();
-const HostFiService = require('./src/services/hostfiService');
-const hostfiService = new HostFiService();
+const hostfiService = require('./src/services/hostfiService');
+// Service is already instantiated in export if it is formatted like 'module.exports = new HostFiService()'
+// Or if it exports the class: 'const HostFiService = require(...); const service = new HostFiService();'
+// Based on view_file below, I'll adjust. Let's assume standard class export for now but check file first.
+
 
 async function debugChannels() {
     const customId = '6983ea1691b5040eb0fb0276'; // User's ID from logs
