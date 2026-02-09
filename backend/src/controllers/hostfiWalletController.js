@@ -438,6 +438,23 @@ exports.createFiatChannel = catchAsync(async (req, res, next) => {
         });
       }
 
+      // FINAL FALLBACK: Fetch recent 100 and filter manually
+      if (!channels || channels.length === 0) {
+        console.log('[Controller:createFiatChannel] API filters failed. Attempting manual fetch & filter...');
+        const allChannels = await hostfiService.getFiatCollectionChannels({ limit: 100 });
+
+        const match = allChannels.find(c =>
+          c.customId === fiatCustomId ||
+          c.custom_id === fiatCustomId ||
+          (c.currency === currency && (c.customId === req.user._id.toString() || c.custom_id === req.user._id.toString())) // Last ditch: check non-namespaced
+        );
+
+        if (match) {
+          console.log(`[Controller:createFiatChannel] Found channel via manual filter: ${match.id}`);
+          channels = [match];
+        }
+      }
+
       console.log(`[Controller:createFiatChannel] Found ${channels ? channels.length : 0} channels for user`);
 
       if (!channels || channels.length === 0) {
