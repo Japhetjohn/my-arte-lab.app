@@ -157,20 +157,23 @@ exports.handleFiatDeposit = catchAsync(async (req, res) => {
 exports.handleCryptoDeposit = catchAsync(async (req, res) => {
   const payload = req.body;
 
+  // Extract data from payload or payload.data (HostFi structure robustness)
+  const data = payload.data || payload;
+
   // Verify webhook signature (using x-auth-secret)
   const authSecret = req.headers['x-auth-secret'];
-  if (!hostfiService.verifyWebhookSignature(authSecret, payload)) {
+  if (!hostfiService.verifyWebhookSignature(authSecret, req.body)) {
     return res.status(401).json({ success: false, error: 'Invalid secret' });
   }
 
   // Record webhook event
   try {
     await WebhookEvent.recordWebhook({
-      eventId: payload.id || payload.txHash,
+      eventId: data.id || payload.id || data.txHash,
       provider: 'hostfi',
       eventType: 'crypto_deposit',
-      payload,
-      signature
+      payload: req.body,
+      signature: authSecret
     });
   } catch (error) {
     if (error.message.includes('Duplicate')) {
@@ -178,16 +181,16 @@ exports.handleCryptoDeposit = catchAsync(async (req, res) => {
     }
   }
 
-  console.log('Crypto deposit webhook received:', payload);
+  console.log('Crypto deposit webhook received:', JSON.stringify(data, null, 2));
 
   // Apply 1% platform fee on deposits (on-ramp)
-  const depositAmount = payload.amount || 0;
+  const depositAmount = data.amount || 0;
   const feeBreakdown = hostfiService.calculateOnRampFee(depositAmount);
 
   // Find user by customId
-  const user = await User.findById(payload.customId);
+  const user = await User.findById(data.customId);
   if (!user) {
-    console.error(`User not found for crypto deposit: ${payload.customId}`);
+    console.error(`User not found for crypto deposit: ${data.customId}`);
     return res.status(404).json({ success: false, error: 'User not found' });
   }
 
@@ -195,7 +198,7 @@ exports.handleCryptoDeposit = catchAsync(async (req, res) => {
     // Credit user wallet (amount after 1% platform fee) - USE SERVICE FOR CONVERSION
     await hostfiWalletService.updateBalance(
       user._id,
-      payload.currency,
+      data.currency,
       feeBreakdown.amountAfterFee,
       'credit'
     );
@@ -205,25 +208,25 @@ exports.handleCryptoDeposit = catchAsync(async (req, res) => {
       {
         user: user._id,
         $or: [
-          { reference: payload.addressId },
-          { reference: payload.id },
-          { 'paymentDetails.walletAddress': payload.address }
+          { reference: data.addressId },
+          { reference: data.id },
+          { 'paymentDetails.walletAddress': data.address }
         ]
       },
       {
         $set: {
           amount: depositAmount,
-          currency: payload.currency,
+          currency: data.currency,
           status: 'completed',
           platformFee: feeBreakdown.platformFee,
           netAmount: feeBreakdown.amountAfterFee,
-          transactionHash: payload.txHash,
-          blockchainNetwork: payload.network,
-          confirmations: payload.confirmations || 0,
+          transactionHash: data.txHash,
+          blockchainNetwork: data.network,
+          confirmations: data.confirmations || 0,
           completedAt: new Date(),
-          'paymentDetails.txHash': payload.txHash,
-          'paymentDetails.network': payload.network,
-          'metadata.hostfiReference': payload.id
+          'paymentDetails.txHash': data.txHash,
+          'paymentDetails.network': data.network,
+          'metadata.hostfiReference': data.id
         }
       },
       { upsert: true, new: true }
