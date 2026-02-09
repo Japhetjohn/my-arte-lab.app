@@ -117,7 +117,8 @@ const transactionSchema = new mongoose.Schema({
       default: 'hostfi'
     },
     country: String,
-    recordType: String
+    recordType: String,
+    collectionChannelId: String
   },
 
   processedAt: Date,

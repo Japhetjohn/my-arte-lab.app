@@ -417,16 +417,28 @@ exports.createFiatChannel = catchAsync(async (req, res, next) => {
 
     // Step 2: Fallback to finding a channel ALREADY assigned to THIS user
     try {
-      const channels = await hostfiService.getFiatCollectionChannels({
+      console.log(`[Controller:createFiatChannel] Attempting to fetch existing channel for customId: ${req.user._id}`);
+
+      // Try with standard camelCase
+      let channels = await hostfiService.getFiatCollectionChannels({
         customId: req.user._id.toString(),
         currency: currency
       });
 
-      console.log(`[Controller:createFiatChannel] Found ${channels.length} channels for user`);
+      // If that failed, try snake_case custom_id (API inconsistency potential)
+      if (!channels || channels.length === 0) {
+        console.log('[Controller:createFiatChannel] Retrying fetch with snake_case custom_id...');
+        channels = await hostfiService.getFiatCollectionChannels({
+          custom_id: req.user._id.toString(),
+          currency: currency
+        });
+      }
+
+      console.log(`[Controller:createFiatChannel] Found ${channels ? channels.length : 0} channels for user`);
 
       if (!channels || channels.length === 0) {
         return next(new ErrorHandler(
-          `Unable to create ${currency} collection channel and no existing channel for user. Error: ${createError.message}`,
+          `Unable to create ${currency} collection channel and no existing channel found for user. Error: ${createError.message}`,
           503
         ));
       }
@@ -434,7 +446,7 @@ exports.createFiatChannel = catchAsync(async (req, res, next) => {
       // Use the first available channel assigned to this user
       channel = channels[0];
 
-      console.log(`[Controller:createFiatChannel] Using user's existing channel`);
+      console.log(`[Controller:createFiatChannel] Using user's existing channel: ${channel.id}`);
     } catch (fetchError) {
       console.error('[Controller:createFiatChannel] Failed to fetch user channels:', fetchError.message);
       throw createError; // Throw original creation error
