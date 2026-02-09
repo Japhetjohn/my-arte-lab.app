@@ -219,6 +219,8 @@ exports.handleCryptoDeposit = catchAsync(async (req, res) => {
       },
       {
         $set: {
+          user: user._id,
+          type: 'deposit',
           amount: depositAmount,
           currency: data.currency,
           status: 'completed',

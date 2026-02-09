@@ -107,8 +107,8 @@ class HostFiWalletService {
           });
           storedAsset = user.wallet.hostfiWalletAssets[user.wallet.hostfiWalletAssets.length - 1];
         } else {
-          // DO NOT overwrite balance from HostFi as it might be platform-wide
-          // storedAsset.balance = asset.balance || 0; 
+          // Update balance from HostFi as source of truth
+          storedAsset.balance = asset.balance || 0;
           storedAsset.lastSynced = new Date();
         }
 
@@ -138,6 +138,27 @@ class HostFiWalletService {
         }
       }
 
+      // Recalculate aggregate balance in primary currency (NGN)
+      let totalAggregateInPrimary = 0;
+      const primaryCurrency = user.wallet.currency || 'NGN';
+
+      for (const asset of user.wallet.hostfiWalletAssets) {
+        if (asset.balance === 0) continue;
+
+        if (asset.currency === primaryCurrency) {
+          totalAggregateInPrimary += asset.balance;
+        } else {
+          try {
+            const rateData = await hostfiService.getCurrencyRates(asset.currency, primaryCurrency, true);
+            const rate = rateData.rate || rateData.data?.rate || 0;
+            totalAggregateInPrimary += (asset.balance * rate);
+          } catch (err) {
+            console.warn(`[Sync] Failed to convert ${asset.currency} to ${primaryCurrency} for aggregate balance:`, err.message);
+          }
+        }
+      }
+
+      user.wallet.balance = totalAggregateInPrimary;
       user.wallet.lastUpdated = new Date();
       await user.save();
 
