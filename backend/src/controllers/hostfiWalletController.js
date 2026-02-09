@@ -423,11 +423,20 @@ exports.createFiatChannel = catchAsync(async (req, res, next) => {
       // Use namespaced customId to avoid collision with crypto addresses
       const fiatCustomId = `${req.user._id.toString()}-FIAT`;
       console.log(`[Controller:createFiatChannel] Attempting to fetch existing channel for customId: ${fiatCustomId}`);
-
+      // Try with snake_case custom_id (Preferred by HostFi API apparently)
       let channels = await hostfiService.getFiatCollectionChannels({
-        customId: fiatCustomId,
+        custom_id: fiatCustomId,
         currency: currency
       });
+
+      // If that failed, try standard camelCase
+      if (!channels || channels.length === 0) {
+        console.log('[Controller:createFiatChannel] Retrying fetch with camelCase customId...');
+        channels = await hostfiService.getFiatCollectionChannels({
+          customId: fiatCustomId,
+          currency: currency
+        });
+      }
 
       console.log(`[Controller:createFiatChannel] Found ${channels ? channels.length : 0} channels for user`);
 
