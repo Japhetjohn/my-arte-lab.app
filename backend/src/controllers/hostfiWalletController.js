@@ -57,11 +57,11 @@ exports.getWallet = catchAsync(async (req, res, next) => {
   successResponse(res, 200, 'Wallet retrieved successfully', {
     wallet: {
       assets: assetsWithUsd,
-      balance: user.wallet.balance, // This might be a legacy field or primary balance
-      pendingBalance: user.wallet.pendingBalance,
-      totalEarnings: user.wallet.totalEarnings,
+      balance: totalBalanceUsd,
+      pendingBalance: user.wallet.pendingBalance || 0,
+      totalEarnings: user.wallet.totalEarnings || 0,
       balanceUsd: totalBalanceUsd,
-      currency: user.wallet.currency,
+      currency: 'USD', // Override display currency for UI consistency
       network: user.wallet.network,
       address: user.wallet.address,
       lastUpdated: user.wallet.lastUpdated
@@ -137,10 +137,10 @@ exports.getBalanceSummary = catchAsync(async (req, res, next) => {
   successResponse(res, 200, 'Balance summary retrieved successfully', {
     wallet: {
       assets: assetsWithUsd,
-      balance: user.wallet.balance,
-      pendingBalance: user.wallet.pendingBalance,
-      totalEarnings: user.wallet.totalEarnings,
-      currency: user.wallet.currency,
+      balance: totalBalanceUsd,
+      pendingBalance: user.wallet.pendingBalance || 0,
+      totalEarnings: user.wallet.totalEarnings || 0,
+      currency: 'USD',
       balanceUsd: totalBalanceUsd
     },
     summary
