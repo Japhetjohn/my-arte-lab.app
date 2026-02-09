@@ -121,6 +121,7 @@ exports.handleFiatDeposit = catchAsync(async (req, res) => {
       },
       {
         $set: {
+          type: 'deposit',
           amount: depositAmount,
           currency: data.currency || 'NGN',
           status: 'completed',
