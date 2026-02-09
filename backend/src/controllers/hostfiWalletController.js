@@ -424,24 +424,23 @@ exports.createFiatChannel = catchAsync(async (req, res, next) => {
       const fiatCustomId = `${req.user._id.toString()}-FIAT`;
       console.log(`[Controller:createFiatChannel] Attempting to fetch existing channel for customId: ${fiatCustomId}`);
       // Try with snake_case custom_id (Preferred by HostFi API apparently)
+      // REMOVED CURRENCY FILTER to increase hit rate
       let channels = await hostfiService.getFiatCollectionChannels({
-        custom_id: fiatCustomId,
-        currency: currency
+        custom_id: fiatCustomId
       });
 
       // If that failed, try standard camelCase
       if (!channels || channels.length === 0) {
         console.log('[Controller:createFiatChannel] Retrying fetch with camelCase customId...');
         channels = await hostfiService.getFiatCollectionChannels({
-          customId: fiatCustomId,
-          currency: currency
+          customId: fiatCustomId
         });
       }
 
-      // FINAL FALLBACK: Fetch recent 100 and filter manually
+      // FINAL FALLBACK: Fetch recent 1000 and filter manually
       if (!channels || channels.length === 0) {
-        console.log('[Controller:createFiatChannel] API filters failed. Attempting manual fetch & filter...');
-        const allChannels = await hostfiService.getFiatCollectionChannels({ limit: 100 });
+        console.log('[Controller:createFiatChannel] API filters failed. Attempting manual fetch & filter (Limit 1000)...');
+        const allChannels = await hostfiService.getFiatCollectionChannels({ limit: 1000 });
 
         const match = allChannels.find(c =>
           c.customId === fiatCustomId ||
