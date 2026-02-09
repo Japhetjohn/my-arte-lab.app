@@ -16,9 +16,12 @@ async function debugChannels() {
         console.log(`Found: ${channels1.length}`);
         if (channels1.length > 0) console.log(JSON.stringify(channels1[0], null, 2));
 
-        // 2. Try snake_case
-        console.log('\n--- Attempt 2: custom_id (snake_case) ---');
-        const channels2 = await hostfiService.getFiatCollectionChannels({ custom_id: customId });
+        // 2. Try snake_case with currency (Exact Controller Match)
+        console.log('\n--- Attempt 2: custom_id (snake_case) + currency ---');
+        const channels2 = await hostfiService.getFiatCollectionChannels({
+            custom_id: customId,
+            currency: 'NGN'
+        });
         console.log(`Found: ${channels2.length}`);
 
         // 3. Try fetching ALL and filtering manually
