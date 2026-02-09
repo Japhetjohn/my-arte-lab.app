@@ -6,7 +6,7 @@ const hostfiService = require('./src/services/hostfiService');
 
 
 async function debugChannels() {
-    const customId = '6983ea1691b5040eb0fb0276-FIAT'; // UPDATED: user's ID + suffix from logs
+    const customId = '6984f82a2398198b0598ba50-FIAT'; // UPDATED: The FAILING user ID from logs
     console.log(`🔍 Debugging Channels for CustomID: ${customId}`);
 
     try {
