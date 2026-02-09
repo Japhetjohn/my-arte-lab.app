@@ -42,6 +42,15 @@ async function debugChannels() {
         console.error('❌ Error:', error.message);
         if (error.response) console.error(error.response.data);
     }
+
+    try {
+        console.log('\n--- Checking Crypto Addresses ---');
+        const cryptoAddresses = await hostfiService.getCryptoCollectionAddresses({ customId });
+        console.log(`Found Crypto Addresses: ${cryptoAddresses.length}`);
+        if (cryptoAddresses.length > 0) console.log(JSON.stringify(cryptoAddresses[0], null, 2));
+    } catch (error) {
+        console.error('❌ Crypto Error:', error.message);
+    }
 }
 
 debugChannels();
