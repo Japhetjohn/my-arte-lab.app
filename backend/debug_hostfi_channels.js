@@ -6,7 +6,7 @@ const hostfiService = require('./src/services/hostfiService');
 
 
 async function debugChannels() {
-    const customId = '6983ea1691b5040eb0fb0276'; // User's ID from logs
+    const customId = '6983ea1691b5040eb0fb0276-FIAT'; // UPDATED: user's ID + suffix from logs
     console.log(`🔍 Debugging Channels for CustomID: ${customId}`);
 
     try {
@@ -21,7 +21,7 @@ async function debugChannels() {
         const channels2 = await hostfiService.getFiatCollectionChannels({ custom_id: customId });
         console.log(`Found: ${channels2.length}`);
 
-        // 3. Try fetching ALL (limit 100) and filtering manually
+        // 3. Try fetching ALL and filtering manually
         console.log('\n--- Attempt 3: Fetch All & Filter ---');
         const allChannels = await hostfiService.getFiatCollectionChannels({ limit: 100 });
         console.log(`Fetched Total: ${allChannels.length}`);
@@ -32,10 +32,9 @@ async function debugChannels() {
             console.log('Match found via manual filter!');
             console.log(JSON.stringify(manualFilter[0], null, 2));
         } else {
-            // Log one random channel to see structure
-            if (allChannels.length > 0) {
-                console.log('Random channel structure:', JSON.stringify(allChannels[0], null, 2));
-            }
+            // Let's dump the customIds of the first few to see if we are close
+            const ids = allChannels.map(c => c.customId || c.custom_id).slice(0, 10);
+            console.log('First 10 channel customIds:', ids);
         }
 
     } catch (error) {
