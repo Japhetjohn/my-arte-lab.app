@@ -140,7 +140,7 @@ class HostFiService {
       amount: amountVal,
       currency: currencyVal,
       reference: data.reference,
-      clientReference: data.clientReference || metadataMap.clientReference || metadataMap.customId,
+      clientReference: data.clientReference || metadataMap.clientReference || metadataMap.customId || metadataMap.identifier,
       customId: data.customId || metadataMap.customId || metadataMap.userId,
       network: data.network || metadataMap.network,
       txHash: data.txHash || data.transactionId || metadataMap.transactionId || metadataMap.sessionId
@@ -503,6 +503,117 @@ class HostFiService {
       return response;
     } catch (error) {
       console.error(`Failed to get collection transaction ${transactionId}:`, error.message);
+      throw error;
+    }
+  }
+
+  // ============================================
+  // HOST+ PAY (CHECKOUT / V2)
+  // ============================================
+
+  /**
+   * Get supported payment currencies
+   * @returns {Promise<Object>} List of supported currencies
+   */
+  async getPayCurrencies() {
+    try {
+      const response = await this.makeRequest('GET', '/v1/pay/currencies');
+      return response.currencies || response;
+    } catch (error) {
+      console.error('Failed to get pay currencies:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Assign or update an assigned address
+   * @param {string} subAddressId - ID of sub-address to assign
+   * @returns {Promise<Object>} Assignment details
+   */
+  async assignPayAddress(subAddressId) {
+    try {
+      const response = await this.makeRequest('POST', `/v1/pay/address/${subAddressId}/assign`);
+      return response;
+    } catch (error) {
+      console.error(`Failed to assign pay address ${subAddressId}:`, error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Unassign a payment address
+   * @param {string} subAddressId - ID of sub-address to unassign
+   * @returns {Promise<Object>} Success status
+   */
+  async unassignPayAddress(subAddressId) {
+    try {
+      const response = await this.makeRequest('POST', `/v1/pay/address/${subAddressId}/unassign`);
+      return response;
+    } catch (error) {
+      console.error(`Failed to unassign pay address ${subAddressId}:`, error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Get all assigned payment addresses
+   * @param {Object} filters - Optional filters (network, subAddress, page, size)
+   * @returns {Promise<Object>} Paginated addresses
+   */
+  async getPayAddresses(filters = {}) {
+    try {
+      const response = await this.makeRequest('GET', '/v1/pay/addresses', null, filters);
+      return response;
+    } catch (error) {
+      console.error('Failed to get pay addresses:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Get available payment address (Create payment transaction)
+   * @param {Object} params - Transaction parameters (email, phoneNumber, identifier, currency, network, amount, feeBearer, memo)
+   * @returns {Promise<Object>} Available address and transaction ID
+   */
+  async createPaymentTransaction(params) {
+    try {
+      if (!params.identifier) {
+        console.warn('identifier (custom reference) is recommended for payment transactions');
+      }
+      const response = await this.makeRequest('POST', '/v1/pay/transactions', params);
+      return response;
+    } catch (error) {
+      console.error('Failed to create payment transaction:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Get payment transactions
+   * @param {Object} filters - Query filters (identifier, currency, network, page, size)
+   * @returns {Promise<Object>} Paginated payment transactions
+   */
+  async getPaymentTransactions(filters = {}) {
+    try {
+      const response = await this.makeRequest('GET', '/v1/pay/transactions', null, filters);
+      return response;
+    } catch (error) {
+      console.error('Failed to get payment transactions:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Get a payment transaction by ID or custom identifier
+   * @param {string} id - Transaction ID or custom identifier
+   * @returns {Promise<Object>} Transaction details
+   */
+  async getPaymentTransactionById(id) {
+    try {
+      const response = await this.makeRequest('GET', `/v1/pay/transactions/${id}`);
+      return response;
+    } catch (error) {
+      console.error(`Failed to get payment transaction ${id}:`, error.message);
       throw error;
     }
   }

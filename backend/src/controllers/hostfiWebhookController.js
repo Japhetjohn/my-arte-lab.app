@@ -65,6 +65,12 @@ exports.handleWebhook = catchAsync(async (req, res, next) => {
         await processPayout(parsed, 'crypto');
         break;
 
+      case 'PAYMENT_SUCCESS':
+      case 'PAYMENT_FAILED':
+      case 'PAYMENT_EXPIRED':
+      case 'PAYMENT_CANCELED':
+        await processPayout(parsed, 'pay');
+        break;
       case 'ADDRESS_GENERATED':
         await processAddressGenerated(parsed);
         break;
@@ -201,8 +207,8 @@ async function processPayout(parsed, payoutType) {
   const user = await User.findById(transaction.user);
   if (!user) throw new Error('User not found linked to transaction');
 
-  const isSuccess = ['COMPLETED', 'SUCCESS', 'WITHDRAWAL_SUCCESS', 'SUCCESSFUL'].includes(status);
-  const isFailed = ['FAILED', 'REJECTED', 'WITHDRAWAL_FAILED', 'DEBIT_FAILED', 'FAILED_PAYOUT'].includes(status);
+  const isSuccess = ['COMPLETED', 'SUCCESS', 'WITHDRAWAL_SUCCESS', 'SUCCESSFUL', 'PAID'].includes(status);
+  const isFailed = ['FAILED', 'REJECTED', 'WITHDRAWAL_FAILED', 'DEBIT_FAILED', 'FAILED_PAYOUT', 'CANCELED', 'EXPIRED'].includes(status);
 
   if (isSuccess) {
     if (transaction.status !== 'completed') {
