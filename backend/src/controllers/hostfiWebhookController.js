@@ -202,7 +202,7 @@ async function processPayout(parsed, payoutType) {
   if (!user) throw new Error('User not found linked to transaction');
 
   const isSuccess = ['COMPLETED', 'SUCCESS', 'WITHDRAWAL_SUCCESS', 'SUCCESSFUL'].includes(status);
-  const isFailed = ['FAILED', 'REJECTED', 'WITHDRAWAL_FAILED', 'DEBIT_FAILED'].includes(status);
+  const isFailed = ['FAILED', 'REJECTED', 'WITHDRAWAL_FAILED', 'DEBIT_FAILED', 'FAILED_PAYOUT'].includes(status);
 
   if (isSuccess) {
     if (transaction.status !== 'completed') {

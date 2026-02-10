@@ -110,12 +110,14 @@ class HostFiService {
     const data = payload.data || payload;
     const event = payload.event || payload.type || '';
 
-    // Extract metadata as a map for easier lookup if it's an array
+    // Extract metadata as a map for easier lookup
+    // Support both {key: value} and [{name: 'key', value: 'val'}] formats
     let metadataMap = {};
     if (Array.isArray(data.metadata)) {
       data.metadata.forEach(item => {
-        if (item.key && item.value) {
-          metadataMap[item.key] = item.value;
+        const key = item.name || item.key;
+        if (key && item.value !== undefined) {
+          metadataMap[key] = item.value;
         }
       });
     } else if (data.metadata && typeof data.metadata === 'object') {
@@ -138,10 +140,10 @@ class HostFiService {
       amount: amountVal,
       currency: currencyVal,
       reference: data.reference,
-      clientReference: data.clientReference || metadataMap.clientReference,
+      clientReference: data.clientReference || metadataMap.clientReference || metadataMap.customId,
       customId: data.customId || metadataMap.customId || metadataMap.userId,
       network: data.network || metadataMap.network,
-      txHash: data.txHash || data.transactionId || metadataMap.transactionId
+      txHash: data.txHash || data.transactionId || metadataMap.transactionId || metadataMap.sessionId
     };
   }
 
@@ -364,9 +366,9 @@ class HostFiService {
 
       const payload = {
         assetId,
-        currency,
-        network,
-        customId: customId.toString()
+        customId: customId.toString(),
+        network: network || 'SOL',
+        async: true
       };
 
       console.log('Creating crypto collection address with payload:', JSON.stringify(payload, null, 2));
