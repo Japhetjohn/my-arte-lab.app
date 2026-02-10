@@ -36,16 +36,21 @@ class HostFiWalletService {
       }
 
       // Store wallet asset IDs in user document
-      user.wallet.hostfiWalletAssets = walletAssets.map(asset => ({
-        assetId: asset.id,
-        currency: asset.currency.code || asset.currency,  // Store currency code
-        assetType: asset.type,
-        balance: 0, // Initialize with 0, we track this locally
-        lastSynced: new Date()
-      }));
+      user.wallet.hostfiWalletAssets = walletAssets.map(asset => {
+        const currencyData = asset.currency || {};
+        return {
+          assetId: asset.id,
+          currency: currencyData.code || currencyData, // Extract code if it's an object
+          assetType: asset.type,
+          balance: asset.balance || 0, // In initialization we can trust HostFi balance
+          reservedBalance: asset.reservedBalance || 0,
+          lastSynced: new Date()
+        };
+      });
 
       // Set primary currency (prefer NGN for Nigerian users)
-      const primaryAsset = walletAssets.find(a => a.currency.code === 'NGN') || walletAssets[0];
+      const primaryAsset = walletAssets.find(a => (a.currency.code || a.currency) === 'NGN') || walletAssets[0];
+      const primaryCurrencyCode = primaryAsset.currency.code || primaryAsset.currency;
       // Only set currency, don't overwrite balance (we track it ourselves)
       if (!user.wallet.currency) {
         user.wallet.currency = primaryAsset.currency.code;  // Store currency code
@@ -98,17 +103,20 @@ class HostFiWalletService {
 
         if (!storedAsset) {
           // New asset appeared, add it
+          const currencyData = asset.currency || {};
           user.wallet.hostfiWalletAssets.push({
             assetId: asset.id,
-            currency: asset.currency.code || asset.currency,
+            currency: currencyData.code || currencyData,
             assetType: asset.type,
-            balance: 0, // Initialize with 0, we track this locally via transactions
+            balance: asset.balance || 0,
+            reservedBalance: asset.reservedBalance || 0,
             lastSynced: new Date()
           });
           storedAsset = user.wallet.hostfiWalletAssets[user.wallet.hostfiWalletAssets.length - 1];
         } else {
-          // DO NOT overwrite balance from HostFi as it is a shared platform account
-          // storedAsset.balance = asset.balance || 0; 
+          // Update balance and reservedBalance from HostFi as source of truth
+          storedAsset.balance = asset.balance || 0;
+          storedAsset.reservedBalance = asset.reservedBalance || 0;
           storedAsset.lastSynced = new Date();
         }
 

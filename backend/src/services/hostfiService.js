@@ -242,6 +242,7 @@ class HostFiService {
       if (type) params.type = type;
 
       const response = await this.makeRequest('GET', '/v1/assets', null, params);
+      // Response is usually { assets: [...] } or direct array
       return response.assets || response.data || (Array.isArray(response) ? response : []);
     } catch (error) {
       console.error('Failed to get user wallets:', error.message);
@@ -341,6 +342,21 @@ class HostFiService {
       return response;
     } catch (error) {
       console.error('Failed to swap assets:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Replay webhooks for a specific period
+   * @param {Object} params - Replay parameters (fromDate, toDate, category)
+   * @returns {Promise<Object>} Success message
+   */
+  async replayWebhooks(params) {
+    try {
+      const response = await this.makeRequest('POST', '/v1/assets/webhooks/replay', params);
+      return response;
+    } catch (error) {
+      console.error('Failed to replay webhooks:', error.message);
       throw error;
     }
   }
