@@ -614,11 +614,10 @@ class HostFiService {
 
       const payload = {
         assetId: walletAssetId,
-        amount: amount, // Send full amount, HostFi deducts fees if applicable or we manage them
-        currency,
-        methodId: methodId || 'BANK_TRANSFER',
-        memo: memo || `Withdrawal of ${amount} ${currency}`,
         clientReference,
+        methodId: methodId || 'BANK_TRANSFER',
+        amount: Number(amount),
+        currency,
         recipient: {
           type: recipient.type || (methodId === 'BANK_TRANSFER' ? 'BANK' : (methodId === 'MOBILE_MONEY' ? 'MOMO' : 'CRYPTO')),
           method: methodId || 'BANK_TRANSFER',
@@ -628,8 +627,12 @@ class HostFiService {
           bankId: recipient.bankId,
           bankName: recipient.bankName,
           country: recipient.country || 'NG',
-          accountType: recipient.accountType || 'SAVINGS'
-        }
+          accountType: recipient.accountType || 'SAVINGS',
+          network: recipient.network,
+          address: recipient.address,
+          memo: recipient.memo
+        },
+        memo: memo || `Withdrawal of ${amount} ${currency}`
       };
 
       console.log('Initiating HostFi withdrawal:', {
@@ -692,20 +695,8 @@ class HostFiService {
   /**
    * Lookup and validate bank account
    * @param {Object} params - Lookup parameters
-   * @param {string} params.country - Country code
-   * @param {string} params.bankId - Bank ID
-   * @param {string} params.accountNumber - Account number
-   * @returns {Promise<Object>} Account name and validation result
-   */
-  async lookupBankAccount({ country, bankId, accountNumber }) {
-    try {
-      const payload = { country, bankId, accountNumber };
-
-      const response = await this.makeRequest('POST', '/v1/payout/accounts/lookup', payload);
-      return response;
-    } catch (error) {
       console.error('Bank account lookup failed:', error.message);
-      throw new Error(error.message || 'Invalid account details');
+      throw error;
     }
   }
 

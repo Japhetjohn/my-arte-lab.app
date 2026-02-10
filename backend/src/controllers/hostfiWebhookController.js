@@ -56,12 +56,12 @@ exports.handleWebhook = catchAsync(async (req, res, next) => {
         break;
 
       case 'FIAT_WITHDRAWAL':
-      case 'FIAT_PAYOUT':
+      case 'FIAT_PAYOUT': // Keeping FIAT_PAYOUT for backward compatibility if needed
         await processPayout(parsed, 'fiat');
         break;
 
       case 'CRYPTO_WITHDRAWAL':
-      case 'CRYPTO_PAYOUT':
+      case 'CRYPTO_PAYOUT': // Keeping CRYPTO_PAYOUT for backward compatibility if needed
         await processPayout(parsed, 'crypto');
         break;
 
