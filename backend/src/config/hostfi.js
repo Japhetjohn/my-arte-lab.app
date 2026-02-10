@@ -4,7 +4,7 @@
  */
 
 module.exports = {
-  apiUrl: process.env.HOSTFI_API_URL || 'https://api.dev.hostcap.io',
+  apiUrl: process.env.HOSTFI_API_URL || 'https://api.hostcap.io',
   clientId: process.env.HOSTFI_CLIENT_ID,
   secretKey: process.env.HOSTFI_SECRET_KEY,
   webhookSecret: process.env.HOSTFI_WEBHOOK_SECRET,
