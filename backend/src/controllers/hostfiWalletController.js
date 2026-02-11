@@ -322,164 +322,73 @@ exports.createFiatChannel = catchAsync(async (req, res, next) => {
 
   console.log(`[Controller:createFiatChannel] Getting channel for user=${req.user._id}, currency=${currency}`);
 
+  // Use namespaced customId to avoid collision with crypto addresses
+  const fiatCustomId = `${req.user._id.toString()}-FIAT`;
   let channel;
 
-  // Step 1: Try to create a new channel
+  // Step 1: CHECK FOR EXISTING CHANNEL FIRST
   try {
-    console.log('[Controller:createFiatChannel] Attempting to create new channel...');
+    console.log(`[Controller:createFiatChannel] Checking for existing channel with customId: ${fiatCustomId}...`);
 
-    // Map currency to country code - GLOBAL SUPPORT
-    const currencyToCountry = {
-      // Africa
-      'NGN': 'NG', // Nigeria
-      'KES': 'KE', // Kenya
-      'GHS': 'GH', // Ghana
-      'ZAR': 'ZA', // South Africa
-      'TZS': 'TZ', // Tanzania
-      'UGX': 'UG', // Uganda
-      'ZMW': 'ZM', // Zambia
-      'RWF': 'RW', // Rwanda
-      'XOF': 'SN', // West African CFA (Senegal, Benin, Burkina Faso, etc.)
-      'XAF': 'CM', // Central African CFA (Cameroon, Gabon, etc.)
-      'EGP': 'EG', // Egypt
-      'MAD': 'MA', // Morocco
-      'TND': 'TN', // Tunisia
-      'DZD': 'DZ', // Algeria
-      'ETB': 'ET', // Ethiopia
+    // Fetch all channels and filter manually (most reliable approach)
+    const allChannels = await hostfiService.getFiatCollectionChannels({ limit: 1000 });
 
-      // Europe
-      'EUR': 'FR', // Euro (France as default, works for all Eurozone)
-      'GBP': 'GB', // British Pound (UK)
-      'CHF': 'CH', // Swiss Franc (Switzerland)
-      'SEK': 'SE', // Swedish Krona
-      'NOK': 'NO', // Norwegian Krone
-      'DKK': 'DK', // Danish Krone
-      'PLN': 'PL', // Polish Zloty
-      'CZK': 'CZ', // Czech Koruna
-      'HUF': 'HU', // Hungarian Forint
-      'RON': 'RO', // Romanian Leu
-      'BGN': 'BG', // Bulgarian Lev
-      'HRK': 'HR', // Croatian Kuna
-      'RSD': 'RS', // Serbian Dinar
-      'UAH': 'UA', // Ukrainian Hryvnia
-      'TRY': 'TR', // Turkish Lira
+    const existingChannel = allChannels.find(c =>
+      c.customId === fiatCustomId ||
+      c.custom_id === fiatCustomId ||
+      (c.currency === currency && (c.customId === req.user._id.toString() || c.custom_id === req.user._id.toString()))
+    );
 
-      // Americas
-      'USD': 'US', // US Dollar
-      'CAD': 'CA', // Canadian Dollar
-      'MXN': 'MX', // Mexican Peso
-      'BRL': 'BR', // Brazilian Real
-      'ARS': 'AR', // Argentine Peso
-      'CLP': 'CL', // Chilean Peso
-      'COP': 'CO', // Colombian Peso
-      'PEN': 'PE', // Peruvian Sol
+    if (existingChannel) {
+      console.log(`[Controller:createFiatChannel] Found existing channel: ${existingChannel.id}`);
+      channel = existingChannel;
+    }
+  } catch (fetchError) {
+    console.log('[Controller:createFiatChannel] Error checking for existing channels:', fetchError.message);
+    // Continue to creation attempt
+  }
 
-      // Asia
-      'JPY': 'JP', // Japanese Yen
-      'CNY': 'CN', // Chinese Yuan
-      'INR': 'IN', // Indian Rupee
-      'KRW': 'KR', // South Korean Won
-      'SGD': 'SG', // Singapore Dollar
-      'HKD': 'HK', // Hong Kong Dollar
-      'MYR': 'MY', // Malaysian Ringgit
-      'THB': 'TH', // Thai Baht
-      'VND': 'VN', // Vietnamese Dong
-      'PHP': 'PH', // Philippine Peso
-      'IDR': 'ID', // Indonesian Rupiah
-      'PKR': 'PK', // Pakistani Rupee
-      'BDT': 'BD', // Bangladeshi Taka
-      'AED': 'AE', // UAE Dirham
-      'SAR': 'SA', // Saudi Riyal
-      'QAR': 'QA', // Qatari Riyal
-      'KWD': 'KW', // Kuwaiti Dinar
-      'ILS': 'IL', // Israeli Shekel
-
-      // Oceania
-      'AUD': 'AU', // Australian Dollar
-      'NZD': 'NZ', // New Zealand Dollar
-    };
-
-    const countryCode = currencyToCountry[currency] || 'NG'; // Default to NG, but currency choice drives this
-
-    // Use namespaced customId to avoid collision with crypto addresses
-    const fiatCustomId = `${req.user._id.toString()}-FIAT`;
-
-    channel = await hostfiService.createFiatCollectionChannel({
-      assetId,
-      currency,
-      customId: fiatCustomId,
-      type: 'DYNAMIC',
-      method: 'BANK_TRANSFER',
-      countryCode
-    });
-
-    console.log('[Controller:createFiatChannel] New channel created successfully');
-  } catch (createError) {
-    console.log('[Controller:createFiatChannel] Creation failed, checking for existing channel assigned to user');
-    console.log('[Controller:createFiatChannel] Error:', createError.message);
-
-    // Step 2: Fallback to finding a channel ALREADY assigned to THIS user
+  // Step 2: CREATE NEW CHANNEL IF NONE EXISTS
+  if (!channel) {
     try {
-      // Use namespaced customId to avoid collision with crypto addresses
-      const fiatCustomId = `${req.user._id.toString()}-FIAT`;
-      console.log(`[Controller:createFiatChannel] Attempting to fetch existing channel for customId: ${fiatCustomId}`);
-      // Try with snake_case custom_id (Preferred by HostFi API apparently)
-      // REMOVED CURRENCY FILTER to increase hit rate
-      let channels = await hostfiService.getFiatCollectionChannels({
-        custom_id: fiatCustomId
+      console.log('[Controller:createFiatChannel] No existing channel found. Creating new channel...');
+
+      // Map currency to country code - GLOBAL SUPPORT
+      const currencyToCountry = {
+        // Africa
+        'NGN': 'NG', 'KES': 'KE', 'GHS': 'GH', 'ZAR': 'ZA', 'TZS': 'TZ', 'UGX': 'UG', 'ZMW': 'ZM', 'RWF': 'RW',
+        'XOF': 'SN', 'XAF': 'CM', 'EGP': 'EG', 'MAD': 'MA', 'TND': 'TN', 'DZD': 'DZ', 'ETB': 'ET',
+        // Europe
+        'EUR': 'FR', 'GBP': 'GB', 'CHF': 'CH', 'SEK': 'SE', 'NOK': 'NO', 'DKK': 'DK', 'PLN': 'PL',
+        'CZK': 'CZ', 'HUF': 'HU', 'RON': 'RO', 'BGN': 'BG', 'HRK': 'HR', 'RSD': 'RS', 'UAH': 'UA', 'TRY': 'TR',
+        // Americas
+        'USD': 'US', 'CAD': 'CA', 'MXN': 'MX', 'BRL': 'BR', 'ARS': 'AR', 'CLP': 'CL', 'COP': 'CO', 'PEN': 'PE',
+        // Asia
+        'JPY': 'JP', 'CNY': 'CN', 'INR': 'IN', 'KRW': 'KR', 'SGD': 'SG', 'HKD': 'HK', 'MYR': 'MY',
+        'THB': 'TH', 'VND': 'VN', 'PHP': 'PH', 'IDR': 'ID', 'PKR': 'PK', 'BDT': 'BD', 'AED': 'AE',
+        'SAR': 'SA', 'QAR': 'QA', 'KWD': 'KW', 'ILS': 'IL',
+        // Oceania
+        'AUD': 'AU', 'NZD': 'NZ',
+      };
+
+      const countryCode = currencyToCountry[currency] || 'NG';
+
+      channel = await hostfiService.createFiatCollectionChannel({
+        assetId,
+        currency,
+        customId: fiatCustomId,
+        type: 'DYNAMIC',
+        method: 'BANK_TRANSFER',
+        countryCode
       });
 
-      // If that failed, try standard camelCase
-      if (!channels || channels.length === 0) {
-        console.log('[Controller:createFiatChannel] Retrying fetch with camelCase customId...');
-        channels = await hostfiService.getFiatCollectionChannels({
-          customId: fiatCustomId
-        });
-      }
-
-      // FINAL FALLBACK: Fetch recent 1000 and filter manually
-      if (!channels || channels.length === 0) {
-        console.log('[Controller:createFiatChannel] API filters failed. Attempting manual fetch & filter (Limit 1000)...');
-        const allChannels = await hostfiService.getFiatCollectionChannels({ limit: 1000 });
-
-        const match = allChannels.find(c =>
-          c.customId === fiatCustomId ||
-          c.custom_id === fiatCustomId ||
-          (c.currency === currency && (c.customId === req.user._id.toString() || c.custom_id === req.user._id.toString())) // Last ditch: check non-namespaced
-        );
-
-        if (match) {
-          console.log(`[Controller:createFiatChannel] Found channel via manual filter: ${match.id}`);
-          channels = [match];
-        }
-      }
-
-      console.log(`[Controller:createFiatChannel] Found ${channels ? channels.length : 0} channels for user`);
-
-      if (!channels || channels.length === 0) {
-        // Check if this is a "already exists" error
-        const isDuplicateError = createError.message && createError.message.toLowerCase().includes('already exists');
-
-        if (isDuplicateError) {
-          return next(new ErrorHandler(
-            `A ${currency} deposit account already exists for your profile. Please refresh the page and try again. If the issue persists, contact support.`,
-            409 // Conflict status code
-          ));
-        }
-
-        return next(new ErrorHandler(
-          `Unable to create ${currency} collection channel. Error: ${createError.message}`,
-          503
-        ));
-      }
-
-      // Use the first available channel assigned to this user
-      channel = channels[0];
-
-      console.log(`[Controller:createFiatChannel] Using user's existing channel: ${channel.id}`);
-    } catch (fetchError) {
-      console.error('[Controller:createFiatChannel] Failed to fetch user channels:', fetchError.message);
-      throw createError; // Throw original creation error
+      console.log('[Controller:createFiatChannel] New channel created successfully');
+    } catch (createError) {
+      console.error('[Controller:createFiatChannel] Failed to create channel:', createError.message);
+      return next(new ErrorHandler(
+        `Unable to create ${currency} deposit account. ${createError.message}`,
+        500
+      ));
     }
   }
 
