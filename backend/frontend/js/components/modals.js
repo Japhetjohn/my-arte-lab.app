@@ -1439,62 +1439,87 @@ export async function showAddFundsModal() {
                 generateBtn.disabled = true;
                 generateBtn.textContent = 'Generating...';
 
-                const result = await api.createHostfiFiatChannel({ currency });
+                let channel;
 
-                if (result.success && result.data) {
-                    const channel = result.data.channel;
+                try {
+                    // Try to create a new channel
+                    const result = await api.createHostfiFiatChannel({ currency });
+                    if (result.success && result.data) {
+                        channel = result.data.channel;
+                    }
+                } catch (createError) {
+                    // If we get a 409 error, the channel already exists - fetch it
+                    if (createError.message && createError.message.includes('already exists')) {
+                        console.log('[showAddFundsModal] Channel exists, fetching existing channels...');
+                        const channelsResult = await api.getHostfiFiatChannels();
 
-                    accountDisplay.innerHTML = `
-                        <div style="background: var(--background-alt); padding: 20px; border-radius: 8px; border: 2px solid var(--success);">
-                             <div style="text-align: center; margin-bottom: 20px;">
-                                <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">
-                                    Account Number
-                                </div>
-                                <div style="font-size: 32px; font-weight: 700; color: var(--primary); letter-spacing: 2px; margin-bottom: 8px;">
-                                    ${channel.accountNumber}
-                                </div>
-                                <button onclick="navigator.clipboard.writeText('${channel.accountNumber}'); showToast('Copied!', 'success');"
-                                        style="background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 12px;">
-                                    Copy Number
-                                </button>
-                            </div>
+                        if (channelsResult.success && channelsResult.data) {
+                            const channels = channelsResult.data.channels || channelsResult.data || [];
+                            // Find the channel for this currency
+                            channel = channels.find(c => c.currency === currency) || channels[0];
+                        }
 
-                            <div style="border-top: 1px solid var(--border); padding-top: 16px; margin-top: 16px;">
-                                <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
-                                    <span style="color: var(--text-secondary);">Bank Name:</span>
-                                    <span style="font-weight: 600;">${channel.bankName}</span>
-                                </div>
-                                <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
-                                    <span style="color: var(--text-secondary);">Account Name:</span>
-                                    <span style="font-weight: 600;">${channel.accountName}</span>
-                                </div>
-                                <div style="display: flex; justify-content: space-between;">
-                                    <span style="color: var(--text-secondary);">Currency:</span>
-                                    <span style="font-weight: 600;">${channel.currency}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div style="background: #FEF3C7; padding: 16px; border-radius: 8px; margin-top: 16px; border-left: 4px solid #F59E0B;">
-                            <div style="color: #92400E; font-size: 14px; font-weight: 600; margin-bottom: 12px;">
-                                Instructions:
-                            </div>
-                            <ol style="color: #92400E; font-size: 13px; margin: 0; padding-left: 20px; line-height: 1.8;">
-                                <li>Transfer any amount to the account above.</li>
-                                <li>Funds will be credited to your wallet automatically.</li>
-                            </ol>
-                        </div>
-                         
-                        <button onclick="closeModal()" class="btn-primary" style="width: 100%; margin-top: 16px;">
-                            Done
-                        </button>
-                    `;
-
-                    formContainer.style.display = 'none';
-                    accountDisplay.style.display = 'block';
-                } else {
-                    throw new Error(result.message || 'Failed to generate account');
+                        if (!channel) {
+                            throw new Error('Unable to retrieve your deposit account. Please try again or contact support.');
+                        }
+                    } else {
+                        // Re-throw if it's not a duplicate error
+                        throw createError;
+                    }
                 }
+
+                if (!channel) {
+                    throw new Error('Failed to generate account');
+                }
+
+                accountDisplay.innerHTML = `
+                    <div style="background: var(--background-alt); padding: 20px; border-radius: 8px; border: 2px solid var(--success);">
+                         <div style="text-align: center; margin-bottom: 20px;">
+                            <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">
+                                Account Number
+                            </div>
+                            <div style="font-size: 32px; font-weight: 700; color: var(--primary); letter-spacing: 2px; margin-bottom: 8px;">
+                                ${channel.accountNumber}
+                            </div>
+                            <button onclick="navigator.clipboard.writeText('${channel.accountNumber}'); showToast('Copied!', 'success');"
+                                    style="background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 12px;">
+                                Copy Number
+                            </button>
+                        </div>
+
+                        <div style="border-top: 1px solid var(--border); padding-top: 16px; margin-top: 16px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                                <span style="color: var(--text-secondary);">Bank Name:</span>
+                                <span style="font-weight: 600;">${channel.bankName}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                                <span style="color: var(--text-secondary);">Account Name:</span>
+                                <span style="font-weight: 600;">${channel.accountName}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="color: var(--text-secondary);">Currency:</span>
+                                <span style="font-weight: 600;">${channel.currency}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="background: #FEF3C7; padding: 16px; border-radius: 8px; margin-top: 16px; border-left: 4px solid #F59E0B;">
+                        <div style="color: #92400E; font-size: 14px; font-weight: 600; margin-bottom: 12px;">
+                            Instructions:
+                        </div>
+                        <ol style="color: #92400E; font-size: 13px; margin: 0; padding-left: 20px; line-height: 1.8;">
+                            <li>Transfer any amount to the account above.</li>
+                            <li>Funds will be credited to your wallet automatically.</li>
+                        </ol>
+                    </div>
+                     
+                    <button onclick="closeModal()" class="btn-primary" style="width: 100%; margin-top: 16px;">
+                        Done
+                    </button>
+                `;
+
+                formContainer.style.display = 'none';
+                accountDisplay.style.display = 'block';
             } catch (error) {
                 console.error('Failed to generate account:', error);
                 showToast(error.message || 'Failed to generate account', 'error');
