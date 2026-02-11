@@ -457,8 +457,18 @@ exports.createFiatChannel = catchAsync(async (req, res, next) => {
       console.log(`[Controller:createFiatChannel] Found ${channels ? channels.length : 0} channels for user`);
 
       if (!channels || channels.length === 0) {
+        // Check if this is a "already exists" error
+        const isDuplicateError = createError.message && createError.message.toLowerCase().includes('already exists');
+
+        if (isDuplicateError) {
+          return next(new ErrorHandler(
+            `A ${currency} deposit account already exists for your profile. Please refresh the page and try again. If the issue persists, contact support.`,
+            409 // Conflict status code
+          ));
+        }
+
         return next(new ErrorHandler(
-          `Unable to create ${currency} collection channel and no existing channel found for user. Error: ${createError.message}`,
+          `Unable to create ${currency} collection channel. Error: ${createError.message}`,
           503
         ));
       }
