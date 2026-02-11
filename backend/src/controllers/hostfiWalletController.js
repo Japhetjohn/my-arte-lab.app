@@ -541,8 +541,11 @@ exports.createFiatChannel = catchAsync(async (req, res, next) => {
 exports.getFiatChannels = catchAsync(async (req, res, next) => {
   const { currency } = req.query;
 
+  // Use namespaced customId to match channel creation format
+  const fiatCustomId = `${req.user._id.toString()}-FIAT`;
+
   const filters = {
-    customId: req.user._id.toString()
+    customId: fiatCustomId
   };
   if (currency) filters.currency = currency;
 
