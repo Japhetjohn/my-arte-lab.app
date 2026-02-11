@@ -312,149 +312,131 @@ exports.getCryptoAddresses = catchAsync(async (req, res, next) => {
  */
 exports.createFiatChannel = catchAsync(async (req, res, next) => {
   const { currency = 'NGN' } = req.body;
+  const FiatChannel = require('../models/FiatChannel');
 
-  // Get user's wallet asset ID for the currency
+  console.log(`[Controller:createFiatChannel] Getting channel for user=${req.user._id}, currency=${currency}`);
+
+  // Step 1: CHECK DATABASE FIRST
+  let savedChannel = await FiatChannel.findOne({
+    userId: req.user._id,
+    currency: currency
+  });
+
+  if (savedChannel) {
+    console.log(`[Controller:createFiatChannel] Found channel in database: ${savedChannel.channelId}`);
+
+    // Return the saved channel details
+    return successResponse(res, 200, 'Fiat channel retrieved successfully', {
+      channel: {
+        id: savedChannel.channelId,
+        reference: savedChannel.reference,
+        accountNumber: savedChannel.accountNumber,
+        accountName: savedChannel.accountName,
+        bankName: savedChannel.bankName,
+        bankId: savedChannel.bankId,
+        currency: savedChannel.currency,
+        type: savedChannel.type,
+        method: savedChannel.method,
+        countryCode: savedChannel.countryCode,
+        active: savedChannel.active,
+        createdAt: savedChannel.createdAt
+      }
+    });
+  }
+
+  // Step 2: GET WALLET ASSET ID
   const assetId = await hostfiWalletService.getWalletAssetId(req.user._id, currency);
 
   if (!assetId) {
     return next(new ErrorHandler(`Wallet for currency ${currency} not found`, 404));
   }
 
-  console.log(`[Controller:createFiatChannel] Getting channel for user=${req.user._id}, currency=${currency}`);
-
-  // Use namespaced customId to avoid collision with crypto addresses
+  // Step 3: CREATE NEW CHANNEL IN HOSTFI
   const fiatCustomId = `${req.user._id.toString()}-FIAT`;
-  let channel;
 
-  // Step 1: CHECK FOR EXISTING CHANNEL FIRST
   try {
-    console.log(`[Controller:createFiatChannel] Checking for existing channel with customId: ${fiatCustomId}...`);
+    console.log('[Controller:createFiatChannel] Creating new channel in HostFi...');
 
-    // Fetch all channels and filter manually (most reliable approach)
-    const allChannels = await hostfiService.getFiatCollectionChannels({ limit: 1000 });
+    // Map currency to country code
+    const currencyToCountry = {
+      'NGN': 'NG', 'KES': 'KE', 'GHS': 'GH', 'ZAR': 'ZA', 'TZS': 'TZ', 'UGX': 'UG', 'ZMW': 'ZM', 'RWF': 'RW',
+      'XOF': 'SN', 'XAF': 'CM', 'EGP': 'EG', 'MAD': 'MA', 'TND': 'TN', 'DZD': 'DZ', 'ETB': 'ET',
+      'EUR': 'FR', 'GBP': 'GB', 'CHF': 'CH', 'SEK': 'SE', 'NOK': 'NO', 'DKK': 'DK', 'PLN': 'PL',
+      'CZK': 'CZ', 'HUF': 'HU', 'RON': 'RO', 'BGN': 'BG', 'HRK': 'HR', 'RSD': 'RS', 'UAH': 'UA', 'TRY': 'TR',
+      'USD': 'US', 'CAD': 'CA', 'MXN': 'MX', 'BRL': 'BR', 'ARS': 'AR', 'CLP': 'CL', 'COP': 'CO', 'PEN': 'PE',
+      'JPY': 'JP', 'CNY': 'CN', 'INR': 'IN', 'KRW': 'KR', 'SGD': 'SG', 'HKD': 'HK', 'MYR': 'MY',
+      'THB': 'TH', 'VND': 'VN', 'PHP': 'PH', 'IDR': 'ID', 'PKR': 'PK', 'BDT': 'BD', 'AED': 'AE',
+      'SAR': 'SA', 'QAR': 'QA', 'KWD': 'KW', 'ILS': 'IL',
+      'AUD': 'AU', 'NZD': 'NZ',
+    };
 
-    const existingChannel = allChannels.find(c =>
-      c.customId === fiatCustomId ||
-      c.custom_id === fiatCustomId ||
-      (c.currency === currency && (c.customId === req.user._id.toString() || c.custom_id === req.user._id.toString()))
-    );
+    const countryCode = currencyToCountry[currency] || 'NG';
 
-    if (existingChannel) {
-      console.log(`[Controller:createFiatChannel] Found existing channel: ${existingChannel.id}`);
-      channel = existingChannel;
-    }
-  } catch (fetchError) {
-    console.log('[Controller:createFiatChannel] Error checking for existing channels:', fetchError.message);
-    // Continue to creation attempt
-  }
+    const channel = await hostfiService.createFiatCollectionChannel({
+      assetId,
+      currency,
+      customId: fiatCustomId,
+      type: 'DYNAMIC',
+      method: 'BANK_TRANSFER',
+      countryCode
+    });
 
-  // Step 2: CREATE NEW CHANNEL IF NONE EXISTS
-  if (!channel) {
-    try {
-      console.log('[Controller:createFiatChannel] No existing channel found. Creating new channel...');
+    console.log('[Controller:createFiatChannel] Channel created successfully in HostFi');
 
-      // Map currency to country code - GLOBAL SUPPORT
-      const currencyToCountry = {
-        // Africa
-        'NGN': 'NG', 'KES': 'KE', 'GHS': 'GH', 'ZAR': 'ZA', 'TZS': 'TZ', 'UGX': 'UG', 'ZMW': 'ZM', 'RWF': 'RW',
-        'XOF': 'SN', 'XAF': 'CM', 'EGP': 'EG', 'MAD': 'MA', 'TND': 'TN', 'DZD': 'DZ', 'ETB': 'ET',
-        // Europe
-        'EUR': 'FR', 'GBP': 'GB', 'CHF': 'CH', 'SEK': 'SE', 'NOK': 'NO', 'DKK': 'DK', 'PLN': 'PL',
-        'CZK': 'CZ', 'HUF': 'HU', 'RON': 'RO', 'BGN': 'BG', 'HRK': 'HR', 'RSD': 'RS', 'UAH': 'UA', 'TRY': 'TR',
-        // Americas
-        'USD': 'US', 'CAD': 'CA', 'MXN': 'MX', 'BRL': 'BR', 'ARS': 'AR', 'CLP': 'CL', 'COP': 'CO', 'PEN': 'PE',
-        // Asia
-        'JPY': 'JP', 'CNY': 'CN', 'INR': 'IN', 'KRW': 'KR', 'SGD': 'SG', 'HKD': 'HK', 'MYR': 'MY',
-        'THB': 'TH', 'VND': 'VN', 'PHP': 'PH', 'IDR': 'ID', 'PKR': 'PK', 'BDT': 'BD', 'AED': 'AE',
-        'SAR': 'SA', 'QAR': 'QA', 'KWD': 'KW', 'ILS': 'IL',
-        // Oceania
-        'AUD': 'AU', 'NZD': 'NZ',
-      };
+    // Step 4: SAVE TO DATABASE
+    savedChannel = await FiatChannel.create({
+      userId: req.user._id,
+      currency: currency,
+      channelId: channel.id,
+      reference: channel.reference,
+      customId: fiatCustomId,
+      type: channel.type || 'DYNAMIC',
+      method: channel.method || 'BANK_TRANSFER',
+      accountNumber: channel.accountNumber,
+      accountName: channel.accountName,
+      bankName: channel.bankName,
+      bankId: channel.bankId,
+      countryCode: channel.country || countryCode,
+      assetId: assetId,
+      active: channel.active !== false,
+      hostfiResponse: channel
+    });
 
-      const countryCode = currencyToCountry[currency] || 'NG';
+    console.log(`[Controller:createFiatChannel] Channel saved to database: ${savedChannel._id}`);
 
-      channel = await hostfiService.createFiatCollectionChannel({
-        assetId,
-        currency,
-        customId: fiatCustomId,
-        type: 'DYNAMIC',
-        method: 'BANK_TRANSFER',
-        countryCode
-      });
-
-      console.log('[Controller:createFiatChannel] New channel created successfully');
-    } catch (createError) {
-      console.error('[Controller:createFiatChannel] Failed to create channel:', createError.message);
-
-      // Check if this is an "already exists" error
-      const isDuplicateError = createError.message && createError.message.toLowerCase().includes('already exists');
-
-      if (isDuplicateError) {
-        // Channel exists but HostFi's list API doesn't return it
-        // This is a known HostFi API limitation - channels aren't always returned in list queries
-        return next(new ErrorHandler(
-          `Your ${currency} deposit account already exists but cannot be retrieved automatically. Please contact support with your user ID to get your account details.`,
-          409
-        ));
+    return successResponse(res, 201, 'Fiat channel created successfully', {
+      channel: {
+        id: savedChannel.channelId,
+        reference: savedChannel.reference,
+        accountNumber: savedChannel.accountNumber,
+        accountName: savedChannel.accountName,
+        bankName: savedChannel.bankName,
+        bankId: savedChannel.bankId,
+        currency: savedChannel.currency,
+        type: savedChannel.type,
+        method: savedChannel.method,
+        countryCode: savedChannel.countryCode,
+        active: savedChannel.active,
+        createdAt: savedChannel.createdAt
       }
+    });
 
+  } catch (createError) {
+    console.error('[Controller:createFiatChannel] Failed to create channel:', createError.message);
+
+    // Check if this is an "already exists" error
+    const isDuplicateError = createError.message && createError.message.toLowerCase().includes('already exists');
+
+    if (isDuplicateError) {
+      // Channel exists in HostFi but not in our DB (edge case)
+      // This shouldn't happen often, but handle it gracefully
       return next(new ErrorHandler(
-        `Unable to create ${currency} deposit account. ${createError.message}`,
-        500
+        `Your ${currency} deposit account already exists in HostFi but is not synced to our database. Please contact support to resolve this issue.`,
+        409
       ));
     }
   }
-
-  // Log the channel object to debug
-  console.log('[Controller:createFiatChannel] Final channel object:', JSON.stringify(channel, null, 2));
-
-  if (!channel) {
-    return next(new ErrorHandler('Failed to get collection channel', 500));
-  }
-
-  // Create pending transaction record
-  const transaction = await Transaction.create({
-    transactionId: `FIAT-CH-${uuidv4()}`,
-    user: req.user._id,
-    type: 'deposit',
-    amount: 0, // Amount not known yet
-    currency,
-    status: 'pending',
-    paymentMethod: 'bank_transfer',
-    paymentDetails: {
-      accountNumber: channel.accountNumber,
-      accountName: channel.accountName,
-      bankName: channel.bankName,
-      bankId: channel.bankId,
-      country: channel.country
-    },
-    reference: channel.id,
-    metadata: {
-      collectionChannelId: channel.id,
-      provider: 'hostfi',
-      type: 'fiat_collection',
-      channelType: channel.type
-    }
-  });
-
-  successResponse(res, 201, 'Fiat collection channel retrieved successfully', {
-    channel: {
-      accountNumber: channel.accountNumber,
-      accountName: channel.accountName,
-      bankName: channel.bankName,
-      bankId: channel.bankId,
-      currency: channel.currency,
-      country: channel.country,
-      type: channel.type,
-      reference: channel.id,
-      instructions: `Transfer ${currency} to the account above. Your wallet will be credited automatically after 1% platform fee.`
-    },
-    transaction: {
-      id: transaction._id,
-      transactionId: transaction.transactionId,
-      reference: transaction.reference
-    }
-  });
+});
 });
 
 /**
