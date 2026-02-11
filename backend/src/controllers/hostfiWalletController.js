@@ -435,8 +435,12 @@ exports.createFiatChannel = catchAsync(async (req, res, next) => {
         409
       ));
     }
+
+    return next(new ErrorHandler(
+      `Unable to create ${currency} deposit account. ${createError.message}`,
+      500
+    ));
   }
-});
 });
 
 /**
