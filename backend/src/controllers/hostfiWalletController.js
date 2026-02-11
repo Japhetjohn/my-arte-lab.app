@@ -385,6 +385,19 @@ exports.createFiatChannel = catchAsync(async (req, res, next) => {
       console.log('[Controller:createFiatChannel] New channel created successfully');
     } catch (createError) {
       console.error('[Controller:createFiatChannel] Failed to create channel:', createError.message);
+
+      // Check if this is an "already exists" error
+      const isDuplicateError = createError.message && createError.message.toLowerCase().includes('already exists');
+
+      if (isDuplicateError) {
+        // Channel exists but HostFi's list API doesn't return it
+        // This is a known HostFi API limitation - channels aren't always returned in list queries
+        return next(new ErrorHandler(
+          `Your ${currency} deposit account already exists but cannot be retrieved automatically. Please contact support with your user ID to get your account details.`,
+          409
+        ));
+      }
+
       return next(new ErrorHandler(
         `Unable to create ${currency} deposit account. ${createError.message}`,
         500
