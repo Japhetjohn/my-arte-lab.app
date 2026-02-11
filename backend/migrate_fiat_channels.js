@@ -11,6 +11,7 @@ const FiatChannel = require('./src/models/FiatChannel');
 const User = require('./src/models/User');
 const HostFiService = require('./src/services/hostfiService');
 
+// Create instance of HostFi service
 const hostfiService = new HostFiService();
 
 async function migrateFiatChannels() {
