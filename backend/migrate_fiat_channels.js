@@ -9,10 +9,7 @@ require('dotenv').config();
 const mongoose = require('mongoose');
 const FiatChannel = require('./src/models/FiatChannel');
 const User = require('./src/models/User');
-const HostFiService = require('./src/services/hostfiService');
-
-// Create instance of HostFi service
-const hostfiService = new HostFiService();
+const hostfiService = require('./src/services/hostfiService');
 
 async function migrateFiatChannels() {
     try {
