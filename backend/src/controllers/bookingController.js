@@ -527,7 +527,8 @@ exports.counterProposal = catchAsync(async (req, res, next) => {
     amount,
     creatorAmount,
     platformFee,
-    proposedAt: new Date()
+    proposedAt: new Date(),
+    applied: false
   };
 
   await booking.addMessage(req.user._id, `Counter proposal: ${booking.currency} ${amount.toFixed(2)}`);

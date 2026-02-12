@@ -85,9 +85,20 @@ class BookingService {
         throw new ErrorHandler('Client not found', 404);
       }
 
+      // Check if there is a counter-proposal that hasn't been applied yet
+      if (booking.counterProposal && booking.counterProposal.amount && !booking.counterProposal.applied) {
+        console.log(`[BookingService] Applying counter-proposal for booking ${bookingId}. Original: ${booking.amount}, Counter: ${booking.counterProposal.amount}`);
+
+        booking.amount = booking.counterProposal.amount;
+        booking.platformFee = booking.counterProposal.platformFee;
+        booking.creatorAmount = booking.counterProposal.creatorAmount;
+        booking.counterProposal.applied = true;
+        // The booking will be saved later in this function
+      }
+
       if (client.wallet.balance < booking.amount) {
         throw new ErrorHandler(
-          `Insufficient balance. Required: ${booking.amount} USDC, Available: ${client.wallet.balance} USDC`,
+          `Insufficient balance. Required: ${booking.amount} ${booking.currency}, Available: ${client.wallet.balance} ${booking.currency}`,
           400
         );
       }
@@ -122,7 +133,7 @@ class BookingService {
         [
           {
             user: client._id,
-            type: 'escrow', // Changed to escrow to indicate held funds
+            type: 'escrow',
             amount: booking.amount,
             currency: booking.currency,
             status: 'completed',
@@ -134,7 +145,7 @@ class BookingService {
         { session }
       );
 
-      booking.status = 'confirmed'; // Ready to start work
+      booking.status = 'confirmed';
       booking.paymentStatus = 'paid';
       booking.paidAt = new Date();
       booking.escrowWallet.balance = booking.amount;
@@ -393,24 +404,13 @@ class BookingService {
       endDate,
       escrowWallet: {
         address: `escrow-${bookingId}`,
-        balance: amount
+        balance: 0 // Balance is 0 until payment is processed
       }
     });
 
-    client.wallet.balance -= amount;
-    client.wallet.pendingBalance += amount;
-    await client.save({ validateBeforeSave: false });
-
-    await Transaction.create({
-      user: client._id,
-      type: 'escrow',
-      amount,
-      currency: currency || 'USDC',
-      status: 'completed',
-      booking: booking._id,
-      description: `Funds held in escrow for ${serviceTitle}`,
-      completedAt: new Date()
-    });
+    // CRITICAL: Double-charging fix. We no longer deduct balance during creation.
+    // The client only pays after the creator accepts and the client explicitly calls /pay.
+    console.log(`[BookingService] Booking ${bookingId} created. No funds deducted yet.`);
 
     return { booking, alreadyExists: false };
   }

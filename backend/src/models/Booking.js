@@ -153,7 +153,11 @@ const bookingSchema = new mongoose.Schema({
     amount: Number,
     creatorAmount: Number,
     platformFee: Number,
-    proposedAt: Date
+    proposedAt: Date,
+    applied: {
+      type: Boolean,
+      default: false
+    }
   },
 
   review: {
