@@ -38,9 +38,14 @@ async function restoreAndConvert() {
             await user.save();
 
             // Create Adjustment Transaction
+            const timestamp = Date.now().toString(36).toUpperCase();
+            const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+            const transactionId = `TXN-RESTORE-${timestamp}-${random}`;
+
             await Transaction.create({
+                transactionId,
                 user: user._id,
-                type: 'adjustment',
+                type: 'onramp',
                 amount: finalUsdc,
                 currency: 'USDC',
                 status: 'completed',
