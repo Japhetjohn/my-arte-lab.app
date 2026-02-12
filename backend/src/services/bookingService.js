@@ -129,11 +129,16 @@ class BookingService {
         throw new ErrorHandler('Concurrent modification detected or insufficient balance', 409);
       }
 
+      const timestamp = Date.now().toString(36).toUpperCase();
+      const random = Math.random().toString(36).substring(2, 10).toUpperCase();
+      const transactionId = `TXN-${timestamp}-${random}`;
+
       await Transaction.create(
         [
           {
+            transactionId,
             user: client._id,
-            type: 'payment', // Changed from 'escrow' to 'payment' to match Transaction schema enum
+            type: 'payment',
             amount: booking.amount,
             currency: booking.currency,
             status: 'completed',
