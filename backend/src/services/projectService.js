@@ -337,7 +337,7 @@ class ProjectService {
             completedAt: new Date()
           }
         ],
-        { session }
+        { session, ordered: true }
       );
 
       // Notify both parties
