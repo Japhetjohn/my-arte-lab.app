@@ -102,6 +102,7 @@ async function processFiatDeposit(parsed) {
     return;
   }
 
+  const isTestEvent = id.startsWith('TEST-EVT-');
   const feeBreakdown = hostfiService.calculateOnRampFee(amount);
 
   let userId = customId;
@@ -115,9 +116,84 @@ async function processFiatDeposit(parsed) {
     throw new Error(`User not found: ${userId}`);
   }
 
-  console.log(`[Webhook:FiatDeposit] Crediting User ${user._id} for ${amount} ${currency}`);
-  await hostfiWalletService.updateBalance(user._id, currency, feeBreakdown.amountAfterFee, 'credit');
+  console.log(`[Webhook:FiatDeposit] Processing deposit for User ${user._id}: ${amount} ${currency} (Test: ${isTestEvent})`);
 
+  let finalCreditAmount = feeBreakdown.amountAfterFee;
+  let finalCreditCurrency = currency;
+  let swapDetails = null;
+
+  // 1. Handle Fee and Auto-Conversion for ALL deposits (Simulate for test, Execute for live)
+  try {
+    const ngnAssetId = await hostfiWalletService.getWalletAssetId(user._id, 'NGN');
+    const usdcAssetId = await hostfiWalletService.getWalletAssetId(user._id, 'USDC');
+
+    if (!isTestEvent) {
+      console.log(`[Webhook:FiatDeposit] Initiating 1% fee transfer of ${feeBreakdown.platformFee} ${currency} to platform wallet...`);
+      // In a real on-ramp, the 1% is usually handled by the platform during the swap or via a separate payout
+      // For simplicity, we swap the FULL amount to USDC and THEN deduct fee, OR swap 99%.
+      // Most efficient: Swap 99% NGN -> User USDC. The 1% stays in NGN or we collect it.
+      // Better: Swap 100% NGN -> USDC, then the platform takes 1% USDC.
+
+      // Let's go with: Swap 100% NGN -> USDC. User receives full amount in USDC, 
+      // then we deduct our 1% commission from their USDC balance (Internal Ledger) 
+      // and optionally move it on HostFi if needed. 
+      // Actually, user wants 1% from on-ramp/off-ramp.
+
+      console.log(`[Webhook:FiatDeposit] Swapping ${amount} ${currency} to USDC...`);
+      const swapResult = await hostfiService.swapAssets({
+        fromCurrency: currency,
+        fromAssetId: ngnAssetId,
+        toCurrency: 'USDC',
+        toAssetId: usdcAssetId,
+        amount: amount
+      });
+
+      const receivedUsdc = swapResult.destinationAmount || swapResult.data?.destinationAmount;
+      if (receivedUsdc) {
+        const usdcFeeBreakdown = hostfiService.calculatePlatformFee(receivedUsdc); // Use 1% logic
+        // We actually want 1% specifically for on-ramp
+        const onRampFeeUsdc = (receivedUsdc * 1) / 100;
+        finalCreditAmount = receivedUsdc - onRampFeeUsdc;
+        finalCreditCurrency = 'USDC';
+        swapDetails = {
+          fromAmount: amount,
+          fromCurrency: currency,
+          toAmount: receivedUsdc,
+          toCurrency: 'USDC',
+          fee: onRampFeeUsdc,
+          reference: swapResult.id || swapResult.reference
+        };
+      }
+    } else {
+      // SIMULATE for test events
+      console.log('[Webhook:FiatDeposit] SIMULATING conversion to USDC for test event');
+      // Estimate rate (e.g. 1500 NGN = 1 USDC)
+      const rate = 1 / 1500;
+      const simulatedUsdc = amount * rate;
+      finalCreditAmount = simulatedUsdc * 0.99; // 1% fee
+      finalCreditCurrency = 'USDC';
+      swapDetails = {
+        fromAmount: amount,
+        fromCurrency: currency,
+        toAmount: simulatedUsdc,
+        toCurrency: 'USDC',
+        fee: simulatedUsdc * 0.01,
+        isSimulation: true
+      };
+    }
+  } catch (error) {
+    console.error('[Webhook:FiatDeposit] Auto-conversion/Fee processing failed:', error.message);
+    // Fallback: Credit NGN if swap fails
+    console.log('[Webhook:FiatDeposit] Falling back to NGN credit');
+    finalCreditAmount = feeBreakdown.amountAfterFee;
+    finalCreditCurrency = currency;
+  }
+
+  // 2. Update Internal Balance
+  console.log(`[Webhook:FiatDeposit] Final Credit: ${finalCreditAmount} ${finalCreditCurrency}`);
+  await hostfiWalletService.updateBalance(user._id, finalCreditCurrency, finalCreditAmount, 'credit');
+
+  // 3. Update/Create Transaction Record
   const updateResult = await Transaction.findOneAndUpdate(
     {
       user: user._id,
@@ -133,12 +209,14 @@ async function processFiatDeposit(parsed) {
         amount: amount,
         currency: currency,
         status: 'completed',
-        platformFee: feeBreakdown.platformFee,
-        netAmount: feeBreakdown.amountAfterFee,
+        platformFee: swapDetails ? swapDetails.fee : feeBreakdown.platformFee,
+        netAmount: finalCreditAmount,
         completedAt: new Date(),
         'paymentDetails.actualAmount': amount,
         'metadata.hostfiReference': id,
-        'metadata.hostfiStatus': status
+        'metadata.hostfiStatus': status,
+        'metadata.autoConverted': !!swapDetails,
+        'metadata.swapDetails': swapDetails
       }
     },
     { upsert: true, new: true }

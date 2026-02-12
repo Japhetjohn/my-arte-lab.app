@@ -71,7 +71,7 @@ class HostFiService {
    * @returns {Object} Fee breakdown
    */
   calculateOnRampFee(amount) {
-    const feePercent = 1; // 1% fee for deposits
+    const feePercent = 1; // Fixed 1% for on-ramp
     const fee = (amount * feePercent) / 100;
     const amountAfterFee = amount - fee;
 
@@ -86,12 +86,12 @@ class HostFiService {
   }
 
   /**
-   * Calculate off-ramp fee (no fee for withdrawals)
+   * Calculate off-ramp fee (1% - charged when users withdraw)
    * @param {number} amount - Withdrawal amount
    * @returns {Object} Fee breakdown
    */
   calculateOffRampFee(amount) {
-    const feePercent = 1; // 1% fee for withdrawals
+    const feePercent = 1; // Fixed 1% for off-ramp
     const fee = (amount * feePercent) / 100;
     const amountAfterFee = amount - fee;
 
@@ -103,6 +103,51 @@ class HostFiService {
       platformWallet: this.platformWalletAddress,
       feeType: 'off-ramp'
     };
+  }
+
+  /**
+   * Automatically transfer platform commission (1% fee) to platform wallet
+   * @param {Object} params - commission parameters
+   * @param {string} params.assetId - Source wallet asset ID
+   * @param {number} params.amount - commission amount to transfer
+   * @param {string} params.currency - Currency code
+   * @param {string} params.clientReference - Unique reference
+   * @returns {Promise<Object>} Payout response
+   */
+  async collectCommission({ assetId, amount, currency, clientReference }) {
+    if (!this.platformWalletAddress) {
+      console.warn('PLATFORM_WALLET_ADDRESS not configured, skipping commission transfer');
+      return { skipped: true, reason: 'No platform wallet' };
+    }
+
+    try {
+      console.log(`[HostFi Service] Collecting ${amount} ${currency} commission to ${this.platformWalletAddress}`);
+
+      const payload = {
+        assetId,
+        clientReference: clientReference || `FEE-${Date.now()}`,
+        methodId: 'CRYPTO_TRANSFER', // Assuming this for address transfer, or just Payout
+        amount: Number(amount),
+        currency,
+        recipient: {
+          type: 'CRYPTO',
+          method: 'CRYPTO',
+          currency,
+          address: this.platformWalletAddress,
+          network: 'SOL', // User specified Solana USDC
+          country: 'NG' // Required by some payout endpoints even for crypto
+        },
+        memo: `Platform Commission (1%) for transaction ${clientReference}`
+      };
+
+      const response = await this.makeRequest('POST', '/v1/payout/transactions', payload);
+      return response;
+    } catch (error) {
+      console.error('[HostFi Service] Failed to collect commission:', error.message);
+      // We don't throw here to avoid blocking the main transaction if the fee transfer fails
+      // though ideally we should log it for manual reconciliation
+      return { error: error.message };
+    }
   }
 
   /**
