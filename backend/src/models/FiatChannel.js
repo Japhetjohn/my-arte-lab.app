@@ -27,7 +27,7 @@ const fiatChannelSchema = new mongoose.Schema({
     },
     type: {
         type: String,
-        enum: ['STATIC', 'DYNAMIC'],
+        enum: ['STATIC', 'DYNAMIC', 'BANK_TRANSFER'],
         default: 'DYNAMIC'
     },
     method: {

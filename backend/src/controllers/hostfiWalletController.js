@@ -407,6 +407,8 @@ exports.createFiatChannel = catchAsync(async (req, res, next) => {
 
     console.log('[Controller:createFiatChannel] Channel created successfully in HostFi');
 
+    console.log('[Controller:createFiatChannel] HostFi response:', JSON.stringify(channel, null, 2));
+
     // Step 4: SAVE TO DATABASE
     savedChannel = await FiatChannel.create({
       userId: req.user._id,
@@ -414,7 +416,7 @@ exports.createFiatChannel = catchAsync(async (req, res, next) => {
       channelId: channel.id,
       reference: channel.reference,
       customId: fiatCustomId,
-      type: channel.type || 'DYNAMIC',
+      type: (channel.type === 'BANK_TRANSFER' ? 'DYNAMIC' : channel.type) || 'DYNAMIC',
       method: channel.method || 'BANK_TRANSFER',
       accountNumber: channel.accountNumber,
       accountName: channel.accountName,
