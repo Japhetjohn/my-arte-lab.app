@@ -126,10 +126,13 @@ async function processFiatDeposit(parsed) {
   try {
     const sourceAssetId = await hostfiWalletService.getWalletAssetId(user._id, currency);
 
+    // RE-FETCH user to avoid stale object issue if getWalletAssetId triggered a sync
+    const refreshedUser = await User.findById(user._id);
+
     // Specifically target USDC on SOL network
     let usdcAssetId = null;
-    if (user.wallet.hostfiWalletAssets) {
-      const solUsdc = user.wallet.hostfiWalletAssets.find(a =>
+    if (refreshedUser.wallet.hostfiWalletAssets) {
+      const solUsdc = refreshedUser.wallet.hostfiWalletAssets.find(a =>
         a.currency === 'USDC' && (a.colNetwork === 'SOL' || a.colNetwork === 'Solana')
       );
       usdcAssetId = solUsdc?.assetId;
