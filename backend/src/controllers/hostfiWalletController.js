@@ -328,11 +328,10 @@ exports.createFiatChannel = catchAsync(async (req, res, next) => {
     // VERIFY IF STILL ACTIVE IN HOSTFI (Dynamic channels expire)
     try {
       const activeChannels = await hostfiService.getFiatCollectionChannels({
-        currency: currency,
-        customId: savedChannel.customId
+        currency: currency
       });
 
-      const records = activeChannels.records || [];
+      const records = activeChannels.records || activeChannels || [];
       const stillActive = records.find(c => c.id === savedChannel.channelId && c.active !== false);
 
       if (stillActive) {
