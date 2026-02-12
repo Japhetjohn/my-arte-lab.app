@@ -11,22 +11,23 @@ require('dotenv').config();
 const mongoose = require('mongoose');
 const User = require('./src/models/User');
 const FiatChannel = require('./src/models/FiatChannel');
-const hostfiWalletController = require('./src/controllers/hostfiWalletController'); // We might need to mock req/res
+const hostfiWalletController = require('./src/controllers/hostfiWalletController');
 
-// A helper to simulate the controller call
+// A helper to simulate the controller call and wait for it
 async function simulateCreateFiatChannel(userId, currency) {
-    const req = {
-        user: { _id: userId },
-        body: { currency }
-    };
-    const res = {
-        status: function () { return this; },
-        json: function (data) { this.data = data; return this; }
-    };
-    const next = (err) => { throw err; };
+    return new Promise((resolve, reject) => {
+        const req = {
+            user: { _id: userId },
+            body: { currency }
+        };
+        const res = {
+            status: function () { return this; },
+            json: function (data) { resolve(data); return this; }
+        };
+        const next = (err) => { reject(err); };
 
-    await hostfiWalletController.createFiatChannel(req, res, next);
-    return res.data;
+        hostfiWalletController.createFiatChannel(req, res, next);
+    });
 }
 
 async function verifyFiatChannelFlow() {
@@ -51,8 +52,9 @@ async function verifyFiatChannelFlow() {
         console.log('✅ Result 1:', result1.message);
         const channel1 = result1.data.channel;
         console.log(`📡 Channel ID: ${channel1.id}`);
+        console.log(`🔗 Custom ID: ${channel1.customId || 'unknown'}`);
 
-        // 2. Second Creation (should return same if active, but we'll check unique ID logic)
+        // 2. Second Creation (should return same if active)
         console.log('\n--- Step 2: Immediate Consecutive Request ---');
         const result2 = await simulateCreateFiatChannel(user._id, 'NGN');
         console.log('✅ Result 2:', result2.message);
@@ -64,7 +66,7 @@ async function verifyFiatChannelFlow() {
             console.log('ℹ️  Note: New channel created (might be because logic refreshed it).');
         }
 
-        // 3. Test expiry logic by manually breaking the record in DB (e.g. changing channelId to invalid)
+        // 3. Test expiry logic by manually breaking the record in DB
         console.log('\n--- Step 3: Test Expiry Refresh ---');
         await FiatChannel.findOneAndUpdate({ userId: user._id }, { channelId: 'expired_id' });
         console.log('🧪 Simulating expired channel in DB...');
