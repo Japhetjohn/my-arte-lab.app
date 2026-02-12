@@ -788,12 +788,27 @@ class HostFiService {
     try {
       // Calculate platform fee (1% for off-ramp)
       const feeBreakdown = this.calculateOffRampFee(amount);
+      const isCryptoPayout = recipient.type === 'CRYPTO' || methodId === 'CRYPTO';
+
+      console.log(`[HostFi Service] Initiating withdrawal of ${amount} ${currency}. Fee: ${feeBreakdown.platformFee}`);
+
+      // 1. Collect Commission (1%)
+      // For off-ramp, we send the fee to the platform wallet
+      await this.collectCommission({
+        assetId: walletAssetId,
+        amount: feeBreakdown.platformFee,
+        currency,
+        clientReference: `COMM-OFF-${clientReference.substring(0, 8)}`
+      });
+
+      // 2. Send the remainder to the recipient
+      const payoutAmount = feeBreakdown.amountAfterFee;
 
       const payload = {
         assetId: walletAssetId,
         clientReference,
         methodId: methodId || 'BANK_TRANSFER',
-        amount: Number(amount),
+        amount: Number(payoutAmount),
         currency,
         recipient: {
           type: recipient.type || (methodId === 'BANK_TRANSFER' ? 'BANK' : (methodId === 'MOBILE_MONEY' ? 'MOMO' : 'CRYPTO')),
@@ -809,24 +824,17 @@ class HostFiService {
           address: recipient.address,
           memo: recipient.memo
         },
-        memo: memo || `Withdrawal of ${amount} ${currency}`
+        memo: memo || `Withdrawal of ${payoutAmount} ${currency} (Net)`
       };
 
-      console.log('Initiating HostFi withdrawal:', {
-        clientReference,
-        originalAmount: amount,
-        platformFee: feeBreakdown.platformFee,
-        amountAfterFee: feeBreakdown.amountAfterFee,
-        currency,
-        methodId
-      });
-      console.log('HostFi Withdrawal Payload:', JSON.stringify(payload, null, 2));
+      console.log('HostFi Payout Payload:', JSON.stringify(payload, null, 2));
 
       const response = await this.makeRequest('POST', '/v1/payout/transactions', payload);
 
-      // Return response with fee breakdown
       return {
         ...response,
+        platformFee: feeBreakdown.platformFee,
+        netAmount: payoutAmount,
         feeBreakdown
       };
     } catch (error) {

@@ -150,11 +150,20 @@ async function processFiatDeposit(parsed) {
 
       const receivedUsdc = swapResult.destinationAmount || swapResult.data?.destinationAmount;
       if (receivedUsdc) {
-        const usdcFeeBreakdown = hostfiService.calculatePlatformFee(receivedUsdc); // Use 1% logic
         // We actually want 1% specifically for on-ramp
         const onRampFeeUsdc = (receivedUsdc * 1) / 100;
         finalCreditAmount = receivedUsdc - onRampFeeUsdc;
         finalCreditCurrency = 'USDC';
+
+        // Actually collect the fee on HostFi
+        console.log(`[Webhook:FiatDeposit] Collecting ${onRampFeeUsdc} USDC on-ramp commission...`);
+        await hostfiService.collectCommission({
+          assetId: usdcAssetId,
+          amount: onRampFeeUsdc,
+          currency: 'USDC',
+          clientReference: `COMM-ON-${id.substring(0, 8)}`
+        });
+
         swapDetails = {
           fromAmount: amount,
           fromCurrency: currency,
@@ -170,14 +179,18 @@ async function processFiatDeposit(parsed) {
       // Estimate rate (e.g. 1500 NGN = 1 USDC)
       const rate = 1 / 1500;
       const simulatedUsdc = amount * rate;
-      finalCreditAmount = simulatedUsdc * 0.99; // 1% fee
+      const simulatedFee = simulatedUsdc * 0.01;
+      finalCreditAmount = simulatedUsdc - simulatedFee;
       finalCreditCurrency = 'USDC';
+
+      console.log(`[Webhook:FiatDeposit] SIMULATING commission collection of ${simulatedFee} USDC`);
+
       swapDetails = {
         fromAmount: amount,
         fromCurrency: currency,
         toAmount: simulatedUsdc,
         toCurrency: 'USDC',
-        fee: simulatedUsdc * 0.01,
+        fee: simulatedFee,
         isSimulation: true
       };
     }
