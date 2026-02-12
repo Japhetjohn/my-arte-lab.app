@@ -19,38 +19,42 @@ const hostfiService = require('./src/services/hostfiService');
 async function simulateDepositWebhook(userId, amount, currency) {
     console.log(`\n--- [Simulating Deposit Webhook] ---`);
 
-    // Create a dummy payload
-    const payload = {
-        event: 'fiat_deposit_received',
-        id: `TEST-EVT-${Date.now()}`,
-        data: {
-            amount: amount,
-            currency: currency,
-            status: 'SUCCESS',
-            customId: userId.toString(),
-            channelId: `TEST-CH-${Date.now()}`
-        }
-    };
+    return new Promise((resolve, reject) => {
+        // Create a dummy payload
+        const payload = {
+            event: 'fiat_deposit_received',
+            id: `TEST-EVT-${Date.now()}`,
+            data: {
+                amount: amount,
+                currency: currency,
+                status: 'SUCCESS',
+                customId: userId.toString(),
+                channelId: `TEST-CH-${Date.now()}`
+            }
+        };
 
-    // Mock req, res
-    const req = {
-        body: payload,
-        headers: {
-            'x-auth-secret': process.env.HOSTFI_WEBHOOK_SECRET
-        }
-    };
-    const res = {
-        status: function (code) { this.statusCode = code; return this; },
-        json: function (data) { this.data = data; return this; }
-    };
-    const next = (err) => { throw err; };
+        // Mock req, res
+        const req = {
+            body: payload,
+            headers: {
+                'x-auth-secret': process.env.HOSTFI_WEBHOOK_SECRET
+            }
+        };
+        const res = {
+            status: function (code) { this.statusCode = code; return this; },
+            json: function (data) {
+                this.data = data;
+                resolve(data);
+                return this;
+            }
+        };
+        const next = (err) => {
+            console.error('Webhook processing error:', err);
+            reject(err);
+        };
 
-    // Note: We need to bypass signature verification or mock it
-    // Since we have the secret in .env, verifyWebhookSignature should work if we use it correctly
-
-    await hostfiWebhookController.handleWebhook(req, res, next);
-    console.log('✅ Webhook result:', res.data);
-    return res.data;
+        hostfiWebhookController.handleWebhook(req, res, next);
+    });
 }
 
 async function runFullSimulation() {
@@ -72,9 +76,12 @@ async function runFullSimulation() {
 
         // --- STEP 1: VERIFY DEPOSIT WEBHOOK ---
         const startBalance = client.wallet.balance;
-        const depositAmount = 1000;
-        await simulateDepositWebhook(client._id, depositAmount, 'NGN');
+        const depositAmount = 2000; // Increased to ensure enough for project
+        console.log(`Simulating deposit of ${depositAmount} NGN/USDC...`);
+        const result1 = await simulateDepositWebhook(client._id, depositAmount, 'NGN');
+        console.log('✅ Webhook result:', JSON.stringify(result1));
 
+        // Refresh client to see balance update
         const updatedClient = await User.findById(client._id);
         console.log(`💰 Client Balance after webhook deposit simulation: ${updatedClient.wallet.balance}`);
 
@@ -82,7 +89,9 @@ async function runFullSimulation() {
             console.log('🎉 SUCCESS: Webhook deposit correctly credited the user.');
         } else {
             console.error('❌ FAILURE: Balance did not update after webhook.');
-            // Proceeding anyway for the project test, but this is a red flag
+            // Boosting balance manually to continue project test if webhook failed
+            console.log('⚠️  Manually boosting balance to continue simulation...');
+            await User.findByIdAndUpdate(client._id, { 'wallet.balance': startBalance + depositAmount });
         }
 
         // --- STEP 2: PROJECT LIFECYCLE ---
@@ -93,9 +102,14 @@ async function runFullSimulation() {
             title: 'Test Flow Project',
             description: 'A project to test the end-to-end flow.',
             clientId: client._id,
-            budget: { amount: 2000, currency: 'USDC' },
+            budget: {
+                min: 1000,
+                max: 2000,
+                currency: 'USDC'
+            },
             status: 'open',
-            category: 'Graphic Design',
+            category: 'design',
+            timeline: '1-week',
             platformCommission: 10
         });
         console.log(`✅ Project created: ${project._id}`);
@@ -118,12 +132,6 @@ async function runFullSimulation() {
 
         // 2.2 Process Payment
         console.log('\n2.2 Processing Payment (Client pays escrow)...');
-        // Ensure client has enough balance
-        if (updatedClient.wallet.balance < 2000) {
-            console.log('⚠️  Boosting client balance for simulation...');
-            await User.findByIdAndUpdate(client._id, { 'wallet.balance': 5000 });
-        }
-
         await projectService.processProjectPayment(project._id, client._id);
         const projPaid = await Project.findById(project._id);
         const clientAfterPayment = await User.findById(client._id);
@@ -163,6 +171,7 @@ async function runFullSimulation() {
 
         // Clean up test data
         console.log('\n🗑️  Cleaning up simulation data...');
+        // We don't delete to keep history for the user, or we can delete if it's strict clean test
         await Project.findByIdAndDelete(project._id);
         await Application.findByIdAndDelete(application._id);
         await Transaction.deleteMany({ project: project._id });
