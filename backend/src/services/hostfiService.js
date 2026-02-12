@@ -341,8 +341,25 @@ class HostFiService {
    */
   async swapAssets(params) {
     try {
-      console.log('Swapping assets:', JSON.stringify(params, null, 2));
-      const response = await this.makeRequest('POST', '/v1/assets/convert', params);
+      // Align with HostFi V1/V2 swap structure: { source: { currency, assetId }, target: { currency, assetId }, amount: { value, currency } }
+      const payload = params.source ? params : {
+        source: {
+          currency: params.fromCurrency || params.sourceCurrency,
+          assetId: params.fromAssetId || params.sourceAssetId
+        },
+        target: {
+          currency: params.toCurrency || params.targetCurrency,
+          assetId: params.toAssetId || params.targetAssetId
+        },
+        amount: {
+          value: Number(params.amount),
+          currency: params.fromCurrency || params.sourceCurrency || params.amountCurrency
+        },
+        category: params.category || 'SWAP'
+      };
+
+      console.log('Swapping assets with payload:', JSON.stringify(payload, null, 2));
+      const response = await this.makeRequest('POST', '/v1/assets/swap', payload);
       return response;
     } catch (error) {
       console.error('Failed to swap assets:', error.message);
