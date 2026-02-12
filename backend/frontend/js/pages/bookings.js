@@ -248,7 +248,7 @@ function renderModernBookingCard(booking) {
             <div class="booking-card-footer">
                 <div class="booking-amount">
                     <div class="amount-label">Amount</div>
-                    <div class="amount-value">USDC ${booking.amount.toFixed(2)}</div>
+                    <div class="amount-value">USDC ${booking.amount ? booking.amount.toFixed(2) : '0.00'}</div>
                 </div>
                 <button class="view-details-btn" onclick="event.stopPropagation(); window.viewBookingDetails('${booking._id}')">
                     View Details
@@ -329,7 +329,7 @@ window.viewBookingDetails = async function (bookingId) {
                                 <div style="background: #EFF6FF; padding: 16px; border-radius: 12px; margin-bottom: 20px; border-left: 4px solid #3B82F6;">
                                     <div style="color: #1E40AF; font-weight: 600; margin-bottom: 4px;">Counter Proposal</div>
                                     <div style="color: #1E3A8A; font-size: 14px;">
-                                        Creator proposed: USDC ${booking.counterProposal.amount.toFixed(2)}
+                                        Creator proposed: USDC ${booking.counterProposal?.amount ? booking.counterProposal.amount.toFixed(2) : '0.00'}
                                         <div class="caption">Proposed ${formatDate(booking.counterProposal.proposedAt)}</div>
                                     </div>
                                 </div>
@@ -362,7 +362,7 @@ window.viewBookingDetails = async function (bookingId) {
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
                                 <div>
                                     <div class="caption" style="color: var(--text-secondary); margin-bottom: 4px;">Amount</div>
-                                    <div style="font-size: 20px; font-weight: 700; color: var(--primary);">USDC ${booking.amount.toFixed(2)}</div>
+                                    <div style="font-size: 20px; font-weight: 700; color: var(--primary);">USDC ${booking.amount ? booking.amount.toFixed(2) : '0.00'}</div>
                                 </div>
                                 <div>
                                     <div class="caption" style="color: var(--text-secondary); margin-bottom: 4px;">Payment</div>
@@ -375,7 +375,7 @@ window.viewBookingDetails = async function (bookingId) {
                             ${booking.paymentStatus === 'pending' && booking.escrowWallet?.address && !isCreator && booking.status === 'confirmed' ? `
                                 <div style="background: var(--primary); color: white; padding: 16px; border-radius: 12px; margin: 20px 0;">
                                     <div style="font-weight: 600; margin-bottom: 8px;">Pay for this booking</div>
-                                    <div style="font-size: 14px; opacity: 0.9; margin-bottom: 12px;">Send USDC ${booking.amount.toFixed(2)} to:</div>
+                                    <div style="font-size: 14px; opacity: 0.9; margin-bottom: 12px;">Send USDC ${booking.amount ? booking.amount.toFixed(2) : '0.00'} to:</div>
                                     <div style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; word-break: break-all; font-family: monospace; font-size: 13px;">
                                         ${booking.escrowWallet.address}
                                     </div>
@@ -395,7 +395,7 @@ window.viewBookingDetails = async function (bookingId) {
                                         The creator has accepted your request. Please pay the amount to hold it in escrow and start the job.
                                     </div>
                                     <button class="btn-primary" style="width: 100%;" onclick="window.processBookingPayment('${booking._id}', '${booking._type}')">
-                                        Proceed to Payment (USDC ${booking.amount.toFixed(2)})
+                                        Proceed to Payment (USDC ${booking.amount ? booking.amount.toFixed(2) : '0.00'})
                                     </button>
                                 </div>
                             ` : ''}
