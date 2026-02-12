@@ -133,7 +133,7 @@ class BookingService {
         [
           {
             user: client._id,
-            type: 'escrow',
+            type: 'payment', // Changed from 'escrow' to 'payment' to match Transaction schema enum
             amount: booking.amount,
             currency: booking.currency,
             status: 'completed',
