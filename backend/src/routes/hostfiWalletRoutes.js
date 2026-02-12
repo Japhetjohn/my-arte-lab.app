@@ -167,6 +167,13 @@ router.get('/rates/exchange', protect, hostfiWalletController.getExchangeRates);
  */
 router.get('/fees/exchange', protect, hostfiWalletController.getExchangeFees);
 
+/**
+ * @route   GET /api/hostfi/currency/swap-pairs
+ * @desc    Get supported currency swap/conversion pairs
+ * @access  Private
+ */
+router.get('/currency/swap-pairs', protect, hostfiWalletController.getCurrencySwapPairs);
+
 // ============================================
 // WEBHOOK ROUTES (Public - validated by signature)
 // ============================================

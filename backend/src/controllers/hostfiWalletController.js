@@ -38,9 +38,17 @@ exports.getWallet = catchAsync(async (req, res, next) => {
         const rate = rateData.rate || rateData.data?.rate || 0;
         usdEquivalent = asset.balance * rate;
       } catch (error) {
-        // Only log once to avoid flooding
-        if (process.env.NODE_ENV === 'development') {
-          console.warn(`[Wallet] Optional rate fetch failed for ${currency}: ${error.message}`);
+        // Use getValidConversionTarget to ensure we use a supported pair
+        try {
+          const validTarget = await hostfiService.getValidConversionTarget(currency, 'USDT');
+          const rateData = await hostfiService.getCurrencyRates(currency, validTarget);
+          const rate = rateData.rate || rateData.data?.rate || 0;
+          usdEquivalent = asset.balance * rate;
+        } catch (fallbackError) {
+          // Only log in development to avoid flooding
+          if (process.env.NODE_ENV === 'development') {
+            console.warn(`[Wallet] Failed to get rate for ${currency}:`, fallbackError.message);
+          }
         }
       }
     }
@@ -870,5 +878,20 @@ exports.getExchangeFees = catchAsync(async (req, res, next) => {
       percent: 1,
       description: 'Platform fee deducted from all on-ramp and off-ramp transactions'
     }
+  });
+});
+
+/**
+ * Get supported currency swap/conversion pairs
+ * GET /v1/hostfi/currency/swap-pairs?currency=ETH
+ */
+exports.getCurrencySwapPairs = catchAsync(async (req, res, next) => {
+  const currency = req.query.currency;
+
+  const pairs = await hostfiService.getCurrencySwapPairs(currency);
+
+  successResponse(res, 200, 'Currency swap pairs retrieved successfully', {
+    currency: currency || 'all',
+    pairs
   });
 });

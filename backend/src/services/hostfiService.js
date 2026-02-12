@@ -22,6 +22,10 @@ class HostFiService {
     this.accessToken = null;
     this.tokenExpiry = null;
 
+    // Currency swap pairs cache
+    this.swapPairs = null;
+    this.swapPairsCacheExpiry = null;
+
     // Create axios instance
     this.api = axios.create({
       baseURL: this.apiUrl,
@@ -968,6 +972,84 @@ class HostFiService {
     };
 
     return countries[code] || code;
+  }
+
+  /**
+   * Get supported currency swap/conversion pairs
+   * Endpoint: GET /v1/currency/swap/pairs?currency={code}
+   * @param {string} currency - Currency code (e.g., 'ETH', 'SOL', 'BTC')
+   * @returns {Promise<Array>} Array of supported target currencies
+   */
+  async getCurrencySwapPairs(currency = null) {
+    try {
+      // Return cached pairs if still valid (cache for 1 hour)
+      if (this.swapPairs && this.swapPairsCacheExpiry && Date.now() < this.swapPairsCacheExpiry) {
+        if (currency) {
+          return this.swapPairs[currency] || [];
+        }
+        return this.swapPairs;
+      }
+
+      const params = currency ? { currency } : {};
+      const response = await this.makeRequest('GET', '/v1/currency/swap/pairs', null, params);
+
+      // Cache the response for 1 hour
+      if (!currency) {
+        this.swapPairs = response.data || response;
+        this.swapPairsCacheExpiry = Date.now() + (60 * 60 * 1000); // 1 hour
+        return this.swapPairs;
+      }
+
+      return response.data || response;
+    } catch (error) {
+      console.error(`Failed to get currency swap pairs${currency ? ` for ${currency}` : ''}:`, error.message);
+
+      // Fallback to common pairs if API fails
+      const fallbackPairs = {
+        'ETH': ['USDT', 'USDC'],
+        'BTC': ['USDT', 'USDC'],
+        'SOL': ['USDT', 'USDC'],
+        'USDT': ['USDC', 'NGN'],
+        'USDC': ['USDT', 'NGN']
+      };
+
+      if (currency) {
+        return fallbackPairs[currency] || ['USDT', 'USDC'];
+      }
+      return fallbackPairs;
+    }
+  }
+
+  /**
+   * Helper to get a valid conversion target for a source currency
+   * Useful when you want to convert to fiat but need to check supported pairs
+   * @param {string} fromCurrency - Source currency (e.g., 'ETH', 'SOL')
+   * @param {string} preferredTarget - Preferred target currency (e.g., 'USD', 'NGN')
+   * @returns {Promise<string>} Valid target currency to use
+   */
+  async getValidConversionTarget(fromCurrency, preferredTarget = 'USDT') {
+    try {
+      const supportedPairs = await this.getCurrencySwapPairs(fromCurrency);
+
+      // If preferred target is supported, use it
+      if (supportedPairs.includes(preferredTarget)) {
+        return preferredTarget;
+      }
+
+      // Otherwise, prefer USDT or USDC as intermediary
+      if (supportedPairs.includes('USDT')) {
+        return 'USDT';
+      }
+      if (supportedPairs.includes('USDC')) {
+        return 'USDC';
+      }
+
+      // Return first available pair
+      return supportedPairs[0] || preferredTarget;
+    } catch (error) {
+      console.error(`Failed to get valid conversion target for ${fromCurrency}:`, error.message);
+      return 'USDT'; // Safe fallback
+    }
   }
 }
 
