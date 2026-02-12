@@ -144,9 +144,7 @@ transactionSchema.index({ 'metadata.provider': 1 });
 
 transactionSchema.pre('save', async function (next) {
   if (!this.transactionId) {
-    const timestamp = Date.now().toString(36).toUpperCase();
-    const random = Math.random().toString(36).substring(2, 10).toUpperCase();
-    this.transactionId = `TXN-${timestamp}-${random}`;
+    this.transactionId = generateTransactionId();
   }
 
   if (!this.netAmount) {
@@ -155,6 +153,22 @@ transactionSchema.pre('save', async function (next) {
 
   next();
 });
+
+transactionSchema.pre('findOneAndUpdate', function (next) {
+  const update = this.getUpdate();
+  if (update.$set && !update.$set.transactionId) {
+    update.$set.transactionId = generateTransactionId();
+  } else if (!update.transactionId && !update.$set) {
+    update.transactionId = generateTransactionId();
+  }
+  next();
+});
+
+function generateTransactionId() {
+  const timestamp = Date.now().toString(36).toUpperCase();
+  const random = Math.random().toString(36).substring(2, 10).toUpperCase();
+  return `TXN-${timestamp}-${random}`;
+}
 
 transactionSchema.methods.markCompleted = async function (transactionHash) {
   this.status = 'completed';
