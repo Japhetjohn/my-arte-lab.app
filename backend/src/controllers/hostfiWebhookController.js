@@ -124,25 +124,29 @@ async function processFiatDeposit(parsed) {
 
   // 1. Handle Fee and Auto-Conversion for ALL deposits (Simulate for test, Execute for live)
   try {
-    const ngnAssetId = await hostfiWalletService.getWalletAssetId(user._id, 'NGN');
-    const usdcAssetId = await hostfiWalletService.getWalletAssetId(user._id, 'USDC');
+    const sourceAssetId = await hostfiWalletService.getWalletAssetId(user._id, currency);
+
+    // Specifically target USDC on SOL network
+    let usdcAssetId = null;
+    if (user.wallet.hostfiWalletAssets) {
+      const solUsdc = user.wallet.hostfiWalletAssets.find(a =>
+        a.currency === 'USDC' && (a.colNetwork === 'SOL' || a.colNetwork === 'Solana')
+      );
+      usdcAssetId = solUsdc?.assetId;
+    }
+
+    // Fallback if Solana USDC not explicitly found via network tag
+    if (!usdcAssetId) {
+      usdcAssetId = await hostfiWalletService.getWalletAssetId(user._id, 'USDC');
+    }
 
     if (!isTestEvent) {
       console.log(`[Webhook:FiatDeposit] Initiating 1% fee transfer of ${feeBreakdown.platformFee} ${currency} to platform wallet...`);
-      // In a real on-ramp, the 1% is usually handled by the platform during the swap or via a separate payout
-      // For simplicity, we swap the FULL amount to USDC and THEN deduct fee, OR swap 99%.
-      // Most efficient: Swap 99% NGN -> User USDC. The 1% stays in NGN or we collect it.
-      // Better: Swap 100% NGN -> USDC, then the platform takes 1% USDC.
-
-      // Let's go with: Swap 100% NGN -> USDC. User receives full amount in USDC, 
-      // then we deduct our 1% commission from their USDC balance (Internal Ledger) 
-      // and optionally move it on HostFi if needed. 
-      // Actually, user wants 1% from on-ramp/off-ramp.
 
       console.log(`[Webhook:FiatDeposit] Swapping ${amount} ${currency} to USDC...`);
       const swapResult = await hostfiService.swapAssets({
         fromCurrency: currency,
-        fromAssetId: ngnAssetId,
+        fromAssetId: sourceAssetId,
         toCurrency: 'USDC',
         toAssetId: usdcAssetId,
         amount: amount

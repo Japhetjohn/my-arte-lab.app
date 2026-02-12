@@ -2,7 +2,7 @@ const axios = require('axios');
 require('dotenv').config();
 
 async function testWebhook() {
-    const webhookUrl = 'http://localhost:5000/api/hostfi/webhook';
+    const webhookUrl = 'http://localhost:5000/api/hostfi/webhooks';
     const userId = '6985e9e84f74dfb2c18e7a54'; // labossvisuals@gmail.com
     const timestamp = Date.now();
     const eventId = `TEST-EVT-${timestamp}`;
