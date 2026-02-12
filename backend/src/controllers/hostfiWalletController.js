@@ -323,25 +323,47 @@ exports.createFiatChannel = catchAsync(async (req, res, next) => {
   });
 
   if (savedChannel) {
-    console.log(`[Controller:createFiatChannel] Found channel in database: ${savedChannel.channelId}`);
+    console.log(`[Controller:createFiatChannel] Found channel in database: ${savedChannel.channelId}. Verifying with HostFi...`);
 
-    // Return the saved channel details
-    return successResponse(res, 200, 'Fiat channel retrieved successfully', {
-      channel: {
-        id: savedChannel.channelId,
-        reference: savedChannel.reference,
-        accountNumber: savedChannel.accountNumber,
-        accountName: savedChannel.accountName,
-        bankName: savedChannel.bankName,
-        bankId: savedChannel.bankId,
-        currency: savedChannel.currency,
-        type: savedChannel.type,
-        method: savedChannel.method,
-        countryCode: savedChannel.countryCode,
-        active: savedChannel.active,
-        createdAt: savedChannel.createdAt
+    // VERIFY IF STILL ACTIVE IN HOSTFI (Dynamic channels expire)
+    try {
+      const activeChannels = await hostfiService.getFiatCollectionChannels({
+        currency: currency,
+        customId: savedChannel.customId
+      });
+
+      const records = activeChannels.records || [];
+      const stillActive = records.find(c => c.id === savedChannel.channelId && c.active !== false);
+
+      if (stillActive) {
+        console.log(`[Controller:createFiatChannel] Channel ${savedChannel.channelId} is still active in HostFi.`);
+        return successResponse(res, 200, 'Fiat channel retrieved successfully', {
+          channel: {
+            id: savedChannel.channelId,
+            reference: savedChannel.reference,
+            accountNumber: savedChannel.accountNumber,
+            accountName: savedChannel.accountName,
+            bankName: savedChannel.bankName,
+            bankId: savedChannel.bankId,
+            currency: savedChannel.currency,
+            type: savedChannel.type,
+            method: savedChannel.method,
+            countryCode: savedChannel.countryCode,
+            active: savedChannel.active,
+            createdAt: savedChannel.createdAt
+          }
+        });
+      } else {
+        console.log(`[Controller:createFiatChannel] Channel ${savedChannel.channelId} has expired or is inactive in HostFi. Refreshing...`);
+        // Delete expired channel to allow creation of new one
+        await FiatChannel.findByIdAndDelete(savedChannel._id);
+        savedChannel = null;
       }
-    });
+    } catch (verifyError) {
+      console.error('[Controller:createFiatChannel] Failed to verify channel with HostFi:', verifyError.message);
+      // If verification fails, proceed with existing channel if it's the only one we have, 
+      // or try to refresh if it's a critical error. For now, let's keep it if we can't confirm it's dead.
+    }
   }
 
   // Step 2: GET WALLET ASSET ID
@@ -352,7 +374,9 @@ exports.createFiatChannel = catchAsync(async (req, res, next) => {
   }
 
   // Step 3: CREATE NEW CHANNEL IN HOSTFI
-  const fiatCustomId = `${req.user._id.toString()}-FIAT`;
+  // Per HostFi support: Dynamic accounts require a UNIQUE reference (customId) per request
+  // and cannot reuse IDs to prevent duplicate deposits.
+  const fiatCustomId = `${req.user._id.toString()}-FIAT-${Date.now()}`;
 
   try {
     console.log('[Controller:createFiatChannel] Creating new channel in HostFi...');
