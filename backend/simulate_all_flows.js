@@ -76,7 +76,7 @@ async function runFullSimulation() {
 
         // --- STEP 1: VERIFY DEPOSIT WEBHOOK ---
         const startBalance = client.wallet.balance;
-        const depositAmount = 2000; // Increased to ensure enough for project
+        const depositAmount = 2000;
         console.log(`Simulating deposit of ${depositAmount} NGN/USDC...`);
         const result1 = await simulateDepositWebhook(client._id, depositAmount, 'NGN');
         console.log('✅ Webhook result:', JSON.stringify(result1));
@@ -119,6 +119,8 @@ async function runFullSimulation() {
             projectId: project._id,
             creatorId: creator._id,
             proposedBudget: { amount: 2000, currency: 'USDC' },
+            proposedTimeline: '3 days',
+            coverLetter: 'This is my comprehensive flow test application.',
             proposal: 'I can do this!',
             status: 'pending'
         });
@@ -170,11 +172,12 @@ async function runFullSimulation() {
         }
 
         // Clean up test data
-        console.log('\n🗑️  Cleaning up simulation data...');
-        // We don't delete to keep history for the user, or we can delete if it's strict clean test
+        console.log('\n--- [Cleaning Up] ---');
         await Project.findByIdAndDelete(project._id);
         await Application.findByIdAndDelete(application._id);
         await Transaction.deleteMany({ project: project._id });
+        // Also delete the test deposit transaction
+        await Transaction.deleteMany({ reference: result1?.id || 'NO_REF' });
 
         console.log('\n✅ End-to-end verification completed successfully!');
         process.exit(0);
