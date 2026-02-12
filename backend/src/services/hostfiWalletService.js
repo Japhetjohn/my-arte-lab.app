@@ -172,7 +172,16 @@ class HostFiWalletService {
         }
       }
 
-      user.wallet.balance = totalAggregateInPrimary;
+      // Update aggregate balance: Only overwrite if we have HostFi funds, 
+      // OR if the current balance is 0. This preserves manual adjustments/restorations.
+      if (totalAggregateInPrimary > 0 || !user.wallet.balance || user.wallet.balance === 0) {
+        user.wallet.balance = totalAggregateInPrimary;
+      } else {
+        // If HostFi total is 0 but we have a ledger balance, we keep the ledger balance
+        // but still update the currency/network if they were changed
+        console.log(`[Sync] HostFi is 0 but ledger has ${user.wallet.balance}, preserving ledger.`);
+      }
+
       user.wallet.lastUpdated = new Date();
       await user.save();
 
