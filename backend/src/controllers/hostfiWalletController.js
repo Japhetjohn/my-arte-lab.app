@@ -473,16 +473,12 @@ exports.createFiatChannel = catchAsync(async (req, res, next) => {
  */
 exports.getFiatChannels = catchAsync(async (req, res, next) => {
   const { currency } = req.query;
+  const FiatChannel = require('../models/FiatChannel');
 
-  // Use namespaced customId to match channel creation format
-  const fiatCustomId = `${req.user._id.toString()}-FIAT`;
+  const query = { userId: req.user._id };
+  if (currency) query.currency = currency;
 
-  const filters = {
-    customId: fiatCustomId
-  };
-  if (currency) filters.currency = currency;
-
-  const channels = await hostfiService.getFiatCollectionChannels(filters);
+  const channels = await FiatChannel.find(query);
 
   successResponse(res, 200, 'Fiat channels retrieved successfully', {
     channels
