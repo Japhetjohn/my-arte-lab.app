@@ -59,13 +59,14 @@ exports.getWallet = catchAsync(async (req, res, next) => {
     };
   }));
 
-  // Calculate total USD balance
+  // Calculate total USD balance: prioritize internal ledger if it has funds from migration/restoration
   const totalBalanceUsd = assetsWithUsd.reduce((sum, asset) => sum + asset.usdEquivalent, 0);
+  const displayBalance = Math.max(totalBalanceUsd, user.wallet.balance || 0);
 
   successResponse(res, 200, 'Wallet retrieved successfully', {
     wallet: {
       assets: assetsWithUsd,
-      balance: totalBalanceUsd,
+      balance: displayBalance,
       pendingBalance: user.wallet.pendingBalance || 0,
       totalEarnings: user.wallet.totalEarnings || 0,
       balanceUsd: totalBalanceUsd,
