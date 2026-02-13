@@ -126,7 +126,7 @@ class HostFiService {
       const payload = {
         assetId,
         clientReference: clientReference || `FEE-${Date.now()}`,
-        methodId: 'CRYPTO_TRANSFER', // Assuming this for address transfer, or just Payout
+        methodId: 'CRYPTO', // Standard crypto transfer method
         amount: Number(amount),
         currency,
         recipient: {
@@ -134,8 +134,8 @@ class HostFiService {
           method: 'CRYPTO',
           currency,
           address: this.platformWalletAddress,
-          network: 'SOL', // User specified Solana USDC
-          country: 'NG' // Required by some payout endpoints even for crypto
+          network: 'SOL', // Target Solana USDC wallet
+          country: 'NG'
         },
         memo: `Platform Commission (1%) for transaction ${clientReference}`
       };
@@ -144,8 +144,6 @@ class HostFiService {
       return response;
     } catch (error) {
       console.error('[HostFi Service] Failed to collect commission:', error.message);
-      // We don't throw here to avoid blocking the main transaction if the fee transfer fails
-      // though ideally we should log it for manual reconciliation
       return { error: error.message };
     }
   }
@@ -880,6 +878,23 @@ class HostFiService {
   /**
    * Lookup and validate bank account
    * @param {Object} params - Lookup parameters
+   * @param {string} params.country - Country code (NG, etc.)
+   * @param {string} params.bankId - Bank ID from getBanksList
+   * @param {string} params.accountNumber - Bank account number
+   * @returns {Promise<Object>} Account verification details
+   */
+  async lookupBankAccount({ country, bankId, accountNumber }) {
+    try {
+      const payload = {
+        country: country || 'NG',
+        bankId,
+        accountNumber
+      };
+
+      console.log(`[HostFi Service] Looking up bank account: ${accountNumber} in bank ${bankId}`);
+      const response = await this.makeRequest('POST', '/v1/payout/banks/lookup', payload);
+      return response.data || response;
+    } catch (error) {
       console.error('Bank account lookup failed:', error.message);
       throw error;
     }
