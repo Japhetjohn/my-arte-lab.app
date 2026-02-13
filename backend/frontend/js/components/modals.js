@@ -1024,7 +1024,7 @@ window.showBankWithdrawal = async function () {
                                     <input type="number" id="withdrawAmount" class="form-input" placeholder="0.00" min="1000" step="1" required>
                                     <button type="button" id="withdrawMaxBtn" class="btn-text" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 12px; color: var(--primary-color);">Use Max</button>
                                 </div>
-                                <small style="color: var(--text-secondary); display: block; margin-top: 4px;">Minimum withdrawal: 1,000 ${window.walletData?.currency || 'NGN'}</small>
+                                <small id="withdrawMinHint" style="color: var(--text-secondary); display: block; margin-top: 4px;">Minimum withdrawal: 1,000 ${window.walletData?.currency || 'NGN'}</small>
                                 <small style="color: var(--text-secondary);">Available: <span id="availableBalance">0.00</span> ${window.walletData?.currency || 'NGN'} | Fee: 1%</small>
                             </div>
 
@@ -1113,6 +1113,13 @@ window.showBankWithdrawal = async function () {
                 accountInput.disabled = true;
                 return;
             }
+
+            // Update minimum withdrawal amount based on currency
+            const isFiat = ['NGN', 'KES', 'GHS', 'EGP', 'ZAR', 'TZS', 'UGX'].includes(currency);
+            const minAmount = isFiat ? 1000 : 1;
+            amountInput.min = minAmount;
+            document.getElementById('withdrawMinHint').textContent = `Minimum withdrawal: ${minAmount.toLocaleString()} ${currency}`;
+
             initBanks(currency);
         });
 
@@ -1149,10 +1156,21 @@ window.showBankWithdrawal = async function () {
 
                         if (res.success && res.data) {
                             const accountInfo = res.data.account || res.data;
-                            nameInput.value = accountInfo.accountName || accountInfo.name || 'Verified Account';
+                            // Broaden account name check to handle various API response formats
+                            const resolvedName = accountInfo.accountName || accountInfo.account_name || accountInfo.name || accountInfo.full_name;
+
+                            if (resolvedName) {
+                                nameInput.value = resolvedName;
+                                nameInput.readOnly = true;
+                                nameInput.style.backgroundColor = 'var(--bg-secondary)';
+                                showToast('Account verified: ' + resolvedName, 'success');
+                            } else {
+                                nameInput.value = '';
+                                nameInput.placeholder = 'Account verified (name unavailable)';
+                                showToast('Account verified', 'success');
+                            }
                             isVerified = true;
                             checkForm();
-                            showToast('Account verified', 'success');
                         } else {
                             nameInput.value = ''; // Clear verifying status if failed
                             nameInput.placeholder = 'Enter account name (manual)';
