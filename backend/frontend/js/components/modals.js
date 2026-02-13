@@ -1050,16 +1050,17 @@ window.showBankWithdrawal = async function () {
         const maxBtn = document.getElementById('withdrawMaxBtn');
         const availableDisplay = document.getElementById('availableBalance');
 
-        const availableDisplay = document.getElementById('availableBalance');
-
-        // Set available balance and initial min value
+        // Set available balance and initial min value based on WALLET currency, NOT target currency
         if (window.walletData) {
             availableDisplay.textContent = (window.walletData.balance || 0).toLocaleString();
             const walletCurrency = window.walletData.currency || 'USD';
+            // If primary balance is a major African fiat, min 1000. If USD/USDC/Crypto, min 1 or 0.1
             const isFiatPrimary = ['NGN', 'KES', 'GHS', 'EGP', 'ZAR', 'TZS', 'UGX'].includes(walletCurrency);
-            const initialMin = isFiatPrimary ? 1000 : 1;
-            amountInput.min = initialMin;
-            document.getElementById('withdrawMinHint').textContent = `Minimum withdrawal: ${initialMin.toLocaleString()} ${walletCurrency}`;
+            const minAmount = isFiatPrimary ? 1000 : 1;
+
+            amountInput.min = minAmount;
+            amountInput.placeholder = `Min: ${minAmount}`;
+            document.getElementById('withdrawMinHint').textContent = `Minimum withdrawal: ${minAmount.toLocaleString()} ${walletCurrency}`;
         }
 
         maxBtn.addEventListener('click', () => {
@@ -1113,150 +1114,136 @@ window.showBankWithdrawal = async function () {
             initBanks(currencies[0]);
         }
 
-        currencySelect.addEventListener('change', async () => {
-            const currency = currencySelect.value;
-            if (!currency) {
-                bankSelectGroup.style.display = 'none';
-                accountInput.disabled = true;
-                return;
-            }
+        initBanks(currency);
+    });
 
-            // Update minimum withdrawal amount based on currency
-            const isFiat = ['NGN', 'KES', 'GHS', 'EGP', 'ZAR', 'TZS', 'UGX'].includes(currency);
-            const minAmount = isFiat ? 1000 : 1;
-            amountInput.min = minAmount;
-            document.getElementById('withdrawMinHint').textContent = `Minimum withdrawal: ${minAmount.toLocaleString()} ${currency}`;
+    bankSelect.addEventListener('change', () => {
+        selectedBankCode = bankSelect.value;
+        accountInput.disabled = !selectedBankCode;
+        if (selectedBankCode) {
+            accountInput.focus();
+        }
+        checkForm(); // Check form when bank changes
+    });
 
-            initBanks(currency);
-        });
+    let verifyTimeout;
+    accountInput.addEventListener('input', () => {
+        clearTimeout(verifyTimeout);
+        nameInput.value = '';
+        nameInput.readOnly = false;
+        nameInput.style.backgroundColor = '';
+        nameInput.placeholder = 'Verifying account...';
+        isVerified = false;
 
-        bankSelect.addEventListener('change', () => {
-            selectedBankCode = bankSelect.value;
-            accountInput.disabled = !selectedBankCode;
-            if (selectedBankCode) {
-                accountInput.focus();
-            }
-            checkForm(); // Check form when bank changes
-        });
+        checkForm(); // Check form immediately
 
-        let verifyTimeout;
-        accountInput.addEventListener('input', () => {
-            clearTimeout(verifyTimeout);
-            nameInput.value = '';
-            nameInput.readOnly = false;
-            nameInput.style.backgroundColor = '';
-            nameInput.placeholder = 'Enter account name (manual)';
-            isVerified = false;
+        const accNum = accountInput.value;
+        if (accNum.length >= 10 && selectedBankCode) {
+            nameInput.value = 'Verifying...';
+            verifyTimeout = setTimeout(async () => {
+                try {
+                    const res = await api.verifyHostfiBankAccount({
+                        bankId: selectedBankCode,
+                        accountNumber: accNum,
+                        country: CURRENCY_COUNTRY_MAP[currencySelect.value] || 'NG'
+                    });
 
-            checkForm(); // Check form immediately
+                    if (res.success && res.data) {
+                        const accountInfo = res.data.account || res.data;
+                        // Comprehensive name field checking
+                        const resolvedName = accountInfo.accountName || accountInfo.account_name || accountInfo.name || accountInfo.full_name || accountInfo.account_holder_name;
 
-            const accNum = accountInput.value;
-            if (accNum.length >= 10 && selectedBankCode) {
-                nameInput.value = 'Verifying...';
-                verifyTimeout = setTimeout(async () => {
-                    try {
-                        const res = await api.verifyHostfiBankAccount({
-                            bankId: selectedBankCode,
-                            accountNumber: accNum,
-                            country: CURRENCY_COUNTRY_MAP[currencySelect.value] || 'NG'
-                        });
-
-                        if (res.success && res.data) {
-                            const accountInfo = res.data.account || res.data;
-                            // Broaden account name check to handle various API response formats
-                            const resolvedName = accountInfo.accountName || accountInfo.account_name || accountInfo.name || accountInfo.full_name;
-
-                            if (resolvedName) {
-                                nameInput.value = resolvedName;
-                                nameInput.readOnly = true;
-                                nameInput.style.backgroundColor = 'var(--bg-secondary)';
-                                showToast('Account verified: ' + resolvedName, 'success');
-                            } else {
-                                nameInput.value = '';
-                                nameInput.placeholder = 'Account verified (name unavailable)';
-                                showToast('Account verified', 'success');
-                            }
+                        if (resolvedName && resolvedName !== 'undefined') {
+                            nameInput.value = resolvedName;
+                            nameInput.readOnly = true;
+                            nameInput.style.backgroundColor = '#eef2ff'; // Subtle blue to indicate success
                             isVerified = true;
-                            checkForm();
+                            showToast('Account verified: ' + resolvedName, 'success');
                         } else {
-                            nameInput.value = ''; // Clear verifying status if failed
-                            nameInput.placeholder = 'Enter account name (manual)';
+                            nameInput.value = '';
+                            nameInput.placeholder = 'Verified (name unavailable - please type)';
                             nameInput.readOnly = false;
-                            nameInput.disabled = false;
-                            isVerified = true; // Still allow submission
-                            checkForm();
+                            isVerified = true;
                         }
-                    } catch (err) {
+                        checkForm();
+                    } else {
                         nameInput.value = '';
+                        nameInput.placeholder = 'Enter account name (manual)';
                         nameInput.readOnly = false;
-                        nameInput.disabled = false;
-                        isVerified = true; // Still allow submission
+                        isVerified = true;
                         checkForm();
                     }
-                }, 800);
-            }
-        });
-
-        const checkForm = () => {
-            const hasAccount = accountInput.value.length >= 10;
-            const hasBank = !!selectedBankCode;
-            const hasAmount = amountInput.value && parseFloat(amountInput.value) > 0;
-
-            // Allow submission if we have account, bank and amount, even if auto-verify isn't done
-            if (hasAccount && hasBank && hasAmount) {
-                submitBtn.disabled = false;
-            } else {
-                submitBtn.disabled = true;
-            }
-        };
-
-        amountInput.addEventListener('input', checkForm);
-
-        document.getElementById('hostfiWithdrawForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            // Allow manual name if needed and sanitize 'undefined'
-            let accountName = nameInput.value;
-            if (!accountName || accountName === 'undefined' || accountName === 'Verifying...') {
-                accountName = 'Verified Recipient';
-            }
-
-            try {
-                submitBtn.disabled = true;
-                submitBtn.textContent = 'Processing...';
-
-                const res = await api.initiateHostfiWithdrawal({
-                    amount: parseFloat(amountInput.value),
-                    currency: window.walletData?.currency || 'NGN',
-                    targetCurrency: currencySelect.value,
-                    methodId: 'BANK_TRANSFER',
-                    recipient: {
-                        accountNumber: accountInput.value,
-                        accountName: accountName,
-                        bankId: selectedBankCode,
-                        bankName: bankSelect.options[bankSelect.selectedIndex].text,
-                        country: CURRENCY_COUNTRY_MAP[currencySelect.value] || 'NG'
-                    }
-                });
-
-                if (res.success) {
-                    closeModal();
-                    showToast('Withdrawal initiated successfully!', 'success');
-                    setTimeout(() => window.location.reload(), 1500);
-                } else {
-                    throw new Error(res.message);
+                } catch (err) {
+                    nameInput.value = '';
+                    nameInput.placeholder = 'Enter account name (manual)';
+                    nameInput.readOnly = false;
+                    isVerified = true;
+                    checkForm();
                 }
-            } catch (error) {
-                showToast(error.message || 'Withdrawal failed', 'error');
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Withdraw Funds';
-            }
-        });
+            }, 800);
+        }
+    });
 
-    } catch (error) {
-        console.error('Failed to load withdrawal modal:', error);
-        showToast(error.message || 'Failed to load withdrawal options', 'error');
-    }
+    const checkForm = () => {
+        const hasAccount = accountInput.value.length >= 10;
+        const hasBank = !!selectedBankCode;
+        const hasAmount = amountInput.value && parseFloat(amountInput.value) > 0;
+        const hasName = nameInput.value.length >= 3 && nameInput.value !== 'Verifying...';
+
+        if (hasAccount && hasBank && hasAmount && hasName) {
+            submitBtn.disabled = false;
+        } else {
+            submitBtn.disabled = true;
+        }
+    };
+
+    amountInput.addEventListener('input', checkForm);
+
+    document.getElementById('hostfiWithdrawForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        // Allow manual name if needed and sanitize 'undefined'
+        let accountName = nameInput.value;
+        if (!accountName || accountName === 'undefined' || accountName === 'Verifying...') {
+            accountName = 'Verified Recipient';
+        }
+
+        try {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Processing...';
+
+            const res = await api.initiateHostfiWithdrawal({
+                amount: parseFloat(amountInput.value),
+                currency: window.walletData?.currency || 'NGN',
+                targetCurrency: currencySelect.value,
+                methodId: 'BANK_TRANSFER',
+                recipient: {
+                    accountNumber: accountInput.value,
+                    accountName: accountName,
+                    bankId: selectedBankCode,
+                    bankName: bankSelect.options[bankSelect.selectedIndex].text,
+                    country: CURRENCY_COUNTRY_MAP[currencySelect.value] || 'NG'
+                }
+            });
+
+            if (res.success) {
+                closeModal();
+                showToast('Withdrawal initiated successfully!', 'success');
+                setTimeout(() => window.location.reload(), 1500);
+            } else {
+                throw new Error(res.message);
+            }
+        } catch (error) {
+            showToast(error.message || 'Withdrawal failed', 'error');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Withdraw Funds';
+        }
+    });
+
+} catch (error) {
+    console.error('Failed to load withdrawal modal:', error);
+    showToast(error.message || 'Failed to load withdrawal options', 'error');
+}
 };
 
 
