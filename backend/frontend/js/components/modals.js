@@ -1024,7 +1024,7 @@ window.showBankWithdrawal = async function () {
                                     <input type="number" id="withdrawAmount" class="form-input" placeholder="0.00" min="1000" step="1" required>
                                     <button type="button" id="withdrawMaxBtn" class="btn-text" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 12px; color: var(--primary-color);">Use Max</button>
                                 </div>
-                                <small id="withdrawMinHint" style="color: var(--text-secondary); display: block; margin-top: 4px;">Minimum withdrawal: 1,000 ${window.walletData?.currency || 'NGN'}</small>
+                                <small id="withdrawMinHint" style="color: var(--text-secondary); display: block; margin-top: 4px;">Minimum withdrawal: ${(window.walletData?.currency === 'USDC' || window.walletData?.currency === 'USD') ? '1.0' : '1,000'} ${window.walletData?.currency || 'NGN'}</small>
                                 <small style="color: var(--text-secondary);">Available: <span id="availableBalance">0.00</span> ${window.walletData?.currency || 'NGN'} | Fee: 1%</small>
                             </div>
 
@@ -1050,9 +1050,16 @@ window.showBankWithdrawal = async function () {
         const maxBtn = document.getElementById('withdrawMaxBtn');
         const availableDisplay = document.getElementById('availableBalance');
 
-        // Set available balance display
+        const availableDisplay = document.getElementById('availableBalance');
+
+        // Set available balance and initial min value
         if (window.walletData) {
             availableDisplay.textContent = (window.walletData.balance || 0).toLocaleString();
+            const walletCurrency = window.walletData.currency || 'USD';
+            const isFiatPrimary = ['NGN', 'KES', 'GHS', 'EGP', 'ZAR', 'TZS', 'UGX'].includes(walletCurrency);
+            const initialMin = isFiatPrimary ? 1000 : 1;
+            amountInput.min = initialMin;
+            document.getElementById('withdrawMinHint').textContent = `Minimum withdrawal: ${initialMin.toLocaleString()} ${walletCurrency}`;
         }
 
         maxBtn.addEventListener('click', () => {
@@ -1136,10 +1143,10 @@ window.showBankWithdrawal = async function () {
         accountInput.addEventListener('input', () => {
             clearTimeout(verifyTimeout);
             nameInput.value = '';
-            nameInput.placeholder = 'Enter account name (manual)';
             nameInput.readOnly = false;
-            nameInput.disabled = false;
-            isVerified = true; // Set to true immediately to allow submission
+            nameInput.style.backgroundColor = '';
+            nameInput.placeholder = 'Enter account name (manual)';
+            isVerified = false;
 
             checkForm(); // Check form immediately
 
