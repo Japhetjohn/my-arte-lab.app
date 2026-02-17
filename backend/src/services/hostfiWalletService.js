@@ -99,22 +99,30 @@ class HostFiWalletService {
 
       // Update stored assets and balances
       for (const asset of walletAssets) {
-        let storedAsset = user.wallet.hostfiWalletAssets.find(a => a.assetId === asset.id);
+        const currencyCode = asset.currency.code || asset.currency;
+        const networkCode = asset.network || (asset.type === 'CRYPTO' ? 'SOL' : 'HOSTFI'); // Default network if missing
+
+        // Find existing asset by ID OR by (currency + network) to prevent logical duplicates
+        let storedAsset = user.wallet.hostfiWalletAssets.find(a =>
+          a.assetId === asset.id ||
+          (a.currency === currencyCode && (a.colNetwork === networkCode || a.network === networkCode))
+        );
 
         if (!storedAsset) {
           // New asset appeared, add it
-          const currencyData = asset.currency || {};
           user.wallet.hostfiWalletAssets.push({
             assetId: asset.id,
-            currency: currencyData.code || currencyData,
+            currency: currencyCode,
             assetType: asset.type,
             balance: asset.balance || 0,
             reservedBalance: asset.reservedBalance || 0,
-            lastSynced: new Date()
+            lastSynced: new Date(),
+            network: networkCode
           });
           storedAsset = user.wallet.hostfiWalletAssets[user.wallet.hostfiWalletAssets.length - 1];
         } else {
-          // Update balance and reservedBalance from HostFi as source of truth
+          // Update details for existing asset
+          storedAsset.assetId = asset.id; // Update ID in case it changed
           storedAsset.balance = asset.balance || 0;
           storedAsset.reservedBalance = asset.reservedBalance || 0;
           storedAsset.lastSynced = new Date();
@@ -122,10 +130,9 @@ class HostFiWalletService {
 
         // Sync collection address if available
         if (asset.type === 'CRYPTO') {
-          const currencyCode = asset.currency.code || asset.currency;
           const addrInfo = cryptoAddresses.find(a =>
             a.assetId === asset.id ||
-            (a.currency === currencyCode && a.network === asset.network)
+            (a.currency === currencyCode && a.network === networkCode)
           );
 
           if (addrInfo) {
