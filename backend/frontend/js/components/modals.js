@@ -1010,3 +1010,224 @@ window.handlePhoneVisibilityToggleNew = async function (checkbox) {
         showToast(error.message || 'Failed to update phone visibility', 'error');
     }
 };
+
+// ==========================================
+// WALLET MODALS (HOSTFI)
+// ==========================================
+
+export async function showAddFundsModal() {
+    const countryData = getUserCountryData();
+    const modalContent = `
+        <div class="modal" onclick="closeModalOnBackdrop(event)">
+            <div class="modal-content glass-effect" style="max-width: 500px; border: 1px solid rgba(255,255,255,0.6); box-shadow: 0 12px 48px rgba(0,0,0,0.15); border-radius: 24px; overflow: hidden;">
+                <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.2); padding: 20px 24px;">
+                    <h2 style="margin: 0; font-size: 1.5rem; font-weight: 700; background: linear-gradient(135deg, var(--primary), #cc8dff); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Add Funds</h2>
+                    <button class="icon-btn" onclick="closeModal()" style="background: rgba(255,255,255,0.2); border-radius: 50%; padding: 8px;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div style="padding: 24px;">
+                    <div style="display: flex; gap: 8px; margin-bottom: 24px; background: rgba(0,0,0,0.05); padding: 6px; border-radius: 12px;">
+                        <button class="btn-tab active" id="fiatTab" onclick="switchFundTab('fiat')" style="flex: 1; padding: 10px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; transition: all 0.3s;">Fiat (Bank)</button>
+                        <button class="btn-tab" id="cryptoTab" onclick="switchFundTab('crypto')" style="flex: 1; padding: 10px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; transition: all 0.3s;">Crypto (USDC)</button>
+                    </div>
+
+                    <div id="fiatFundView">
+                        <div class="form-group">
+                            <label class="form-label" style="font-weight: 600; margin-bottom: 8px; display: block;">Select Country/Currency</label>
+                            <select id="fundCurrency" class="form-input" style="background: rgba(255,255,255,0.5); width: 100%; padding: 12px; border-radius: 12px; border: 1px solid rgba(0,0,0,0.1); font-size: 1rem;">
+                                ${Object.keys(COUNTRY_MAP).filter(k => k.length > 2).map(k => `
+                                    <option value="${COUNTRY_MAP[k].currency}" ${COUNTRY_MAP[k].currency === countryData.currency ? 'selected' : ''}>
+                                        ${k.charAt(0).toUpperCase() + k.slice(1)} (${COUNTRY_MAP[k].currency})
+                                    </option>
+                                `).join('')}
+                            </select>
+                        </div>
+                        <button class="btn-primary" onclick="generateFiatChannel()" style="width: 100%; padding: 14px; margin-top: 16px; font-weight: 700;">Generate Deposit Account</button>
+                    </div>
+
+                    <div id="cryptoFundView" style="display: none;">
+                        <div style="background: rgba(151, 71, 255, 0.08); padding: 16px; border-radius: 16px; margin-bottom: 20px; border: 1px solid rgba(151, 71, 255, 0.15);">
+                            <div style="display: flex; align-items: flex-start; gap: 12px;">
+                                <div style="color: var(--primary); padding-top: 2px;">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                        <path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div style="font-weight: 700; font-size: 14px; margin-bottom: 4px; color: var(--text-primary);">Gasless Transactions Active</div>
+                                    <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.5; font-weight: 500;">
+                                        Our platform sponsors gas fees for Solana USDC transactions. You only need USDC to interact - no SOL required!
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="btn-primary" onclick="generateCryptoAddress()" style="width: 100%; padding: 14px; font-weight: 700;">Get Solana USDC Address</button>
+                    </div>
+
+                    <div id="depositResult" style="display: none; margin-top: 24px; padding: 24px; border-radius: 20px; background: rgba(255,255,255,0.6); border: 2px dashed rgba(151, 71, 255, 0.2); animation: fadeIn 0.3s ease;">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <style>
+            .btn-tab.active {
+                background: white;
+                color: var(--primary);
+                box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            }
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+        </style>
+    `;
+    openModal(modalContent);
+}
+
+window.switchFundTab = function (tab) {
+    document.getElementById('fiatFundView').style.display = tab === 'fiat' ? 'block' : 'none';
+    document.getElementById('cryptoFundView').style.display = tab === 'crypto' ? 'block' : 'none';
+    document.getElementById('fiatTab').classList.toggle('active', tab === 'fiat');
+    document.getElementById('cryptoTab').classList.toggle('active', tab === 'crypto');
+    document.getElementById('depositResult').style.display = 'none';
+};
+
+window.generateFiatChannel = async function () {
+    const currency = document.getElementById('fundCurrency').value;
+    window.showLoadingSpinner(`Generating ${currency} account...`);
+    try {
+        const response = await api.createHostfiFiatChannel({ currency });
+        window.hideLoadingSpinner();
+        if (response.success) {
+            const channel = response.data.channel;
+            const resultDiv = document.getElementById('depositResult');
+            resultDiv.innerHTML = `
+                <div style="text-align: center;">
+                    <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; color: var(--text-secondary); margin-bottom: 16px;">Transfer to this account</div>
+                    <div style="font-size: 24px; font-weight: 800; color: var(--text-primary); margin-bottom: 8px; letter-spacing: 1px;">${channel.accountNumber}</div>
+                    <div style="font-weight: 700; font-size: 1.1rem; color: var(--primary); margin-bottom: 16px;">${channel.bankName}</div>
+                    <div style="font-size: 14px; font-weight: 600; background: rgba(0,0,0,0.04); padding: 12px; border-radius: 12px; color: var(--text-secondary);">${channel.accountName}</div>
+                    <p class="caption mt-lg" style="color: #64748b; font-weight: 500;">Funds will reflect automatically after network confirmation (1-15 mins).</p>
+                </div>
+            `;
+            resultDiv.style.display = 'block';
+        }
+    } catch (error) {
+        window.hideLoadingSpinner();
+        showToast(error.message, 'error');
+    }
+};
+
+window.generateCryptoAddress = async function () {
+    window.showLoadingSpinner('Generating Solana address...');
+    try {
+        const response = await api.createHostfiCryptoAddress({ currency: 'USDC', network: 'SOL' });
+        window.hideLoadingSpinner();
+        if (response.success) {
+            const address = response.data.address;
+            const resultDiv = document.getElementById('depositResult');
+            resultDiv.innerHTML = `
+                <div style="text-align: center;">
+                    <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; color: var(--text-secondary); margin-bottom: 16px;">Solana USDC Address</div>
+                    <div style="font-size: 13px; font-family: 'Inter', monospace; word-break: break-all; background: rgba(0,0,0,0.06); padding: 16px; border-radius: 14px; margin-bottom: 16px; line-height: 1.4; color: var(--text-primary); border: 1px solid rgba(0,0,0,0.05);">${address.address}</div>
+                    <button class="btn-ghost" onclick="navigator.clipboard.writeText('${address.address}'); showToast('Copied to clipboard!', 'success')" style="border: 1px solid rgba(0,0,0,0.1); padding: 8px 16px; border-radius: 10px; font-weight: 600; cursor: pointer;">Copy Address</button>
+                    ${address.qrCode ? `<img src="${address.qrCode}" style="width: 160px; height: 160px; margin: 20px auto; display: block; border-radius: 12px; border: 4px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">` : ''}
+                    <p class="caption mt-md" style="color: #ef4444; font-weight: 600;">Only send USDC via Solana (SPL) network.</p>
+                </div>
+            `;
+            resultDiv.style.display = 'block';
+        }
+    } catch (error) {
+        window.hideLoadingSpinner();
+        showToast(error.message, 'error');
+    }
+};
+
+export async function showWithdrawModal() {
+    const modalContent = `
+        <div class="modal" onclick="closeModalOnBackdrop(event)">
+            <div class="modal-content glass-effect" style="max-width: 500px; border: 1px solid rgba(255,255,255,0.6); border-radius: 24px;">
+                <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.2);">
+                    <h2 style="background: linear-gradient(135deg, var(--primary), #cc8dff); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Withdraw Funds</h2>
+                    <button class="icon-btn" onclick="closeModal()" style="background: rgba(255,255,255,0.2); border-radius: 50%;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                        </svg>
+                    </button>
+                </div>
+                <div style="padding: 24px;">
+                    <p class="text-secondary" style="margin-bottom: 24px; font-weight: 500;">Withdraw your earnings to your bank account or crypto wallet.</p>
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label class="form-label" style="font-weight: 600;">Amount (USDC)</label>
+                        <div style="position: relative;">
+                            <input type="number" id="withdrawAmount" class="form-input" placeholder="0.00" style="padding-left: 50px; width: 100%; padding: 12px 12px 12px 50px; border-radius: 12px; border: 1px solid rgba(0,0,0,0.1);">
+                            <div style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-weight: 700; color: var(--primary);">USDC</div>
+                        </div>
+                    </div>
+                    <div style="background: rgba(0,0,0,0.03); padding: 16px; border-radius: 16px; margin-bottom: 24px;">
+                        <div style="font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px;">Platform Fee (1%)</div>
+                        <div id="withdrawFee" style="font-weight: 700; color: var(--text-primary);">$0.00</div>
+                    </div>
+                    <button class="btn-primary w-100" onclick="showToast('Please set up withdrawal account in settings', 'info')" style="padding: 14px; font-weight: 700;">Continue</button>
+                </div>
+            </div>
+        </div>
+    `;
+    openModal(modalContent);
+
+    const amountInput = document.getElementById('withdrawAmount');
+    if (amountInput) {
+        amountInput.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value) || 0;
+            const fee = val * 0.01;
+            document.getElementById('withdrawFee').textContent = `$${fee.toFixed(2)}`;
+        });
+    }
+}
+
+export async function showSwapModal() {
+    const modalContent = `
+        <div class="modal" onclick="closeModalOnBackdrop(event)">
+            <div class="modal-content glass-effect" style="max-width: 500px; border: 1px solid rgba(255,255,255,0.6); border-radius: 24px;">
+                <div class="modal-header">
+                    <h2 style="background: linear-gradient(135deg, var(--primary), #cc8dff); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Swap Assets</h2>
+                    <button class="icon-btn" onclick="closeModal()">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                        </svg>
+                    </button>
+                </div>
+                <div style="padding: 24px; text-align: center;">
+                    <div style="width: 80px; height: 80px; background: rgba(151, 71, 255, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; color: var(--primary);">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
+                            <path d="M7 16V4M7 4L3 8M7 4l4 4M17 8v12M17 20l4-4M17 20l-4-4" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <p class="text-secondary" style="margin-bottom: 24px; font-weight: 500;">Convert between supported currencies instantly with best market rates.</p>
+                    <button class="btn-primary w-100" onclick="showToast('Swap feature is being optimized', 'info')" style="padding: 14px; font-weight: 700;">Coming Soon</button>
+                </div>
+            </div>
+        </div>
+    `;
+    openModal(modalContent);
+}
+
+export async function showPayoutSettings() {
+    navigateToPage('settings');
+    setTimeout(() => {
+        showToast('Add your bank account details here', 'info');
+    }, 500);
+}
+
+export async function showTransactionHistory() {
+    navigateToPage('wallet');
+}
+
+export async function showEarningsReport() {
+    showToast('Detailed earnings report coming soon', 'info');
+}
