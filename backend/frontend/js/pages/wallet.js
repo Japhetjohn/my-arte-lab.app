@@ -289,7 +289,7 @@ function renderWalletContent() {
                                         <img src="${otherPartyAvatar}" alt="${otherPartyName}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.6);">
                                         <div class="transaction-info">
                                             <div class="transaction-title" style="color: var(--text-primary);">${booking.serviceTitle}</div>
-                                            <div class="transaction-date" style="font-weight: 500;">${otherPartyName} • ${formatDate(booking.createdAt)}</div>
+                                            <div class="transaction-date" style="font-weight: 500;">${otherPartyName} • ${formatDate(booking.createdAt)} ${new Date(booking.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                                         </div>
                                     </div>
                                     <div style="text-align: right;">
@@ -332,7 +332,7 @@ function renderWalletContent() {
                                     </div>
                                     <div class="transaction-info">
                                         <div class="transaction-title" style="color: var(--text-primary);">${transaction.description || transaction.type}</div>
-                                        <div class="transaction-date" style="font-weight: 500;">${transaction.transactionId} • ${formatDate(transaction.createdAt)}</div>
+                                        <div class="transaction-date" style="font-weight: 500;">${transaction.transactionId} • ${formatDate(transaction.createdAt)} ${new Date(transaction.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                                     </div>
                                 </div>
                                 <div style="text-align: right;">
