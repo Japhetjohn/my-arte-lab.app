@@ -1,0 +1,33 @@
+{
+  "name": "myartelab",
+  "version": "1.0.0",
+  "description": "Built for African Creators. Trusted by clients globally.",
+  "main": "frontend/index.html",
+  "scripts": {
+    "dev:frontend": "cd frontend && python3 -m http.server 8000",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:clean": "cd backend && npm run dev:clean",
+    "kill-port": "cd backend && npm run kill-port",
+    "start": "cd frontend && python3 -m http.server 8000",
+    "open": "xdg-open http://localhost:8000 || firefox http://localhost:8000",
+    "test": "cd backend && npm test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Japhetjohn/my-arte-lab.app.git"
+  },
+  "keywords": [
+    "marketplace",
+    "creators",
+    "booking",
+    "portfolio",
+    "vanilla-js",
+    "es6-modules"
+  ],
+  "author": "Japhetjohn",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Japhetjohn/my-arte-lab.app/issues"
+  },
+  "homepage": "https://github.com/Japhetjohn/my-arte-lab.app#readme"
+}

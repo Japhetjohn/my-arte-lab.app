@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=5.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>MyArteLab - Built for African Creators. Trusted by Global Clients.</title>
+
+    <!-- Open Graph Meta Tags for Social Sharing (WhatsApp, Facebook, etc.) -->
+    <meta property="og:title" content="MyArteLab - Built for African Creators. Trusted by Global Clients.">
+    <meta property="og:description" content="Built for African Creators. Trusted by Global Clients.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://app.myartelab.com">
+    <meta property="og:image" content="https://app.myartelab.com/logo.PNG">
+    <meta property="og:site_name" content="MyArteLab">
+
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="MyArteLab - Built for African Creators. Trusted by Global Clients.">
+    <meta name="twitter:description" content="Built for African Creators. Trusted by Global Clients.">
+    <meta name="twitter:image" content="https://app.myartelab.com/logo.PNG">
+
+    <!-- General Meta Description -->
+    <meta name="description" content="Built for African Creators. Trusted by Global Clients.">
+
+    <link rel="icon" type="image/png" href="logo.PNG">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Top Navigation Bar (Desktop) -->
+    <nav class="top-nav" id="topNav">
+        <div class="container">
+            <div class="nav-content">
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <button class="icon-btn" id="backBtn" style="display: none;" aria-label="Go back">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <path d="M15 10H5M5 10l5 5M5 10l5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </button>
+                    <div class="logo" onclick="navigateToPage('home')" style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                        <img src="logo.PNG" alt="MyArteLab" style="height: 32px; width: auto;">
+                        <span>MyArteLab</span>
+                    </div>
+                </div>
+                <div class="nav-actions">
+                    <button class="icon-btn" id="searchBtn" aria-label="Search">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <path d="M9 17A8 8 0 1 0 9 1a8 8 0 0 0 0 16zM18 18l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </button>
+                    <button class="icon-btn" id="notificationsBtn" aria-label="Notifications" style="display: none;">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <path d="M15 6.667A5 5 0 0 0 5 6.667c0 5.833-2.5 7.5-2.5 7.5h15S15 12.5 15 6.667zM11.442 17.5a1.667 1.667 0 0 1-2.884 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                        <span class="notification-badge" style="display: none;">0</span>
+                    </button>
+                    <div class="user-menu-container" id="userMenuContainer">
+                        <button class="btn-secondary" id="authBtn">Sign in</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main id="mainContent" class="main-content">
+        <!-- Content will be dynamically loaded here -->
+    </main>
+
+    <!-- Bottom Navigation (Mobile) -->
+    <nav class="bottom-nav" id="bottomNav">
+        <button class="nav-item active" data-page="home">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9z" stroke="currentColor" stroke-width="2"/>
+                <path d="M9 22V12h6v10" stroke="currentColor" stroke-width="2"/>
+            </svg>
+            <span>Home</span>
+        </button>
+        <button class="nav-item" data-page="projects">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>Projects</span>
+        </button>
+        <button class="nav-item" data-page="bookings">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
+                <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" stroke-width="2"/>
+            </svg>
+            <span>Bookings</span>
+        </button>
+        <button class="nav-item" data-page="wallet">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M21 12V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5z" stroke="currentColor" stroke-width="2"/>
+                <path d="M18 12h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <span>Wallet</span>
+        </button>
+    </nav>
+
+    <!-- Modals Container -->
+    <div id="modalsContainer"></div>
+
+    <!-- Search Overlay -->
+    <div class="overlay search-overlay" id="searchOverlay">
+        <div class="overlay-content">
+            <div class="search-header">
+                <button class="icon-btn" id="closeSearchBtn">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </button>
+                <input type="text" class="search-input" placeholder="Search by service, city, style, e.g. wedding photographer Lagos" id="globalSearch">
+            </div>
+            <div class="search-results" id="searchResults">
+                <div class="recent-searches">
+                    <h3>Recent searches</h3>
+                    <div class="search-tags">
+                        <span class="tag">Wedding photographer</span>
+                        <span class="tag">Lagos designer</span>
+                        <span class="tag">Portrait photography</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load app -->
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>

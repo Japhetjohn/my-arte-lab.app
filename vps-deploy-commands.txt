@@ -1,0 +1,23 @@
+# VPS Deployment Commands
+# SSH Password: @Kuulsinim45
+# Run these commands on the VPS:
+
+cd /var/www/myartelab/backend
+
+# Pull latest changes
+git pull origin main
+
+# Install dependencies (sharp)
+npm install
+
+# Create upload directories
+mkdir -p uploads/avatars uploads/covers uploads/portfolio uploads/services
+chmod -R 755 uploads
+chown -R www-data:www-data uploads
+
+# Restart PM2
+pm2 restart myartelab
+
+# Check status
+pm2 list
+pm2 logs myartelab --lines 50
