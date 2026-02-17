@@ -908,6 +908,20 @@ export function showHelpSupportModal() {
                             <p style="font-size: 13px; color: var(--text-secondary); padding: 8px 0; margin: 0;">Go to Settings and upload your ID or portfolio proof. Our team will review and verify your account within 48 hours.</p>
                         </details>
                     </div>
+                    <style>
+                        .faq-accordion details {
+                            transition: all 0.3s ease;
+                        }
+                        .faq-accordion details[open] {
+                            background: rgba(151, 71, 255, 0.03);
+                        }
+                        .faq-accordion details[open] .chevron {
+                            transform: rotate(180deg);
+                        }
+                        .faq-accordion summary::-webkit-details-marker {
+                            display: none;
+                        }
+                    </style>
                     <p style="color: var(--text-secondary); font-size: 13px; margin-top: 16px; margin-bottom: 0;">
                         Send us your questions at the email above and we'll be happy to help!
                     </p>
