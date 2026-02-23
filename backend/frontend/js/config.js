@@ -6,7 +6,7 @@ const isDevelopment = window.location.hostname === 'localhost' ||
 
 export const API_BASE_URL = isDevelopment
     ? 'http://localhost:5000/api'
-    : 'https://myartelab.com/api';
+    : '/api';
 
 export const API_ENDPOINTS = {
     register: '/auth/register',
