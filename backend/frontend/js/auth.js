@@ -8,37 +8,15 @@ import { COUNTRIES_ALPHABETICAL } from './data/countries.js';
 
 const AUTH_MODAL_STYLES = `
 <style>
-    .am-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); z-index: 1000; display: flex; align-items: flex-end; justify-content: center; padding: 0; }
-    @media (min-width: 600px) { .am-overlay { align-items: center; padding: 20px; } }
-    .am-sheet { background: #0f0f13; border: 1px solid rgba(255,255,255,0.08); border-radius: 24px 24px 0 0; width: 100%; max-width: 440px; max-height: 92vh; overflow-y: auto; animation: authSlideUp 0.3s cubic-bezier(0.16,1,0.3,1); padding-bottom: env(safe-area-inset-bottom, 24px); position: relative; }
-    @media (min-width: 600px) { .am-sheet { border-radius: 24px; animation: authScaleIn 0.25s cubic-bezier(0.16,1,0.3,1); } }
-    @keyframes authSlideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-    @keyframes authScaleIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-    .am-handle { width: 40px; height: 4px; background: rgba(255,255,255,0.12); border-radius: 2px; margin: 12px auto 0; }
-    .am-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px 0; }
-    .am-title { font-size: 20px; font-weight: 800; color: white; }
-    .am-close { width: 32px; height: 32px; background: rgba(255,255,255,0.08); border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.6); transition: all 0.15s; }
-    .am-close:hover { background: rgba(255,255,255,0.14); color: white; }
-    .am-body { padding: 20px 24px 24px; }
-    .am-label { font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.45); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; display: block; }
-    .am-input { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 12px 16px; font-size: 15px; color: white; outline: none; transition: all 0.2s; box-sizing: border-box; }
-    .am-input:focus { border-color: #7c3aed; background: rgba(255,255,255,0.08); box-shadow: 0 0 0 4px rgba(124,58,237,0.15); }
-    .am-select { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 12px 16px; font-size: 15px; color: white; outline: none; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.4)' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; background-size: 14px; }
-    .am-select:focus { border-color: #7c3aed; }
-    .am-select option { background: #1a1a2e; color: white; }
-    .am-btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #7c3aed, #4f46e5); border: none; border-radius: 12px; color: white; font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.2s; margin-top: 8px; }
-    .am-btn:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 4px 15px rgba(124,58,237,0.4); }
-    .am-btn:active { transform: translateY(0); }
-    .am-btn-ghost { width: 100%; padding: 12px; background: transparent; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: rgba(255,255,255,0.6); font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-    .am-btn-ghost:hover { background: rgba(255,255,255,0.05); color: white; border-color: rgba(255,255,255,0.2); }
-    .am-divider { height: 1px; background: rgba(255,255,255,0.08); margin: 24px 0; position: relative; text-align: center; }
-    .am-footer-link { color: #a78bfa; text-decoration: none; font-weight: 700; transition: color 0.15s; }
-    .am-footer-link:hover { color: #c084fc; text-decoration: underline; }
-    .am-check-label { display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; color: rgba(255,255,255,0.6); margin: 16px 0; }
-    .am-check-input { width: 18px; height: 18px; border-radius: 4px; border: 2px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.05); appearance: none; -webkit-appearance: none; cursor: pointer; position: relative; transition: all 0.2s; }
-    .am-check-input:checked { background: #7c3aed; border-color: #7c3aed; }
+    /* Auth-specific helper styles that weren't moved to global glass system */
+    .am-divider { height: 1px; background: rgba(151, 71, 255, 0.1); margin: 24px 0; position: relative; text-align: center; }
+    .am-footer-link { color: #9747FF; text-decoration: none; font-weight: 700; transition: all 0.2s; }
+    .am-footer-link:hover { color: #6B46FF; text-decoration: underline; }
+    .am-check-label { display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; color: var(--text-secondary); margin: 16px 0; }
+    .am-check-input { width: 18px; height: 18px; border-radius: 6px; border: 2px solid rgba(151, 71, 255, 0.2); background: rgba(255, 255, 255, 0.4); appearance: none; -webkit-appearance: none; cursor: pointer; position: relative; transition: all 0.2s; }
+    .am-check-input:checked { background: #9747FF; border-color: #9747FF; }
     .am-check-input:checked::after { content: '✓'; position: absolute; color: white; font-size: 12px; left: 50%; top: 50%; transform: translate(-50%, -50%); }
-    .am-pw-req { display: flex; align-items: center; gap: 6px; font-size: 11px; margin-bottom: 4px; transition: color 0.2s; }
+    .am-pw-req { display: flex; align-items: center; gap: 6px; font-size: 11px; margin-bottom: 4px; transition: color 0.2s; color: var(--text-secondary); }
     .password-requirement.valid { color: #10B981 !important; }
     .password-requirement.valid svg { color: #10B981 !important; }
 </style>
@@ -48,41 +26,40 @@ export function showAuthModal(type = 'signin', userType = 'client') {
     const isSignUp = type === 'signup';
     const modalContent = `
         ${AUTH_MODAL_STYLES}
-        <div class="am-overlay" onclick="if(event.target === this) closeModal()">
-            <div class="am-sheet">
-                <div class="am-handle"></div>
-                <div class="am-header">
-                    <span class="am-title">${isSignUp ? 'Create account' : 'Welcome back'}</span>
-                    <button class="am-close" onclick="closeModal()">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+        <div class="glass-modal-overlay" onclick="if(event.target === this) closeModal()">
+            <div class="glass-modal-content" style="max-width: ${isSignUp ? '500px' : '440px'};">
+                <div class="glass-modal-header">
+                    <span class="glass-modal-title">${isSignUp ? 'Create Account' : 'Welcome Back'}</span>
+                    <button class="glass-modal-close" onclick="closeModal()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
                     </button>
                 </div>
 
-                <div class="am-body">
+                <div class="glass-modal-body">
                     <form onsubmit="handleAuth(event, '${type}')" id="authForm">
                         ${isSignUp ? `
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
                                 <div>
-                                    <label class="am-label">First name</label>
-                                    <input type="text" name="firstName" class="am-input" required maxlength="50" placeholder="John">
+                                    <label class="glass-form-label">First Name</label>
+                                    <input type="text" name="firstName" class="glass-input" required maxlength="50" placeholder="John">
                                 </div>
                                 <div>
-                                    <label class="am-label">Last name</label>
-                                    <input type="text" name="lastName" class="am-input" required maxlength="50" placeholder="Doe">
+                                    <label class="glass-form-label">Last Name</label>
+                                    <input type="text" name="lastName" class="glass-input" required maxlength="50" placeholder="Doe">
                                 </div>
                             </div>
 
                             <div style="margin-bottom: 16px;">
-                                <label class="am-label">I am a</label>
-                                <select name="role" class="am-select" id="userTypeSelect" onchange="toggleCategoryField()">
+                                <label class="glass-form-label">I am a</label>
+                                <select name="role" class="glass-input" id="userTypeSelect" onchange="toggleCategoryField()" style="appearance: none; background-image: url('data:image/svg+xml,%3Csvg width=%2214%22 height=%2214%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22rgba(151,71,255,0.6)%22 stroke-width=%222.5%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M6 9l6 6 6-6%22/%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 16px center;">
                                     <option value="client" ${userType === 'client' ? 'selected' : ''}>Client (Ordering work)</option>
                                     <option value="creator" ${userType === 'creator' ? 'selected' : ''}>Creator (Offering services)</option>
                                 </select>
                             </div>
 
                             <div style="margin-bottom: 16px; display: ${userType === 'creator' ? 'block' : 'none'};" id="categoryFieldGroup">
-                                <label class="am-label">Category</label>
-                                <select name="category" class="am-select" id="categorySelect">
+                                <label class="glass-form-label">Category</label>
+                                <select name="category" class="glass-input" id="categorySelect" style="appearance: none; background-image: url('data:image/svg+xml,%3Csvg width=%2214%22 height=%2214%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22rgba(151,71,255,0.6)%22 stroke-width=%222.5%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M6 9l6 6 6-6%22/%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 16px center;">
                                     <option value="photographer">Photographer</option>
                                     <option value="designer">Designer</option>
                                     <option value="videographer">Videographer</option>
@@ -93,29 +70,29 @@ export function showAuthModal(type = 'signin', userType = 'client') {
                         ` : ''}
 
                         <div style="margin-bottom: 16px;">
-                            <label class="am-label">Email Address</label>
-                            <input type="email" name="email" class="am-input" required placeholder="john@example.com">
+                            <label class="glass-form-label">Email Address</label>
+                            <input type="email" name="email" class="glass-input" required placeholder="john@example.com">
                         </div>
 
                         <div style="margin-bottom: 16px;">
-                            <label class="am-label">Password</label>
+                            <label class="glass-form-label">Password</label>
                             <div style="position: relative;">
-                                <input type="password" name="password" class="am-input" id="passwordInput" required minlength="8" oninput="${isSignUp ? 'validatePassword()' : ''}" placeholder="••••••••" style="padding-right: 48px;">
-                                <button type="button" onclick="togglePasswordVisibility('passwordInput', this)" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 10px; color: rgba(255,255,255,0.4);">
+                                <input type="password" name="password" class="glass-input" id="passwordInput" required minlength="8" oninput="${isSignUp ? 'validatePassword()' : ''}" placeholder="••••••••" style="padding-right: 48px;">
+                                <button type="button" onclick="togglePasswordVisibility('passwordInput', this)" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 10px; color: var(--primary);">
                                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" class="eye-icon"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/></svg>
                                 </button>
                             </div>
                             ${isSignUp ? `
-                            <div id="passwordRequirements" style="margin-top: 10px;">
-                                <div id="req-length" class="am-pw-req password-requirement" style="color: rgba(255,255,255,0.3);">
+                            <div id="passwordRequirements" style="margin-top: 12px; display: grid; grid-template-columns: 1fr; gap: 4px;">
+                                <div id="req-length" class="am-pw-req password-requirement">
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2.5"/><path d="M15 9l-6 6M9 9l6 6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
                                     <span>At least 8 characters</span>
                                 </div>
-                                <div id="req-uppercase" class="am-pw-req password-requirement" style="color: rgba(255,255,255,0.3);">
+                                <div id="req-uppercase" class="am-pw-req password-requirement">
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2.5"/><path d="M15 9l-6 6M9 9l6 6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
                                     <span>One uppercase letter</span>
                                 </div>
-                                <div id="req-number" class="am-pw-req password-requirement" style="color: rgba(255,255,255,0.3);">
+                                <div id="req-number" class="am-pw-req password-requirement">
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2.5"/><path d="M15 9l-6 6M9 9l6 6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
                                     <span>One number</span>
                                 </div>
@@ -125,64 +102,66 @@ export function showAuthModal(type = 'signin', userType = 'client') {
 
                         ${isSignUp ? `
                         <div style="margin-bottom: 20px;">
-                            <label class="am-label">Confirm Password</label>
+                            <label class="glass-form-label">Confirm Password</label>
                             <div style="position: relative;">
-                                <input type="password" name="confirmPassword" class="am-input" id="confirmPasswordInput" required minlength="8" oninput="validatePasswordMatch()" placeholder="••••••••" style="padding-right: 48px;">
-                                <button type="button" onclick="togglePasswordVisibility('confirmPasswordInput', this)" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 10px; color: rgba(255,255,255,0.4);">
+                                <input type="password" name="confirmPassword" class="glass-input" id="confirmPasswordInput" required minlength="8" oninput="validatePasswordMatch()" placeholder="••••••••" style="padding-right: 48px;">
+                                <button type="button" onclick="togglePasswordVisibility('confirmPasswordInput', this)" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 10px; color: var(--primary);">
                                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" class="eye-icon"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/></svg>
                                 </button>
                             </div>
                             <div id="passwordMatchError" style="color: #EF4444; font-size: 11px; margin-top: 6px; display: none; font-weight: 600;">Passwords do not match</div>
                         </div>
 
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
                             <div>
-                                <label class="am-label">Local Area</label>
-                                <input type="text" name="localArea" class="am-input" placeholder="e.g. Wuye" required>
+                                <label class="glass-form-label">Local Area</label>
+                                <input type="text" name="localArea" class="glass-input" placeholder="e.g. Wuye" required>
                             </div>
                             <div>
-                                <label class="am-label">State/Region</label>
-                                <input type="text" name="state" class="am-input" placeholder="e.g. FCT" required>
+                                <label class="glass-form-label">State/Region</label>
+                                <input type="text" name="state" class="glass-input" placeholder="e.g. FCT" required>
                             </div>
                         </div>
 
                         <div style="margin-bottom: 16px;">
-                            <label class="am-label">Country</label>
-                            <select name="country" id="countrySelect" class="am-select" required>
+                            <label class="glass-form-label">Country</label>
+                            <select name="country" id="countrySelect" class="glass-input" required style="appearance: none; background-image: url('data:image/svg+xml,%3Csvg width=%2214%22 height=%2214%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22rgba(151,71,255,0.6)%22 stroke-width=%222.5%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M6 9l6 6 6-6%22/%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 16px center;">
                                 <option value="">Select your country</option>
                             </select>
                         </div>
 
                         <label class="am-check-label">
                             <input type="checkbox" required class="am-check-input">
-                            <span>I accept the <a href="#" class="am-footer-link">Terms & Conditions</a></span>
+                            <span style="font-size: 13px;">I accept the <a href="#" class="am-footer-link">Terms & Conditions</a></span>
                         </label>
                         ` : `
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin: 20px 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin: 24px 0;">
                             <label class="am-check-label" style="margin: 0;">
                                 <input type="checkbox" name="rememberMe" id="rememberMeCheckbox" class="am-check-input">
-                                <span>Remember me</span>
+                                <span style="font-size: 13px;">Remember me</span>
                             </label>
                             <a href="#" class="am-footer-link" style="font-size: 13px;">Forgot password?</a>
                         </div>
                         `}
 
-                        <button type="submit" class="am-btn" id="authSubmitBtn">${isSignUp ? 'Create account' : 'Sign in'}</button>
+                        <button type="submit" class="glass-btn-primary" id="authSubmitBtn">${isSignUp ? 'Create Account' : 'Sign In'}</button>
                     </form>
 
-                    <div class="am-divider"></div>
+                    <div class="am-divider">
+                        <span style="position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.01); backdrop-filter: blur(20px); padding: 0 10px; color: var(--text-secondary); font-size: 12px; font-weight: 600;">OR</span>
+                    </div>
 
                     <div style="text-align: center;">
-                        <span style="color: rgba(255,255,255,0.4); font-size: 14px;">
+                        <span style="color: var(--text-secondary); font-size: 14px;">
                             ${isSignUp ? 'Already have an account?' : "Don't have an account?"}
                         </span>
                         <a href="#" onclick="showAuthModal('${isSignUp ? 'signin' : 'signup'}'); return false;" class="am-footer-link" style="margin-left: 5px;">
-                            ${isSignUp ? 'Sign in' : 'Create account'}
+                            ${isSignUp ? 'Sign In' : 'Create Account'}
                         </a>
                     </div>
 
                     ${!isSignUp ? `
-                        <button class="am-btn-ghost" onclick="navigateToPage('home'); closeModal();" style="margin-top: 16px;">Continue as guest</button>
+                        <button class="glass-btn-ghost" onclick="navigateToPage('home'); closeModal();" style="margin-top: 16px;">Continue as Guest</button>
                     ` : ''}
                 </div>
             </div>
@@ -621,24 +600,23 @@ function validatePasswordMatch() {
 export function showEmailVerificationModal(email, userRole = 'client') {
     const modalContent = `
         ${AUTH_MODAL_STYLES}
-        <div class="am-overlay" onclick="if(event.target === this) skipVerification('${userRole}')">
-            <div class="am-sheet" style="max-width: 400px;">
-                <div class="am-handle"></div>
-                <div class="am-header">
-                    <span class="am-title">Verify email</span>
-                    <button class="am-close" onclick="skipVerification('${userRole}')">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+        <div class="glass-modal-overlay" onclick="if(event.target === this) skipVerification('${userRole}')">
+            <div class="glass-modal-content" style="max-width: 440px;">
+                <div class="glass-modal-header">
+                    <span class="glass-modal-title">Verify Email</span>
+                    <button class="glass-modal-close" onclick="skipVerification('${userRole}')">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
                     </button>
                 </div>
 
-                <div class="am-body">
-                    <div style="text-align: center; margin-bottom: 24px;">
-                        <div style="width: 64px; height: 64px; background: rgba(124,58,237,0.1); border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
-                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" style="color: #a78bfa;"><path d="M21 8l-7.89 5.26a2 2 0 01-2.22 0L3 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                <div class="glass-modal-body">
+                    <div style="text-align: center; margin-bottom: 32px;">
+                        <div style="width: 72px; height: 72px; background: rgba(151, 71, 255, 0.1); border-radius: 24px; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; border: 1px solid rgba(151, 71, 255, 0.2);">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" style="color: #9747FF;"><path d="M21 8l-7.89 5.26a2 2 0 01-2.22 0L3 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
                         </div>
-                        <p style="color: rgba(255,255,255,0.6); font-size: 14px; line-height: 1.6;">
+                        <p style="color: var(--text-secondary); font-size: 15px; line-height: 1.6;">
                             Enter the 6-digit code sent to<br>
-                            <strong style="color: white;">${email}</strong>
+                            <strong style="color: var(--text-primary);">${email}</strong>
                         </p>
                     </div>
 
@@ -647,30 +625,32 @@ export function showEmailVerificationModal(email, userRole = 'client') {
                             <input
                                 type="text"
                                 name="code"
-                                class="am-input"
+                                class="glass-input"
                                 placeholder="0 0 0 0 0 0"
                                 required
                                 maxlength="6"
                                 pattern="[0-9]{1,6}"
-                                style="text-align: center; font-size: 28px; letter-spacing: 12px; font-weight: 800; font-family: monospace; padding: 16px;"
+                                style="text-align: center; font-size: 32px; letter-spacing: 12px; font-weight: 800; font-family: monospace; padding: 20px; border-color: var(--primary);"
                                 inputmode="numeric"
                             >
-                            <p style="text-align: center; font-size: 12px; color: rgba(255,255,255,0.3); margin-top: 12px;">Code expires in 30 minutes</p>
+                            <p style="text-align: center; font-size: 12px; color: var(--text-secondary); margin-top: 14px; opacity: 0.7;">Code expires in 30 minutes</p>
                         </div>
 
-                        <button type="submit" class="am-btn">Verify Account</button>
+                        <button type="submit" class="glass-btn-primary">Verify Account</button>
                     </form>
 
-                    <div class="am-divider"></div>
+                    <div class="am-divider">
+                        <span style="position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.01); backdrop-filter: blur(20px); padding: 0 10px; color: var(--text-secondary); font-size: 12px; font-weight: 600;">OR</span>
+                    </div>
 
-                    <div style="text-align: center; margin-bottom: 12px;">
-                        <p style="color: rgba(255,255,255,0.4); font-size: 13px;">
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <p style="color: var(--text-secondary); font-size: 14px;">
                             Didn't receive the code?
                             <button type="button" onclick="handleResendVerification()" class="am-footer-link" style="background: none; border: none; padding: 0; font-family: inherit; cursor: pointer;">Resend</button>
                         </p>
                     </div>
 
-                    <button class="am-btn-ghost" onclick="skipVerification('${userRole}')">Skip for now</button>
+                    <button class="glass-btn-ghost" onclick="skipVerification('${userRole}')">Skip for now</button>
                 </div>
             </div>
         </div>
@@ -792,69 +772,70 @@ export function showHelpSupportModal() {
     const modalContent = `
         ${AUTH_MODAL_STYLES}
         <style>
-            .faq-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; margin-bottom: 20px; overflow: hidden; }
-            .faq-item { border-bottom: 1px solid rgba(255,255,255,0.06); }
+            .faq-card { background: rgba(151,71,255,0.03); border: 1px solid rgba(151,71,255,0.1); border-radius: 20px; margin-bottom: 24px; overflow: hidden; backdrop-filter: blur(5px); }
+            .faq-item { border-bottom: 1px solid rgba(151,71,255,0.06); }
             .faq-item:last-child { border-bottom: none; }
-            .faq-item summary { padding: 16px 20px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; font-weight: 700; color: white; list-style: none; user-select: none; }
+            .faq-item summary { padding: 18px 24px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; font-weight: 700; color: var(--text-primary); list-style: none; user-select: none; transition: background 0.2s; }
+            .faq-item summary:hover { background: rgba(151,71,255,0.05); }
             .faq-item summary::-webkit-details-marker { display: none; }
-            .faq-item summary .chevron { color: rgba(255,255,255,0.3); transition: transform 0.2s; }
-            .faq-item[open] summary .chevron { transform: rotate(180deg); color: #a78bfa; }
-            .faq-content { padding: 0 20px 16px; font-size: 14px; color: rgba(255,255,255,0.5); line-height: 1.6; }
-            .contact-chip { display: flex; align-items: center; gap: 12px; background: rgba(124,58,237,0.1); border: 1px solid rgba(124,58,237,0.2); border-radius: 12px; padding: 16px; margin-bottom: 24px; text-decoration: none; }
+            .faq-item summary .chevron { color: var(--primary); opacity: 0.4; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+            .faq-item[open] summary .chevron { transform: rotate(180deg); opacity: 1; }
+            .faq-content { padding: 0 24px 20px; font-size: 14px; color: var(--text-secondary); line-height: 1.6; }
+            .contact-link-card { display: flex; align-items: center; gap: 16px; background: rgba(151, 71, 255, 0.05); border: 1px solid rgba(151, 71, 255, 0.15); border-radius: 20px; padding: 20px; margin-bottom: 32px; text-decoration: none; transition: all 0.2s; }
+            .contact-link-card:hover { transform: translateY(-3px); background: rgba(151, 71, 255, 0.08); border-color: var(--primary); box-shadow: 0 8px 24px rgba(151, 71, 255, 0.1); }
         </style>
-        <div class="am-overlay" onclick="if(event.target === this) closeModal()">
-            <div class="am-sheet">
-                <div class="am-handle"></div>
-                <div class="am-header">
-                    <span class="am-title">Help & Support</span>
-                    <button class="am-close" onclick="closeModal()">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+        <div class="glass-modal-overlay" onclick="if(event.target === this) closeModal()">
+            <div class="glass-modal-content" style="max-width: 500px;">
+                <div class="glass-modal-header">
+                    <span class="glass-modal-title">Help & Support</span>
+                    <button class="glass-modal-close" onclick="closeModal()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
                     </button>
                 </div>
 
-                <div class="am-body">
-                    <div style="text-align: center; margin-bottom: 24px;">
-                        <h3 style="margin-bottom: 8px;">How can we help?</h3>
-                        <p style="color: rgba(255,255,255,0.45); font-size: 14px;">Contact us or find answers in our FAQ</p>
+                <div class="glass-modal-body">
+                    <div style="text-align: center; margin-bottom: 32px;">
+                        <h3 style="margin-bottom: 10px; font-weight: 800; font-size: 22px;">How can we help?</h3>
+                        <p style="color: var(--text-secondary); font-size: 15px;">Find answers below or reach out to our team</p>
                     </div>
 
-                    <a href="mailto:contact@myartelab.com" class="contact-chip">
-                        <div style="width: 40px; height: 40px; border-radius: 10px; background: #7c3aed; display: flex; align-items: center; justify-content: center; color: white;">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                    <a href="mailto:contact@myartelab.com" class="contact-link-card">
+                        <div style="width: 48px; height: 48px; border-radius: 14px; background: linear-gradient(135deg, #9747FF, #6B46FF); display: flex; align-items: center; justify-content: center; color: white; box-shadow: 0 4px 12px rgba(151, 71, 255, 0.3);">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
                         </div>
                         <div style="flex: 1;">
-                            <div style="font-weight: 700; font-size: 15px; color: white;">Email Support</div>
-                            <div style="font-size: 13px; color: #a78bfa;">contact@myartelab.com</div>
+                            <div style="font-weight: 800; font-size: 16px; color: var(--text-primary);">Email Support</div>
+                            <div style="font-size: 14px; color: var(--primary); font-weight: 600;">contact@myartelab.com</div>
                         </div>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="color: rgba(255,255,255,0.2);"><path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="color: var(--primary); opacity: 0.3;"><path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     </a>
 
-                    <div class="am-label">Common Questions</div>
+                    <div class="glass-form-label" style="margin-bottom: 16px;">Common Questions</div>
                     <div class="faq-card">
                         <details class="faq-item">
                             <summary>
                                 <span>How do I get started as a creator?</span>
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="chevron"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="chevron"><path d="M6 9l6 6 6-6"/></svg>
                             </summary>
                             <div class="faq-content">Sign up as a creator, verify your email, and go to settings to complete your profile with your portfolio and services.</div>
                         </details>
                         <details class="faq-item">
                             <summary>
                                 <span>How do payments work?</span>
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="chevron"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="chevron"><path d="M6 9l6 6 6-6"/></svg>
                             </summary>
                             <div class="faq-content">Clients pay via their wallet. The funds are held in escrow until the creator submits the work and the client approves it.</div>
                         </details>
                         <details class="faq-item">
                             <summary>
                                 <span>How do I withdraw my earnings?</span>
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="chevron"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="chevron"><path d="M6 9l6 6 6-6"/></svg>
                             </summary>
                             <div class="faq-content">You can withdraw your completed earnings to your bank account or crypto wallet via the Wallet page.</div>
                         </details>
                     </div>
 
-                    <button class="am-btn" onclick="closeModal()">Close</button>
+                    <button class="glass-btn-primary" onclick="closeModal()">Got it</button>
                 </div>
             </div>
         </div>
