@@ -5,33 +5,121 @@ import api from '../services/api.js';
 let bookings = [];
 let currentFilter = 'all'; // all, active, completed
 
+const BOOKINGS_STYLES = `
+<style>
+    .bk-container { max-width: 1000px; margin: 0 auto; padding: 24px; }
+    .bk-header { margin-bottom: 32px; }
+    .bk-title { font-size: 32px; font-weight: 800; color: white; margin-bottom: 8px; letter-spacing: -0.02em; }
+    .bk-subtitle { color: rgba(255,255,255,0.45); font-size: 15px; }
+    
+    .bk-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 32px; }
+    .bk-stat-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 20px; display: flex; align-items: center; gap: 16px; transition: transform 0.2s; }
+    .bk-stat-card:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.12); }
+    .bk-stat-icon { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+    .bk-stat-label { font-size: 13px; color: rgba(255,255,255,0.4); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+    .bk-stat-value { font-size: 20px; font-weight: 800; color: white; margin-top: 2px; }
+    
+    .bk-filters { display: flex; gap: 8px; margin-bottom: 24px; overflow-x: auto; padding-bottom: 8px; scrollbar-width: none; }
+    .bk-filters::-webkit-scrollbar { display: none; }
+    .bk-filter-btn { padding: 10px 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); color: rgba(255,255,255,0.6); font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+    .bk-filter-btn:hover { background: rgba(255,255,255,0.06); color: white; }
+    .bk-filter-btn.active { background: white; color: #0f0f13; border-color: white; }
+    
+    .bk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+    .bk-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 24px; padding: 20px; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); position: relative; overflow: hidden; }
+    .bk-card:hover { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.15); transform: translateY(-4px); box-shadow: 0 12px 30px -10px rgba(0,0,0,0.5); }
+    
+    .bk-card-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; }
+    .bk-user { display: flex; align-items: center; gap: 12px; }
+    .bk-avatar { width: 44px; height: 44px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.06); object-fit: crop; }
+    .bk-username { font-weight: 700; color: white; font-size: 15px; }
+    .bk-userrole { font-size: 12px; color: rgba(255,255,255,0.35); font-weight: 600; }
+    
+    .bk-status-tag { padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; }
+    .status-active { background: rgba(59, 130, 246, 0.1); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.2); }
+    .status-completed { background: rgba(16, 185, 129, 0.1); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.2); }
+    .status-pending { background: rgba(245, 158, 11, 0.1); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.2); }
+    
+    .bk-card-body { margin-bottom: 20px; }
+    .bk-job-title { font-size: 18px; font-weight: 800; color: white; margin-bottom: 8px; line-height: 1.3; }
+    .bk-meta { display: flex; align-items: center; gap: 16px; color: rgba(255,255,255,0.3); font-size: 13px; font-weight: 500; }
+    .bk-meta-item { display: flex; align-items: center; gap: 6px; }
+    
+    .bk-card-footer { display: flex; align-items: center; justify-content: space-between; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.06); }
+    .bk-price-label { font-size: 11px; color: rgba(255,255,255,0.35); font-weight: 700; text-transform: uppercase; margin-bottom: 2px; }
+    .bk-price-value { font-size: 18px; font-weight: 800; color: #a78bfa; }
+    
+    .bk-btn-details { background: rgba(255,255,255,0.06); border: none; border-radius: 12px; color: white; padding: 10px 16px; font-weight: 700; font-size: 13px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 8px; }
+    .bk-card:hover .bk-btn-details { background: #7c3aed; box-shadow: 0 4px 15px rgba(124,58,237,0.3); }
+    
+    .bk-empty { text-align: center; padding: 80px 20px; background: rgba(255,255,255,0.02); border: 1px dashed rgba(255,255,255,0.1); border-radius: 32px; margin-top: 20px; }
+    .bk-empty-icon { font-size: 48px; margin-bottom: 20px; opacity: 0.2; color: white; }
+
+    /* Modal Styles */
+    .bkm-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); z-index: 1000; display: flex; align-items: flex-end; justify-content: center; }
+    @media (min-width: 600px) { .bkm-overlay { align-items: center; padding: 20px; } }
+    .bkm-sheet { background: #0f0f13; border: 1px solid rgba(255,255,255,0.08); border-radius: 24px 24px 0 0; width: 100%; max-width: 600px; max-height: 92vh; overflow-y: auto; animation: bkmSlideUp 0.3s cubic-bezier(0.16,1,0.3,1); padding-bottom: env(safe-area-inset-bottom, 24px); position: relative; }
+    @media (min-width: 600px) { .bkm-sheet { border-radius: 24px; animation: bkmScaleIn 0.25s cubic-bezier(0.16,1,0.3,1); } }
+    @keyframes bkmSlideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    @keyframes bkmScaleIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    
+    .bkm-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px; border-bottom: 1px solid rgba(255,255,255,0.06); sticky; top: 0; background: #0f0f13; z-index: 10; }
+    .bkm-title { font-size: 18px; font-weight: 800; color: white; }
+    .bkm-close { width: 32px; height: 32px; background: rgba(255,255,255,0.08); border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.6); }
+    
+    .bkm-body { padding: 24px; }
+    .bkm-section { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 20px; padding: 20px; margin-bottom: 20px; }
+    .bkm-label { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; }
+    
+    .journey-track { display: flex; justify-content: space-between; position: relative; padding: 10px 0; }
+    .journey-line { position: absolute; top: 22px; left: 10%; right: 10%; height: 2px; background: rgba(255,255,255,0.06); z-index: 1; }
+    .journey-step { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 8px; flex: 1; }
+    .journey-dot { width: 24px; height: 24px; border-radius: 50%; background: #1a1a1f; border: 2px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; color: rgba(255,255,255,0.3); transition: all 0.3s; }
+    .journey-step.active .journey-dot { border-color: #7c3aed; color: #7c3aed; box-shadow: 0 0 15px rgba(124,58,237,0.3); }
+    .journey-step.completed .journey-dot { background: #7c3aed; border-color: #7c3aed; color: white; }
+    .journey-label { font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.3); text-transform: uppercase; }
+    .journey-step.active .journey-label { color: white; }
+
+    .action-banner { background: rgba(124,58,237,0.1); border: 1px solid rgba(124,58,237,0.2); border-radius: 16px; padding: 16px; margin-bottom: 20px; }
+    .action-banner.warning { background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.2); }
+    .action-banner-title { font-weight: 800; font-size: 14px; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+    
+    .msg-bubble { max-width: 85%; padding: 10px 14px; border-radius: 16px; margin-bottom: 8px; font-size: 14px; line-height: 1.5; }
+    .msg-bubble.sent { background: #7c3aed; color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
+    .msg-bubble.received { background: rgba(255,255,255,0.05); color: white; align-self: flex-start; border-bottom-left-radius: 4px; border: 1px solid rgba(255,255,255,0.08); }
+</style>
+`;
+
 export async function renderBookingsPage() {
     const mainContent = document.getElementById('mainContent');
+    mainContent.innerHTML = BOOKINGS_STYLES;
 
     if (!appState.user) {
-        mainContent.innerHTML = `
-            <div class="empty-state glass-effect" style="margin: 40px auto; max-width: 500px; border-radius: 24px; padding: 40px 20px;">
-                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" style="opacity: 0.4; margin-bottom: 16px;">
-                    <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
-                    <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                </svg>
-                <h3>Sign in to view your bookings</h3>
-                <p>Keep track of all your active and completed jobs</p>
-                <button class="btn-primary" onclick="showAuthModal('signin')">Sign in</button>
+        mainContent.innerHTML += `
+            <div class="bk-container">
+                <div class="bk-empty">
+                    <div class="bk-empty-icon">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16 2v4M8 2v4M3 10h18M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                    </div>
+                    <h2>Please sign in</h2>
+                    <p style="color: rgba(255,255,255,0.4); margin-bottom: 24px;">Sign in to view and manage your bookings</p>
+                    <button class="btn-primary" onclick="showAuthModal('signin')">Sign in</button>
+                </div>
             </div>
         `;
         return;
     }
 
-    mainContent.innerHTML = `
-        <div class="section">
-            <div class="container">
-                <h1 class="mb-lg">Bookings</h1>
-                <div class="text-center glass-effect" style="padding: 60px 20px; border-radius: 24px; max-width: 400px; margin: 0 auto;">
-                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" style="opacity: 0.8; margin-bottom: 16px; animation: spin 2s linear infinite; color: var(--primary);">
-                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" stroke-dasharray="60" stroke-dashoffset="20"/>
-                    </svg>
-                    <p class="text-secondary" style="font-weight: 500;">Loading bookings...</p>
+    mainContent.innerHTML += `
+        <div class="bk-container">
+            <div class="bk-header">
+                <h1 class="bk-title">Bookings</h1>
+                <p class="bk-subtitle">Manage your active jobs and track progress</p>
+            </div>
+            <div id="bookingsListContainer">
+                <div style="text-align: center; padding: 60px;">
+                    <div class="loading-spinner" style="margin: 0 auto 16px;"></div>
+                    <p style="color: rgba(255,255,255,0.4);">Loading your bookings...</p>
                 </div>
             </div>
         </div>
@@ -45,7 +133,6 @@ export async function renderBookingsPage() {
 
         const regularBookings = bookingsResp.success ? (bookingsResp.data.bookings || []) : [];
         const myProjects = projectsResp.success ? (projectsResp.data.projects || []) : [];
-
         const activeProjects = myProjects.filter(p => ['awaiting_payment', 'in_progress', 'delivered', 'completed'].includes(p.status));
 
         const projectsAsJobs = activeProjects.map(p => ({
@@ -62,32 +149,26 @@ export async function renderBookingsPage() {
         renderBookingsList();
     } catch (error) {
         console.error('Failed to load bookings:', error);
-        mainContent.innerHTML = `
-            <div class="section">
-                <div class="container">
-                    <div class="empty-state glass-effect" style="margin: 40px auto; max-width: 500px; border-radius: 24px; padding: 40px 20px; border-color: rgba(239, 68, 68, 0.3);">
-                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" style="opacity: 0.4; margin-bottom: 16px; color: var(--error);">
-                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-                            <path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                        </svg>
-                        <h3>Failed to load bookings</h3>
-                        <p>${error.message}</p>
-                        <button class="btn-primary" onclick="window.location.reload()">Try again</button>
-                    </div>
-                </div>
+        document.getElementById('bookingsListContainer').innerHTML = `
+            <div class="bk-empty" style="border-color: rgba(239, 68, 68, 0.2);">
+                <div class="bk-empty-icon" style="color: #ef4444; opacity: 0.5;">!</div>
+                <h3>Failed to load bookings</h3>
+                <p style="color: rgba(255,255,255,0.4); margin-bottom: 24px;">${error.message}</p>
+                <button class="btn-primary" onclick="window.location.reload()">Retry</button>
             </div>
         `;
     }
 }
 
 function renderBookingsList() {
-    const mainContent = document.getElementById('mainContent');
+    const listContainer = document.getElementById('bookingsListContainer');
+    if (!listContainer) return;
 
     const activeBookings = bookings.filter(b => !['completed', 'cancelled'].includes(b.status));
-    const completedBookings = bookings.filter(b => ['completed', 'cancelled'].includes(b.status));
+    const completedBookings = bookings.filter(b => ['completed', 'completed_with_escrow', 'cancelled'].includes(b.status));
 
     const totalEarnings = bookings
-        .filter(b => b.status === 'completed')
+        .filter(b => b.status === 'completed' || b.status === 'completed_with_escrow')
         .reduce((sum, b) => sum + (b.amount || 0), 0);
 
     let displayBookings = bookings;
@@ -97,153 +178,116 @@ function renderBookingsList() {
         displayBookings = completedBookings;
     }
 
-    mainContent.innerHTML = `
-        <div class="section">
-            <div class="container">
-                <div class="bookings-header-modern glass-effect" style="padding: 24px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.5);">
-                    <div>
-                        <h1 class="page-title-modern">Bookings</h1>
-                        <p class="page-subtitle-modern">Manage all your bookings and track project progress</p>
-                    </div>
+    listContainer.innerHTML = `
+        <div class="bk-stats">
+            <div class="bk-stat-card">
+                <div class="bk-stat-icon" style="background: rgba(124, 58, 237, 0.1); color: #a78bfa;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
                 </div>
-
-                <div class="bookings-stats-grid">
-                    <div class="stat-card-booking glass-effect" style="border-radius: 16px; border: 1px solid rgba(255,255,255,0.5);">
-                        <div class="stat-icon-booking" style="background: rgba(151, 71, 255, 0.15); color: var(--primary); backdrop-filter: blur(4px);">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                                <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
-                                <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                            </svg>
-                        </div>
-                        <div class="stat-details-booking">
-                            <div class="stat-label-booking" style="font-weight: 500;">Total Bookings</div>
-                            <div class="stat-value-booking">${bookings.length}</div>
-                        </div>
-                    </div>
-
-                    <div class="stat-card-booking glass-effect" style="border-radius: 16px; border: 1px solid rgba(255,255,255,0.5);">
-                        <div class="stat-icon-booking" style="background: rgba(59, 130, 246, 0.15); color: #3B82F6; backdrop-filter: blur(4px);">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-                                <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                            </svg>
-                        </div>
-                        <div class="stat-details-booking">
-                            <div class="stat-label-booking" style="font-weight: 500;">Active</div>
-                            <div class="stat-value-booking">${activeBookings.length}</div>
-                        </div>
-                    </div>
-
-                    <div class="stat-card-booking glass-effect" style="border-radius: 16px; border: 1px solid rgba(255,255,255,0.5);">
-                        <div class="stat-icon-booking" style="background: rgba(16, 185, 129, 0.15); color: #10B981; backdrop-filter: blur(4px);">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                                <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </div>
-                        <div class="stat-details-booking">
-                            <div class="stat-label-booking" style="font-weight: 500;">Completed</div>
-                            <div class="stat-value-booking">${completedBookings.length}</div>
-                        </div>
-                    </div>
-
-                    <div class="stat-card-booking glass-effect" style="border-radius: 16px; border: 1px solid rgba(255,255,255,0.5);">
-                        <div class="stat-icon-booking" style="background: rgba(34, 197, 94, 0.15); color: #10B981; backdrop-filter: blur(4px);">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                            </svg>
-                        </div>
-                        <div class="stat-details-booking">
-                            <div class="stat-label-booking" style="font-weight: 500;">Total Earnings</div>
-                            <div class="stat-value-booking">$${totalEarnings.toFixed(2)}</div>
-                        </div>
-                    </div>
+                <div>
+                    <div class="bk-stat-label">Total</div>
+                    <div class="bk-stat-value">${bookings.length}</div>
                 </div>
-
-                <div class="bookings-filters-modern">
-                    <button class="filter-btn-booking ${currentFilter === 'all' ? 'active' : ''}" onclick="window.filterBookings('all')">
-                        All (${bookings.length})
-                    </button>
-                    <button class="filter-btn-booking ${currentFilter === 'active' ? 'active' : ''}" onclick="window.filterBookings('active')">
-                        Active (${activeBookings.length})
-                    </button>
-                    <button class="filter-btn-booking ${currentFilter === 'completed' ? 'active' : ''}" onclick="window.filterBookings('completed')">
-                        Completed (${completedBookings.length})
-                    </button>
+            </div>
+            <div class="bk-stat-card">
+                <div class="bk-stat-icon" style="background: rgba(59, 130, 246, 0.1); color: #60a5fa;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
                 </div>
-
-                ${displayBookings.length > 0 ? `
-                    <div class="bookings-grid-modern">
-                        ${displayBookings.map(booking => renderModernBookingCard(booking)).join('')}
-                    </div>
-                ` : `
-                    <div class="empty-state-modern glass-effect" style="padding: 60px 20px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.4);">
-                        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" style="opacity: 0.3; margin-bottom: 16px;">
-                            <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
-                            <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                        </svg>
-                        <h3>No ${currentFilter === 'all' ? '' : currentFilter} bookings</h3>
-                        <p>${currentFilter === 'active' ? 'Your active jobs will appear here' : currentFilter === 'completed' ? 'Your completed jobs will appear here' : 'Your bookings will appear here'}</p>
-                        ${appState.user.role === 'client' && currentFilter !== 'completed' ? '<button class="btn-primary" onclick="navigateToPage(\'discover\')">Find Creators</button>' : ''}
-                    </div>
-                `}
+                <div>
+                    <div class="bk-stat-label">Active</div>
+                    <div class="bk-stat-value">${activeBookings.length}</div>
+                </div>
+            </div>
+            <div class="bk-stat-card">
+                <div class="bk-stat-icon" style="background: rgba(16, 185, 129, 0.1); color: #34d399;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+                </div>
+                <div>
+                    <div class="bk-stat-label">Completed</div>
+                    <div class="bk-stat-value">${completedBookings.length}</div>
+                </div>
+            </div>
+            <div class="bk-stat-card">
+                <div class="bk-stat-icon" style="background: rgba(107, 114, 128, 0.1); color: #9ca3af;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+                </div>
+                <div>
+                    <div class="bk-stat-label">Earnings</div>
+                    <div class="bk-stat-value">$${totalEarnings.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                </div>
             </div>
         </div>
+
+        <div class="bk-filters">
+            <button class="bk-filter-btn ${currentFilter === 'all' ? 'active' : ''}" onclick="window.filterBookings('all')">All Jobs</button>
+            <button class="bk-filter-btn ${currentFilter === 'active' ? 'active' : ''}" onclick="window.filterBookings('active')">In Progress</button>
+            <button class="bk-filter-btn ${currentFilter === 'completed' ? 'active' : ''}" onclick="window.filterBookings('completed')">Finished</button>
+        </div>
+
+        ${displayBookings.length > 0 ? `
+            <div class="bk-grid">
+                ${displayBookings.map(booking => renderModernBookingCard(booking)).join('')}
+            </div>
+        ` : `
+            <div class="bk-empty">
+                <div class="bk-empty-icon">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16 2v4M8 2v4M3 10h18M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                </div>
+                <h3>No ${currentFilter === 'all' ? '' : currentFilter} bookings found</h3>
+                <p style="color: rgba(255,255,255,0.4);">Your job list is currently empty.</p>
+            </div>
+        `}
     `;
 }
 
 function renderModernBookingCard(booking) {
     const isCreator = appState.user.role === 'creator';
-    const otherPartyName = isCreator ? booking.client?.name || 'Client' : booking.creator?.name || 'Creator';
-    const otherPartyAvatar = isCreator
-        ? booking.client?.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop'
-        : booking.creator?.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop';
+    const otherParty = isCreator ? booking.client : booking.creator;
+    const otherPartyName = otherParty?.name || (isCreator ? 'Client' : 'Creator');
+    const otherPartyAvatar = otherParty?.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop';
 
-    const statusColor = getStatusColor(booking.status);
+    // Determine status class
+    let statusClass = 'status-pending';
+    if (['completed', 'completed_with_escrow'].includes(booking.status)) statusClass = 'status-completed';
+    else if (['in_progress', 'delivered'].includes(booking.status)) statusClass = 'status-active';
 
     return `
-        <div class="booking-card-modern glass-effect" style="border-radius: 16px; border: 1px solid rgba(255,255,255,0.5); cursor: pointer;" onclick="window.viewBookingDetails('${booking._id}')">
-            <div class="booking-card-header" style="border-bottom: 1px solid rgba(255,255,255,0.3);">
-                <div class="booking-user-info">
-                    <img src="${otherPartyAvatar}" alt="${otherPartyName}" class="booking-avatar" style="border-color: rgba(255,255,255,0.6);">
+        <div class="bk-card" onclick="window.viewBookingDetails('${booking._id}')">
+            <div class="bk-card-header">
+                <div class="bk-user">
+                    <img src="${otherPartyAvatar}" alt="${otherPartyName}" class="bk-avatar">
                     <div>
-                        <div class="booking-name">${otherPartyName}</div>
-                        <div class="booking-role">${isCreator ? 'Client' : 'Creator'}</div>
+                        <div class="bk-username">${otherPartyName}</div>
+                        <div class="bk-userrole">${isCreator ? 'Client' : 'Creator'}</div>
                     </div>
                 </div>
-                <div class="booking-status-badges">
-                    <span class="status-badge-modern" style="background: ${statusColor}dd; backdrop-filter: blur(4px); color: white;">
-                        ${formatStatus(booking.status)}
-                    </span>
-                    ${booking.paymentStatus === 'pending' ? `
-                        <span class="payment-badge-modern pending" style="background: rgba(245, 158, 11, 0.2); backdrop-filter: blur(4px);">Payment Pending</span>
-                    ` : booking.paymentStatus === 'paid' ? `
-                        <span class="payment-badge-modern paid" style="background: rgba(16, 185, 129, 0.2); backdrop-filter: blur(4px);">Paid</span>
-                    ` : ''}
+                <div class="bk-status-tag ${statusClass}">
+                    ${formatStatus(booking.status)}
                 </div>
             </div>
 
-            <div class="booking-card-body">
-                <h3 class="booking-title">${booking.serviceTitle}</h3>
-                ${booking.bookingId ? `<div class="booking-id">ID: ${booking.bookingId}</div>` : ''}
-                <div class="booking-date">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                        <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
-                        <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                    </svg>
-                    ${formatDate(booking.startDate || booking.createdAt)}
+            <div class="bk-card-body">
+                <h3 class="bk-job-title">${booking.serviceTitle}</h3>
+                <div class="bk-meta">
+                    <div class="bk-meta-item">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                        ${formatDate(booking.startDate || booking.createdAt)}
+                    </div>
+                    <div class="bk-meta-item">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                        ${booking._type === 'project' ? 'Project' : 'Service'}
+                    </div>
                 </div>
             </div>
 
-            <div class="booking-card-footer" style="border-top: 1px solid rgba(255,255,255,0.3);">
-                <div class="booking-amount">
-                    <div class="amount-label">Amount</div>
-                    <div class="amount-value">USDC ${booking.amount ? booking.amount.toFixed(2) : '0.00'}</div>
+            <div class="bk-card-footer">
+                <div>
+                    <div class="bk-price-label">Job Amount</div>
+                    <div class="bk-price-value">USDC ${booking.amount ? booking.amount.toFixed(2) : '0.00'}</div>
                 </div>
-                <button class="view-details-btn" onclick="event.stopPropagation(); window.viewBookingDetails('${booking._id}')" style="background: rgba(151, 71, 255, 0.9); backdrop-filter: blur(4px);">
-                    View Details
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                        <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
+                <button class="bk-btn-details">
+                    Details
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
                 </button>
             </div>
         </div>
@@ -257,7 +301,6 @@ window.filterBookings = function (filter) {
 
 window.viewBookingDetails = async function (bookingId) {
     try {
-        // Find the booking in our local array to determine its type
         const localItem = bookings.find(b => b._id === bookingId);
         const type = localItem ? localItem._type : 'booking';
 
@@ -270,224 +313,140 @@ window.viewBookingDetails = async function (bookingId) {
 
         if (response.success) {
             const booking = type === 'project' ? response.data.project : response.data.booking;
-            booking._type = type; // Ensure type is preserved
+            booking._type = type;
 
             const isCreator = appState.user.role === 'creator';
-            const unreadCount = booking.messages?.filter(m =>
-                !m.read && m.sender.toString() !== appState.user._id
-            ).length || 0;
+            const unreadCount = booking.messages?.filter(m => !m.read && m.sender.toString() !== appState.user._id).length || 0;
 
             const modalContent = `
-                <div class="modal" onclick="closeModalOnBackdrop(event)">
-                    <div class="modal-content glass-effect" style="max-width: 700px; max-height: 90vh; overflow-y: auto; border: 1px solid rgba(255,255,255,0.6); box-shadow: 0 12px 48px rgba(0,0,0,0.15);">
-                        <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.3); background: transparent;">
-                            <h2>Booking Details ${unreadCount > 0 ? `<span class="tag" style="background: #FF6B35; color: white; font-size: 12px; margin-left: 8px;">${unreadCount} new</span>` : ''}</h2>
-                            <button class="icon-btn" onclick="closeModal()" style="background: rgba(255,255,255,0.2);">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                                    <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2"/>
-                                </svg>
+                <div class="bkm-overlay" onclick="if(event.target === this) closeModal()">
+                    <div class="bkm-sheet">
+                        <div class="bkm-header">
+                            <span class="bkm-title">Booking Details</span>
+                            <button class="bkm-close" onclick="closeModal()">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
                             </button>
                         </div>
 
-                        <div style="padding: 20px;">
-                            <div class="booking-journey-container" style="margin-bottom: 24px; padding: 16px; background: rgba(255,255,255,0.4); border-radius: 16px; border: 1px solid rgba(255,255,255,0.5);">
-                                <div style="font-size: 13px; font-weight: 700; color: var(--text-secondary); margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.5px;">Booking Journey</div>
-                                <div class="booking-steps-visual" style="display: flex; justify-content: space-between; position: relative;">
-                                    <div style="position: absolute; top: 10px; left: 0; right: 0; height: 2px; background: var(--border); z-index: 1;"></div>
-                                    
+                        <div class="bkm-body">
+                            <!-- Journey Tracker -->
+                            <div class="bkm-section" style="padding: 16px 20px;">
+                                <div class="bkm-label">Booking Journey</div>
+                                <div class="journey-track">
+                                    <div class="journey-line"></div>
                                     ${['pending', 'awaiting_payment', 'confirmed', 'delivered', 'completed'].map((s, i) => {
                 const statuses = ['pending', 'awaiting_payment', 'confirmed', 'delivered', 'completed'];
                 const currentIdx = statuses.indexOf(booking.status);
                 const isDone = statuses.indexOf(s) < currentIdx || booking.status === 'completed';
                 const isActive = s === booking.status;
-                const label = s === 'pending' ? 'Request' :
-                    s === 'awaiting_payment' ? 'Acceptance' :
-                        s === 'confirmed' ? 'Payment' :
-                            s === 'delivered' ? 'Work' : 'Done';
-
+                const labels = { pending: 'Request', awaiting_payment: 'Accept', confirmed: 'Pay', delivered: 'Work', completed: 'Done' };
                 return `
-                                            <div style="display: flex; flex-direction: column; align-items: center; gap: 6px; z-index: 2; flex: 1; position: relative;">
-                                                <div style="width: 22px; height: 22px; border-radius: 50%; background: ${isDone ? 'var(--primary)' : isActive ? 'white' : 'var(--border)'}; border: 2px solid ${isDone || isActive ? 'var(--primary)' : 'var(--border)'}; display: flex; align-items: center; justify-content: center; color: ${isDone ? 'white' : 'var(--primary)'}; font-size: 10px; box-shadow: ${isActive ? '0 0 10px var(--primary)' : 'none'}; transition: all 0.3s ease;">
-                                                    ${isDone ? '✓' : i + 1}
-                                                </div>
-                                                <div style="font-size: 10px; font-weight: ${isActive ? '700' : '500'}; color: ${isActive ? 'var(--primary)' : 'var(--text-secondary)'}; text-align: center; white-space: nowrap;">${label}</div>
+                                            <div class="journey-step ${isDone ? 'completed' : isActive ? 'active' : ''}">
+                                                <div class="journey-dot">${isDone ? '✓' : i + 1}</div>
+                                                <div class="journey-label">${labels[s]}</div>
                                             </div>
                                         `;
             }).join('')}
                                 </div>
                             </div>
 
+                            <!-- Action Banners -->
                             ${booking.status === 'pending' && isCreator ? `
-                                <div style="background: rgba(254, 243, 199, 0.6); backdrop-filter: blur(8px); padding: 16px; border-radius: 12px; margin-bottom: 20px; border-left: 4px solid #F59E0B; border-right: 1px solid rgba(255,255,255,0.5); border-top: 1px solid rgba(255,255,255,0.5); border-bottom: 1px solid rgba(255,255,255,0.5);">
-                                    <div style="color: #92400E; font-weight: 600; margin-bottom: 8px;">Action Required</div>
-                                    <div style="color: #78350F; font-size: 14px; margin-bottom: 12px;">
-                                        Review this booking request and decide whether to accept, reject, or make a counter proposal.
+                                <div class="action-banner">
+                                    <div class="action-banner-title">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+                                        Pending Request
                                     </div>
-                                    <div style="display: flex; gap: 8px; flex-wrap: wrap;" id="actionButtons">
-                                        <button class="btn-primary" style="flex: 1; min-width: 120px;" onclick="window.acceptBookingRequest('${booking._id}')">Accept</button>
-                                        <button class="btn-secondary" style="flex: 1; min-width: 120px; background: rgba(255,255,255,0.5);" onclick="window.showCounterProposalForm('${booking._id}')">Counter Proposal</button>
-                                        <button class="btn-ghost" style="color: #EF4444; flex: 1; min-width: 120px;" onclick="window.showRejectForm('${booking._id}')">Reject</button>
+                                    <p style="font-size: 13px; color: rgba(255,255,255,0.6); margin-bottom: 16px;">Review this request to start the job.</p>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;" id="actionButtons">
+                                        <button class="bk-filter-btn active" onclick="window.acceptBookingRequest('${booking._id}')">Accept Job</button>
+                                        <button class="bk-filter-btn" onclick="window.showCounterProposalForm('${booking._id}')">Counter Offer</button>
                                     </div>
-                                    <div id="counterProposalForm" style="display: none; margin-top: 16px; padding: 16px; background: rgba(59, 130, 246, 0.1); border-radius: 8px;">
-                                        <div style="font-weight: 600; margin-bottom: 12px; color: #1E40AF;">Enter Counter Proposal Amount</div>
-                                        <div style="display: flex; gap: 8px; align-items: flex-end;">
-                                            <div style="flex: 1;">
-                                                <input type="number" id="counterAmount" class="form-input" placeholder="Enter amount in USDC" step="0.01" min="0" style="margin: 0; background: rgba(255,255,255,0.5);">
-                                            </div>
-                                            <button class="btn-primary" onclick="window.submitCounterProposal('${booking._id}', document.getElementById('counterAmount').value)">Submit</button>
-                                            <button class="btn-ghost" onclick="document.getElementById('counterProposalForm').style.display='none'; document.getElementById('actionButtons').style.display='flex';">Cancel</button>
+                                    <div id="counterProposalForm" style="display: none; margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.1);">
+                                        <div class="bkm-label">Proposed Amount</div>
+                                        <div style="display: flex; gap: 10px;">
+                                            <input type="number" id="counterAmount" class="am-input" placeholder="USDC Amount" style="flex: 1;">
+                                            <button class="bk-filter-btn active" onclick="window.submitCounterProposal('${booking._id}', document.getElementById('counterAmount').value)">Send</button>
                                         </div>
                                     </div>
-                                    <div id="rejectForm" style="display: none; margin-top: 16px; padding: 16px; background: rgba(239, 68, 68, 0.1); border-radius: 8px;">
-                                        <div style="font-weight: 600; margin-bottom: 12px; color: #991B1B;">Reason for Rejection (Optional)</div>
-                                        <div style="display: flex; flex-direction: column; gap: 8px;">
-                                            <textarea id="rejectReason" class="form-input" placeholder="Enter reason..." rows="3" style="margin: 0; background: rgba(255,255,255,0.5);"></textarea>
-                                            <div style="display: flex; gap: 8px;">
-                                                <button class="btn-primary" style="background: #EF4444; flex: 1;" onclick="window.submitRejection('${booking._id}', document.getElementById('rejectReason').value)">Reject Booking</button>
-                                                <button class="btn-ghost" onclick="document.getElementById('rejectForm').style.display='none'; document.getElementById('actionButtons').style.display='flex';">Cancel</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            ` : ''}
-
-                            ${booking.counterProposal ? `
-                                <div style="background: rgba(239, 246, 255, 0.6); backdrop-filter: blur(8px); padding: 16px; border-radius: 12px; margin-bottom: 20px; border-left: 4px solid #3B82F6; border-right: 1px solid rgba(255,255,255,0.5); border-top: 1px solid rgba(255,255,255,0.5); border-bottom: 1px solid rgba(255,255,255,0.5);">
-                                    <div style="color: #1E40AF; font-weight: 600; margin-bottom: 4px;">Counter Proposal</div>
-                                    <div style="color: #1E3A8A; font-size: 14px;">
-                                        Creator proposed: USDC ${booking.counterProposal?.amount ? booking.counterProposal.amount.toFixed(2) : '0.00'}
-                                        <div class="caption">Proposed ${formatDate(booking.counterProposal.proposedAt)}</div>
-                                    </div>
-                                </div>
-                            ` : ''}
-
-                            <div style="background: rgba(255,255,255,0.4); padding: 16px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.5);">
-                                <div class="caption" style="color: var(--text-secondary); margin-bottom: 4px;">Booking ID</div>
-                                <div style="font-weight: 600;">${booking.bookingId}</div>
-                            </div>
-
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
-                                <div>
-                                    <div class="caption" style="color: var(--text-secondary); margin-bottom: 4px;">${isCreator ? 'Client' : 'Creator'}</div>
-                                    <div style="font-weight: 600;">${isCreator ? booking.client?.name : booking.creator?.name}</div>
-                                </div>
-                                <div>
-                                    <div class="caption" style="color: var(--text-secondary); margin-bottom: 4px;">Status</div>
-                                    <span class="tag" style="background: ${getStatusColor(booking.status)}dd; backdrop-filter: blur(4px); color: white;">
-                                        ${formatStatus(booking.status)}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label">Service</label>
-                                <div style="font-weight: 600;">${booking.serviceTitle}</div>
-                                <div class="caption" style="margin-top: 4px;">${booking.serviceDescription}</div>
-                            </div>
-
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
-                                <div>
-                                    <div class="caption" style="color: var(--text-secondary); margin-bottom: 4px;">Amount</div>
-                                    <div style="font-size: 20px; font-weight: 700; color: var(--primary);">USDC ${booking.amount ? booking.amount.toFixed(2) : '0.00'}</div>
-                                </div>
-                                <div>
-                                    <div class="caption" style="color: var(--text-secondary); margin-bottom: 4px;">Payment</div>
-                                    <span class="tag" style="background: ${booking.paymentStatus === 'paid' ? '#10B981' : '#FFA500'}dd; backdrop-filter: blur(4px); color: white;">
-                                        ${booking.paymentStatus}
-                                    </span>
-                                </div>
-                            </div>
-
-                            ${booking.paymentStatus === 'pending' && booking.escrowWallet?.address && !isCreator && booking.status === 'confirmed' ? `
-                                <div style="background: rgba(151, 71, 255, 0.85); backdrop-filter: blur(8px); color: white; padding: 16px; border-radius: 12px; margin: 20px 0; border: 1px solid rgba(255,255,255,0.3);">
-                                    <div style="font-weight: 600; margin-bottom: 8px;">Pay for this booking</div>
-                                    <div style="font-size: 14px; opacity: 0.9; margin-bottom: 12px;">Send USDC ${booking.amount ? booking.amount.toFixed(2) : '0.00'} to:</div>
-                                    <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; word-break: break-all; font-family: monospace; font-size: 13px;">
-                                        ${booking.escrowWallet.address}
-                                    </div>
-                                    <button class="btn-secondary" style="margin-top: 12px; width: 100%; border-color: rgba(255,255,255,0.6); color: white; background: rgba(255,255,255,0.1);" onclick="navigator.clipboard.writeText('${booking.escrowWallet.address}').then(() => showToast('Address copied!', 'success'))">
-                                        Copy Address
-                                    </button>
                                 </div>
                             ` : ''}
 
                             ${booking.status === 'awaiting_payment' && !isCreator ? `
-                                <div style="background: rgba(239, 246, 255, 0.6); backdrop-filter: blur(8px); padding: 16px; border-radius: 12px; margin: 20px 0; border: 1px solid rgba(191, 219, 254, 0.8);">
-                                    <div style="font-weight: 600; color: #1E40AF; margin-bottom: 8px;">Waiting for Payment</div>
-                                    <div style="font-size: 14px; color: #1E3A8A; margin-bottom: 12px;">
-                                        The creator has accepted your request. Please pay the amount to hold it in escrow and start the job.
+                                <div class="action-banner" style="background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.2);">
+                                    <div class="action-banner-title" style="color: #60a5fa;">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+                                        Acceptance Received
                                     </div>
-                                    <button class="btn-primary" style="width: 100%;" onclick="window.processBookingPayment('${booking._id}', '${booking._type}')">
-                                        Proceed to Payment (USDC ${booking.amount ? booking.amount.toFixed(2) : '0.00'})
-                                    </button>
+                                    <p style="font-size: 13px; color: rgba(255,255,255,0.6); margin-bottom: 16px;">The creator accepted your request. Pay now to lock the funds in escrow.</p>
+                                    <button class="btn-primary" style="width: 100%; height: 44px;" onclick="window.processBookingPayment('${booking._id}', '${booking._type}')">Pay USDC ${booking.amount.toFixed(2)}</button>
                                 </div>
                             ` : ''}
 
                             ${booking.status === 'in_progress' && isCreator ? `
-                                <div style="background: rgba(240, 253, 244, 0.6); backdrop-filter: blur(8px); padding: 16px; border-radius: 12px; margin: 20px 0; border: 1px solid rgba(187, 247, 208, 0.8);">
-                                    <div style="font-weight: 600; color: #166534; margin-bottom: 8px;">Submit Your Work</div>
-                                    <div style="font-size: 14px; color: #14532D; margin-bottom: 12px;">
-                                        The client has paid. You can now start the work. Once finished, submit the link to your deliverables below.
+                                <div class="action-banner" style="background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.2);">
+                                    <div class="action-banner-title" style="color: #34d399;">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+                                        In Progress
                                     </div>
-                                    <div class="form-group" style="margin-bottom: 12px;">
-                                        <input type="url" id="deliverableUrl" class="form-input" placeholder="Link to deliverables (Google Drive, Dropbox, etc.)" style="margin: 0; background: rgba(255,255,255,0.6);">
+                                    <p style="font-size: 13px; color: rgba(255,255,255,0.6); margin-bottom: 16px;">Funds are secured. Once finished, submit the link to your work.</p>
+                                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                                        <input type="url" id="deliverableUrl" class="am-input" placeholder="Work URL (Drive/Dropbox)">
+                                        <button class="btn-primary" style="width: 100%; height: 44px;" onclick="window.submitDeliverable('${booking._id}', '${booking._type}')">Submit Deliverables</button>
                                     </div>
-                                    <div class="form-group" style="margin-bottom: 12px;">
-                                        <textarea id="deliverableNotes" class="form-input" placeholder="Any notes for the client..." rows="2" style="margin: 0; background: rgba(255,255,255,0.6);"></textarea>
-                                    </div>
-                                    <button class="btn-primary" style="width: 100%;" onclick="window.submitDeliverable('${booking._id}', '${booking._type}')">
-                                        Submit Work
-                                    </button>
                                 </div>
                             ` : ''}
 
                             ${booking.status === 'delivered' && !isCreator ? `
-                                <div style="background: rgba(240, 253, 244, 0.6); backdrop-filter: blur(8px); padding: 16px; border-radius: 12px; margin: 20px 0; border: 1px solid rgba(187, 247, 208, 0.8);">
-                                    <div style="font-weight: 600; color: #166534; margin-bottom: 8px;">Review Deliverables</div>
-                                    <div style="font-size: 14px; color: #14532D; margin-bottom: 12px;">
-                                        The creator has submitted their work. Please review it and approve to release the funds.
+                                <div class="action-banner" style="background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.2);">
+                                    <div class="action-banner-title" style="color: #34d399;">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+                                        Work Submitted
                                     </div>
-                                    ${booking.attachments && booking.attachments.length > 0 ? `
-                                        <div style="margin-bottom: 12px;">
-                                            <strong>Deliverables:</strong><br>
-                                            <a href="${booking.attachments[booking.attachments.length - 1].url}" target="_blank" class="btn-ghost" style="display: inline-flex; align-items: center; gap: 8px; margin-top: 8px; background: rgba(255,255,255,0.5);">
-                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 15V3m0 12l-4-4m4 4l4-4M2 17l.621 2.485A2 2 0 0 0 4.561 21h14.878a2 2 0 0 0 1.94-1.515L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                                                View Deliverable
-                                            </a>
-                                        </div>
-                                    ` : ''}
-                                    <button class="btn-primary" style="width: 100%;" onclick="window.releasePayment('${booking._id}', '${booking._type}')">
-                                        Approve and Release Funds
-                                    </button>
+                                    <p style="font-size: 13px; color: rgba(255,255,255,0.6); margin-bottom: 16px;">Review the creator's work and approve to release funds.</p>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                        <a href="${booking.attachments?.[0]?.url || '#'}" target="_blank" class="bk-filter-btn" style="text-align: center; text-decoration: none; display: flex; align-items: center; justify-content: center;">View Work</a>
+                                        <button class="btn-primary" style="height: 44px;" onclick="window.releasePayment('${booking._id}', '${booking._type}')">Approve</button>
+                                    </div>
                                 </div>
                             ` : ''}
 
-                            <div style="margin: 24px 0;">
-                                <h3 style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="2"/>
-                                    </svg>
-                                    Messages
-                                </h3>
-                                <div id="messagesContainer" style="background: rgba(255,255,255,0.3); border: 1px solid rgba(255,255,255,0.4); border-radius: 12px; padding: 16px; max-height: 300px; overflow-y: auto; margin-bottom: 12px;">
+                            <!-- Details Grid -->
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
+                                <div class="bkm-section" style="margin-bottom: 0;">
+                                    <div class="bkm-label">${isCreator ? 'Client' : 'Creator'}</div>
+                                    <div style="font-weight: 700;">${isCreator ? booking.client?.name : booking.creator?.name}</div>
+                                </div>
+                                <div class="bkm-section" style="margin-bottom: 0;">
+                                    <div class="bkm-label">Amount</div>
+                                    <div style="font-weight: 800; color: #a78bfa; font-size: 18px;">USDC ${booking.amount.toFixed(2)}</div>
+                                </div>
+                            </div>
+
+                            <div class="bkm-section">
+                                <div class="bkm-label">Service Title</div>
+                                <div style="font-weight: 700; margin-bottom: 4px;">${booking.serviceTitle}</div>
+                                <p style="font-size: 13px; color: rgba(255,255,255,0.4); line-height: 1.5;">${booking.serviceDescription || 'No description provided.'}</p>
+                            </div>
+
+                            <!-- Messages Area -->
+                            <div class="bkm-label" style="margin-top: 32px; display: flex; align-items: center; justify-content: space-between;">
+                                <span>Project Messages</span>
+                                ${unreadCount > 0 ? `<span style="background: #ef4444; color: white; padding: 2px 8px; border-radius: 10px; font-size: 10px;">${unreadCount} NEW</span>` : ''}
+                            </div>
+                            <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 20px; padding: 16px; margin-top: 8px;">
+                                <div id="messagesContainer" style="max-height: 240px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 4px; margin-bottom: 16px;">
                                     ${booking.messages && booking.messages.length > 0 ?
                     booking.messages.map(msg => {
                         const isMine = msg.sender.toString() === appState.user._id;
-                        return `
-                                                <div style="display: flex; justify-content: ${isMine ? 'flex-end' : 'flex-start'}; margin-bottom: 12px;">
-                                                    <div style="max-width: 70%; background: ${isMine ? 'var(--primary)' : 'rgba(255,255,255,0.7)'}; backdrop-filter: blur(4px); color: ${isMine ? 'white' : 'inherit'}; padding: 10px 14px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-                                                        <div style="font-size: 14px;">${msg.message}</div>
-                                                        <div style="font-size: 11px; opacity: 0.7; margin-top: 4px;">${formatDate(msg.timestamp)}</div>
-                                                    </div>
-                                                </div>
-                                            `;
-                    }).join('')
-                    : '<div class="text-secondary" style="text-align: center; padding: 20px;">No messages yet</div>'
+                        return `<div class="msg-bubble ${isMine ? 'sent' : 'received'}">${msg.message}</div>`;
+                    }).join('') :
+                    '<div style="text-align: center; padding: 40px; color: rgba(255,255,255,0.2); font-size: 13px;">No messages yet. Start the conversation!</div>'
                 }
                                 </div>
                                 <form onsubmit="window.sendBookingMessage(event, '${booking._id}', '${booking._type}')" style="display: flex; gap: 8px;">
-                                    <input type="text" id="messageInput" class="form-input" placeholder="Type a message..." required style="flex: 1; background: rgba(255,255,255,0.5);">
-                                    <button type="submit" class="btn-primary" style="padding: 10px 20px;">Send</button>
+                                    <input type="text" id="messageInput" class="am-input" placeholder="Type a message..." required style="flex: 1; border-radius: 16px;">
+                                    <button type="submit" class="bk-filter-btn active" style="padding: 0 20px; height: 44px; border-radius: 16px;">Send</button>
                                 </form>
                             </div>
                         </div>
@@ -498,14 +457,13 @@ window.viewBookingDetails = async function (bookingId) {
             document.getElementById('modalsContainer').innerHTML = modalContent;
             document.body.style.overflow = 'hidden';
 
-            const messagesContainer = document.getElementById('messagesContainer');
-            if (messagesContainer) {
-                messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            }
+            // Scroll to bottom of messages
+            const msgBox = document.getElementById('messagesContainer');
+            if (msgBox) msgBox.scrollTop = msgBox.scrollHeight;
         }
-    } catch (error) {
-        console.error('Failed to load booking details:', error);
-        alert('Failed to load booking details');
+    } catch (e) {
+        console.error('Error viewing details:', e);
+        showToast('Failed to load details', 'error');
     }
 };
 
@@ -642,9 +600,23 @@ window.acceptBookingRequest = async function (bookingId) {
 };
 
 window.showRejectForm = function (bookingId) {
+    // Remove any existing forms
+    document.getElementById('rejectForm')?.remove();
+    document.getElementById('counterProposalForm')?.remove();
+
     document.getElementById('actionButtons').style.display = 'none';
-    document.getElementById('counterProposalForm').style.display = 'none';
-    document.getElementById('rejectForm').style.display = 'block';
+    const rejectHtml = `
+        <div id="rejectForm" class="action-banner warning" style="margin-top: 16px; animation: bkmScaleIn 0.2s ease;">
+            <div class="action-banner-title" style="color: #ef4444;">Reject Booking</div>
+            <p style="font-size: 13px; color: rgba(255,255,255,0.6); margin-bottom: 12px;">Please provide a reason for rejecting this job.</p>
+            <textarea id="rejectReason" class="am-input" placeholder="Enter reason (optional)" rows="3" style="width: 100%; border-radius: 12px; margin-bottom: 12px;"></textarea>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <button class="bk-filter-btn active" style="background: #ef4444;" onclick="window.submitRejection('${bookingId}', document.getElementById('rejectReason').value)">Confirm Reject</button>
+                <button class="bk-filter-btn" onclick="document.getElementById('rejectForm').remove(); document.getElementById('actionButtons').style.display='grid';">Cancel</button>
+            </div>
+        </div>
+    `;
+    document.getElementById('actionButtons').insertAdjacentHTML('afterend', rejectHtml);
 };
 
 window.submitRejection = async function (bookingId, reason) {
@@ -663,9 +635,23 @@ window.submitRejection = async function (bookingId, reason) {
 };
 
 window.showCounterProposalForm = function (bookingId) {
+    // Remove any existing forms
+    document.getElementById('rejectForm')?.remove();
+    document.getElementById('counterProposalForm')?.remove();
+
     document.getElementById('actionButtons').style.display = 'none';
-    document.getElementById('rejectForm').style.display = 'none';
-    document.getElementById('counterProposalForm').style.display = 'block';
+    const counterProposalHtml = `
+        <div id="counterProposalForm" class="action-banner info" style="margin-top: 16px; animation: bkmScaleIn 0.2s ease;">
+            <div class="action-banner-title" style="color: #3b82f6;">Counter Proposal</div>
+            <p style="font-size: 13px; color: rgba(255,255,255,0.6); margin-bottom: 12px;">Propose a new amount for this booking.</p>
+            <input type="number" id="counterAmount" class="am-input" placeholder="Enter new amount (USDC)" style="width: 100%; border-radius: 12px; margin-bottom: 12px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <button class="bk-filter-btn active" style="background: #3b82f6;" onclick="window.submitCounterProposal('${bookingId}', document.getElementById('counterAmount').value)">Send Proposal</button>
+                <button class="bk-filter-btn" onclick="document.getElementById('counterProposalForm').remove(); document.getElementById('actionButtons').style.display='grid';">Cancel</button>
+            </div>
+        </div>
+    `;
+    document.getElementById('actionButtons').insertAdjacentHTML('afterend', counterProposalHtml);
     setTimeout(() => document.getElementById('counterAmount').focus(), 100);
 };
 
