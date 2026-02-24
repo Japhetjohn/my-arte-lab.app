@@ -7998,3 +7998,201 @@ select.form-select-modern:hover {
 .rounded-full {
     border-radius: 9999px;
 }
+/* =========================================
+   💎 PREMIUM GLASSMORPHISM MODAL SYSTEM 💎
+   ========================================= */
+
+.glass-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(12px) saturate(180%);
+    -webkit-backdrop-filter: blur(12px) saturate(180%);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: glassFadeIn 0.3s ease-out;
+}
+
+.glass-modal-content {
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(25px) saturate(200%);
+    -webkit-backdrop-filter: blur(25px) saturate(200%);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 28px;
+    width: 100%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 
+        0 4px 24px -1px rgba(0, 0, 0, 0.1),
+        0 20px 48px -10px rgba(0, 0, 0, 0.15),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+    animation: glassScaleIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+[data-theme="dark"] .glass-modal-content {
+    background: rgba(15, 23, 42, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 
+        0 4px 24px -1px rgba(0, 0, 0, 0.3),
+        0 20px 48px -10px rgba(0, 0, 0, 0.4),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+.glass-modal-header {
+    padding: 24px 32px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(151, 71, 255, 0.1);
+}
+
+.glass-modal-title {
+    font-size: 24px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #9747FF, #6B46FF);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -0.02em;
+}
+
+.glass-modal-close {
+    width: 36px;
+    height: 36px;
+    background: rgba(151, 71, 255, 0.1);
+    border: 1px solid rgba(151, 71, 255, 0.1);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.glass-modal-close:hover {
+    background: var(--primary);
+    color: white;
+    transform: rotate(90deg);
+}
+
+.glass-modal-body {
+    padding: 24px 32px 32px;
+    flex: 1;
+}
+
+.glass-form-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.glass-input {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(151, 71, 255, 0.2);
+    border-radius: 14px;
+    padding: 14px 18px;
+    font-size: 16px;
+    color: var(--text-primary);
+    transition: all 0.2s ease;
+    outline: none;
+}
+
+[data-theme="dark"] .glass-input {
+    background: rgba(30, 41, 59, 0.4);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.glass-input:focus {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(151, 71, 255, 0.15);
+}
+
+[data-theme="dark"] .glass-input:focus {
+    background: rgba(30, 41, 59, 0.8);
+}
+
+.glass-btn-primary {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, #9747FF, #6B46FF);
+    border: none;
+    border-radius: 16px;
+    color: white;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 8px 24px -6px rgba(151, 71, 255, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.glass-btn-primary:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 12px 32px -8px rgba(151, 71, 255, 0.6);
+}
+
+.glass-btn-primary:active {
+    transform: translateY(0) scale(0.98);
+}
+
+.glass-btn-ghost {
+    width: 100%;
+    padding: 14px;
+    background: rgba(151, 71, 255, 0.05);
+    border: 1px solid rgba(151, 71, 255, 0.1);
+    border-radius: 16px;
+    color: var(--primary);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.glass-btn-ghost:hover {
+    background: rgba(151, 71, 255, 0.1);
+    color: var(--secondary);
+}
+
+@keyframes glassFadeIn {
+    from { opacity: 0; backdrop-filter: blur(0px); }
+    to { opacity: 1; backdrop-filter: blur(12px); }
+}
+
+@keyframes glassScaleIn {
+    from { opacity: 0; transform: scale(0.9) translateY(20px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* Scrollbar for Glass Modal */
+.glass-modal-content::-webkit-scrollbar {
+    width: 6px;
+}
+.glass-modal-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+.glass-modal-content::-webkit-scrollbar-thumb {
+    background: rgba(151, 71, 255, 0.2);
+    border-radius: 10px;
+}
+.glass-modal-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(151, 71, 255, 0.4);
+}
+

@@ -173,7 +173,7 @@ function renderProjectCards(projects) {
                 <div class="project-card-modern glass-effect" data-project-id="${project._id}" style="background: rgba(255,255,255,0.6); border: 1px solid rgba(255,255,255,0.5); backdrop-filter: blur(12px);">
                     ${project.coverImage ? `
                         <div class="project-cover-modern">
-                            <img src="${project.coverImage}" alt="${project.title}" onerror="this.parentElement.remove();" style="mix-blend-mode: overlay;">
+                            <img src="${project.coverImage}" alt="${project.title}" onerror="this.parentElement.remove();">
                             <div class="project-type-badge-modern" style="background: ${getProjectTypeBadgeColor(project.projectType)}dd; backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.2);">
                                 ${project.projectType.replace('-', ' ')}
                             </div>

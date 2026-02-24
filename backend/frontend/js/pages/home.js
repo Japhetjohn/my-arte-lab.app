@@ -17,7 +17,7 @@ function renderModernCreatorCards(creators) {
         <div class="card card-lift scroll-fade-in dynamic-light creator-card-modern" data-creator-id="${creator.id}" style="cursor: pointer; padding: 0; overflow: hidden;">
             <div style="height: 140px; background: linear-gradient(135deg, rgba(151, 71, 255, 0.5) 0%, rgba(107, 70, 255, 0.5) 100%); position: relative; overflow: hidden;">
                 ${creator.cover ? `
-                    <img src="${creator.cover}" alt="${creator.name}" style="width: 100%; height: 100%; object-fit: cover; mix-blend-mode: overlay;">
+                    <img src="${creator.cover}" alt="${creator.name}" style="width: 100%; height: 100%; object-fit: cover;">
                 ` : ''}
                 ${creator.verified ? `
                     <div style="position: absolute; top: 12px; right: 12px; background: rgba(255, 255, 255, 0.4); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.5); padding: 4px 10px; border-radius: 20px; display: flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: #065f46; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">

@@ -361,7 +361,7 @@ export async function showProjectDetail(projectId) {
                         ${project.coverImage ? `
                             <img src="${project.coverImage}"
                                  alt="${project.title}"
-                                 style="width: 100%; max-height: 400px; object-fit: cover; border-radius: var(--radius); margin-bottom: 24px; cursor: pointer; mix-blend-mode: overlay; border: 1px solid rgba(255,255,255,0.3);"
+                                 style="width: 100%; max-height: 400px; object-fit: cover; border-radius: var(--radius); margin-bottom: 24px; cursor: pointer; border: 1px solid rgba(255,255,255,0.3);"
                                  onclick="window.openImageModal('${project.coverImage}')">
                         ` : ''}
 
