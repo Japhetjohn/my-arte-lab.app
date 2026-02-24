@@ -345,7 +345,6 @@ window.viewBookingDetails = async function (bookingId) {
                 </div>
             </div>
         </div>
-                </div>
     `;
 
             document.getElementById('modalsContainer').innerHTML = modalContent;

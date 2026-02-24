@@ -247,23 +247,22 @@ export async function renderProfilePage() {
             });
         }
     }
-}
 
-// Service image gallery handlers
-if (isCreator && services.length > 0) {
-    document.querySelectorAll('.service-images-grid').forEach(grid => {
-        const serviceIndex = parseInt(grid.dataset.serviceIndex);
-        const service = services[serviceIndex];
-        if (service && service.images) {
-            grid.querySelectorAll('.service-image-item').forEach(item => {
-                item.addEventListener('click', () => {
-                    const index = parseInt(item.dataset.index);
-                    window.openImageModal(service.images[index], service.images, index);
+    // Service image gallery handlers
+    if (isCreator && services.length > 0) {
+        document.querySelectorAll('.service-images-grid').forEach(grid => {
+            const serviceIndex = parseInt(grid.dataset.serviceIndex);
+            const service = services[serviceIndex];
+            if (service && service.images) {
+                grid.querySelectorAll('.service-image-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        const index = parseInt(item.dataset.index);
+                        window.openImageModal(service.images[index], service.images, index);
+                    });
                 });
-            });
-        }
-    });
-}
+            }
+        });
+    }
 }
 
 async function requestEmailVerification() {
