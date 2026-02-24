@@ -154,111 +154,61 @@ export async function showBookingModal(creatorId, serviceIndex = 0) {
     }
 
     const service = creator.services[serviceIndex];
-
-    const avatarUrl = creator.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name || 'User')}&background=9747FF&color=fff&bold=true`;
+    const userAvatar = creator.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name || 'User')}&background=9747FF&color=fff&bold=true&size=200`;
 
     const modalContent = `
-        <div class="modal" onclick="closeModalOnBackdrop(event)">
-            <div class="modal-content glass-effect" style="max-width: 600px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.6); box-shadow: 0 12px 48px rgba(0,0,0,0.15);">
-                <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.3); background: transparent; padding: 24px;">
-                    <h2 style="margin: 0; font-size: 22px;">Request booking</h2>
-                    <button class="icon-btn" onclick="closeModal()" style="background: rgba(255,255,255,0.3);">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2"/>
-                        </svg>
+        <div class="bkm-overlay" onclick="if(event.target === this) closeModal()">
+            <div class="bkm-sheet" style="max-width: 580px;">
+                <div class="bkm-header">
+                    <span class="bkm-title">Request a Booking</span>
+                    <button class="bkm-close" onclick="closeModal()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
                     </button>
                 </div>
 
-                <div style="padding: 24px;">
-                    <div class="booking-stepper mb-lg" style="margin-bottom: 32px;">
-                        <div class="step active">
-                            <div class="step-circle" style="box-shadow: 0 4px 12px rgba(151,71,255,0.3);">1</div>
-                            <div class="step-label">Request</div>
-                        </div>
-                        <div class="step">
-                            <div class="step-circle" style="background: rgba(255,255,255,0.4);">2</div>
-                            <div class="step-label">Approval</div>
-                        </div>
-                        <div class="step">
-                            <div class="step-circle" style="background: rgba(255,255,255,0.4);">3</div>
-                            <div class="step-label">Payment</div>
+                <div class="bkm-body">
+                    <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 20px; padding: 20px; margin-bottom: 24px; display: flex; align-items: center; gap: 16px;">
+                        <img src="${userAvatar}" style="width: 56px; height: 56px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.1);">
+                        <div>
+                            <div style="color: white; font-weight: 700; font-size: 17px; margin-bottom: 4px;">${creator.name}</div>
+                            <div style="color: #a78bfa; font-weight: 600; font-size: 13px;">${service.title}</div>
                         </div>
                     </div>
 
-                    <div style="background: rgba(255,255,255,0.5); padding: 16px; border-radius: 16px; margin-bottom: 24px; border: 1px solid rgba(255,255,255,0.6);">
-                        <div style="display: flex; gap: 12px; align-items: center;">
-                            <img src="${avatarUrl}" style="width: 48px; height: 48px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.8);" alt="${creator.name}">
-                            <div>
-                                <div style="font-weight: 700; font-size: 16px;">${creator.name}</div>
-                                <div class="caption" style="color: var(--primary); font-weight: 500;">${service.title}</div>
-                            </div>
-                        </div>
+                    <div style="background: rgba(124,58,237,0.05); border: 1px solid rgba(124,58,237,0.1); border-radius: 16px; padding: 16px; margin-bottom: 32px;">
+                        <p style="color: #a78bfa; font-weight: 700; font-size: 13px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            Booking Process
+                        </p>
+                        <p style="color: rgba(255,255,255,0.5); font-size: 13px; line-height: 1.5;">
+                            Submit your request with a budget. The creator will review and accept or counter. Payment is only held in escrow once both parties agree.
+                        </p>
                     </div>
 
-                    <div style="background: rgba(254, 243, 199, 0.6); padding: 16px; border-radius: 12px; margin-bottom: 24px; border-left: 4px solid #F59E0B; backdrop-filter: blur(4px);">
-                        <div style="color: #92400E; font-size: 14px; font-weight: 600; margin-bottom: 8px;">
-                            How it works:
-                        </div>
-                        <ol style="color: #92400E; font-size: 13px; margin: 0; padding-left: 20px; line-height: 1.6;">
-                            <li>Submit your booking request with your proposed budget</li>
-                            <li>The creator reviews and accepts, declines, or counter-proposes</li>
-                            <li>Once accepted, payment is secured</li>
-                            <li>Funds are held safely until the job is completed</li>
-                        </ol>
-                        <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(146, 64, 14, 0.2); color: #92400E; font-size: 13px; font-weight: 600;">
-                            Note: Make sure you have enough USDC before sending a request.
-                        </div>
-                    </div>
-
-                    <form id="bookingForm" data-creator-id="${creatorId}" data-service-index="${serviceIndex}">
-                        <div class="form-group">
-                            <label class="form-label">Your Budget (USDC)</label>
-                            <input type="number" id="proposedPrice" name="proposedPrice" class="form-input" required min="1" step="0.01" placeholder="Enter your proposed budget" style="background: rgba(255,255,255,0.6);">
-                            <div class="caption mt-sm">Enter the amount you're willing to pay for this service</div>
+                    <form id="bookingForm" data-creator-id="${creatorId}" data-service-index="${serviceIndex}" style="display: flex; flex-direction: column; gap: 20px;">
+                        <div>
+                            <label class="st-label">Your Budget (USDC)</label>
+                            <input type="number" id="proposedPrice" name="proposedPrice" class="st-input" required min="1" step="0.01" placeholder="Enter amount">
                         </div>
 
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                            <div class="form-group">
-                                <label class="form-label">Start Date</label>
-                                <input type="date" id="bookingDate" name="bookingDate" class="form-input" required min="${new Date().toISOString().split('T')[0]}" onchange="updateEndDateMin()" style="background: rgba(255,255,255,0.6);">
+                            <div>
+                                <label class="st-label">Start Date</label>
+                                <input type="date" id="bookingDate" name="bookingDate" class="st-input" required min="${new Date().toISOString().split('T')[0]}" onchange="document.getElementById('endDate').min = this.value">
                             </div>
-
-                            <div class="form-group">
-                                <label class="form-label">End Date</label>
-                                <input type="date" id="endDate" name="endDate" class="form-input" required min="${new Date().toISOString().split('T')[0]}" style="background: rgba(255,255,255,0.6);">
-                            </div>
-                        </div>
-
-                        <script>
-                            function updateEndDateMin() {
-                                const startDate = document.getElementById('bookingDate').value;
-                                const endDateInput = document.getElementById('endDate');
-                                if (startDate) {
-                                    endDateInput.min = startDate;
-                                }
-                            }
-                        </script>
-
-                        <div class="form-group">
-                            <label class="form-label">Project brief (300 characters)</label>
-                            <textarea id="projectBrief" name="projectBrief" class="form-textarea" maxlength="300" placeholder="Tell us about your project..." required style="background: rgba(255,255,255,0.6);"></textarea>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label">Attach files (optional)</label>
-                            <input type="file" id="bookingAttachments" class="form-input" multiple accept="image/*,.pdf,.doc,.docx" style="background: rgba(255,255,255,0.6);">
-                            <div class="small-text" style="margin-top: 8px; color: var(--text-secondary);">
-                                Upload event graphics, reference images, or any relevant files (Max 5 files, 10MB each)
+                            <div>
+                                <label class="st-label">End Date</label>
+                                <input type="date" id="endDate" name="endDate" class="st-input" required min="${new Date().toISOString().split('T')[0]}">
                             </div>
                         </div>
 
-                        <div class="alert alert-success" style="background: rgba(16, 185, 129, 0.15); backdrop-filter: blur(4px); border: 1px solid rgba(16, 185, 129, 0.3);">
-                            <strong>No payment yet.</strong> The creator will review your request first. Payment is only secured after acceptance.
+                        <div>
+                            <label class="st-label">Project Brief</label>
+                            <textarea id="projectBrief" name="projectBrief" class="st-input" style="min-height: 100px; resize: vertical;" placeholder="Briefly describe what you need..."></textarea>
                         </div>
 
-                        <div class="form-actions" style="margin-top: 32px;">
-                            <button type="button" class="btn-ghost" onclick="closeModal()" style="background: rgba(255,255,255,0.3);">Cancel</button>
-                            <button type="submit" class="btn-primary" id="submitBookingBtn" style="box-shadow: 0 4px 16px rgba(151,71,255,0.4);">Send Booking Request</button>
+                        <div style="margin-top: 12px;">
+                            <button type="submit" class="btn-primary" style="width: 100%; height: 52px; font-size: 16px;">Send Booking Request</button>
                         </div>
                     </form>
                 </div>
