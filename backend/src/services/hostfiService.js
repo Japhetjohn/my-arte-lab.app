@@ -511,7 +511,7 @@ class HostFiService {
       // Per HostFi: type="STATIC" or "DYNAMIC", method="BANK_TRANSFER"
       // DYNAMIC = Temporary account (no KYC required in payload)
       const payload = {
-        type: type || 'DYNAMIC',
+        type: type || 'STATIC',
         method: method || 'BANK_TRANSFER',
         assetId,
         customId: customId.toString(),
@@ -917,9 +917,15 @@ class HostFiService {
       return response;
     } catch (error) {
       if (!silent) {
-        console.error('Failed to get currency rates:', error.message);
+        console.error(`Failed to get currency rates for ${fromCurrency}/${toCurrency}:`, error.message);
       }
-      throw error;
+
+      // Return a predictable structure for errors to avoid breaking callers
+      return {
+        rate: 0,
+        error: error.message,
+        unsupported: true
+      };
     }
   }
 

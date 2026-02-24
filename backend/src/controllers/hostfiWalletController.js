@@ -408,7 +408,7 @@ exports.createFiatChannel = catchAsync(async (req, res, next) => {
       assetId,
       currency,
       customId: fiatCustomId,
-      type: 'DYNAMIC',
+      type: 'STATIC',
       method: 'BANK_TRANSFER',
       countryCode
     });
@@ -424,7 +424,7 @@ exports.createFiatChannel = catchAsync(async (req, res, next) => {
       channelId: channel.id,
       reference: channel.reference,
       customId: fiatCustomId,
-      type: (channel.type === 'BANK_TRANSFER' ? 'DYNAMIC' : channel.type) || 'DYNAMIC',
+      type: (channel.type === 'BANK_TRANSFER' ? 'STATIC' : channel.type) || 'STATIC',
       method: channel.method || 'BANK_TRANSFER',
       accountNumber: channel.accountNumber,
       accountName: channel.accountName,
