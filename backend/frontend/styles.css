@@ -60,33 +60,46 @@ body {
 }
 
 @keyframes glassBg {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
 }
 
 /* 2. Top and Bottom Navigation Glass */
-.top-nav, .bottom-nav {
+.top-nav,
+.bottom-nav {
     background: rgba(255, 255, 255, 0.65) !important;
     backdrop-filter: blur(16px) saturate(180%);
     -webkit-backdrop-filter: blur(16px) saturate(180%);
     border-bottom: 1px solid rgba(255, 255, 255, 0.4) !important;
 }
 
-[data-theme="dark"] .top-nav, 
+[data-theme="dark"] .top-nav,
 [data-theme="dark"] .bottom-nav {
     background: rgba(30, 41, 59, 0.65) !important;
     border-color: rgba(255, 255, 255, 0.05) !important;
 }
 
 /* 3. Search Overlay & Modals */
-.search-overlay, .modal-overlay, .overlay {
+.search-overlay,
+.modal-overlay,
+.overlay {
     background: rgba(15, 23, 36, 0.4) !important;
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
 }
 
-.overlay-content, .modal-content, .user-dropdown {
+.overlay-content,
+.modal-content,
+.user-dropdown {
     background: rgba(255, 255, 255, 0.8) !important;
     backdrop-filter: blur(20px) saturate(200%);
     -webkit-backdrop-filter: blur(20px) saturate(200%);
@@ -94,7 +107,7 @@ body {
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1) !important;
 }
 
-[data-theme="dark"] .overlay-content, 
+[data-theme="dark"] .overlay-content,
 [data-theme="dark"] .modal-content,
 [data-theme="dark"] .user-dropdown {
     background: rgba(30, 41, 59, 0.75) !important;
@@ -103,17 +116,23 @@ body {
 }
 
 /* 4. Cards & Containers (Soft Glass) */
-.card, .creator-card, .project-card, .bento-item, .service-card, .quick-action-btn, .wallet-card-item {
+.card,
+.creator-card,
+.project-card,
+.bento-item,
+.service-card,
+.quick-action-btn,
+.wallet-card-item {
     background: rgba(255, 255, 255, 0.6) !important;
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.5) !important;
 }
 
-[data-theme="dark"] .card, 
-[data-theme="dark"] .creator-card, 
-[data-theme="dark"] .project-card, 
-[data-theme="dark"] .bento-item, 
+[data-theme="dark"] .card,
+[data-theme="dark"] .creator-card,
+[data-theme="dark"] .project-card,
+[data-theme="dark"] .bento-item,
 [data-theme="dark"] .service-card,
 [data-theme="dark"] .quick-action-btn,
 [data-theme="dark"] .wallet-card-item {
@@ -122,20 +141,25 @@ body {
 }
 
 /* 5. Inputs and Search Bars */
-.search-input, .form-input, .form-textarea, .form-select {
+.search-input,
+.form-input,
+.form-textarea,
+.form-select {
     background: rgba(255, 255, 255, 0.5) !important;
     backdrop-filter: blur(4px);
     border: 1px solid rgba(255, 255, 255, 0.6) !important;
 }
 
-.search-input:focus, .form-input:focus, .form-textarea:focus {
+.search-input:focus,
+.form-input:focus,
+.form-textarea:focus {
     background: rgba(255, 255, 255, 0.9) !important;
     border-color: var(--primary) !important;
 }
 
-[data-theme="dark"] .search-input, 
-[data-theme="dark"] .form-input, 
-[data-theme="dark"] .form-textarea, 
+[data-theme="dark"] .search-input,
+[data-theme="dark"] .form-input,
+[data-theme="dark"] .form-textarea,
 [data-theme="dark"] .form-select {
     background: rgba(15, 23, 36, 0.5) !important;
     border-color: rgba(255, 255, 255, 0.1) !important;
@@ -6524,35 +6548,38 @@ select:focus-visible {
     stroke: var(--primary);
 }
 
-/* Projects Grid */
-
+/* Projects Grid Overlay Improvements */
 .projects-grid-modern {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-    gap: 24px;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    gap: 32px;
 }
 
 .project-card-modern {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.03) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 28px !important;
     overflow: hidden;
-    transition: all 0.2s;
+    transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1) !important;
     cursor: pointer;
+    backdrop-filter: blur(20px);
 }
 
 .project-card-modern:hover {
-    border-color: var(--primary);
-    box-shadow: 0 4px 16px rgba(151, 71, 255, 0.12);
-    transform: translateY(-4px);
+    transform: translateY(-8px) scale(1.02);
+    border-color: rgba(151, 71, 255, 0.3) !important;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3), 0 0 20px rgba(151, 71, 255, 0.1);
 }
 
-/* Project Cover */
+.project-card-modern:hover .project-cover-modern img {
+    transform: scale(1.1);
+}
 
+/* Project Cover Styling */
 .project-cover-modern {
     position: relative;
     width: 100%;
-    height: 200px;
+    height: 220px;
     overflow: hidden;
 }
 
@@ -6560,228 +6587,136 @@ select:focus-visible {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    transition: transform 0.6s cubic-bezier(0.165, 0.84, 0.44, 1);
 }
 
+/* Premium Badges */
 .project-type-badge-modern {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    padding: 6px 12px;
-    border-radius: 6px;
-    font-size: 12px;
-    font-weight: 600;
-    color: white;
-    text-transform: capitalize;
-    backdrop-filter: blur(8px);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
-/* Project Card Content */
-
+/* Card Content Refinement */
 .project-card-content {
-    padding: 20px;
+    padding: 28px;
+    display: flex;
+    flex-direction: column;
 }
 
 .project-card-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-}
-
-.project-client-info {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.project-client-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 2px solid var(--border);
+    align-items: flex-start;
+    margin-bottom: 24px;
 }
 
 .project-client-name {
-    font-weight: 600;
-    font-size: 14px;
+    font-weight: 700;
+    font-size: 15px;
     color: var(--text-primary);
+    margin-bottom: 2px;
 }
 
 .project-posted-time {
     font-size: 12px;
     color: var(--text-secondary);
-}
-
-.project-type-badge-inline {
-    padding: 6px 12px;
-    border-radius: 6px;
-    font-size: 11px;
-    font-weight: 600;
-    color: white;
-    text-transform: capitalize;
+    opacity: 0.6;
 }
 
 .project-card-title {
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin: 0 0 12px 0;
-    line-height: 1.4;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+    font-size: 22px;
+    font-weight: 800;
+    color: #fff;
+    margin: 0 0 14px 0;
+    line-height: 1.35;
+    letter-spacing: -0.015em;
 }
 
 .project-card-description {
-    font-size: 14px;
+    font-size: 14.5px;
     color: var(--text-secondary);
     line-height: 1.6;
-    margin: 0 0 16px 0;
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+    margin: 0 0 24px 0;
+    opacity: 0.85;
 }
 
-/* Project Skills */
-
-.project-skills {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 16px;
-}
-
+/* Skills & Tags */
 .skill-tag {
-    padding: 6px 12px;
-    background: rgba(151, 71, 255, 0.1);
+    padding: 7px 15px;
+    background: rgba(151, 71, 255, 0.08);
     color: var(--primary);
-    border-radius: 6px;
-    font-size: 12px;
-    font-weight: 500;
+    border: 1px solid rgba(151, 71, 255, 0.15);
+    border-radius: 12px;
+    font-size: 11.5px;
+    font-weight: 700;
+    transition: all 0.2s;
 }
 
-.skill-tag.more {
-    background: var(--background);
-    color: var(--text-secondary);
+.skill-tag:hover {
+    background: rgba(151, 71, 255, 0.15);
+    transform: translateY(-1px);
 }
 
-/* Project Card Footer */
-
+/* Grid Footer & Meta */
 .project-card-footer {
-    padding-top: 16px;
-    border-top: 1px solid var(--border);
-}
-
-.project-budget {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 12px;
-}
-
-.project-budget svg {
-    stroke: #10B981;
-    flex-shrink: 0;
+    padding-top: 24px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    margin-top: auto;
 }
 
 .budget-amount {
-    font-size: 18px;
-    font-weight: 700;
+    font-size: 21px;
+    font-weight: 900;
     color: #10B981;
+    letter-spacing: -0.02em;
 }
 
 .project-meta-info {
     display: flex;
-    gap: 16px;
-    flex-wrap: wrap;
-}
-
-.project-timeline,
-.project-applications {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 13px;
+    gap: 20px;
     color: var(--text-secondary);
+    font-size: 13.5px;
+    font-weight: 600;
 }
 
-.project-timeline svg,
-.project-applications svg {
-    stroke: var(--text-secondary);
-    flex-shrink: 0;
-}
-
-/* Responsive Design for Projects */
-
-@media (max-width: 1024px) {
-    .projects-header-content {
-        grid-template-columns: auto 1fr;
-        gap: 16px;
-    }
-
-    .post-project-btn {
-        grid-column: 1 / -1;
-        justify-content: center;
-    }
-
+/* Responsive Overrides */
+@media (max-width: 1200px) {
     .projects-grid-modern {
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 24px;
     }
 }
 
 @media (max-width: 768px) {
     .projects-header-modern {
-        padding: 24px 20px;
-    }
-
-    .projects-header-content {
-        grid-template-columns: 1fr;
-        gap: 16px;
-        text-align: center;
-    }
-
-    .projects-icon-modern {
-        width: 56px;
-        height: 56px;
-        margin: 0 auto;
+        padding: 32px 24px !important;
+        border-radius: 24px !important;
     }
 
     .projects-title-modern {
-        font-size: 24px;
-    }
-
-    .projects-subtitle-modern {
-        font-size: 14px;
-    }
-
-    .projects-stats-grid {
-        grid-template-columns: 1fr;
-        gap: 16px;
+        font-size: 32px !important;
     }
 
     .projects-grid-modern {
         grid-template-columns: 1fr;
-        gap: 16px;
+        gap: 20px;
     }
 
-    .project-card-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 12px;
+    .project-card-modern {
+        border-radius: 24px !important;
     }
 
-    .project-type-badge-inline {
-        align-self: flex-start;
+    .project-card-content {
+        padding: 24px;
     }
 
-    .project-meta-info {
-        flex-direction: column;
-        gap: 8px;
+    .stat-card-project {
+        padding: 18px !important;
+        gap: 12px !important;
     }
 }
+
 
 @media (max-width: 480px) {
     .projects-header-modern {
@@ -7998,6 +7933,7 @@ select.form-select-modern:hover {
 .rounded-full {
     border-radius: 9999px;
 }
+
 /* =========================================
    💎 PREMIUM GLASSMORPHISM MODAL SYSTEM 💎
    ========================================= */
@@ -8026,7 +7962,7 @@ select.form-select-modern:hover {
     max-width: 500px;
     max-height: 90vh;
     overflow-y: auto;
-    box-shadow: 
+    box-shadow:
         0 4px 24px -1px rgba(0, 0, 0, 0.1),
         0 20px 48px -10px rgba(0, 0, 0, 0.15),
         inset 0 0 0 1px rgba(255, 255, 255, 0.4);
@@ -8039,7 +7975,7 @@ select.form-select-modern:hover {
 [data-theme="dark"] .glass-modal-content {
     background: rgba(15, 23, 42, 0.75);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 
+    box-shadow:
         0 4px 24px -1px rgba(0, 0, 0, 0.3),
         0 20px 48px -10px rgba(0, 0, 0, 0.4),
         inset 0 0 0 1px rgba(255, 255, 255, 0.05);
@@ -8058,6 +7994,7 @@ select.form-select-modern:hover {
     font-weight: 800;
     background: linear-gradient(135deg, #9747FF, #6B46FF);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
     letter-spacing: -0.02em;
 }
@@ -8172,27 +8109,43 @@ select.form-select-modern:hover {
 }
 
 @keyframes glassFadeIn {
-    from { opacity: 0; backdrop-filter: blur(0px); }
-    to { opacity: 1; backdrop-filter: blur(12px); }
+    from {
+        opacity: 0;
+        backdrop-filter: blur(0px);
+    }
+
+    to {
+        opacity: 1;
+        backdrop-filter: blur(12px);
+    }
 }
 
 @keyframes glassScaleIn {
-    from { opacity: 0; transform: scale(0.9) translateY(20px); }
-    to { opacity: 1; transform: scale(1) translateY(0); }
+    from {
+        opacity: 0;
+        transform: scale(0.9) translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
 }
 
 /* Scrollbar for Glass Modal */
 .glass-modal-content::-webkit-scrollbar {
     width: 6px;
 }
+
 .glass-modal-content::-webkit-scrollbar-track {
     background: transparent;
 }
+
 .glass-modal-content::-webkit-scrollbar-thumb {
     background: rgba(151, 71, 255, 0.2);
     border-radius: 10px;
 }
+
 .glass-modal-content::-webkit-scrollbar-thumb:hover {
     background: rgba(151, 71, 255, 0.4);
 }
-
