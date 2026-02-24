@@ -12,123 +12,116 @@ export function showPostProjectModal() {
     }
 
     const modalContent = `
-        <div class="modal" onclick="closeModalOnBackdrop(event)">
-            <div class="modal-content glass-effect" style="border: 1px solid rgba(255,255,255,0.6); box-shadow: 0 12px 48px rgba(0,0,0,0.15);">
-                <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.2);">
-                    <h2>Post a Project</h2>
-                    <button class="icon-btn" onclick="closeModal()" style="background: rgba(255,255,255,0.2);">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2"/>
-                        </svg>
+        <div class="glass-modal-overlay" onclick="if(event.target === this) closeModal()">
+            <div class="glass-modal-content" style="max-width: 640px;">
+                <div class="glass-modal-header">
+                    <span class="glass-modal-title">Post a Project</span>
+                    <button class="glass-modal-close" onclick="closeModal()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
                     </button>
                 </div>
 
-                <div style="background: rgba(254, 243, 199, 0.6); backdrop-filter: blur(8px); padding: 16px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #F59E0B; border-right: 1px solid rgba(255,255,255,0.5); border-top: 1px solid rgba(255,255,255,0.5); border-bottom: 1px solid rgba(255,255,255,0.5);">
-                    <div style="color: #92400E; font-size: 14px; font-weight: 600; margin-bottom: 8px;">
-                        How it works:
-                    </div>
-                    <ol style="color: #92400E; font-size: 13px; margin: 0; padding-left: 20px; line-height: 1.6;">
-                        <li>Post your project with detailed requirements and budget</li>
-                        <li>Creators browse and apply with their proposals</li>
-                        <li>Review applications and select the best creator</li>
-                        <li>Work begins once you accept their application</li>
-                    </ol>
-                </div>
-
-                <form id="postProjectForm" style="padding: 0 24px 24px;">
-                    <div class="form-group">
-                        <label class="form-label">Project Title *</label>
-                        <input type="text" name="title" class="form-input" placeholder="e.g., Need product photography for e-commerce store" required maxlength="200" style="background: rgba(255,255,255,0.5);">
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Category *</label>
-                        <select name="category" class="form-input" required style="background: rgba(255,255,255,0.5);">
-                            <option value="">Select category</option>
-                            <option value="photography">Photography</option>
-                            <option value="videography">Videography</option>
-                            <option value="design">Design</option>
-                            <option value="illustration">Illustration</option>
-                            <option value="content">Content Creation</option>
-                            <option value="other">Other</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Project Type *</label>
-                        <select name="projectType" class="form-input" required style="background: rgba(255,255,255,0.5);">
-                            <option value="one-time">One-Time Project</option>
-                            <option value="ongoing">Ongoing Work</option>
-                            <option value="bounty">Bounty (Best submission wins)</option>
-                        </select>
-                        <div class="caption mt-sm">One-time: Fixed scope. Ongoing: Retainer-based. Bounty: Competition style.</div>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Description *</label>
-                        <textarea name="description" class="form-textarea" rows="6" placeholder="Describe your project in detail. What are you looking for? What's the scope of work?" required maxlength="5000" style="background: rgba(255,255,255,0.5);"></textarea>
-                        <div class="caption mt-sm"><span id="descCharCount">0</span>/5000 characters</div>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Budget Range (USDC) *</label>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                            <input type="number" name="budgetMin" class="form-input" placeholder="Min $" required min="0" step="1" style="background: rgba(255,255,255,0.5);">
-                            <input type="number" name="budgetMax" class="form-input" placeholder="Max $" required min="0" step="1" style="background: rgba(255,255,255,0.5);">
+                <div class="glass-modal-body">
+                    <div style="background: rgba(151, 71, 255, 0.05); border: 1px solid rgba(151, 71, 255, 0.15); border-radius: 20px; padding: 20px; margin-bottom: 32px;">
+                        <div style="color: var(--primary); font-size: 14px; font-weight: 800; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            How it works:
                         </div>
-                        <label style="display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 14px;">
-                            <input type="checkbox" name="negotiable" checked>
-                            <span>Budget is negotiable</span>
-                        </label>
+                        <ol style="color: var(--text-secondary); font-size: 13px; margin: 0; padding-left: 20px; line-height: 1.8; opacity: 0.8;">
+                            <li>Post your project with detailed requirements and budget</li>
+                            <li>Creators browse and apply with their proposals</li>
+                            <li>Review applications and select the best creator</li>
+                            <li>Work begins once you accept their application</li>
+                        </ol>
                     </div>
 
-                    <div class="form-group">
-                        <label class="form-label">Start Date *</label>
-                        <input type="date" name="startDate" class="form-input" required min="${new Date().toISOString().split('T')[0]}" onchange="updateProjectEndDateMin()" style="background: rgba(255,255,255,0.5);">
-                        <div class="caption mt-sm">When do you want the project to start?</div>
-                    </div>
+                    <form id="postProjectForm" style="display: flex; flex-direction: column; gap: 24px;">
+                        <div>
+                            <label class="glass-form-label">Project Title *</label>
+                            <input type="text" name="title" class="glass-input" placeholder="e.g., Need product photography for e-commerce store" required maxlength="200">
+                        </div>
 
-                    <div class="form-group">
-                        <label class="form-label">Expected Completion Date *</label>
-                        <input type="date" name="deadline" class="form-input" required min="${new Date().toISOString().split('T')[0]}" style="background: rgba(255,255,255,0.5);">
-                        <div class="caption mt-sm">When do you need this completed?</div>
-                    </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                            <div>
+                                <label class="glass-form-label">Category *</label>
+                                <select name="category" class="glass-input" required style="appearance: none; background-image: url('data:image/svg+xml,%3Csvg width=%2214%22 height=%2214%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22rgba(151,71,255,0.6)%22 stroke-width=%222.5%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M6 9l6 6 6-6%22/%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 16px center;">
+                                    <option value="">Select category</option>
+                                    <option value="photography">Photography</option>
+                                    <option value="videography">Videography</option>
+                                    <option value="design">Design</option>
+                                    <option value="illustration">Illustration</option>
+                                    <option value="content">Content Creation</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="glass-form-label">Project Type *</label>
+                                <select name="projectType" class="glass-input" required style="appearance: none; background-image: url('data:image/svg+xml,%3Csvg width=%2214%22 height=%2214%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22rgba(151,71,255,0.6)%22 stroke-width=%222.5%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M6 9l6 6 6-6%22/%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 16px center;">
+                                    <option value="one-time">One-Time Project</option>
+                                    <option value="ongoing">Ongoing Work</option>
+                                    <option value="bounty">Bounty (Competition)</option>
+                                </select>
+                            </div>
+                        </div>
 
-                    <script>
-                        function updateProjectEndDateMin() {
-                            const startDate = document.querySelector('[name="startDate"]').value;
-                            const endDateInput = document.querySelector('[name="deadline"]');
-                            if (startDate) {
-                                endDateInput.min = startDate;
-                            }
-                        }
-                    </script>
+                        <div>
+                            <label class="glass-form-label">Description *</label>
+                            <textarea name="description" class="glass-input" rows="5" placeholder="Describe your project in detail..." required maxlength="5000" style="min-height: 120px;"></textarea>
+                            <div style="text-align: right; font-size: 11px; color: var(--text-secondary); margin-top: 6px; opacity: 0.6;"><span id="descCharCount">0</span>/5000</div>
+                        </div>
 
-                    <div class="form-group">
-                        <label class="form-label">Skills Required</label>
-                        <input type="text" id="skillsInput" class="form-input" placeholder="Type skill and press Enter" style="background: rgba(255,255,255,0.5);">
-                        <div id="skillsList" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;"></div>
-                        <div class="caption mt-sm">Press Enter to add each skill</div>
-                    </div>
+                        <div>
+                            <label class="glass-form-label">Budget Range (USDC) *</label>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                                <input type="number" name="budgetMin" class="glass-input" placeholder="Min $" required min="0">
+                                <input type="number" name="budgetMax" class="glass-input" placeholder="Max $" required min="0">
+                            </div>
+                            <label style="display: flex; align-items: center; gap: 10px; margin-top: 12px; cursor: pointer; user-select: none;">
+                                <input type="checkbox" name="negotiable" checked style="width: 18px; height: 18px; accent-color: var(--primary);">
+                                <span style="font-size: 14px; color: var(--text-secondary); font-weight: 600;">Budget is negotiable</span>
+                            </label>
+                        </div>
 
-                    <div class="form-group">
-                        <label class="form-label">Deliverables Expected</label>
-                        <input type="text" id="deliverablesInput" class="form-input" placeholder="Type deliverable and press Enter" style="background: rgba(255,255,255,0.5);">
-                        <div id="deliverablesList" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;"></div>
-                        <div class="caption mt-sm">e.g., "50 edited photos", "2-minute video", etc.</div>
-                    </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                            <div>
+                                <label class="glass-form-label">Start Date *</label>
+                                <input type="date" name="startDate" class="glass-input" required min="${new Date().toISOString().split('T')[0]}" onchange="updateProjectEndDateMin()">
+                            </div>
+                            <div>
+                                <label class="glass-form-label">Expected Completion *</label>
+                                <input type="date" name="deadline" class="glass-input" required min="${new Date().toISOString().split('T')[0]}">
+                            </div>
+                        </div>
 
-                    <div class="form-group">
-                        <label class="form-label">Project Image (Optional)</label>
-                        <input type="file" id="projectImage" class="form-input" accept="image/*" style="background: rgba(255,255,255,0.5);">
-                        <div class="caption mt-sm">Upload a reference image or visual for your project (Max 10MB)</div>
-                    </div>
+                        <div>
+                            <label class="glass-form-label">Skills & Deliverables</label>
+                            <div style="display: flex; flex-direction: column; gap: 12px;">
+                                <input type="text" id="skillsInput" class="glass-input" placeholder="Type skill and press Enter">
+                                <div id="skillsList" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
+                                
+                                <input type="text" id="deliverablesInput" class="glass-input" placeholder="Type deliverable and press Enter">
+                                <div id="deliverablesList" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
+                            </div>
+                        </div>
 
-                    <div class="form-actions" style="margin-top: 32px;">
-                        <button type="button" class="btn-ghost" onclick="closeModal()">Cancel</button>
-                        <button type="submit" class="btn-primary" id="submitProjectBtn">Post Project</button>
-                    </div>
-                </form>
+                        <div>
+                            <label class="glass-form-label">Project Image (Optional)</label>
+                            <div style="position: relative;">
+                                <input type="file" id="projectImage" class="glass-input" accept="image/*" style="opacity: 0; position: absolute; inset: 0; cursor: pointer; z-index: 2;">
+                                <div style="border: 2px dashed rgba(151, 71, 255, 0.2); border-radius: 16px; padding: 24px; text-align: center; background: rgba(151, 71, 255, 0.03); transition: all 0.2s;" id="imageDropzone">
+                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" style="margin-bottom: 12px; opacity: 0.5;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+                                    <div style="font-size: 14px; color: var(--text-secondary); font-weight: 600;">Click or drag image to upload</div>
+                                    <div style="font-size: 12px; color: var(--text-secondary); opacity: 0.5; margin-top: 4px;">Max 10MB</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 12px; display: flex; gap: 16px;">
+                            <button type="button" class="glass-btn-ghost" onclick="closeModal()" style="flex: 1;">Cancel</button>
+                            <button type="submit" class="glass-btn-primary" id="submitProjectBtn" style="flex: 2;">Post Project</button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     `;
@@ -341,107 +334,117 @@ export async function showProjectDetail(projectId) {
         window.hideLoadingSpinner();
 
         const modalContent = `
-            <div class="modal" onclick="closeModalOnBackdrop(event)">
-                <div class="modal-content glass-effect" style="max-width: 900px; border: 1px solid rgba(255,255,255,0.6); box-shadow: 0 12px 48px rgba(0,0,0,0.15);">
-                    <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.2);">
+            <div class="glass-modal-overlay" onclick="if(event.target === this) closeModal()">
+                <div class="glass-modal-content" style="max-width: 960px;">
+                    <div class="glass-modal-header" style="align-items: flex-start;">
                         <div>
-                            <span class="badge" style="background: ${getProjectTypeBadgeColor(project.projectType)}dd; backdrop-filter: blur(4px); color: white; margin-bottom: 8px;">
+                            <span class="glass-tag" style="background: ${getProjectTypeBadgeColor(project.projectType)}20; color: ${getProjectTypeBadgeColor(project.projectType)}; border-color: ${getProjectTypeBadgeColor(project.projectType)}40; margin-bottom: 8px;">
                                 ${project.projectType.replace('-', ' ')}
                             </span>
-                            <h2 style="margin: 0;">${project.title}</h2>
+                            <span class="glass-modal-title" style="display: block;">${project.title}</span>
                         </div>
-                        <button class="icon-btn" onclick="closeModal()" style="background: rgba(255,255,255,0.2);">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                                <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2"/>
-                            </svg>
+                        <button class="glass-modal-close" onclick="closeModal()">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
                         </button>
                     </div>
 
-                    <div style="padding: 24px; overflow-y: auto;">
+                    <div class="glass-modal-body" style="padding-top: 0;">
+                        <style>
+                            .project-stat-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 4px; }
+                            .project-stat-label { font-size: 11px; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.6; }
+                            .project-stat-value { font-size: 20px; font-weight: 800; color: var(--text-primary); }
+                        </style>
+
                         ${project.coverImage ? `
-                            <img src="${project.coverImage}"
-                                 alt="${project.title}"
-                                 style="width: 100%; max-height: 400px; object-fit: cover; border-radius: var(--radius); margin-bottom: 24px; cursor: pointer; border: 1px solid rgba(255,255,255,0.3);"
-                                 onclick="window.openImageModal('${project.coverImage}')">
+                            <div style="position: relative; border-radius: 24px; overflow: hidden; margin: 0 0 32px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 16px 48px rgba(0,0,0,0.2);">
+                                <img src="${project.coverImage}"
+                                     alt="${project.title}"
+                                     style="width: 100%; max-height: 480px; object-fit: cover; cursor: pointer; display: block;"
+                                     onclick="window.openImageModal('${project.coverImage}')">
+                                <div style="position: absolute; inset: 0; background: linear-gradient(to bottom, transparent 60%, rgba(0,0,0,0.4)); pointer-events: none;"></div>
+                            </div>
                         ` : ''}
 
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; padding: 20px; background: rgba(255,255,255,0.4); border: 1px solid rgba(255,255,255,0.5); border-radius: var(--radius);">
-                            <div>
-                                <div class="caption">Budget</div>
-                                <div style="font-size: 20px; font-weight: 700; color: #10b981;">
-                                    $${project.budget.min} - $${project.budget.max}
-                                </div>
-                                ${project.budget.negotiable ? '<div class="caption" style="font-weight: 500;">Negotiable</div>' : ''}
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 40px;">
+                            <div class="project-stat-card">
+                                <span class="project-stat-label">Budget Range</span>
+                                <span class="project-stat-value" style="color: #10B981;">$${project.budget.min} - $${project.budget.max}</span>
+                                ${project.budget.negotiable ? '<span style="font-size: 11px; color: #10B981; font-weight: 700;">Negotiable</span>' : ''}
                             </div>
-                            <div>
-                                <div class="caption">Timeline</div>
-                                <div style="font-size: 16px; font-weight: 600; color: var(--text-primary);">${formatTimeline(project.timeline)}</div>
-                                ${project.deadline ? `<div class="caption" style="font-weight: 500;">Deadline: ${new Date(project.deadline).toLocaleDateString()}</div>` : ''}
+                            <div class="project-stat-card">
+                                <span class="project-stat-label">Timeline</span>
+                                <span class="project-stat-value">${formatTimeline(project.timeline)}</span>
+                                ${project.deadline ? `<span style="font-size: 11px; color: var(--text-secondary); opacity: 0.7;">Ends: ${new Date(project.deadline).toLocaleDateString()}</span>` : ''}
                             </div>
-                            <div>
-                                <div class="caption">Applications</div>
-                                <div style="font-size: 16px; font-weight: 600; color: var(--text-primary);">${project.applicationsCount}</div>
+                            <div class="project-stat-card">
+                                <span class="project-stat-label">Applications</span>
+                                <span class="project-stat-value">${project.applicationsCount}</span>
+                                <span style="font-size: 11px; color: var(--text-secondary); opacity: 0.7;">Submissions</span>
                             </div>
-                            <div>
-                                <div class="caption">Posted</div>
-                                <div style="font-size: 14px; font-weight: 500;">${formatTimeAgo(project.createdAt)}</div>
+                            <div class="project-stat-card">
+                                <span class="project-stat-label">Category</span>
+                                <span class="project-stat-value" style="text-transform: capitalize;">${project.category}</span>
+                                <span style="font-size: 11px; color: var(--text-secondary); opacity: 0.7;">${formatTimeAgo(project.createdAt)}</span>
                             </div>
                         </div>
 
-                        <div class="form-group">
-                            <h3 style="color: var(--text-primary);">Description</h3>
-                            <p style="white-space: pre-wrap; line-height: 1.6; color: var(--text-secondary);">${project.description}</p>
-                        </div>
-
-                        ${project.skillsRequired && project.skillsRequired.length > 0 ? `
-                            <div class="form-group">
-                                <h3 style="color: var(--text-primary);">Skills Required</h3>
-                                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                                    ${project.skillsRequired.map(skill => `
-                                        <span style="background: rgba(151, 71, 255, 0.8); backdrop-filter: blur(4px); color: white; padding: 6px 14px; border-radius: 6px; font-size: 14px; border: 1px solid rgba(255,255,255,0.3);">
-                                            ${skill}
-                                        </span>
-                                    `).join('')}
+                        <div style="display: grid; grid-template-columns: 1fr 320px; gap: 40px;">
+                            <div style="display: flex; flex-direction: column; gap: 40px;">
+                                <div>
+                                    <h3 style="font-size: 20px; font-weight: 800; color: var(--text-primary); margin-bottom: 16px;">Description</h3>
+                                    <p style="white-space: pre-wrap; line-height: 1.8; color: var(--text-secondary); font-size: 16px; opacity: 0.9;">${project.description}</p>
                                 </div>
-                            </div>
-                        ` : ''}
 
-                        ${project.deliverables && project.deliverables.length > 0 ? `
-                            <div class="form-group">
-                                <h3 style="color: var(--text-primary);">Deliverables Expected</h3>
-                                <ul style="list-style: none; padding: 0; margin: 0;">
-                                    ${project.deliverables.map(item => `
-                                        <li style="padding: 8px 0; display: flex; align-items: center; gap: 8px; color: var(--text-secondary); font-weight: 500;">
-                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="flex-shrink: 0; color: #10b981;">
-                                                <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2"/>
-                                            </svg>
-                                            <span>${item}</span>
-                                        </li>
-                                    `).join('')}
-                                </ul>
-                            </div>
-                        ` : ''}
-
-                        <div style="border-top: 1px solid rgba(255,255,255,0.3); padding-top: 24px; margin-top: 24px;">
-                            <h3 style="margin-bottom: 16px; color: var(--text-primary);">Posted by</h3>
-                            <div style="background: rgba(255,255,255,0.4); border: 1px solid rgba(255,255,255,0.5); padding: 20px; border-radius: var(--radius);">
-                                <div style="display: flex; align-items: center; gap: 16px;">
-                                    <img src="${project.clientId.avatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(project.clientId.name)}"
-                                         alt="${project.clientId.name}"
-                                         style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.6);">
-                                    <div style="flex: 1;">
-                                        <div style="font-weight: 700; font-size: 18px; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; color: var(--text-primary);">
-                                            ${project.clientId.name}
-                                            ${project.clientId.isEmailVerified ? '<span style="color: #10b981;">✓</span>' : ''}
+                                ${project.skillsRequired && project.skillsRequired.length > 0 ? `
+                                    <div>
+                                        <h3 style="font-size: 18px; font-weight: 800; color: var(--text-primary); margin-bottom: 16px;">Skills Required</h3>
+                                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                            ${project.skillsRequired.map(skill => `
+                                                <span class="glass-tag" style="background: rgba(151, 71, 255, 0.08); color: var(--primary); border-color: rgba(151, 71, 255, 0.15); padding: 8px 16px; font-size: 14px;">
+                                                    ${skill}
+                                                </span>
+                                            `).join('')}
                                         </div>
-                                        <div class="caption" style="font-weight: 500;">${project.clientId.email}</div>
                                     </div>
-                                </div>
-                            </div>
-                        </div>
+                                ` : ''}
 
-                        <div class="form-actions" style="margin-top: 32px;">
-                            ${renderProjectActions(project, hasApplied)}
+                                ${project.deliverables && project.deliverables.length > 0 ? `
+                                    <div>
+                                        <h3 style="font-size: 18px; font-weight: 800; color: var(--text-primary); margin-bottom: 16px;">Expected Deliverables</h3>
+                                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                                            ${project.deliverables.map(item => `
+                                                <div style="display: flex; align-items: start; gap: 14px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 16px;">
+                                                    <div style="width: 24px; height: 24px; border-radius: 8px; background: rgba(16, 185, 129, 0.1); display: flex; align-items: center; justify-content: center; color: #10B981; flex-shrink: 0; margin-top: 2px;">
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                                                    </div>
+                                                    <span style="color: var(--text-secondary); line-height: 1.6; font-weight: 500;">${item}</span>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                ` : ''}
+                            </div>
+
+                            <div style="display: flex; flex-direction: column; gap: 24px;">
+                                <div style="background: rgba(151, 71, 255, 0.03); border: 1px solid rgba(151, 71, 255, 0.1); border-radius: 24px; padding: 24px;">
+                                    <h4 style="font-size: 13px; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 20px; opacity: 0.6;">Posted By</h4>
+                                    <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px;">
+                                        <img src="${project.clientId.avatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(project.clientId.name)}"
+                                             alt="${project.clientId.name}"
+                                             style="width: 56px; height: 56px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary);">
+                                        <div>
+                                            <div style="font-weight: 800; font-size: 17px; color: var(--text-primary); margin-bottom: 2px; display: flex; align-items: center; gap: 6px;">
+                                                ${project.clientId.name}
+                                                ${project.clientId.isEmailVerified ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="var(--primary)" style="color: white;"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>' : ''}
+                                            </div>
+                                            <div style="font-size: 13px; color: var(--text-secondary); opacity: 0.7;">Client</div>
+                                        </div>
+                                    </div>
+                                    ${renderProjectActions(project, hasApplied)}
+                                </div>
+
+                                <button class="glass-btn-ghost" onclick="closeModal()">Close Details</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -462,8 +465,7 @@ function renderProjectActions(project, hasApplied) {
     // If user owns the project
     if (appState.user && project.clientId._id === appState.user._id) {
         return `
-            <button class="btn-ghost" onclick="closeModal()" style="background: rgba(255,255,255,0.3);">Close</button>
-            <button class="btn-primary" onclick="window.viewProjectApplications('${project._id}')">
+            <button class="glass-btn-primary" onclick="window.viewProjectApplications('${project._id}')">
                 View Applications (${project.applicationsCount})
             </button>
         `;
@@ -473,14 +475,14 @@ function renderProjectActions(project, hasApplied) {
     if (appState.user) {
         if (hasApplied) {
             return `
-                <button class="btn-ghost" onclick="closeModal()" style="background: rgba(255,255,255,0.3);">Close</button>
-                <button class="btn-secondary" disabled style="background: rgba(255,255,255,0.5);">Already Applied</button>
+                <button class="glass-btn-primary" disabled style="background: rgba(16, 185, 129, 0.1); color: #10B981; border-color: rgba(16, 185, 129, 0.2);">
+                    Applied Successfully
+                </button>
             `;
         }
 
         return `
-            <button class="btn-ghost" onclick="closeModal()" style="background: rgba(255,255,255,0.3);">Close</button>
-            <button class="btn-primary" onclick="window.showApplicationForm('${project._id}')">
+            <button class="glass-btn-primary" onclick="window.showApplicationForm('${project._id}')">
                 Apply to Project
             </button>
         `;
@@ -488,8 +490,7 @@ function renderProjectActions(project, hasApplied) {
 
     // Not logged in
     return `
-        <button class="btn-ghost" onclick="closeModal()" style="background: rgba(255,255,255,0.3);">Close</button>
-        <button class="btn-primary" onclick="window.showAuthModal('signin')">
+        <button class="glass-btn-primary" onclick="window.showAuthModal('signin')">
             Sign In to Apply
         </button>
     `;
@@ -549,63 +550,59 @@ export async function showApplicationForm(projectId) {
     }
 
     const modalContent = `
-        <div class="modal" onclick="closeModalOnBackdrop(event)">
-            <div class="modal-content glass-effect" style="border: 1px solid rgba(255,255,255,0.6); box-shadow: 0 12px 48px rgba(0,0,0,0.15);">
-                <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.2);">
-                    <h2>Apply to Project</h2>
-                    <button class="icon-btn" onclick="closeModal()" style="background: rgba(255,255,255,0.2);">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2"/>
-                        </svg>
+        <div class="glass-modal-overlay" onclick="if(event.target === this) closeModal()">
+            <div class="glass-modal-content" style="max-width: 600px;">
+                <div class="glass-modal-header">
+                    <span class="glass-modal-title">Apply to Project</span>
+                    <button class="glass-modal-close" onclick="closeModal()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
                     </button>
                 </div>
 
-                <div style="background: rgba(254, 243, 199, 0.6); backdrop-filter: blur(8px); padding: 16px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #F59E0B; border-right: 1px solid rgba(255,255,255,0.5); border-top: 1px solid rgba(255,255,255,0.5); border-bottom: 1px solid rgba(255,255,255,0.5);">
-                    <div style="color: #92400E; font-size: 14px; font-weight: 600; margin-bottom: 8px;">
-                        Application Tips:
+                <div class="glass-modal-body">
+                    <div style="background: rgba(151, 71, 255, 0.05); border: 1px solid rgba(151, 71, 255, 0.15); border-radius: 20px; padding: 20px; margin-bottom: 32px;">
+                        <div style="color: var(--primary); font-size: 14px; font-weight: 800; margin-bottom: 12px;">Application Tips:</div>
+                        <ul style="color: var(--text-secondary); font-size: 13px; margin: 0; padding-left: 20px; line-height: 1.8; opacity: 0.8;">
+                            <li>Highlight relevant experience and showcase your best work</li>
+                            <li>Be specific about your approach and timeline</li>
+                            <li>Propose a competitive but fair budget</li>
+                        </ul>
                     </div>
-                    <ul style="color: #92400E; font-size: 13px; margin: 0; padding-left: 20px; line-height: 1.6;">
-                        <li>Highlight relevant experience and showcase your best work</li>
-                        <li>Be specific about your approach and timeline</li>
-                        <li>Propose a competitive but fair budget</li>
-                    </ul>
+
+                    <form id="applicationForm" style="display: flex; flex-direction: column; gap: 24px;">
+                        <div>
+                            <label class="glass-form-label">Cover Letter *</label>
+                            <textarea name="coverLetter" class="glass-input" rows="6" placeholder="Explain why you're the best fit for this project..." required maxlength="2000"></textarea>
+                            <div style="text-align: right; font-size: 11px; color: var(--text-secondary); margin-top: 6px; opacity: 0.6;"><span id="coverLetterCount">0</span>/2000</div>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                            <div>
+                                <label class="glass-form-label">Proposed Budget (USDC) *</label>
+                                <input type="number" name="proposedBudget" class="glass-input" placeholder="Price" required min="0" step="1">
+                            </div>
+                            <div>
+                                <label class="glass-form-label">Timeline *</label>
+                                <input type="text" name="proposedTimeline" class="glass-input" placeholder="e.g., 2 weeks" required maxlength="200">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="glass-form-label">Portfolio Links (Optional)</label>
+                            <input type="text" id="portfolioLinkInput" class="glass-input" placeholder="Paste link and press Enter">
+                            <div id="portfolioLinksList" style="margin-top: 12px; display: flex; flex-direction: column; gap: 8px;"></div>
+                        </div>
+
+                        <div style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.15); border-radius: 16px; padding: 16px; font-size: 13px; color: #10B981; font-weight: 600; text-align: center;">
+                            Note: You can edit or withdraw your application before the client reviews it.
+                        </div>
+
+                        <div style="display: flex; gap: 16px; margin-top: 12px;">
+                            <button type="button" class="glass-btn-ghost" onclick="closeModal()" style="flex: 1;">Cancel</button>
+                            <button type="submit" class="glass-btn-primary" id="submitApplicationBtn" style="flex: 2;">Submit Application</button>
+                        </div>
+                    </form>
                 </div>
-
-                <form id="applicationForm" style="padding: 0 24px 24px;">
-                    <div class="form-group">
-                        <label class="form-label">Cover Letter *</label>
-                        <textarea name="coverLetter" class="form-textarea" rows="8" placeholder="Explain why you're the best fit for this project. Highlight your relevant experience and how you'll approach the work." required maxlength="2000" style="background: rgba(255,255,255,0.5);"></textarea>
-                        <div class="caption mt-sm"><span id="coverLetterCount">0</span>/2000 characters</div>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Your Proposed Budget (USDC) *</label>
-                        <input type="number" name="proposedBudget" class="form-input" placeholder="Enter your price" required min="0" step="1" style="background: rgba(255,255,255,0.5);">
-                        <div class="caption mt-sm">Based on project scope and your expertise</div>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Timeline/Delivery Estimate *</label>
-                        <input type="text" name="proposedTimeline" class="form-input" placeholder="e.g., 2 weeks, 5 business days" required maxlength="200" style="background: rgba(255,255,255,0.5);">
-                        <div class="caption mt-sm">When can you deliver?</div>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Portfolio Links (Optional)</label>
-                        <input type="text" id="portfolioLinkInput" class="form-input" placeholder="Paste link and press Enter" style="background: rgba(255,255,255,0.5);">
-                        <div id="portfolioLinksList" style="margin-top: 12px;"></div>
-                        <div class="caption mt-sm">Add relevant work samples or portfolio pieces</div>
-                    </div>
-
-                    <div class="alert alert-success" style="background: rgba(16, 185, 129, 0.15); backdrop-filter: blur(4px); border: 1px solid rgba(16, 185, 129, 0.3);">
-                        <strong>Note:</strong> You can edit or withdraw your application before the client reviews it.
-                    </div>
-
-                    <div class="form-actions" style="margin-top: 32px;">
-                        <button type="button" class="btn-ghost" onclick="closeModal()" style="background: rgba(255,255,255,0.3);">Cancel</button>
-                        <button type="submit" class="btn-primary" id="submitApplicationBtn">Submit Application</button>
-                    </div>
-                </form>
             </div>
         </div>
     `;
@@ -641,14 +638,13 @@ export async function showApplicationForm(projectId) {
 
     function renderPortfolioLinks() {
         portfolioList.innerHTML = portfolioLinks.map((link, index) => `
-            <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: rgba(255,255,255,0.5); border: 1px solid rgba(255,255,255,0.6); border-radius: 8px; margin-bottom: 8px;">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="flex-shrink: 0; color: var(--primary);">
-                    <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" stroke="currentColor" stroke-width="2"/>
-                    <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" stroke="currentColor" stroke-width="2"/>
-                </svg>
-                <a href="${link.url}" target="_blank" style="flex: 1; color: var(--primary); text-decoration: none; font-size: 14px; font-weight: 500;">${link.url}</a>
-                <button type="button" onclick="removePortfolioLink(${index})" class="btn-ghost" style="padding: 4px 8px; min-width: auto; background: rgba(255,255,255,0.5);">
-                    ×
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px;">
+                <div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+                    <span style="font-size: 13px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${link.url}</span>
+                </div>
+                <button type="button" onclick="removePortfolioLink(${index})" style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 4px; opacity: 0.6; transition: opacity 0.2s;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6L6 18M6 6l12 12"/></svg>
                 </button>
             </div>
         `).join('');
@@ -726,32 +722,28 @@ export async function viewProjectApplications(projectId) {
         window.hideLoadingSpinner();
 
         const modalContent = `
-            <div class="modal" onclick="closeModalOnBackdrop(event)">
-                <div class="modal-content glass-effect" style="max-width: 1000px; border: 1px solid rgba(255,255,255,0.6); box-shadow: 0 12px 48px rgba(0,0,0,0.15);">
-                    <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.2);">
-                        <h2>Applications (${applications.length})</h2>
-                        <button class="icon-btn" onclick="closeModal()" style="background: rgba(255,255,255,0.2);">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                                <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2"/>
-                            </svg>
+            <div class="glass-modal-overlay" onclick="if(event.target === this) closeModal()">
+                <div class="glass-modal-content" style="max-width: 800px;">
+                    <div class="glass-modal-header">
+                        <span class="glass-modal-title">Applications (${applications.length})</span>
+                        <button class="glass-modal-close" onclick="closeModal()">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
                         </button>
                     </div>
 
-                    <div style="padding: 24px; max-height: 80vh; overflow-y: auto;">
+                    <div class="glass-modal-body" style="max-height: 70vh; overflow-y: auto; padding-right: 8px;">
                         ${applications.length > 0 ? renderApplicationsList(applications) : `
-                            <div class="empty-state glass-effect" style="padding: 60px 20px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.4);">
-                                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" style="opacity: 0.3; margin-bottom: 16px;">
-                                    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2"/>
-                                    <circle cx="8.5" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
-                                    <path d="M20 8v6M23 11h-6" stroke="currentColor" stroke-width="2"/>
-                                </svg>
-                                <h3>No applications yet</h3>
-                                <p class="caption">Check back soon for creator applications</p>
+                            <div style="text-align: center; padding: 60px 20px;">
+                                <div style="width: 80px; height: 80px; background: rgba(151, 71, 255, 0.05); border-radius: 28px; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; color: var(--primary); opacity: 0.5;">
+                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M8.5 7a4 4 0 100-8 4 4 0 000 8zM20 8v6M23 11h-6"/></svg>
+                                </div>
+                                <h3 style="font-weight: 800; font-size: 20px; color: var(--text-primary); margin-bottom: 8px;">No applications yet</h3>
+                                <p style="color: var(--text-secondary); font-size: 15px;">Check back soon for creator applications</p>
                             </div>
                         `}
 
-                        <div class="form-actions" style="margin-top: 24px;">
-                            <button class="btn-ghost" onclick="closeModal()" style="background: rgba(255,255,255,0.3);">Close</button>
+                        <div style="margin-top: 32px; text-align: center;">
+                            <button class="glass-btn-ghost" onclick="closeModal()">Close Window</button>
                         </div>
                     </div>
                 </div>
@@ -770,63 +762,56 @@ export async function viewProjectApplications(projectId) {
 
 function renderApplicationsList(applications) {
     return applications.map(app => `
-        <div class="card glass-effect" style="padding: 24px; margin-bottom: 16px; border: 1px solid rgba(255,255,255,0.5); background: rgba(255,255,255,0.6);">
-            <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.3); padding-bottom: 16px;">
+        <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 24px; padding: 24px; margin-bottom: 20px;">
+            <div style="display: flex; align-items: start; justify-content: space-between; margin-bottom: 20px;">
                 <div style="display: flex; align-items: center; gap: 16px;">
                     <img src="${app.creatorId.avatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(app.creatorId.name)}"
                          alt="${app.creatorId.name}"
-                         style="width: 56px; height: 56px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.6);">
+                         style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary);">
                     <div>
-                        <div style="font-weight: 700; font-size: 18px; margin-bottom: 4px; color: var(--text-primary);">${app.creatorId.name}</div>
-                        <div class="caption" style="font-weight: 500;">${app.creatorId.category || 'Creator'}</div>
+                        <div style="font-weight: 800; font-size: 16px; color: var(--text-primary); margin-bottom: 2px;">${app.creatorId.name}</div>
+                        <div style="font-size: 13px; color: var(--primary); font-weight: 600; opacity: 0.8;">${app.creatorId.category || 'Creator'}</div>
                     </div>
                 </div>
                 <div style="text-align: right;">
-                    <div style="font-size: 24px; font-weight: 700; color: #10b981;">$${app.proposedBudget.amount}</div>
-                    <div class="caption" style="font-weight: 500;">${app.proposedTimeline}</div>
+                    <div style="font-size: 22px; font-weight: 800; color: #10B981; margin-bottom: 2px;">$${app.proposedBudget.amount}</div>
+                    <div style="font-size: 12px; color: var(--text-secondary); font-weight: 700; opacity: 0.6;">${app.proposedTimeline}</div>
                 </div>
             </div>
 
-            <div style="margin-bottom: 16px; background: rgba(255,255,255,0.4); padding: 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.5);">
-                <h4 class="caption" style="color: var(--text-primary); font-weight: 600;">Cover Letter</h4>
-                <p style="white-space: pre-wrap; line-height: 1.6; margin-top: 8px; color: var(--text-secondary);">${app.coverLetter}</p>
+            <div style="background: rgba(151, 71, 255, 0.03); border: 1px solid rgba(151, 71, 255, 0.08); border-radius: 16px; padding: 16px; margin-bottom: 20px;">
+                <div style="font-size: 11px; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; opacity: 0.6;">Cover Letter</div>
+                <p style="white-space: pre-wrap; line-height: 1.6; color: var(--text-secondary); font-size: 14px; margin: 0;">${app.coverLetter}</p>
             </div>
 
             ${app.portfolioLinks && app.portfolioLinks.length > 0 ? `
-                <div style="margin-bottom: 16px;">
-                    <h4 class="caption" style="color: var(--text-primary); font-weight: 600;">Portfolio</h4>
-                    <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;">
+                <div style="margin-bottom: 20px;">
+                    <div style="font-size: 11px; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px; opacity: 0.6;">Portfolio</div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
                         ${app.portfolioLinks.map(link => `
-                            <a href="${link.url}" target="_blank" class="btn-ghost" style="font-size: 13px; padding: 6px 12px; background: rgba(151, 71, 255, 0.1); color: var(--primary); border: 1px solid rgba(151, 71, 255, 0.2);">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style="margin-right: 4px;">
-                                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" stroke="currentColor" stroke-width="2"/>
-                                    <path d="M15 3h6v6M10 14L21 3" stroke="currentColor" stroke-width="2"/>
-                                </svg>
-                                View Work
+                            <a href="${link.url}" target="_blank" class="glass-btn-ghost" style="font-size: 12px; padding: 8px 16px; min-width: auto; background: rgba(151, 71, 255, 0.05);">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right: 6px; opacity: 0.6;"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+                                View Portoflio
                             </a>
                         `).join('')}
                     </div>
                 </div>
             ` : ''}
 
-            <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.3);">
-                <div>
-                    <span style="padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; background: ${getStatusColor(app.status)}20; color: ${getStatusColor(app.status)}; border: 1px solid ${getStatusColor(app.status)}40; backdrop-filter: blur(4px);">
-                        ${app.status.toUpperCase()}
+            <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.06);">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span style="padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 800; text-transform: uppercase; background: ${getStatusColor(app.status)}15; color: ${getStatusColor(app.status)}; border: 1px solid ${getStatusColor(app.status)}30;">
+                        ${app.status}
                     </span>
-                    <span class="caption" style="margin-left: 12px; font-weight: 500;">
+                    <span style="font-size: 12px; color: var(--text-secondary); font-weight: 600; opacity: 0.6;">
                         Applied ${formatTimeAgo(app.createdAt)}
                     </span>
                 </div>
 
                 ${app.status === 'pending' ? `
                     <div style="display: flex; gap: 8px;">
-                        <button class="btn-ghost" onclick="window.handleApplicationAction('${app._id}', 'rejected')" style="color: #ef4444; background: rgba(239, 68, 68, 0.1);">
-                            Reject
-                        </button>
-                        <button class="btn-primary" onclick="window.handleApplicationAction('${app._id}', 'accepted')" style="box-shadow: 0 4px 12px rgba(151,71,255,0.3);">
-                            Accept
-                        </button>
+                        <button class="glass-btn-ghost" onclick="window.handleApplicationAction('${app._id}', 'rejected')" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.2); background: rgba(239, 68, 68, 0.05); padding: 8px 16px; font-size: 14px; min-width: auto;">Reject</button>
+                        <button class="glass-btn-primary" onclick="window.handleApplicationAction('${app._id}', 'accepted')" style="padding: 8px 24px; font-size: 14px; min-width: auto; box-shadow: 0 8px 20px rgba(151, 71, 255, 0.2);">Accept Proposal</button>
                     </div>
                 ` : ''}
             </div>
