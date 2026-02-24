@@ -8149,6 +8149,7 @@ select.form-select-modern:hover {
 .glass-modal-content::-webkit-scrollbar-thumb:hover {
     background: rgba(151, 71, 255, 0.4);
 }
+
 /* ==========================================
    BOOKINGS PAGE - Premium Glassmorphic UI
    ========================================== */
@@ -8166,11 +8167,11 @@ select.form-select-modern:hover {
     gap: 28px;
     margin-bottom: 48px;
     padding: 32px;
-    background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%);
-    border: 1px solid rgba(255,255,255,0.08);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 32px;
     backdrop-filter: blur(20px);
-    box-shadow: 0 24px 48px -12px rgba(0,0,0,0.3);
+    box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.3);
 }
 
 .bookings-icon-modern {
@@ -8221,7 +8222,7 @@ select.form-select-modern:hover {
     background: rgba(255, 255, 255, 0.05);
     border-color: rgba(151, 71, 255, 0.3);
     transform: translateY(-6px);
-    box-shadow: 0 30px 60px -20px rgba(0,0,0,0.6), 0 0 0 1px rgba(151, 71, 255, 0.1);
+    box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(151, 71, 255, 0.1);
 }
 
 .booking-card-modern::before {
@@ -8333,7 +8334,7 @@ select.form-select-modern:hover {
     left: 5%;
     right: 5%;
     height: 3px;
-    background: rgba(255,255,255,0.05);
+    background: rgba(255, 255, 255, 0.05);
     z-index: 1;
     border-radius: 10px;
 }
@@ -8353,13 +8354,13 @@ select.form-select-modern:hover {
     height: 32px;
     border-radius: 12px;
     background: #1a1a1f;
-    border: 2px solid rgba(255,255,255,0.1);
+    border: 2px solid rgba(255, 255, 255, 0.1);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 12px;
     font-weight: 900;
-    color: rgba(255,255,255,0.3);
+    color: rgba(255, 255, 255, 0.3);
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -8384,5 +8385,212 @@ select.form-select-modern:hover {
         text-align: center;
         padding: 24px;
         gap: 16px;
+    }
+}
+
+/* Profile Page Styles */
+.profile-container-modern {
+    padding-bottom: 80px;
+}
+
+.pf-cover-modern {
+    position: relative;
+    height: 300px;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    overflow: hidden;
+}
+
+.pf-cover-modern::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, transparent 0%, rgba(15, 15, 19, 0.8) 100%);
+}
+
+.pf-cover-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: blur(20px) brightness(0.7);
+    transform: scale(1.1);
+}
+
+.pf-header-content {
+    max-width: 1200px;
+    margin: -80px auto 0;
+    padding: 0 40px;
+    position: relative;
+    z-index: 10;
+    display: flex;
+    align-items: flex-end;
+    gap: 32px;
+}
+
+.pf-avatar-container {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.pf-avatar-modern {
+    width: 160px;
+    height: 160px;
+    border-radius: 40px;
+    border: 4px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    object-fit: cover;
+    background: #1a1a1f;
+}
+
+.pf-verified-badge {
+    position: absolute;
+    bottom: -8px;
+    right: -8px;
+    width: 36px;
+    height: 36px;
+    background: #10B981;
+    border: 4px solid #0f0f13;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.pf-user-info-main {
+    flex: 1;
+    padding-bottom: 12px;
+}
+
+.pf-name-modern {
+    font-size: 42px;
+    font-weight: 900;
+    color: white;
+    margin: 0 0 8px;
+    letter-spacing: -0.03em;
+}
+
+.pf-meta-modern {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 15px;
+}
+
+.pf-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.pf-grid-layout {
+    max-width: 1200px;
+    margin: 40px auto 0;
+    padding: 0 40px;
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 32px;
+}
+
+.pf-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.pf-main-content {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+}
+
+.pf-stats-modern {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+}
+
+.pf-stat-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
+    padding: 20px;
+    text-align: center;
+}
+
+.pf-stat-value {
+    font-size: 24px;
+    font-weight: 850;
+    color: white;
+    margin-bottom: 4px;
+}
+
+.pf-stat-label {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    opacity: 0.5;
+}
+
+.pf-service-card-modern {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 24px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.pf-service-card-modern:hover {
+    border-color: rgba(151, 71, 255, 0.3);
+    transform: translateY(-4px);
+}
+
+.pf-portfolio-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+.pf-portfolio-item {
+    aspect-ratio: 1;
+    border-radius: 16px;
+    overflow: hidden;
+    cursor: pointer;
+    position: relative;
+}
+
+.pf-portfolio-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+.pf-portfolio-item:hover img {
+    transform: scale(1.1);
+}
+
+@media (max-width: 1024px) {
+    .pf-grid-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .pf-header-content {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        margin-top: -60px;
+    }
+
+    .pf-meta-modern {
+        justify-content: center;
+    }
+
+    .pf-stats-modern {
+        grid-template-columns: repeat(2, 1fr);
     }
 }
