@@ -8149,3 +8149,240 @@ select.form-select-modern:hover {
 .glass-modal-content::-webkit-scrollbar-thumb:hover {
     background: rgba(151, 71, 255, 0.4);
 }
+/* ==========================================
+   BOOKINGS PAGE - Premium Glassmorphic UI
+   ========================================== */
+
+.bookings-container-modern {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 24px;
+    animation: glassFadeIn 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.bookings-header-modern {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    margin-bottom: 48px;
+    padding: 32px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 32px;
+    backdrop-filter: blur(20px);
+    box-shadow: 0 24px 48px -12px rgba(0,0,0,0.3);
+}
+
+.bookings-icon-modern {
+    width: 72px;
+    height: 72px;
+    background: linear-gradient(135deg, #9747FF, #6B46FF);
+    border-radius: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    box-shadow: 0 12px 24px rgba(151, 71, 255, 0.3);
+    flex-shrink: 0;
+}
+
+.bookings-title-modern {
+    font-size: 32px;
+    font-weight: 900;
+    color: var(--text-primary);
+    letter-spacing: -0.03em;
+    margin: 0 0 6px 0;
+}
+
+.bookings-subtitle-modern {
+    font-size: 16px;
+    color: var(--text-secondary);
+    opacity: 0.7;
+    margin: 0;
+    font-weight: 500;
+}
+
+/* Booking Card Modernized */
+.booking-card-modern {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 28px;
+    padding: 24px;
+    transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.booking-card-modern:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(151, 71, 255, 0.3);
+    transform: translateY(-6px);
+    box-shadow: 0 30px 60px -20px rgba(0,0,0,0.6), 0 0 0 1px rgba(151, 71, 255, 0.1);
+}
+
+.booking-card-modern::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, transparent, rgba(151, 71, 255, 0.3), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.booking-card-modern:hover::before {
+    opacity: 1;
+}
+
+.booking-user-info {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.booking-avatar-modern {
+    width: 48px;
+    height: 48px;
+    border-radius: 16px;
+    object-fit: cover;
+    border: 2px solid rgba(151, 71, 255, 0.2);
+}
+
+.booking-username-modern {
+    font-weight: 800;
+    color: var(--text-primary);
+    font-size: 16px;
+}
+
+.booking-role-modern {
+    font-size: 12px;
+    color: var(--text-secondary);
+    opacity: 0.6;
+    font-weight: 600;
+}
+
+.booking-job-title-modern {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--text-primary);
+    line-height: 1.4;
+    margin: 0;
+}
+
+.booking-meta-modern {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    opacity: 0.8;
+}
+
+.booking-footer-modern {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    margin-top: auto;
+}
+
+.booking-amount-modern {
+    font-size: 22px;
+    font-weight: 900;
+    color: #10B981;
+    letter-spacing: -0.02em;
+}
+
+.booking-btn-modern {
+    background: rgba(151, 71, 255, 0.1);
+    border: 1px solid rgba(151, 71, 255, 0.2);
+    color: var(--primary);
+    padding: 10px 20px;
+    border-radius: 14px;
+    font-weight: 800;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.booking-card-modern:hover .booking-btn-modern {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+    box-shadow: 0 8px 20px rgba(151, 71, 255, 0.3);
+}
+
+/* Status Journey in Details */
+.journey-track-modern {
+    display: flex;
+    justify-content: space-between;
+    position: relative;
+    padding: 20px 0;
+    margin: 20px 0;
+}
+
+.journey-line-modern {
+    position: absolute;
+    top: 36px;
+    left: 5%;
+    right: 5%;
+    height: 3px;
+    background: rgba(255,255,255,0.05);
+    z-index: 1;
+    border-radius: 10px;
+}
+
+.journey-step-modern {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+}
+
+.journey-dot-modern {
+    width: 32px;
+    height: 32px;
+    border-radius: 12px;
+    background: #1a1a1f;
+    border: 2px solid rgba(255,255,255,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 900;
+    color: rgba(255,255,255,0.3);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.journey-step-modern.completed .journey-dot-modern {
+    background: #10B981;
+    border-color: #10B981;
+    color: white;
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+}
+
+.journey-step-modern.active .journey-dot-modern {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+    box-shadow: 0 0 20px rgba(151, 71, 255, 0.4);
+    transform: scale(1.1);
+}
+
+@media (max-width: 768px) {
+    .bookings-header-modern {
+        flex-direction: column;
+        text-align: center;
+        padding: 24px;
+        gap: 16px;
+    }
+}
