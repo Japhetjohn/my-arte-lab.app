@@ -157,58 +157,58 @@ export async function showBookingModal(creatorId, serviceIndex = 0) {
     const userAvatar = creator.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name || 'User')}&background=9747FF&color=fff&bold=true&size=200`;
 
     const modalContent = `
-        <div class="bkm-overlay" onclick="if(event.target === this) closeModal()">
-            <div class="bkm-sheet" style="max-width: 580px;">
-                <div class="bkm-header">
-                    <span class="bkm-title">Request a Booking</span>
-                    <button class="bkm-close" onclick="closeModal()">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        <div class="glass-modal-overlay" onclick="if(event.target === this) closeModal()">
+            <div class="glass-modal-content" style="max-width: 580px;">
+                <div class="glass-modal-header">
+                    <span class="glass-modal-title">Request a Booking</span>
+                    <button class="glass-modal-close" onclick="closeModal()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
                     </button>
                 </div>
 
-                <div class="bkm-body">
-                    <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 20px; padding: 20px; margin-bottom: 24px; display: flex; align-items: center; gap: 16px;">
-                        <img src="${userAvatar}" style="width: 56px; height: 56px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.1);">
+                <div class="glass-modal-body">
+                    <div style="background: rgba(151, 71, 255, 0.05); border: 1px solid rgba(151, 71, 255, 0.1); border-radius: 20px; padding: 20px; margin-bottom: 24px; display: flex; align-items: center; gap: 16px;">
+                        <img src="${userAvatar}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary);">
                         <div>
-                            <div style="color: white; font-weight: 700; font-size: 17px; margin-bottom: 4px;">${creator.name}</div>
-                            <div style="color: #a78bfa; font-weight: 600; font-size: 13px;">${service.title}</div>
+                            <div style="color: var(--text-primary); font-weight: 800; font-size: 18px; margin-bottom: 4px;">${creator.name}</div>
+                            <div style="color: var(--primary); font-weight: 600; font-size: 14px;">${service.title}</div>
                         </div>
                     </div>
 
-                    <div style="background: rgba(124,58,237,0.05); border: 1px solid rgba(124,58,237,0.1); border-radius: 16px; padding: 16px; margin-bottom: 32px;">
-                        <p style="color: #a78bfa; font-weight: 700; font-size: 13px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <div style="background: rgba(151, 71, 255, 0.03); border: 1px solid rgba(151, 71, 255, 0.1); border-radius: 16px; padding: 16px; margin-bottom: 32px;">
+                        <p style="color: var(--primary); font-weight: 700; font-size: 13px; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                             Booking Process
                         </p>
-                        <p style="color: rgba(255,255,255,0.5); font-size: 13px; line-height: 1.5;">
+                        <p style="color: var(--text-secondary); font-size: 13px; line-height: 1.6; opacity: 0.8;">
                             Submit your request with a budget. The creator will review and accept or counter. Payment is only held in escrow once both parties agree.
                         </p>
                     </div>
 
-                    <form id="bookingForm" data-creator-id="${creatorId}" data-service-index="${serviceIndex}" style="display: flex; flex-direction: column; gap: 20px;">
+                    <form id="bookingForm" data-creator-id="${creatorId}" data-service-index="${serviceIndex}" style="display: flex; flex-direction: column; gap: 24px;">
                         <div>
-                            <label class="st-label">Your Budget (USDC)</label>
-                            <input type="number" id="proposedPrice" name="proposedPrice" class="st-input" required min="1" step="0.01" placeholder="Enter amount">
+                            <label class="glass-form-label">Your Budget (USDC)</label>
+                            <input type="number" id="proposedPrice" name="proposedPrice" class="glass-input" required min="1" step="0.01" placeholder="Enter amount">
                         </div>
 
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                             <div>
-                                <label class="st-label">Start Date</label>
-                                <input type="date" id="bookingDate" name="bookingDate" class="st-input" required min="${new Date().toISOString().split('T')[0]}" onchange="document.getElementById('endDate').min = this.value">
+                                <label class="glass-form-label">Start Date</label>
+                                <input type="date" id="bookingDate" name="bookingDate" class="glass-input" required min="${new Date().toISOString().split('T')[0]}" onchange="document.getElementById('endDate').min = this.value">
                             </div>
                             <div>
-                                <label class="st-label">End Date</label>
-                                <input type="date" id="endDate" name="endDate" class="st-input" required min="${new Date().toISOString().split('T')[0]}">
+                                <label class="glass-form-label">End Date</label>
+                                <input type="date" id="endDate" name="endDate" class="glass-input" required min="${new Date().toISOString().split('T')[0]}">
                             </div>
                         </div>
 
                         <div>
-                            <label class="st-label">Project Brief</label>
-                            <textarea id="projectBrief" name="projectBrief" class="st-input" style="min-height: 100px; resize: vertical;" placeholder="Briefly describe what you need..."></textarea>
+                            <label class="glass-form-label">Project Brief</label>
+                            <textarea id="projectBrief" name="projectBrief" class="glass-input" style="min-height: 100px; resize: vertical;" placeholder="Briefly describe what you need..."></textarea>
                         </div>
 
-                        <div style="margin-top: 12px;">
-                            <button type="submit" class="btn-primary" style="width: 100%; height: 52px; font-size: 16px;">Send Booking Request</button>
+                        <div style="margin-top: 8px;">
+                            <button type="submit" class="glass-btn-primary">Send Booking Request</button>
                         </div>
                     </form>
                 </div>
@@ -513,62 +513,51 @@ export function handleCoverUpload() {
 
 export function showChangePasswordModal() {
     const modalContent = `
-        <div class="modal" onclick="closeModalOnBackdrop(event)">
-            <div class="modal-content glass-effect" style="max-width: 500px; border: 1px solid rgba(255,255,255,0.6); box-shadow: 0 12px 48px rgba(0,0,0,0.15);">
-                <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.2);">
-                    <h2>Change Password</h2>
-                    <button class="icon-btn" onclick="closeModal()" style="background: rgba(255,255,255,0.2);">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2"/>
-                        </svg>
+        <div class="glass-modal-overlay" onclick="if(event.target === this) closeModal()">
+            <div class="glass-modal-content" style="max-width: 480px;">
+                <div class="glass-modal-header">
+                    <span class="glass-modal-title">Change Password</span>
+                    <button class="glass-modal-close" onclick="closeModal()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
                     </button>
                 </div>
 
-                <form onsubmit="handlePasswordChange(event)" style="padding: 20px;">
-                    <div class="form-group">
-                        <label class="form-label">Current Password</label>
-                        <div style="position: relative;">
-                            <input type="password" id="currentPassword" class="form-input" required style="padding-right: 40px; background: rgba(255,255,255,0.4);">
-                            <button type="button" onclick="togglePasswordVisibility('currentPassword', this)" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 4px; display: flex; align-items: center; color: var(--text-secondary);">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" class="eye-icon">
-                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                    <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                </svg>
-                            </button>
+                <div class="glass-modal-body">
+                    <form onsubmit="handlePasswordChange(event)" style="display: flex; flex-direction: column; gap: 20px;">
+                        <div>
+                            <label class="glass-form-label">Current Password</label>
+                            <div style="position: relative;">
+                                <input type="password" id="currentPassword" class="glass-input" required placeholder="••••••••" style="padding-right: 48px;">
+                                <button type="button" onclick="togglePasswordVisibility('currentPassword', this)" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 10px; color: var(--primary);">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" class="eye-icon"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/></svg>
+                                </button>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="form-group">
-                        <label class="form-label">New Password</label>
-                        <div style="position: relative;">
-                            <input type="password" id="newPassword" class="form-input" required minlength="8" style="padding-right: 40px; background: rgba(255,255,255,0.4);">
-                            <button type="button" onclick="togglePasswordVisibility('newPassword', this)" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 4px; display: flex; align-items: center; color: var(--text-secondary);">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" class="eye-icon">
-                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                    <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                </svg>
-                            </button>
+                        <div>
+                            <label class="glass-form-label">New Password</label>
+                            <div style="position: relative;">
+                                <input type="password" id="newPassword" class="glass-input" required minlength="8" placeholder="••••••••" style="padding-right: 48px;">
+                                <button type="button" onclick="togglePasswordVisibility('newPassword', this)" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 10px; color: var(--primary);">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" class="eye-icon"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/></svg>
+                                </button>
+                            </div>
+                            <div style="font-size: 11px; color: var(--text-secondary); margin-top: 6px; opacity: 0.7;">Minimum 8 characters</div>
                         </div>
-                        <div class="caption mt-sm">Minimum 8 characters</div>
-                    </div>
 
-                    <div class="form-group">
-                        <label class="form-label">Confirm New Password</label>
-                        <div style="position: relative;">
-                            <input type="password" id="confirmPassword" class="form-input" required minlength="8" style="padding-right: 40px; background: rgba(255,255,255,0.4);">
-                            <button type="button" onclick="togglePasswordVisibility('confirmPassword', this)" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 4px; display: flex; align-items: center; color: var(--text-secondary);">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" class="eye-icon">
-                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                    <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                </svg>
-                            </button>
+                        <div>
+                            <label class="glass-form-label">Confirm New Password</label>
+                            <div style="position: relative;">
+                                <input type="password" id="confirmPassword" class="glass-input" required minlength="8" placeholder="••••••••" style="padding-right: 48px;">
+                                <button type="button" onclick="togglePasswordVisibility('confirmPassword', this)" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 10px; color: var(--primary);">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" class="eye-icon"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/></svg>
+                                </button>
+                            </div>
                         </div>
-                    </div>
 
-                    <button type="submit" class="btn-primary" style="width: 100%; margin-top: 16px;">
-                        Change Password
-                    </button>
-                </form>
+                        <button type="submit" class="glass-btn-primary" style="margin-top: 12px;">Change Password</button>
+                    </form>
+                </div>
             </div>
         </div>
     `;
@@ -615,22 +604,20 @@ window.handlePasswordChange = async function (event) {
 
 export async function showTwoFactorModal() {
     const modalContent = `
-        <div class="modal" onclick="closeModalOnBackdrop(event)">
-            <div class="modal-content glass-effect" style="max-width: 500px; border: 1px solid rgba(255,255,255,0.6); box-shadow: 0 12px 48px rgba(0,0,0,0.15);">
-                <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.2);">
-                    <h2>Two-Factor Authentication</h2>
-                    <button class="icon-btn" onclick="closeModal()" style="background: rgba(255,255,255,0.2);">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2"/>
-                        </svg>
+        <div class="glass-modal-overlay" onclick="if(event.target === this) closeModal()">
+            <div class="glass-modal-content" style="max-width: 500px;">
+                <div class="glass-modal-header">
+                    <span class="glass-modal-title">Two-Factor Authentication</span>
+                    <button class="glass-modal-close" onclick="closeModal()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
                     </button>
                 </div>
 
-                <div style="padding: 24px;">
+                <div class="glass-modal-body">
                     <div id="twoFactorContent">
-                        <div style="text-align: center; padding: 40px;">
-                            <div class="spinner" style="margin: 0 auto 16px;"></div>
-                            <p style="color: var(--text-secondary);">Setting up 2FA...</p>
+                        <div style="text-align: center; padding: 60px 0;">
+                            <div class="glass-loading-spinner" style="width: 48px; height: 48px; margin: 0 auto 20px;"></div>
+                            <p style="color: var(--text-secondary); font-weight: 600;">Setting up 2FA...</p>
                         </div>
                     </div>
                 </div>
@@ -653,62 +640,61 @@ export async function showTwoFactorModal() {
 
         // Display setup UI with real QR code
         const setupContent = `
-            <div class="card glass-effect" style="padding: 20px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.4);">
+            <div style="background: rgba(151, 71, 255, 0.05); border: 1px solid rgba(151, 71, 255, 0.15); border-radius: 20px; padding: 20px; margin-bottom: 24px;">
                 <div style="display: flex; align-items: start; gap: 16px;">
-                    <div style="background: linear-gradient(135deg, var(--primary), var(--secondary)); width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                            <rect x="5" y="11" width="14" height="10" rx="2"/>
-                            <path d="M12 16v1M8 11V7a4 4 0 0 1 8 0v4"/>
-                        </svg>
+                    <div style="background: linear-gradient(135deg, #9747FF, #6B46FF); width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 12px rgba(151, 71, 255, 0.3);">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M12 16v1M8 11V7a4 4 0 0 1 8 0v4"/></svg>
                     </div>
                     <div style="flex: 1;">
-                        <h4 style="margin: 0 0 8px 0;">Secure Your Account</h4>
-                        <p style="color: var(--text-secondary); font-size: 14px; line-height: 1.6; margin: 0;">
-                            Add an extra layer of security by enabling two-factor authentication. You'll need to enter a code from your authenticator app each time you log in.
+                        <h4 style="margin: 0 0 6px 0; font-weight: 800; color: var(--text-primary);">Secure Your Account</h4>
+                        <p style="color: var(--text-secondary); font-size: 14px; line-height: 1.6; margin: 0; opacity: 0.8;">
+                            Enable two-factor authentication for maximum security. Scan the QR code with your authenticator app.
                         </p>
                     </div>
                 </div>
             </div>
 
             <div style="margin-bottom: 24px;">
-                <h4 style="margin: 0 0 16px 0;">Setup Steps:</h4>
-                <ol style="padding-left: 24px; color: var(--text-secondary); line-height: 2;">
-                    <li>Download an authenticator app (Google Authenticator, Authy, or Microsoft Authenticator)</li>
-                    <li>Scan the QR code below with your app</li>
-                    <li>Enter the 6-digit code to verify</li>
-                </ol>
+                <h4 style="margin: 0 0 16px 0; font-size: 15px; font-weight: 800; color: var(--text-primary);">Setup Steps:</h4>
+                <div style="display: flex; flex-direction: column; gap: 12px; color: var(--text-secondary); font-size: 14px;">
+                    <div style="display: flex; gap: 12px; align-items: flex-start;">
+                        <span style="width: 20px; height: 20px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; flex-shrink: 0; margin-top: 2px;">1</span>
+                        <span>Download Google Authenticator or Authy</span>
+                    </div>
+                    <div style="display: flex; gap: 12px; align-items: flex-start;">
+                        <span style="width: 20px; height: 20px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; flex-shrink: 0; margin-top: 2px;">2</span>
+                        <span>Scan the QR code below</span>
+                    </div>
+                    <div style="display: flex; gap: 12px; align-items: flex-start;">
+                        <span style="width: 20px; height: 20px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; flex-shrink: 0; margin-top: 2px;">3</span>
+                        <span>Enter the 6-digit verification code</span>
+                    </div>
+                </div>
             </div>
 
-            <div style="text-align: center; padding: 24px; background: rgba(255,255,255,0.7); border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.8);">
-                <img src="${qrCode}" alt="2FA QR Code" style="width: 200px; height: 200px; margin: 0 auto; border-radius: 8px;">
-                <p style="margin-top: 12px; color: var(--text-secondary); font-size: 13px;">Scan this QR code with your authenticator app</p>
-                <p style="margin-top: 8px; font-family: monospace; font-size: 11px; color: var(--text-secondary); word-break: break-all; padding: 0 20px;">Manual key: ${manualEntryKey}</p>
+            <div style="text-align: center; padding: 24px; background: white; border-radius: 20px; margin-bottom: 24px;">
+                <img src="${qrCode}" alt="2FA QR Code" style="width: 180px; height: 180px; margin: 0 auto; display: block;">
+                <div style="margin-top: 20px;">
+                    <p style="color: #666; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">Manual Setup Key</p>
+                    <code style="display: block; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--primary); background: #f5f5f5; padding: 8px 12px; border-radius: 10px; word-break: break-all;">${manualEntryKey}</code>
+                </div>
             </div>
 
-            <div style="margin-bottom: 20px;">
-                <label class="form-label">Enter 6-digit code from your app</label>
-                <input type="text" id="twoFactorCode" class="form-input" placeholder="000000" maxlength="6" pattern="[0-9]{6}" style="text-align: center; font-size: 24px; letter-spacing: 8px; font-weight: 600; background: rgba(255,255,255,0.5);">
+            <div style="margin-bottom: 24px;">
+                <label class="glass-form-label">Verification Code</label>
+                <input type="text" id="twoFactorCode" class="glass-input" placeholder="000 000" maxlength="6" pattern="[0-9]{6}" style="text-align: center; font-size: 28px; letter-spacing: 8px; font-weight: 800; border-color: var(--primary);">
             </div>
 
             <div style="display: flex; gap: 12px;">
-                <button class="btn-secondary" onclick="closeModal()" style="flex: 1; background: rgba(255,255,255,0.5);">Cancel</button>
-                <button class="btn-primary" id="enable2FABtn" style="flex: 1;" disabled>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline; margin-right: 6px; vertical-align: middle;">
-                        <path d="M9 12l2 2 4-4"/>
-                        <circle cx="12" cy="12" r="10"/>
-                    </svg>
-                    Enable 2FA
-                </button>
+                <button class="glass-btn-ghost" onclick="closeModal()" style="flex: 1;">Cancel</button>
+                <button class="glass-btn-primary" id="enable2FABtn" style="flex: 1;" disabled>Enable 2FA</button>
             </div>
 
-            <div class="card" style="background: rgba(255, 193, 7, 0.15); border: 1px solid rgba(255, 193, 7, 0.3); padding: 16px; margin-top: 20px;">
+            <div style="background: rgba(255, 152, 0, 0.08); border: 1px solid rgba(255, 152, 0, 0.2); border-radius: 16px; padding: 16px; margin-top: 24px;">
                 <div style="display: flex; gap: 12px; align-items: start;">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="flex-shrink: 0; margin-top: 2px;">
-                        <circle cx="12" cy="12" r="10" stroke="#FFC107" stroke-width="2"/>
-                        <path d="M12 8v4M12 16h.01" stroke="#FFC107" stroke-width="2" stroke-linecap="round"/>
-                    </svg>
-                    <p style="margin: 0; font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
-                        <strong>Important:</strong> Save your backup codes in a safe place. You'll need them to access your account if you lose your device.
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF9800" stroke-width="2.5" style="flex-shrink: 0; margin-top: 2px;"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/></svg>
+                    <p style="margin: 0; font-size: 13px; color: var(--text-secondary); line-height: 1.6; opacity: 0.9;">
+                        <strong>Important:</strong> Save your recovery codes in a safe place. You'll need them if you lose access to your device.
                     </p>
                 </div>
             </div>
@@ -778,38 +764,34 @@ function showBackupCodesModal(backupCodes = []) {
     }
 
     const modalContent = `
-        <div class="modal" onclick="closeModalOnBackdrop(event)">
-            <div class="modal-content glass-effect" style="max-width: 500px; border: 1px solid rgba(255,255,255,0.6);">
-                <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.2);">
-                    <h2>Backup Codes</h2>
-                    <button class="icon-btn" onclick="closeModal()" style="background: rgba(255,255,255,0.2);">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2"/>
-                        </svg>
+        <div class="glass-modal-overlay" onclick="if(event.target === this) closeModal()">
+            <div class="glass-modal-content" style="max-width: 480px;">
+                <div class="glass-modal-header">
+                    <span class="glass-modal-title">Backup Codes</span>
+                    <button class="glass-modal-close" onclick="closeModal()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
                     </button>
                 </div>
 
-                <div style="padding: 24px;">
-                    <div class="card" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); padding: 16px; margin-bottom: 20px;">
-                        <p style="margin: 0; color: var(--text-secondary); font-size: 14px; line-height: 1.6;">
-                            Save these backup codes in a secure location. Each code can only be used once to access your account if you lose your authenticator device.
+                <div class="glass-modal-body">
+                    <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 16px; padding: 16px; margin-bottom: 24px;">
+                        <p style="margin: 0; color: var(--text-secondary); font-size: 14px; line-height: 1.6; opacity: 0.9;">
+                            Save these backup codes in a secure location. Each code can only be used once if you lose your authenticator device.
                         </p>
                     </div>
 
-                    <div style="background: rgba(255,255,255,0.4); padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.6);">
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-family: monospace; font-size: 14px;">
-                            ${backupCodes.map(code => `<div style="padding: 8px; background: rgba(255,255,255,0.7); border-radius: 6px; text-align: center; border: 1px solid rgba(255,255,255,0.5);">${code}</div>`).join('')}
+                    <div style="background: rgba(255,255,255,0.03); padding: 24px; border-radius: 20px; margin-bottom: 24px; border: 1px solid rgba(255,255,255,0.08);">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 700;">
+                            ${backupCodes.map(code => `<div style="padding: 12px; background: rgba(255,255,255,0.05); border-radius: 10px; text-align: center; border: 1px solid rgba(255,255,255,0.1); color: var(--primary);">${code}</div>`).join('')}
                         </div>
                     </div>
 
                     <div style="display: flex; gap: 12px;">
-                        <button class="btn-secondary" onclick="window.downloadBackupCodes(${JSON.stringify(backupCodes).replace(/"/g, '&quot;')})" style="flex: 1; background: rgba(255,255,255,0.5);">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline; margin-right: 6px; vertical-align: middle;">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
-                            </svg>
+                        <button class="glass-btn-ghost" onclick="window.downloadBackupCodes(${JSON.stringify(backupCodes).replace(/"/g, '&quot;')})" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
                             Download
                         </button>
-                        <button class="btn-primary" onclick="closeModal()" style="flex: 1;">Done</button>
+                        <button class="glass-btn-primary" onclick="closeModal()" style="flex: 1;">Done</button>
                     </div>
                 </div>
             </div>
@@ -836,48 +818,51 @@ window.showDeleteAccountModal = function () {
     const user = appState.user;
     const isOAuthUser = !!user?.googleId;
 
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
-    modal.innerHTML = `
-        <div class="modal-content glass-effect" style="border: 1px solid rgba(239, 68, 68, 0.4); box-shadow: 0 12px 48px rgba(239, 68, 68, 0.15);">
-            <div class="modal-header" style="border-bottom: 1px solid rgba(239, 68, 68, 0.2);">
-                <h2 style="color: var(--error);">Delete account</h2>
-                <button class="modal-close" onclick="this.closest('.modal-overlay').remove()" style="background: rgba(239, 68, 68, 0.1);">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                        <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                    </svg>
-                </button>
-            </div>
-            <div class="modal-body">
-                <p><strong>Warning:</strong> This action cannot be undone.</p>
-                <p class="mt-md">Deleting your account will permanently remove all your data including:</p>
-                <ul style="margin-top: 12px; padding-left: 24px;">
-                    <li>Profile information</li>
-                    <li>Portfolio and services</li>
-                    <li>Bookings and messages</li>
-                    <li>Wallet balance and transaction history</li>
-                </ul>
-                ${isOAuthUser ? `
-                    <p style="margin-top: 16px; padding: 12px; background: rgba(239, 68, 68, 0.1); border-radius: 8px; font-size: 14px;">
-                        <strong>Note:</strong> You signed in with Google, so no password is required to delete your account.
-                    </p>
-                ` : ''}
-            </div>
-            <form onsubmit="handleAccountDeletion(event)" style="padding: 0 24px 24px;">
-                ${!isOAuthUser ? `
-                    <div class="form-group" style="margin-bottom: 24px;">
-                        <label class="form-label">Enter your password to confirm</label>
-                        <input type="password" class="form-input" id="deleteAccountPassword" required placeholder="Your password" style="background: rgba(255,255,255,0.4);">
-                    </div>
-                ` : ''}
-                <div class="form-actions">
-                    <button type="button" class="btn-ghost" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
-                    <button type="submit" class="btn-primary" style="background: var(--error); border-color: var(--error);">Delete my account</button>
+    const modalContent = `
+        <div class="glass-modal-overlay" onclick="if(event.target === this) closeModal()">
+            <div class="glass-modal-content" style="max-width: 480px; border: 1px solid rgba(239, 68, 68, 0.3);">
+                <div class="glass-modal-header">
+                    <span class="glass-modal-title" style="color: #EF4444;">Delete Account</span>
+                    <button class="glass-modal-close" onclick="closeModal()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                    </button>
                 </div>
-            </form>
+
+                <div class="glass-modal-body">
+                    <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 16px; padding: 20px; margin-bottom: 24px;">
+                        <div style="display: flex; gap: 12px; align-items: start;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2.5" style="flex-shrink: 0;"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/></svg>
+                            <div>
+                                <p style="margin: 0 0 8px; font-weight: 800; color: var(--text-primary);">Warning: This is permanent</p>
+                                <p style="margin: 0; font-size: 13px; color: var(--text-secondary); line-height: 1.6; opacity: 0.9;">
+                                    Deleting your account will permanently remove all your data, including your portfolio, balance, and message history.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form onsubmit="handleAccountDeletion(event)" style="display: flex; flex-direction: column; gap: 20px;">
+                        ${!isOAuthUser ? `
+                            <div>
+                                <label class="glass-form-label">Enter password to confirm</label>
+                                <input type="password" id="deleteAccountPassword" class="glass-input" required placeholder="Your password">
+                            </div>
+                        ` : `
+                            <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px; color: var(--text-secondary); font-size: 13px;">
+                                You signed in with Google, no password is required.
+                            </div>
+                        `}
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px;">
+                            <button type="button" class="glass-btn-ghost" onclick="closeModal()">Cancel</button>
+                            <button type="submit" class="glass-btn-primary" style="background: #EF4444; border-color: #EF4444; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);">Delete Permanently</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
     `;
-    document.body.appendChild(modal);
+    openModal(modalContent);
 };
 
 window.handleAccountDeletion = async function (event) {
