@@ -93,18 +93,17 @@ export function renderSettingsPage() {
                             </div>
                         </div>
 
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                            <div>
-                                <label class="st-label">Email Address</label>
-                                <input type="email" class="st-input" value="${appState.user.email}" id="profileEmail" required>
-                            </div>
-                            <div>
-                                <label class="st-label">Phone Number</label>
-                                <input type="tel" class="st-input" value="${appState.user.phoneNumber || ''}" id="profilePhone" placeholder="+234...">
-                            </div>
+                        <div>
+                            <label class="st-label">Email Address</label>
+                            <input type="email" class="st-input" value="${appState.user.email}" id="profileEmail" required>
                         </div>
 
-                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
+                        <div>
+                            <label class="st-label">Phone Number</label>
+                            <input type="tel" class="st-input" value="${appState.user.phoneNumber || ''}" id="profilePhone" placeholder="+234...">
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1.5fr; gap: 16px;">
                             <div>
                                 <label class="st-label">Local Area</label>
                                 <input type="text" class="st-input" value="${appState.user.location?.localArea || ''}" id="profileLocalArea" required>
@@ -134,11 +133,11 @@ export function renderSettingsPage() {
 
                         <div>
                             <label class="st-label">Bio (Short summary of your profile)</label>
-                            <textarea class="st-input" id="profileBio" style="min-height: 100px; resize: vertical;">${appState.user.bio || ''}</textarea>
+                            <textarea class="st-input" id="profileBio" style="min-height: 100px; resize: vertical; line-height: 1.6;">${appState.user.bio || ''}</textarea>
                         </div>
                         
                         <div style="margin-top: 12px; display: flex; justify-content: flex-end; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 24px;">
-                            <button type="submit" class="btn-primary" style="height: 48px; padding: 0 40px; border-radius: 12px;">Save Profile Changes</button>
+                            <button type="submit" class="btn-primary" style="height: 48px; min-width: 200px; border-radius: 12px; font-weight: 700;">Save Profile Changes</button>
                         </div>
                     </form>
                 </section>
