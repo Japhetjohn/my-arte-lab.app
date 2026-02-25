@@ -156,8 +156,8 @@ export async function renderCreatorProfile(creatorIdOrObject) {
                 <div style="height: 180px; width: 100%; border-radius: 24px; overflow: hidden; background: rgba(0,0,0,0.05);">
                     <img src="${coverImage}" style="width: 100%; height: 100%; object-fit: cover;">
                 </div>
-                <div style="padding: 0 24px; margin-top: -50px; display: flex; align-items: flex-end; gap: 20px;">
-                    <div style="position: relative;">
+                <div style="padding: 0 24px; display: flex; align-items: flex-end; gap: 20px;">
+                    <div style="position: relative; margin-top: -50px;">
                         <img src="${avatarUrl}" style="width: 100px; height: 100px; border-radius: 28px; border: 4px solid var(--background); background: var(--background); box-shadow: 0 10px 25px rgba(0,0,0,0.1); object-fit: cover;">
                         ${creator.verified ? `
                             <div style="position: absolute; bottom: -4px; right: -4px; width: 28px; height: 28px; background: #10B981; border: 3px solid var(--background); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white;">
@@ -165,8 +165,8 @@ export async function renderCreatorProfile(creatorIdOrObject) {
                             </div>
                         ` : ''}
                     </div>
-                    <div style="flex: 1; padding-bottom: 8px;">
-                        <h1 style="font-size: 26px; font-weight: 800; color: var(--text-primary); margin: 0 0 4px; letter-spacing: -0.02em;">${creator.name}</h1>
+                    <div style="flex: 1; padding-bottom: 4px;">
+                        <h1 style="font-size: 26px; font-weight: 800; color: var(--text-primary); margin: 0 0 6px; letter-spacing: -0.02em;">${creator.name}</h1>
                         <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                             <span style="background: var(--primary); color: white; padding: 4px 12px; border-radius: 8px; font-size: 11px; font-weight: 700;">${creator.role}</span>
                             <div style="display: flex; align-items: center; gap: 4px; color: var(--text-secondary); font-size: 12px; font-weight: 600; opacity: 0.8;">
@@ -242,19 +242,26 @@ export async function renderCreatorProfile(creatorIdOrObject) {
                 ${creator.services && creator.services.length > 0 ? `
                     <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 24px;">
                         <span style="font-size: 11px; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.6; display: block; margin-bottom: 20px;">Professional Services</span>
-                        <div style="display: flex; flex-direction: column; gap: 16px;">
+                        <div style="display: flex; flex-direction: column; gap: 20px;">
                             ${creator.services.map((service, index) => `
-                                <div style="display: flex; gap: 16px; padding: 16px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px;">
-                                    <div style="width: 70px; height: 70px; min-width: 70px; border-radius: 12px; overflow: hidden;">
-                                        <img src="${service.images?.[0] || 'https://via.placeholder.com/70'}" style="width: 100%; height: 100%; object-fit: cover;">
+                                <div style="display: flex; flex-direction: column; gap: 12px; padding: 16px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px;">
+                                    <div style="display: flex; gap: 16px; align-items: flex-start;">
+                                        <div style="flex: 1;">
+                                            <div style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px;">${service.title}</div>
+                                            <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin: 0; opacity: 0.7;">${service.description}</p>
+                                        </div>
+                                        <button class="service-book-btn" data-creator-id="${creator.id}" data-service-index="${index}" style="background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer;">Select</button>
                                     </div>
-                                    <div style="flex: 1;">
-                                        <div style="font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px;">${service.title}</div>
-                                        <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin: 0; opacity: 0.7; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${service.description}</p>
-                                    </div>
-                                    <div style="display: flex; align-items: center;">
-                                        <button class="service-book-btn" data-creator-id="${creator.id}" data-service-index="${index}" style="background: var(--primary); color: white; border: none; padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer;">Select</button>
-                                    </div>
+
+                                    ${service.images && service.images.length > 0 ? `
+                                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px; margin-top: 4px;">
+                                            ${service.images.map(img => `
+                                                <div style="aspect-ratio: 1; border-radius: 10px; overflow: hidden; background: rgba(0,0,0,0.1);">
+                                                    <img src="${img}" style="width: 100%; height: 100%; object-fit: cover; cursor: pointer;" onclick="window.openImageModal('${img}')">
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    ` : ''}
                                 </div>
                             `).join('')}
                         </div>
