@@ -192,6 +192,8 @@ body {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    font-family: inherit;
+    /* Force inheritance by default */
 }
 
 html {
@@ -209,6 +211,18 @@ body {
     width: 100%;
     max-width: 100vw;
     transition: background-color var(--transition-base), color var(--transition-base);
+}
+
+/* Ensure all form elements and children inherit the global font */
+input,
+button,
+select,
+textarea,
+optgroup,
+option {
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
 }
 
 /* Smooth theme transitions for all elements */

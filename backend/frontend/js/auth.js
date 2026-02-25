@@ -10,8 +10,8 @@ const AUTH_MODAL_STYLES = `
 <style>
     /* Auth-specific helper styles that weren't moved to global glass system */
     .am-divider { height: 1px; background: rgba(151, 71, 255, 0.1); margin: 24px 0; position: relative; text-align: center; }
-    .am-footer-link { color: #9747FF; text-decoration: none; font-weight: 700; transition: all 0.2s; }
-    .am-footer-link:hover { color: #6B46FF; text-decoration: underline; }
+    .am-footer-link { color: var(--primary); text-decoration: none; font-weight: 700; transition: all 0.2s; }
+    .am-footer-link:hover { color: var(--secondary); text-decoration: underline; }
     .am-check-label { display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; color: var(--text-secondary); margin: 16px 0; }
     .am-check-input { width: 18px; height: 18px; border-radius: 6px; border: 2px solid rgba(151, 71, 255, 0.2); background: rgba(255, 255, 255, 0.4); appearance: none; -webkit-appearance: none; cursor: pointer; position: relative; transition: all 0.2s; }
     .am-check-input:checked { background: #9747FF; border-color: #9747FF; }

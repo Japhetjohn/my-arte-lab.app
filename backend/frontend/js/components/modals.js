@@ -676,7 +676,7 @@ export async function showTwoFactorModal() {
                 <img src="${qrCode}" alt="2FA QR Code" style="width: 180px; height: 180px; margin: 0 auto; display: block;">
                 <div style="margin-top: 20px;">
                     <p style="color: #666; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">Manual Setup Key</p>
-                    <code style="display: block; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--primary); background: #f5f5f5; padding: 8px 12px; border-radius: 10px; word-break: break-all;">${manualEntryKey}</code>
+                    <code style="display: block; font-size: 13px; color: var(--primary); background: #f5f5f5; padding: 10px 12px; border-radius: 10px; word-break: break-all; font-weight: 700;">${manualEntryKey}</code>
                 </div>
             </div>
 
