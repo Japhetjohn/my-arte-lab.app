@@ -181,10 +181,18 @@ const userSchema = new mongoose.Schema({
   },
 
   wallet: {
-    // Tsara Integration
-    tsaraWalletId: String,    // Tsara wallet ID (wal_*)
-    tsaraAddress: String,     // Primary Solana address from Tsara
-    tsaraReference: String,   // Unique reference used for Tsara
+    // Tsara Integration (Local Wallet Management)
+    tsaraWalletId: String,    // Internal ID or reference
+    tsaraAddress: String,     // Solana public address
+    tsaraReference: String,   // Unique reference
+    tsaraMnemonic: {          // Mnemonic phrase (stored encrypted)
+      type: String,
+      select: false
+    },
+    tsaraEncryptedPrivateKey: { // Secret key (stored encrypted)
+      type: String,
+      select: false
+    },
 
     // HostFi Integration (Legacy)
     assetId: String,        // HostFi wallet asset ID

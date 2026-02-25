@@ -18,16 +18,14 @@ async function testTsaraWorkflow() {
 
         if (walletResponse.success) {
             const wallet = walletResponse.data;
-            console.log(`\nSuccess! Wallet ID: ${wallet.id}`);
+            console.log(`\nSuccess! Local Wallet Reference: ${wallet.reference}`);
             console.log(`Primary Address: ${wallet.primary_address}`);
+            console.log(`Encrypted Mnemonic: ${wallet.mnemonic.substring(0, 20)}...`);
 
-            console.log(`\nStep 2: Retrieving wallet details...`);
-            const retrieveResponse = await tsaraService.getWallet({ reference: wallet.reference });
-            console.log('Retrieve Message:', retrieveResponse.message);
-
-            console.log(`\nStep 3: Checking balance...`);
-            const balanceResponse = await tsaraService.getBalance(wallet.reference);
-            console.log('Total Balance:', balanceResponse.counter.total_balance);
+            console.log(`\nStep 2: Checking balance via RPC...`);
+            const balanceResponse = await tsaraService.getBalance(wallet.primary_address);
+            console.log('Balance Response:', JSON.stringify(balanceResponse, null, 2));
+            console.log('Total USDC Balance:', balanceResponse.counter.total_balance);
         } else {
             console.error('Failed to create wallet:', walletResponse.message);
         }

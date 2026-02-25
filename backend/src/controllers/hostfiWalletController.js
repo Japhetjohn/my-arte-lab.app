@@ -73,6 +73,8 @@ exports.getWallet = catchAsync(async (req, res, next) => {
       currency: 'USD', // Override display currency for UI consistency
       network: user.wallet.network,
       address: user.wallet.address,
+      tsaraAddress: user.wallet.tsaraAddress,
+      tsaraBalance: user.wallet.balance, // This now includes Tsara in aggregate
       lastUpdated: user.wallet.lastUpdated
     }
   });
@@ -150,7 +152,9 @@ exports.getBalanceSummary = catchAsync(async (req, res, next) => {
       pendingBalance: user.wallet.pendingBalance || 0,
       totalEarnings: user.wallet.totalEarnings || 0,
       currency: 'USD',
-      balanceUsd: totalBalanceUsd
+      balanceUsd: totalBalanceUsd,
+      tsaraAddress: user.wallet.tsaraAddress,
+      tsaraBalance: user.wallet.balance
     },
     summary
   });
@@ -207,7 +211,59 @@ exports.getSupportedCurrencies = catchAsync(async (req, res, next) => {
  * User gets a Solana address to receive USDC
  */
 exports.createCryptoAddress = catchAsync(async (req, res, next) => {
-  // Enforce USDC on Solana - HostFi expects "SOL" not "Solana"
+  const user = await User.findById(req.user._id);
+
+  // 1. If user has a Tsara address, return it (Prioritize local Solana wallet)
+  if (user.wallet.tsaraAddress) {
+    return successResponse(res, 200, 'Solana USDC address retrieved', {
+      address: {
+        address: user.wallet.tsaraAddress,
+        currency: 'USDC',
+        network: 'Solana',
+        reference: user.wallet.tsaraReference,
+        instructions: `Send USDC on Solana network to this address. Your wallet will be credited automatically.`
+      }
+    });
+  }
+
+  // 2. If no Tsara address, try to create one locally
+  try {
+    const tsaraService = require('../services/tsaraService');
+    const tsaraWallet = await tsaraService.createWallet(
+      `${user.firstName} ${user.lastName}`,
+      `tsara_${user._id}`,
+      { userId: user._id }
+    );
+
+    if (tsaraWallet.success) {
+      user.wallet.tsaraWalletId = tsaraWallet.data.id;
+      user.wallet.tsaraAddress = tsaraWallet.data.primary_address;
+      user.wallet.tsaraReference = tsaraWallet.data.reference;
+      user.wallet.tsaraMnemonic = tsaraWallet.data.mnemonic;
+      user.wallet.tsaraEncryptedPrivateKey = tsaraWallet.data.secretKey;
+
+      // Update primary address and network for display
+      user.wallet.address = tsaraWallet.data.primary_address;
+      user.wallet.network = 'Solana';
+      user.wallet.lastUpdated = new Date();
+      await user.save();
+
+      return successResponse(res, 201, 'Solana USDC address created', {
+        address: {
+          address: user.wallet.tsaraAddress,
+          currency: 'USDC',
+          network: 'Solana',
+          reference: user.wallet.tsaraReference,
+          instructions: `Send USDC on Solana network to this address. Your wallet will be credited automatically.`
+        }
+      });
+    }
+  } catch (tsaraErr) {
+    console.error('[Controller:createCryptoAddress] Local Tsara wallet creation failed:', tsaraErr.message);
+    // Fallback to HostFi below
+  }
+
+  // 3. Fallback to HostFi (Legacy)
   const currency = 'USDC';
   const network = 'SOL';
 
@@ -217,7 +273,7 @@ exports.createCryptoAddress = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler(`Wallet for currency ${currency} not found`, 404));
   }
 
-  // Check if user already has a crypto address for this currency (idempotency check)
+  // Check if user already has a crypto address for this currency in HostFi
   try {
     const existingAddresses = await hostfiService.getCryptoCollectionAddresses({
       currency,
@@ -227,20 +283,18 @@ exports.createCryptoAddress = catchAsync(async (req, res, next) => {
 
     if (existingAddresses && existingAddresses.length > 0) {
       const existingAddress = existingAddresses[0];
-      return successResponse(res, 200, 'Crypto address already exists', {
+      return successResponse(res, 200, 'HostFi crypto address retrieved', {
         address: {
           address: existingAddress.address,
           currency: existingAddress.currency,
           network: existingAddress.network,
-          qrCode: existingAddress.qrCode || null,
           reference: existingAddress.id,
           instructions: `Send ${currency} on ${network} network to this address. Your wallet will be credited automatically after 1% platform fee.`
         }
       });
     }
   } catch (err) {
-    console.log('Error checking existing addresses:', err.message);
-    // Continue to create new address if check fails
+    console.log('Error checking existing HostFi addresses:', err.message);
   }
 
   // Create crypto collection address

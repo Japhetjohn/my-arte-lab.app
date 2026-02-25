@@ -1,144 +1,153 @@
 const axios = require('axios');
+const bip39 = require('bip39');
+const { derivePath } = require('ed25519-hd-key');
+const {
+    Keypair,
+    Connection,
+    PublicKey,
+    clusterApiUrl,
+    LAMPORTS_PER_SOL
+} = require('@solana/web3.js');
+const {
+    getAssociatedTokenAddress,
+    getAccount,
+    TokenAccountNotFoundError
+} = require('@solana/spl-token');
 const tsaraConfig = require('../config/tsara');
+const walletEncryptionService = require('./walletEncryption');
+
+// USDC Constants
+const USDC_MINT_MAINNET = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
+const USDC_MINT_DEVNET = '4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU';
 
 /**
- * Tsara Service - Stablecoin Infrastructure
- * Supports: Wallet Management, Transfers, Balance Checks, Webhooks
- * API Documentation: https://usetsara.readme.io/reference/introduction
+ * Tsara Service - Stablecoin Infrastructure (Local Management)
+ * Supports: Local Wallet Management, Transfers, Balance Checks
+ * Derived from tsara.node project pattern.
  */
 class TsaraService {
     constructor() {
         this.apiUrl = tsaraConfig.apiUrl;
         this.secretKey = tsaraConfig.secretKey;
 
-        const baseURL = this.apiUrl;
+        const cluster = process.env.SOLANA_CLUSTER || 'mainnet-beta';
+        this.connection = new Connection(
+            process.env.SOLANA_RPC_URL || clusterApiUrl(cluster),
+            'confirmed'
+        );
+
+        this.usdcMint = new PublicKey(
+            cluster === 'mainnet-beta' ? USDC_MINT_MAINNET : USDC_MINT_DEVNET
+        );
 
         this.api = axios.create({
-            baseURL,
+            baseURL: this.apiUrl,
             headers: tsaraConfig.getHeaders(),
             timeout: 30000
         });
 
-        console.log(`[Tsara Service] Initialized with baseURL: ${baseURL}`);
+        console.log(`[Tsara Service] Initialized local management for Solana ${cluster}`);
     }
 
     /**
-     * Create a virtual wallet for a user
-     * @param {string} label - Label for the wallet (e.g., user name)
-     * @param {string} reference - Your unique reference for the wallet
+     * Create a virtual wallet locally
+     * @param {string} label - Label for the wallet
+     * @param {string} reference - Your unique reference
      * @param {Object} metadata - Optional metadata
      * @returns {Promise<Object>} Wallet details
      */
     async createWallet(label, reference, metadata = {}) {
         try {
-            const payload = {
-                type: 'stablecoin',
-                network: 'solana',
-                asset: 'USDC',
-                label,
-                reference,
-                metadata
-            };
+            const mnemonic = bip39.generateMnemonic();
+            const seed = await bip39.mnemonicToSeed(mnemonic);
+            const { key } = derivePath(`m/44'/501'/0'`, seed.toString("hex"));
+            const keypair = Keypair.fromSeed(key);
 
-            const response = await this.api.post('wallets', payload);
-            return response.data;
+            const publicKey = keypair.publicKey.toBase58();
+            const encryptedMnemonic = walletEncryptionService.encryptPrivateKey(mnemonic);
+            const encryptedSecretKey = walletEncryptionService.encryptPrivateKey(Buffer.from(keypair.secretKey).toString("hex"));
+
+            // Returning structure that matches original API expectations where possible
+            return {
+                success: true,
+                data: {
+                    id: reference,
+                    reference,
+                    label,
+                    primary_address: publicKey,
+                    mnemonic: encryptedMnemonic, // Saved to DB by controller
+                    secretKey: encryptedSecretKey,
+                    metadata
+                }
+            };
         } catch (error) {
             this.handleError('createWallet', error);
         }
     }
 
     /**
-     * Retrieve wallet details by reference or ID
-     * @param {string} reference - Wallet reference
-     * @param {string} id - Wallet ID
-     * @returns {Promise<Object>} Wallet details
-     */
-    async getWallet({ reference, id }) {
-        try {
-            const params = {};
-            if (reference) params.reference = reference;
-            if (id) params.id = id;
-
-            const response = await this.api.get('wallets', { params });
-            return response.data;
-        } catch (error) {
-            this.handleError('getWallet', error);
-        }
-    }
-
-    /**
-     * Get wallet balance
-     * @param {string} reference - Wallet reference
+     * Get wallet balance locally via Solana RPC
+     * @param {string} address - Wallet address
      * @returns {Promise<Object>} Balance details
      */
-    async getBalance(reference) {
+    async getBalance(address) {
         try {
-            const response = await this.api.get('wallets/balance', {
-                params: { reference }
-            });
-            return response.data;
+            const pubKey = new PublicKey(address);
+
+            // SOL Balance
+            const solBalance = await this.connection.getBalance(pubKey);
+
+            // USDC Balance
+            let usdcBalance = '0';
+            try {
+                const ata = await getAssociatedTokenAddress(this.usdcMint, pubKey);
+                const account = await getAccount(this.connection, ata);
+                usdcBalance = (Number(account.amount) / 1e6).toString();
+            } catch (e) {
+                // If account not found, balance is 0
+                if (e.name !== 'TokenAccountNotFoundError' && !e.message.includes('could not find account')) {
+                    console.error('[Tsara Service] USDC balance check warning:', e.message);
+                }
+            }
+
+            const totalBalance = parseFloat(usdcBalance);
+
+            return {
+                success: true,
+                data: {
+                    address: address,
+                    balance: totalBalance,
+                    sol_balance: solBalance / LAMPORTS_PER_SOL,
+                    currency: 'USDC',
+                    status: 'active'
+                },
+                counter: {
+                    total_balance: totalBalance
+                }
+            };
         } catch (error) {
             this.handleError('getBalance', error);
         }
     }
 
     /**
-     * Transfer USDC
-     * @param {Object} params - Transfer parameters
-     * @returns {Promise<Object>} Transfer details
+     * Transfer USDC (Simplified local implementation)
+     * For full implementation, would require signing with locally stored keys.
      */
-    async transfer({ from_address, to_address, amount, reference, memo, metadata = {} }) {
-        try {
-            const payload = {
-                from_address,
-                to_address,
-                amount: Number(amount),
-                network: 'Solana', // Docs show capitalized 'Solana' for transfers
-                asset: 'USDC',
-                reference,
-                memo,
-                metadata
-            };
-
-            const response = await this.api.post('wallets/transfer', payload);
-            return response.data;
-        } catch (error) {
-            this.handleError('transfer', error);
-        }
+    async transfer(params) {
+        // This would involve loading the user's encrypted key, decrypting it,
+        // and building/signing a Solana transaction.
+        // For now, we return a message that this is handled via local wallet.
+        console.log('[Tsara Service] Transfer requested:', params.reference);
+        throw new Error('Local transfer logic pending implementation - requires private key decryption');
     }
 
     /**
-     * List transfers
-     * @param {Object} filters - Query filters
-     * @returns {Promise<Object>} Paginated transfers
-     */
-    async listTransfers(filters = {}) {
-        try {
-            const response = await this.api.get('wallets/transfers', { params: filters });
-            return response.data;
-        } catch (error) {
-            this.handleError('listTransfers', error);
-        }
-    }
-
-    /**
-     * Handle API errors
+     * Handle errors
      */
     handleError(method, error) {
-        const status = error.response?.status;
-        const data = error.response?.data;
-
-        console.error(`[Tsara Service] ${method} failed:`, {
-            status,
-            message: error.message,
-            data: data ? JSON.stringify(data) : 'No detail'
-        });
-
-        if (data && data.error) {
-            throw new Error(data.error.message || `Tsara API error: ${data.error.code}`);
-        }
-
-        throw new Error(error.message || `Tsara API internal error during ${method}`);
+        console.error(`[Tsara Service] ${method} error:`, error.message);
+        throw error;
     }
 }
 
