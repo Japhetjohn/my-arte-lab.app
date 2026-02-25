@@ -11,8 +11,7 @@ class TsaraService {
         this.apiUrl = tsaraConfig.apiUrl;
         this.secretKey = tsaraConfig.secretKey;
 
-        // Ensure apiUrl ends with /
-        const baseURL = this.apiUrl.endsWith('/') ? this.apiUrl : `${this.apiUrl}/`;
+        const baseURL = this.apiUrl;
 
         this.api = axios.create({
             baseURL,
