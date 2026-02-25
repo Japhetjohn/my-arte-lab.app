@@ -10,12 +10,19 @@ const router = express.Router();
  * This route file is kept for backwards compatibility.
  */
 
+const tsaraWebhookController = require('../controllers/tsaraWebhookController');
+
+// Tsara Webhooks
+router.post('/tsara', tsaraWebhookController.handleWebhook);
+
+// Catch-all for other webhooks
 router.all('*', (req, res) => {
   res.status(404).json({
     success: false,
     message: 'Webhook endpoint not found',
-    note: 'HostFi webhooks are at /api/hostfi/webhooks/',
+    note: 'HostFi webhooks are at /api/hostfi/webhooks/, Tsara webhooks are at /api/webhooks/tsara',
     availableEndpoints: [
+      '/api/webhooks/tsara',
       '/api/hostfi/webhooks/address-generated',
       '/api/hostfi/webhooks/fiat-deposit',
       '/api/hostfi/webhooks/crypto-deposit',

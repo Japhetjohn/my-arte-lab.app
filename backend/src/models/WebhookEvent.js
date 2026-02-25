@@ -12,7 +12,7 @@ const webhookEventSchema = new mongoose.Schema({
   provider: {
     type: String,
     required: true,
-    enum: ['hostfi', 'other']
+    enum: ['hostfi', 'tsara', 'other']
   },
 
   eventType: {
@@ -63,12 +63,12 @@ webhookEventSchema.index({ eventId: 1, provider: 1 });
 webhookEventSchema.index({ processed: 1, createdAt: -1 });
 webhookEventSchema.index({ provider: 1, eventType: 1 });
 
-webhookEventSchema.statics.isProcessed = async function(eventId, provider) {
+webhookEventSchema.statics.isProcessed = async function (eventId, provider) {
   const event = await this.findOne({ eventId, provider });
   return event ? event.processed : false;
 };
 
-webhookEventSchema.statics.markProcessed = async function(eventId, provider, error = null) {
+webhookEventSchema.statics.markProcessed = async function (eventId, provider, error = null) {
   return await this.findOneAndUpdate(
     { eventId, provider },
     {
@@ -80,7 +80,7 @@ webhookEventSchema.statics.markProcessed = async function(eventId, provider, err
   );
 };
 
-webhookEventSchema.statics.recordWebhook = async function(data) {
+webhookEventSchema.statics.recordWebhook = async function (data) {
   try {
     return await this.create({
       eventId: data.eventId,
