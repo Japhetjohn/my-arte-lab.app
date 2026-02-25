@@ -14,6 +14,13 @@ const tsaraWebhookController = require('../controllers/tsaraWebhookController');
 
 // Tsara Webhooks
 router.post('/tsara', tsaraWebhookController.handleWebhook);
+router.get('/tsara', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'Tsara Webhook endpoint is live and ready for POST events',
+    documentation: 'https://usetsara.readme.io/reference/webhooks'
+  });
+});
 
 // Catch-all for other webhooks
 router.all('*', (req, res) => {

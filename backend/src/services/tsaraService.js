@@ -19,6 +19,8 @@ class TsaraService {
             headers: tsaraConfig.getHeaders(),
             timeout: 30000
         });
+
+        console.log(`[Tsara Service] Initialized with baseURL: ${baseURL}`);
     }
 
     /**
