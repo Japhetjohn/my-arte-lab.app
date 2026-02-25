@@ -200,7 +200,7 @@ const userSchema = new mongoose.Schema({
     colAddress: String,     // Collection address (for crypto/fiat deposits)
     colNetwork: String,     // Network for the collection address
     lastSynced: Date
-  }],
+  },
 
   // Legacy Solana wallet (deprecated - will be removed)
   address: {
@@ -272,33 +272,32 @@ const userSchema = new mongoose.Schema({
       type: Date,
       default: Date.now
     }
-  }]
-},
+  }],
 
   isEmailVerified: {
-  type: Boolean,
-  default: false
-},
+    type: Boolean,
+    default: false
+  },
 
   isPhoneVerified: {
-  type: Boolean,
-  default: false
-},
+    type: Boolean,
+    default: false
+  },
 
   isIdVerified: {
-  type: Boolean,
-  default: false
-},
+    type: Boolean,
+    default: false
+  },
 
   isActive: {
-  type: Boolean,
-  default: true
-},
+    type: Boolean,
+    default: true
+  },
 
   isVerified: {
-  type: Boolean,
-  default: false
-},
+    type: Boolean,
+    default: false
+  },
 
   emailVerificationToken: String,
   emailVerificationExpire: Date,
@@ -309,13 +308,13 @@ const userSchema = new mongoose.Schema({
 
   // Two-Factor Authentication
   twoFactorSecret: {
-  type: String,
-  select: false // Don't include in queries by default for security
-},
+    type: String,
+    select: false // Don't include in queries by default for security
+  },
   twoFactorEnabled: {
-  type: Boolean,
-  default: false
-},
+    type: Boolean,
+    default: false
+  },
   twoFactorBackupCodes: [{
     code: {
       type: String,
@@ -329,52 +328,52 @@ const userSchema = new mongoose.Schema({
   }],
 
   profileVisibility: {
-  type: String,
-  enum: ['public', 'private', 'clients'],
-  default: 'public'
-},
+    type: String,
+    enum: ['public', 'private', 'clients'],
+    default: 'public'
+  },
 
   lastLogin: Date,
   lastActive: Date,
 
   completedBookings: {
-  type: Number,
-  default: 0
-},
+    type: Number,
+    default: 0
+  },
 
   responseTime: {
-  type: Number,
-  default: null
-},
+    type: Number,
+    default: null
+  },
 
   metrics: {
-  responseRate: {
-    type: Number,
-    default: 100,
-    min: 0,
-    max: 100
+    responseRate: {
+      type: Number,
+      default: 100,
+      min: 0,
+      max: 100
+    },
+    onTimeDeliveryRate: {
+      type: Number,
+      default: 100,
+      min: 0,
+      max: 100
+    },
+    repeatClientRate: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 100
+    },
+    totalEarnings: {
+      type: Number,
+      default: 0
+    },
+    averageOrderValue: {
+      type: Number,
+      default: 0
+    }
   },
-  onTimeDeliveryRate: {
-    type: Number,
-    default: 100,
-    min: 0,
-    max: 100
-  },
-  repeatClientRate: {
-    type: Number,
-    default: 0,
-    min: 0,
-    max: 100
-  },
-  totalEarnings: {
-    type: Number,
-    default: 0
-  },
-  averageOrderValue: {
-    type: Number,
-    default: 0
-  }
-},
 
   badges: [{
     type: {
@@ -388,11 +387,11 @@ const userSchema = new mongoose.Schema({
   }],
 
   profileCompletion: {
-  type: Number,
-  default: 0,
-  min: 0,
-  max: 100
-},
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 100
+  },
 
   favoriteCreators: [{
     type: mongoose.Schema.Types.ObjectId,
@@ -400,14 +399,14 @@ const userSchema = new mongoose.Schema({
   }],
 
   seoSlug: {
-  type: String,
-  unique: true,
-  sparse: true
-}
+    type: String,
+    unique: true,
+    sparse: true
+  }
 
 }, {
   timestamps: true,
-    toJSON: { virtuals: true },
+  toJSON: { virtuals: true },
   toObject: { virtuals: true }
 });
 
