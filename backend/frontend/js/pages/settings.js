@@ -4,40 +4,37 @@ import { showToast } from '../utils.js';
 
 const SETTINGS_STYLES = `
 <style>
-    .st-container { max-width: 1000px; margin: 0 auto; padding: 24px; display: grid; grid-template-columns: 240px 1fr; gap: 40px; }
-    @media (max-width: 768px) { .st-container { grid-template-columns: 1fr; gap: 24px; } }
+    .st-container { max-width: 680px; margin: 0 auto; padding: 32px 20px 60px; display: flex; flex-direction: column; gap: 32px; }
+    @media (max-width: 768px) { .st-container { padding: 24px 16px; } }
     
-    .st-sidebar { position: sticky; top: 100px; height: fit-content; }
-    .st-nav { display: flex; flex-direction: column; gap: 4px; }
-    .st-nav-item { padding: 12px 16px; border-radius: 12px; color: rgba(255,255,255,0.5); font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 12px; font-size: 14px; border: none; background: transparent; width: 100%; text-align: left; }
-    .st-nav-item:hover { background: rgba(255,255,255,0.05); color: white; }
-    .st-nav-item.active { background: rgba(124,58,237,0.1); color: #a78bfa; }
+    .st-nav { display: none; } /* Simplified to single column for redesign consistency */
     
     .st-content { display: flex; flex-direction: column; gap: 32px; }
-    .st-title { font-size: 28px; font-weight: 800; color: white; margin-bottom: 8px; letter-spacing: -0.02em; }
-    .st-section { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 24px; padding: 32px; }
-    .st-section-title { font-size: 18px; font-weight: 700; color: white; margin-bottom: 24px; display: flex; align-items: center; gap: 10px; }
+    .st-title { font-size: 26px; font-weight: 700; color: var(--text-primary); margin: 0 0 4px; }
+    .st-section { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 24px; padding: 24px; }
+    .st-section-title { font-size: 16px; font-weight: 700; color: var(--text-primary); margin-bottom: 24px; display: flex; align-items: center; gap: 10px; }
     
-    .st-label { font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; display: block; }
-    .st-input { width: 100%; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 12px 16px; color: white; font-size: 14px; transition: all 0.2s; }
-    .st-input:focus { border-color: #7c3aed; background: rgba(255,255,255,0.05); outline: none; box-shadow: 0 0 0 4px rgba(124,58,237,0.15); }
+    .st-label { font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; display: block; opacity: 0.7; }
+    .st-input { width: 100%; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 12px 16px; color: var(--text-primary); font-size: 14px; transition: all 0.2s; }
+    .st-input:focus { border-color: var(--primary); background: rgba(255,255,255,0.05); outline: none; box-shadow: 0 0 0 4px rgba(151,71,255,0.1); }
     
-    .st-item { display: flex; align-items: center; justify-content: space-between; padding: 20px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .st-item { display: flex; align-items: center; justify-content: space-between; padding: 16px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
     .st-item:last-child { border-bottom: none; }
     .st-item-info { display: flex; flex-direction: column; gap: 4px; }
-    .st-item-title { font-size: 15px; font-weight: 600; color: white; }
-    .st-item-desc { font-size: 13px; color: rgba(255,255,255,0.4); }
+    .st-item-title { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+    .st-item-desc { font-size: 12px; color: var(--text-secondary); opacity: 0.6; }
     
-    .st-avatar-group { display: flex; align-items: center; gap: 24px; margin-bottom: 32px; }
-    .st-avatar-preview { width: 80px; height: 80px; border-radius: 50%; object-fit: crop; border: 2px solid rgba(255,255,255,0.1); }
-    .st-avatar-btn { padding: 8px 16px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: white; font-size: 13px; cursor: pointer; }
+    .st-avatar-group { display: flex; align-items: center; gap: 20px; margin-bottom: 28px; }
+    .st-avatar-preview { width: 72px; height: 72px; border-radius: 20px; object-fit: cover; border: 2px solid rgba(255,255,255,0.1); background: var(--background-alt); }
+    .st-avatar-btn { padding: 8px 16px; background: rgba(151,71,255,0.08); border: 1px solid rgba(151,71,255,0.2); border-radius: 10px; color: var(--primary); font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+    .st-avatar-btn:hover { background: rgba(151,71,255,0.12); }
     
-    .st-toggle { position: relative; width: 44px; height: 24px; background: rgba(255,255,255,0.1); border-radius: 20px; cursor: pointer; transition: all 0.3s; }
-    .st-toggle::after { content: ''; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; background: white; border-radius: 50%; transition: all 0.3s; }
-    input:checked + .st-toggle { background: #7c3aed; }
-    input:checked + .st-toggle::after { left: 22px; }
+    .st-toggle { position: relative; width: 40px; height: 22px; background: rgba(0,0,0,0.1); border-radius: 20px; cursor: pointer; transition: all 0.3s; border: 1px solid rgba(255,255,255,0.05); }
+    .st-toggle::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; background: white; border-radius: 50%; transition: all 0.3s; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    input:checked + .st-toggle { background: var(--primary); }
+    input:checked + .st-toggle::after { left: 20px; }
     
-    .st-danger-banner { background: rgba(239,68,68,0.05); border: 1px solid rgba(239,68,68,0.15); border-radius: 16px; padding: 20px; margin-top: 40px; }
+    .st-danger-banner { background: rgba(239,68,68,0.04); border: 1px solid rgba(239,68,68,0.15); border-radius: 20px; padding: 24px; margin-top: 16px; }
 </style>
 `;
 
@@ -46,11 +43,12 @@ export function renderSettingsPage() {
 
     if (!appState.user) {
         mainContent.innerHTML = `
-            <div style="text-align: center; padding: 100px 24px;">
+            ${SETTINGS_STYLES}
+            <div style="text-align: center; padding: 100px 24px; max-width: 440px; margin: 0 auto;">
                 <div style="font-size: 64px; margin-bottom: 24px; opacity: 0.2;">👤</div>
-                <h2 style="color: white; margin-bottom: 12px;">Sign in to view settings</h2>
-                <p style="color: rgba(255,255,255,0.4); margin-bottom: 32px;">Please authenticate to manage your profile and account.</p>
-                <button class="btn-primary" onclick="showAuthModal('signin')">Sign In</button>
+                <h2 style="color: var(--text-primary); margin-bottom: 12px; font-weight: 700;">Sign in to view settings</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 32px; opacity: 0.7;">Please authenticate to manage your profile and account.</p>
+                <button class="btn-primary" onclick="showAuthModal('signin')" style="height: 48px; padding: 0 40px; border-radius: 12px;">Sign In</button>
             </div>
         `;
         return;
@@ -61,39 +59,17 @@ export function renderSettingsPage() {
     mainContent.innerHTML = `
         ${SETTINGS_STYLES}
         <div class="st-container">
-            <!-- Sidebar -->
-            <aside class="st-sidebar">
-                <div class="st-nav">
-                    <button class="st-nav-item active" onclick="scrollToSection('profile-section')">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                        Profile
-                    </button>
-                    <button class="st-nav-item" onclick="scrollToSection('appearance-section')">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-                        Appearance
-                    </button>
-                    <button class="st-nav-item" onclick="scrollToSection('security-section')">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                        Security
-                    </button>
-                    <button class="st-nav-item" onclick="scrollToSection('danger-section')" style="color: #ef4444;">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                        Delete Account
-                    </button>
-                </div>
-            </aside>
-
             <!-- Main Content -->
             <div class="st-content">
-                <div>
+                <div style="margin-bottom: 8px;">
                     <h1 class="st-title">Settings</h1>
-                    <p style="color: rgba(255,255,255,0.4); font-size: 15px;">Manage your account preferences and professional profile.</p>
+                    <p style="color: var(--text-secondary); font-size: 15px; margin: 0; opacity: 0.7;">Manage your account preferences and professional profile.</p>
                 </div>
 
                 <!-- Profile Section -->
                 <section class="st-section" id="profile-section">
                     <h2 class="st-section-title">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                         Personal Information
                     </h2>
 
@@ -101,7 +77,7 @@ export function renderSettingsPage() {
                         <img src="${userAvatar}" class="st-avatar-preview" id="avatarPreview">
                         <div>
                             <button class="st-avatar-btn" onclick="handleAvatarUpload()">Change Photo</button>
-                            <p style="font-size: 12px; color: rgba(255,255,255,0.3); margin-top: 8px;">JPG, PNG or GIF. Max 5MB.</p>
+                            <p style="font-size: 11px; color: var(--text-secondary); margin-top: 8px; opacity: 0.5;">JPG, PNG or GIF. Max 5MB.</p>
                         </div>
                     </div>
 
@@ -162,7 +138,7 @@ export function renderSettingsPage() {
                         </div>
                         
                         <div style="margin-top: 12px; display: flex; justify-content: flex-end; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 24px;">
-                            <button type="submit" class="btn-primary" style="height: 48px; padding: 0 40px;">Save Profile Changes</button>
+                            <button type="submit" class="btn-primary" style="height: 48px; padding: 0 40px; border-radius: 12px;">Save Profile Changes</button>
                         </div>
                     </form>
                 </section>
@@ -170,7 +146,7 @@ export function renderSettingsPage() {
                 <!-- Appearance Section -->
                 <section class="st-section" id="appearance-section">
                     <h2 class="st-section-title">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2.5"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
                         Appearance
                     </h2>
 
@@ -200,7 +176,7 @@ export function renderSettingsPage() {
                 <!-- Security Section -->
                 <section class="st-section" id="security-section">
                     <h2 class="st-section-title">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                         Security & Privacy
                     </h2>
 
@@ -228,7 +204,7 @@ export function renderSettingsPage() {
                 <section id="danger-section" class="st-danger-banner">
                     <h3 style="color: #ef4444; font-size: 16px; font-weight: 700; margin-bottom: 8px;">Danger Zone</h3>
                     <p style="color: rgba(239,68,68,0.6); font-size: 13px; margin-bottom: 20px;">Once you delete your account, there is no going back. Please be certain.</p>
-                    <button class="btn-primary" style="background: #ef4444; border: none;" onclick="showDeleteAccountModal()">Delete My Account</button>
+                    <button class="btn-primary" style="background: #ef4444; border: none; height: 44px; padding: 0 24px; border-radius: 12px; font-weight: 700;" onclick="showDeleteAccountModal()">Delete My Account</button>
                 </section>
             </div>
         </div>
@@ -412,7 +388,7 @@ window.showChangePasswordModal = function () {
                 </button>
             </div>
             <div class="bkm-body">
-                <p style="color: rgba(255,255,255,0.4); font-size: 13px; margin-bottom: 24px;">Confirm your current password before choosing a new one.</p>
+                <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 24px; opacity: 0.7;">Confirm your current password before choosing a new one.</p>
                 <form onsubmit="handlePasswordChange(event)" style="display: flex; flex-direction: column; gap: 16px;">
                     <div>
                         <label class="st-label">Current Password</label>
@@ -480,11 +456,11 @@ window.showTwoFactorModal = function () {
             <div class="bkm-body">
                 <div style="text-align: center; padding: 20px 0;">
                     <div style="font-size: 48px; margin-bottom: 20px;">🛡️</div>
-                    <h3 style="color: white; margin-bottom: 12px;">Enhanced Security</h3>
-                    <p style="color: rgba(255,255,255,0.4); font-size: 14px; line-height: 1.6; margin-bottom: 24px;">
+                    <h3 style="color: var(--text-primary); margin-bottom: 12px;">Enhanced Security</h3>
+                    <p style="color: var(--text-secondary); font-size: 14px; line-height: 1.6; margin-bottom: 24px; opacity: 0.7;">
                         Protect your account with an extra verification layer. When enabled, you'll need both your password and a code from your phone to sign in.
                     </p>
-                    <div style="background: rgba(124,58,237,0.1); color: #a78bfa; padding: 12px; border-radius: 12px; font-weight: 700; font-size: 13px; letter-spacing: 0.05em;">
+                    <div style="background: rgba(151,71,255,0.1); color: var(--primary); padding: 12px; border-radius: 12px; font-weight: 700; font-size: 13px; letter-spacing: 0.05em;">
                         COMING SOON
                     </div>
                 </div>
@@ -509,8 +485,8 @@ window.showDeleteAccountModal = function () {
             </div>
             <div class="bkm-body">
                 <div style="background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.1); border-radius: 16px; padding: 16px; margin-bottom: 24px;">
-                    <p style="color: #ef4444; font-weight: 700; font-size: 14px; margin-bottom: 8px;">Warning: Procced with caution</p>
-                    <p style="color: rgba(255,255,255,0.4); font-size: 13px; line-height: 1.5;">
+                    <p style="color: #ef4444; font-weight: 700; font-size: 14px; margin-bottom: 8px;">Warning: Proceed with caution</p>
+                    <p style="color: var(--text-secondary); font-size: 13px; line-height: 1.5; opacity: 0.7;">
                         All your data, including profile info, bookings, and wallet balance, will be permanently removed.
                     </p>
                 </div>
@@ -522,7 +498,7 @@ window.showDeleteAccountModal = function () {
                             <input type="password" class="st-input" id="deleteAccountPassword" required placeholder="Enter password to confirm">
                         </div>
                     ` : `
-                        <p style="color: rgba(255,255,255,0.4); font-size: 13px;">You signed in with Google. No password confirm required.</p>
+                        <p style="color: var(--text-secondary); font-size: 13px; opacity: 0.7;">You signed in with Google. No password confirm required.</p>
                     `}
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px;">
                         <button type="button" class="bk-filter-btn" onclick="this.closest('.bkm-overlay').remove()">Cancel</button>
