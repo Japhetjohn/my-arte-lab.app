@@ -11,6 +11,7 @@ async function testTsaraWorkflow() {
 
         console.log(`\nStep 1: Creating wallet...`);
         console.log(`Reference: ${reference}`);
+        console.log(`Using BaseURL: ${tsaraService.api.defaults.baseURL}`);
 
         const walletResponse = await tsaraService.createWallet(label, reference, { purpose: 'testing' });
         console.log('Response:', JSON.stringify(walletResponse, null, 2));
