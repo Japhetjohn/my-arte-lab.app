@@ -10,18 +10,19 @@ const BOOKINGS_STYLES = ''; // Styles moved to styles.css
 
 export async function renderBookingsPage() {
     const mainContent = document.getElementById('mainContent');
-    mainContent.innerHTML = ''; // Clear container
 
     if (!appState.user) {
         mainContent.innerHTML = `
-            <div class="bookings-container-modern">
-                <div class="empty-state-modern" style="padding: 80px 40px; text-align: center; background: rgba(255,255,255,0.02); border: 2px dashed rgba(255,255,255,0.08); border-radius: 40px;">
-                    <div class="empty-state-icon" style="width: 100px; height: 100px; background: rgba(151, 71, 255, 0.05); border-radius: 30px; display: flex; align-items: center; justify-content: center; margin: 0 auto 32px; color: var(--primary);">
-                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 2v4M8 2v4M3 10h18M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+            <div style="min-height: 60vh; display: flex; align-items: center; justify-content: center; padding: 40px 20px;">
+                <div style="text-align: center; max-width: 400px;">
+                    <div style="width: 80px; height: 80px; background: linear-gradient(135deg, rgba(151,71,255,0.15), rgba(107,70,255,0.15)); border-radius: 24px; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; border: 1px solid rgba(151,71,255,0.2);">
+                        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" style="color: var(--primary);">
+                            <path d="M16 2v4M8 2v4M3 10h18M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" stroke="currentColor" stroke-width="2"/>
+                        </svg>
                     </div>
-                    <h2 style="font-size: 28px; font-weight: 850; color: var(--text-primary); margin-bottom: 12px;">Sign in to view bookings</h2>
-                    <p style="color: var(--text-secondary); opacity: 0.6; margin-bottom: 32px; font-size: 16px;">Manage your active jobs and track progress across all your projects.</p>
-                    <button class="glass-btn-primary" onclick="showAuthModal('signin')" style="padding: 14px 32px;">Connect Account</button>
+                    <h2 style="margin-bottom: 8px; font-size: 22px;">Bookings</h2>
+                    <p style="color: var(--text-secondary); margin-bottom: 24px; line-height: 1.6;">Sign in to view and manage your active collaborations</p>
+                    <button class="btn-primary" onclick="showAuthModal('signin')">Sign in to continue</button>
                 </div>
             </div>
         `;
@@ -29,34 +30,51 @@ export async function renderBookingsPage() {
     }
 
     mainContent.innerHTML = `
-        <div class="bookings-container-modern">
-            <header class="bookings-header-modern">
-                <div class="bookings-icon-modern">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 2v4M8 2v4M3 10h18M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                </div>
+        <div style="max-width: 680px; margin: 0 auto; padding: 32px 20px 60px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px;">
                 <div>
-                    <h1 class="bookings-title-modern">Job Management</h1>
-                    <p class="bookings-subtitle-modern">Track your active collaborations and manage payments securely in escrow</p>
+                    <h1 style="font-size: 26px; font-weight: 700; margin: 0 0 4px;">Bookings</h1>
+                    <p style="color: var(--text-secondary); font-size: 14px; margin: 0;">Track your collaborations</p>
                 </div>
-            </header>
-
-            <div id="bookingsStatsContainer"></div>
+                <button onclick="window.location.reload()" style="display: flex; align-items: center; gap: 6px; background: rgba(151,71,255,0.08); border: 1px solid rgba(151,71,255,0.2); color: var(--primary); padding: 8px 14px; border-radius: 10px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M4 12a8 8 0 1 1 16 0" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><path d="M4 12l-2-2m2 2l2-2" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+                    Refresh
+                </button>
+            </div>
             
-            <div class="filters-container-modern" style="margin-bottom: 32px;">
-                <div class="filter-group">
-                    <button class="filter-chip ${currentFilter === 'all' ? 'active' : ''}" onclick="window.filterBookings('all')">All History</button>
-                    <button class="filter-chip ${currentFilter === 'active' ? 'active' : ''}" onclick="window.filterBookings('active')">In Progress</button>
-                    <button class="filter-chip ${currentFilter === 'completed' ? 'active' : ''}" onclick="window.filterBookings('completed')">Completed</button>
+            <div id="bookingsSkeleton">
+                <div style="background: linear-gradient(135deg, rgba(151,71,255,0.1), rgba(107,70,255,0.1)); border-radius: 24px; height: 180px; margin-bottom: 24px; animation: pulse 1.5s ease-in-out infinite;"></div>
+                <div style="display: flex; gap: 8px; margin-bottom: 28px;">
+                    <div style="width: 80px; height: 32px; background: rgba(255,255,255,0.08); border-radius: 20px; animation: pulse 1.5s ease-in-out infinite;"></div>
+                    <div style="width: 80px; height: 32px; background: rgba(255,255,255,0.08); border-radius: 20px; animation: pulse 1.5s ease-in-out infinite 0.1s;"></div>
+                    <div style="width: 80px; height: 32px; background: rgba(255,255,255,0.08); border-radius: 20px; animation: pulse 1.5s ease-in-out infinite 0.2s;"></div>
                 </div>
+                <div style="height: 100px; background: rgba(255,255,255,0.05); border-radius: 16px; margin-bottom: 12px; animation: pulse 1.5s ease-in-out infinite;"></div>
+                <div style="height: 100px; background: rgba(255,255,255,0.05); border-radius: 16px; margin-bottom: 12px; animation: pulse 1.5s ease-in-out infinite 0.1s;"></div>
             </div>
 
-            <div id="bookingsListContainer">
-                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 400px; gap: 20px;">
-                    <div class="glass-loading-spinner"></div>
-                    <p style="color: var(--text-secondary); font-weight: 600; opacity: 0.5;">Syncing your job records...</p>
-                </div>
-            </div>
+            <div id="bookingsContent" style="display:none;"></div>
         </div>
+        <style>
+            @keyframes pulse { 0%,100% { opacity:0.6; } 50% { opacity:1; } }
+            @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+            .bookings-section { animation: fadeIn 0.3s ease; }
+            .tx-item { 
+                display: flex; align-items: center; gap: 14px; padding: 14px 16px; 
+                border-radius: 14px; background: rgba(255,255,255,0.04); 
+                border: 1px solid rgba(255,255,255,0.07); margin-bottom: 8px; 
+                transition: all 0.2s; cursor: pointer; 
+            }
+            .tx-item:hover { background: rgba(255,255,255,0.08); transform: translateY(-1px); border-color: rgba(151,71,255,0.2); }
+            .section-header { font-size: 13px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; margin: 28px 0 12px; }
+            .filter-tabs { display: flex; gap: 8px; margin-bottom: 24px; }
+            .filter-tab { 
+                padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; 
+                cursor: pointer; transition: all 0.2s; border: 1px solid rgba(255,255,255,0.08); 
+                background: rgba(255,255,255,0.03); color: var(--text-secondary);
+            }
+            .filter-tab.active { background: rgba(151,71,255,0.15); color: var(--primary); border-color: rgba(151,71,255,0.3); }
+        </style>
     `;
 
     try {
@@ -80,75 +98,39 @@ export async function renderBookingsPage() {
         }));
 
         bookings = [...regularBookings, ...projectsAsJobs];
+
+        document.getElementById('bookingsSkeleton').style.display = 'none';
+        const content = document.getElementById('bookingsContent');
+        content.style.display = 'block';
         renderBookingsList();
     } catch (error) {
         console.error('Failed to load bookings:', error);
-        document.getElementById('bookingsListContainer').innerHTML = `
-            <div class="empty-state-modern" style="border-color: rgba(239, 68, 68, 0.15);">
-                <div class="empty-state-icon" style="background: rgba(239, 68, 68, 0.1); color: #EF4444;">
-                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+        document.getElementById('bookingsSkeleton').style.display = 'none';
+        const content = document.getElementById('bookingsContent');
+        content.style.display = 'block';
+        content.innerHTML = `
+            <div style="text-align: center; padding: 48px 20px;">
+                <div style="width: 56px; height: 56px; background: rgba(239,68,68,0.1); border-radius: 16px; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style="color: #EF4444;"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
                 </div>
-                <h3 style="color: #EF4444;">Failed to sync bookings</h3>
-                <p style="color: var(--text-secondary); margin-bottom: 24px;">${error.message}</p>
-                <button class="glass-btn-primary" onclick="renderBookingsPage()">Try Reconnecting</button>
+                <h3 style="margin-bottom: 8px;">Failed to load bookings</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 14px;">${error.message}</p>
+                <button class="btn-primary" onclick="window.location.reload()">Try again</button>
             </div>
         `;
     }
 }
 
+
 function renderBookingsList() {
-    const listContainer = document.getElementById('bookingsListContainer');
-    const statsContainer = document.getElementById('bookingsStatsContainer');
-    if (!listContainer || !statsContainer) return;
+    const listContainer = document.getElementById('bookingsContent');
+    if (!listContainer) return;
 
     const activeBookings = bookings.filter(b => !['completed', 'cancelled', 'completed_with_escrow'].includes(b.status));
     const completedBookings = bookings.filter(b => ['completed', 'completed_with_escrow'].includes(b.status));
 
-    const totalEarnings = bookings
-        .filter(b => b.status === 'completed' || b.status === 'completed_with_escrow')
-        .reduce((sum, b) => sum + (b.amount || 0), 0);
-
-    // Render Stats
-    statsContainer.innerHTML = `
-        <div class="stats-grid-modern" style="margin-bottom: 40px;">
-            <div class="stat-card-project">
-                <div class="stat-card-icon" style="background: rgba(151, 71, 255, 0.1); color: var(--primary);">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 2v4M8 2v4M3 10h18M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                </div>
-                <div class="stat-card-content">
-                    <span class="stat-card-label">Total Jobs</span>
-                    <span class="stat-card-value">${bookings.length}</span>
-                </div>
-            </div>
-            <div class="stat-card-project">
-                <div class="stat-card-icon" style="background: rgba(59, 130, 246, 0.1); color: #3B82F6;">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-                </div>
-                <div class="stat-card-content">
-                    <span class="stat-card-label">In Progress</span>
-                    <span class="stat-card-value">${activeBookings.length}</span>
-                </div>
-            </div>
-            <div class="stat-card-project">
-                <div class="stat-card-icon" style="background: rgba(16, 185, 129, 0.1); color: #10B981;">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
-                </div>
-                <div class="stat-card-content">
-                    <span class="stat-card-label">Completed</span>
-                    <span class="stat-card-value">${completedBookings.length}</span>
-                </div>
-            </div>
-            <div class="stat-card-project">
-                <div class="stat-card-icon" style="background: rgba(245, 158, 11, 0.1); color: #F59E0B;">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
-                </div>
-                <div class="stat-card-content">
-                    <span class="stat-card-label">Earnings</span>
-                    <span class="stat-card-value">$${totalEarnings.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                </div>
-            </div>
-        </div>
-    `;
+    const totalInEscrow = activeBookings.reduce((sum, b) => sum + (b.amount || 0), 0);
+    const totalEarnings = completedBookings.reduce((sum, b) => sum + (b.amount || 0), 0);
 
     let displayBookings = bookings;
     if (currentFilter === 'active') {
@@ -157,68 +139,88 @@ function renderBookingsList() {
         displayBookings = completedBookings;
     }
 
-    if (displayBookings.length === 0) {
-        listContainer.innerHTML = `
-            <div class="empty-state-modern" style="padding: 100px 40px;">
-                <div class="empty-state-icon" style="opacity: 0.3;">
-                    <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16 2v4M8 2v4M3 10h18M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                </div>
-                <h3 style="font-size: 22px; margin-bottom: 8px;">No records found</h3>
-                <p style="color: var(--text-secondary); opacity: 0.6;">Your ${currentFilter === 'all' ? 'history' : currentFilter + ' job list'} is currently empty.</p>
-            </div>
-        `;
-        return;
-    }
-
     listContainer.innerHTML = `
-        <div class="projects-grid-modern">
-            ${displayBookings.map(booking => renderModernBookingCard(booking)).join('')}
+        <div class="bookings-section">
+            <!-- STATS CARD -->
+            <div style="background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%); border-radius: 24px; padding: 24px; margin-bottom: 28px; position: relative; overflow: hidden; box-shadow: 0 12px 24px rgba(124, 58, 237, 0.2);">
+                <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; background: rgba(255,255,255,0.07); border-radius: 50%;"></div>
+                <div style="position: relative; display: flex; flex-direction: column; gap: 20px;">
+                    <div>
+                        <div style="font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.65); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px;">Total Volume</div>
+                        <div style="font-size: 32px; font-weight: 800; color: white;">$${(totalEarnings + totalInEscrow).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                    </div>
+                    <div style="display: flex; gap: 12px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.12);">
+                        <div style="flex: 1;">
+                            <div style="font-size: 10px; color: rgba(255,255,255,0.55); margin-bottom: 2px;">In Progress</div>
+                            <div style="font-size: 15px; font-weight: 700; color: #FBD38D;">$${totalInEscrow.toFixed(2)}</div>
+                        </div>
+                        <div style="width: 1px; background: rgba(255,255,255,0.12);"></div>
+                        <div style="flex: 1;">
+                            <div style="font-size: 10px; color: rgba(255,255,255,0.55); margin-bottom: 2px;">Completed</div>
+                            <div style="font-size: 15px; font-weight: 700; color: #9AE6B4;">$${totalEarnings.toFixed(2)}</div>
+                        </div>
+                        <div style="width: 1px; background: rgba(255,255,255,0.12);"></div>
+                        <div style="flex: 1;">
+                            <div style="font-size: 10px; color: rgba(255,255,255,0.55); margin-bottom: 2px;">Total Jobs</div>
+                            <div style="font-size: 15px; font-weight: 700; color: white;">${bookings.length}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FILTERS -->
+            <div class="filter-tabs">
+                <div class="filter-tab ${currentFilter === 'all' ? 'active' : ''}" onclick="window.filterBookings('all')">All History</div>
+                <div class="filter-tab ${currentFilter === 'active' ? 'active' : ''}" onclick="window.filterBookings('active')">In Progress</div>
+                <div class="filter-tab ${currentFilter === 'completed' ? 'active' : ''}" onclick="window.filterBookings('completed')">Completed</div>
+            </div>
+
+            <!-- LIST -->
+            ${displayBookings.length > 0 ? `
+                <div class="section-header">Recent Activity</div>
+                ${displayBookings.map(b => buildBookingItemHTML(b)).join('')}
+            ` : `
+                <div style="text-align: center; padding: 48px 20px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 20px; margin-top: 20px;">
+                    <div style="width: 48px; height: 48px; background: rgba(255,255,255,0.05); border-radius: 14px; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; color: var(--text-secondary); opacity: 0.5;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 2v4M8 2v4M3 10h18M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                    </div>
+                    <p style="color: var(--text-secondary); font-size: 14px;">No ${currentFilter === 'all' ? 'bookings' : currentFilter + ' bookings'} found</p>
+                </div>
+            `}
         </div>
     `;
 }
 
-function renderModernBookingCard(booking) {
+function buildBookingItemHTML(booking) {
     const isCreator = appState.user.role === 'creator';
     const otherParty = isCreator ? booking.client : booking.creator;
-    const otherPartyName = otherParty?.name || (isCreator ? 'Client' : 'Creator');
-    const otherPartyAvatar = otherParty?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(otherPartyName)}&background=9747FF&color=fff`;
+    const name = otherParty?.name || (isCreator ? 'Client' : 'Creator');
+    const avatar = otherParty?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=9747FF&color=fff`;
+
+    const statusColors = {
+        completed: '#10B981', in_progress: '#3B82F6', confirmed: '#6366F1',
+        awaiting_payment: '#F59E0B', pending: '#9CA3AF', cancelled: '#EF4444'
+    };
+    const sColor = statusColors[booking.status] || '#9CA3AF';
+    const statusLabel = formatStatus(booking.status);
 
     return `
-        <div class="booking-card-modern" onclick="window.viewBookingDetails('${booking._id}')">
-            <div class="booking-user-info">
-                <img src="${otherPartyAvatar}" alt="${otherPartyName}" class="booking-avatar-modern">
-                <div style="flex: 1;">
-                    <div class="booking-username-modern">${otherPartyName}</div>
-                    <div class="booking-role-modern">${isCreator ? 'Client' : 'Creator'} • ${formatDate(booking.startDate || booking.createdAt)}</div>
-                </div>
-                <span class="glass-tag" style="background: ${getStatusColor(booking.status)}15; color: ${getStatusColor(booking.status)}; border-color: ${getStatusColor(booking.status)}30;">
-                    ${formatStatus(booking.status)}
-                </span>
+        <div class="tx-item" onclick="window.viewBookingDetails('${booking._id}')">
+            <div style="width: 44px; height: 44px; min-width: 44px; border-radius: 12px; overflow: hidden; border: 1.5px solid rgba(151,71,255,0.1);">
+                <img src="${avatar}" style="width: 100%; height: 100%; object-fit: cover;">
             </div>
-
-            <h3 class="booking-job-title-modern">${booking.serviceTitle}</h3>
-            
-            <div class="booking-meta-modern">
-                <div style="display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.03); padding: 6px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                    <span>${booking._type === 'project' ? 'Project' : 'Service'}</span>
-                </div>
-                <div style="display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.03); padding: 6px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-                    <span>ID: ${booking._id.slice(-6).toUpperCase()}</span>
-                </div>
+            <div style="flex: 1; min-width: 0;">
+                <div style="font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px;">${booking.serviceTitle || 'Project Collaboration'}</div>
+                <div style="font-size: 12px; color: var(--text-secondary); font-weight: 500;">${name} • ${formatDate(booking.createdAt)}</div>
             </div>
-
-            <div class="booking-footer-modern">
-                <div>
-                    <div style="font-size: 11px; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.5; margin-bottom: 2px;">Escrow Balance</div>
-                    <div class="booking-amount-modern">USDC ${booking.amount ? booking.amount.toFixed(2) : '0.00'}</div>
-                </div>
-                <button class="booking-btn-modern">View Journey</button>
+            <div style="text-align: right; min-width: 80px;">
+                <div style="font-size: 15px; font-weight: 800; color: white; margin-bottom: 2px;">$${(booking.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                <div style="font-size: 11px; font-weight: 700; color: ${sColor}; text-transform: capitalize;">${statusLabel}</div>
             </div>
         </div>
     `;
 }
+
 
 window.filterBookings = function (filter) {
     currentFilter = filter;
