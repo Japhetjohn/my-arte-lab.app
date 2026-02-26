@@ -551,55 +551,101 @@ export async function showApplicationForm(projectId) {
 
     const modalContent = `
         <div class="glass-modal-overlay" onclick="if(event.target === this) closeModal()">
-            <div class="glass-modal-content" style="max-width: 600px;">
-                <div class="glass-modal-header">
-                    <span class="glass-modal-title">Apply to Project</span>
+            <div class="glass-modal-content" style="max-width: 650px; background: rgba(13, 13, 18, 0.95);">
+                <div class="glass-modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 24px;">
+                    <div style="display: flex; align-items: center; gap: 16px;">
+                        <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #9747FF, #6B46FF); border-radius: 14px; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(151,71,255,0.3);">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        </div>
+                        <div>
+                            <span class="glass-modal-title" style="margin: 0; font-size: 22px;">Apply to Project</span>
+                            <div style="color: var(--text-secondary); font-size: 13px; opacity: 0.6; font-weight: 500; margin-top: 2px;">Submit your best proposal to standard out</div>
+                        </div>
+                    </div>
                     <button class="glass-modal-close" onclick="closeModal()">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
                     </button>
                 </div>
 
-                <div class="glass-modal-body">
-                    <div style="background: rgba(151, 71, 255, 0.05); border: 1px solid rgba(151, 71, 255, 0.15); border-radius: 20px; padding: 20px; margin-bottom: 32px;">
-                        <div style="color: var(--primary); font-size: 14px; font-weight: 800; margin-bottom: 12px;">Application Tips:</div>
-                        <ul style="color: var(--text-secondary); font-size: 13px; margin: 0; padding-left: 20px; line-height: 1.8; opacity: 0.8;">
-                            <li>Highlight relevant experience and showcase your best work</li>
-                            <li>Be specific about your approach and timeline</li>
-                            <li>Propose a competitive but fair budget</li>
-                        </ul>
+                <div class="glass-modal-body" style="padding-top: 32px;">
+                    <div style="background: linear-gradient(135deg, rgba(151, 71, 255, 0.1), rgba(107, 70, 255, 0.05)); border: 1px solid rgba(151, 71, 255, 0.2); border-radius: 20px; padding: 24px; margin-bottom: 32px; display: flex; gap: 20px; align-items: flex-start;">
+                        <div style="color: var(--primary); background: rgba(151, 71, 255, 0.15); width: 32px; height: 32px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="color: var(--text-primary); font-size: 14px; font-weight: 800; margin-bottom: 8px;">Pro-Tips for Success:</div>
+                            <ul style="color: var(--text-secondary); font-size: 13px; margin: 0; padding-left: 16px; line-height: 1.8; opacity: 0.9; font-weight: 500;">
+                                <li>Be specific about your <span style="color: var(--primary); font-weight: 700;">unique approach</span></li>
+                                <li>Include relevant links to your <span style="color: var(--primary); font-weight: 700;">best past work</span></li>
+                                <li>Propose a timeline that is <span style="color: var(--primary); font-weight: 700;">realistic and clear</span></li>
+                            </ul>
+                        </div>
                     </div>
 
-                    <form id="applicationForm" style="display: flex; flex-direction: column; gap: 24px;">
-                        <div>
-                            <label class="glass-form-label">Cover Letter *</label>
-                            <textarea name="coverLetter" class="glass-input" rows="6" placeholder="Explain why you're the best fit for this project..." required maxlength="2000"></textarea>
-                            <div style="text-align: right; font-size: 11px; color: var(--text-secondary); margin-top: 6px; opacity: 0.6;"><span id="coverLetterCount">0</span>/2000</div>
-                        </div>
-
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                            <div>
-                                <label class="glass-form-label">Proposed Budget (USDC) *</label>
-                                <input type="number" name="proposedBudget" class="glass-input" placeholder="Price" required min="0" step="1">
+                    <form id="applicationForm" style="display: flex; flex-direction: column; gap: 32px;">
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <span style="font-size: 11px; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 0.1em;">Section 01</span>
+                                <div style="height: 1px; flex: 1; background: linear-gradient(to right, rgba(151,71,255,0.2), transparent);"></div>
                             </div>
-                            <div>
-                                <label class="glass-form-label">Timeline *</label>
-                                <input type="text" name="proposedTimeline" class="glass-input" placeholder="e.g., 2 weeks" required maxlength="200">
+                            <h4 style="margin: 0; font-size: 16px; font-weight: 800; color: var(--text-primary);">The Pitch (Cover Letter)</h4>
+                            <div style="position: relative;">
+                                <textarea name="coverLetter" class="glass-input" rows="7" placeholder="Why are you the perfect fit for this? Share your vision..." required maxlength="2000" style="padding: 16px; background: rgba(0,0,0,0.2); border-color: rgba(255,255,255,0.08);"></textarea>
+                                <div style="text-align: right; font-size: 11px; color: var(--text-secondary); margin-top: 8px; font-weight: 700; opacity: 0.6; font-family: 'JetBrains Mono', monospace;">
+                                    <span id="coverLetterCount">0</span>/2000
+                                </div>
                             </div>
                         </div>
 
-                        <div>
-                            <label class="glass-form-label">Portfolio Links (Optional)</label>
-                            <input type="text" id="portfolioLinkInput" class="glass-input" placeholder="Paste link and press Enter">
-                            <div id="portfolioLinksList" style="margin-top: 12px; display: flex; flex-direction: column; gap: 8px;"></div>
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <span style="font-size: 11px; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 0.1em;">Section 02</span>
+                                <div style="height: 1px; flex: 1; background: linear-gradient(to right, rgba(151,71,255,0.2), transparent);"></div>
+                            </div>
+                            <h4 style="margin: 0; font-size: 16px; font-weight: 800; color: var(--text-primary);">The Offer (Price & Timing)</h4>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                                <div>
+                                    <label class="glass-form-label" style="margin-bottom: 8px; font-size: 12px; opacity: 0.8;">Budget (USDC) *</label>
+                                    <div style="position: relative;">
+                                        <input type="number" name="proposedBudget" class="glass-input" placeholder="0.00" required min="1" step="0.01" style="padding-left: 36px; background: rgba(0,0,0,0.2); border-color: rgba(255,255,255,0.08);">
+                                        <div style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--primary); font-weight: 800; font-size: 14px;">$</div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="glass-form-label" style="margin-bottom: 8px; font-size: 12px; opacity: 0.8;">Timeline *</label>
+                                    <div style="position: relative;">
+                                        <input type="text" name="proposedTimeline" class="glass-input" placeholder="e.g., 5-7 business days" required maxlength="200" style="padding-left: 36px; background: rgba(0,0,0,0.2); border-color: rgba(255,255,255,0.08);">
+                                        <div style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--primary);">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
-                        <div style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.15); border-radius: 16px; padding: 16px; font-size: 13px; color: #10B981; font-weight: 600; text-align: center;">
-                            Note: You can edit or withdraw your application before the client reviews it.
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <span style="font-size: 11px; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 0.1em;">Section 03</span>
+                                <div style="height: 1px; flex: 1; background: linear-gradient(to right, rgba(151,71,255,0.2), transparent);"></div>
+                            </div>
+                            <h4 style="margin: 0; font-size: 16px; font-weight: 800; color: var(--text-primary);">Supporting Proof (Portfolio)</h4>
+                            <div style="position: relative;">
+                                <input type="text" id="portfolioLinkInput" class="glass-input" placeholder="Paste link and press Enter" style="padding-right: 100px; background: rgba(0,0,0,0.2); border-color: rgba(255,255,255,0.08);">
+                                <div style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: rgba(151,71,255,0.1); color: var(--primary); font-size: 10px; font-weight: 800; padding: 4px 10px; border-radius: 6px; letter-spacing: 0.05em; border: 1px solid rgba(151,71,255,0.2);">PRESS ENTER</div>
+                            </div>
+                            <div id="portfolioLinksList" style="margin-top: 12px; display: flex; flex-direction: column; gap: 10px;"></div>
                         </div>
 
-                        <div style="display: flex; gap: 16px; margin-top: 12px;">
-                            <button type="button" class="glass-btn-ghost" onclick="closeModal()" style="flex: 1;">Cancel</button>
-                            <button type="submit" class="glass-btn-primary" id="submitApplicationBtn" style="flex: 2;">Submit Application</button>
+                        <div style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.15); border-radius: 18px; padding: 16px; font-size: 12px; color: #10B981; font-weight: 600; display: flex; align-items: center; gap: 12px;">
+                            <div style="width: 24px; height: 24px; border-radius: 50%; background: rgba(16, 185, 129, 0.1); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><path d="M20 6L9 17l-5-5"/></svg>
+                            </div>
+                            <span>Editable before client review.</span>
+                        </div>
+
+                        <div style="display: flex; gap: 16px; margin-top: 8px;">
+                            <button type="button" class="glass-btn-ghost" onclick="closeModal()" style="flex: 1; font-weight: 700;">Cancel</button>
+                            <button type="submit" class="glass-btn-primary" id="submitApplicationBtn" style="flex: 2; font-weight: 800; font-size: 16px; box-shadow: 0 12px 24px rgba(151,71,255,0.25);">Submit Application</button>
                         </div>
                     </form>
                 </div>

@@ -74,26 +74,47 @@ window.showLoadingSpinner = function (message = 'Loading...') {
     const spinner = document.createElement('div');
     spinner.id = 'globalLoadingSpinner';
     spinner.innerHTML = `
-        <div class="modal" style="z-index: 10000; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);">
-            <div class="modal-content glass-effect" style="max-width: 300px; text-align: center; padding: 40px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.4); box-shadow: 0 12px 40px rgba(0,0,0,0.2);">
-                <div style="margin-bottom: 20px;">
-                    <div class="spinner" style="
-                        border: 4px solid rgba(151,71,255,0.2);
-                        border-left-color: var(--primary);
+        <div class="modal" style="z-index: 10000; background: rgba(0,0,0,0.6); backdrop-filter: blur(12px);">
+            <div class="modal-content glass-effect" style="max-width: 320px; text-align: center; padding: 50px 40px; border-radius: 32px; border: 1px solid rgba(255,255,255,0.25); box-shadow: 0 24px 80px rgba(0,0,0,0.4); background: rgba(255,255,255,0.05);">
+                <div style="margin-bottom: 30px; position: relative; width: 80px; height: 80px; margin-left: auto; margin-right: auto;">
+                    <div style="
+                        position: absolute;
+                        inset: -15px;
                         border-radius: 50%;
-                        width: 50px;
-                        height: 50px;
-                        animation: spin 1s linear infinite;
-                        margin: 0 auto;
+                        background: radial-gradient(circle, var(--primary) 0%, transparent 70%);
+                        opacity: 0.2;
+                        animation: pulse 2s ease-in-out infinite;
                     "></div>
+                    <img src="logo.PNG" alt="Loading..." style="
+                        width: 100%;
+                        height: 100%;
+                        object-fit: contain;
+                        filter: drop-shadow(0 0 15px rgba(151,71,255,0.4));
+                        animation: logo-float 3s ease-in-out infinite;
+                    ">
                 </div>
-                <p style="color: var(--text-primary); font-weight: 600; margin: 0; font-size: 16px;">${message}</p>
+                <p style="color: var(--text-primary); font-weight: 800; margin: 0; font-size: 18px; letter-spacing: -0.01em;">${message}</p>
+                <div style="margin-top: 16px; display: flex; justify-content: center; gap: 6px;">
+                    <div class="dot" style="width: 6px; height: 6px; background: var(--primary); border-radius: 50%; animation: dot-bounce 1.4s infinite 0s;"></div>
+                    <div class="dot" style="width: 6px; height: 6px; background: var(--primary); border-radius: 50%; animation: dot-bounce 1.4s infinite 0.2s;"></div>
+                    <div class="dot" style="width: 6px; height: 6px; background: var(--primary); border-radius: 50%; animation: dot-bounce 1.4s infinite 0.4s;"></div>
+                </div>
             </div>
         </div>
         <style>
-            @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
+            @keyframes pulse {
+                0% { transform: scale(0.95); opacity: 0.1; }
+                50% { transform: scale(1.1); opacity: 0.3; }
+                100% { transform: scale(0.95); opacity: 0.1; }
+            }
+            @keyframes logo-float {
+                0% { transform: translateY(0) rotate(0deg); }
+                50% { transform: translateY(-10px) rotate(5deg); }
+                100% { transform: translateY(0) rotate(0deg); }
+            }
+            @keyframes dot-bounce {
+                0%, 80%, 100% { transform: scale(0); opacity: 0.3; }
+                40% { transform: scale(1); opacity: 1; }
             }
         </style>
     `;
