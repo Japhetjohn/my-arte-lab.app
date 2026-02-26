@@ -2,6 +2,7 @@ import { appState, setUser, clearUser } from './state.js';
 import { navigateToPage } from './navigation.js';
 import { showToast, closeModal, openModal } from './utils.js';
 import api from './services/api.js';
+import { syncWalletBackground } from './pages/wallet.js';
 import { getAvatarUrl } from './utils/avatar.js';
 import { COUNTRIES_ALPHABETICAL } from './data/countries.js';
 
@@ -524,6 +525,12 @@ async function updateNotificationBadge() {
                 if (unreadCount > 0) {
                     badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
                     badge.style.display = 'flex';
+
+                    // Trigger immediate wallet sync if on wallet page and new notification arrives
+                    if (appState.currentPage === 'wallet') {
+                        console.log('[Notification Sync] New notification detected, syncing wallet...');
+                        syncWalletBackground();
+                    }
                 } else {
                     badge.style.display = 'none';
                 }

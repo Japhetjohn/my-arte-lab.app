@@ -7,6 +7,7 @@ import { renderProfilePage } from './pages/profile.js';
 import { renderSettingsPage } from './pages/settings.js';
 import { renderFavoritesPage } from './pages/favorites.js';
 import { renderNotificationsPage } from './pages/notifications.js';
+import { renderWalletPage, startWalletPolling, stopWalletPolling } from './pages/wallet.js';
 import { addPageTransition, initScrollAnimations, init2025Effects } from './utils.js';
 
 export function navigateToPage(page, addToHistoryFlag = true) {
@@ -15,6 +16,11 @@ export function navigateToPage(page, addToHistoryFlag = true) {
         addToHistory(appState.currentPage);
         const urlPath = page === 'home' ? '/' : `/${page}`;
         history.pushState({ page }, '', urlPath);
+    }
+
+    // Stop wallet polling if we are navigating away from wallet
+    if (appState.currentPage === 'wallet' && page !== 'wallet') {
+        stopWalletPolling();
     }
 
     setCurrentPage(page);
@@ -53,6 +59,7 @@ export function navigateToPage(page, addToHistoryFlag = true) {
                 break;
             case 'wallet':
                 renderWalletPage();
+                startWalletPolling();
                 break;
             case 'profile':
                 renderProfilePage();

@@ -23,6 +23,8 @@ const assetColors = {
 let walletData = null;
 let transactions = [];
 let recentBookings = [];
+let walletPollingInterval = null;
+const POLLING_INTERVAL = 10000; // 10 seconds
 
 export async function renderWalletPage() {
     const mainContent = document.getElementById('mainContent');
@@ -117,6 +119,69 @@ export async function renderWalletPage() {
                 <button class="btn-primary" onclick="window.location.reload()">Try again</button>
             </div>
         `;
+    }
+}
+
+/**
+ * Perform a background sync of wallet data without spinners
+ * to allow for a seamless "live" update experience.
+ */
+export async function syncWalletBackground() {
+    if (!appState.user || appState.currentPage !== 'wallet') return;
+
+    try {
+        const [walletResponse, transactionsResponse] = await Promise.all([
+            api.getHostfiWallet(),
+            api.getHostfiTransactions(1, 10)
+        ]);
+
+        if (walletResponse.success) {
+            const newData = walletResponse.data.wallet;
+            const newTransactions = transactionsResponse.data?.transactions || [];
+
+            // Detect changes before re-rendering to prevent unnecessary DOM flickering
+            const currentTotal = walletData?.balance || 0;
+            const newTotal = newData?.balance || 0;
+
+            const currentTxCount = transactions?.length || 0;
+            const newTxCount = newTransactions?.length || 0;
+
+            if (currentTotal !== newTotal || currentTxCount !== newTxCount) {
+                console.log('[Wallet Polling] Change detected, updating UI...');
+                walletData = newData;
+                window.walletData = walletData;
+                transactions = newTransactions;
+
+                const content = document.getElementById('walletContent');
+                if (content && content.style.display === 'block') {
+                    content.innerHTML = buildWalletHTML();
+                }
+            }
+        }
+    } catch (error) {
+        // Silently fail background sync to avoid annoying the user
+        console.warn('[Wallet Polling] Background sync failed:', error.message);
+    }
+}
+
+/**
+ * Start 10-second polling for wallet updates
+ */
+export function startWalletPolling() {
+    if (walletPollingInterval) return;
+
+    console.log('[Wallet Polling] Starting...');
+    walletPollingInterval = setInterval(syncWalletBackground, POLLING_INTERVAL);
+}
+
+/**
+ * Stop wallet polling
+ */
+export function stopWalletPolling() {
+    if (walletPollingInterval) {
+        console.log('[Wallet Polling] Stopping...');
+        clearInterval(walletPollingInterval);
+        walletPollingInterval = null;
     }
 }
 
