@@ -84,21 +84,20 @@ window.showLoadingSpinner = function () {
     `;
 
     spinner.innerHTML = `
-        <div style="position: relative; width: 100px; height: 100px; display: flex; align-items: center; justify-content: center;">
+        <div style="position: relative; width: 120px; height: 120px; display: flex; align-items: center; justify-content: center;">
             <img src="logo.PNG" alt="Loading..." style="
                 width: 100%;
                 height: 100%;
                 object-fit: contain;
-                animation: logo-spin-bounce 2s ease-in-out infinite;
+                filter: drop-shadow(0 0 20px rgba(151,71,255,0.25));
+                animation: logo-premium-motion 2.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
             ">
         </div>
         <style>
-            @keyframes logo-spin-bounce {
-                0% { transform: scale(1) rotate(0deg); }
-                25% { transform: scale(1.1) rotate(15deg); }
-                50% { transform: scale(1) rotate(0deg); }
-                75% { transform: scale(1.1) rotate(-15deg); }
-                100% { transform: scale(1) rotate(0deg); }
+            @keyframes logo-premium-motion {
+                0% { transform: scale(0.98) rotate(-10deg); }
+                50% { transform: scale(1.1) rotate(10deg); }
+                100% { transform: scale(0.98) rotate(-10deg); }
             }
         </style>
     `;
