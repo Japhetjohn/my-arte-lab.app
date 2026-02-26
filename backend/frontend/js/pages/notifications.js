@@ -75,7 +75,7 @@ function renderNotificationsList() {
     const readNotifications = notifications.filter(n => n.read);
 
     mainContent.innerHTML = `
-        < div class="section" >
+        <div class="section">
             <div class="container">
                 <div class="glass-effect" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding: 24px; border-radius: 20px;">
                     <h1 style="margin: 0;">Notifications ${unreadCount > 0 ? `<span class="tag" style="background: #FF6B35; color: white; font-size: 14px; margin-left: 8px; border: none;">${unreadCount} new</span>` : ''}</h1>
