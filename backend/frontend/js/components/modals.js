@@ -67,54 +67,38 @@ function getUserCountryData() {
 }
 
 
-window.showLoadingSpinner = function (message = 'Loading...') {
+window.showLoadingSpinner = function () {
     const existingSpinner = document.getElementById('globalLoadingSpinner');
     if (existingSpinner) existingSpinner.remove();
 
     const spinner = document.createElement('div');
     spinner.id = 'globalLoadingSpinner';
+    spinner.style.cssText = `
+        position: fixed;
+        inset: 0;
+        z-index: 99999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+    `;
+
     spinner.innerHTML = `
-        <div class="modal" style="z-index: 10000; background: rgba(0,0,0,0.6); backdrop-filter: blur(12px);">
-            <div class="modal-content glass-effect" style="max-width: 320px; text-align: center; padding: 50px 40px; border-radius: 32px; border: 1px solid rgba(255,255,255,0.25); box-shadow: 0 24px 80px rgba(0,0,0,0.4); background: rgba(255,255,255,0.05);">
-                <div style="margin-bottom: 30px; position: relative; width: 80px; height: 80px; margin-left: auto; margin-right: auto;">
-                    <div style="
-                        position: absolute;
-                        inset: -15px;
-                        border-radius: 50%;
-                        background: radial-gradient(circle, var(--primary) 0%, transparent 70%);
-                        opacity: 0.2;
-                        animation: pulse 2s ease-in-out infinite;
-                    "></div>
-                    <img src="logo.PNG" alt="Loading..." style="
-                        width: 100%;
-                        height: 100%;
-                        object-fit: contain;
-                        filter: drop-shadow(0 0 15px rgba(151,71,255,0.4));
-                        animation: logo-float 3s ease-in-out infinite;
-                    ">
-                </div>
-                <p style="color: var(--text-primary); font-weight: 800; margin: 0; font-size: 18px; letter-spacing: -0.01em;">${message}</p>
-                <div style="margin-top: 16px; display: flex; justify-content: center; gap: 6px;">
-                    <div class="dot" style="width: 6px; height: 6px; background: var(--primary); border-radius: 50%; animation: dot-bounce 1.4s infinite 0s;"></div>
-                    <div class="dot" style="width: 6px; height: 6px; background: var(--primary); border-radius: 50%; animation: dot-bounce 1.4s infinite 0.2s;"></div>
-                    <div class="dot" style="width: 6px; height: 6px; background: var(--primary); border-radius: 50%; animation: dot-bounce 1.4s infinite 0.4s;"></div>
-                </div>
-            </div>
+        <div style="position: relative; width: 100px; height: 100px; display: flex; align-items: center; justify-content: center;">
+            <img src="logo.PNG" alt="Loading..." style="
+                width: 100%;
+                height: 100%;
+                object-fit: contain;
+                animation: logo-spin-bounce 2s ease-in-out infinite;
+            ">
         </div>
         <style>
-            @keyframes pulse {
-                0% { transform: scale(0.95); opacity: 0.1; }
-                50% { transform: scale(1.1); opacity: 0.3; }
-                100% { transform: scale(0.95); opacity: 0.1; }
-            }
-            @keyframes logo-float {
-                0% { transform: translateY(0) rotate(0deg); }
-                50% { transform: translateY(-10px) rotate(5deg); }
-                100% { transform: translateY(0) rotate(0deg); }
-            }
-            @keyframes dot-bounce {
-                0%, 80%, 100% { transform: scale(0); opacity: 0.3; }
-                40% { transform: scale(1); opacity: 1; }
+            @keyframes logo-spin-bounce {
+                0% { transform: scale(1) rotate(0deg); }
+                25% { transform: scale(1.1) rotate(15deg); }
+                50% { transform: scale(1) rotate(0deg); }
+                75% { transform: scale(1.1) rotate(-15deg); }
+                100% { transform: scale(1) rotate(0deg); }
             }
         </style>
     `;

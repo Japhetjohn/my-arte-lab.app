@@ -116,7 +116,7 @@ export async function renderHomePage() {
     `;
 
     setupFilterListeners();
-    window.showLoadingSpinner('Discovering creators...');
+    window.showLoadingSpinner();
     await loadCreators();
 }
 

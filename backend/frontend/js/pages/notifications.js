@@ -51,19 +51,19 @@ export async function renderNotificationsPage() {
         console.error('Failed to load notifications:', error);
         window.hideLoadingSpinner();
         mainContent.innerHTML = `
-        < div class="section" >
-            <div class="container">
-                <div class="empty-state glass-effect" style="margin: 40px auto; max-width: 500px; border-radius: 24px; padding: 40px 20px; border-color: rgba(239, 68, 68, 0.3);">
-                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" style="opacity: 0.4; margin-bottom: 16px; color: var(--error);">
-                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" />
-                        <path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                    </svg>
-                    <h3>Failed to load notifications</h3>
-                    <p>${error.message}</p>
-                    <button class="btn-primary" onclick="window.location.reload()">Try again</button>
+            <div class="section">
+                <div class="container">
+                    <div class="empty-state glass-effect" style="margin: 40px auto; max-width: 500px; border-radius: 24px; padding: 40px 20px; border-color: rgba(239, 68, 68, 0.3);">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" style="opacity: 0.4; margin-bottom: 16px; color: var(--error);">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                            <path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                        <h3>Failed to load notifications</h3>
+                        <p>${error.message}</p>
+                        <button class="btn-primary" onclick="window.location.reload()">Try again</button>
+                    </div>
                 </div>
             </div>
-            </div >
         `;
     }
 }
