@@ -76,7 +76,7 @@ export async function renderWalletPage() {
         </style>
     `;
 
-    window.showLoadingSpinner('Loading your wallet...');
+    window.showLoadingSpinner();
 
     try {
         const [walletResponse, transactionsResponse, bookingsResponse] = await Promise.all([

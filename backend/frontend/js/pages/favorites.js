@@ -7,7 +7,7 @@ export async function renderFavoritesPage() {
     setCurrentPage('favorites');
     const mainContent = document.getElementById('mainContent');
 
-    window.showLoadingSpinner('Loading your favorites...');
+    window.showLoadingSpinner();
 
     try {
         const response = await api.getFavorites();

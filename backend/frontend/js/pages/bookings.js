@@ -65,7 +65,7 @@ export async function renderBookingsPage() {
         </style>
     `;
 
-    window.showLoadingSpinner('Loading your bookings...');
+    window.showLoadingSpinner();
 
     try {
         const [bookingsResp, projectsResp] = await Promise.all([

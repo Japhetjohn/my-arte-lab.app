@@ -36,7 +36,7 @@ export async function renderNotificationsPage() {
         </div>
     `;
 
-    window.showLoadingSpinner('Loading notifications...');
+    window.showLoadingSpinner();
 
     try {
         const response = await api.getNotifications();

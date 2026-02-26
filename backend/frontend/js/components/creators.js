@@ -81,7 +81,7 @@ export async function renderCreatorProfile(creatorIdOrObject) {
 
     if (creatorId) {
         try {
-            window.showLoadingSpinner('Loading creator profile...');
+            window.showLoadingSpinner();
 
             const response = await api.getCreatorProfile(creatorId);
 
