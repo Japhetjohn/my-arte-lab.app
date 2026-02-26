@@ -54,7 +54,7 @@ exports.getWallet = catchAsync(async (req, res, next) => {
     }
 
     return {
-      ...asset.toObject(),
+      ...(asset.toObject ? asset.toObject() : asset),
       usdEquivalent: parseFloat(usdEquivalent.toFixed(2))
     };
   }));
@@ -138,7 +138,7 @@ exports.getBalanceSummary = catchAsync(async (req, res, next) => {
     }
 
     return {
-      ...asset.toObject(),
+      ...(asset.toObject ? asset.toObject() : asset),
       usdEquivalent: parseFloat(usdEquivalent.toFixed(2))
     };
   }));

@@ -205,9 +205,16 @@ const userSchema = new mongoose.Schema({
       type: Number,
       default: 0
     },
-    colAddress: String,     // Collection address (for crypto/fiat deposits)
     colNetwork: String,     // Network for the collection address
-    lastSynced: Date
+    lastSynced: Date,
+    hostfiWalletAssets: [{
+      assetId: String,
+      currency: String,
+      assetType: String,
+      balance: { type: Number, default: 0 },
+      reservedBalance: { type: Number, default: 0 },
+      lastSynced: { type: Date, default: Date.now }
+    }]
   },
 
   // Legacy Solana wallet (deprecated - will be removed)
