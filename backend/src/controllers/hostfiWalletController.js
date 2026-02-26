@@ -310,7 +310,6 @@ exports.createCryptoAddress = catchAsync(async (req, res, next) => {
   }
 
   // Save address to user wallet for quick access
-  const user = await User.findById(req.user._id);
   user.wallet.address = address.address;
   user.wallet.network = 'Solana';
   user.wallet.lastUpdated = new Date();

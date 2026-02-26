@@ -27,18 +27,18 @@ class HostFiWalletService {
 
       console.log(`Initializing HostFi wallets for user ${userId}...`);
 
-      // Get all available wallet assets from HostFi
-      // HostFi automatically provisions wallets for each supported currency
+      // Sync multi-currency assets (managed via HostFi)
+      console.log(`[Wallet Service] Syncing HostFi assets for user ${userId}...`);
       const walletAssets = await hostfiService.getUserWallets();
 
       if (!walletAssets || walletAssets.length === 0) {
         throw new Error('No wallet assets available from HostFi');
       }
 
-      // Initialize Tsara local wallet if missing
+      // Create/Sync Tsara Local Solana Wallet
       if (!user.wallet.tsaraAddress) {
         const tsaraService = require('./tsaraService');
-        console.log(`Initializing Tsara local wallet for user ${userId}...`);
+        console.log(`[Tsara Service] Generating local Solana wallet for user ${userId}...`);
 
         try {
           const tsaraWallet = await tsaraService.createWallet(
@@ -59,9 +59,10 @@ class HostFiWalletService {
               user.wallet.address = tsaraWallet.data.primary_address;
               user.wallet.network = 'Solana';
             }
+            console.log(`[Tsara Service] Local Solana wallet created: ${user.wallet.tsaraAddress}`);
           }
         } catch (tsaraError) {
-          console.error(`Failed to create Tsara wallet for user ${userId}:`, tsaraError.message);
+          console.error(`[Tsara Service] Failed to create local wallet for user ${userId}:`, tsaraError.message);
           // Don't fail the whole initialization if Tsara fails
         }
       }
