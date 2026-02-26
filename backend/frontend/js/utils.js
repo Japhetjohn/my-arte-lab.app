@@ -153,31 +153,7 @@ export function initScrollAnimations() {
     });
 }
 
-// Skeleton Loader HTML Generator
-export function createSkeletonCard() {
-    return `
-        <div class="skeleton-card">
-            <div style="display: flex; gap: 16px; margin-bottom: 16px;">
-                <div class="skeleton skeleton-avatar"></div>
-                <div style="flex: 1;">
-                    <div class="skeleton skeleton-line" style="width: 60%; margin-bottom: 8px;"></div>
-                    <div class="skeleton skeleton-line short"></div>
-                </div>
-            </div>
-            <div class="skeleton" style="height: 180px; margin-bottom: 12px;"></div>
-            <div class="skeleton skeleton-text"></div>
-            <div class="skeleton skeleton-text medium"></div>
-        </div>
-    `;
-}
-
-export function showSkeletonLoaders(count = 6) {
-    let skeletons = '';
-    for (let i = 0; i < count; i++) {
-        skeletons += createSkeletonCard();
-    }
-    return `<div class="creators-grid">${skeletons}</div>`;
-}
+// Branded Loader has replaced Skeletons globally for a more premium experience.
 
 // Add button ripple effect programmatically
 export function addButtonRipple(button, e) {

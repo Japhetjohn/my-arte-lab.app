@@ -81,19 +81,7 @@ export async function renderCreatorProfile(creatorIdOrObject) {
 
     if (creatorId) {
         try {
-            mainContent.innerHTML = `
-                <div class="section">
-                    <div class="container">
-                        <div class="text-center" style="padding: 60px 20px;">
-                            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" style="opacity: 0.4; margin-bottom: 16px;">
-                                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-                                <path d="M12 12l3-3M12 12V8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                            </svg>
-                            <p class="text-secondary">Loading profile...</p>
-                        </div>
-                    </div>
-                </div>
-            `;
+            window.showLoadingSpinner('Loading creator profile...');
 
             const response = await api.getCreatorProfile(creatorId);
 
@@ -121,10 +109,12 @@ export async function renderCreatorProfile(creatorIdOrObject) {
                     metrics: apiCreator.metrics || {},
                     badges: apiCreator.badges || []
                 };
+                window.hideLoadingSpinner();
             } else {
                 throw new Error('Failed to load creator profile');
             }
         } catch (error) {
+            window.hideLoadingSpinner();
             mainContent.innerHTML = `
                 <div class="section">
                     <div class="container">

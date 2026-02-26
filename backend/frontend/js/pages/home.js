@@ -1,7 +1,7 @@
 import { appState } from '../state.js';
 import api from '../services/api.js';
 import { formatLocation } from '../utils/formatters.js';
-import { showSkeletonLoaders, calculateCreatorScore, getCreatorTier, sortCreatorsByRelevance } from '../utils.js';
+import { calculateCreatorScore, getCreatorTier, sortCreatorsByRelevance } from '../utils.js';
 
 let creators = [];
 let currentFilters = {
@@ -109,14 +109,14 @@ export async function renderHomePage() {
         </div>
 
         <div class="section" id="homeResults">
-            <div class="container">
-                ${showSkeletonLoaders(6)}
+            <div class="container" id="creatorsContainer">
+                <!-- Content will be loaded here -->
             </div>
         </div>
     `;
 
     setupFilterListeners();
-
+    window.showLoadingSpinner('Discovering creators...');
     await loadCreators();
 }
 
@@ -177,11 +177,12 @@ async function loadCreators() {
             }
 
             appState.creators = creators;
-
+            window.hideLoadingSpinner();
             renderCreatorsList();
         }
     } catch (error) {
         console.error('Failed to load creators:', error);
+        window.hideLoadingSpinner();
         const mainContent = document.getElementById('mainContent');
         mainContent.innerHTML = `
             <div class="section">

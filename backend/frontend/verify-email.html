@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -32,8 +33,13 @@
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         .success-icon {
@@ -71,31 +77,113 @@
         }
     </style>
 </head>
+
 <body>
-    <div class="verify-container">
+    <div class="verify-container"
+        style="max-width: 500px; margin: 100px auto; padding: 40px; text-align: center; background: rgba(13, 13, 18, 0.95); border-radius: 24px; border: 1px solid rgba(255,255,255,0.08); backdrop-filter: blur(12px); box-shadow: 0 24px 80px rgba(0,0,0,0.4);">
         <div id="loading-state">
-            <h1>Verifying Your Email</h1>
-            <div class="spinner"></div>
-            <p>Please wait while we verify your email address...</p>
+            <div
+                style="margin-bottom: 30px; position: relative; width: 80px; height: 80px; margin-left: auto; margin-right: auto;">
+                <div style="
+                    position: absolute;
+                    inset: -15px;
+                    border-radius: 50%;
+                    background: radial-gradient(circle, #9747FF 0%, transparent 70%);
+                    opacity: 0.2;
+                    animation: pulse 2s ease-in-out infinite;
+                "></div>
+                <img src="logo.PNG" alt="Loading..." style="
+                    width: 100%;
+                    height: 100%;
+                    object-fit: contain;
+                    filter: drop-shadow(0 0 15px rgba(151,71,255,0.4));
+                    animation: logo-float 3s ease-in-out infinite;
+                ">
+            </div>
+            <h1 style="color: white; font-size: 24px; margin-bottom: 12px; font-weight: 800; letter-spacing: -0.02em;">
+                Verifying Your Email</h1>
+            <p style="color: rgba(255,255,255,0.6); font-size: 16px; line-height: 1.6;">Please wait while we secure your
+                account...</p>
+            <div style="margin-top: 24px; display: flex; justify-content: center; gap: 6px;">
+                <div class="dot"
+                    style="width: 6px; height: 6px; background: #9747FF; border-radius: 50%; animation: dot-bounce 1.4s infinite 0s;">
+                </div>
+                <div class="dot"
+                    style="width: 6px; height: 6px; background: #9747FF; border-radius: 50%; animation: dot-bounce 1.4s infinite 0.2s;">
+                </div>
+                <div class="dot"
+                    style="width: 6px; height: 6px; background: #9747FF; border-radius: 50%; animation: dot-bounce 1.4s infinite 0.4s;">
+                </div>
+            </div>
         </div>
+
+        <style>
+            @keyframes pulse {
+                0% {
+                    transform: scale(0.95);
+                    opacity: 0.1;
+                }
+
+                50% {
+                    transform: scale(1.1);
+                    opacity: 0.3;
+                }
+
+                100% {
+                    transform: scale(0.95);
+                    opacity: 0.1;
+                }
+            }
+
+            @keyframes logo-float {
+                0% {
+                    transform: translateY(0) rotate(0deg);
+                }
+
+                50% {
+                    transform: translateY(-10px) rotate(5deg);
+                }
+
+                100% {
+                    transform: translateY(0) rotate(0deg);
+                }
+            }
+
+            @keyframes dot-bounce {
+
+                0%,
+                80%,
+                100% {
+                    transform: scale(0);
+                    opacity: 0.3;
+                }
+
+                40% {
+                    transform: scale(1);
+                    opacity: 1;
+                }
+            }
+        </style>
 
         <div id="success-state" style="display: none;">
             <div class="success-icon">
                 <svg width="64" height="64" viewBox="0 0 24 24" fill="none">
-                    <circle cx="12" cy="12" r="10" fill="rgba(16, 185, 129, 0.2)" stroke="#10B981" stroke-width="2"/>
-                    <path d="M9 12l2 2 4-4" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="12" cy="12" r="10" fill="rgba(16, 185, 129, 0.2)" stroke="#10B981" stroke-width="2" />
+                    <path d="M9 12l2 2 4-4" stroke="#10B981" stroke-width="2.5" stroke-linecap="round"
+                        stroke-linejoin="round" />
                 </svg>
             </div>
             <h1>Email Verified!</h1>
-            <p class="message">Your email has been successfully verified. You can now access all features of MyArteLab.</p>
+            <p class="message">Your email has been successfully verified. You can now access all features of MyArteLab.
+            </p>
             <a href="index.html" class="btn-primary">Go to Dashboard</a>
         </div>
 
         <div id="error-state" style="display: none;">
             <div class="error-icon">
                 <svg width="64" height="64" viewBox="0 0 24 24" fill="none">
-                    <circle cx="12" cy="12" r="10" stroke="#EF4444" stroke-width="2"/>
-                    <path d="M15 9l-6 6M9 9l6 6" stroke="#EF4444" stroke-width="2" stroke-linecap="round"/>
+                    <circle cx="12" cy="12" r="10" stroke="#EF4444" stroke-width="2" />
+                    <path d="M15 9l-6 6M9 9l6 6" stroke="#EF4444" stroke-width="2" stroke-linecap="round" />
                 </svg>
             </div>
             <h1>Verification Failed</h1>
@@ -107,8 +195,8 @@
     <script>
         // API Configuration - dynamically detect environment
         const API_URL = (window.location.hostname === 'localhost' ||
-                         window.location.hostname === '127.0.0.1' ||
-                         window.location.hostname.startsWith('192.168'))
+            window.location.hostname === '127.0.0.1' ||
+            window.location.hostname.startsWith('192.168'))
             ? 'http://localhost:5000/api'
             : `${window.location.origin}/api`;
 
@@ -167,4 +255,5 @@
         verifyEmail();
     </script>
 </body>
+
 </html>

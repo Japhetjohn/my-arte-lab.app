@@ -58,19 +58,9 @@ export async function renderWalletPage() {
                     Refresh
                 </button>
             </div>
-            <div id="walletSkeleton">
-                <div style="background: linear-gradient(135deg, rgba(151,71,255,0.3), rgba(107,70,255,0.3)); border-radius: 24px; height: 220px; margin-bottom: 16px; animation: pulse 1.5s ease-in-out infinite;"></div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 24px;">
-                    <div style="height: 54px; background: rgba(255,255,255,0.08); border-radius: 14px; animation: pulse 1.5s ease-in-out infinite;"></div>
-                    <div style="height: 54px; background: rgba(255,255,255,0.08); border-radius: 14px; animation: pulse 1.5s ease-in-out infinite 0.1s;"></div>
-                    <div style="height: 54px; background: rgba(255,255,255,0.08); border-radius: 14px; animation: pulse 1.5s ease-in-out infinite 0.2s;"></div>
-                </div>
-                <div style="height: 120px; background: rgba(255,255,255,0.05); border-radius: 16px; animation: pulse 1.5s ease-in-out infinite;"></div>
-            </div>
             <div id="walletContent" style="display:none;"></div>
         </div>
         <style>
-            @keyframes pulse { 0%,100% { opacity:0.6; } 50% { opacity:1; } }
             @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
             .wallet-action-btn {
                 flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px;
@@ -86,6 +76,8 @@ export async function renderWalletPage() {
         </style>
     `;
 
+    window.showLoadingSpinner('Loading your wallet...');
+
     try {
         const [walletResponse, transactionsResponse, bookingsResponse] = await Promise.all([
             api.getHostfiWallet(),
@@ -99,14 +91,14 @@ export async function renderWalletPage() {
             transactions = transactionsResponse.data?.transactions || [];
             recentBookings = bookingsResponse.data?.bookings || [];
 
-            document.getElementById('walletSkeleton').style.display = 'none';
+            window.hideLoadingSpinner();
             const content = document.getElementById('walletContent');
             content.style.display = 'block';
             content.innerHTML = buildWalletHTML();
         }
     } catch (error) {
         console.error('Failed to load wallet:', error);
-        document.getElementById('walletSkeleton').style.display = 'none';
+        window.hideLoadingSpinner();
         document.getElementById('walletContent').style.display = 'block';
         document.getElementById('walletContent').innerHTML = `
             <div style="text-align: center; padding: 48px 20px;">

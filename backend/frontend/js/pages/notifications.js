@@ -32,15 +32,11 @@ export async function renderNotificationsPage() {
                     </h1>
                     <button class="btn-secondary" onclick="window.markAllNotificationsRead()">Mark all as read</button>
                 </div>
-                <div class="text-center" style="padding: 60px 20px;">
-                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" style="opacity: 0.4; margin-bottom: 16px; animation: spin 2s linear infinite;">
-                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" stroke-dasharray="60" stroke-dashoffset="20"/>
-                    </svg>
-                    <p class="text-secondary">Loading notifications...</p>
-                </div>
             </div>
         </div>
     `;
+
+    window.showLoadingSpinner('Loading notifications...');
 
     try {
         const response = await api.getNotifications();
@@ -48,24 +44,26 @@ export async function renderNotificationsPage() {
         if (response.success) {
             notifications = response.data.notifications || [];
             unreadCount = response.data.unreadCount || 0;
+            window.hideLoadingSpinner();
             renderNotificationsList();
         }
     } catch (error) {
         console.error('Failed to load notifications:', error);
+        window.hideLoadingSpinner();
         mainContent.innerHTML = `
-            <div class="section">
-                <div class="container">
-                    <div class="empty-state glass-effect" style="margin: 40px auto; max-width: 500px; border-radius: 24px; padding: 40px 20px; border-color: rgba(239, 68, 68, 0.3);">
-                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" style="opacity: 0.4; margin-bottom: 16px; color: var(--error);">
-                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-                            <path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                        </svg>
-                        <h3>Failed to load notifications</h3>
-                        <p>${error.message}</p>
-                        <button class="btn-primary" onclick="window.location.reload()">Try again</button>
-                    </div>
+        < div class="section" >
+            <div class="container">
+                <div class="empty-state glass-effect" style="margin: 40px auto; max-width: 500px; border-radius: 24px; padding: 40px 20px; border-color: rgba(239, 68, 68, 0.3);">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" style="opacity: 0.4; margin-bottom: 16px; color: var(--error);">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" />
+                        <path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                    <h3>Failed to load notifications</h3>
+                    <p>${error.message}</p>
+                    <button class="btn-primary" onclick="window.location.reload()">Try again</button>
                 </div>
             </div>
+            </div >
         `;
     }
 }
@@ -77,7 +75,7 @@ function renderNotificationsList() {
     const readNotifications = notifications.filter(n => n.read);
 
     mainContent.innerHTML = `
-        <div class="section">
+        < div class="section" >
             <div class="container">
                 <div class="glass-effect" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding: 24px; border-radius: 20px;">
                     <h1 style="margin: 0;">Notifications ${unreadCount > 0 ? `<span class="tag" style="background: #FF6B35; color: white; font-size: 14px; margin-left: 8px; border: none;">${unreadCount} new</span>` : ''}</h1>
@@ -112,8 +110,8 @@ function renderNotificationsList() {
                     </div>
                 ` : ''}
             </div>
-        </div>
-    `;
+        </div >
+        `;
 }
 
 function renderNotificationCard(notification) {
@@ -157,11 +155,11 @@ function renderNotificationCard(notification) {
     const color = colorMap[notification.type] || colorMap.system;
 
     return `
-        <div class="notification-card glass-effect ${!notification.read ? 'unread' : ''}"
-             onclick="window.handleNotificationClick('${notification._id}', '${notification.link || '#'}')"
-             style="cursor: pointer; margin-bottom: 12px; border-radius: 16px; 
-                    ${!notification.read ? 'background: rgba(151, 71, 255, 0.15); border-left: 4px solid var(--primary);' : ''}">
-            <div style="display: flex; gap: 16px; align-items: start; padding: 4px;">
+        < div class="notification-card glass-effect ${!notification.read ? 'unread' : ''}"
+    onclick = "window.handleNotificationClick('${notification._id}', '${notification.link || '#'}')"
+    style = "cursor: pointer; margin-bottom: 12px; border-radius: 16px; 
+                    ${!notification.read ? 'background: rgba(151, 71, 255, 0.15); border-left: 4px solid var(--primary);' : ''} ">
+        < div style = "display: flex; gap: 16px; align-items: start; padding: 4px;" >
                 <div style="flex-shrink: 0; width: 44px; height: 44px; background: rgba(255,255,255,0.5); backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.6); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: ${color}; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
                     ${icon}
                 </div>
@@ -173,12 +171,12 @@ function renderNotificationCard(notification) {
                     <p style="color: var(--text-secondary); font-size: 14px; margin: 0 0 8px 0; line-height: 1.5;">${notification.message}</p>
                     <div style="font-size: 12px; font-weight: 500; color: var(--primary); opacity: 0.8;">${formatDate(notification.createdAt)}</div>
                 </div>
-            </div>
-        </div>
-    `;
+            </div >
+        </div >
+        `;
 }
 
-window.handleNotificationClick = async function(notificationId, link) {
+window.handleNotificationClick = async function (notificationId, link) {
     try {
         await api.markNotificationAsRead(notificationId);
 
@@ -197,7 +195,7 @@ window.handleNotificationClick = async function(notificationId, link) {
     }
 };
 
-window.markAllNotificationsRead = async function() {
+window.markAllNotificationsRead = async function () {
     try {
         await api.markAllNotificationsAsRead();
         await renderNotificationsPage();
@@ -214,7 +212,7 @@ window.markAllNotificationsRead = async function() {
     }
 };
 
-window.deleteAllReadNotifications = async function() {
+window.deleteAllReadNotifications = async function () {
     if (!confirm('Delete all read notifications?')) return;
 
     try {

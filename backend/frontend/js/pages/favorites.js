@@ -7,25 +7,14 @@ export async function renderFavoritesPage() {
     setCurrentPage('favorites');
     const mainContent = document.getElementById('mainContent');
 
-    mainContent.innerHTML = `
-        <div class="section">
-            <div class="container">
-                <h1 class="page-title mb-lg">Saved Creators</h1>
-                <div class="text-center glass-effect" style="padding: 60px 20px; border-radius: 24px; max-width: 400px; margin: 0 auto; border: 1px solid rgba(255,255,255,0.4);">
-                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" style="opacity: 0.8; margin-bottom: 16px; animation: spin 2s linear infinite; color: var(--primary);">
-                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" stroke-dasharray="60" stroke-dashoffset="20"/>
-                    </svg>
-                    <p class="text-secondary" style="font-weight: 500;">Loading your favorites...</p>
-                </div>
-            </div>
-        </div>
-    `;
+    window.showLoadingSpinner('Loading your favorites...');
 
     try {
         const response = await api.getFavorites();
 
         if (response.success) {
             const favorites = response.data.favorites;
+            window.hideLoadingSpinner();
 
             if (favorites && favorites.length > 0) {
                 mainContent.innerHTML = `
@@ -66,6 +55,7 @@ export async function renderFavoritesPage() {
         }
     } catch (error) {
         console.error('Failed to load favorites:', error);
+        window.hideLoadingSpinner();
         mainContent.innerHTML = `
             <div class="section">
                 <div class="container">
@@ -150,17 +140,17 @@ function renderFavoriteCard(creator) {
             ${creator.badges && creator.badges.length > 0 ? `
                 <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px;">
                     ${creator.badges.slice(0, 3).map(badge => {
-                        const badgeInfo = {
-                            'top_rated': { icon: '⭐', label: 'Top Rated' },
-                            'power_seller': { icon: '💪', label: 'Power Seller' },
-                            'rising_talent': { icon: '🚀', label: 'Rising' },
-                            'fast_responder': { icon: '⚡', label: 'Fast' },
-                            'reliable': { icon: '✓', label: 'Reliable' }
-                        };
-                        const info = badgeInfo[badge.type] || { icon: '🏆', label: badge.type };
-                        // 🌟 UPDATED: Frosted badges
-                        return `<span style="font-size: 12px; padding: 4px 10px; background: rgba(255,255,255,0.5); backdrop-filter: blur(4px); border-radius: 8px; border: 1px solid rgba(255,255,255,0.4); color: var(--text-primary); font-weight: 500;">${info.icon} ${info.label}</span>`;
-                    }).join('')}
+        const badgeInfo = {
+            'top_rated': { icon: '⭐', label: 'Top Rated' },
+            'power_seller': { icon: '💪', label: 'Power Seller' },
+            'rising_talent': { icon: '🚀', label: 'Rising' },
+            'fast_responder': { icon: '⚡', label: 'Fast' },
+            'reliable': { icon: '✓', label: 'Reliable' }
+        };
+        const info = badgeInfo[badge.type] || { icon: '🏆', label: badge.type };
+        // 🌟 UPDATED: Frosted badges
+        return `<span style="font-size: 12px; padding: 4px 10px; background: rgba(255,255,255,0.5); backdrop-filter: blur(4px); border-radius: 8px; border: 1px solid rgba(255,255,255,0.4); color: var(--text-primary); font-weight: 500;">${info.icon} ${info.label}</span>`;
+    }).join('')}
                 </div>
             ` : ''}
 

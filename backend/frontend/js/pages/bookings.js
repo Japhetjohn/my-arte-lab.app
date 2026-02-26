@@ -42,21 +42,9 @@ export async function renderBookingsPage() {
                 </button>
             </div>
             
-            <div id="bookingsSkeleton">
-                <div style="background: linear-gradient(135deg, rgba(151,71,255,0.1), rgba(107,70,255,0.1)); border-radius: 24px; height: 180px; margin-bottom: 24px; animation: pulse 1.5s ease-in-out infinite;"></div>
-                <div style="display: flex; gap: 8px; margin-bottom: 28px;">
-                    <div style="width: 80px; height: 32px; background: rgba(255,255,255,0.08); border-radius: 20px; animation: pulse 1.5s ease-in-out infinite;"></div>
-                    <div style="width: 80px; height: 32px; background: rgba(255,255,255,0.08); border-radius: 20px; animation: pulse 1.5s ease-in-out infinite 0.1s;"></div>
-                    <div style="width: 80px; height: 32px; background: rgba(255,255,255,0.08); border-radius: 20px; animation: pulse 1.5s ease-in-out infinite 0.2s;"></div>
-                </div>
-                <div style="height: 100px; background: rgba(255,255,255,0.05); border-radius: 16px; margin-bottom: 12px; animation: pulse 1.5s ease-in-out infinite;"></div>
-                <div style="height: 100px; background: rgba(255,255,255,0.05); border-radius: 16px; margin-bottom: 12px; animation: pulse 1.5s ease-in-out infinite 0.1s;"></div>
-            </div>
-
             <div id="bookingsContent" style="display:none;"></div>
         </div>
         <style>
-            @keyframes pulse { 0%,100% { opacity:0.6; } 50% { opacity:1; } }
             @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
             .bookings-section { animation: fadeIn 0.3s ease; }
             .tx-item { 
@@ -76,6 +64,8 @@ export async function renderBookingsPage() {
             .filter-tab.active { background: rgba(151,71,255,0.15); color: var(--primary); border-color: rgba(151,71,255,0.3); }
         </style>
     `;
+
+    window.showLoadingSpinner('Loading your bookings...');
 
     try {
         const [bookingsResp, projectsResp] = await Promise.all([
@@ -99,13 +89,13 @@ export async function renderBookingsPage() {
 
         bookings = [...regularBookings, ...projectsAsJobs];
 
-        document.getElementById('bookingsSkeleton').style.display = 'none';
+        window.hideLoadingSpinner();
         const content = document.getElementById('bookingsContent');
         content.style.display = 'block';
         renderBookingsList();
     } catch (error) {
         console.error('Failed to load bookings:', error);
-        document.getElementById('bookingsSkeleton').style.display = 'none';
+        window.hideLoadingSpinner();
         const content = document.getElementById('bookingsContent');
         content.style.display = 'block';
         content.innerHTML = `
