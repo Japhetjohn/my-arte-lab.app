@@ -266,12 +266,12 @@ window.handleProfileUpdate = async function (event) {
             if (skills) profileData.skills = skills.split(',').map(s => s.trim()).filter(s => s);
         }
 
-        showToast('Updating profile...', 'info');
-
+        window.showLoadingSpinner();
         const response = await api.updateProfile(profileData);
 
         if (response.success) {
             setUser(response.data.user);
+            window.hideLoadingSpinner();
             showToast('Profile updated successfully', 'success');
 
             setTimeout(() => {
@@ -281,6 +281,7 @@ window.handleProfileUpdate = async function (event) {
             showToast(response.message || 'Failed to update profile', 'error');
         }
     } catch (error) {
+        window.hideLoadingSpinner();
         showToast(error.message || 'Failed to update profile', 'error');
     }
 };
@@ -300,7 +301,7 @@ window.handleAvatarUpload = function () {
         }
 
         try {
-            showToast('Uploading avatar...', 'info');
+            window.showLoadingSpinner();
 
             const formData = new FormData();
             formData.append('avatar', file);
@@ -310,11 +311,14 @@ window.handleAvatarUpload = function () {
             if (response.success) {
                 setUser(response.data.user);
                 document.getElementById('avatarPreview').src = response.data.user.avatar;
+                window.hideLoadingSpinner();
                 showToast('Avatar updated successfully', 'success');
             } else {
+                window.hideLoadingSpinner();
                 showToast(response.message || 'Failed to upload avatar', 'error');
             }
         } catch (error) {
+            window.hideLoadingSpinner();
             showToast(error.message || 'Failed to upload avatar', 'error');
         }
     };
@@ -337,7 +341,7 @@ window.handleCoverUpload = function () {
         }
 
         try {
-            showToast('Uploading cover image...', 'info');
+            window.showLoadingSpinner();
 
             const formData = new FormData();
             formData.append('coverImage', file);
@@ -347,11 +351,14 @@ window.handleCoverUpload = function () {
             if (response.success) {
                 setUser(response.data.user);
                 document.getElementById('coverPreview').src = response.data.user.coverImage;
+                window.hideLoadingSpinner();
                 showToast('Cover image updated successfully', 'success');
             } else {
+                window.hideLoadingSpinner();
                 showToast(response.message || 'Failed to upload cover image', 'error');
             }
         } catch (error) {
+            window.hideLoadingSpinner();
             showToast(error.message || 'Failed to upload cover image', 'error');
         }
     };
@@ -422,7 +429,7 @@ window.handlePasswordChange = async function (event) {
     }
 
     try {
-        showToast('Changing password...', 'info');
+        window.showLoadingSpinner();
 
         const response = await api.updatePassword({
             currentPassword,
@@ -430,12 +437,15 @@ window.handlePasswordChange = async function (event) {
         });
 
         if (response.success) {
+            window.hideLoadingSpinner();
             showToast('Password changed successfully', 'success');
             document.querySelector('.modal-overlay').remove();
         } else {
+            window.hideLoadingSpinner();
             showToast(response.message || 'Failed to change password', 'error');
         }
     } catch (error) {
+        window.hideLoadingSpinner();
         showToast(error.message || 'Failed to change password', 'error');
     }
 };
@@ -528,11 +538,12 @@ window.handleAccountDeletion = async function (event) {
     if (!confirmed) return;
 
     try {
-        showToast('Deleting account...', 'info');
+        window.showLoadingSpinner();
 
         const response = await api.deleteAccount(password);
 
         if (response.success) {
+            window.hideLoadingSpinner();
             showToast('Account deleted successfully. Goodbye!', 'success');
 
             localStorage.removeItem('token');
@@ -545,10 +556,12 @@ window.handleAccountDeletion = async function (event) {
                 window.location.href = '/';
             }, 2000);
         } else {
+            window.hideLoadingSpinner();
             showToast(response.message || 'Failed to delete account', 'error');
         }
     } catch (error) {
         console.error('Account deletion error:', error);
+        window.hideLoadingSpinner();
         showToast(error.message || 'Failed to delete account', 'error');
     }
 };

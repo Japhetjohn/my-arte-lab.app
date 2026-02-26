@@ -4,27 +4,18 @@ import { appState } from '../state.js';
 export async function renderProjectsPage() {
     const mainContent = document.getElementById('mainContent');
 
-    // Show loading state
-    mainContent.innerHTML = `
-        <div style="max-width: 680px; margin: 0 auto; padding: 40px 20px;">
-            <div style="text-align: center; padding: 60px 20px;">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" style="opacity: 0.3; margin-bottom: 16px; animation: spin 1s linear infinite; color: var(--primary);">
-                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-                    <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2"/>
-                </svg>
-                <p style="color: var(--text-secondary); font-weight: 500; font-size: 14px;">Curating projects...</p>
-            </div>
-        </div>
-    `;
+    window.showLoadingSpinner();
 
     try {
         const response = await api.getProjects();
 
         if (!response.success) {
+            window.hideLoadingSpinner();
             throw new Error(response.message || 'Failed to load projects');
         }
 
         const projects = response.data.projects || [];
+        window.hideLoadingSpinner();
 
         mainContent.innerHTML = `
             <div style="max-width: 680px; margin: 0 auto; padding: 32px 20px 60px; display: flex; flex-direction: column; gap: 32px;">
@@ -184,12 +175,15 @@ function setupFilterListeners() {
 
 async function applyFilters() {
     try {
+        window.showLoadingSpinner();
         const response = await api.getProjects(currentFilters);
         const projects = response.data.projects || [];
         document.getElementById('projectsGrid').innerHTML = renderProjectCards(projects);
         setupProjectCardListeners();
+        window.hideLoadingSpinner();
     } catch (error) {
         console.error('Error filtering projects:', error);
+        window.hideLoadingSpinner();
     }
 }
 
