@@ -63,46 +63,21 @@ exports.register = catchAsync(async (req, res, next) => {
   user.emailVerificationToken = hashedCode;
   user.emailVerificationExpire = Date.now() + 30 * 60 * 1000; // 30 minutes
 
-  await user.save({ validateBeforeSave: false});
+  await user.save({ validateBeforeSave: false });
 
-  // Initialize HostFi wallets and create Solana USDC address in background (non-blocking)
+  // Initialize wallets (HostFi & local Tsara) in background (non-blocking)
   setImmediate(async () => {
     try {
       const hostfiWalletService = require('../services/hostfiWalletService');
-      const hostfiService = require('../services/hostfiService');
+      console.log(`[Background] Initializing wallets for ${user.email}...`);
 
-      console.log(`[Background] Initializing HostFi wallet for ${user.email}...`);
-
-      // Initialize HostFi wallet assets - this fetches all available currencies
+      // initializeUserWallets now handles both HostFi asset syncing and local Tsara wallet generation
       await hostfiWalletService.initializeUserWallets(user._id);
-      console.log(`[Background] HostFi wallet initialized for ${user.email}`);
 
-      // Create Solana USDC collection address for deposits
-      try {
-        const assetId = await hostfiWalletService.getWalletAssetId(user._id, 'USDC');
-        if (assetId) {
-          const cryptoAddress = await hostfiService.createCryptoCollectionAddress({
-            assetId,
-            currency: 'USDC',
-            network: 'SOL',
-            customId: user._id.toString()
-          });
-
-          // Update user wallet with the address
-          const updatedUser = await User.findById(user._id);
-          if (updatedUser) {
-            updatedUser.wallet.address = cryptoAddress.address;
-            updatedUser.wallet.network = 'SOL';
-            await updatedUser.save({ validateBeforeSave: false });
-            console.log(`[Background] Solana USDC wallet created: ${cryptoAddress.address.substring(0, 10)}...`);
-          }
-        }
-      } catch (addressError) {
-        console.error(`[Background] Failed to create wallet address for ${user.email}:`, addressError.message);
-      }
+      console.log(`[Background] Wallets initialized successfully for ${user.email}`);
     } catch (walletError) {
       console.error(`[Background] Wallet initialization failed for ${user.email}:`, walletError.message);
-      // Wallet will be automatically initialized on first wallet access
+      // Fail silently in background; will be retried on first wallet access
     }
   });
 

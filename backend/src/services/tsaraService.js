@@ -5,8 +5,8 @@ const {
     Keypair,
     Connection,
     PublicKey,
-    clusterApiUrl,
-    LAMPORTS_PER_SOL
+    LAMPORTS_PER_SOL,
+    clusterApiUrl
 } = require('@solana/web3.js');
 const {
     getAssociatedTokenAddress,
@@ -15,6 +15,7 @@ const {
 } = require('@solana/spl-token');
 const tsaraConfig = require('../config/tsara');
 const walletEncryptionService = require('./walletEncryption');
+const constants = require('../utils/constants');
 
 // USDC Constants
 const USDC_MINT_MAINNET = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
@@ -27,23 +28,32 @@ const USDC_MINT_DEVNET = '4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU';
  */
 class TsaraService {
     constructor() {
-        this.apiUrl = tsaraConfig.apiUrl;
-        this.secretKey = tsaraConfig.secretKey;
+        // this.apiUrl = tsaraConfig.apiUrl; // Removed
+        // this.secretKey = tsaraConfig.secretKey; // Removed
 
         const cluster = process.env.SOLANA_CLUSTER || 'mainnet-beta';
-        this.connection = new Connection(
-            process.env.SOLANA_RPC_URL || clusterApiUrl(cluster),
-            'confirmed'
-        );
+        let rpcUrl = process.env.SOLANA_RPC_URL;
 
-        this.usdcMint = new PublicKey(
-            cluster === 'mainnet-beta' ? USDC_MINT_MAINNET : USDC_MINT_DEVNET
-        );
+        if (!rpcUrl) {
+            try {
+                rpcUrl = clusterApiUrl(cluster);
+            } catch (e) {
+                console.warn('[Tsara Service] Failed to get cluster API URL, falling back to mainnet-beta default');
+                rpcUrl = 'https://api.mainnet-beta.solana.com';
+            }
+        }
+
+        this.connection = new Connection(rpcUrl, 'confirmed');
+
+        this.usdcMint = new PublicKey(constants.TOKENS?.USDC?.MINT || USDC_MINT_MAINNET);
 
         this.api = axios.create({
-            baseURL: this.apiUrl,
-            headers: tsaraConfig.getHeaders(),
-            timeout: 30000
+            baseURL: tsaraConfig.apiUrl,
+            headers: {
+                'Authorization': `Bearer ${tsaraConfig.secretKey}`,
+                'Content-Type': 'application/json'
+            }
+            // timeout: 30000 // Removed
         });
 
         console.log(`[Tsara Service] Initialized local management for Solana ${cluster}`);
