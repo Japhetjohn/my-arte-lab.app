@@ -83,7 +83,8 @@ router.get('/:id', optionalAuth, async (req, res) => {
     console.error('Error fetching project:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch project'
+      message: 'Failed to fetch project',
+      error: error.message
     });
   }
 });
@@ -139,7 +140,8 @@ router.post('/', protect, async (req, res) => {
     console.error('Error creating project:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to create project'
+      message: 'Failed to create project',
+      error: error.message
     });
   }
 });

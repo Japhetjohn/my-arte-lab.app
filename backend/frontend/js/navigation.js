@@ -10,16 +10,16 @@ import { renderNotificationsPage } from './pages/notifications.js';
 import { addPageTransition, initScrollAnimations, init2025Effects } from './utils.js';
 
 export function navigateToPage(page, addToHistoryFlag = true) {
+    // Use History API to update URL
     if (addToHistoryFlag && appState.currentPage !== page) {
         addToHistory(appState.currentPage);
+        const urlPath = page === 'home' ? '/' : `/${page}`;
+        history.pushState({ page }, '', urlPath);
     }
 
     setCurrentPage(page);
-
     localStorage.setItem('currentPage', page);
-
     closeUserDropdown();
-
     updateBackButton();
 
     document.querySelectorAll('.nav-item').forEach(item => {
@@ -111,13 +111,13 @@ export function openSearchOverlay() {
     if (overlay) {
         // 1. Make it visible in the DOM first (it stays invisible because opacity is 0)
         overlay.style.display = 'block';
-        
+
         // 2. Force the browser to register the display change before animating
         void overlay.offsetWidth;
-        
+
         // 3. Add the active class to trigger the smooth frosted glass fade-in
         overlay.classList.add('active');
-        
+
         // 4. Focus the input so the user can start typing immediately
         setTimeout(() => {
             document.getElementById('globalSearch')?.focus();
@@ -130,7 +130,7 @@ export function closeSearchOverlay() {
     if (overlay) {
         // 1. Remove the active class to trigger the smooth fade-out
         overlay.classList.remove('active');
-        
+
         // 2. Wait for the CSS transition (0.3s) to finish before hiding it from the DOM completely
         setTimeout(() => {
             overlay.style.display = 'none';

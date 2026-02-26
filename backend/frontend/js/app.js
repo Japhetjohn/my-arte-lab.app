@@ -53,8 +53,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     await initializeApp();
     setupEventListeners();
 
-    // Handle hash-based routing (for shared links)
-    handleHashRoute();
+    // Handle routing
+    handleHistoryRoute();
 
     updateBackButton();
 });
@@ -120,37 +120,55 @@ function setupEventListeners() {
         }
     });
 
-    // Handle hash changes (for shared links)
-    window.addEventListener('hashchange', handleHashRoute);
+    // Handle browser back/forward buttons
+    window.addEventListener('popstate', (e) => {
+        if (e.state && e.state.page) {
+            navigateToPage(e.state.page, false);
+        } else {
+            handleHistoryRoute();
+        }
+    });
+
+    // Handle legacy hash changes (for shared links)
+    window.addEventListener('hashchange', handleHistoryRoute);
 }
 
 /**
- * Handle hash-based routing for shared profile links
- * Example: #/creator/507f1f77bcf86cd799439011
+ * Handle path-based routing (History API)
  */
-function handleHashRoute() {
+function handleHistoryRoute() {
+    const path = window.location.pathname;
     const hash = window.location.hash;
 
-    if (!hash || hash === '#') {
-        // No hash, load default page
-        const lastPage = localStorage.getItem('currentPage') || 'home';
-        navigateToPage(lastPage, false);
+    // Handle legacy hash routes first (redirect to clean path)
+    if (hash && hash.startsWith('#/creator/')) {
+        const creatorId = hash.replace('#/creator/', '');
+        history.replaceState({ page: 'creator', creatorId }, '', `/creator/${creatorId}`);
+        renderCreatorProfile(creatorId);
         return;
     }
 
-    // Parse hash route: #/creator/123
-    const match = hash.match(/#\/creator\/([a-f0-9]{24})/i);
-
-    if (match && match[1]) {
-        const creatorId = match[1];
-        console.log('Loading creator profile:', creatorId);
-
-        // Render the creator profile
-        renderCreatorProfile(creatorId);
-    } else {
-        // Invalid hash, go to home
-        console.warn('Invalid hash route:', hash);
+    // Handle clean paths
+    if (path === '/' || path === '/home') {
         navigateToPage('home', false);
+    } else if (path.startsWith('/creator/')) {
+        const creatorId = path.split('/')[2];
+        if (creatorId && creatorId.length === 24) {
+            renderCreatorProfile(creatorId);
+        } else {
+            navigateToPage('home', false);
+        }
+    } else {
+        // Match other pages (wallet, bookings, etc)
+        const page = path.substring(1);
+        const validPages = ['projects', 'bookings', 'notifications', 'wallet', 'profile', 'settings', 'favorites'];
+        if (validPages.includes(page)) {
+            navigateToPage(page, false);
+        } else {
+            // Fallback to last page or home
+            const lastPage = localStorage.getItem('currentPage') || 'home';
+            navigateToPage(lastPage, false);
+        }
     }
 }
 

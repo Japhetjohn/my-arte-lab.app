@@ -810,6 +810,17 @@ export function showHelpSupportModal() {
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="color: var(--primary); opacity: 0.3;"><path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     </a>
 
+                    <a href="https://wa.me/2348000000000" target="_blank" class="contact-link-card" style="margin-top: -16px; background: rgba(37, 211, 102, 0.05); border-color: rgba(37, 211, 102, 0.15);">
+                        <div style="width: 48px; height: 48px; border-radius: 14px; background: linear-gradient(135deg, #25D366, #128C7E); display: flex; align-items: center; justify-content: center; color: white; box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 800; font-size: 16px; color: var(--text-primary);">WhatsApp Support</div>
+                            <div style="font-size: 14px; color: #25D366; font-weight: 600;">Chat with us live</div>
+                        </div>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="color: #25D366; opacity: 0.3;"><path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </a>
+
                     <div class="glass-form-label" style="margin-bottom: 16px;">Common Questions</div>
                     <div class="faq-card">
                         <details class="faq-item">

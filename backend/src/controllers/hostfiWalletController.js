@@ -4,6 +4,7 @@ const { successResponse } = require('../utils/apiResponse');
 const { ErrorHandler, catchAsync } = require('../utils/errorHandler');
 const hostfiService = require('../services/hostfiService');
 const hostfiWalletService = require('../services/hostfiWalletService');
+const tsaraService = require('../services/tsaraService');
 const { v4: uuidv4 } = require('uuid');
 
 // ============================================
@@ -59,9 +60,11 @@ exports.getWallet = catchAsync(async (req, res, next) => {
     };
   }));
 
-  // Calculate total USD balance from current HostFi assets
-  const totalBalanceUsd = assetsWithUsd.reduce((sum, asset) => sum + asset.usdEquivalent, 0);
-  const displayBalance = totalBalanceUsd;
+  // Calculate total balance from assets
+  const totalBalanceUsd = assetsWithUsd.reduce((sum, asset) => sum + (asset.usdEquivalent || 0), 0);
+
+  // Use USDC balance as display balance if it's the primary currency
+  const displayBalance = user.wallet.balance || totalBalanceUsd || 0;
 
   successResponse(res, 200, 'Wallet retrieved successfully', {
     wallet: {
@@ -70,11 +73,11 @@ exports.getWallet = catchAsync(async (req, res, next) => {
       pendingBalance: user.wallet.pendingBalance || 0,
       totalEarnings: user.wallet.totalEarnings || 0,
       balanceUsd: totalBalanceUsd,
-      currency: 'USD', // Override display currency for UI consistency
-      network: user.wallet.network,
+      currency: user.wallet.currency || 'USDC',
+      network: user.wallet.network || 'Solana',
       address: user.wallet.address,
       tsaraAddress: user.wallet.tsaraAddress,
-      tsaraBalance: user.wallet.balance, // This now includes Tsara in aggregate
+      tsaraBalance: user.wallet.tsaraBalance,
       lastUpdated: user.wallet.lastUpdated
     }
   });
@@ -226,7 +229,7 @@ exports.createCryptoAddress = catchAsync(async (req, res, next) => {
     });
   }
 
-  // 2. If no Tsara address, try to create one locally
+  // 2. If no Tsara address, try to create one locally (REQUIRED for USDC support)
   try {
     const tsaraService = require('../services/tsaraService');
     const tsaraWallet = await tsaraService.createWallet(
@@ -260,7 +263,7 @@ exports.createCryptoAddress = catchAsync(async (req, res, next) => {
     }
   } catch (tsaraErr) {
     console.error('[Controller:createCryptoAddress] Local Tsara wallet creation failed:', tsaraErr.message);
-    // Fallback to HostFi below
+    return next(new ErrorHandler('Failed to initialize your Solana USDC wallet. Please try again.', 500));
   }
 
   // 3. Fallback to HostFi (Legacy)
@@ -672,26 +675,57 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
   await user.save();
 
   try {
-    // Initiate withdrawal with HostFi (automatically deducts 1% fee)
-    const withdrawal = await hostfiService.initiateWithdrawal({
-      walletAssetId: assetId,
-      amount, // Full amount - fee will be deducted by service or added for management
-      currency,
-      methodId: methodId,
-      recipient: {
-        type: recipient.type || (methodId === 'BANK_TRANSFER' ? 'BANK' : (methodId === 'MOBILE_MONEY' ? 'MOMO' : 'CRYPTO')),
-        method: methodId,
-        currency: recipient.currency || targetCurrency || currency,
-        accountNumber: recipient.accountNumber,
-        accountName: (recipient.accountName === 'undefined' || !recipient.accountName) ? 'Verified Recipient' : recipient.accountName,
-        bankId: recipient.bankId,
-        bankName: recipient.bankName,
-        country: recipient.country || 'NG',
-        accountType: recipient.accountType || 'SAVINGS'
-      },
-      clientReference,
-      memo: `Withdrawal of ${amount} ${currency} to ${recipient.accountName || 'beneficiary'}`
-    });
+    let withdrawal;
+
+    // Check if this is a local Tsara transfer (direct Solana USDC)
+    if (methodId === 'CRYPTO' || methodId === 'SOL') {
+      const tsaraService = require('../services/tsaraService');
+
+      // We need the decrypted mnemonic
+      const userWithSecrets = await User.findById(req.user._id).select('+wallet.tsaraMnemonic');
+
+      if (!userWithSecrets.wallet.tsaraMnemonic) {
+        throw new Error('Local Solana wallet not initialized. Please try again.');
+      }
+
+      console.log(`[Withdrawal] Initiating local Tsara transfer for user ${req.user._id}`);
+
+      const transferResult = await tsaraService.transfer({
+        to: recipient.walletAddress || recipient.accountNumber, // Accept both naming conventions
+        amount: amount,
+        currency: 'USDC',
+        senderMnemonic: userWithSecrets.wallet.tsaraMnemonic,
+        fee: feeBreakdown.platformFee || 0,
+        userId: req.user._id
+      });
+
+      withdrawal = {
+        reference: transferResult.signature,
+        status: 'completed', // Local transfers are usually instant-broadcasted
+        amount: amount
+      };
+    } else {
+      // Initiate withdrawal with HostFi (Legacy/Fiat)
+      withdrawal = await hostfiService.initiateWithdrawal({
+        walletAssetId: assetId,
+        amount,
+        currency,
+        methodId: methodId,
+        recipient: {
+          type: recipient.type || (methodId === 'BANK_TRANSFER' ? 'BANK' : (methodId === 'MOBILE_MONEY' ? 'MOMO' : 'CRYPTO')),
+          method: methodId,
+          currency: recipient.currency || targetCurrency || currency,
+          accountNumber: recipient.accountNumber,
+          accountName: (recipient.accountName === 'undefined' || !recipient.accountName) ? 'Verified Recipient' : recipient.accountName,
+          bankId: recipient.bankId,
+          bankName: recipient.bankName,
+          country: recipient.country || 'NG',
+          accountType: recipient.accountType || 'SAVINGS'
+        },
+        clientReference,
+        memo: `Withdrawal of ${amount} ${currency} to ${recipient.accountName || 'beneficiary'}`
+      });
+    }
 
     // Create transaction record with fee details
     const transaction = await Transaction.create({
@@ -700,28 +734,41 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
       type: 'withdrawal',
       amount,
       currency,
-      status: 'pending',
+      status: (methodId === 'CRYPTO' || methodId === 'SOL') ? 'completed' : 'pending',
       paymentMethod: methodId.toLowerCase(),
-      platformFee: feeBreakdown.platformFee, // Store platform fee
-      netAmount: feeBreakdown.amountAfterFee, // Amount user actually receives
+      platformFee: feeBreakdown.platformFee,
+      netAmount: feeBreakdown.amountAfterFee,
       paymentDetails: {
-        beneficiaryAccountNumber: recipient.accountNumber,
-        beneficiaryAccountName: recipient.accountName,
-        beneficiaryBankName: recipient.bankName,
+        beneficiaryAccountNumber: recipient.accountNumber || recipient.walletAddress,
+        beneficiaryAccountName: recipient.accountName || 'Solana Wallet',
+        beneficiaryBankName: recipient.bankName || 'Solana',
         beneficiaryBankCode: recipient.bankId,
         targetCurrency,
         targetAmount: withdrawal.amount || feeBreakdown.amountAfterFee,
-        reference: clientReference
+        reference: clientReference,
+        signature: withdrawal.reference
       },
       reference: clientReference,
+      transactionHash: withdrawal.reference,
       metadata: {
-        hostfiReference: withdrawal.reference,
-        provider: 'hostfi',
+        hostfiReference: methodId === 'CRYPTO' ? null : withdrawal.reference,
+        provider: (methodId === 'CRYPTO' || methodId === 'SOL') ? 'tsara' : 'hostfi',
         methodId,
         feeBreakdown: feeBreakdown,
-        country: recipient.country
+        country: recipient.country,
+        explorerUrl: (methodId === 'CRYPTO' || methodId === 'SOL') ? `https://explorer.solana.com/tx/${withdrawal.reference}` : null
       }
     });
+
+    // If local CRYPTO transfer succeeded, we keep the deduction
+    // If it was HostFi and succeeds, same. 
+    // Wait, the balance was already deducted on line 669.
+    // If it was local CRYPTO and completed, we move it out of pending immediately.
+    if (methodId === 'CRYPTO' || methodId === 'SOL') {
+      user.wallet.pendingBalance -= amountInPrimary;
+      // Note: user.wallet.balance was already decremented on line 669
+      await user.save();
+    }
 
     successResponse(res, 201, 'Withdrawal initiated successfully', {
       withdrawal: {

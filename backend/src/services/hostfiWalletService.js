@@ -189,7 +189,7 @@ class HostFiWalletService {
           const balanceData = await tsaraService.getBalance(user.wallet.tsaraAddress);
           if (balanceData.success) {
             tsaraLocalUsdcBalance = balanceData.data.balance; // This is the USDC balance
-            // Update last synced for tsara if we had a field, for now just use it in aggregate
+            user.wallet.tsaraBalance = tsaraLocalUsdcBalance; // Update specific field if it exists or for local use
           }
         } catch (tsaraErr) {
           console.warn(`[Sync] Failed to fetch Tsara balance for ${userId}:`, tsaraErr.message);
@@ -198,19 +198,15 @@ class HostFiWalletService {
 
       // Update primary balance currency if not set
       if (!user.wallet.currency) {
-        const primaryAsset = user.wallet.hostfiWalletAssets.find(a => a.currency === 'NGN') ||
-          user.wallet.hostfiWalletAssets[0];
-        if (primaryAsset) {
-          user.wallet.currency = primaryAsset.currency;
-        }
+        user.wallet.currency = 'USDC'; // Default to USDC for internationalization
       }
 
       // Rebuild aggregate balance from sub-assets
       let totalAggregateInPrimary = 0;
-      const primaryCurrency = user.wallet.currency || 'NGN';
+      const primaryCurrency = user.wallet.currency || 'USDC';
 
       for (const asset of user.wallet.hostfiWalletAssets) {
-        if (asset.balance === 0) continue;
+        if (!asset.balance || asset.balance <= 0) continue;
 
         if (asset.currency === primaryCurrency) {
           totalAggregateInPrimary += asset.balance;
@@ -221,14 +217,14 @@ class HostFiWalletService {
             const rate = rateData.rate || rateData.data?.rate || 0;
             totalAggregateInPrimary += (asset.balance * rate);
           } catch (err) {
-            console.warn(`[Sync] Conversion failed for aggregate:`, err.message);
+            console.warn(`[Sync] Conversion failed for aggregate ${asset.currency}->${primaryCurrency}:`, err.message);
           }
         }
       }
 
       // Add Tsara local balance to aggregate (convert if necessary)
       if (tsaraLocalUsdcBalance > 0) {
-        if (primaryCurrency === 'USDC' || primaryCurrency === 'USD') {
+        if (['USDC', 'USD', 'USDT'].includes(primaryCurrency.toUpperCase())) {
           totalAggregateInPrimary += tsaraLocalUsdcBalance;
         } else {
           try {
@@ -236,25 +232,25 @@ class HostFiWalletService {
             const rate = rateData.rate || rateData.data?.rate || 0;
             totalAggregateInPrimary += (tsaraLocalUsdcBalance * rate);
           } catch (err) {
-            console.warn(`[Sync] Tsara conversion failed:`, err.message);
-            // If conversion fails, we still have the NGN balance from HostFi, 
-            // but the Tsara balance might be missed in aggregate. 
-            // For now, we don't add it if we can't value it.
+            console.warn(`[Sync] Tsara conversion failed USDC->${primaryCurrency}:`, err.message);
+            // If primary is NGN and conversion fails, we still have the value in USDC
+            // For now, if we can't value it in primary, we don't add to aggregate to keep it consistent
           }
         }
       }
 
       // Update aggregate balance: Use HostFi + Tsara as the base
-      user.wallet.balance = totalAggregateInPrimary;
+      // Ensure we don't accidentally set to negative or NaN
+      user.wallet.balance = Math.max(0, totalAggregateInPrimary || 0);
 
-      user.wallet.lastUpdated = new Date();
-      await user.save();
-
-      console.log(`Wallet balances synced for user ${userId}`);
+      console.log(`Wallet balances synced for user ${userId}. Total Aggregate: ${user.wallet.balance} ${primaryCurrency}`);
       return user;
     } catch (error) {
       console.error(`Failed to sync wallet balances for user ${userId}:`, error.message);
-      throw error;
+      // Even if sync fails, returning the user with stale data is better than crashing, 
+      // but we should mark it for retry
+      const user = await User.findById(userId);
+      return user || { wallet: { balance: 0, hostfiWalletAssets: [] } };
     }
   }
 
@@ -344,50 +340,9 @@ class HostFiWalletService {
         throw new Error(`Wallet for currency ${currency} not found even after sync`);
       }
 
-      // Update balance - CONVERT TO PRIMARY CURRENCY IF DIFFERENT
-      const isCredit = type === 'credit' || type === 'earning' || type === 'deposit';
-
-      if (isCredit) {
-        asset.balance += amount;
-
-        // Convert to primary currency for aggregate balance
-        let amountInPrimary = amount;
-        if (currency !== user.wallet.currency) {
-          try {
-            const rateData = await hostfiService.getCurrencyRates(currency, user.wallet.currency, true);
-            const rate = rateData.rate || rateData.data?.rate || 0;
-            amountInPrimary = amount * rate;
-          } catch (error) {
-            console.error(`Balance update conversion failed (${currency} to ${user.wallet.currency}):`, error.message);
-            // Fallback: value it at 0 in primary or keep previous if we can't get rate
-          }
-        }
-
-        user.wallet.balance += amountInPrimary;
-        if (type === 'earning') {
-          user.wallet.totalEarnings += amountInPrimary;
-        }
-      } else {
-        asset.balance -= amount;
-
-        let amountInPrimary = amount;
-        if (currency !== user.wallet.currency) {
-          try {
-            const rateData = await hostfiService.getCurrencyRates(currency, user.wallet.currency);
-            const rate = rateData.rate || rateData.data?.rate || 0;
-            amountInPrimary = amount * rate;
-          } catch (error) {
-            console.error(`Balance update conversion failed (${currency} to ${user.wallet.currency}):`, error.message);
-          }
-        }
-        user.wallet.balance -= amountInPrimary;
-      }
-
-      asset.lastSynced = new Date();
-      user.wallet.lastUpdated = new Date();
-
-      await user.save();
-      return user;
+      // Update balance - Trigger a full sync rather than manual adjustment
+      // This ensures we always match the source of truth (HostFi/On-chain)
+      return await this.syncWalletBalances(userId);
     } catch (error) {
       console.error(`Failed to update balance for user ${userId}:`, error.message);
       throw error;

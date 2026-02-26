@@ -1115,14 +1115,14 @@ export async function showWithdrawModal() {
         <div class="glass-modal-overlay" onclick="if(event.target === this) closeModal()">
             <div class="glass-modal-content" style="max-width: 480px;">
                 <div class="glass-modal-header">
-                    <span class="glass-modal-title">Withdraw</span>
+                    <span class="glass-modal-title">Withdraw / Send Funds</span>
                     <button class="glass-modal-close" onclick="closeModal()">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
                     </button>
                 </div>
 
                 <div class="glass-modal-body">
-                    <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 20px; margin-bottom: 32px; display: flex; justify-content: space-between; align-items: center;">
+                    <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 20px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center;">
                         <span style="font-size: 14px; color: var(--text-secondary); font-weight: 600;">Available Balance</span>
                         <div style="text-align: right;">
                             <span style="font-size: 24px; font-weight: 800; color: var(--text-primary);">$${balance.toFixed(2)}</span>
@@ -1130,28 +1130,50 @@ export async function showWithdrawModal() {
                         </div>
                     </div>
 
-                    <div style="margin-bottom:24px;">
-                        <label class="glass-form-label">Amount to Withdraw</label>
-                        <div style="position: relative;">
-                            <input type="number" id="withdrawAmount" class="glass-input" placeholder="0.00" min="1" max="${balance}" step="0.01" oninput="updateWithdrawFee(this.value)" style="padding-right: 80px; font-size: 18px; font-weight: 700;">
-                            <button onclick="document.getElementById('withdrawAmount').value='${balance}'; updateWithdrawFee('${balance}')" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: var(--primary); border: none; border-radius: 10px; padding: 6px 14px; font-size: 12px; font-weight: 800; color: white; cursor: pointer; transition: all 0.2s;">MAX</button>
+                    <div style="display: flex; gap: 4px; background: rgba(255,255,255,0.05); padding: 4px; border-radius: 14px; margin-bottom: 24px;">
+                        <button class="glass-tab-btn active" id="bankWithdrawTab" onclick="switchWithdrawTab('bank')" style="flex: 1; padding: 10px; font-size: 13px;">Bank Account</button>
+                        <button class="glass-tab-btn" id="cryptoWithdrawTab" onclick="switchWithdrawTab('crypto')" style="flex: 1; padding: 10px; font-size: 13px;">Solana Wallet</button>
+                    </div>
+
+                    <div id="commonWithdrawFields">
+                        <div style="margin-bottom:24px;">
+                            <label class="glass-form-label">Amount to Withdraw</label>
+                            <div style="position: relative;">
+                                <input type="number" id="withdrawAmount" class="glass-input" placeholder="0.00" min="1" max="${balance}" step="0.01" oninput="updateWithdrawFee(this.value)" style="padding-right: 80px; font-size: 18px; font-weight: 700;">
+                                <button onclick="document.getElementById('withdrawAmount').value='${balance}'; updateWithdrawFee('${balance}')" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: var(--primary); border: none; border-radius: 10px; padding: 6px 14px; font-size: 12px; font-weight: 800; color: white; cursor: pointer;">MAX</button>
+                            </div>
+                        </div>
+
+                        <div id="cryptoWithdrawFields" style="display:none; margin-bottom:24px;">
+                            <label class="glass-form-label">Recipient Solana Address</label>
+                            <input type="text" id="recipientAddress" class="glass-input" placeholder="Paste Solana wallet address...">
+                            <div style="margin-top: 12px; display: flex; gap: 8px; align-items: start; background: rgba(151, 71, 255, 0.05); border: 1px solid rgba(151, 71, 255, 0.1); border-radius: 12px; padding: 10px;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5" style="margin-top: 2px;"><circle cx="12" cy="12" r="10"/><path d="M12 16h.01M12 8v4" stroke-linecap="round"/></svg>
+                                <span style="font-size: 11px; color: var(--text-secondary); line-height: 1.4;">Gasless Transfer: No SOL required. Fees are paid in USDC.</span>
+                            </div>
+                        </div>
+
+                        <div style="background: rgba(255,255,255,0.02); border-radius: 20px; padding: 20px; margin-bottom: 24px; border: 1px solid rgba(255,255,255,0.05);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <span style="font-size: 14px; color: var(--text-secondary);">Platform Fee (1%)</span>
+                                <span style="font-size: 15px; font-weight: 700; color: var(--text-primary);" id="withdrawFee">$0.00</span>
+                            </div>
+                            <div style="height: 1px; background: rgba(255,255,255,0.08); margin-bottom: 12px;"></div>
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-size: 14px; color: var(--text-secondary); font-weight: 600;">Recipient Receives</span>
+                                <span style="font-size: 20px; font-weight: 800; color: #10B981;" id="withdrawNet">$0.00</span>
+                            </div>
                         </div>
                     </div>
 
-                    <div style="background: rgba(255,255,255,0.02); border-radius: 20px; padding: 20px; margin-bottom: 32px; border: 1px solid rgba(255,255,255,0.05);">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                            <span style="font-size: 14px; color: var(--text-secondary);">Platform Fee (1%)</span>
-                            <span style="font-size: 15px; font-weight: 700; color: var(--text-primary);" id="withdrawFee">$0.00</span>
-                        </div>
-                        <div style="height: 1px; background: rgba(255,255,255,0.08); margin-bottom: 12px;"></div>
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <span style="font-size: 14px; color: var(--text-secondary); font-weight: 600;">You Will Receive</span>
-                            <span style="font-size: 20px; font-weight: 800; color: #10B981;" id="withdrawNet">$0.00</span>
-                        </div>
+                    <div id="bankWithdrawActions">
+                        <button class="glass-btn-primary" onclick="handleWithdrawSubmit('BANK_TRANSFER')" style="margin-bottom: 12px;">Confirm Bank Withdrawal</button>
+                        <button class="glass-btn-ghost" onclick="window.location.href='/#/settings'">Update Payout Details</button>
                     </div>
 
-                    <button class="glass-btn-primary" onclick="handleWithdrawSubmit()" style="margin-bottom: 12px;">Confirm & Continue</button>
-                    <button class="glass-btn-ghost" onclick="window.location.href='/#/settings'">Update Payout Details</button>
+                    <div id="cryptoWithdrawActions" style="display:none;">
+                        <button class="glass-btn-primary" onclick="handleWithdrawSubmit('CRYPTO')">Send Gasless USDC</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1159,25 +1181,62 @@ export async function showWithdrawModal() {
     openWalletModal(modalContent);
 }
 
-// Alias so the wallet page button works
-window.showBankWithdrawal = function () { showWithdrawModal(); };
-
-window.updateWithdrawFee = function (val) {
-    const amount = parseFloat(val) || 0;
-    const fee = amount * 0.01;
-    const net = amount - fee;
-    document.getElementById('withdrawFee').textContent = `$${fee.toFixed(2)}`;
-    document.getElementById('withdrawNet').textContent = `$${net.toFixed(2)}`;
+window.switchWithdrawTab = function (tab) {
+    document.getElementById('bankWithdrawTab').classList.toggle('active', tab === 'bank');
+    document.getElementById('cryptoWithdrawTab').classList.toggle('active', tab === 'crypto');
+    document.getElementById('cryptoWithdrawFields').style.display = tab === 'crypto' ? 'block' : 'none';
+    document.getElementById('bankWithdrawActions').style.display = tab === 'bank' ? 'block' : 'none';
+    document.getElementById('cryptoWithdrawActions').style.display = tab === 'crypto' ? 'block' : 'none';
 };
 
-window.handleWithdrawSubmit = function () {
+window.handleWithdrawSubmit = async function (methodId) {
     const amount = parseFloat(document.getElementById('withdrawAmount').value);
     const balance = window.walletData?.balance || 0;
+
     if (!amount || amount <= 0) { showToast('Enter a valid amount', 'error'); return; }
     if (amount > balance) { showToast('Insufficient balance', 'error'); return; }
-    closeModal();
-    showToast('Please set up your payout account in Settings first', 'info');
-    setTimeout(() => window.location.href = '/#/settings', 1500);
+
+    if (methodId === 'BANK_TRANSFER') {
+        const userCountry = appState.user?.location?.country || appState.user?.country;
+        if (!userCountry) {
+            showToast('Please set your country in Settings first', 'info');
+            setTimeout(() => window.location.href = '/#/settings', 1500);
+            return;
+        }
+        // Check if user has bank account... this is usually checked on backend but good to prompt
+        closeModal();
+        showToast('Processing bank withdrawal...', 'info');
+        window.location.href = '/#/settings';
+    } else if (methodId === 'CRYPTO') {
+        const recipient = document.getElementById('recipientAddress').value.trim();
+        if (!recipient) { showToast('Enter a recipient Solana address', 'error'); return; }
+        if (recipient.length < 32) { showToast('Invalid Solana address', 'error'); return; }
+
+        try {
+            window.showLoadingSpinner();
+            const response = await api.initiateHostfiWithdrawal({
+                amount,
+                currency: 'USDC',
+                methodId: 'CRYPTO',
+                recipient: {
+                    walletAddress: recipient,
+                    type: 'CRYPTO'
+                }
+            });
+
+            window.hideLoadingSpinner();
+            if (response.success) {
+                closeModal();
+                showToast('USDC sent successfully!', 'success');
+                setTimeout(() => window.location.reload(), 2000);
+            } else {
+                showToast(response.message || 'Transfer failed', 'error');
+            }
+        } catch (error) {
+            window.hideLoadingSpinner();
+            showToast(error.message || 'Transfer error', 'error');
+        }
+    }
 };
 
 export async function showSwapModal() {

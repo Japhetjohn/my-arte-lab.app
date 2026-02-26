@@ -67,17 +67,20 @@ export function renderCreatorCards(creators) {
 }
 
 export async function renderCreatorProfile(creatorIdOrObject) {
-    setCurrentPage('creator-profile');
-
     if (!creatorIdOrObject) {
         return;
     }
 
-    const mainContent = document.getElementById('mainContent');
-    let creator;
-
     // Extract creator ID from string or object
     const creatorId = typeof creatorIdOrObject === 'string' ? creatorIdOrObject : creatorIdOrObject.id;
+
+    // Use History API to update URL
+    if (creatorId && appState.currentPage !== 'creator-profile') {
+        addToHistory(appState.currentPage);
+        history.pushState({ page: 'creator', creatorId }, '', `/creator/${creatorId}`);
+    }
+
+    setCurrentPage('creator-profile');
 
     if (creatorId) {
         try {
@@ -326,7 +329,7 @@ function setupProfileButtonListeners(creator) {
         shareBtn.addEventListener('click', async () => {
             const creatorId = shareBtn.dataset.creatorId;
             const creatorName = shareBtn.dataset.creatorName;
-            const profileUrl = `${window.location.origin}${window.location.pathname}#/creator/${creatorId}`;
+            const profileUrl = `${window.location.origin}/creator/${creatorId}`;
 
             try {
                 // Try native share API first (mobile)

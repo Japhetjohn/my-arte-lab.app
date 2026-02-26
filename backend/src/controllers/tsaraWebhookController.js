@@ -77,12 +77,11 @@ async function processStablecoinReceived(payload) {
         throw new Error(`User not found for reference: ${reference}`);
     }
 
-    // Credit user internal balance (MyArteLab uses it for USD/USDC unified)
-    // We assume 1% platform fee for deposits if applicable, or 0 for now as per project requirements
-    const platformFee = 0;
-    const netAmount = Number(amount) - platformFee;
-
+    // For local Solana wallet, the on-chain balance is the source of truth.
+    // The aggregate balance will be updated on the next sync.
+    // However, to provide immediate feedback, we update the local aggregate.
     user.wallet.balance += netAmount;
+    user.wallet.tsaraBalance = (user.wallet.tsaraBalance || 0) + netAmount;
     user.wallet.lastUpdated = new Date();
     await user.save();
 
@@ -92,6 +91,7 @@ async function processStablecoinReceived(payload) {
             user: user._id,
             $or: [
                 { reference: reference },
+                { transactionId: reference },
                 { transactionHash: transaction_hash }
             ]
         },
@@ -104,7 +104,7 @@ async function processStablecoinReceived(payload) {
                 platformFee,
                 netAmount,
                 transactionHash: transaction_hash,
-                blockchainNetwork: network,
+                blockchainNetwork: network || 'Solana',
                 completedAt: new Date(),
                 'metadata.provider': 'tsara',
                 'metadata.tsaraReference': reference,
