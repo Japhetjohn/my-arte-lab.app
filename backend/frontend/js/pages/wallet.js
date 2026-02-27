@@ -78,10 +78,12 @@ export async function renderWalletPage() {
                 box-shadow: 0 6px 20px rgba(0,0,0,0.15);
             }
             .wallet-section { animation: fadeIn 0.3s ease; }
-            .tx-item { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 14px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); margin-bottom: 8px; transition: background 0.15s; cursor: default; }
-            .tx-item:hover { background: rgba(255,255,255,0.07); }
+            .tx-item { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 14px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); margin-bottom: 8px; transition: all 0.2s ease; cursor: pointer; }
+            .tx-item:hover { background: rgba(255,255,255,0.08); transform: translateX(4px); border-color: rgba(151,71,255,0.3); }
             .asset-row { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 14px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); margin-bottom: 8px; }
             .section-header { font-size: 13px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; margin: 28px 0 12px; }
+            .hash-link { font-size: 10px; font-family: 'JetBrains Mono', monospace; color: var(--primary); text-decoration: none; opacity: 0.7; transition: opacity 0.2s; display: flex; align-items: center; gap: 4px; margin-top: 4px; }
+            .hash-link:hover { opacity: 1; text-decoration: underline; }
         </style>
     `;
 
@@ -322,7 +324,7 @@ function buildWalletHTML() {
         const amountColor = isCredit ? '#10B981' : '#EF4444';
         const iconBg = isCredit ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.1)';
         return `
-                    <div class="tx-item">
+                    <div class="tx-item" onclick="window.showTransactionDetail('${tx._id || tx.id}')">
                         <div style="width: 40px; height: 40px; min-width: 40px; background: ${iconBg}; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="color: ${amountColor};">
                                 ${isCredit
@@ -332,7 +334,13 @@ function buildWalletHTML() {
                         </div>
                         <div style="flex: 1; min-width: 0;">
                             <div style="font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${tx.description || (tx.type.charAt(0).toUpperCase() + tx.type.slice(1))}</div>
-                            <div style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">${formatDate(tx.createdAt)} ${new Date(tx.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                            <div style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">${formatDate(tx.createdAt)}</div>
+                            ${tx.transactionHash ? `
+                                <a href="https://explorer.solana.com/tx/${tx.transactionHash}" target="_blank" class="hash-link" onclick="event.stopPropagation()">
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg>
+                                    ${tx.transactionHash.slice(0, 6)}...${tx.transactionHash.slice(-6)}
+                                </a>
+                            ` : ''}
                         </div>
                         <div style="text-align: right;">
                             <div style="font-size: 15px; font-weight: 700; color: ${amountColor};">${isCredit ? '+' : '-'}${currencySymbols[tx.currency] || ''}${Math.abs(tx.amount).toFixed(2)}</div>

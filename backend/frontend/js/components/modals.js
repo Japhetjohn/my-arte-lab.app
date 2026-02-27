@@ -1286,7 +1286,148 @@ export async function showPayoutSettings() {
 }
 
 export async function showTransactionHistory() {
-    navigateToPage('wallet');
+    try {
+        window.showLoadingSpinner();
+        const response = await api.getHostfiTransactions(1, 50);
+        window.hideLoadingSpinner();
+
+        if (!response.success) throw new Error(response.message || 'Failed to fetch transactions');
+
+        const txs = response.data.transactions || [];
+        const currencySymbols = { 'USD': '$', 'USDC': '$', 'NGN': '₦', 'GHS': '₵', 'KES': 'KSh', 'SOL': '◎' };
+
+        const modalContent = `
+            <div class="glass-modal-overlay" onclick="if(event.target === this) closeModal()">
+                <div class="glass-modal-content" style="max-width: 580px; height: 85vh; display: flex; flex-direction: column;">
+                    <div class="glass-modal-header">
+                        <span class="glass-modal-title">Transaction History</span>
+                        <button class="glass-modal-close" onclick="closeModal()">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                        </button>
+                    </div>
+
+                    <div class="glass-modal-body" style="flex: 1; overflow-y: auto; padding-top: 0;">
+                        ${txs.length > 0 ? `
+                            <div style="display: flex; flex-direction: column; gap: 8px; padding-top: 20px;">
+                                ${txs.map(tx => {
+            const isCredit = ['deposit', 'earning', 'bonus', 'refund'].includes(tx.type);
+            const statusColor = tx.status === 'completed' ? '#10B981' : tx.status === 'failed' ? '#EF4444' : '#F59E0B';
+            const amountColor = isCredit ? '#10B981' : '#EF4444';
+            const iconBg = isCredit ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)';
+            const { formatDate } = window; // Assumes formatDate is globally available or imported in utils
+
+            return `
+                                    <div onclick="window.showTransactionDetail('${tx._id || tx.id}')" style="display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); cursor: pointer; transition: all 0.2s;">
+                                        <div style="width: 40px; height: 40px; background: ${iconBg}; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: ${amountColor}; flex-shrink: 0;">
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                                ${isCredit ? '<path d="M12 5v14M5 12l7 7 7-7"/>' : '<path d="M12 19V5M5 12l7-7 7 7"/>'}
+                                            </svg>
+                                        </div>
+                                        <div style="flex: 1; min-width: 0;">
+                                            <div style="font-size: 14px; font-weight: 700; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${tx.description || (tx.type.charAt(0).toUpperCase() + tx.type.slice(1))}</div>
+                                            <div style="font-size: 12px; color: var(--text-secondary); opacity: 0.7; margin-top: 2px;">${new Date(tx.createdAt).toLocaleDateString()} • ${new Date(tx.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                                        </div>
+                                        <div style="text-align: right; flex-shrink: 0;">
+                                            <div style="font-size: 15px; font-weight: 800; color: ${amountColor};">${isCredit ? '+' : '-'}${currencySymbols[tx.currency] || ''}${Math.abs(tx.amount).toFixed(2)}</div>
+                                            <div style="font-size: 10px; font-weight: 800; color: ${statusColor}; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px;">${tx.status}</div>
+                                        </div>
+                                    </div>
+                                `;
+        }).join('')}
+                            </div>
+                        ` : `
+                            <div style="text-align: center; padding: 60px 20px; opacity: 0.5;">
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 16px;"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>
+                                <p>No transactions found</p>
+                            </div>
+                        `}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('modalsContainer').innerHTML = modalContent;
+        openModal();
+    } catch (error) {
+        showToast(error.message, 'error');
+    }
+}
+
+window.showTransactionDetail = async function (txId) {
+    try {
+        window.showLoadingSpinner();
+        const response = await api.request(`/hostfi/wallet/transactions/${txId}`);
+        window.hideLoadingSpinner();
+
+        if (!response.success) throw new Error(response.message || 'Failed to fetch transaction details');
+
+        const tx = response.data.transaction;
+        const currencySymbols = { 'USD': '$', 'USDC': '$', 'NGN': '₦', 'GHS': '₵', 'KES': 'KSh', 'SOL': '◎' };
+        const isCredit = ['deposit', 'earning', 'bonus', 'refund'].includes(tx.type);
+        const amountColor = isCredit ? '#10B981' : '#EF4444';
+
+        const modalContent = `
+            <div class="glass-modal-overlay" onclick="if(event.target === this) closeModal()">
+                <div class="glass-modal-content" style="max-width: 440px;">
+                    <div class="glass-modal-header">
+                        <span class="glass-modal-title">Transaction Details</span>
+                        <button class="glass-modal-close" onclick="closeModal()">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                        </button>
+                    </div>
+
+                    <div class="glass-modal-body" style="text-align: center; padding-bottom: 32px;">
+                        <div style="width: 64px; height: 64px; background: rgba(151, 71, 255, 0.1); border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; color: var(--primary); border: 1px solid rgba(151, 71, 255, 0.2);">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                            </svg>
+                        </div>
+
+                        <div style="font-size: 32px; font-weight: 800; color: ${amountColor}; margin-bottom: 4px;">
+                            ${isCredit ? '+' : '-'}${currencySymbols[tx.currency] || ''}${Math.abs(tx.amount).toFixed(2)}
+                        </div>
+                        <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 24px;">${tx.description || (tx.type.charAt(0).toUpperCase() + tx.type.slice(1))}</div>
+
+                        <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 16px; text-align: left;">
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="font-size: 13px; color: var(--text-secondary);">Status</span>
+                                <span style="font-size: 13px; font-weight: 700; color: ${tx.status === 'completed' ? '#10B981' : '#F59E0B'}; text-transform: capitalize;">${tx.status}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="font-size: 13px; color: var(--text-secondary);">Date</span>
+                                <span style="font-size: 13px; font-weight: 600;">${new Date(tx.createdAt).toLocaleString()}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="font-size: 13px; color: var(--text-secondary);">Type</span>
+                                <span style="font-size: 13px; font-weight: 600; text-transform: capitalize;">${tx.type}</span>
+                            </div>
+                            ${tx.transactionHash ? `
+                                <div style="height: 1px; background: rgba(255,255,255,0.08); margin: 4px 0;"></div>
+                                <div style="text-align: left;">
+                                    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">Transaction Hash</div>
+                                    <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--primary); background: rgba(151,71,255,0.05); padding: 12px; border-radius: 12px; word-break: break-all; line-height: 1.5; border: 1px solid rgba(151,71,255,0.1);">
+                                        ${tx.transactionHash}
+                                    </div>
+                                    <a href="https://explorer.solana.com/tx/${tx.transactionHash}" target="_blank" style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 12px; color: var(--primary); text-decoration: none; font-size: 13px; font-weight: 700; background: rgba(151,71,255,0.1); padding: 10px; border-radius: 12px;">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg>
+                                        View on Solana Explorer
+                                    </a>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('modalsContainer').innerHTML = modalContent;
+        // Check if modal container is already open, if not, open it
+        if (!document.querySelector('.glass-modal-overlay.active')) {
+            openModal();
+        }
+    } catch (error) {
+        showToast(error.message, 'error');
+    }
 }
 
 export async function showEarningsReport() {

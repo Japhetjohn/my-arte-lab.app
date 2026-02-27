@@ -24,6 +24,7 @@ const notificationSchema = new mongoose.Schema({
       'payment_received',
       'payment_deducted',
       'payment_failed',
+      'deposit_credited',
       'withdrawal_completed',
       'withdrawal_failed',
       'counter_proposal',
