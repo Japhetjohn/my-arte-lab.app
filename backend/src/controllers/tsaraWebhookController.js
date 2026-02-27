@@ -77,16 +77,24 @@ async function processStablecoinReceived(payload) {
         throw new Error(`User not found for reference: ${reference}`);
     }
 
+    // Calculate fees (1% platform fee)
+    const platformFee = Number(amount) * 0.01;
+    const netAmount = Number(amount) - platformFee;
+
+    console.log(`[Tsara Webhook] Deposit Breakdown - Amount: ${amount}, Fee: ${platformFee}, Net: ${netAmount}`);
+
     // For local Solana wallet, the on-chain balance is the source of truth.
     // The aggregate balance will be updated on the next sync.
     // However, to provide immediate feedback, we update the local aggregate.
-    user.wallet.balance += netAmount;
+    user.wallet.balance = (user.wallet.balance || 0) + netAmount;
     user.wallet.tsaraBalance = (user.wallet.tsaraBalance || 0) + netAmount;
     user.wallet.lastUpdated = new Date();
     await user.save();
 
+    console.log(`[Tsara Webhook] User ${user._id} balance updated. New Aggregate: ${user.wallet.balance}`);
+
     // Update or Create Transaction
-    await Transaction.findOneAndUpdate(
+    const transaction = await Transaction.findOneAndUpdate(
         {
             user: user._id,
             $or: [
@@ -97,6 +105,7 @@ async function processStablecoinReceived(payload) {
         },
         {
             $set: {
+                user: user._id,
                 type: 'deposit',
                 amount: Number(amount),
                 currency: asset,
@@ -113,6 +122,8 @@ async function processStablecoinReceived(payload) {
         },
         { upsert: true, new: true }
     );
+
+    console.log(`[Tsara Webhook] Transaction history created: ${transaction._id}`);
 
     // Send Notification
     try {
