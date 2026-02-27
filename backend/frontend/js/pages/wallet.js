@@ -1,7 +1,7 @@
 import { appState } from '../state.js';
 import { formatDate, showToast } from '../utils.js';
 import api from '../services/api.js';
-import { showAddFundsModal, showSwapModal } from '../components/modals.js';
+import { showAddFundsModal, showSwapModal, showWithdrawModal, showTransactionHistory } from '../components/modals.js';
 
 const currencySymbols = {
     'USD': '$', 'USDC': '$', 'USDT': '$', 'NGN': '₦',
@@ -254,7 +254,7 @@ function buildWalletHTML() {
                     </div>
                     Deposit
                 </button>
-                <button class="wallet-action-btn" onclick="window.showBankWithdrawal()">
+                <button class="wallet-action-btn" onclick="window.showWithdrawModal()">
                     <div style="width: 34px; height: 34px; background: rgba(251,146,60,0.2); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 19V5M5 12l7-7 7 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
                     </div>
@@ -378,6 +378,8 @@ function buildWalletHTML() {
 
 window.fundWallet = function () { showAddFundsModal(); };
 window.showSwapModal = function () { showSwapModal(); };
+window.showWithdrawModal = function () { showWithdrawModal(); };
+window.showTransactionHistory = function () { showTransactionHistory(); };
 window.walletData = walletData;
 
 window.copyWalletAddress = async function () {

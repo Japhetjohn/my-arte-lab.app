@@ -243,6 +243,12 @@ class HostFiWalletService {
       // Ensure we don't accidentally set to negative or NaN
       user.wallet.balance = Math.max(0, totalAggregateInPrimary || 0);
 
+      // CRITICAL: Ensure the primary wallet address is the Tsara Solana address if available
+      if (user.wallet.tsaraAddress) {
+        user.wallet.address = user.wallet.tsaraAddress;
+        user.wallet.network = 'Solana';
+      }
+
       console.log(`Wallet balances synced for user ${userId}. Total Aggregate: ${user.wallet.balance} ${primaryCurrency}`);
       return user;
     } catch (error) {

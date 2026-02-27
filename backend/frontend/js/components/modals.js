@@ -1007,7 +1007,20 @@ export async function showAddFundsModal() {
                                 <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.6; opacity: 0.8;">We sponsor all Solana gas fees. Just send USDC directly to your address.</div>
                             </div>
                         </div>
-                        <button class="glass-btn-primary" onclick="generateCryptoAddress()">Get Solana USDC Address</button>
+                        ${window.walletData?.address && !window.walletData?.address.startsWith('pending_') ? `
+                            <div style="background: rgba(151, 71, 255, 0.05); border: 1px solid rgba(151, 71, 255, 0.2); border-radius: 20px; padding: 24px; text-align: center;">
+                                <div style="font-size: 11px; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 20px;">Your Solana USDC Address</div>
+                                <div style="font-size: 13px; font-family: 'JetBrains Mono', monospace; word-break: break-all; color: var(--text-primary); background: rgba(0,0,0,0.2); border-radius: 12px; padding: 16px; line-height: 1.6; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.05);">
+                                    ${window.walletData.address}
+                                </div>
+                                <button class="glass-btn-ghost" onclick="navigator.clipboard.writeText('${window.walletData.address}'); showToast('Address copied!', 'success')" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; border-radius: 12px;">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                                    Copy Address
+                                </button>
+                            </div>
+                        ` : `
+                            <button class="glass-btn-primary" onclick="generateCryptoAddress()">Get Solana USDC Address</button>
+                        `}
                     </div>
 
                     <div id="depositResult" style="display:none; margin-top: 24px; animation: glassFadeInPulse 0.4s ease;"></div>
