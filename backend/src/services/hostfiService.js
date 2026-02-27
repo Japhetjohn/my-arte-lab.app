@@ -71,7 +71,7 @@ class HostFiService {
    * @returns {Object} Fee breakdown
    */
   calculateOnRampFee(amount) {
-    const feePercent = 1; // Fixed 1% for on-ramp
+    const feePercent = 0; // Removed platform fee for on-ramp
     const fee = (amount * feePercent) / 100;
     const amountAfterFee = amount - fee;
 
@@ -91,7 +91,7 @@ class HostFiService {
    * @returns {Object} Fee breakdown
    */
   calculateOffRampFee(amount) {
-    const feePercent = 1; // Fixed 1% for off-ramp
+    const feePercent = 0; // Removed platform fee for off-ramp
     const fee = (amount * feePercent) / 100;
     const amountAfterFee = amount - fee;
 

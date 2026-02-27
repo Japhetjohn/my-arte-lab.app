@@ -155,11 +155,11 @@ function renderNotificationCard(notification) {
     const color = colorMap[notification.type] || colorMap.system;
 
     return `
-        < div class="notification-card glass-effect ${!notification.read ? 'unread' : ''}"
+        <div class="notification-card glass-effect ${!notification.read ? 'unread' : ''}"
     onclick = "window.handleNotificationClick('${notification._id}', '${notification.link || '#'}')"
     style = "cursor: pointer; margin-bottom: 12px; border-radius: 16px; 
                     ${!notification.read ? 'background: rgba(151, 71, 255, 0.15); border-left: 4px solid var(--primary);' : ''} ">
-        < div style = "display: flex; gap: 16px; align-items: start; padding: 4px;" >
+        <div style = "display: flex; gap: 16px; align-items: start; padding: 4px;" >
                 <div style="flex-shrink: 0; width: 44px; height: 44px; background: rgba(255,255,255,0.5); backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.6); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: ${color}; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
                     ${icon}
                 </div>
@@ -171,8 +171,8 @@ function renderNotificationCard(notification) {
                     <p style="color: var(--text-secondary); font-size: 14px; margin: 0 0 8px 0; line-height: 1.5;">${notification.message}</p>
                     <div style="font-size: 12px; font-weight: 500; color: var(--primary); opacity: 0.8;">${formatDate(notification.createdAt)}</div>
                 </div>
-            </div >
-        </div >
+            </div>
+        </div>
         `;
 }
 

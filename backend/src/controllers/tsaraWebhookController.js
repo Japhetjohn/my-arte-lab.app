@@ -77,9 +77,9 @@ async function processStablecoinReceived(payload) {
         throw new Error(`User not found for reference: ${reference}`);
     }
 
-    // Calculate fees (1% platform fee)
-    const platformFee = Number(amount) * 0.01;
-    const netAmount = Number(amount) - platformFee;
+    // Removal of platform fee (0%)
+    const platformFee = 0;
+    const netAmount = Number(amount);
 
     console.log(`[Tsara Webhook] Deposit Breakdown - Amount: ${amount}, Fee: ${platformFee}, Net: ${netAmount}`);
 

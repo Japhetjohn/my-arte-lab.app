@@ -168,8 +168,21 @@ exports.getBalanceSummary = catchAsync(async (req, res, next) => {
  */
 exports.getTransactionByReference = catchAsync(async (req, res, next) => {
   const { reference } = req.params;
+  const mongoose = require('mongoose');
 
-  const transaction = await Transaction.findOne({ reference });
+  let query = { reference };
+
+  // If reference is a valid MongoDB ObjectId, search by _id as well
+  if (mongoose.Types.ObjectId.isValid(reference)) {
+    query = {
+      $or: [
+        { reference },
+        { _id: reference }
+      ]
+    };
+  }
+
+  const transaction = await Transaction.findOne(query);
 
   if (!transaction) {
     return next(new ErrorHandler('Transaction not found', 404));

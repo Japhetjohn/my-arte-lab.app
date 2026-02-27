@@ -1296,6 +1296,12 @@ export async function showTransactionHistory() {
         const txs = response.data.transactions || [];
         const currencySymbols = { 'USD': '$', 'USDC': '$', 'NGN': '₦', 'GHS': '₵', 'KES': 'KSh', 'SOL': '◎' };
 
+        // Helper to format date within scope
+        const formatTxDate = (dateString) => {
+            const date = new Date(dateString);
+            return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        };
+
         const modalContent = `
             <div class="glass-modal-overlay" onclick="if(event.target === this) closeModal()">
                 <div class="glass-modal-content" style="max-width: 580px; height: 85vh; display: flex; flex-direction: column;">
@@ -1397,6 +1403,11 @@ window.showTransactionDetail = async function (txId) {
                                 <span style="font-size: 13px; color: var(--text-secondary);">Date</span>
                                 <span style="font-size: 13px; font-weight: 600;">${new Date(tx.createdAt).toLocaleString()}</span>
                             </div>
+                            ${tx.platformFee && tx.platformFee > 0 ? `
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="font-size: 13px; color: var(--text-secondary);">Platform Fee</span>
+                                <span style="font-size: 13px; font-weight: 600; color: #EF4444;">-${currencySymbols[tx.currency] || ''}${Number(tx.platformFee).toFixed(2)}</span>
+                            </div>` : ''}
                             <div style="display: flex; justify-content: space-between;">
                                 <span style="font-size: 13px; color: var(--text-secondary);">Type</span>
                                 <span style="font-size: 13px; font-weight: 600; text-transform: capitalize;">${tx.type}</span>
