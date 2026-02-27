@@ -67,7 +67,7 @@ class TsaraService {
         try {
             const mnemonic = bip39.generateMnemonic();
             const seed = await bip39.mnemonicToSeed(mnemonic);
-            const { key } = derivePath(`m/44'/501'/0'`, seed.toString("hex"));
+            const { key } = derivePath(`m/44'/501'/0'/0'`, seed.toString("hex"));
             const keypair = Keypair.fromSeed(key);
 
             const publicKey = keypair.publicKey.toBase58();
@@ -140,7 +140,7 @@ class TsaraService {
         const mnemonic = walletEncryptionService.decryptPrivateKey(encryptedMnemonic);
         const mnemonicStr = Buffer.from(mnemonic).toString('utf8');
         const seed = await bip39.mnemonicToSeed(mnemonicStr);
-        const { key } = derivePath(`m/44'/501'/0'`, seed.toString("hex"));
+        const { key } = derivePath(`m/44'/501'/0'/0'`, seed.toString("hex"));
         return Keypair.fromSeed(key);
     }
 
@@ -152,7 +152,7 @@ class TsaraService {
         if (!funderMnemonic) throw new Error("Funder mnemonic (FUNDER_MNEMONIC) not set in environment");
 
         const seed = await bip39.mnemonicToSeed(funderMnemonic);
-        const { key } = derivePath(`m/44'/501'/0'`, seed.toString("hex"));
+        const { key } = derivePath(`m/44'/501'/0'/0'`, seed.toString("hex"));
         return Keypair.fromSeed(key);
     }
 
