@@ -148,8 +148,13 @@ class TsaraService {
      * Get Funder Keypair from environment
      */
     async getFunderKeypair() {
-        const funderMnemonic = process.env.FUNDER_MNEMONIC;
-        if (!funderMnemonic) throw new Error("Funder mnemonic (FUNDER_MNEMONIC) not set in environment");
+        // Prioritize GAS_SPONSOR_SEED (Production) then FUNDER_MNEMONIC (Legacy/Dev)
+        const funderMnemonic = process.env.GAS_SPONSOR_SEED || process.env.FUNDER_MNEMONIC;
+
+        if (!funderMnemonic) {
+            console.error('[Tsara Service] Critical: No gas sponsor mnemonic found in environment variables (GAS_SPONSOR_SEED or FUNDER_MNEMONIC)');
+            throw new Error("Gas sponsor wallet not configured. Please contact support.");
+        }
 
         const seed = await bip39.mnemonicToSeed(funderMnemonic);
         const { key } = derivePath(`m/44'/501'/0'/0'`, seed.toString("hex"));
