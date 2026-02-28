@@ -665,9 +665,9 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
     }
   }
 
-  // Check balance using the primary currency equivalent
-  if (user.wallet.balance < amountInPrimary) {
-    return next(new ErrorHandler(`Insufficient balance. You need approx ${amountInPrimary.toFixed(2)} ${user.wallet.currency}`, 400));
+  // Check balance using the primary currency equivalent (with small epsilon for precision)
+  if (user.wallet.balance < (amountInPrimary - 0.000001)) {
+    return next(new ErrorHandler(`Insufficient balance. Available: ${user.wallet.balance.toFixed(4)} ${user.wallet.currency}`, 400));
   }
 
   // Get wallet asset ID

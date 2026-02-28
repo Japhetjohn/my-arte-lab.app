@@ -239,9 +239,8 @@ class HostFiWalletService {
         }
       }
 
-      // Update aggregate balance: Use HostFi + Tsara as the base
-      // Ensure we don't accidentally set to negative or NaN
       user.wallet.balance = Math.max(0, totalAggregateInPrimary || 0);
+      user.balance = user.wallet.balance; // Keep root balance in sync
 
       // CRITICAL: Ensure the primary wallet address is the Tsara Solana address if available
       if (user.wallet.tsaraAddress) {
@@ -249,6 +248,7 @@ class HostFiWalletService {
         user.wallet.network = 'Solana';
       }
 
+      await user.save();
       console.log(`Wallet balances synced for user ${userId}. Total Aggregate: ${user.wallet.balance} ${primaryCurrency}`);
       return user;
     } catch (error) {
