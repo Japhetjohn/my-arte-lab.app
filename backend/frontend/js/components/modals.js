@@ -1152,7 +1152,7 @@ export async function showWithdrawModal() {
                         <div style="margin-bottom:24px;">
                             <label class="glass-form-label">Amount to Withdraw</label>
                             <div style="position: relative;">
-                                <input type="number" id="withdrawAmount" class="glass-input" placeholder="0.00" min="1" max="${balance}" step="0.01" oninput="updateWithdrawFee(this.value)" style="padding-right: 80px; font-size: 18px; font-weight: 700;">
+                                <input type="number" id="withdrawAmount" class="glass-input" placeholder="0.00" min="0.01" max="${balance}" step="0.01" oninput="updateWithdrawFee(this.value)" style="padding-right: 80px; font-size: 18px; font-weight: 700;">
                                 <button onclick="document.getElementById('withdrawAmount').value='${balance}'; updateWithdrawFee('${balance}')" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: var(--primary); border: none; border-radius: 10px; padding: 6px 14px; font-size: 12px; font-weight: 800; color: white; cursor: pointer;">MAX</button>
                             </div>
                         </div>
@@ -1168,7 +1168,7 @@ export async function showWithdrawModal() {
 
                         <div style="background: rgba(255,255,255,0.02); border-radius: 20px; padding: 20px; margin-bottom: 24px; border: 1px solid rgba(255,255,255,0.05);">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                                <span style="font-size: 14px; color: var(--text-secondary);">Platform Fee (1%)</span>
+                                <span style="font-size: 14px; color: var(--text-secondary);">Network Fee (USDC)</span>
                                 <span style="font-size: 15px; font-weight: 700; color: var(--text-primary);" id="withdrawFee">$0.00</span>
                             </div>
                             <div style="height: 1px; background: rgba(255,255,255,0.08); margin-bottom: 12px;"></div>
@@ -1193,6 +1193,22 @@ export async function showWithdrawModal() {
     `;
     openWalletModal(modalContent);
 }
+
+window.showBankWithdrawal = function () {
+    showWithdrawModal();
+};
+
+window.updateWithdrawFee = function (amount) {
+    const val = parseFloat(amount) || 0;
+    const fee = val > 0 ? 0.05 : 0; // Standard network fee estimate
+    const net = Math.max(0, val - fee);
+
+    const feeEl = document.getElementById('withdrawFee');
+    const netEl = document.getElementById('withdrawNet');
+
+    if (feeEl) feeEl.textContent = `$${fee.toFixed(2)}`;
+    if (netEl) netEl.textContent = `$${net.toFixed(2)}`;
+};
 
 window.switchWithdrawTab = function (tab) {
     document.getElementById('bankWithdrawTab').classList.toggle('active', tab === 'bank');

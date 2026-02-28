@@ -678,8 +678,10 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
   // Generate unique reference
   const clientReference = `WD-${uuidv4()}`;
 
-  // Calculate platform fee (1% for off-ramp)
+  // Calculate fees
   const feeBreakdown = hostfiService.calculateOffRampFee(amount);
+  const networkFee = hostfiService.calculateNetworkFee(currency, methodId);
+  const amountToTransfer = Math.max(0, amount - networkFee);
 
   // Deduct from balance and add to pending (using converted amounts where appropriate)
   user.wallet.balance -= amountInPrimary;
@@ -704,11 +706,11 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
       console.log(`[Withdrawal] Initiating local Tsara transfer for user ${req.user._id}`);
 
       const transferResult = await tsaraService.transfer({
-        to: recipient.walletAddress || recipient.accountNumber, // Accept both naming conventions
-        amount: amount,
+        to: recipient.walletAddress || recipient.accountNumber,
+        amount: amountToTransfer,
         currency: 'USDC',
         senderMnemonic: userWithSecrets.wallet.tsaraMnemonic,
-        fee: feeBreakdown.platformFee || 0,
+        fee: 0, // No platform fee
         userId: req.user._id
       });
 
@@ -721,7 +723,7 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
       // Initiate withdrawal with HostFi (Legacy/Fiat)
       withdrawal = await hostfiService.initiateWithdrawal({
         walletAssetId: assetId,
-        amount,
+        amount: amountToTransfer,
         currency,
         methodId: methodId,
         recipient: {
@@ -736,7 +738,7 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
           accountType: recipient.accountType || 'SAVINGS'
         },
         clientReference,
-        memo: `Withdrawal of ${amount} ${currency} to ${recipient.accountName || 'beneficiary'}`
+        memo: `Withdrawal of ${amountToTransfer} ${currency} to ${recipient.accountName || 'beneficiary'}`
       });
     }
 
@@ -749,17 +751,18 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
       currency,
       status: (methodId === 'CRYPTO' || methodId === 'SOL') ? 'completed' : 'pending',
       paymentMethod: methodId.toLowerCase(),
-      platformFee: feeBreakdown.platformFee,
-      netAmount: feeBreakdown.amountAfterFee,
+      platformFee: 0,
+      netAmount: amountToTransfer,
       paymentDetails: {
         beneficiaryAccountNumber: recipient.accountNumber || recipient.walletAddress,
         beneficiaryAccountName: recipient.accountName || 'Solana Wallet',
         beneficiaryBankName: recipient.bankName || 'Solana',
         beneficiaryBankCode: recipient.bankId,
         targetCurrency,
-        targetAmount: withdrawal.amount || feeBreakdown.amountAfterFee,
+        targetAmount: withdrawal.amount || amountToTransfer,
         reference: clientReference,
-        signature: withdrawal.reference
+        signature: withdrawal.reference,
+        networkFee: networkFee
       },
       reference: clientReference,
       transactionHash: withdrawal.reference,
@@ -767,7 +770,7 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
         hostfiReference: methodId === 'CRYPTO' ? null : withdrawal.reference,
         provider: (methodId === 'CRYPTO' || methodId === 'SOL') ? 'tsara' : 'hostfi',
         methodId,
-        feeBreakdown: feeBreakdown,
+        feeBreakdown: { ...feeBreakdown, networkFee },
         country: recipient.country,
         explorerUrl: (methodId === 'CRYPTO' || methodId === 'SOL') ? `https://explorer.solana.com/tx/${withdrawal.reference}` : null
       }
@@ -788,9 +791,9 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
         reference: clientReference,
         amount,
         currency,
-        platformFee: feeBreakdown.platformFee,
-        platformFeePercent: feeBreakdown.platformFeePercent,
-        amountAfterFee: feeBreakdown.amountAfterFee,
+        platformFee: 0,
+        networkFee: networkFee,
+        amountAfterFee: amountToTransfer,
         status: 'pending',
         recipient: {
           accountName: recipient.accountName,

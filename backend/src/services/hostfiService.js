@@ -77,9 +77,9 @@ class HostFiService {
 
     return {
       originalAmount: amount,
-      platformFee: fee,
-      platformFeePercent: feePercent,
-      amountAfterFee,
+      platformFee: 0,
+      platformFeePercent: 0,
+      amountAfterFee: amount,
       platformWallet: this.platformWalletAddress,
       feeType: 'on-ramp'
     };
@@ -97,12 +97,29 @@ class HostFiService {
 
     return {
       originalAmount: amount,
-      platformFee: fee,
-      platformFeePercent: feePercent,
-      amountAfterFee,
+      platformFee: 0,
+      platformFeePercent: 0,
+      amountAfterFee: amount,
       platformWallet: this.platformWalletAddress,
       feeType: 'off-ramp'
     };
+  }
+
+  /**
+   * Calculate network (gas) fee for withdrawal
+   * @param {string} currency - Currency code
+   * @param {string} network - Network name
+   * @returns {number} Estimated network fee in the given currency
+   */
+  calculateNetworkFee(currency = 'USDC', network = 'SOL') {
+    // Standard gas fee estimates per transaction
+    if (currency === 'USDC' && (network === 'SOL' || network === 'Solana')) {
+      return 0.05; // ~0.05 USDC for Solana transfers
+    }
+    if (currency === 'NGN' || currency === 'KES') {
+      return 50; // Flat local fee for bank transfers
+    }
+    return 0; // Default
   }
 
   /**
