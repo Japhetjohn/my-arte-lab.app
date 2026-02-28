@@ -631,8 +631,9 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Valid amount is required', 400));
   }
 
-  if (!recipient || !recipient.accountNumber || !recipient.accountName) {
-    return next(new ErrorHandler('Recipient details are required', 400));
+  const isCrypto = methodId === 'CRYPTO' || methodId === 'SOL';
+  if (!recipient || (!isCrypto && (!recipient.accountNumber || !recipient.accountName)) || (isCrypto && !recipient.walletAddress)) {
+    return next(new ErrorHandler(isCrypto ? 'Recipient wallet address is required' : 'Recipient bank details are required', 400));
   }
 
   const user = await User.findById(req.user._id);
