@@ -761,8 +761,7 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
         targetCurrency,
         targetAmount: withdrawal.amount || amountToTransfer,
         reference: clientReference,
-        signature: withdrawal.reference,
-        networkFee: networkFee
+        signature: withdrawal.reference
       },
       reference: clientReference,
       transactionHash: withdrawal.reference,
