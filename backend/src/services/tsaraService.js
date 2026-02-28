@@ -145,20 +145,33 @@ class TsaraService {
     }
 
     /**
-     * Get Funder Keypair from environment
+     * Get Funder/Gas Sponsor Keypair from environment
+     * Uses GAS_SPONSOR_PRIVATE_KEY (byte array) preferentially,
+     * falls back to GAS_SPONSOR_SEED or FUNDER_MNEMONIC
      */
     async getFunderKeypair() {
-        // Prioritize GAS_SPONSOR_SEED (Production) then FUNDER_MNEMONIC (Legacy/Dev)
-        const funderMnemonic = process.env.GAS_SPONSOR_SEED || process.env.FUNDER_MNEMONIC;
-
-        if (!funderMnemonic) {
-            console.error('[Tsara Service] Critical: No gas sponsor mnemonic found in environment variables (GAS_SPONSOR_SEED or FUNDER_MNEMONIC)');
-            throw new Error("Gas sponsor wallet not configured. Please contact support.");
+        // Method 1: Use private key bytes directly (most reliable)
+        const privateKeyEnv = process.env.GAS_SPONSOR_PRIVATE_KEY;
+        if (privateKeyEnv) {
+            try {
+                const keyBytes = JSON.parse(privateKeyEnv);
+                const keypair = Keypair.fromSecretKey(Uint8Array.from(keyBytes));
+                console.log(`[Tsara Service] Gas sponsor loaded from private key: ${keypair.publicKey.toBase58()}`);
+                return keypair;
+            } catch (e) {
+                console.warn('[Tsara Service] Failed to parse GAS_SPONSOR_PRIVATE_KEY, trying mnemonic...');
+            }
         }
 
-        const seed = await bip39.mnemonicToSeed(funderMnemonic);
-        const { key } = derivePath(`m/44'/501'/0'/0'`, seed.toString("hex"));
-        return Keypair.fromSeed(key);
+        // Method 2: Use mnemonic / seed phrase
+        const funderMnemonic = process.env.GAS_SPONSOR_SEED || process.env.FUNDER_MNEMONIC;
+        if (funderMnemonic) {
+            const seed = await bip39.mnemonicToSeed(funderMnemonic);
+            const { key } = derivePath(`m/44'/501'/0'/0'`, seed.toString("hex"));
+            return Keypair.fromSeed(key);
+        }
+
+        throw new Error("Gas sponsor wallet not configured. Set GAS_SPONSOR_PRIVATE_KEY or GAS_SPONSOR_SEED in environment.");
     }
 
     /**
