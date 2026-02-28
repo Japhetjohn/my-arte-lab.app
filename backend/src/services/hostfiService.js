@@ -112,14 +112,7 @@ class HostFiService {
    * @returns {number} Estimated network fee in the given currency
    */
   calculateNetworkFee(currency = 'USDC', network = 'SOL') {
-    // Standard gas fee estimates per transaction
-    if (currency === 'USDC' && (network === 'SOL' || network === 'Solana')) {
-      return 0.05; // ~0.05 USDC for Solana transfers
-    }
-    if (currency === 'NGN' || currency === 'KES') {
-      return 50; // Flat local fee for bank transfers
-    }
-    return 0; // Default
+    return 0; // Removed hardcoded fee as requested
   }
 
   /**

@@ -680,8 +680,7 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
 
   // Calculate fees
   const feeBreakdown = hostfiService.calculateOffRampFee(amount);
-  const networkFee = hostfiService.calculateNetworkFee(currency, methodId);
-  const amountToTransfer = Math.max(0, amount - networkFee);
+  const amountToTransfer = amount; // No network fee deduction
 
   // Deduct from balance and add to pending (using converted amounts where appropriate)
   user.wallet.balance -= amountInPrimary;
@@ -770,7 +769,7 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
         hostfiReference: methodId === 'CRYPTO' ? null : withdrawal.reference,
         provider: (methodId === 'CRYPTO' || methodId === 'SOL') ? 'tsara' : 'hostfi',
         methodId,
-        feeBreakdown: { ...feeBreakdown, networkFee },
+        feeBreakdown: { ...feeBreakdown, networkFee: 0 },
         country: recipient.country,
         explorerUrl: (methodId === 'CRYPTO' || methodId === 'SOL') ? `https://explorer.solana.com/tx/${withdrawal.reference}` : null
       }
@@ -792,8 +791,8 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
         amount,
         currency,
         platformFee: 0,
-        networkFee: networkFee,
-        amountAfterFee: amountToTransfer,
+        networkFee: 0,
+        amountAfterFee: amount,
         status: 'pending',
         recipient: {
           accountName: recipient.accountName,

@@ -1167,11 +1167,6 @@ export async function showWithdrawModal() {
                         </div>
 
                         <div style="background: rgba(255,255,255,0.02); border-radius: 20px; padding: 20px; margin-bottom: 24px; border: 1px solid rgba(255,255,255,0.05);">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                                <span style="font-size: 14px; color: var(--text-secondary);">Network Fee (USDC)</span>
-                                <span style="font-size: 15px; font-weight: 700; color: var(--text-primary);" id="withdrawFee">$0.00</span>
-                            </div>
-                            <div style="height: 1px; background: rgba(255,255,255,0.08); margin-bottom: 12px;"></div>
                             <div style="display: flex; justify-content: space-between; align-items: center;">
                                 <span style="font-size: 14px; color: var(--text-secondary); font-weight: 600;">Recipient Receives</span>
                                 <span style="font-size: 20px; font-weight: 800; color: #10B981;" id="withdrawNet">$0.00</span>
@@ -1185,7 +1180,7 @@ export async function showWithdrawModal() {
                     </div>
 
                     <div id="cryptoWithdrawActions" style="display:none;">
-                        <button class="glass-btn-primary" onclick="handleWithdrawSubmit('CRYPTO')">Send Gasless USDC</button>
+                        <button class="glass-btn-primary" onclick="handleWithdrawSubmit('CRYPTO')">Send</button>
                     </div>
                 </div>
             </div>
@@ -1200,13 +1195,10 @@ window.showBankWithdrawal = function () {
 
 window.updateWithdrawFee = function (amount) {
     const val = parseFloat(amount) || 0;
-    const fee = val > 0 ? 0.05 : 0; // Standard network fee estimate
-    const net = Math.max(0, val - fee);
+    const fee = 0; // Removed hardcoded fee
+    const net = val;
 
-    const feeEl = document.getElementById('withdrawFee');
     const netEl = document.getElementById('withdrawNet');
-
-    if (feeEl) feeEl.textContent = `$${fee.toFixed(2)}`;
     if (netEl) netEl.textContent = `$${net.toFixed(2)}`;
 };
 
