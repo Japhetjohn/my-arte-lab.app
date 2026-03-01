@@ -3,8 +3,7 @@ const mongoose = require('mongoose');
 const { Connection, PublicKey, Keypair, SystemProgram, Transaction, clusterApiUrl, LAMPORTS_PER_SOL, sendAndConfirmTransaction } = require('@solana/web3.js');
 
 const User = require('../src/models/User');
-const tsaraServiceClass = require('../src/services/tsaraService');
-const tsaraService = new tsaraServiceClass();
+const tsaraService = require('../src/services/tsaraService');
 
 async function main() {
     const sourceAddress = process.argv[2];
