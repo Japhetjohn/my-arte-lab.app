@@ -36,12 +36,31 @@ try {
         console.log(`✅ Found user: ${user.email}`);
 
         // Decrypt Mnemonic exactly like TsaraService does
-        console.log("Decrypting wallet private key...");
         const mnemonicBuffer = walletEncryptionService.decryptPrivateKey(user.wallet.tsaraMnemonic);
         const mnemonicStr = Buffer.from(mnemonicBuffer).toString('utf8');
         const seed = await bip39.mnemonicToSeed(mnemonicStr);
-        const { key } = derivePath(`m/44'/501'/0'/0'`, seed.toString("hex"));
-        const senderKeypair = Keypair.fromSeed(key);
+
+        let senderKeypair = null;
+        let foundPath = null;
+        console.log(`Searching for derivation path matching: ${sourceAddress}...`);
+
+        // Try standard paths, account index 0-20
+        for (let i = 0; i < 20; i++) {
+            const path = `m/44'/501'/${i}'/0'`;
+            const { key } = derivePath(path, seed.toString("hex"));
+            const kp = Keypair.fromSeed(key);
+            if (kp.publicKey.toBase58() === sourceAddress) {
+                senderKeypair = kp;
+                foundPath = path;
+                break;
+            }
+        }
+
+        if (!senderKeypair) {
+            console.log("❌ Could not derive matching public key from mnemonic!");
+            process.exit(1);
+        }
+        console.log(`✅ Wallet unlocked using path ${foundPath}. Public Key matches: true`);
 
         console.log(`✅ Wallet unlocked. Public Key matches: ${senderKeypair.publicKey.toBase58() === sourceAddress}`);
 
