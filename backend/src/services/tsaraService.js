@@ -190,7 +190,30 @@ class TsaraService {
             try {
                 const mnemonicText = Buffer.from(walletEncryptionService.decryptPrivateKey(tsaraMnemonic)).toString('utf8');
                 const seed = await bip39.mnemonicToSeed(mnemonicText);
-                const { key } = derivePath(`m/44'/501'/0'/0'`, seed.toString("hex"));
+
+                // Try all common Solana derivation paths (match emergency script logic)
+                const paths = [
+                    `m/44'/501'/0'/0'`, // Phantom / Sollet standard
+                    `m/44'/501'/0'`,     // Legacy
+                    `m/44'/501'/1'/0'`,  // Alternate index
+                    `m/44'/501'/0'/0`    // No trailing tick
+                ];
+
+                const userAddress = userData.tsaraAddress;
+
+                for (const path of paths) {
+                    try {
+                        const { key } = derivePath(path, seed.toString("hex"));
+                        const kp = Keypair.fromSeed(key);
+                        // If we have the address to compare against, use it to find the *right* one
+                        if (!userAddress || kp.publicKey.toBase58() === userAddress) {
+                            return kp;
+                        }
+                    } catch (err) { }
+                }
+
+                // Fallback: if we didn't match address (or didn't have it), return standard
+                const { key } = derivePath(paths[0], seed.toString("hex"));
                 return Keypair.fromSeed(key);
             } catch (e) {
                 console.warn('[Tsara Service] Failed to decrypt/derive from tsaraMnemonic:', e.message);
