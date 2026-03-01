@@ -162,8 +162,34 @@ class TsaraService {
                         keyBytes = Object.values(keyBytes);
                     }
                 } else {
-                    const bs58 = require('bs58');
-                    keyBytes = Array.from(bs58.decode(privateKeyEnv));
+                    // Custom Base58 decoder for Solana private keys to avoid ESM bs58 module resolution issues
+                    const ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+                    const base58 = {
+                        decode: (string) => {
+                            if (string.length === 0) return new Uint8Array(0);
+                            const bytes = [0];
+                            for (let i = 0; i < string.length; i++) {
+                                const c = string[i];
+                                if (!(c in base58.ALPHABET_MAP)) throw new Error('Non-base58 character');
+                                for (let j = 0; j < bytes.length; j++) bytes[j] *= 58;
+                                bytes[0] += base58.ALPHABET_MAP[c];
+                                let carry = 0;
+                                for (let j = 0; j < bytes.length; ++j) {
+                                    bytes[j] += carry;
+                                    carry = bytes[j] >> 8;
+                                    bytes[j] &= 0xff;
+                                }
+                                while (carry) {
+                                    bytes.push(carry & 0xff);
+                                    carry >>= 8;
+                                }
+                            }
+                            for (let i = 0; string[i] === '1' && i < string.length - 1; i++) bytes.push(0);
+                            return new Uint8Array(bytes.reverse());
+                        },
+                        ALPHABET_MAP: ALPHABET.split('').reduce((map, char, i) => { map[char] = i; return map; }, {})
+                    };
+                    keyBytes = Array.from(base58.decode(privateKeyEnv));
                 }
                 const keypair = Keypair.fromSecretKey(Uint8Array.from(keyBytes));
                 console.log(`[Tsara Service] Gas sponsor loaded from private key: ${keypair.publicKey.toBase58()}`);
