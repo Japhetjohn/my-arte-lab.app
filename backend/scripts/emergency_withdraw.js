@@ -44,16 +44,37 @@ try {
         let foundPath = null;
         console.log(`Searching for derivation path matching: ${sourceAddress}...`);
 
-        // Try standard paths, account index 0-20
+        // 1. Try standard paths
         for (let i = 0; i < 20; i++) {
-            const path = `m/44'/501'/${i}'/0'`;
-            const { key } = derivePath(path, seed.toString("hex"));
-            const kp = Keypair.fromSeed(key);
-            if (kp.publicKey.toBase58() === sourceAddress) {
-                senderKeypair = kp;
-                foundPath = path;
-                break;
+            const pathsToTry = [
+                `m/44'/501'/${i}'/0'`,
+                `m/44'/501'/${i}'`,
+                `m/501'/${i}'/0/0`
+            ];
+
+            for (const path of pathsToTry) {
+                try {
+                    const { key } = derivePath(path, seed.toString("hex"));
+                    const kp = Keypair.fromSeed(key);
+                    if (kp.publicKey.toBase58() === sourceAddress) {
+                        senderKeypair = kp;
+                        foundPath = path;
+                        break;
+                    }
+                } catch (e) { }
             }
+            if (senderKeypair) break;
+        }
+
+        // 2. Try raw seed (Phantom style)
+        if (!senderKeypair) {
+            try {
+                const kp = Keypair.fromSeed(seed.slice(0, 32));
+                if (kp.publicKey.toBase58() === sourceAddress) {
+                    senderKeypair = kp;
+                    foundPath = "Raw Seed (Phantom)";
+                }
+            } catch (e) { }
         }
 
         if (!senderKeypair) {
