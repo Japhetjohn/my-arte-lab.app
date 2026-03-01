@@ -151,10 +151,20 @@ class TsaraService {
      */
     async getFunderKeypair() {
         // Method 1: Use private key bytes directly (most reliable)
-        const privateKeyEnv = process.env.GAS_SPONSOR_PRIVATE_KEY;
+        const privateKeyEnv = process.env.GAS_SPONSOR_PRIVATE_KEY || process.env.FUNDER_PRIVATE_KEY_BASE58;
         if (privateKeyEnv) {
             try {
-                const keyBytes = JSON.parse(privateKeyEnv);
+                let keyBytes;
+                if (privateKeyEnv.startsWith('[') || privateKeyEnv.startsWith('{')) {
+                    keyBytes = JSON.parse(privateKeyEnv);
+                    // Handle case where object is returned instead of array (e.g. {0: 1, 1: 2})
+                    if (!Array.isArray(keyBytes) && keyBytes !== null && typeof keyBytes === 'object') {
+                        keyBytes = Object.values(keyBytes);
+                    }
+                } else {
+                    const bs58 = require('bs58');
+                    keyBytes = Array.from(bs58.decode(privateKeyEnv));
+                }
                 const keypair = Keypair.fromSecretKey(Uint8Array.from(keyBytes));
                 console.log(`[Tsara Service] Gas sponsor loaded from private key: ${keypair.publicKey.toBase58()}`);
                 return keypair;
