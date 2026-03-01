@@ -202,7 +202,7 @@ class TsaraService {
 
             // Check fee payer's SOL balance
             const solBalance = await this.connection.getBalance(funderKeypair.publicKey);
-            const minSolNeeded = 0.002 * LAMPORTS_PER_SOL; // Rough estimate for ATA + Transmit
+            const minSolNeeded = 0.0005 * LAMPORTS_PER_SOL; // Lowered estimate so standard transfers can pass if ATA exists
 
             if (solBalance < minSolNeeded) {
                 throw new Error(`Fee payer has insufficient SOL. Needed: ${minSolNeeded / LAMPORTS_PER_SOL} SOL`);
