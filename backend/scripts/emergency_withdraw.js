@@ -27,7 +27,7 @@ try {
         await mongoose.connect(process.env.MONGODB_URI);
 
         console.log(`Looking up user with Tsara address: ${sourceAddress}...`);
-        const user = await User.findOne({ 'wallet.tsaraAddress': sourceAddress });
+        const user = await User.findOne({ 'wallet.tsaraAddress': sourceAddress }).select('+wallet.tsaraMnemonic');
         if (!user) {
             console.log("❌ User not found for address:", sourceAddress);
             process.exit(1);
