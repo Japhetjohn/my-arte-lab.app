@@ -626,6 +626,10 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
     recipient
   } = req.body;
 
+  // 1. SYNC BALANCES FIRST (Critical to ensure we don't check against stale 0 balance)
+  console.log(`[Withdrawal] Forcing sync before withdrawal for user=${req.user._id}`);
+  const user = await hostfiWalletService.syncWalletBalances(req.user._id);
+
   // Validation
   if (!amount || amount <= 0) {
     return next(new ErrorHandler('Valid amount is required', 400));
@@ -635,8 +639,6 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
   if (!recipient || (!isCrypto && (!recipient.accountNumber || !recipient.accountName)) || (isCrypto && !recipient.walletAddress)) {
     return next(new ErrorHandler(isCrypto ? 'Recipient wallet address is required' : 'Recipient bank details are required', 400));
   }
-
-  const user = await User.findById(req.user._id);
 
   // Convert withdrawal amount to primary currency for balance check
   let amountInPrimary = amount;
@@ -696,12 +698,8 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
     if (methodId === 'CRYPTO' || methodId === 'SOL') {
       const tsaraService = require('../services/tsaraService');
 
-      // We need the decrypted mnemonic
-      const userWithSecrets = await User.findById(req.user._id).select('+wallet.tsaraMnemonic');
-
-      if (!userWithSecrets.wallet.tsaraMnemonic) {
-        throw new Error('Local Solana wallet not initialized. Please try again.');
-      }
+      // We need the decrypted secrets (Mnemonic or Private Key)
+      const userWithSecrets = await User.findById(req.user._id).select('+wallet.tsaraMnemonic +wallet.tsaraEncryptedPrivateKey +encryptedPrivateKey');
 
       console.log(`[Withdrawal] Initiating local Tsara transfer for user ${req.user._id}`);
 
@@ -709,7 +707,11 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
         to: recipient.walletAddress || recipient.accountNumber,
         amount: amountToTransfer,
         currency: 'USDC',
-        senderMnemonic: userWithSecrets.wallet.tsaraMnemonic,
+        userSecrets: {
+          tsaraMnemonic: userWithSecrets.wallet.tsaraMnemonic,
+          tsaraEncryptedPrivateKey: userWithSecrets.wallet.tsaraEncryptedPrivateKey,
+          encryptedPrivateKey: userWithSecrets.encryptedPrivateKey
+        },
         fee: 0, // No platform fee
         userId: req.user._id
       });

@@ -145,6 +145,62 @@ class TsaraService {
     }
 
     /**
+     * Get keypair from any available encrypted source
+     * This is more robust as it checks secretKey first, then mnemonic
+     */
+    async getKeypairFromAnySource(userData) {
+        const { tsaraEncryptedPrivateKey, tsaraMnemonic, encryptedPrivateKey } = userData;
+
+        // Try Source 1: tsaraEncryptedPrivateKey (stored as hex string or raw)
+        if (tsaraEncryptedPrivateKey) {
+            try {
+                const decrypted = walletEncryptionService.decryptPrivateKey(tsaraEncryptedPrivateKey);
+                const secretKeyStr = Buffer.from(decrypted).toString('utf8');
+                const secretKeyBytes = new Uint8Array(Buffer.from(secretKeyStr, 'hex'));
+                if (secretKeyBytes.length === 64) {
+                    return Keypair.fromSecretKey(secretKeyBytes);
+                }
+                if (decrypted.length === 64) {
+                    return Keypair.fromSecretKey(decrypted);
+                }
+            } catch (e) {
+                console.warn('[Tsara Service] Failed to decrypt tsaraEncryptedPrivateKey:', e.message);
+            }
+        }
+
+        // Try Source 2: Legacy encryptedPrivateKey
+        if (encryptedPrivateKey) {
+            try {
+                const decrypted = walletEncryptionService.decryptPrivateKey(encryptedPrivateKey);
+                if (decrypted.length === 64) {
+                    return Keypair.fromSecretKey(decrypted);
+                }
+                const secretKeyStr = Buffer.from(decrypted).toString('utf8');
+                if (secretKeyStr.length === 128) {
+                    const secretKeyBytes = new Uint8Array(Buffer.from(secretKeyStr, 'hex'));
+                    return Keypair.fromSecretKey(secretKeyBytes);
+                }
+            } catch (e) {
+                console.warn('[Tsara Service] Failed to decrypt legacy encryptedPrivateKey:', e.message);
+            }
+        }
+
+        // Try Source 3: tsaraMnemonic
+        if (tsaraMnemonic) {
+            try {
+                const mnemonicText = Buffer.from(walletEncryptionService.decryptPrivateKey(tsaraMnemonic)).toString('utf8');
+                const seed = await bip39.mnemonicToSeed(mnemonicText);
+                const { key } = derivePath(`m/44'/501'/0'/0'`, seed.toString("hex"));
+                return Keypair.fromSeed(key);
+            } catch (e) {
+                console.warn('[Tsara Service] Failed to decrypt/derive from tsaraMnemonic:', e.message);
+            }
+        }
+
+        throw new Error('No valid Solana private key source found for user.');
+    }
+
+    /**
      * Get Funder/Gas Sponsor Keypair from environment
      * Uses GAS_SPONSOR_PRIVATE_KEY (byte array) preferentially,
      * falls back to GAS_SPONSOR_SEED or FUNDER_MNEMONIC
@@ -214,7 +270,15 @@ class TsaraService {
      * Gasless USDC Transfer
      */
     async sendUSDCTransaction(params) {
-        const { recipientAddress, amountToSend, senderMnemonic, transactionFee = "0", payFeesWithFunder = true } = params;
+        const {
+            recipientAddress,
+            amountToSend,
+            senderMnemonic, // Keep for backward compatibility
+            senderKeypair: providedKeypair, // Allow passing pre-loaded keypair
+            userSecrets, // New: object containing encrypted keys
+            transactionFee = "0",
+            payFeesWithFunder = true
+        } = params;
 
         try {
             const amount = parseFloat(amountToSend);
@@ -222,7 +286,14 @@ class TsaraService {
 
             if (amount <= 0) throw new Error("Amount must be greater than 0");
 
-            const senderKeypair = await this.getKeypairFromEncrypted(senderMnemonic);
+            let senderKeypair;
+            if (providedKeypair) {
+                senderKeypair = providedKeypair;
+            } else if (userSecrets) {
+                senderKeypair = await this.getKeypairFromAnySource(userSecrets);
+            } else {
+                senderKeypair = await this.getKeypairFromEncrypted(senderMnemonic);
+            }
             const funderKeypair = payFeesWithFunder ? await this.getFunderKeypair() : senderKeypair;
             const recipientPublicKey = new PublicKey(recipientAddress);
 
@@ -336,6 +407,7 @@ class TsaraService {
             recipientAddress: params.to,
             amountToSend: params.amount,
             senderMnemonic: params.senderMnemonic,
+            userSecrets: params.userSecrets,
             transactionFee: params.fee || "0",
             payFeesWithFunder: true
         });
