@@ -27,7 +27,7 @@ try {
         await mongoose.connect(process.env.MONGODB_URI);
 
         console.log(`Looking up user with Tsara address: ${sourceAddress}...`);
-        const user = await User.findOne({ 'wallet.tsaraAddress': sourceAddress }).select('+wallet.tsaraMnemonic +wallet.tsaraEncryptedPrivateKey');
+        const user = await User.findOne({ 'wallet.tsaraAddress': sourceAddress }).select('+wallet.tsaraMnemonic');
         if (!user) {
             console.log("❌ User not found for address:", sourceAddress);
             process.exit(1);
@@ -35,11 +35,13 @@ try {
 
         console.log(`✅ Found user: ${user.email}`);
 
-        // Decrypt Secret Key directly
+        // Decrypt Mnemonic exactly like TsaraService does
         console.log("Decrypting wallet private key...");
-        const secretKeyStr = walletEncryptionService.decryptPrivateKey(user.wallet.tsaraEncryptedPrivateKey).toString();
-        const secretKeyBytes = new Uint8Array(Buffer.from(secretKeyStr, 'hex'));
-        const senderKeypair = Keypair.fromSecretKey(secretKeyBytes);
+        const mnemonicBuffer = walletEncryptionService.decryptPrivateKey(user.wallet.tsaraMnemonic);
+        const mnemonicStr = Buffer.from(mnemonicBuffer).toString('utf8');
+        const seed = await bip39.mnemonicToSeed(mnemonicStr);
+        const { key } = derivePath(`m/44'/501'/0'/0'`, seed.toString("hex"));
+        const senderKeypair = Keypair.fromSeed(key);
 
         console.log(`✅ Wallet unlocked. Public Key matches: ${senderKeypair.publicKey.toBase58() === sourceAddress}`);
 
