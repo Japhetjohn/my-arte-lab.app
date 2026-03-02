@@ -745,6 +745,12 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
     }
 
     // Create transaction record with fee details
+    const recipientDisplay = (recipient.walletAddress || recipient.accountNumber || '');
+    const shortRecipient = recipientDisplay.length > 8 ? `${recipientDisplay.slice(0, 4)}...${recipientDisplay.slice(-4)}` : recipientDisplay;
+    const txDescription = (methodId === 'CRYPTO' || methodId === 'SOL')
+      ? `Sent ${amountToTransfer} USDC to ${shortRecipient}`
+      : `Bank withdrawal to ${recipient.accountName || 'beneficiary'}`;
+
     const transaction = await Transaction.create({
       transactionId: `WD-${uuidv4()}`,
       user: req.user._id,
@@ -752,9 +758,13 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
       amount,
       currency,
       status: (methodId === 'CRYPTO' || methodId === 'SOL') ? 'completed' : 'pending',
+      description: txDescription,
       paymentMethod: methodId.toLowerCase(),
       platformFee: 0,
       netAmount: amountToTransfer,
+      fromAddress: user.wallet.tsaraAddress || user.wallet.address,
+      toAddress: recipient.walletAddress || recipient.accountNumber,
+      blockchainNetwork: (methodId === 'CRYPTO' || methodId === 'SOL') ? 'Solana' : null,
       paymentDetails: {
         beneficiaryAccountNumber: recipient.accountNumber || recipient.walletAddress,
         beneficiaryAccountName: recipient.accountName || 'Solana Wallet',

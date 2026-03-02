@@ -1328,7 +1328,7 @@ export async function showTransactionHistory() {
             const statusColor = tx.status === 'completed' ? '#10B981' : tx.status === 'failed' ? '#EF4444' : '#F59E0B';
             const amountColor = isCredit ? '#10B981' : '#EF4444';
             const iconBg = isCredit ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)';
-            const { formatDate } = window; // Assumes formatDate is globally available or imported in utils
+            const realTxHash = tx.transactionHash && tx.transactionHash.length > 40 && !tx.transactionHash.startsWith('sim_') && !tx.transactionHash.startsWith('final_verified_') ? tx.transactionHash : null;
 
             return `
                                     <div onclick="window.showTransactionDetail('${tx._id || tx.id}')" style="display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); cursor: pointer; transition: all 0.2s;">
@@ -1340,6 +1340,7 @@ export async function showTransactionHistory() {
                                         <div style="flex: 1; min-width: 0;">
                                             <div style="font-size: 14px; font-weight: 700; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${tx.description || (tx.type.charAt(0).toUpperCase() + tx.type.slice(1))}</div>
                                             <div style="font-size: 12px; color: var(--text-secondary); opacity: 0.7; margin-top: 2px;">${new Date(tx.createdAt).toLocaleDateString()} • ${new Date(tx.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                                            ${realTxHash ? `<a href="https://explorer.solana.com/tx/${realTxHash}" target="_blank" onclick="event.stopPropagation()" style="display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-family: monospace; color: #9945FF; text-decoration: none; margin-top: 4px; opacity: 0.8;"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg>${realTxHash.slice(0, 8)}...${realTxHash.slice(-8)}</a>` : ''}
                                         </div>
                                         <div style="text-align: right; flex-shrink: 0;">
                                             <div style="font-size: 15px; font-weight: 800; color: ${amountColor};">${isCredit ? '+' : '-'}${currencySymbols[tx.currency] || ''}${Math.abs(tx.amount).toFixed(2)}</div>
@@ -1420,19 +1421,33 @@ window.showTransactionDetail = async function (txId) {
                                 <span style="font-size: 13px; color: var(--text-secondary);">Type</span>
                                 <span style="font-size: 13px; font-weight: 600; text-transform: capitalize;">${tx.type}</span>
                             </div>
-                            ${tx.transactionHash ? `
+                            ${(() => {
+                const realHash = tx.transactionHash && tx.transactionHash.length > 40 && !tx.transactionHash.startsWith('sim_') && !tx.transactionHash.startsWith('final_verified_') ? tx.transactionHash : null;
+                if (!realHash) return '';
+                return `
                                 <div style="height: 1px; background: rgba(255,255,255,0.08); margin: 4px 0;"></div>
                                 <div style="text-align: left;">
-                                    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">Transaction Hash</div>
+                                    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">Blockchain TX Hash</div>
                                     <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--primary); background: rgba(151,71,255,0.05); padding: 12px; border-radius: 12px; word-break: break-all; line-height: 1.5; border: 1px solid rgba(151,71,255,0.1);">
-                                        ${tx.transactionHash}
+                                        ${realHash}
                                     </div>
-                                    <a href="https://explorer.solana.com/tx/${tx.transactionHash}" target="_blank" style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 12px; color: var(--primary); text-decoration: none; font-size: 13px; font-weight: 700; background: rgba(151,71,255,0.1); padding: 10px; border-radius: 12px;">
+                                    <a href="https://explorer.solana.com/tx/${realHash}" target="_blank" style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 12px; color: var(--primary); text-decoration: none; font-size: 13px; font-weight: 700; background: rgba(151,71,255,0.1); padding: 10px; border-radius: 12px;">
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg>
                                         View on Solana Explorer
                                     </a>
-                                </div>
-                            ` : ''}
+                                </div>`;
+            })()}
+                            ${tx.fromAddress ? `
+                                <div style="height: 1px; background: rgba(255,255,255,0.08); margin: 4px 0;"></div>
+                                <div style="text-align: left;">
+                                    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">From</div>
+                                    <div style="font-size: 11px; font-family: monospace; color: var(--text-primary); word-break: break-all;">${tx.fromAddress}</div>
+                                </div>` : ''}
+                            ${tx.toAddress ? `
+                                <div style="text-align: left; margin-top: 8px;">
+                                    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">To</div>
+                                    <div style="font-size: 11px; font-family: monospace; color: var(--text-primary); word-break: break-all;">${tx.toAddress}</div>
+                                </div>` : ''}
                         </div>
                     </div>
                 </div>
