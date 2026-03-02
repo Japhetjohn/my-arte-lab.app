@@ -85,7 +85,7 @@ window.showLoadingSpinner = function () {
 
     spinner.innerHTML = `
         <div style="position: relative; width: 120px; height: 120px; display: flex; align-items: center; justify-content: center;">
-            <img src="logo.PNG" alt="Loading..." style="
+            <img src="/logo.PNG" alt="Loading..." style="
                 width: 100%;
                 height: 100%;
                 object-fit: contain;
@@ -622,7 +622,7 @@ export async function showTwoFactorModal() {
                         <div style="text-align: center; padding: 60px 0;">
                             <div style="margin-bottom: 24px; position: relative; width: 64px; height: 64px; margin-left: auto; margin-right: auto;">
                                 <div style="position: absolute; inset: -10px; border-radius: 50%; background: radial-gradient(circle, var(--primary) 0%, transparent 70%); opacity: 0.2; animation: pulse 2s ease-in-out infinite;"></div>
-                                <img src="logo.PNG" alt="Loading..." style="width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 10px rgba(151,71,255,0.3)); animation: logo-float 3s ease-in-out infinite;">
+                                <img src="/logo.PNG" alt="Loading..." style="width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 10px rgba(151,71,255,0.3)); animation: logo-float 3s ease-in-out infinite;">
                             </div>
                             <p style="color: var(--text-secondary); font-weight: 800; font-size: 15px;">Setting up 2FA...</p>
                         </div>
@@ -724,7 +724,7 @@ export async function showTwoFactorModal() {
                 enableBtn.disabled = true;
                 enableBtn.innerHTML = `
                     <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
-                        <img src="logo.PNG" style="width: 18px; height: 18px; object-fit: contain; animation: pulse 1s infinite;">
+                        <img src="/logo.PNG" style="width: 18px; height: 18px; object-fit: contain; animation: pulse 1s infinite;">
                         <span>Verifying...</span>
                     </div>
                 `;

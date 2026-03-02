@@ -215,21 +215,31 @@ export async function renderCreatorProfile(creatorIdOrObject) {
                 ` : ''}
 
                 <!-- Portfolio -->
-                ${creator.portfolio && creator.portfolio.length > 0 ? `
+                ${creator.portfolio && creator.portfolio.length > 0 ? (() => {
+            // Portfolio items can be objects { title, image, description } or plain strings
+            const portfolioItems = creator.portfolio.filter(item => {
+                const src = (typeof item === 'string') ? item : item?.image;
+                return src && src.trim();
+            });
+            if (portfolioItems.length === 0) return '';
+            return `
                     <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 24px;">
                         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
                             <span style="font-size: 11px; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.6;">Portfolio Showcase</span>
-                            <span style="font-size: 11px; font-weight: 700; color: var(--text-secondary); opacity: 0.4;">${creator.portfolio.length} ITEMS</span>
+                            <span style="font-size: 11px; font-weight: 700; color: var(--text-secondary); opacity: 0.4;">${portfolioItems.length} ITEMS</span>
                         </div>
                         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
-                            ${creator.portfolio.slice(0, 6).map((img, i) => `
-                                <div class="portfolio-item" data-creator-id="${creator.id}" data-image-index="${i}" style="aspect-ratio: 1; border-radius: 12px; overflow: hidden; cursor: pointer;">
-                                    <img src="${img}" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
-                                </div>
-                            `).join('')}
+                            ${portfolioItems.slice(0, 6).map((item, i) => {
+                const src = (typeof item === 'string') ? item : item.image;
+                const title = (typeof item === 'object' && item.title) ? item.title : '';
+                return `
+                                <div class="portfolio-item" data-creator-id="${creator.id}" data-image-index="${i}" style="aspect-ratio: 1; border-radius: 12px; overflow: hidden; cursor: pointer; background: rgba(255,255,255,0.04);" title="${title}">
+                                    <img src="${src}" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" onerror="this.style.display='none'">
+                                </div>`;
+            }).join('')}
                         </div>
-                    </div>
-                ` : ''}
+                    </div>`;
+        })() : ''}
 
                 <!-- Services -->
                 ${creator.services && creator.services.length > 0 ? `
