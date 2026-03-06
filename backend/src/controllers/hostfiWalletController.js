@@ -458,26 +458,9 @@ exports.createFiatChannel = catchAsync(async (req, res, next) => {
   try {
     console.log('[Controller:createFiatChannel] Creating new channel in HostFi...');
 
-    // Map currency to country code
-    const currencyToCountry = {
-      'NGN': 'NG', 'KES': 'KE', 'GHS': 'GH', 'ZAR': 'ZA', 'TZS': 'TZ', 'UGX': 'UG', 'ZMW': 'ZM', 'RWF': 'RW',
-      'XOF': 'SN', 'XAF': 'CM', 'EGP': 'EG', 'MAD': 'MA', 'TND': 'TN', 'DZD': 'DZ', 'ETB': 'ET',
-      'EUR': 'FR', 'GBP': 'GB', 'CHF': 'CH', 'SEK': 'SE', 'NOK': 'NO', 'DKK': 'DK', 'PLN': 'PL',
-      'CZK': 'CZ', 'HUF': 'HU', 'RON': 'RO', 'BGN': 'BG', 'HRK': 'HR', 'RSD': 'RS', 'UAH': 'UA', 'TRY': 'TR',
-      'USD': 'US', 'CAD': 'CA', 'MXN': 'MX', 'BRL': 'BR', 'ARS': 'AR', 'CLP': 'CL', 'COP': 'CO', 'PEN': 'PE',
-      'JPY': 'JP', 'CNY': 'CN', 'INR': 'IN', 'KRW': 'KR', 'SGD': 'SG', 'HKD': 'HK', 'MYR': 'MY',
-      'THB': 'TH', 'VND': 'VN', 'PHP': 'PH', 'IDR': 'ID', 'PKR': 'PK', 'BDT': 'BD', 'AED': 'AE',
-      'SAR': 'SA', 'QAR': 'QA', 'KWD': 'KW', 'ILS': 'IL',
-      'AUD': 'AU', 'NZD': 'NZ',
-    };
-
-    const currencyToMethod = {
-      'KES': 'MOBILE_MONEY', 'GHS': 'MOBILE_MONEY', 'TZS': 'MOBILE_MONEY',
-      'UGX': 'MOBILE_MONEY', 'ZMW': 'MOBILE_MONEY', 'RWF': 'MOBILE_MONEY',
-      'ZAR': 'EFT'
-    };
-
-    const methodId = currencyToMethod[currency] || 'BANK_TRANSFER';
+    const config = hostfiService.getCurrencyConfig(currency);
+    const countryCode = config.country;
+    const methodId = config.method;
 
     const channel = await hostfiService.createFiatCollectionChannel({
       assetId,
@@ -627,10 +610,14 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
   const {
     amount,
     currency = 'USDC',
-    targetCurrency = 'NGN',
-    methodId = 'BANK_TRANSFER',
+    targetCurrency, // Allow dynamic target currency
+    methodId, // Will be determined by currency if missing
     recipient
   } = req.body;
+
+  const config = hostfiService.getCurrencyConfig(targetCurrency || currency);
+  const effectiveMethodId = methodId || config.method;
+  const effectiveTargetCurrency = targetCurrency || currency;
 
   // 1. SYNC BALANCES FIRST (Critical to ensure we don't check against stale 0 balance)
   console.log(`[Withdrawal] Forcing sync before withdrawal for user=${req.user._id}`);
@@ -641,7 +628,7 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Valid amount is required', 400));
   }
 
-  const isCrypto = methodId === 'CRYPTO' || methodId === 'SOL';
+  const isCrypto = effectiveMethodId === 'CRYPTO' || effectiveMethodId === 'SOL';
 
   // Basic validation based on method
   if (!recipient) {
@@ -651,10 +638,10 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
   if (isCrypto && !recipient.walletAddress) {
     return next(new ErrorHandler('Recipient wallet address is required', 400));
   } else if (!isCrypto) {
-    if (methodId === 'MOBILE_MONEY' && !recipient.accountNumber) {
+    if (effectiveMethodId === 'MOBILE_MONEY' && !recipient.accountNumber) {
       return next(new ErrorHandler('Recipient Mobile Money number is required', 400));
-    } else if ((methodId === 'BANK_TRANSFER' || methodId === 'EFT') && (!recipient.accountNumber || !recipient.accountName)) {
-      return next(new ErrorHandler('Recipient bank details are required', 400));
+    } else if ((effectiveMethodId === 'BANK_TRANSFER' || effectiveMethodId === 'EFT') && (!recipient.accountNumber || !recipient.accountName)) {
+      return next(new ErrorHandler('Recipient bank details (Account Number & Name) are required', 400));
     }
   }
 
@@ -744,12 +731,12 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
       withdrawal = await hostfiService.initiateWithdrawal({
         walletAssetId: assetId,
         amount: amountToTransfer,
-        currency,
-        methodId: methodId,
+        currency: effectiveTargetCurrency,
+        methodId: effectiveMethodId,
         recipient: {
-          type: recipient.type || (methodId === 'BANK_TRANSFER' ? 'BANK' : (methodId === 'MOBILE_MONEY' ? 'MOMO' : 'CRYPTO')),
-          method: methodId,
-          currency: recipient.currency || targetCurrency || currency,
+          type: recipient.type || (effectiveMethodId === 'BANK_TRANSFER' ? 'BANK' : (effectiveMethodId === 'MOBILE_MONEY' ? 'MOMO' : (effectiveMethodId === 'EFT' ? 'BANK' : 'CRYPTO'))),
+          method: effectiveMethodId,
+          currency: recipient.currency || effectiveTargetCurrency,
           accountNumber: recipient.accountNumber,
           accountName: (recipient.accountName === 'undefined' || !recipient.accountName) ? 'Verified Recipient' : recipient.accountName,
           bankId: recipient.bankId,

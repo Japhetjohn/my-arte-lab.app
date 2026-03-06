@@ -20,6 +20,8 @@ const COUNTRY_MAP = {
     'ug': { country: 'UG', currency: 'UGX' },
     'zambia': { country: 'ZM', currency: 'ZMW' },
     'zm': { country: 'ZM', currency: 'ZMW' },
+    'rwanda': { country: 'RW', currency: 'RWF' },
+    'rw': { country: 'RW', currency: 'RWF' },
     'united states': { country: 'US', currency: 'USD' },
     'us': { country: 'US', currency: 'USD' },
     'united kingdom': { country: 'GB', currency: 'GBP' },
@@ -1048,32 +1050,39 @@ window.generateFiatChannel = async function () {
         if (response.success) {
             const ch = response.data.channel;
             const resultDiv = document.getElementById('depositResult');
+            const isMomo = ch.method === 'MOBILE_MONEY';
+            const isEFT = ch.method === 'EFT';
+
+            let methodLabel = 'Bank Transfer Details';
+            if (isMomo) methodLabel = 'Mobile Money Details';
+            if (isEFT) methodLabel = 'EFT Transfer Details';
+
             resultDiv.innerHTML = `
                 <div style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 20px; padding: 24px; position: relative; overflow: hidden;">
-                    <div style="font-size: 11px; font-weight: 800; color: #10B981; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 20px;">Bank Transfer Details</div>
+                    <div style="font-size: 11px; font-weight: 800; color: #10B981; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 20px;">${methodLabel}</div>
                     
                     <div style="margin-bottom: 20px;">
-                        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; opacity: 0.7;">Account Number</div>
+                        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; opacity: 0.7;">${isMomo ? 'Phone/Account Number' : 'Account Number'}</div>
                         <div style="font-size: 28px; font-weight: 800; color: var(--text-primary); font-family: 'JetBrains Mono', monospace; letter-spacing: -0.02em;">${ch.accountNumber}</div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
                         <div>
-                            <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; opacity: 0.7;">Bank Name</div>
-                            <div style="font-size: 15px; font-weight: 700; color: var(--text-primary);">${ch.bankName}</div>
+                            <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; opacity: 0.7;">${isMomo ? 'Provider' : 'Bank Name'}</div>
+                            <div style="font-size: 15px; font-weight: 700; color: var(--text-primary);">${ch.bankName || ch.provider || (isMomo ? 'Mobile Money' : 'Bank')}</div>
                         </div>
                         <div>
                             <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; opacity: 0.7;">Account Name</div>
-                            <div style="font-size: 14px; font-weight: 600; color: var(--text-primary);">${ch.accountName}</div>
+                            <div style="font-size: 14px; font-weight: 600; color: var(--text-primary);">${ch.accountName || 'Reserved for you'}</div>
                         </div>
                     </div>
 
-                    <button class="glass-btn-ghost" onclick="navigator.clipboard.writeText('${ch.accountNumber}'); showToast('Account number copied!', 'success')" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; border-radius: 12px;">
+                    <button class="glass-btn-ghost" onclick="navigator.clipboard.writeText('${ch.accountNumber}'); showToast('Copied!', 'success')" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; border-radius: 12px;">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-                        Copy Account Number
+                        Copy ${isMomo ? 'Number' : 'Account Number'}
                     </button>
                     
-                    <div style="margin-top: 20px; font-size: 12px; color: var(--text-secondary); text-align: center; opacity: 0.6; line-height: 1.5;">Funds reflect within 1–15 mins after bank confirmation</div>
+                    <div style="margin-top: 20px; font-size: 12px; color: var(--text-secondary); text-align: center; opacity: 0.6; line-height: 1.5;">Funds reflect within 1–15 mins after confirmation</div>
                 </div>
             `;
             resultDiv.style.display = 'block';

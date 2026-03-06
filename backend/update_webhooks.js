@@ -21,12 +21,12 @@ async function updateWebhooks() {
     try {
         // 1. Authenticate
         console.log('🔑 Authenticating...');
-        const authResponse = await axios.post(`${API_URL}/api/v1/auth/login`, {
+        const authResponse = await axios.post(`${API_URL}/auth/token`, {
             clientId: CLIENT_ID,
             clientSecret: SECRET_KEY
         });
 
-        const token = authResponse.data.accessToken || authResponse.data.data?.accessToken;
+        const token = authResponse.data.accessToken || authResponse.data.data?.accessToken || authResponse.data.token;
         if (!token) {
             console.error('❌ Auth Failed:', authResponse.data);
             return;

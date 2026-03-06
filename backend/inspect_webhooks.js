@@ -10,16 +10,17 @@ async function manageWebhooks() {
     try {
         // 1. Authenticate
         console.log('🔑 Authenticating...');
-        const authResponse = await axios.post(`${API_URL}/api/v1/auth/login`, {
+        const authResponse = await axios.post(`${API_URL}/auth/token`, {
             clientId: CLIENT_ID,
             clientSecret: SECRET_KEY
         });
 
-        // Check for different token fields just in case
+        // Check for different token fields
         const token = authResponse.data.accessToken ||
             authResponse.data.token ||
             authResponse.data.data?.accessToken ||
-            authResponse.data.data?.token;
+            authResponse.data.data?.token ||
+            authResponse.data.data; // Sometimes it's the direct string
 
         if (!token) {
             console.error('❌ Failed to get access token.', JSON.stringify(authResponse.data, null, 2));

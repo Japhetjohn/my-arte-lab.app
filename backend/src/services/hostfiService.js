@@ -130,6 +130,11 @@ class HostFiService {
       return { skipped: true, reason: 'No platform wallet' };
     }
 
+    if (Number(amount) <= 0) {
+      console.log('[HostFi Service] Commission amount is 0, skipping transfer');
+      return { skipped: true, reason: 'Zero amount' };
+    }
+
     try {
       console.log(`[HostFi Service] Collecting ${amount} ${currency} commission to ${this.platformWalletAddress}`);
 
@@ -520,13 +525,15 @@ class HostFiService {
     try {
       // Per HostFi: type="STATIC" or "DYNAMIC", method="BANK_TRANSFER"
       // DYNAMIC = Temporary account (no KYC required in payload)
+      const config = this.getCurrencyConfig(currency || 'NGN');
+
       const payload = {
         type: type || 'STATIC',
-        method: method || 'BANK_TRANSFER',
+        method: method || config.method,
         assetId,
         customId: customId.toString(),
         currency: currency || 'NGN',
-        countryCode: countryCode || 'NG'
+        countryCode: countryCode || config.country
       };
 
       console.log('[HostFi Service] Creating fiat collection channel with payload:', JSON.stringify(payload, null, 2));
@@ -812,21 +819,24 @@ class HostFiService {
       // 2. Send the remainder to the recipient
       const payoutAmount = feeBreakdown.amountAfterFee;
 
+      const config = this.getCurrencyConfig(currency);
+      const payoutMethod = methodId || config.method;
+
       const payload = {
         assetId: walletAssetId,
         clientReference,
-        methodId: methodId || 'BANK_TRANSFER',
+        methodId: payoutMethod,
         amount: Number(payoutAmount),
         currency,
         recipient: {
-          type: recipient.type || (methodId === 'BANK_TRANSFER' ? 'BANK' : (methodId === 'MOBILE_MONEY' ? 'MOMO' : 'CRYPTO')),
-          method: methodId || 'BANK_TRANSFER',
+          type: recipient.type || (payoutMethod === 'BANK_TRANSFER' ? 'BANK' : (payoutMethod === 'MOBILE_MONEY' ? 'MOMO' : (payoutMethod === 'EFT' ? 'BANK' : 'CRYPTO'))),
+          method: payoutMethod,
           currency: recipient.currency || currency,
           accountNumber: recipient.accountNumber,
           accountName: recipient.accountName || 'Verified Recipient',
           bankId: recipient.bankId,
           bankName: recipient.bankName,
-          country: recipient.country || 'NG',
+          country: recipient.country || config.country,
           accountType: recipient.accountType || 'SAVINGS',
           network: recipient.network,
           address: recipient.address,
@@ -911,6 +921,38 @@ class HostFiService {
   }
 
   // ============================================
+  /**
+   * Get default configuration (method, country) for a currency
+   * @param {string} currency - Currency code
+   * @returns {Object} { country, method }
+   */
+  getCurrencyConfig(currency) {
+    const mapping = {
+      // African Countries
+      'NGN': { country: 'NG', method: 'BANK_TRANSFER' },
+      'KES': { country: 'KE', method: 'MOBILE_MONEY' },
+      'GHS': { country: 'GH', method: 'MOBILE_MONEY' },
+      'ZAR': { country: 'ZA', method: 'EFT' },
+      'TZS': { country: 'TZ', method: 'MOBILE_MONEY' },
+      'UGX': { country: 'UG', method: 'MOBILE_MONEY' },
+      'ZMW': { country: 'ZM', method: 'MOBILE_MONEY' },
+      'RWF': { country: 'RW', method: 'MOBILE_MONEY' },
+      'XOF': { country: 'SN', method: 'MOBILE_MONEY' },
+      'XAF': { country: 'CM', method: 'MOBILE_MONEY' },
+      'EGP': { country: 'EG', method: 'BANK_TRANSFER' },
+
+      // Major Currencies
+      'USD': { country: 'US', method: 'BANK_TRANSFER' },
+      'EUR': { country: 'FR', method: 'BANK_TRANSFER' },
+      'GBP': { country: 'GB', method: 'BANK_TRANSFER' },
+      'CAD': { country: 'CA', method: 'BANK_TRANSFER' },
+      'AUD': { country: 'AU', method: 'BANK_TRANSFER' },
+      'JPY': { country: 'JP', method: 'BANK_TRANSFER' }
+    };
+
+    return mapping[currency] || { country: 'NG', method: 'BANK_TRANSFER' };
+  }
+
   // CURRENCY & RATES
   // ============================================
 
