@@ -466,7 +466,7 @@ exports.createFiatChannel = catchAsync(async (req, res, next) => {
       assetId,
       currency,
       customId: fiatCustomId,
-      type: 'STATIC',
+      type: 'DYNAMIC',
       method: methodId,
       countryCode
     });

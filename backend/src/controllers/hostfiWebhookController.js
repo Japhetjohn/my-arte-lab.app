@@ -157,10 +157,12 @@ async function processFiatDeposit(parsed) {
 
       const receivedUsdc = swapResult.destinationAmount || swapResult.data?.destinationAmount;
       if (receivedUsdc) {
-        // We actually want 1% specifically for on-ramp
-        const onRampFeeUsdc = (receivedUsdc * 1) / 100;
-        finalCreditAmount = receivedUsdc - onRampFeeUsdc;
+        // Use the actual amount received from HostFi swap (already 0% platform fee assumed)
+        finalCreditAmount = receivedUsdc;
         finalCreditCurrency = 'USDC';
+
+        // Commission collection is skipped if fee is 0
+        const onRampFeeUsdc = 0;
 
         // Actually collect the fee on HostFi
         console.log(`[Webhook:FiatDeposit] Collecting ${onRampFeeUsdc} USDC on-ramp commission...`);
@@ -184,10 +186,10 @@ async function processFiatDeposit(parsed) {
       // SIMULATE for test events
       console.log('[Webhook:FiatDeposit] SIMULATING conversion to USDC for test event');
       // Estimate rate (e.g. 1500 NGN = 1 USDC)
-      const rate = 1 / 1500;
+      const rate = 1 / 1600;
       const simulatedUsdc = amount * rate;
-      const simulatedFee = simulatedUsdc * 0.01;
-      finalCreditAmount = simulatedUsdc - simulatedFee;
+      const simulatedFee = 0; // 0% fee
+      finalCreditAmount = simulatedUsdc;
       finalCreditCurrency = 'USDC';
 
       console.log(`[Webhook:FiatDeposit] SIMULATING commission collection of ${simulatedFee} USDC`);
@@ -203,10 +205,8 @@ async function processFiatDeposit(parsed) {
     }
   } catch (error) {
     console.error('[Webhook:FiatDeposit] Auto-conversion/Fee processing failed:', error.message);
-    // Fallback: Credit NGN if swap fails
-    console.log('[Webhook:FiatDeposit] Falling back to NGN credit');
-    finalCreditAmount = feeBreakdown.amountAfterFee;
-    finalCreditCurrency = currency;
+    // User requested NO fallbacks. If swap fails, we throw to prevent incorrect credit.
+    throw new Error(`Auto-conversion to USDC failed: ${error.message}. Manual resolution required.`);
   }
 
   // 2. Update Internal Balance
