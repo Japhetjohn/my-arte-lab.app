@@ -5,7 +5,7 @@ require('dotenv').config();
 async function simulateDeposit() {
     const WEBHOOK_URL = 'http://localhost:5000/api/hostfi/webhooks';
     const WEBHOOK_SECRET = process.env.HOSTFI_WEBHOOK_SECRET;
-    const USER_ID = '67ac7598c25528399589d985'; // Using a known user ID from logs or DB
+    const USER_ID = '6983ea1691b5040eb0fb0276'; // Verified production user ID
 
     const payload = {
         event: 'fiat_deposit',
