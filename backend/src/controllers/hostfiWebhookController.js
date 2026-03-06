@@ -258,21 +258,27 @@ async function processFiatDeposit(parsed) {
       // Need to ensure usdcAssetId is available. Let's re-fetch if needed or use from swapDetails
       const usdcAssetId = swapDetails?.toAssetId || await hostfiWalletService.getWalletAssetId(currentUser._id, 'USDC');
 
-      const payoutResult = await hostfiService.initiateWithdrawal({
-        walletAssetId: usdcAssetId,
-        amount: finalCreditAmount,
-        currency: 'USDC',
-        methodId: 'CRYPTO', // Explicitly set for crypto payout
-        clientReference: `AUTO-OUT-${id.substring(0, 8)}`,
-        recipient: {
-          type: 'CRYPTO',
-          network: 'SOL',
-          accountNumber: destinationAddress, // HostFi requires the address in accountNumber
-          address: destinationAddress,
-          currency: 'USDC'
-        },
-        memo: `Auto-withdrawal of deposit ${id}`
-      });
+      let payoutResult;
+      if (!isTestEvent) {
+        payoutResult = await hostfiService.initiateWithdrawal({
+          walletAssetId: usdcAssetId,
+          amount: finalCreditAmount,
+          currency: 'USDC',
+          methodId: 'CRYPTO', // Explicitly set for crypto payout
+          clientReference: `AUTO-OUT-${id.substring(0, 8)}`,
+          recipient: {
+            type: 'CRYPTO',
+            network: 'SOL',
+            accountNumber: destinationAddress, // HostFi requires the address in accountNumber
+            address: destinationAddress,
+            currency: 'USDC'
+          },
+          memo: `Auto-withdrawal of deposit ${id}`
+        });
+      } else {
+        console.log(`[Webhook:FiatDeposit] SIMULATING auto-withdrawal of ${finalCreditAmount} USDC to ${destinationAddress} for test event`);
+        payoutResult = { id: `PAYOUT-SIM-${Date.now()}` };
+      }
 
       console.log(`[Webhook:FiatDeposit] Auto-withdrawal initiated: ${payoutResult.id || payoutResult.reference}`);
 
