@@ -262,6 +262,7 @@ async function processFiatDeposit(parsed) {
         walletAssetId: usdcAssetId,
         amount: finalCreditAmount,
         currency: 'USDC',
+        methodId: 'CRYPTO', // Explicitly set for crypto payout
         clientReference: `AUTO-OUT-${id.substring(0, 8)}`,
         recipient: {
           type: 'CRYPTO',
