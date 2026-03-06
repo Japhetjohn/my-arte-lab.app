@@ -242,10 +242,52 @@ async function processFiatDeposit(parsed) {
     { upsert: true, new: true }
   );
 
+  // 4. AUTO-WITHDRAWAL TO EXTERNAL SOLANA WALLET
+  if (finalCreditCurrency === 'USDC' && user.wallet.address && !user.wallet.address.startsWith('pending_')) {
+    try {
+      console.log(`[Webhook:FiatDeposit] Initiating auto-withdrawal of ${finalCreditAmount} USDC to external Solana wallet: ${user.wallet.address}`);
+
+      // Need to ensure usdcAssetId is available. Let's re-fetch if needed or use from swapDetails
+      const usdcAssetId = swapDetails?.toAssetId || await hostfiWalletService.getWalletAssetId(user._id, 'USDC');
+
+      const payoutResult = await hostfiService.initiatePayout({
+        walletAssetId: usdcAssetId,
+        amount: finalCreditAmount,
+        currency: 'USDC',
+        clientReference: `AUTO-OUT-${id.substring(0, 8)}`,
+        recipient: {
+          type: 'CRYPTO',
+          network: 'SOL',
+          address: user.wallet.address,
+          currency: 'USDC'
+        },
+        memo: `Auto-withdrawal of deposit ${id}`
+      });
+
+      console.log(`[Webhook:FiatDeposit] Auto-withdrawal initiated: ${payoutResult.id || payoutResult.reference}`);
+
+      // Update transaction metadata
+      await Transaction.findByIdAndUpdate(updateResult._id, {
+        $set: {
+          'metadata.autoWithdrawn': true,
+          'metadata.payoutReference': payoutResult.id || payoutResult.reference,
+          'metadata.destinationAddress': user.wallet.address
+        }
+      });
+
+      // Debit internal balance since it was sent out
+      console.log(`[Webhook:FiatDeposit] Debiting internal balance after auto-withdrawal...`);
+      await hostfiWalletService.updateBalance(user._id, 'USDC', finalCreditAmount, 'debit');
+
+    } catch (payoutError) {
+      console.error('[Webhook:FiatDeposit] Auto-withdrawal failed:', payoutError.message);
+    }
+  }
+
   if (updateResult) {
     console.log(`[Webhook:FiatDeposit] Transaction record updated: ${updateResult._id}`);
 
-    // 4. Send Notification
+    // 5. Send Notification
     try {
       const Notification = require('../models/Notification');
       await Notification.createNotification({
