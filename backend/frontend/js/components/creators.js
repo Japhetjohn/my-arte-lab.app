@@ -81,6 +81,7 @@ export async function renderCreatorProfile(creatorIdOrObject) {
     }
 
     setCurrentPage('creator-profile');
+    const mainContent = document.getElementById('mainContent');
 
     let creator = typeof creatorIdOrObject === 'object' ? creatorIdOrObject : null;
 
