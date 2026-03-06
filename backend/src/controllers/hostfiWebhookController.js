@@ -258,7 +258,7 @@ async function processFiatDeposit(parsed) {
       // Need to ensure usdcAssetId is available. Let's re-fetch if needed or use from swapDetails
       const usdcAssetId = swapDetails?.toAssetId || await hostfiWalletService.getWalletAssetId(currentUser._id, 'USDC');
 
-      const payoutResult = await hostfiService.initiatePayout({
+      const payoutResult = await hostfiService.initiateWithdrawal({
         walletAssetId: usdcAssetId,
         amount: finalCreditAmount,
         currency: 'USDC',
