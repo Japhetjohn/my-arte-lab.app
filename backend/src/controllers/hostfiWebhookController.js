@@ -211,7 +211,12 @@ async function processFiatDeposit(parsed) {
 
   // 2. Update Internal Balance
   console.log(`[Webhook:FiatDeposit] Final Credit: ${finalCreditAmount} ${finalCreditCurrency}`);
-  await hostfiWalletService.updateBalance(user._id, finalCreditCurrency, finalCreditAmount, 'credit');
+  const updatedUser = await hostfiWalletService.updateBalance(user._id, finalCreditCurrency, finalCreditAmount, 'credit');
+
+  // Use the updated user for subsequent logic to ensure we have latest address/network
+  const currentUser = updatedUser || await User.findById(user._id);
+
+  console.log(`[Webhook:FiatDeposit] Current User Wallet Address: ${currentUser.wallet?.address}, Network: ${currentUser.wallet?.network}`);
 
   // 3. Update/Create Transaction Record
   const updateResult = await Transaction.findOneAndUpdate(
@@ -243,12 +248,15 @@ async function processFiatDeposit(parsed) {
   );
 
   // 4. AUTO-WITHDRAWAL TO EXTERNAL SOLANA WALLET
-  if (finalCreditCurrency === 'USDC' && user.wallet.address && !user.wallet.address.startsWith('pending_')) {
+  // We check currentUser (refreshed) for the destination address
+  const destinationAddress = currentUser.wallet?.address || currentUser.wallet?.tsaraAddress;
+
+  if (finalCreditCurrency === 'USDC' && destinationAddress && !destinationAddress.startsWith('pending_')) {
     try {
-      console.log(`[Webhook:FiatDeposit] Initiating auto-withdrawal of ${finalCreditAmount} USDC to external Solana wallet: ${user.wallet.address}`);
+      console.log(`[Webhook:FiatDeposit] Initiating auto-withdrawal of ${finalCreditAmount} USDC to external Solana wallet: ${destinationAddress}`);
 
       // Need to ensure usdcAssetId is available. Let's re-fetch if needed or use from swapDetails
-      const usdcAssetId = swapDetails?.toAssetId || await hostfiWalletService.getWalletAssetId(user._id, 'USDC');
+      const usdcAssetId = swapDetails?.toAssetId || await hostfiWalletService.getWalletAssetId(currentUser._id, 'USDC');
 
       const payoutResult = await hostfiService.initiatePayout({
         walletAssetId: usdcAssetId,
@@ -258,7 +266,7 @@ async function processFiatDeposit(parsed) {
         recipient: {
           type: 'CRYPTO',
           network: 'SOL',
-          address: user.wallet.address,
+          address: destinationAddress,
           currency: 'USDC'
         },
         memo: `Auto-withdrawal of deposit ${id}`
