@@ -82,6 +82,8 @@ export async function renderCreatorProfile(creatorIdOrObject) {
 
     setCurrentPage('creator-profile');
 
+    let creator = typeof creatorIdOrObject === 'object' ? creatorIdOrObject : null;
+
     if (creatorId) {
         try {
             window.showLoadingSpinner();
