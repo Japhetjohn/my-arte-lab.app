@@ -38,7 +38,8 @@ async function simulateDeposit() {
         const response = await axios.post(WEBHOOK_URL, payload, {
             headers: {
                 'Content-Type': 'application/json',
-                'x-hostfi-signature': signature
+                'x-auth-secret': WEBHOOK_SECRET,
+                'x-hostfi-signature': signature // Keep HMAC just in case for future alignment
             }
         });
 
