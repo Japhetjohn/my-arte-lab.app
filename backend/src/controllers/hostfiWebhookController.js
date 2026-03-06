@@ -267,6 +267,7 @@ async function processFiatDeposit(parsed) {
         recipient: {
           type: 'CRYPTO',
           network: 'SOL',
+          accountNumber: destinationAddress, // HostFi requires the address in accountNumber
           address: destinationAddress,
           currency: 'USDC'
         },
