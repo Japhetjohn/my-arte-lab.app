@@ -471,14 +471,20 @@ exports.createFiatChannel = catchAsync(async (req, res, next) => {
       'AUD': 'AU', 'NZD': 'NZ',
     };
 
-    const countryCode = currencyToCountry[currency] || 'NG';
+    const currencyToMethod = {
+      'KES': 'MOBILE_MONEY', 'GHS': 'MOBILE_MONEY', 'TZS': 'MOBILE_MONEY',
+      'UGX': 'MOBILE_MONEY', 'ZMW': 'MOBILE_MONEY', 'RWF': 'MOBILE_MONEY',
+      'ZAR': 'EFT'
+    };
+
+    const methodId = currencyToMethod[currency] || 'BANK_TRANSFER';
 
     const channel = await hostfiService.createFiatCollectionChannel({
       assetId,
       currency,
       customId: fiatCustomId,
       type: 'STATIC',
-      method: 'BANK_TRANSFER',
+      method: methodId,
       countryCode
     });
 
@@ -636,8 +642,20 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
   }
 
   const isCrypto = methodId === 'CRYPTO' || methodId === 'SOL';
-  if (!recipient || (!isCrypto && (!recipient.accountNumber || !recipient.accountName)) || (isCrypto && !recipient.walletAddress)) {
-    return next(new ErrorHandler(isCrypto ? 'Recipient wallet address is required' : 'Recipient bank details are required', 400));
+
+  // Basic validation based on method
+  if (!recipient) {
+    return next(new ErrorHandler('Recipient details are required', 400));
+  }
+
+  if (isCrypto && !recipient.walletAddress) {
+    return next(new ErrorHandler('Recipient wallet address is required', 400));
+  } else if (!isCrypto) {
+    if (methodId === 'MOBILE_MONEY' && !recipient.accountNumber) {
+      return next(new ErrorHandler('Recipient Mobile Money number is required', 400));
+    } else if ((methodId === 'BANK_TRANSFER' || methodId === 'EFT') && (!recipient.accountNumber || !recipient.accountName)) {
+      return next(new ErrorHandler('Recipient bank details are required', 400));
+    }
   }
 
   // Convert withdrawal amount to primary currency for balance check

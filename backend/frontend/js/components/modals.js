@@ -1144,7 +1144,7 @@ export async function showWithdrawModal() {
                     </div>
 
                     <div style="display: flex; gap: 4px; background: rgba(255,255,255,0.05); padding: 4px; border-radius: 14px; margin-bottom: 24px;">
-                        <button class="glass-tab-btn active" id="bankWithdrawTab" onclick="switchWithdrawTab('bank')" style="flex: 1; padding: 10px; font-size: 13px;">Bank Account</button>
+                        <button class="glass-tab-btn active" id="bankWithdrawTab" onclick="switchWithdrawTab('bank')" style="flex: 1; padding: 10px; font-size: 13px;">Fiat Account</button>
                         <button class="glass-tab-btn" id="cryptoWithdrawTab" onclick="switchWithdrawTab('crypto')" style="flex: 1; padding: 10px; font-size: 13px;">Solana Wallet</button>
                     </div>
 
@@ -1154,6 +1154,30 @@ export async function showWithdrawModal() {
                             <div style="position: relative;">
                                 <input type="number" id="withdrawAmount" class="glass-input" placeholder="0.00" min="0.01" max="${balance}" step="0.01" oninput="updateWithdrawFee(this.value)" style="padding-right: 80px; font-size: 18px; font-weight: 700;">
                                 <button onclick="document.getElementById('withdrawAmount').value='${balance}'; updateWithdrawFee('${balance}')" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: var(--primary); border: none; border-radius: 10px; padding: 6px 14px; font-size: 12px; font-weight: 800; color: white; cursor: pointer;">MAX</button>
+                            </div>
+                        </div>
+
+                        <div id="fiatWithdrawFields" style="margin-bottom:24px;">
+                            <label class="glass-form-label">Receive In</label>
+                            <select id="withdrawCurrency" class="glass-input" style="margin-bottom: 12px; appearance: none; background-image: url('data:image/svg+xml,%3Csvg width=%2214%22 height=%2214%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22rgba(151,71,255,0.6)%22 stroke-width=%222.5%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M6 9l6 6 6-6%22/%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 16px center;" onchange="window.updateWithdrawMethodUI()">
+                                <option value="NGN" data-method="BANK_TRANSFER">NGN - Bank Transfer</option>
+                                <option value="KES" data-method="MOBILE_MONEY">KES - Mobile Money</option>
+                                <option value="GHS" data-method="MOBILE_MONEY">GHS - Mobile Money</option>
+                                <option value="TZS" data-method="MOBILE_MONEY">TZS - Mobile Money</option>
+                                <option value="UGX" data-method="MOBILE_MONEY">UGX - Mobile Money</option>
+                                <option value="ZMW" data-method="MOBILE_MONEY">ZMW - Mobile Money</option>
+                                <option value="RWF" data-method="MOBILE_MONEY">RWF - Mobile Money</option>
+                                <option value="ZAR" data-method="EFT">ZAR - EFT</option>
+                            </select>
+
+                            <div id="bankDetailsContainer">
+                                <input type="text" id="recipientBankName" class="glass-input" placeholder="Bank Name" style="margin-bottom: 12px;">
+                                <input type="text" id="recipientAccountName" class="glass-input" placeholder="Account Name" style="margin-bottom: 12px;">
+                                <input type="text" id="recipientAccountNumber" class="glass-input" placeholder="Account Number">
+                            </div>
+
+                            <div id="momoDetailsContainer" style="display:none;">
+                                <input type="text" id="recipientMomoNumber" class="glass-input" placeholder="Mobile Money Number">
                             </div>
                         </div>
 
@@ -1175,19 +1199,35 @@ export async function showWithdrawModal() {
                     </div>
 
                     <div id="bankWithdrawActions">
-                        <button class="glass-btn-primary" onclick="handleWithdrawSubmit('BANK_TRANSFER')" style="margin-bottom: 12px;">Confirm Bank Withdrawal</button>
-                        <button class="glass-btn-ghost" onclick="window.location.href='/#/settings'">Update Payout Details</button>
+                        <button class="glass-btn-primary" onclick="handleWithdrawSubmit('FIAT')" style="margin-bottom: 12px;">Process Fiat Withdrawal</button>
                     </div>
 
                     <div id="cryptoWithdrawActions" style="display:none;">
-                        <button class="glass-btn-primary" onclick="handleWithdrawSubmit('CRYPTO')">Send</button>
+                        <button class="glass-btn-primary" onclick="handleWithdrawSubmit('CRYPTO')">Send USDC</button>
                     </div>
                 </div>
             </div>
         </div>
     `;
     openWalletModal(modalContent);
+
+    // Initial trigger to set the right UI for the default selected currency
+    setTimeout(() => { if (window.updateWithdrawMethodUI) window.updateWithdrawMethodUI(); }, 100);
 }
+
+window.updateWithdrawMethodUI = function () {
+    const selector = document.getElementById('withdrawCurrency');
+    if (!selector) return;
+    const method = selector.options[selector.selectedIndex].getAttribute('data-method');
+
+    if (method === 'MOBILE_MONEY') {
+        document.getElementById('bankDetailsContainer').style.display = 'none';
+        document.getElementById('momoDetailsContainer').style.display = 'block';
+    } else {
+        document.getElementById('bankDetailsContainer').style.display = 'block';
+        document.getElementById('momoDetailsContainer').style.display = 'none';
+    }
+};
 
 window.showBankWithdrawal = function () {
     showWithdrawModal();
@@ -1206,6 +1246,7 @@ window.switchWithdrawTab = function (tab) {
     document.getElementById('bankWithdrawTab').classList.toggle('active', tab === 'bank');
     document.getElementById('cryptoWithdrawTab').classList.toggle('active', tab === 'crypto');
     document.getElementById('cryptoWithdrawFields').style.display = tab === 'crypto' ? 'block' : 'none';
+    document.getElementById('fiatWithdrawFields').style.display = tab === 'bank' ? 'block' : 'none';
     document.getElementById('bankWithdrawActions').style.display = tab === 'bank' ? 'block' : 'none';
     document.getElementById('cryptoWithdrawActions').style.display = tab === 'crypto' ? 'block' : 'none';
 };
@@ -1217,46 +1258,66 @@ window.handleWithdrawSubmit = async function (methodId) {
     if (!amount || amount <= 0) { showToast('Enter a valid amount', 'error'); return; }
     if (amount > balance) { showToast('Insufficient balance', 'error'); return; }
 
-    if (methodId === 'BANK_TRANSFER') {
-        const userCountry = appState.user?.location?.country || appState.user?.country;
-        if (!userCountry) {
-            showToast('Please set your country in Settings first', 'info');
-            setTimeout(() => window.location.href = '/#/settings', 1500);
-            return;
-        }
-        // Check if user has bank account... this is usually checked on backend but good to prompt
-        closeModal();
-        showToast('Processing bank withdrawal...', 'info');
-        window.location.href = '/#/settings';
-    } else if (methodId === 'CRYPTO') {
-        const recipient = document.getElementById('recipientAddress').value.trim();
-        if (!recipient) { showToast('Enter a recipient Solana address', 'error'); return; }
-        if (recipient.length < 32) { showToast('Invalid Solana address', 'error'); return; }
+    window.showLoadingSpinner();
 
-        try {
-            window.showLoadingSpinner();
+    try {
+        if (methodId === 'FIAT') {
+            const selector = document.getElementById('withdrawCurrency');
+            const currency = selector.value;
+            const backendMethod = selector.options[selector.selectedIndex].getAttribute('data-method');
+            let recipient = {};
+
+            if (backendMethod === 'MOBILE_MONEY') {
+                const momoNumber = document.getElementById('recipientMomoNumber').value.trim();
+                if (!momoNumber) throw new Error('Mobile Money number is required');
+                recipient = { accountNumber: momoNumber, type: 'MOBILE_MONEY' };
+            } else {
+                const bName = document.getElementById('recipientBankName').value.trim();
+                const aName = document.getElementById('recipientAccountName').value.trim();
+                const aNum = document.getElementById('recipientAccountNumber').value.trim();
+                if (!bName || !aName || !aNum) throw new Error('Bank details are required');
+                recipient = { bankName: bName, accountName: aName, accountNumber: aNum, type: backendMethod };
+            }
+
+            const response = await api.initiateHostfiWithdrawal({
+                amount,
+                currency,
+                methodId: backendMethod,
+                recipient
+            });
+
+            if (response.success) {
+                closeModal();
+                showToast('Fiat withdrawal initiated successfully!', 'success');
+                setTimeout(() => window.location.reload(), 2000);
+            } else {
+                throw new Error(response.message || 'Withdrawal failed');
+            }
+
+        } else if (methodId === 'CRYPTO') {
+            const recipientAddr = document.getElementById('recipientAddress').value.trim();
+            if (!recipientAddr) throw new Error('Recipient Solana address is required');
+            if (recipientAddr.length < 32) throw new Error('Invalid Solana address length');
+
             const response = await api.initiateHostfiWithdrawal({
                 amount,
                 currency: 'USDC',
                 methodId: 'CRYPTO',
-                recipient: {
-                    walletAddress: recipient,
-                    type: 'CRYPTO'
-                }
+                recipient: { walletAddress: recipientAddr, type: 'CRYPTO' }
             });
 
-            window.hideLoadingSpinner();
             if (response.success) {
                 closeModal();
                 showToast('USDC sent successfully!', 'success');
                 setTimeout(() => window.location.reload(), 2000);
             } else {
-                showToast(response.message || 'Transfer failed', 'error');
+                throw new Error(response.message || 'Transfer failed');
             }
-        } catch (error) {
-            window.hideLoadingSpinner();
-            showToast(error.message || 'Transfer error', 'error');
         }
+    } catch (error) {
+        showToast(error.message || 'Transfer error', 'error');
+    } finally {
+        window.hideLoadingSpinner();
     }
 };
 
