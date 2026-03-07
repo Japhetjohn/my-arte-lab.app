@@ -195,6 +195,7 @@ class HostFiService {
 
     return {
       event,
+      eventType: event,
       data,
       metadata: metadataMap,
       id: data.id || payload.id || data.reference,
