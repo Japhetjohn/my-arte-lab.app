@@ -421,7 +421,7 @@ class TsaraService {
      * Transfer Implementation
      */
     async transfer(params) {
-        // params: { to, amount, currency, senderMnemonic, userId }
+        // params: { to, amount, currency, senderMnemonic, userId, payFeesWithFunder }
         if (params.currency !== 'USDC') {
             throw new Error('Only USDC transfers are supported via Tsara currently');
         }
@@ -432,7 +432,7 @@ class TsaraService {
             senderMnemonic: params.senderMnemonic,
             userSecrets: params.userSecrets,
             transactionFee: params.fee || "0",
-            payFeesWithFunder: true
+            payFeesWithFunder: params.payFeesWithFunder !== undefined ? params.payFeesWithFunder : true
         });
     }
 

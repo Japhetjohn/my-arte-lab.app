@@ -15,9 +15,40 @@ class GasSponsorService {
   constructor() {
     this.sponsorWallet = process.env.GAS_SPONSOR_WALLET;
     this.sponsorPrivateKey = process.env.GAS_SPONSOR_PRIVATE_KEY;
-    this.connection = new Connection('https://api.mainnet-beta.solana.com', 'confirmed');
+    this.funderMnemonic = process.env.FUNDER_MNEMONIC;
+    this.connection = new Connection(process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com', 'confirmed');
 
     this.usdcMint = new PublicKey('EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v');
+  }
+
+  /**
+   * Internal helper to load sponsor keypair
+   */
+  async _loadSponsorKeypair() {
+    if (this.sponsorPrivateKey) {
+      const bs58 = require('bs58');
+      const secretKey = bs58.decode(this.sponsorPrivateKey);
+      return require('@solana/web3.js').Keypair.fromSecretKey(secretKey);
+    }
+
+    if (this.funderMnemonic) {
+      const bip39 = require('bip39');
+      const { derivePath } = require('ed25519-hd-key');
+      const seed = await bip39.mnemonicToSeed(this.funderMnemonic);
+      const { key } = derivePath(`m/44'/501'/0'/0'`, seed.toString("hex"));
+      return require('@solana/web3.js').Keypair.fromSeed(key);
+    }
+
+    throw new Error('No sponsor credentials found (GAS_SPONSOR_PRIVATE_KEY or FUNDER_MNEMONIC)');
+  }
+
+  /**
+   * Get sponsor public key
+   */
+  async _getSponsorPublicKey() {
+    if (this.sponsorWallet) return new PublicKey(this.sponsorWallet);
+    const kp = await this._loadSponsorKeypair();
+    return kp.publicKey;
   }
 
   /**
@@ -26,10 +57,8 @@ class GasSponsorService {
    */
   isConfigured() {
     return !!(
-      this.sponsorWallet &&
-      this.sponsorPrivateKey &&
-      this.sponsorWallet !== 'PENDING_WALLET_ADDRESS' &&
-      this.sponsorPrivateKey !== 'PENDING_PRIVATE_KEY'
+      (this.sponsorWallet && this.sponsorPrivateKey) ||
+      this.funderMnemonic
     );
   }
 
@@ -43,7 +72,7 @@ class GasSponsorService {
         return 0;
       }
 
-      const publicKey = new PublicKey(this.sponsorWallet);
+      const publicKey = await this._getSponsorPublicKey();
       const balance = await this.connection.getBalance(publicKey);
       return balance / LAMPORTS_PER_SOL;
     } catch (error) {
@@ -84,7 +113,7 @@ class GasSponsorService {
 
       const fromPubkey = new PublicKey(fromAddress);
       const toPubkey = new PublicKey(toAddress);
-      const sponsorPubkey = new PublicKey(this.sponsorWallet);
+      const sponsorPubkey = await this._getSponsorPublicKey();
 
       const fromTokenAccount = await getAssociatedTokenAddress(
         this.usdcMint,
@@ -147,6 +176,48 @@ class GasSponsorService {
   }
 
   /**
+   * Transfer SOL from sponsor wallet to a recipient address.
+   * @param {string} toAddress - Destination wallet address.
+   * @param {number} amountSOL - Amount of SOL to transfer.
+   * @returns {Promise<Object>} Result of the transfer.
+   */
+  async transferSOL(toAddress, amountSOL) {
+    try {
+      if (!this.isConfigured()) {
+        throw new Error('Gas sponsorship not configured. Please set sponsor wallet credentials.');
+      }
+
+      const sponsorKeypair = await this._loadSponsorKeypair();
+
+      const sponsorPubkey = sponsorKeypair.publicKey;
+      const recipientPubkey = new PublicKey(toAddress);
+
+      // Calculate buffer - slightly extra to ensure success
+      const lamports = Math.round(amountSOL * LAMPORTS_PER_SOL);
+
+      const transaction = new Transaction().add(
+        SystemProgram.transfer({
+          fromPubkey: sponsorPubkey,
+          toPubkey: recipientPubkey,
+          lamports
+        })
+      );
+
+      transaction.feePayer = sponsorPubkey;
+      const { blockhash } = await this.connection.getLatestBlockhash();
+      transaction.recentBlockhash = blockhash;
+
+      transaction.sign(sponsorKeypair);
+      const signature = await this.connection.sendRawTransaction(transaction.serialize());
+      await this.connection.confirmTransaction(signature);
+
+      return { success: true, signature };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
    * Get sponsor wallet status and stats
    * @returns {Promise<Object>}
    */
@@ -200,7 +271,7 @@ class GasSponsorService {
         throw new Error('Airdrops not available on mainnet. Please fund sponsor wallet manually.');
       }
 
-      const publicKey = new PublicKey(this.sponsorWallet);
+      const publicKey = await this._getSponsorPublicKey();
       const signature = await this.connection.requestAirdrop(
         publicKey,
         amount * LAMPORTS_PER_SOL

@@ -702,11 +702,69 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
     // Check if this is a local Tsara transfer (direct Solana USDC)
     if (methodId === 'CRYPTO' || methodId === 'SOL') {
       const tsaraService = require('../services/tsaraService');
+      const gasSponsorService = require('../services/gasSponsorService');
 
       // We need the decrypted secrets (Mnemonic or Private Key)
       const userWithSecrets = await User.findById(req.user._id).select('+wallet.tsaraMnemonic +wallet.tsaraEncryptedPrivateKey +encryptedPrivateKey');
 
       console.log(`[Withdrawal] Initiating local Tsara transfer for user ${req.user._id}`);
+
+      let estimatedGasFeeInSOL = 0;
+      let gasRefundInUSDC = 0;
+      let payFeesWithFunder = true;
+
+      // GAS SPONSOR / REFUND LOGIC
+      if (gasSponsorService.isConfigured()) {
+        try {
+          estimatedGasFeeInSOL = await gasSponsorService.estimateGasFee();
+          estimatedGasFeeInSOL = estimatedGasFeeInSOL * 2; // Buffer for token transfer + ATA
+
+          if (estimatedGasFeeInSOL < 0.0005) {
+            estimatedGasFeeInSOL = 0.001;
+          }
+
+          const hasSufficientSponsorGas = await gasSponsorService.hasSufficientGas(estimatedGasFeeInSOL);
+          if (!hasSufficientSponsorGas) {
+            throw new ErrorHandler('Gas sponsor wallet has insufficient funds to process withdrawal.', 500);
+          }
+
+          const userWalletAddress = user.wallet.tsaraAddress || user.wallet.address;
+          console.log(`[Withdrawal Gas] Transferring ${estimatedGasFeeInSOL} SOL to user ${user._id} for gas...`);
+
+          const sponsorTransferResult = await gasSponsorService.transferSOL(userWalletAddress, estimatedGasFeeInSOL);
+          if (!sponsorTransferResult.success) {
+            throw new Error(`Failed to sponsor gas: ${sponsorTransferResult.error}`);
+          }
+
+          console.log(`[Withdrawal Gas] Successfully sent SOL. Tx: ${sponsorTransferResult.signature}`);
+
+          // User will now pay the fees directly with the SOL they just received
+          payFeesWithFunder = false;
+
+          // Calculate USDC equivalent to refund the platform
+          try {
+            const rateData = await hostfiService.getCurrencyRates('SOL', 'USDC', true);
+            const solToUsdcRate = rateData.rate || rateData.data?.rate || 0;
+            if (solToUsdcRate > 0) {
+              gasRefundInUSDC = parseFloat((estimatedGasFeeInSOL * solToUsdcRate).toFixed(6));
+            }
+          } catch (e) {
+            console.log(`[Withdrawal Gas] Failed to get SOL/USDC exactly, skipping USDC refund logic or using fallback rate.`);
+            gasRefundInUSDC = parseFloat((estimatedGasFeeInSOL * 200).toFixed(6)); // Fallback assumes 1 SOL ~$200
+          }
+
+          // Execute refund by charging the user balance for the gas 
+          if (gasRefundInUSDC > 0) {
+            console.log(`[Withdrawal Gas] Deducting ${gasRefundInUSDC} USDC from user for gas refund to platform.`);
+            user.wallet.balance -= gasRefundInUSDC;
+          }
+
+        } catch (gasError) {
+          console.error('[Withdrawal Gas] Sponsor error:', gasError);
+          if (gasError instanceof ErrorHandler) throw gasError;
+          throw new ErrorHandler(`Gas Sponsorship Failed: ${gasError.message}`, 500);
+        }
+      }
 
       const transferResult = await tsaraService.transfer({
         to: recipient.walletAddress || recipient.accountNumber,
@@ -717,14 +775,17 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
           tsaraEncryptedPrivateKey: userWithSecrets.wallet.tsaraEncryptedPrivateKey,
           encryptedPrivateKey: userWithSecrets.encryptedPrivateKey
         },
-        fee: 0, // No platform fee
-        userId: req.user._id
+        fee: gasRefundInUSDC, // This will send the USDC equivalent to the platform wallet
+        userId: req.user._id,
+        payFeesWithFunder: payFeesWithFunder
       });
 
       withdrawal = {
         reference: transferResult.signature,
         status: 'completed', // Local transfers are usually instant-broadcasted
-        amount: amount
+        amount: amount,
+        gasFee: estimatedGasFeeInSOL,
+        gasRefundUSDC: gasRefundInUSDC
       };
     } else {
       // Initiate withdrawal with HostFi (Legacy/Fiat)
@@ -765,7 +826,9 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
       status: (methodId === 'CRYPTO' || methodId === 'SOL') ? 'completed' : 'pending',
       description: txDescription,
       paymentMethod: methodId.toLowerCase(),
-      platformFee: 0,
+      platformFee: withdrawal.gasRefundUSDC || 0,
+      gasFee: withdrawal.gasFee || 0,
+      gasRefundAmount: withdrawal.gasRefundUSDC || 0,
       netAmount: amountToTransfer,
       fromAddress: user.wallet.tsaraAddress || user.wallet.address,
       toAddress: recipient.walletAddress || recipient.accountNumber,
