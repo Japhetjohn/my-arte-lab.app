@@ -1180,9 +1180,18 @@ export async function showWithdrawModal() {
                             </select>
 
                             <div id="bankDetailsContainer">
-                                <input type="text" id="recipientBankName" class="glass-input" placeholder="Bank Name" style="margin-bottom: 12px;">
-                                <input type="text" id="recipientAccountName" class="glass-input" placeholder="Account Name" style="margin-bottom: 12px;">
-                                <input type="text" id="recipientAccountNumber" class="glass-input" placeholder="Account Number">
+                                <select id="recipientBankId" class="glass-input" style="margin-bottom: 12px; appearance: none; background-image: url('data:image/svg+xml,%3Csvg width=%2214%22 height=%2214%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22rgba(151,71,255,0.6)%22 stroke-width=%222.5%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M6 9l6 6 6-6%22/%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 16px center;">
+                                    <option value="">Select Bank</option>
+                                </select>
+                                <div style="position: relative; margin-bottom: 12px;">
+                                    <input type="text" id="recipientAccountNumber" class="glass-input" placeholder="Account Number" style="padding-right: 100px;">
+                                    <button onclick="window.handleBankLookup()" id="verifyBankBtn" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: rgba(151, 71, 255, 0.1); border: 1px solid rgba(151, 71, 255, 0.2); border-radius: 8px; padding: 6px 12px; font-size: 11px; font-weight: 800; color: var(--primary); cursor: pointer; transition: all 0.2s;">VERIFY</button>
+                                </div>
+                                <div id="verifiedAccountDisplay" style="display: none; background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 12px; padding: 12px; margin-bottom: 12px;">
+                                    <div style="font-size: 10px; color: #10B981; font-weight: 800; text-transform: uppercase; margin-bottom: 4px;">Verified Recipient</div>
+                                    <div id="verifiedAccountName" style="font-size: 14px; font-weight: 700; color: var(--text-primary);">Account Name</div>
+                                </div>
+                                <input type="hidden" id="recipientAccountName">
                             </div>
 
                             <div id="momoDetailsContainer" style="display:none;">
@@ -1228,6 +1237,7 @@ window.updateWithdrawMethodUI = function () {
     const selector = document.getElementById('withdrawCurrency');
     if (!selector) return;
     const method = selector.options[selector.selectedIndex].getAttribute('data-method');
+    const currency = selector.value;
 
     if (method === 'MOBILE_MONEY') {
         document.getElementById('bankDetailsContainer').style.display = 'none';
@@ -1235,6 +1245,72 @@ window.updateWithdrawMethodUI = function () {
     } else {
         document.getElementById('bankDetailsContainer').style.display = 'block';
         document.getElementById('momoDetailsContainer').style.display = 'none';
+
+        // Load banks for this currency's country
+        const countryMap = { 'NGN': 'NG', 'KES': 'KE', 'GHS': 'GH', 'ZAR': 'ZA', 'TZS': 'TZ', 'UGX': 'UG', 'ZMW': 'ZM', 'RWF': 'RW' };
+        const countryCode = countryMap[currency] || 'NG';
+        window.loadBanksList(countryCode);
+    }
+};
+
+window.loadBanksList = async function (countryCode) {
+    const select = document.getElementById('recipientBankId');
+    if (!select) return;
+
+    select.innerHTML = '<option value="">Loading Banks...</option>';
+
+    try {
+        const response = await api.getHostfiBanks(countryCode);
+        if (response.success) {
+            const banks = response.data.banks || [];
+            select.innerHTML = '<option value="">Select Bank</option>';
+            banks.forEach(bank => {
+                const opt = document.createElement('option');
+                opt.value = bank.id || bank.code;
+                opt.textContent = bank.name;
+                select.appendChild(opt);
+            });
+        }
+    } catch (error) {
+        console.error('Failed to load banks:', error);
+        select.innerHTML = '<option value="">Error Loading Banks</option>';
+    }
+};
+
+window.handleBankLookup = async function () {
+    const bankId = document.getElementById('recipientBankId').value;
+    const accountNumber = document.getElementById('recipientAccountNumber').value.trim();
+    const currency = document.getElementById('withdrawCurrency').value;
+    const countryMap = { 'NGN': 'NG', 'KES': 'KE', 'GHS': 'GH', 'ZAR': 'ZA', 'TZS': 'TZ', 'UGX': 'UG', 'ZMW': 'ZM', 'RWF': 'RW' };
+    const country = countryMap[currency] || 'NG';
+
+    if (!bankId || !accountNumber) {
+        showToast('Please select a bank and enter account number', 'error');
+        return;
+    }
+
+    const btn = document.getElementById('verifyBankBtn');
+    btn.disabled = true;
+    btn.textContent = '...';
+
+    try {
+        const response = await api.verifyHostfiBankAccount({ country, bankId, accountNumber });
+        if (response.success) {
+            const data = response.data.accountInfo || response.data;
+            document.getElementById('verifiedAccountDisplay').style.display = 'block';
+            document.getElementById('verifiedAccountName').textContent = data.accountName;
+            document.getElementById('recipientAccountName').value = data.accountName;
+            showToast('Account verified!', 'success');
+        } else {
+            throw new Error(response.message || 'Verification failed');
+        }
+    } catch (error) {
+        showToast(error.message, 'error');
+        document.getElementById('verifiedAccountDisplay').style.display = 'none';
+        document.getElementById('recipientAccountName').value = '';
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'VERIFY';
     }
 };
 
@@ -1244,9 +1320,7 @@ window.showBankWithdrawal = function () {
 
 window.updateWithdrawFee = function (amount) {
     const val = parseFloat(amount) || 0;
-    const fee = 0; // Removed hardcoded fee
     const net = val;
-
     const netEl = document.getElementById('withdrawNet');
     if (netEl) netEl.textContent = `$${net.toFixed(2)}`;
 };
@@ -1281,11 +1355,21 @@ window.handleWithdrawSubmit = async function (methodId) {
                 if (!momoNumber) throw new Error('Mobile Money number is required');
                 recipient = { accountNumber: momoNumber, type: 'MOBILE_MONEY' };
             } else {
-                const bName = document.getElementById('recipientBankName').value.trim();
-                const aName = document.getElementById('recipientAccountName').value.trim();
+                const bankId = document.getElementById('recipientBankId').value;
                 const aNum = document.getElementById('recipientAccountNumber').value.trim();
-                if (!bName || !aName || !aNum) throw new Error('Bank details are required');
-                recipient = { bankName: bName, accountName: aName, accountNumber: aNum, type: backendMethod };
+                const aName = document.getElementById('recipientAccountName').value.trim();
+                const bName = document.getElementById('recipientBankId').options[document.getElementById('recipientBankId').selectedIndex].text;
+
+                if (!bankId || !aNum) throw new Error('Bank selection and account number are required');
+                if (!aName) throw new Error('Please verify the bank account first');
+
+                recipient = {
+                    bankId,
+                    bankName: bName,
+                    accountName: aName,
+                    accountNumber: aNum,
+                    type: backendMethod
+                };
             }
 
             const response = await api.initiateHostfiWithdrawal({
