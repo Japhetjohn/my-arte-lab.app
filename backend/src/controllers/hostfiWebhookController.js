@@ -106,13 +106,14 @@ async function processFiatDeposit(parsed) {
   const feeBreakdown = hostfiService.calculateOnRampFee(amount);
 
   let userId = customId;
-  if (userId && typeof userId === 'string' && userId.endsWith('-FIAT')) {
-    userId = userId.replace('-FIAT', '');
+  // If customId is a string and has a suffix like "-FIAT-1772842743721", extract the first 24 chars
+  if (userId && typeof userId === 'string' && userId.length > 24) {
+    userId = userId.substring(0, 24);
   }
 
   const user = await User.findById(userId);
   if (!user) {
-    console.error(`[Webhook:FiatDeposit] User not found: ${userId}`);
+    console.error(`[Webhook:FiatDeposit] User not found: ${userId} (from customId: ${customId})`);
     throw new Error(`User not found: ${userId}`);
   }
 
