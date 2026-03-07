@@ -97,7 +97,7 @@ exports.handleWebhook = catchAsync(async (req, res, next) => {
 async function processFiatDeposit(parsed) {
   const { id, amount, currency, customId, status, data } = parsed;
 
-  if (!['SUCCESS', 'COMPLETED', 'CREDITED'].includes(status)) {
+  if (!['SUCCESS', 'SUCCESSFUL', 'COMPLETED', 'CREDITED'].includes(status)) {
     console.log(`[Webhook:FiatDeposit] Status ${status} is not successful, ignoring credit logic.`);
     return;
   }
