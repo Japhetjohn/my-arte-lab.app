@@ -1,8 +1,8 @@
 require('dotenv').config({ path: '/var/www/myartelab/backend/.env' });
 const mongoose = require('mongoose');
 const hostfiService = require('/var/www/myartelab/backend/src/services/hostfiService');
-const User = require('/var/www/myartelab/backend/src/models/userModel');
-const Transaction = require('/var/www/myartelab/backend/src/models/transactionModel');
+const User = require('/var/www/myartelab/backend/src/models/User');
+const Transaction = require('/var/www/myartelab/backend/src/models/Transaction');
 
 async function run() {
   await mongoose.connect(process.env.MONGODB_URI);
