@@ -824,6 +824,10 @@ class HostFiService {
       const config = this.getCurrencyConfig(currency);
       const payoutMethod = methodId || config.method;
 
+      // Sanitize memo (HostFi is strict about special characters like ' or ())
+      const sanitize = (str) => typeof str === 'string' ? str.replace(/[^a-zA-Z0-9\s-]/g, '').substring(0, 50) : '';
+      const safeMemo = sanitize(memo || `Withdrawal of ${payoutAmount} ${currency} Net`);
+
       // Normalize recipient type (HostFi expects BANK, MOMO, or CRYPTO)
       let normalizedType = recipient.type || (payoutMethod === 'BANK_TRANSFER' ? 'BANK' : (payoutMethod === 'MOBILE_MONEY' ? 'MOMO' : (payoutMethod === 'EFT' ? 'BANK' : 'CRYPTO')));
       if (normalizedType === 'BANK_TRANSFER' || normalizedType === 'EFT') normalizedType = 'BANK';
@@ -840,16 +844,16 @@ class HostFiService {
           method: payoutMethod,
           currency: recipient.currency || currency,
           accountNumber: recipient.accountNumber,
-          accountName: recipient.accountName || 'Verified Recipient',
+          accountName: sanitize(recipient.accountName || 'Verified Recipient').substring(0, 50),
           bankId: recipient.bankId,
-          bankName: recipient.bankName,
+          bankName: sanitize(recipient.bankName),
           country: recipient.country || config.country,
           accountType: recipient.accountType || 'SAVINGS',
           network: recipient.network,
           address: recipient.address,
-          memo: recipient.memo
+          memo: sanitize(recipient.memo || safeMemo)
         },
-        memo: memo || `Withdrawal of ${payoutAmount} ${currency} (Net)`
+        memo: safeMemo
       };
 
       console.log('HostFi Payout Payload:', JSON.stringify(payload, null, 2));
