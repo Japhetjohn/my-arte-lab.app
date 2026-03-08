@@ -821,8 +821,12 @@ class HostFiService {
       // 2. Send the remainder to the recipient
       const payoutAmount = feeBreakdown.amountAfterFee;
 
-      const config = this.getCurrencyConfig(currency);
       const payoutMethod = methodId || config.method;
+
+      // Normalize recipient type (HostFi expects BANK, MOMO, or CRYPTO)
+      let normalizedType = recipient.type || (payoutMethod === 'BANK_TRANSFER' ? 'BANK' : (payoutMethod === 'MOBILE_MONEY' ? 'MOMO' : (payoutMethod === 'EFT' ? 'BANK' : 'CRYPTO')));
+      if (normalizedType === 'BANK_TRANSFER' || normalizedType === 'EFT') normalizedType = 'BANK';
+      if (normalizedType === 'MOBILE_MONEY') normalizedType = 'MOMO';
 
       const payload = {
         assetId: walletAssetId,
@@ -831,7 +835,7 @@ class HostFiService {
         amount: Number(payoutAmount),
         currency,
         recipient: {
-          type: recipient.type || (payoutMethod === 'BANK_TRANSFER' ? 'BANK' : (payoutMethod === 'MOBILE_MONEY' ? 'MOMO' : (payoutMethod === 'EFT' ? 'BANK' : 'CRYPTO'))),
+          type: normalizedType,
           method: payoutMethod,
           currency: recipient.currency || currency,
           accountNumber: recipient.accountNumber,
