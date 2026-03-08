@@ -810,11 +810,12 @@ class HostFiService {
 
       // 1. Collect Commission (1%)
       // For off-ramp, we send the fee to the platform wallet
+      const safeRef = clientReference ? clientReference.substring(0, 8) : Date.now().toString().substring(5);
       await this.collectCommission({
         assetId: walletAssetId,
         amount: feeBreakdown.platformFee,
         currency,
-        clientReference: `COMM-OFF-${clientReference.substring(0, 8)}`
+        clientReference: `COMM-OFF-${safeRef}`
       });
 
       // 2. Send the remainder to the recipient
