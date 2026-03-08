@@ -14,15 +14,15 @@ async function run() {
     }
     console.log("User found, balance:", user.wallet.balance);
 
-    if (user.wallet.balance < 1) {
-      console.log("Insufficient balance to test $1 withdrawal.");
+    if (user.wallet.balance < 0.40) {
+      console.log("Insufficient balance to test $0.40 withdrawal.");
       return process.exit(1);
     }
 
-    console.log("\nInitiating withdrawal of $1 via HostFi...");
+    console.log("\nInitiating withdrawal of $0.40 via HostFi...");
 
     // Simulating the controller logic directly
-    const amount = 1;
+    const amount = 0.40;
     const recipient = {
       bankId: 'NG::100004',
       bankName: 'OPAY',

@@ -821,7 +821,45 @@ class HostFiService {
       // 2. Send the remainder to the recipient
       const payoutAmount = feeBreakdown.amountAfterFee;
 
-      const config = this.getCurrencyConfig(currency);
+      // Automatic Currency Conversion (Off-ramp Flow)
+      // If source currency (USDC) != target currency (NGN, etc.), perform swap first
+      const targetCurrency = (recipient.currency || currency).toUpperCase();
+      const sourceCurrency = currency.toUpperCase();
+      let effectiveAssetId = walletAssetId;
+      let effectiveAmount = payoutAmount;
+      let effectiveCurrency = sourceCurrency;
+
+      if (sourceCurrency !== targetCurrency && !isCryptoPayout) {
+        console.log(`[HostFi Service] Currency mismatch (${sourceCurrency} -> ${targetCurrency}). Initiating swap first...`);
+
+        // Find target asset ID
+        const assets = await this.getUserWallets();
+        const targetAsset = assets.find(a => {
+          const code = (a.currencyCode || (a.currency && a.currency.code) || a.currency || '').toUpperCase();
+          return code === targetCurrency;
+        });
+
+        if (!targetAsset) {
+          throw new Error(`Target currency ${targetCurrency} asset not found in wallet`);
+        }
+
+        // Perform Swap
+        const swapResult = await this.swapAssets({
+          source: { currency: sourceCurrency, walletAssetId },
+          target: { currency: targetCurrency, walletAssetId: targetAsset.id || targetAsset.assetId },
+          amount: { value: Number(payoutAmount), currency: sourceCurrency },
+          category: 'SWAP'
+        });
+
+        // Update parameters for final payout
+        effectiveAssetId = targetAsset.id || targetAsset.assetId;
+        effectiveAmount = swapResult.data?.targetAmount?.value || swapResult.targetAmount?.value || effectiveAmount;
+        effectiveCurrency = targetCurrency;
+
+        console.log(`[HostFi Service] Swap successful. Payout will proceed with ${effectiveAmount} ${effectiveCurrency}`);
+      }
+
+      const config = this.getCurrencyConfig(effectiveCurrency);
       const payoutMethod = methodId || config.method;
 
       // Strict sanitization for HostFi (avoids 403 Forbidden)
@@ -836,15 +874,15 @@ class HostFiService {
       if (normalizedType === 'MOBILE_MONEY') normalizedType = 'MOMO';
 
       const payload = {
-        assetId: walletAssetId,
+        assetId: effectiveAssetId,
         clientReference,
         methodId: payoutMethod,
-        amount: Number(payoutAmount),
-        currency,
+        amount: Number(effectiveAmount),
+        currency: effectiveCurrency,
         recipient: {
           type: normalizedType,
           method: payoutMethod,
-          currency: recipient.currency || currency,
+          currency: effectiveCurrency,
           accountNumber: recipient.accountNumber,
           accountName: nameSanitize(recipient.accountName || 'Verified Recipient').substring(0, 50),
           bankId: recipient.bankId,
