@@ -913,7 +913,7 @@ class HostFiService {
       };
 
       console.log(`[HostFi Service] Looking up bank account: ${accountNumber} in bank ${bankId}`);
-      const response = await this.makeRequest('POST', '/v1/payout/banks/lookup', payload);
+      const response = await this.makeRequest('POST', '/v1/payout/accounts/lookup', payload);
       return response.data || response;
     } catch (error) {
       console.error('Bank account lookup failed:', error.message);

@@ -1318,17 +1318,24 @@ window.handleAutoVerify = async function () {
     try {
         const response = await api.verifyHostfiBankAccount({ country, bankId, accountNumber });
         if (response.success) {
-            const data = response.data.accountInfo || response.data;
+            // HostFi resolution often nests data under 'data' or 'accountInfo'
+            const resultData = response.data || response;
+            const verifiedName = resultData.accountName || resultData.account_name || (resultData.accountInfo && resultData.accountInfo.accountName);
 
-            // Show success state
-            displayDiv.style.background = 'rgba(16, 185, 129, 0.05)';
-            displayDiv.style.borderColor = 'rgba(16, 185, 129, 0.2)';
-            statusText.style.color = '#10B981';
-            statusText.textContent = 'Verified Recipient';
-            nameText.textContent = data.accountName;
+            if (verifiedName) {
+                // Show success state
+                displayDiv.style.display = 'block';
+                displayDiv.style.background = 'rgba(16, 185, 129, 0.05)';
+                displayDiv.style.borderColor = 'rgba(16, 185, 129, 0.2)';
+                statusText.style.color = '#10B981';
+                statusText.textContent = 'Verified Recipient';
+                nameText.textContent = verifiedName;
 
-            hiddenName.value = data.accountName;
-            submitBtn.disabled = false;
+                hiddenName.value = verifiedName;
+                submitBtn.disabled = false;
+            } else {
+                throw new Error('Member name not returned');
+            }
         } else {
             throw new Error(response.message || 'Verification failed');
         }

@@ -1,0 +1,196 @@
+==> /root/.pm2/logs/myartelab-out.log <==
+⏹️  [Deposit Polling] Stopped
+⏹️  [Escrow Monitoring] Stopped
+[Tsara Service] Initialized local management for Solana mainnet-beta
+
+╔════════════════════════════════════════════════════════╗
+║  MyArteLab Backend Server
+║  Port: 5000
+║  Environment: production
+║  API: http://localhost:5000/api
+║  Payment Gateway: HostFi
+╚════════════════════════════════════════════════════════╝
+
+🚀 [Escrow Monitoring] Starting auto-refund detection...
+   Checking for unsubmitted deliverables after 2 days
+
+Syncing wallet balances for user 6983ea1691b5040eb0fb0276...
+Fetching new HostFi access token...
+Fetching new HostFi access token...
+102.91.92.31 - - [08/Mar/2026:08:30:05 +0000] "GET /api/hostfi/wallet/transactions?page=1&limit=10 HTTP/1.1" 304 - "https://app.myartelab.com/wallet" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
+HostFi access token obtained successfully
+HostFi access token obtained successfully
+102.91.92.31 - - [08/Mar/2026:08:30:06 +0000] "GET /api/hostfi/wallet HTTP/1.1" - - "https://app.myartelab.com/wallet" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
+Wallet balances synced for user 6983ea1691b5040eb0fb0276. Total Aggregate: 1.2629205850614347 USDC
+102.91.92.31 - - [08/Mar/2026:08:30:19 +0000] "GET /api/notifications/unread-count HTTP/1.1" 200 77 "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+102.91.92.31 - - [08/Mar/2026:08:30:19 +0000] "GET /api/auth/me HTTP/1.1" 200 4417 "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+102.91.92.31 - - [08/Mar/2026:08:30:20 +0000] "GET /api/notifications/unread-count HTTP/1.1" 200 77 "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+102.91.92.31 - - [08/Mar/2026:08:30:20 +0000] "GET /api/notifications/unread-count HTTP/1.1" 200 77 "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+102.91.92.31 - - [08/Mar/2026:08:30:20 +0000] "GET /api/hostfi/wallet/transactions?page=1&limit=10 HTTP/1.1" 200 4787 "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Syncing wallet balances for user 6983ea1691b5040eb0fb0276...
+102.91.92.31 - - [08/Mar/2026:08:30:20 +0000] "GET /api/bookings HTTP/1.1" 200 143 "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+102.91.92.31 - - [08/Mar/2026:08:30:20 +0000] "GET /api/notifications/unread-count HTTP/1.1" 200 77 "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Syncing wallet balances for user 6983ea1691b5040eb0fb0276...
+102.91.92.31 - - [08/Mar/2026:08:30:20 +0000] "GET /api/hostfi/wallet/transactions?page=1&limit=10 HTTP/1.1" 200 4787 "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Syncing wallet balances for user 6983ea1691b5040eb0fb0276...
+102.91.92.31 - - [08/Mar/2026:08:30:21 +0000] "GET /api/hostfi/wallet/transactions?page=1&limit=10 HTTP/1.1" 200 4787 "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Syncing wallet balances for user 6983ea1691b5040eb0fb0276...
+102.91.92.31 - - [08/Mar/2026:08:30:21 +0000] "GET /api/hostfi/wallet/transactions?page=1&limit=10 HTTP/1.1" 200 4787 "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+102.91.92.31 - - [08/Mar/2026:08:30:30 +0000] "GET /api/hostfi/wallet/transactions?page=1&limit=10 HTTP/1.1" 304 - "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Wallet balances synced for user 6983ea1691b5040eb0fb0276. Total Aggregate: 1.2630579094875176 USDC
+102.91.92.31 - - [08/Mar/2026:08:30:33 +0000] "GET /api/hostfi/wallet HTTP/1.1" 200 3125 "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Wallet balances synced for user 6983ea1691b5040eb0fb0276. Total Aggregate: 1.2630579094875176 USDC
+102.91.92.31 - - [08/Mar/2026:08:30:33 +0000] "GET /api/hostfi/wallet HTTP/1.1" 200 3125 "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Wallet balances synced for user 6983ea1691b5040eb0fb0276. Total Aggregate: 1.2630579094875176 USDC
+102.91.92.31 - - [08/Mar/2026:08:30:35 +0000] "GET /api/hostfi/wallet HTTP/1.1" 200 3125 "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Wallet balances synced for user 6983ea1691b5040eb0fb0276. Total Aggregate: 1.2630579094875176 USDC
+102.91.92.31 - - [08/Mar/2026:08:30:36 +0000] "GET /api/hostfi/wallet HTTP/1.1" 200 3125 "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Syncing wallet balances for user 6983ea1691b5040eb0fb0276...
+Wallet balances synced for user 6983ea1691b5040eb0fb0276. Total Aggregate: 1.2630579094875176 USDC
+102.91.92.31 - - [08/Mar/2026:08:30:38 +0000] "GET /api/hostfi/banks/NG HTTP/1.1" 304 - "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+102.91.92.31 - - [08/Mar/2026:08:30:39 +0000] "GET /api/hostfi/wallet HTTP/1.1" 200 3125 "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+102.91.92.31 - - [08/Mar/2026:08:30:40 +0000] "GET /api/hostfi/wallet/transactions?page=1&limit=10 HTTP/1.1" 304 - "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Syncing wallet balances for user 6983ea1691b5040eb0fb0276...
+Wallet balances synced for user 6983ea1691b5040eb0fb0276. Total Aggregate: 1.2630579094875176 USDC
+102.91.92.31 - - [08/Mar/2026:08:30:42 +0000] "GET /api/hostfi/wallet HTTP/1.1" 200 3125 "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+102.91.92.31 - - [08/Mar/2026:08:30:49 +0000] "GET /api/notifications/unread-count HTTP/1.1" 304 - "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Syncing wallet balances for user 6983ea1691b5040eb0fb0276...
+102.91.92.31 - - [08/Mar/2026:08:30:50 +0000] "GET /api/hostfi/wallet/transactions?page=1&limit=10 HTTP/1.1" 304 - "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+102.91.92.31 - - [08/Mar/2026:08:30:50 +0000] "GET /api/hostfi/wallet/transactions?page=1&limit=10 HTTP/1.1" 304 - "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Wallet balances synced for user 6983ea1691b5040eb0fb0276. Total Aggregate: 1.2630579094875176 USDC
+102.91.92.31 - - [08/Mar/2026:08:30:52 +0000] "GET /api/hostfi/wallet HTTP/1.1" 200 3125 "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Syncing wallet balances for user 6983ea1691b5040eb0fb0276...
+Wallet balances synced for user 6983ea1691b5040eb0fb0276. Total Aggregate: 1.2630579094875176 USDC
+102.91.92.31 - - [08/Mar/2026:08:30:54 +0000] "GET /api/hostfi/wallet HTTP/1.1" 200 3125 "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+102.91.92.31 - - [08/Mar/2026:08:31:00 +0000] "GET /api/hostfi/wallet/transactions?page=1&limit=10 HTTP/1.1" 304 - "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Syncing wallet balances for user 6983ea1691b5040eb0fb0276...
+Wallet balances synced for user 6983ea1691b5040eb0fb0276. Total Aggregate: 1.2630565465119918 USDC
+102.91.92.31 - - [08/Mar/2026:08:31:02 +0000] "GET /api/hostfi/wallet HTTP/1.1" 200 3125 "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+102.91.92.31 - - [08/Mar/2026:08:31:10 +0000] "GET /api/hostfi/wallet/transactions?page=1&limit=10 HTTP/1.1" 304 - "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Syncing wallet balances for user 6983ea1691b5040eb0fb0276...
+Wallet balances synced for user 6983ea1691b5040eb0fb0276. Total Aggregate: 1.2630565465119918 USDC
+102.91.92.31 - - [08/Mar/2026:08:31:12 +0000] "GET /api/hostfi/wallet HTTP/1.1" 200 3125 "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+102.91.92.31 - - [08/Mar/2026:08:31:19 +0000] "GET /api/notifications/unread-count HTTP/1.1" 304 - "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+102.91.92.31 - - [08/Mar/2026:08:31:19 +0000] "GET /api/hostfi/wallet/transactions?page=1&limit=10 HTTP/1.1" 304 - "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Syncing wallet balances for user 6983ea1691b5040eb0fb0276...
+102.91.92.31 - - [08/Mar/2026:08:31:20 +0000] "GET /api/hostfi/wallet/transactions?page=1&limit=10 HTTP/1.1" 304 - "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+[HostFi Service] Looking up bank account: 70316324 in bank NG::100004
+102.91.92.31 - - [08/Mar/2026:08:31:21 +0000] "POST /api/hostfi/withdrawal/verify-account HTTP/1.1" 200 130 "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+[HostFi Service] Looking up bank account: 703163243 in bank NG::100004
+102.91.92.31 - - [08/Mar/2026:08:31:21 +0000] "POST /api/hostfi/withdrawal/verify-account HTTP/1.1" 200 130 "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Wallet balances synced for user 6983ea1691b5040eb0fb0276. Total Aggregate: 1.2630565465119918 USDC
+[HostFi Service] Looking up bank account: 7031632438 in bank NG::100004
+102.91.92.31 - - [08/Mar/2026:08:31:21 +0000] "POST /api/hostfi/withdrawal/verify-account HTTP/1.1" 200 130 "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+102.91.92.31 - - [08/Mar/2026:08:31:21 +0000] "GET /api/hostfi/wallet HTTP/1.1" 200 3125 "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Syncing wallet balances for user 6983ea1691b5040eb0fb0276...
+Wallet balances synced for user 6983ea1691b5040eb0fb0276. Total Aggregate: 1.2630565465119918 USDC
+102.91.92.31 - - [08/Mar/2026:08:31:24 +0000] "GET /api/hostfi/wallet HTTP/1.1" 200 3125 "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Syncing wallet balances for user 6983ea1691b5040eb0fb0276...
+102.91.92.31 - - [08/Mar/2026:08:31:30 +0000] "GET /api/hostfi/wallet/transactions?page=1&limit=10 HTTP/1.1" 304 - "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Wallet balances synced for user 6983ea1691b5040eb0fb0276. Total Aggregate: 1.2630565465119918 USDC
+102.91.92.31 - - [08/Mar/2026:08:31:32 +0000] "GET /api/hostfi/wallet HTTP/1.1" 200 3125 "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Syncing wallet balances for user 6983ea1691b5040eb0fb0276...
+102.91.92.31 - - [08/Mar/2026:08:31:40 +0000] "GET /api/hostfi/wallet/transactions?page=1&limit=10 HTTP/1.1" 304 - "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Wallet balances synced for user 6983ea1691b5040eb0fb0276. Total Aggregate: 1.2630565465119918 USDC
+102.91.92.31 - - [08/Mar/2026:08:31:42 +0000] "GET /api/hostfi/wallet HTTP/1.1" 200 3125 "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+102.91.92.31 - - [08/Mar/2026:08:31:49 +0000] "GET /api/notifications/unread-count HTTP/1.1" 304 - "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Syncing wallet balances for user 6983ea1691b5040eb0fb0276...
+102.91.92.31 - - [08/Mar/2026:08:31:50 +0000] "GET /api/hostfi/wallet/transactions?page=1&limit=10 HTTP/1.1" 304 - "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+102.91.92.31 - - [08/Mar/2026:08:31:50 +0000] "GET /api/hostfi/wallet/transactions?page=1&limit=10 HTTP/1.1" 304 - "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Wallet balances synced for user 6983ea1691b5040eb0fb0276. Total Aggregate: 1.2630565465119918 USDC
+102.91.92.31 - - [08/Mar/2026:08:31:52 +0000] "GET /api/hostfi/wallet HTTP/1.1" 200 3125 "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Syncing wallet balances for user 6983ea1691b5040eb0fb0276...
+Wallet balances synced for user 6983ea1691b5040eb0fb0276. Total Aggregate: 1.2630565465119918 USDC
+102.91.92.31 - - [08/Mar/2026:08:31:54 +0000] "GET /api/hostfi/wallet HTTP/1.1" 200 3125 "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Syncing wallet balances for user 6983ea1691b5040eb0fb0276...
+102.91.92.31 - - [08/Mar/2026:08:32:00 +0000] "GET /api/hostfi/wallet/transactions?page=1&limit=10 HTTP/1.1" 304 - "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Wallet balances synced for user 6983ea1691b5040eb0fb0276. Total Aggregate: 1.2630565465119918 USDC
+102.91.92.31 - - [08/Mar/2026:08:32:02 +0000] "GET /api/hostfi/wallet HTTP/1.1" 200 3125 "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Syncing wallet balances for user 6983ea1691b5040eb0fb0276...
+102.91.92.31 - - [08/Mar/2026:08:32:10 +0000] "GET /api/hostfi/wallet/transactions?page=1&limit=10 HTTP/1.1" 304 - "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Wallet balances synced for user 6983ea1691b5040eb0fb0276. Total Aggregate: 1.26305021328464 USDC
+102.91.92.31 - - [08/Mar/2026:08:32:12 +0000] "GET /api/hostfi/wallet HTTP/1.1" 200 3123 "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+102.91.92.31 - - [08/Mar/2026:08:32:19 +0000] "GET /api/notifications/unread-count HTTP/1.1" 304 - "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Syncing wallet balances for user 6983ea1691b5040eb0fb0276...
+102.91.92.31 - - [08/Mar/2026:08:32:20 +0000] "GET /api/hostfi/wallet/transactions?page=1&limit=10 HTTP/1.1" 304 - "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+102.91.92.31 - - [08/Mar/2026:08:32:20 +0000] "GET /api/hostfi/wallet/transactions?page=1&limit=10 HTTP/1.1" 304 - "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Wallet balances synced for user 6983ea1691b5040eb0fb0276. Total Aggregate: 1.26305021328464 USDC
+102.91.92.31 - - [08/Mar/2026:08:32:22 +0000] "GET /api/hostfi/wallet HTTP/1.1" 200 3123 "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Syncing wallet balances for user 6983ea1691b5040eb0fb0276...
+Wallet balances synced for user 6983ea1691b5040eb0fb0276. Total Aggregate: 1.26305021328464 USDC
+102.91.92.31 - - [08/Mar/2026:08:32:24 +0000] "GET /api/hostfi/wallet HTTP/1.1" 200 3123 "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Syncing wallet balances for user 6983ea1691b5040eb0fb0276...
+102.91.92.31 - - [08/Mar/2026:08:32:30 +0000] "GET /api/hostfi/wallet/transactions?page=1&limit=10 HTTP/1.1" 304 - "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Wallet balances synced for user 6983ea1691b5040eb0fb0276. Total Aggregate: 1.26305021328464 USDC
+102.91.92.31 - - [08/Mar/2026:08:32:32 +0000] "GET /api/hostfi/wallet HTTP/1.1" 200 3123 "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Syncing wallet balances for user 6983ea1691b5040eb0fb0276...
+102.91.92.31 - - [08/Mar/2026:08:32:40 +0000] "GET /api/hostfi/wallet/transactions?page=1&limit=10 HTTP/1.1" 304 - "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Wallet balances synced for user 6983ea1691b5040eb0fb0276. Total Aggregate: 1.26305021328464 USDC
+102.91.92.31 - - [08/Mar/2026:08:32:42 +0000] "GET /api/hostfi/wallet HTTP/1.1" 200 3123 "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+102.91.92.31 - - [08/Mar/2026:08:32:49 +0000] "GET /api/notifications/unread-count HTTP/1.1" 304 - "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Syncing wallet balances for user 6983ea1691b5040eb0fb0276...
+102.91.92.31 - - [08/Mar/2026:08:32:50 +0000] "GET /api/hostfi/wallet/transactions?page=1&limit=10 HTTP/1.1" 304 - "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+102.91.92.31 - - [08/Mar/2026:08:32:50 +0000] "GET /api/hostfi/wallet/transactions?page=1&limit=10 HTTP/1.1" 304 - "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Wallet balances synced for user 6983ea1691b5040eb0fb0276. Total Aggregate: 1.26305021328464 USDC
+102.91.92.31 - - [08/Mar/2026:08:32:52 +0000] "GET /api/hostfi/wallet HTTP/1.1" 200 3123 "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Syncing wallet balances for user 6983ea1691b5040eb0fb0276...
+Wallet balances synced for user 6983ea1691b5040eb0fb0276. Total Aggregate: 1.26305021328464 USDC
+102.91.92.31 - - [08/Mar/2026:08:32:54 +0000] "GET /api/hostfi/wallet HTTP/1.1" 200 3123 "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Syncing wallet balances for user 6983ea1691b5040eb0fb0276...
+102.91.92.31 - - [08/Mar/2026:08:33:00 +0000] "GET /api/hostfi/wallet/transactions?page=1&limit=10 HTTP/1.1" 304 - "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Wallet balances synced for user 6983ea1691b5040eb0fb0276. Total Aggregate: 1.26305021328464 USDC
+102.91.92.31 - - [08/Mar/2026:08:33:03 +0000] "GET /api/hostfi/wallet HTTP/1.1" 200 3123 "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Syncing wallet balances for user 6983ea1691b5040eb0fb0276...
+102.91.92.31 - - [08/Mar/2026:08:33:10 +0000] "GET /api/hostfi/wallet/transactions?page=1&limit=10 HTTP/1.1" 304 - "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Wallet balances synced for user 6983ea1691b5040eb0fb0276. Total Aggregate: 1.26305021328464 USDC
+102.91.92.31 - - [08/Mar/2026:08:33:12 +0000] "GET /api/hostfi/wallet HTTP/1.1" 200 3123 "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+102.91.92.31 - - [08/Mar/2026:08:33:19 +0000] "GET /api/notifications/unread-count HTTP/1.1" 304 - "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Syncing wallet balances for user 6983ea1691b5040eb0fb0276...
+102.91.92.31 - - [08/Mar/2026:08:33:20 +0000] "GET /api/hostfi/wallet/transactions?page=1&limit=10 HTTP/1.1" 304 - "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+102.91.92.31 - - [08/Mar/2026:08:33:20 +0000] "GET /api/hostfi/wallet/transactions?page=1&limit=10 HTTP/1.1" 304 - "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Wallet balances synced for user 6983ea1691b5040eb0fb0276. Total Aggregate: 1.26305021328464 USDC
+102.91.92.31 - - [08/Mar/2026:08:33:21 +0000] "GET /api/hostfi/wallet HTTP/1.1" 200 3123 "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Syncing wallet balances for user 6983ea1691b5040eb0fb0276...
+Wallet balances synced for user 6983ea1691b5040eb0fb0276. Total Aggregate: 1.26305021328464 USDC
+102.91.92.31 - - [08/Mar/2026:08:33:24 +0000] "GET /api/hostfi/wallet HTTP/1.1" 200 3123 "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Syncing wallet balances for user 6983ea1691b5040eb0fb0276...
+102.91.92.31 - - [08/Mar/2026:08:33:30 +0000] "GET /api/hostfi/wallet/transactions?page=1&limit=10 HTTP/1.1" 304 - "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Wallet balances synced for user 6983ea1691b5040eb0fb0276. Total Aggregate: 1.26305021328464 USDC
+102.91.92.31 - - [08/Mar/2026:08:33:32 +0000] "GET /api/hostfi/wallet HTTP/1.1" 200 3123 "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Syncing wallet balances for user 6983ea1691b5040eb0fb0276...
+102.91.92.31 - - [08/Mar/2026:08:33:40 +0000] "GET /api/hostfi/wallet/transactions?page=1&limit=10 HTTP/1.1" 304 - "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Wallet balances synced for user 6983ea1691b5040eb0fb0276. Total Aggregate: 1.26305021328464 USDC
+102.91.92.31 - - [08/Mar/2026:08:33:51 +0000] "GET /api/notifications/unread-count HTTP/1.1" 304 - "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+102.91.92.31 - - [08/Mar/2026:08:33:51 +0000] "GET /api/hostfi/wallet/transactions?page=1&limit=10 HTTP/1.1" 304 - "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+102.91.92.31 - - [08/Mar/2026:08:33:52 +0000] "GET /api/hostfi/wallet/transactions?page=1&limit=10 HTTP/1.1" 304 - "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+102.91.92.31 - - [08/Mar/2026:08:33:53 +0000] "GET /api/hostfi/wallet HTTP/1.1" 200 3123 "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Syncing wallet balances for user 6983ea1691b5040eb0fb0276...
+Wallet balances synced for user 6983ea1691b5040eb0fb0276. Total Aggregate: 1.26305021328464 USDC
+102.91.92.31 - - [08/Mar/2026:08:33:55 +0000] "GET /api/hostfi/wallet HTTP/1.1" 200 3123 "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Syncing wallet balances for user 6983ea1691b5040eb0fb0276...
+Wallet balances synced for user 6983ea1691b5040eb0fb0276. Total Aggregate: 1.26305021328464 USDC
+102.91.92.31 - - [08/Mar/2026:08:33:57 +0000] "GET /api/hostfi/wallet HTTP/1.1" 200 3123 "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Syncing wallet balances for user 6983ea1691b5040eb0fb0276...
+102.91.92.31 - - [08/Mar/2026:08:34:00 +0000] "GET /api/hostfi/wallet/transactions?page=1&limit=10 HTTP/1.1" 304 - "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Wallet balances synced for user 6983ea1691b5040eb0fb0276. Total Aggregate: 1.2630476535086248 USDC
+102.91.92.31 - - [08/Mar/2026:08:34:02 +0000] "GET /api/hostfi/wallet HTTP/1.1" 200 3125 "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+102.91.92.31 - - [08/Mar/2026:08:34:10 +0000] "GET /api/hostfi/wallet/transactions?page=1&limit=10 HTTP/1.1" 304 - "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Syncing wallet balances for user 6983ea1691b5040eb0fb0276...
+Wallet balances synced for user 6983ea1691b5040eb0fb0276. Total Aggregate: 1.2630476535086248 USDC
+102.91.92.31 - - [08/Mar/2026:08:34:12 +0000] "GET /api/hostfi/wallet HTTP/1.1" 200 3125 "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Syncing wallet balances for user 6983ea1691b5040eb0fb0276...
+102.91.92.31 - - [08/Mar/2026:08:34:20 +0000] "GET /api/notifications/unread-count HTTP/1.1" 304 - "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+102.91.92.31 - - [08/Mar/2026:08:34:20 +0000] "GET /api/hostfi/wallet/transactions?page=1&limit=10 HTTP/1.1" 304 - "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+102.91.92.31 - - [08/Mar/2026:08:34:21 +0000] "GET /api/hostfi/wallet/transactions?page=1&limit=10 HTTP/1.1" 304 - "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Wallet balances synced for user 6983ea1691b5040eb0fb0276. Total Aggregate: 1.2630476535086248 USDC
+102.91.92.31 - - [08/Mar/2026:08:34:22 +0000] "GET /api/hostfi/wallet HTTP/1.1" 200 3125 "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Syncing wallet balances for user 6983ea1691b5040eb0fb0276...
+Wallet balances synced for user 6983ea1691b5040eb0fb0276. Total Aggregate: 1.2630476535086248 USDC
+102.91.92.31 - - [08/Mar/2026:08:34:26 +0000] "GET /api/hostfi/wallet HTTP/1.1" 200 3125 "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Syncing wallet balances for user 6983ea1691b5040eb0fb0276...
+102.91.92.31 - - [08/Mar/2026:08:34:30 +0000] "GET /api/hostfi/wallet/transactions?page=1&limit=10 HTTP/1.1" 304 - "https://app.myartelab.com/wallet" "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+Wallet balances synced for user 6983ea1691b5040eb0fb0276. Total Aggregate: 1.2630476535086248 USDC
+
+==> /root/.pm2/logs/myartelab-error.log <==
+ MongoDB disconnected. Attempting to reconnect...
+bigint: Failed to load bindings, pure JS will be used (try npm run rebuild?)
