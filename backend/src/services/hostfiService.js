@@ -846,14 +846,14 @@ class HostFiService {
           method: payoutMethod,
           currency: recipient.currency || currency,
           accountNumber: recipient.accountNumber,
-          accountName: sanitize(recipient.accountName || 'Verified Recipient').substring(0, 50),
+          accountName: nameSanitize(recipient.accountName || 'Verified Recipient').substring(0, 50),
           bankId: recipient.bankId,
-          bankName: sanitize(recipient.bankName),
+          bankName: nameSanitize(recipient.bankName),
           country: recipient.country || config.country,
           accountType: recipient.accountType || 'SAVINGS',
           network: recipient.network,
           address: recipient.address,
-          memo: sanitize(recipient.memo || safeMemo)
+          memo: memoSanitize(recipient.memo || safeMemo)
         },
         memo: safeMemo
       };
