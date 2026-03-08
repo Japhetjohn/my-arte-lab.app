@@ -41,22 +41,21 @@ async function run() {
       return process.exit(1);
     }
 
-    const { originalAmount, amountAfterFee, feeAmount } = hostfiService.calculatePlatformFee(amount);
+    const { originalAmount, amountAfterFee, feeAmount } = hostfiService.calculateOffRampFee(amount);
 
     // Get wallet asset ID for USDC
     const hostfiWalletService = require('/var/www/myartelab/backend/src/services/hostfiWalletService');
     const assetId = await hostfiWalletService.getWalletAssetId(user._id, 'USDC');
     console.log(`USDC Asset ID: ${assetId}`);
 
-    const payoutAmountNGN = (amountAfterFee * conversionRate).toFixed(2);
-    console.log(`Initiating payout of ${payoutAmountNGN} NGN (after $${feeAmount} fee)`);
+    console.log(`Initiating payout of $${amount} USDC (Source) to NGN (Target)`);
 
     const payoutResponse = await hostfiService.initiateWithdrawal({
       walletAssetId: assetId,
-      amount: payoutAmountNGN,
-      currency: 'NGN',
+      amount: amount, // Source amount in USDC
+      currency: 'USDC', // Source currency must match assetId
       methodId: 'BANK_TRANSFER',
-      recipient: { ...recipient, type: 'BANK' },
+      recipient: { ...recipient, type: 'BANK', currency: 'NGN' },
       clientReference: `WD-TST-${Date.now()}`
     });
 

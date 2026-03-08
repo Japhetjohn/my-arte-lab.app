@@ -761,12 +761,12 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
       withdrawal = await hostfiService.initiateWithdrawal({
         walletAssetId: assetId,
         amount: amountToTransfer,
-        currency: effectiveTargetCurrency,
+        currency: currency, // Source currency (e.g. USDC)
         methodId: effectiveMethodId,
         recipient: {
           type: recipient.type || (effectiveMethodId === 'BANK_TRANSFER' ? 'BANK' : (effectiveMethodId === 'MOBILE_MONEY' ? 'MOMO' : (effectiveMethodId === 'EFT' ? 'BANK' : 'CRYPTO'))),
           method: effectiveMethodId,
-          currency: recipient.currency || effectiveTargetCurrency,
+          currency: effectiveTargetCurrency, // Target currency (e.g. NGN)
           accountNumber: recipient.accountNumber,
           accountName: (recipient.accountName === 'undefined' || !recipient.accountName) ? 'Verified Recipient' : recipient.accountName,
           bankId: recipient.bankId,
