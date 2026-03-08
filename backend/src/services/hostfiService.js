@@ -845,8 +845,8 @@ class HostFiService {
 
         // Perform Swap
         const swapResult = await this.swapAssets({
-          source: { currency: sourceCurrency, walletAssetId },
-          target: { currency: targetCurrency, walletAssetId: targetAsset.id || targetAsset.assetId },
+          source: { currency: sourceCurrency, assetId: walletAssetId },
+          target: { currency: targetCurrency, assetId: targetAsset.id || targetAsset.assetId },
           amount: { value: Number(payoutAmount), currency: sourceCurrency },
           category: 'SWAP'
         });
