@@ -1318,9 +1318,9 @@ window.handleAutoVerify = async function () {
     try {
         const response = await api.verifyHostfiBankAccount({ country, bankId, accountNumber });
         if (response.success) {
-            // HostFi resolution often nests data under 'data' or 'accountInfo'
+            // HostFi resolution often nests data under 'data', 'account', or 'accountInfo'
             const resultData = response.data || response;
-            const verifiedName = resultData.accountName || resultData.account_name || (resultData.accountInfo && resultData.accountInfo.accountName);
+            const verifiedName = resultData.accountName || resultData.account_name || (resultData.account && resultData.account.accountName) || (resultData.accountInfo && resultData.accountInfo.accountName);
 
             if (verifiedName) {
                 // Show success state
