@@ -864,9 +864,9 @@ class HostFiService {
 
       // Strict sanitization for HostFi (avoids 403 Forbidden)
       const nameSanitize = (str) => typeof str === 'string' ? str.replace(/[^a-zA-Z0-9\s]/g, '').substring(0, 50).trim() : '';
-      const memoSanitize = (str) => typeof str === 'string' ? str.replace(/[^a-zA-Z0-9]/g, '').substring(0, 18) : '';
+      const memoSanitize = (str) => typeof str === 'string' ? str.replace(/[^a-zA-Z0-9]/g, '').substring(0, 12) : '';
 
-      const safeMemo = memoSanitize(memo) || `WD${Date.now().toString().substring(8)}`;
+      const safeMemo = memoSanitize(memo) || `Payout${Date.now().toString().substring(10)}`;
 
       // Normalize recipient type (HostFi expects BANK, MOMO, or CRYPTO)
       let normalizedType = recipient.type || (payoutMethod === 'BANK_TRANSFER' ? 'BANK' : (payoutMethod === 'MOBILE_MONEY' ? 'MOMO' : (payoutMethod === 'EFT' ? 'BANK' : 'CRYPTO')));
