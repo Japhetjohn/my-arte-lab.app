@@ -821,6 +821,7 @@ class HostFiService {
       // 2. Send the remainder to the recipient
       const payoutAmount = feeBreakdown.amountAfterFee;
 
+      const config = this.getCurrencyConfig(currency);
       const payoutMethod = methodId || config.method;
 
       // Normalize recipient type (HostFi expects BANK, MOMO, or CRYPTO)
