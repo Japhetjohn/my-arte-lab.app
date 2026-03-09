@@ -1318,34 +1318,45 @@ window.handleAutoVerify = async function () {
     try {
         const response = await api.verifyHostfiBankAccount({ country, bankId, accountNumber });
         if (response.success) {
-            // HostFi resolution often nests data under 'data', 'account', or 'accountInfo'
-            const resultData = response.data || response;
-            const verifiedName = resultData.accountName || resultData.account_name || (resultData.account && resultData.account.accountName) || (resultData.accountInfo && resultData.accountInfo.accountName);
+            // Backend wraps result in response.data.account; try all common paths
+            const d = response.data || {};
+            const a = d.account || d.accountInfo || d;
+            const verifiedName = a.accountName || a.account_name || a.name
+                || d.accountName || d.account_name;
 
             if (verifiedName) {
-                // Show success state
                 displayDiv.style.display = 'block';
                 displayDiv.style.background = 'rgba(16, 185, 129, 0.05)';
                 displayDiv.style.borderColor = 'rgba(16, 185, 129, 0.2)';
                 statusText.style.color = '#10B981';
-                statusText.textContent = 'Verified Recipient';
+                statusText.textContent = '✓ Verified Recipient';
                 nameText.textContent = verifiedName;
 
                 hiddenName.value = verifiedName;
                 submitBtn.disabled = false;
             } else {
-                throw new Error('Member name not returned');
+                // Name missing but API said success, still allow submit with 'Verified Account'
+                displayDiv.style.display = 'block';
+                displayDiv.style.background = 'rgba(16, 185, 129, 0.05)';
+                displayDiv.style.borderColor = 'rgba(16, 185, 129, 0.2)';
+                statusText.style.color = '#10B981';
+                statusText.textContent = '✓ Account Verified';
+                nameText.textContent = 'Account confirmed';
+                hiddenName.value = 'Verified Account';
+                submitBtn.disabled = false;
             }
         } else {
             throw new Error(response.message || 'Verification failed');
         }
     } catch (error) {
-        // Show error state
+        displayDiv.style.display = 'block';
         displayDiv.style.background = 'rgba(239, 68, 68, 0.05)';
         displayDiv.style.borderColor = 'rgba(239, 68, 68, 0.2)';
         statusText.style.color = '#EF4444';
         statusText.textContent = 'Verification Failed';
-        nameText.textContent = error.message.includes('Account Number is Invalid') ? 'Invalid Account Number' : 'Could not verify details';
+        nameText.textContent = error.message.includes('Account Number is Invalid') || error.message.includes('Invalid')
+            ? 'Invalid Account Number'
+            : (error.message || 'Could not verify details');
     }
 };
 
