@@ -3,6 +3,49 @@ import api from '../services/api.js';
 import { formatLocation } from '../utils/formatters.js';
 import { calculateCreatorScore, getCreatorTier, sortCreatorsByRelevance } from '../utils.js';
 
+// Skeleton Loading Functions
+function showSkeletonLoading() {
+    // Featured grid skeletons
+    const featuredGrid = document.getElementById('featuredGrid');
+    if (featuredGrid) {
+        featuredGrid.innerHTML = renderSkeletonCards(4, 'featured');
+    }
+    
+    // Home grid skeletons
+    const homeGrid = document.getElementById('homeGrid');
+    if (homeGrid) {
+        homeGrid.innerHTML = `<div class="creators-grid-all">${renderSkeletonCards(8)}</div>`;
+    }
+}
+
+function hideSkeletonLoading() {
+    // Skeletons are replaced by real content in renderCreatorsList
+    // No action needed as the content overwrites the skeletons
+}
+
+function renderSkeletonCards(count, type = 'default') {
+    const cards = [];
+    for (let i = 0; i < count; i++) {
+        cards.push(`
+            <div class="creator-token-card skeleton-card" style="
+                background: rgba(255, 255, 255, 0.7);
+                border-radius: 16px;
+                overflow: hidden;
+                border: 1px solid rgba(255, 255, 255, 0.5);
+            ">
+                <div class="skeleton skeleton-image" style="aspect-ratio: 1;"></div>
+                <div class="skeleton-content" style="padding: 20px; display: flex; flex-direction: column; gap: 12px;">
+                    <div class="skeleton skeleton-title" style="height: 20px; width: 70%;"></div>
+                    <div class="skeleton skeleton-line" style="height: 14px; width: 100%;"></div>
+                    <div class="skeleton skeleton-line short" style="height: 14px; width: 60%;"></div>
+                    <div class="skeleton skeleton-button" style="height: 36px; width: 100%; margin-top: 8px;"></div>
+                </div>
+            </div>
+        `);
+    }
+    return cards.join('');
+}
+
 let creators = [];
 let currentFilters = {
     search: '',
@@ -379,8 +422,11 @@ export async function renderHomePage() {
 
     setupHomeEventListeners();
     loadPlatformStats();
-    window.showLoadingSpinner();
+    
+    // Show skeleton loading state
+    showSkeletonLoading();
     await loadCreators();
+    hideSkeletonLoading();
 }
 
 function renderActivityFeed() {
@@ -564,12 +610,10 @@ async function loadCreators() {
             }
 
             appState.creators = creators;
-            window.hideLoadingSpinner();
             renderCreatorsList();
         }
     } catch (error) {
         console.error('Failed to load creators:', error);
-        window.hideLoadingSpinner();
         const mainContent = document.getElementById('mainContent');
         mainContent.innerHTML = `
             <div class="section">
