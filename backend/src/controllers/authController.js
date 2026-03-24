@@ -9,11 +9,20 @@ const crypto = require('crypto');
 const { escapeHtml } = require('../utils/sanitize');
 
 exports.register = catchAsync(async (req, res, next) => {
-  const { firstName, lastName, email, password, role, category, localArea, state, country } = req.body;
+  const { firstName, lastName, email, password, role, category, localArea, state, country, avatar, coverImage } = req.body;
 
   // Validate required fields
   if (!firstName || !lastName || !email || !password) {
     return next(new ErrorHandler('Please provide all required fields', 400));
+  }
+  
+  // Avatar and banner are required for all users
+  if (!avatar) {
+    return next(new ErrorHandler('Profile photo is required. Please upload a profile picture.', 400));
+  }
+  
+  if (!coverImage) {
+    return next(new ErrorHandler('Profile banner is required. Please upload a banner image.', 400));
   }
 
   const existingUser = await User.findOne({ email });
@@ -29,6 +38,8 @@ exports.register = catchAsync(async (req, res, next) => {
       lastName,
       email,
       password,
+      avatar,
+      coverImage,
       role: role || 'client',
       category: role === 'creator' ? category : undefined,
       location: {
@@ -250,6 +261,15 @@ exports.updateProfile = catchAsync(async (req, res, next) => {
       updates[key] = req.body[key];
     }
   });
+  
+  // Validate that avatar and coverImage cannot be removed
+  if (updates.avatar === '' || updates.avatar === null) {
+    return next(new ErrorHandler('Profile photo cannot be removed. Please upload a new profile picture.', 400));
+  }
+  
+  if (updates.coverImage === '' || updates.coverImage === null) {
+    return next(new ErrorHandler('Profile banner cannot be removed. Please upload a new banner image.', 400));
+  }
 
   const user = await User.findByIdAndUpdate(
     req.user._id,

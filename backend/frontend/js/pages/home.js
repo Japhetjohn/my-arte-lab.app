@@ -158,29 +158,192 @@ export async function renderHomePage() {
     }
 
     mainContent.innerHTML = `
-        <div class="discover-header glass-effect" style="border-bottom: 1px solid rgba(255,255,255,0.3); margin-bottom: 20px;">
-            <div class="container">
-                <div class="filters-row">
-                    <button class="filter-chip active" data-filter="all">All</button>
-                    <button class="filter-chip" data-filter="photographer">Photographers</button>
-                    <button class="filter-chip" data-filter="designer">Designers</button>
-                    <button class="filter-chip" data-filter="videographer">Videographers</button>
-                    <button class="filter-chip" data-filter="illustrator">Illustrators</button>
-                    <button class="filter-chip" data-filter="verified">Verified only</button>
+        <div class="home-app">
+            <!-- Hero Section -->
+            <section class="home-hero">
+                <div class="container">
+                    <h1 class="home-hero-title">Discover African Creators</h1>
+                    <p class="home-hero-subtitle">Find and book talented photographers, designers, videographers, and more.</p>
+                    
+                    <div class="home-hero-search">
+                        <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"/>
+                            <path d="m21 21-4.35-4.35"/>
+                        </svg>
+                        <input type="text" id="homeHeroSearch" placeholder="Search for creators, services, or skills..." value="${currentFilters.search}">
+                        <button class="home-hero-search-btn" id="homeHeroSearchBtn">Search</button>
+                    </div>
                 </div>
-            </div>
-        </div>
+            </section>
 
-        <div class="section" id="homeResults">
-            <div class="container" id="creatorsContainer">
-                <!-- Content will be loaded here -->
-            </div>
+            <!-- Categories Section -->
+            <section class="home-categories">
+                <div class="container">
+                    <div class="home-categories-grid">
+                        <div class="home-category-card" data-category="photographer">
+                            <div class="home-category-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                                    <circle cx="12" cy="13" r="4"/>
+                                </svg>
+                            </div>
+                            <span class="home-category-name">Photography</span>
+                        </div>
+                        
+                        <div class="home-category-card" data-category="designer">
+                            <div class="home-category-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <path d="M12 19l7-7 3 3-7 7-3-3z"/>
+                                    <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
+                                    <path d="M2 2l7.586 7.586"/>
+                                    <circle cx="11" cy="11" r="2"/>
+                                </svg>
+                            </div>
+                            <span class="home-category-name">Design</span>
+                        </div>
+                        
+                        <div class="home-category-card" data-category="videographer">
+                            <div class="home-category-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <polygon points="23 7 16 12 23 17 23 7"/>
+                                    <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+                                </svg>
+                            </div>
+                            <span class="home-category-name">Video</span>
+                        </div>
+                        
+                        <div class="home-category-card" data-category="illustrator">
+                            <div class="home-category-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <path d="M12 19l7-7 3 3-7 7-3-3z"/>
+                                    <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
+                                    <path d="M2 2l7.586 7.586"/>
+                                    <circle cx="11" cy="11" r="2"/>
+                                </svg>
+                            </div>
+                            <span class="home-category-name">Illustration</span>
+                        </div>
+                        
+                        <div class="home-category-card" data-category="writer">
+                            <div class="home-category-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                </svg>
+                            </div>
+                            <span class="home-category-name">Writing</span>
+                        </div>
+                        
+                        <div class="home-category-card" data-category="musician">
+                            <div class="home-category-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <path d="M9 18V5l12-2v13"/>
+                                    <circle cx="6" cy="18" r="3"/>
+                                    <circle cx="18" cy="16" r="3"/>
+                                </svg>
+                            </div>
+                            <span class="home-category-name">Music</span>
+                        </div>
+                        
+                        <div class="home-category-card" data-category="developer">
+                            <div class="home-category-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <polyline points="16 18 22 12 16 6"/>
+                                    <polyline points="8 6 2 12 8 18"/>
+                                </svg>
+                            </div>
+                            <span class="home-category-name">Development</span>
+                        </div>
+                        
+                        <div class="home-category-card" data-category="marketing">
+                            <div class="home-category-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                                    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                                </svg>
+                            </div>
+                            <span class="home-category-name">Marketing</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Creators Section -->
+            <section class="home-creators" id="homeResults">
+                <div class="container">
+                    <div class="home-creators-header">
+                        <h2 class="home-section-title">Featured Creators</h2>
+                        <div class="home-creators-filters">
+                            <button class="home-filter-btn active" data-filter="all">All</button>
+                            <button class="home-filter-btn" data-filter="verified">Verified</button>
+                        </div>
+                    </div>
+                    <div id="homeGrid">
+                        <!-- Content will be loaded here -->
+                    </div>
+                </div>
+            </section>
         </div>
     `;
 
-    setupFilterListeners();
+    setupHomeEventListeners();
     window.showLoadingSpinner();
     await loadCreators();
+}
+
+function setupHomeEventListeners() {
+    // Category cards click
+    document.querySelectorAll('.home-category-card').forEach(card => {
+        card.addEventListener('click', () => {
+            const category = card.dataset.category;
+            currentFilters.category = category;
+            
+            // Visual feedback
+            document.querySelectorAll('.home-category-card').forEach(c => c.classList.remove('active'));
+            card.classList.add('active');
+            
+            // Scroll to creators section
+            document.getElementById('homeResults').scrollIntoView({ behavior: 'smooth' });
+            
+            loadCreators();
+        });
+    });
+    
+    // Filter buttons
+    document.querySelectorAll('.home-filter-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const filter = e.target.dataset.filter;
+            
+            document.querySelectorAll('.home-filter-btn').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            
+            if (filter === 'verified') {
+                currentFilters.verified = true;
+            } else {
+                currentFilters.verified = false;
+            }
+            
+            loadCreators();
+        });
+    });
+    
+    // Hero search
+    const heroSearch = document.getElementById('homeHeroSearch');
+    const heroSearchBtn = document.getElementById('homeHeroSearchBtn');
+    
+    heroSearch?.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            currentFilters.search = heroSearch.value;
+            document.getElementById('homeResults').scrollIntoView({ behavior: 'smooth' });
+            loadCreators();
+        }
+    });
+    
+    heroSearchBtn?.addEventListener('click', () => {
+        currentFilters.search = heroSearch.value;
+        document.getElementById('homeResults').scrollIntoView({ behavior: 'smooth' });
+        loadCreators();
+    });
 }
 
 async function loadCreators() {
