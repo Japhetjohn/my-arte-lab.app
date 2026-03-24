@@ -61,7 +61,7 @@ exports.getAllCreators = catchAsync(async (req, res, next) => {
   const skip = (parseInt(page) - 1) * parseInt(limit);
 
   const creators = await User.find(query)
-    .select('-password -wallet -encryptedPrivateKey -twoFactorSecret -twoFactorBackupCodes -emailVerificationToken -passwordResetToken -loginAttempts -lockUntil')
+    .select('-password -encryptedPrivateKey -twoFactorSecret -twoFactorBackupCodes -emailVerificationToken -passwordResetToken -loginAttempts -lockUntil -wallet.tsaraMnemonic -wallet.tsaraEncryptedPrivateKey')
     .sort(sort)
     .limit(parseInt(limit))
     .skip(skip)
@@ -118,7 +118,7 @@ exports.getFeaturedCreators = catchAsync(async (req, res, next) => {
     'rating.average': { $gte: 4.5 },
     completedBookings: { $gte: 5 }
   })
-    .select('-password -wallet -encryptedPrivateKey -twoFactorSecret -twoFactorBackupCodes -emailVerificationToken -passwordResetToken -loginAttempts -lockUntil')
+    .select('-password -encryptedPrivateKey -twoFactorSecret -twoFactorBackupCodes -emailVerificationToken -passwordResetToken -loginAttempts -lockUntil -wallet.tsaraMnemonic -wallet.tsaraEncryptedPrivateKey')
     .sort({ 'rating.average': -1, completedBookings: -1 })
     .limit(parseInt(limit))
     .lean();

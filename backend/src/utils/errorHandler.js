@@ -18,20 +18,15 @@ const sendErrorResponse = (err, res) => {
   const statusCode = err.statusCode || 500;
   const message = err.message || 'Internal Server Error';
 
-  if (process.env.NODE_ENV === 'development') {
-    res.status(statusCode).json({
-      success: false,
-      error: message,
-      statusCode,
-      stack: err.stack
-    });
-  } else {
-    res.status(statusCode).json({
-      success: false,
-      error: err.isOperational ? message : 'Something went wrong',
-      statusCode
-    });
-  }
+  // TEMPORARY: Show detailed errors for debugging
+  res.status(statusCode).json({
+    success: false,
+    error: message,
+    statusCode,
+    stack: err.stack,
+    name: err.name,
+    isOperational: err.isOperational
+  });
 };
 
 const errorMiddleware = async (err, req, res, next) => {
