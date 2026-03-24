@@ -34,40 +34,69 @@
 </head>
 
 <body>
-    <!-- Top Navigation Bar (Desktop) -->
+    <!-- Top Navigation Bar -->
     <nav class="top-nav" id="topNav">
         <div class="container">
             <div class="nav-content">
-                <div style="display: flex; align-items: center; gap: 16px;">
-                    <button class="icon-btn" id="backBtn" style="display: none;" aria-label="Go back">
+                <!-- Left: Logo & Title -->
+                <div class="nav-left">
+                    <button class="icon-btn nav-back-btn" id="backBtn" style="display: none;" aria-label="Go back">
                         <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                            <path d="M15 10H5M5 10l5 5M5 10l5-5" stroke="currentColor" stroke-width="2"
-                                stroke-linecap="round" />
+                            <path d="M15 10H5M5 10l5 5M5 10l5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                         </svg>
                     </button>
-                    <div class="logo" onclick="navigateToPage('home')"
-                        style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
-                        <img src="/logo.PNG" alt="MyArteLab" style="height: 32px; width: auto;">
-                        <span>MyArteLab</span>
+                    <div class="nav-brand" onclick="navigateToPage('home')">
+                        <div class="nav-logo-icon">
+                            <img src="/logo.PNG" alt="MyArteLab">
+                        </div>
+                        <div class="nav-brand-text">
+                            <h1>MyArteLab</h1>
+                            <p>Built for African Creators</p>
+                        </div>
                     </div>
                 </div>
-                <div class="nav-actions">
-                    <button class="icon-btn" id="searchBtn" aria-label="Search">
-                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                            <path d="M9 17A8 8 0 1 0 9 1a8 8 0 0 0 0 16zM18 18l-4.35-4.35" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" />
+
+                <!-- Center: Search Bar -->
+                <div class="nav-search">
+                    <div class="search-wrapper">
+                        <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none">
+                            <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
-                    </button>
-                    <button class="icon-btn" id="notificationsBtn" aria-label="Notifications" style="display: none;">
+                        <input type="text" id="navSearchInput" placeholder="Search creators, services...">
+                    </div>
+                </div>
+
+                <!-- Right: Actions & User -->
+                <div class="nav-right">
+                    <button class="icon-btn nav-icon-btn" id="notificationsBtn" aria-label="Notifications" style="display: none;">
                         <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                            <path
-                                d="M15 6.667A5 5 0 0 0 5 6.667c0 5.833-2.5 7.5-2.5 7.5h15S15 12.5 15 6.667zM11.442 17.5a1.667 1.667 0 0 1-2.884 0"
-                                stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                            <path d="M15 6.667A5 5 0 0 0 5 6.667c0 5.833-2.5 7.5-2.5 7.5h15S15 12.5 15 6.667zM11.442 17.5a1.667 1.667 0 0 1-2.884 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                         </svg>
                         <span class="notification-badge" style="display: none;">0</span>
                     </button>
+                    
+                    <!-- Featured Creators Avatars -->
+                    <div class="nav-avatars" id="navAvatars" style="display: none;">
+                        <div class="avatar-stack">
+                            <img src="https://ui-avatars.com/api/?name=Creator+1&background=9747FF&color=fff" alt="Creator">
+                            <img src="https://ui-avatars.com/api/?name=Creator+2&background=6B46FF&color=fff" alt="Creator">
+                            <img src="https://ui-avatars.com/api/?name=Creator+3&background=8B5CF6&color=fff" alt="Creator">
+                        </div>
+                    </div>
+                    
+                    <button class="nav-add-btn" id="navAddBtn" aria-label="Create" style="display: none;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                    </button>
+                    
                     <div class="user-menu-container" id="userMenuContainer">
-                        <button class="btn-secondary" id="authBtn">Sign in</button>
+                        <button class="nav-signin-btn" id="authBtn">Sign in</button>
+                        <div class="nav-user-avatar" id="navUserAvatar" style="display: none;">
+                            <img src="" alt="User" id="navUserImg">
+                        </div>
                     </div>
                 </div>
             </div>

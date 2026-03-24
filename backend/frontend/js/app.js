@@ -85,6 +85,20 @@ function setupEventListeners() {
 
     document.getElementById('backBtn')?.addEventListener('click', goBack);
 
+    // Nav search functionality (new header search)
+    const navSearchInput = document.getElementById('navSearchInput');
+    navSearchInput?.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            const searchQuery = navSearchInput.value.trim();
+            if (searchQuery) {
+                localStorage.setItem('pendingSearch', searchQuery);
+                navigateToPage('home');
+                navSearchInput.value = '';
+            }
+        }
+    });
+
+    // Old search overlay (keep for backward compatibility)
     document.getElementById('searchBtn')?.addEventListener('click', openSearchOverlay);
     document.getElementById('closeSearchBtn')?.addEventListener('click', closeSearchOverlay);
 

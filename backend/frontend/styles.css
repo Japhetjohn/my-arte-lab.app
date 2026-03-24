@@ -8640,3 +8640,524 @@ select.form-select-modern:hover {
         grid-template-columns: repeat(2, 1fr);
     }
 }
+/* =========================================
+   🎨 CREATOR TOKEN CARDS - NEW DESIGN
+   Matching the reference image style
+========================================= */
+
+.creator-token-card {
+    background: #FFFFFF;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.creator-token-card:hover {
+    box-shadow: 0 12px 40px rgba(151, 71, 255, 0.15);
+    transform: translateY(-6px);
+    border-color: rgba(151, 71, 255, 0.2);
+}
+
+.creator-token-card .creator-card-img {
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.creator-token-card:hover .creator-card-img {
+    transform: scale(1.08);
+}
+
+.creator-token-card .see-creator-btn {
+    transition: all 0.2s ease;
+}
+
+.creator-token-card:hover .see-creator-btn {
+    color: #7c3aed;
+}
+
+.creator-token-card .see-creator-btn svg {
+    transition: transform 0.2s ease;
+}
+
+.creator-token-card:hover .see-creator-btn svg {
+    transform: translateX(4px);
+}
+
+/* Grid layout for creator cards */
+#homeGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 28px;
+}
+
+@media (max-width: 768px) {
+    #homeGrid {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 20px;
+    }
+    
+    .creator-token-card {
+        border-radius: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    #homeGrid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+    }
+}
+
+/* =========================================
+   🧭 KANBAN-STYLE HEADER REDESIGN
+   Clean, modern header matching reference
+========================================= */
+
+/* Base Header Styles */
+.top-nav {
+    background: #FFFFFF;
+    border-bottom: 1px solid #E5E7EB;
+    padding: 12px 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.nav-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 24px;
+}
+
+/* Left: Brand Section */
+.nav-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+.nav-back-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #F3F4F6;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: #6B7280;
+}
+
+.nav-back-btn:hover {
+    background: #E5E7EB;
+    color: #374151;
+}
+
+.nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+}
+
+.nav-brand:hover {
+    opacity: 0.8;
+}
+
+.nav-logo-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(151, 71, 255, 0.25);
+}
+
+.nav-logo-icon img {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+}
+
+.nav-brand-text h1 {
+    font-size: 16px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0;
+    line-height: 1.2;
+}
+
+.nav-brand-text p {
+    font-size: 12px;
+    color: #6B7280;
+    margin: 2px 0 0 0;
+    line-height: 1.2;
+}
+
+/* Center: Search Bar */
+.nav-search {
+    flex: 1;
+    max-width: 480px;
+    min-width: 200px;
+}
+
+.search-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.search-icon {
+    position: absolute;
+    left: 14px;
+    color: #9CA3AF;
+    pointer-events: none;
+}
+
+.nav-search input {
+    width: 100%;
+    height: 42px;
+    padding: 0 16px 0 42px;
+    background: #F3F4F6;
+    border: 2px solid transparent;
+    border-radius: 10px;
+    font-size: 14px;
+    color: #111827;
+    transition: all 0.2s ease;
+}
+
+.nav-search input::placeholder {
+    color: #9CA3AF;
+}
+
+.nav-search input:hover {
+    background: #E5E7EB;
+}
+
+.nav-search input:focus {
+    outline: none;
+    background: #FFFFFF;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(151, 71, 255, 0.1);
+}
+
+/* Right: Actions Section */
+.nav-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+.nav-icon-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: #6B7280;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.nav-icon-btn:hover {
+    background: #F3F4F6;
+    color: #374151;
+}
+
+/* Avatar Stack */
+.nav-avatars {
+    display: flex;
+    align-items: center;
+}
+
+.avatar-stack {
+    display: flex;
+    align-items: center;
+}
+
+.avatar-stack img {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid #FFFFFF;
+    margin-left: -8px;
+    transition: transform 0.2s ease;
+    object-fit: cover;
+}
+
+.avatar-stack img:first-child {
+    margin-left: 0;
+}
+
+.avatar-stack img:hover {
+    transform: translateY(-2px);
+    z-index: 1;
+}
+
+/* Add Button */
+.nav-add-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--primary);
+    border: none;
+    cursor: pointer;
+    color: #FFFFFF;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(151, 71, 255, 0.35);
+}
+
+.nav-add-btn:hover {
+    background: #7c3aed;
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(151, 71, 255, 0.45);
+}
+
+/* Sign In Button */
+.nav-signin-btn {
+    height: 40px;
+    padding: 0 20px;
+    background: var(--primary);
+    color: #FFFFFF;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.nav-signin-btn:hover {
+    background: #7c3aed;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(151, 71, 255, 0.35);
+}
+
+/* User Avatar */
+.nav-user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 2px solid #E5E7EB;
+    transition: all 0.2s ease;
+}
+
+.nav-user-avatar:hover {
+    border-color: var(--primary);
+}
+
+.nav-user-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Notification Badge */
+.notification-badge {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 18px;
+    height: 18px;
+    background: #EF4444;
+    color: #FFFFFF;
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #FFFFFF;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .nav-content {
+        padding: 0 16px;
+        gap: 16px;
+    }
+    
+    .nav-brand-text p {
+        display: none;
+    }
+    
+    .nav-search {
+        max-width: 360px;
+    }
+}
+
+@media (max-width: 768px) {
+    .top-nav {
+        padding: 10px 0;
+    }
+    
+    .nav-content {
+        gap: 12px;
+    }
+    
+    .nav-logo-icon {
+        width: 36px;
+        height: 36px;
+    }
+    
+    .nav-logo-icon img {
+        width: 24px;
+        height: 24px;
+    }
+    
+    .nav-brand-text h1 {
+        font-size: 15px;
+    }
+    
+    .nav-search {
+        min-width: auto;
+    }
+    
+    .nav-search input {
+        height: 38px;
+        font-size: 13px;
+    }
+    
+    .nav-avatars {
+        display: none;
+    }
+    
+    .nav-icon-btn {
+        width: 36px;
+        height: 36px;
+    }
+}
+
+@media (max-width: 480px) {
+    .nav-content {
+        padding: 0 12px;
+    }
+    
+    .nav-brand-text {
+        display: none;
+    }
+    
+    .nav-search input::placeholder {
+        font-size: 13px;
+    }
+}
+
+/* =========================================
+   👤 USER DROPDOWN MENU
+   Modern dropdown for kanban-style header
+========================================= */
+
+.user-dropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: 260px;
+    background: #FFFFFF;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    border: 1px solid #E5E7EB;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.2s ease;
+    z-index: 1100;
+    overflow: hidden;
+}
+
+.user-dropdown.active {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.user-dropdown-header {
+    padding: 16px;
+    background: linear-gradient(135deg, rgba(151, 71, 255, 0.05) 0%, rgba(107, 70, 255, 0.05) 100%);
+    border-bottom: 1px solid #E5E7EB;
+}
+
+.user-dropdown-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 2px;
+}
+
+.user-dropdown-email {
+    font-size: 12px;
+    color: #6B7280;
+}
+
+.user-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 12px 16px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    color: #374151;
+    transition: all 0.15s ease;
+    text-align: left;
+}
+
+.user-dropdown-item:hover {
+    background: #F3F4F6;
+    color: #111827;
+}
+
+.user-dropdown-item svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+.user-dropdown-item.danger {
+    color: #DC2626;
+}
+
+.user-dropdown-item.danger:hover {
+    background: #FEF2F2;
+}
+
+.user-dropdown-divider {
+    height: 1px;
+    background: #E5E7EB;
+    margin: 8px 0;
+}
+
+/* User menu container positioning */
+.user-menu-container {
+    position: relative;
+}

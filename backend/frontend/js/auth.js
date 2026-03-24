@@ -362,101 +362,116 @@ export async function initAuth() {
 
 export function updateUserMenu() {
     const userMenuContainer = document.getElementById('userMenuContainer');
-    if (!userMenuContainer) {
-        return;
-    }
-
+    const notificationsBtn = document.getElementById('notificationsBtn');
+    const navUserAvatar = document.getElementById('navUserAvatar');
+    const navUserImg = document.getElementById('navUserImg');
+    const navAvatars = document.getElementById('navAvatars');
+    const navAddBtn = document.getElementById('navAddBtn');
+    
     if (appState.user) {
         const userName = appState.user.name || `${appState.user.firstName || ''} ${appState.user.lastName || ''}`.trim() || 'User';
-        const userFirstName = appState.user.firstName || appState.user.name?.split(' ')[0] || 'User';
-
         const avatarUrl = getAvatarUrl(appState.user);
-        userMenuContainer.innerHTML = `
-            <button class="user-avatar-btn" id="userAvatarBtn">
-                <img src="${avatarUrl}" alt="${userName}" class="avatar avatar-medium">
-                <span>${userFirstName}</span>
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                </svg>
-            </button>
-            <div class="user-dropdown" id="userDropdown">
-                <div class="user-dropdown-header">
-                    <div class="user-dropdown-name">${userName}</div>
-                    <div class="user-dropdown-email">${appState.user.email}</div>
+        
+        // Update user avatar in header
+        if (navUserAvatar && navUserImg) {
+            navUserImg.src = avatarUrl;
+            navUserImg.alt = userName;
+            navUserAvatar.style.display = 'block';
+            
+            // Add click handler for dropdown
+            navUserAvatar.addEventListener('click', (e) => {
+                e.stopPropagation();
+                document.getElementById('userDropdown')?.classList.toggle('active');
+            });
+        }
+        
+        // Show add button for creators
+        if (navAddBtn && appState.user.role === 'creator') {
+            navAddBtn.style.display = 'flex';
+            navAddBtn.addEventListener('click', () => navigateToPage('projects'));
+        }
+        
+        // Show featured creators avatars
+        if (navAvatars) {
+            navAvatars.style.display = 'flex';
+        }
+
+        // Create dropdown menu in userMenuContainer
+        if (userMenuContainer) {
+            userMenuContainer.innerHTML = `
+                <div class="nav-user-avatar" id="navUserAvatarImg">
+                    <img src="${avatarUrl}" alt="${userName}">
                 </div>
-                <button class="user-dropdown-item" onclick="navigateToPage('profile')">
-                    <svg viewBox="0 0 24 24" fill="none">
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2"/>
-                        <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
-                    </svg>
-                    My profile
-                </button>
-                <button class="user-dropdown-item" onclick="navigateToPage('home')">
-                    <svg viewBox="0 0 24 24" fill="none">
-                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9z" stroke="currentColor" stroke-width="2"/>
-                        <path d="M9 22V12h6v10" stroke="currentColor" stroke-width="2"/>
-                    </svg>
-                    Home
-                </button>
-                <button class="user-dropdown-item" onclick="navigateToPage('bookings')">
-                    <svg viewBox="0 0 24 24" fill="none">
-                        <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
-                        <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" stroke-width="2"/>
-                    </svg>
-                    My bookings
-                </button>
-                <button class="user-dropdown-item" onclick="navigateToPage('projects')">
-                    <svg viewBox="0 0 24 24" fill="none">
-                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="2"/>
-                    </svg>
-                    Projects
-                </button>
-                <button class="user-dropdown-item" onclick="navigateToPage('wallet')">
-                    <svg viewBox="0 0 24 24" fill="none">
-                        <path d="M21 12V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5z" stroke="currentColor" stroke-width="2"/>
-                        <path d="M18 12h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                    </svg>
-                    Wallet
-                </button>
-                <button class="user-dropdown-item" onclick="navigateToPage('settings')">
-                    <svg viewBox="0 0 24 24" fill="none">
-                        <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
-                        <path d="M12 1v6m0 6v6M23 12h-6m-6 0H5" stroke="currentColor" stroke-width="2"/>
-                        <path d="M18.364 5.636l-4.243 4.243m-4.242 4.242L5.636 18.364M18.364 18.364l-4.243-4.243m-4.242-4.242L5.636 5.636" stroke="currentColor" stroke-width="2"/>
-                    </svg>
-                    Settings
-                </button>
-                <div class="user-dropdown-divider"></div>
-                <button class="user-dropdown-item" onclick="showHelpSupportModal()">
-                    <svg viewBox="0 0 24 24" fill="none">
-                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-                        <path d="M12 16v-4M12 8h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                    </svg>
-                    Help & Support
-                </button>
-                <button class="user-dropdown-item danger" onclick="handleLogout()">
-                    <svg viewBox="0 0 24 24" fill="none">
-                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                    </svg>
-                    Logout
-                </button>
-            </div>
-        `;
+                <div class="user-dropdown" id="userDropdown">
+                    <div class="user-dropdown-header">
+                        <div class="user-dropdown-name">${userName}</div>
+                        <div class="user-dropdown-email">${appState.user.email}</div>
+                    </div>
+                    <button class="user-dropdown-item" onclick="navigateToPage('profile')">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2"/>
+                            <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                        My profile
+                    </button>
+                    <button class="user-dropdown-item" onclick="navigateToPage('home')">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9z" stroke="currentColor" stroke-width="2"/>
+                            <path d="M9 22V12h6v10" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                        Home
+                    </button>
+                    <button class="user-dropdown-item" onclick="navigateToPage('bookings')">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
+                            <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                        My bookings
+                    </button>
+                    <button class="user-dropdown-item" onclick="navigateToPage('projects')">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                        Projects
+                    </button>
+                    <button class="user-dropdown-item" onclick="navigateToPage('wallet')">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M21 12V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5z" stroke="currentColor" stroke-width="2"/>
+                            <path d="M18 12h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                        Wallet
+                    </button>
+                    <button class="user-dropdown-item" onclick="navigateToPage('settings')">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+                            <path d="M12 1v6m0 6v6M23 12h-6m-6 0H5" stroke="currentColor" stroke-width="2"/>
+                            <path d="M18.364 5.636l-4.243 4.243m-4.242 4.242L5.636 18.364M18.364 18.364l-4.243-4.243m-4.242-4.242L5.636 5.636" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                        Settings
+                    </button>
+                    <div class="user-dropdown-divider"></div>
+                    <button class="user-dropdown-item" onclick="showHelpSupportModal()">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                            <path d="M12 16v-4M12 8h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                        Help & Support
+                    </button>
+                    <button class="user-dropdown-item danger" onclick="handleLogout()">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                        Logout
+                    </button>
+                </div>
+            `;
+            
+            document.getElementById('navUserAvatarImg')?.addEventListener('click', (e) => {
+                e.stopPropagation();
+                document.getElementById('userDropdown')?.classList.toggle('active');
+            });
+        }
 
-        document.getElementById('userAvatarBtn')?.addEventListener('click', (e) => {
-            e.stopPropagation();
-            document.getElementById('userDropdown')?.classList.toggle('active');
-        });
-
-        document.addEventListener('click', (e) => {
-            const dropdown = document.getElementById('userDropdown');
-            const btn = document.getElementById('userAvatarBtn');
-            if (dropdown && !dropdown.contains(e.target) && !btn?.contains(e.target)) {
-                dropdown.classList.remove('active');
-            }
-        });
-
-        const notificationsBtn = document.getElementById('notificationsBtn');
         if (notificationsBtn) {
             notificationsBtn.style.display = 'flex';
             notificationsBtn.addEventListener('click', () => navigateToPage('notifications'));
@@ -474,15 +489,22 @@ export function updateUserMenu() {
                 item.style.display = 'flex';
             }
         });
-
-        const searchBtn = document.getElementById('searchBtn');
-        if (searchBtn) {
-            searchBtn.style.display = 'flex';
-        }
     } else {
-        const notificationsBtn = document.getElementById('notificationsBtn');
+        // User is not logged in
         if (notificationsBtn) {
             notificationsBtn.style.display = 'none';
+        }
+        
+        if (navUserAvatar) {
+            navUserAvatar.style.display = 'none';
+        }
+        
+        if (navAvatars) {
+            navAvatars.style.display = 'none';
+        }
+        
+        if (navAddBtn) {
+            navAddBtn.style.display = 'none';
         }
 
         if (window.notificationInterval) {
@@ -490,8 +512,10 @@ export function updateUserMenu() {
             window.notificationInterval = null;
         }
 
-        userMenuContainer.innerHTML = `<button class="btn-secondary" id="authBtn">Sign in</button>`;
-        document.getElementById('authBtn')?.addEventListener('click', () => showAuthModal('signin'));
+        if (userMenuContainer) {
+            userMenuContainer.innerHTML = `<button class="nav-signin-btn" id="authBtn">Sign in</button>`;
+            document.getElementById('authBtn')?.addEventListener('click', () => showAuthModal('signin'));
+        }
 
         document.querySelectorAll('.nav-item').forEach(item => {
             const page = item.dataset.page;
@@ -499,11 +523,6 @@ export function updateUserMenu() {
                 item.style.display = 'none';
             }
         });
-
-        const searchBtn = document.getElementById('searchBtn');
-        if (searchBtn) {
-            searchBtn.style.display = 'none';
-        }
 
         if (appState.currentPage === 'bookings' || appState.currentPage === 'notifications' ||
             appState.currentPage === 'wallet' || appState.currentPage === 'profile') {

@@ -6,6 +6,8 @@ const morgan = require('morgan');
 const session = require('express-session');
 const MongoStore = require('connect-mongo');
 const crypto = require('crypto');
+const path = require('path');
+const mongoose = require('mongoose');
 
 const connectDatabase = require('./config/database');
 const emailConfig = require('./config/email');
@@ -238,7 +240,6 @@ app.get('/health', async (req, res) => {
   };
 
   try {
-    const mongoose = require('mongoose');
     if (mongoose.connection.readyState === 1) {
       await mongoose.connection.db.admin().ping();
       health.checks.database = 'connected';
@@ -310,8 +311,6 @@ app.get('/api', (req, res) => {
   });
 });
 
-const path = require('path');
-
 // Serve uploaded images
 app.use('/uploads', express.static(path.join(__dirname, '../uploads'), {
   maxAge: '7d', // Cache images for 7 days
@@ -375,10 +374,6 @@ const server = app.listen(PORT, () => {
   console.log(`║  Payment Gateway: HostFi`);
   console.log('╚════════════════════════════════════════════════════════╝\n');
 
-  // Start automatic deposit detection
-  // const depositPollingService = require('./services/depositPollingService');
-  // depositPollingService.start();
-
   // Start escrow monitoring for auto-refunds
   const escrowMonitoringService = require('./services/escrowMonitoringService');
   escrowMonitoringService.start();
@@ -396,8 +391,6 @@ process.on('uncaughtException', (err) => {
 
 process.on('SIGTERM', () => {
   // Stop background services
-  const depositPollingService = require('./services/depositPollingService');
-  depositPollingService.stop();
   const escrowMonitoringService = require('./services/escrowMonitoringService');
   escrowMonitoringService.stop();
 

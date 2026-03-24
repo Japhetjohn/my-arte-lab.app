@@ -13,66 +13,105 @@ let currentFilters = {
 };
 
 function renderModernCreatorCards(creators) {
-    return creators.map(creator => `
-        <div class="card card-lift scroll-fade-in dynamic-light creator-card-modern" data-creator-id="${creator.id}" style="cursor: pointer; padding: 0; overflow: hidden;">
-            <div style="height: 140px; background: linear-gradient(135deg, rgba(151, 71, 255, 0.5) 0%, rgba(107, 70, 255, 0.5) 100%); position: relative; overflow: hidden;">
-                ${creator.cover ? `
-                    <img src="${creator.cover}" alt="${creator.name}" style="width: 100%; height: 100%; object-fit: cover;">
-                ` : ''}
+    return creators.map((creator, index) => `
+        <div class="creator-token-card" data-creator-id="${creator.id}" style="
+            background: #FFFFFF;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        ">
+            <!-- Avatar/Image Section -->
+            <div style="
+                position: relative;
+                width: 100%;
+                aspect-ratio: 1;
+                background: linear-gradient(135deg, rgba(151, 71, 255, 0.1) 0%, rgba(107, 70, 255, 0.1) 100%);
+                overflow: hidden;
+            ">
+                <img src="${creator.avatar}" 
+                     alt="${creator.name}" 
+                     style="
+                        width: 100%;
+                        height: 100%;
+                        object-fit: cover;
+                        transition: transform 0.3s ease;
+                     "
+                     class="creator-card-img"
+                >
                 ${creator.verified ? `
-                    <div style="position: absolute; top: 12px; right: 12px; background: rgba(255, 255, 255, 0.4); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.5); padding: 4px 10px; border-radius: 20px; display: flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: #065f46; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                            <path d="M9 12l2 2 4-4m6-2a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" stroke="currentColor" stroke-width="2"/>
+                    <div style="
+                        position: absolute;
+                        top: 12px;
+                        right: 12px;
+                        background: var(--primary);
+                        color: white;
+                        padding: 6px 12px;
+                        border-radius: 20px;
+                        font-size: 11px;
+                        font-weight: 600;
+                        display: flex;
+                        align-items: center;
+                        gap: 4px;
+                        box-shadow: 0 2px 8px rgba(151, 71, 255, 0.3);
+                    ">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                            <polyline points="20 6 9 17 4 12"></polyline>
                         </svg>
                         Verified
                     </div>
                 ` : ''}
             </div>
-
-            <div style="padding: 20px;">
-                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-                    <img src="${creator.avatar}"
-                         alt="${creator.name}"
-                         style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 3px solid rgba(255, 255, 255, 0.6); box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-                    <div style="flex: 1;">
-                        <h3 style="margin: 0; font-size: 16px; font-weight: 700;">
-                            ${creator.name}
-                        </h3>
-                        <p style="margin: 0; font-size: 13px; color: var(--text-secondary); text-transform: capitalize;">
-                            ${creator.role}
-                        </p>
-                    </div>
-                </div>
-
-                ${creator.location ? `
-                    <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px; color: var(--text-secondary); font-size: 13px;">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" stroke="currentColor" stroke-width="2"/>
-                            <circle cx="12" cy="10" r="3" stroke="currentColor" stroke-width="2"/>
-                        </svg>
-                        <span>${creator.location}</span>
-                    </div>
-                ` : ''}
-
-                ${parseFloat(creator.rating) > 0 ? `
-                    <div style="display: flex; align-items: center; gap: 6px;">
-                        <div style="display: flex; gap: 2px;">
-                            ${Array.from({ length: 5 }, (_, i) => `
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="${i < Math.floor(parseFloat(creator.rating)) ? '#F59E0B' : 'none'}" stroke="#F59E0B" stroke-width="2">
-                                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                                </svg>
-                            `).join('')}
-                        </div>
-                        <span style="font-size: 13px; font-weight: 600; color: var(--text-primary);">
-                            ${creator.rating}
-                        </span>
-                        ${creator.reviewCount > 0 ? `
-                            <span style="font-size: 12px; color: var(--text-secondary);">
-                                (${creator.reviewCount})
-                            </span>
-                        ` : ''}
-                    </div>
-                ` : ''}
+            
+            <!-- Content Section -->
+            <div style="padding: 20px; flex: 1; display: flex; flex-direction: column;">
+                <!-- Name -->
+                <h3 style="
+                    margin: 0 0 8px 0;
+                    font-size: 18px;
+                    font-weight: 700;
+                    color: var(--text-primary);
+                    line-height: 1.3;
+                ">${creator.name}</h3>
+                
+                <!-- Bio -->
+                <p style="
+                    margin: 0 0 16px 0;
+                    font-size: 14px;
+                    color: var(--text-secondary);
+                    line-height: 1.5;
+                    display: -webkit-box;
+                    -webkit-line-clamp: 3;
+                    -webkit-box-orient: vertical;
+                    overflow: hidden;
+                    flex: 1;
+                ">${creator.bio}</p>
+                
+                <!-- See Creator Button -->
+                <button style="
+                    background: transparent;
+                    border: none;
+                    color: var(--primary);
+                    font-size: 14px;
+                    font-weight: 600;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    padding: 0;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                    margin-top: auto;
+                " class="see-creator-btn">
+                    See creator
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition: transform 0.2s ease;">
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                        <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
+                </button>
             </div>
         </div>
     `).join('');
@@ -287,13 +326,47 @@ function renderCreatorsList() {
 }
 
 function setupModernCreatorCardListeners() {
-    document.querySelectorAll('.creator-card-modern').forEach(card => {
-        card.addEventListener('click', () => {
-            const creatorId = card.dataset.creatorId;
-            const creator = creators.find(c => c.id === creatorId);
+    document.querySelectorAll('.creator-token-card').forEach(card => {
+        const creatorId = card.dataset.creatorId;
+        const creator = creators.find(c => c.id === creatorId);
+        
+        // Card click opens creator profile
+        card.addEventListener('click', (e) => {
+            // Don't trigger if clicking the button directly (handled separately)
+            if (e.target.closest('.see-creator-btn')) return;
+            
             if (creator) {
                 window.renderCreatorProfile(creator);
             }
+        });
+        
+        // Button click also opens creator profile
+        const btn = card.querySelector('.see-creator-btn');
+        if (btn && creator) {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent double trigger
+                window.renderCreatorProfile(creator);
+            });
+        }
+        
+        // Hover effects
+        const img = card.querySelector('.creator-card-img');
+        const arrow = btn?.querySelector('svg');
+        
+        card.addEventListener('mouseenter', () => {
+            card.style.boxShadow = '0 8px 30px rgba(151, 71, 255, 0.15)';
+            card.style.transform = 'translateY(-4px)';
+            if (img) img.style.transform = 'scale(1.05)';
+            if (btn) btn.style.color = '#7c3aed';
+            if (arrow) arrow.style.transform = 'translateX(4px)';
+        });
+        
+        card.addEventListener('mouseleave', () => {
+            card.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.08)';
+            card.style.transform = 'translateY(0)';
+            if (img) img.style.transform = 'scale(1)';
+            if (btn) btn.style.color = 'var(--primary)';
+            if (arrow) arrow.style.transform = 'translateX(0)';
         });
     });
 }
