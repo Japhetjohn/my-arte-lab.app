@@ -51,7 +51,7 @@ exports.getFeaturedCreators = async (req, res, next) => {
         { 'rating.average': { $gte: 4.5 } }
       ]
     })
-      .select('-password -wallet.balance -wallet.pendingBalance')
+      .select('-password -wallet.balance -wallet.pendingBalance -wallet.tsaraMnemonic -wallet.tsaraEncryptedPrivateKey -encryptedPrivateKey -twoFactorSecret -twoFactorBackupCodes')
       .sort({ isVerified: -1, 'rating.average': -1, createdAt: -1 })
       .limit(limit)
       .lean();
