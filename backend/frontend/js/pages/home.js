@@ -677,31 +677,6 @@ function renderTopEarners(creators) {
         </div>
     `).join('');
 }
-                    </p>
-                    <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 24px;">
-                        <button class="btn-primary" onclick="window.location.reload()" style="min-width: 140px;">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="display: inline; margin-right: 6px; vertical-align: middle;">
-                                <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0118-6l1.5 2M22 12.5a10 10 0 01-18 6l-1.5-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                            Clear filters
-                        </button>
-                    </div>
-                    <div class="glass-effect" style="padding: 20px; border-radius: 16px; max-width: 500px; margin: 0 auto; border: 1px solid rgba(255,255,255,0.4); box-shadow: 0 8px 32px rgba(0,0,0,0.1);">
-                        <p style="font-weight: 600; margin-bottom: 12px; color: var(--text-primary);">Popular searches:</p>
-                        <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;">
-                            <button class="filter-chip" data-filter="photographer" onclick="document.querySelector('[data-filter=photographer]').click()">Photographers</button>
-                            <button class="filter-chip" data-filter="designer" onclick="document.querySelector('[data-filter=designer]').click()">Designers</button>
-                            <button class="filter-chip" data-filter="videographer" onclick="document.querySelector('[data-filter=videographer]').click()">Videographers</button>
-                        </div>
-                    </div>
-                </div>
-            `}
-        </div>
-    `;
-
-    setupModernCreatorCardListeners();
-    setupSortListener();
-}
 
 function setupModernCreatorCardListeners() {
     document.querySelectorAll('.creator-token-card').forEach(card => {

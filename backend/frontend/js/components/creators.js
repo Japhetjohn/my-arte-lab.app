@@ -144,64 +144,82 @@ export async function renderCreatorProfile(creatorIdOrObject) {
     const coverImage = creator.cover || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200';
 
     mainContent.innerHTML = `
-        <div style="max-width: 680px; margin: 0 auto; padding: 32px 20px 60px; animation: fadeIn 0.4s ease;">
-            <!-- Header navigation/back would go here if needed, but app.js handles it -->
-            
-            <!-- Hero Section -->
-            <div style="position: relative; margin-bottom: 32px;">
-                <div style="height: 180px; width: 100%; border-radius: 24px; overflow: hidden; background: rgba(0,0,0,0.05);">
-                    <img src="${coverImage}" style="width: 100%; height: 100%; object-fit: cover;">
-                </div>
-                <div style="padding: 0 24px; display: flex; align-items: flex-end; gap: 20px;">
-                    <div style="position: relative; margin-top: -50px;">
-                        <img src="${avatarUrl}" style="width: 100px; height: 100px; border-radius: 28px; border: 4px solid var(--background); background: var(--background); box-shadow: 0 10px 25px rgba(0,0,0,0.1); object-fit: cover;">
-                        ${creator.verified ? `
-                            <div style="position: absolute; bottom: -4px; right: -4px; width: 28px; height: 28px; background: #10B981; border: 3px solid var(--background); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white;">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            </div>
-                        ` : ''}
-                    </div>
-                    <div style="flex: 1; padding-bottom: 4px;">
-                        <h1 style="font-size: 26px; font-weight: 800; color: var(--text-primary); margin: 0 0 6px; letter-spacing: -0.02em;">${creator.name}</h1>
-                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                            <span style="background: var(--primary); color: white; padding: 4px 12px; border-radius: 8px; font-size: 11px; font-weight: 700;">${creator.role}</span>
-                            <div style="display: flex; align-items: center; gap: 4px; color: var(--text-secondary); font-size: 12px; font-weight: 600; opacity: 0.8;">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                                ${creator.location}
-                            </div>
+        <div class="profile-app">
+            <!-- Purple Header -->
+            <div class="profile-header">
+                <div class="profile-header-bg"></div>
+                <div class="profile-avatar-wrap">
+                    <img src="${avatarUrl}" alt="${creator.name}" class="profile-avatar">
+                    ${creator.verified ? `
+                        <div class="profile-verified-badge">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
                         </div>
-                    </div>
+                    ` : ''}
                 </div>
+                <h1 class="profile-name">${creator.name}</h1>
+                <p class="profile-email">${creator.role} • ${creator.location}</p>
             </div>
 
-            <div style="display: flex; flex-direction: column; gap: 24px;">
-                <!-- Booking Card -->
-                <div style="background: linear-gradient(135deg, rgba(151,71,255,0.08), rgba(107,70,255,0.08)); border: 1.5px solid rgba(151,71,255,0.25); border-radius: 20px; padding: 24px; display: flex; align-items: center; justify-content: space-between; gap: 20px;">
-                    <div>
-                        <div style="font-size: 10px; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px;">Service Rate</div>
-                        <div style="font-size: 22px; font-weight: 800; color: var(--text-primary);">${creator.price}</div>
+            <!-- Content -->
+            <div class="profile-content">
+                <!-- Stats Card -->
+                <div class="profile-card stats-card">
+                    <div class="stat-item">
+                        <span class="stat-value">${creator.rating}</span>
+                        <span class="stat-label">Rating</span>
                     </div>
-                    <button class="btn-primary profile-book-now-btn" data-creator-id="${creator.id}" style="padding: 12px 28px; border-radius: 12px; font-weight: 700;">Book Now</button>
+                    <div class="stat-divider"></div>
+                    <div class="stat-item">
+                        <span class="stat-value">${creator.reviewCount}</span>
+                        <span class="stat-label">Reviews</span>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat-item">
+                        <span class="stat-value">${creator.completedJobs || 0}</span>
+                        <span class="stat-label">Jobs</span>
+                    </div>
                 </div>
 
-                <!-- About -->
-                <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 24px;">
-                    <span style="font-size: 11px; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.6; display: block; margin-bottom: 12px;">Identity & Bio</span>
-                    <p style="font-size: 15px; color: var(--text-secondary); line-height: 1.7; margin: 0; opacity: 0.9;">
-                        ${creator.bio || 'Professional identity details are currently being finalized.'}
-                    </p>
+                <!-- Bio Card -->
+                <div class="profile-menu">
+                    <div class="menu-section-title">About</div>
+                    <div style="padding: 16px 20px;">
+                        <p style="font-size: 15px; color: #475569; line-height: 1.6; margin: 0;">
+                            ${creator.bio || 'No bio available.'}
+                        </p>
+                    </div>
                 </div>
 
-                <!-- Stats Grid -->
-                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
-                    <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 16px; text-align: center;">
-                        <div style="font-size: 20px; font-weight: 800; color: var(--text-primary);">${creator.metrics?.responseRate || 100}%</div>
-                        <div style="font-size: 10px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-top: 4px; opacity: 0.6;">Response</div>
+                <!-- Services Section -->
+                ${creator.services && creator.services.length > 0 ? `
+                    <div class="profile-menu">
+                        <div class="menu-section-title">Services</div>
+                        ${creator.services.slice(0, 3).map(service => `
+                            <div class="menu-item">
+                                <div class="menu-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                                        <line x1="8" y1="21" x2="16" y2="21"/>
+                                        <line x1="12" y1="17" x2="12" y2="21"/>
+                                    </svg>
+                                </div>
+                                <div style="flex: 1;">
+                                    <span class="menu-text">${service.title}</span>
+                                    ${service.suggestedPrice ? `<span style="font-size: 12px; color: #7C3AED; font-weight: 600;">$${service.suggestedPrice}</span>` : ''}
+                                </div>
+                            </div>
+                        `).join('')}
                     </div>
-                    <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 16px; text-align: center;">
-                        <div style="font-size: 20px; font-weight: 800; color: var(--text-primary);">${creator.metrics?.onTimeDeliveryRate || 100}%</div>
-                        <div style="font-size: 10px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-top: 4px; opacity: 0.6;">On Time</div>
-                    </div>
+                ` : ''}
+
+                <!-- Book Button -->
+                <button class="btn-primary profile-book-now-btn" data-creator-id="${creator.id}" style="width: 100%; padding: 16px; border-radius: 12px; font-size: 16px; font-weight: 700; margin-top: 8px;">
+                    Book Now
+                </button>
+            </div>
+        </div>
                     <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 16px; text-align: center;">
                         <div style="font-size: 20px; font-weight: 800; color: var(--primary);">${creator.rating}</div>
                         <div style="font-size: 10px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-top: 4px; opacity: 0.6;">Rating</div>

@@ -36,7 +36,6 @@ export async function renderProfilePage() {
         } catch (e) { console.error('Failed to load services:', e); }
     }
 
-    const coverImage = user.coverImage || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200';
     const userLocation = user.location
         ? (typeof user.location === 'object'
             ? `${user.location.city || ''}${user.location.city && user.location.country ? ', ' : ''}${user.location.country || ''}`.trim()
@@ -44,59 +43,167 @@ export async function renderProfilePage() {
         : 'Nigeria';
     const userRating = user.rating?.average?.toFixed(1) || '0.0';
     const reviewCount = user.rating?.count || 0;
-    const categoryLabel = isCreator ? (user.category ? user.category.charAt(0).toUpperCase() + user.category.slice(1) : 'Professional Creator') : 'Verified Client';
+    const categoryLabel = isCreator ? (user.category ? user.category.charAt(0).toUpperCase() + user.category.slice(1) : 'Creator') : 'Client';
 
     mainContent.innerHTML = `
-        <div style="max-width: 680px; margin: 0 auto; padding: 32px 20px 60px;">
-            <!-- Header section -->
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px;">
-                <div>
-                    <h1 style="font-size: 26px; font-weight: 700; margin: 0 0 4px;">Profile</h1>
-                    <p style="color: var(--text-secondary); font-size: 14px; margin: 0;">Manage your presence</p>
+        <div class="profile-app">
+            <!-- Purple Header with Avatar -->
+            <div class="profile-header">
+                <div class="profile-header-bg"></div>
+                <div class="profile-avatar-wrap">
+                    <img src="${avatarUrl}" alt="${user.name}" class="profile-avatar">
+                    ${user.verified ? `
+                        <div class="profile-verified-badge">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                        </div>
+                    ` : ''}
                 </div>
-                <button onclick="navigateToPage('settings')" style="display: flex; align-items: center; gap: 6px; background: rgba(151,71,255,0.08); border: 1px solid rgba(151,71,255,0.2); color: var(--primary); padding: 8px 14px; border-radius: 10px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s;">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                    Edit Profile
-                </button>
+                <h1 class="profile-name">${user.name}</h1>
+                <p class="profile-email">${user.email}</p>
             </div>
 
-            <div class="profile-section" style="animation: fadeIn 0.4s ease;">
-                <!-- COVER & AVATAR CARD -->
-                <div style="position: relative; margin-bottom: 32px;">
-                    <div style="height: 180px; width: 100%; border-radius: 24px; overflow: hidden; background: #eee;">
-                        <img src="${coverImage}" style="width: 100%; height: 100%; object-fit: cover;">
-                    </div>
-                    <div style="padding: 0 24px; display: flex; align-items: flex-end; gap: 20px;">
-                        <div style="position: relative; margin-top: -50px;">
-                            <img src="${avatarUrl}" style="width: 100px; height: 100px; border-radius: 28px; border: 4px solid var(--background); background: var(--background); box-shadow: 0 10px 25px rgba(0,0,0,0.1); object-fit: cover;">
-                            ${user.verified ? `
-                                <div style="position: absolute; bottom: -4px; right: -4px; width: 28px; height: 28px; background: #10B981; border: 3px solid var(--background); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white;">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                                </div>
-                            ` : ''}
+            <!-- Content Section -->
+            <div class="profile-content">
+                ${isCreator ? `
+                    <!-- Creator Stats Card -->
+                    <div class="profile-card stats-card">
+                        <div class="stat-item">
+                            <span class="stat-value">${userRating}</span>
+                            <span class="stat-label">Rating</span>
                         </div>
-                        <div style="flex: 1; padding-bottom: 4px;">
-                            <h2 style="font-size: 24px; font-weight: 800; color: var(--text-primary); margin: 0 0 4px;">${user.name}</h2>
-                            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                                <span style="background: var(--primary); color: white; padding: 3px 10px; border-radius: 8px; font-size: 11px; font-weight: 700;">${categoryLabel}</span>
-                                <div style="display: flex; align-items: center; gap: 4px; color: var(--text-secondary); font-size: 12px; font-weight: 600;">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                                    ${userLocation}
-                                </div>
+                        <div class="stat-divider"></div>
+                        <div class="stat-item">
+                            <span class="stat-value">${reviewCount}</span>
+                            <span class="stat-label">Reviews</span>
+                        </div>
+                        <div class="stat-divider"></div>
+                        <div class="stat-item">
+                            <span class="stat-value">${user.completedJobs || 0}</span>
+                            <span class="stat-label">Jobs</span>
+                        </div>
+                    </div>
+                ` : ''}
+
+                <!-- Menu Items -->
+                <div class="profile-menu">
+                    <div class="menu-section-title">Account</div>
+                    
+                    <a href="#" class="menu-item" onclick="navigateToPage('settings'); return false;">
+                        <div class="menu-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="3"/>
+                                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                            </svg>
+                        </div>
+                        <span class="menu-text">Edit Profile</span>
+                        <svg class="menu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="9 18 15 12 9 6"/>
+                        </svg>
+                    </a>
+
+                    ${isCreator ? `
+                        <a href="#" class="menu-item" onclick="navigateToPage('projects'); return false;">
+                            <div class="menu-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                                </svg>
                             </div>
+                            <span class="menu-text">My Projects</span>
+                            <svg class="menu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="9 18 15 12 9 6"/>
+                            </svg>
+                        </a>
+
+                        <a href="#" class="menu-item" onclick="navigateToPage('services'); return false;">
+                            <div class="menu-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                                    <line x1="8" y1="21" x2="16" y2="21"/>
+                                    <line x1="12" y1="17" x2="12" y2="21"/>
+                                </svg>
+                            </div>
+                            <span class="menu-text">My Services</span>
+                            <svg class="menu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="9 18 15 12 9 6"/>
+                            </svg>
+                        </a>
+                    ` : ''}
+
+                    <a href="#" class="menu-item" onclick="navigateToPage('bookings'); return false;">
+                        <div class="menu-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                <line x1="16" y1="2" x2="16" y2="6"/>
+                                <line x1="8" y1="2" x2="8" y2="6"/>
+                                <line x1="3" y1="10" x2="21" y2="10"/>
+                            </svg>
                         </div>
-                    </div>
+                        <span class="menu-text">My Bookings</span>
+                        <svg class="menu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="9 18 15 12 9 6"/>
+                        </svg>
+                    </a>
+
+                    <a href="#" class="menu-item" onclick="navigateToPage('wallet'); return false;">
+                        <div class="menu-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="2" y="5" width="20" height="14" rx="2" ry="2"/>
+                                <line x1="16" y1="12" x2="16" y2="12"/>
+                            </svg>
+                        </div>
+                        <span class="menu-text">Wallet</span>
+                        <svg class="menu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="9 18 15 12 9 6"/>
+                        </svg>
+                    </a>
                 </div>
 
-                <!-- MAIN CONTENT AREA -->
-                <div style="display: flex; flex-direction: column; gap: 24px;">
-                    <!-- ABOUT -->
-                    <div class="glass-info-card" style="margin:0; padding: 24px; border-radius: 20px;">
-                        <span class="section-header" style="margin: 0 0 12px; font-size: 11px;">Identity & Bio</span>
-                        <p style="font-size: 15px; color: var(--text-secondary); line-height: 1.7; margin: 0;">
-                            ${user.bio || 'Professional identity details are currently being finalized.'}
-                        </p>
-                    </div>
+                <!-- Preferences Section -->
+                <div class="profile-menu">
+                    <div class="menu-section-title">Preferences</div>
+                    
+                    <a href="#" class="menu-item" onclick="navigateToPage('notifications'); return false;">
+                        <div class="menu-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                            </svg>
+                        </div>
+                        <span class="menu-text">Notifications</span>
+                        <svg class="menu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="9 18 15 12 9 6"/>
+                        </svg>
+                    </a>
+
+                    <a href="#" class="menu-item" onclick="showHelpSupportModal(); return false;">
+                        <div class="menu-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                                <line x1="12" y1="17" x2="12.01" y2="17"/>
+                            </svg>
+                        </div>
+                        <span class="menu-text">Help & Support</span>
+                        <svg class="menu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="9 18 15 12 9 6"/>
+                        </svg>
+                    </a>
+                </div>
+
+                <!-- Logout Button -->
+                <button class="logout-btn" onclick="handleLogout()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                        <polyline points="16 17 21 12 16 7"/>
+                        <line x1="21" y1="12" x2="9" y2="12"/>
+                    </svg>
+                    Sign Out
+                </button>
+            </div>
+        </div>
+    `;
 
                     ${isCreator ? `
                         <!-- STATS GRID -->
