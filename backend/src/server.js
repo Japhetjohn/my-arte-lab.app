@@ -353,7 +353,9 @@ app.get('*', (req, res) => {
 app.use('/api/*', (req, res) => {
   res.status(404).json({
     success: false,
-    error: 'API endpoint not found'
+    error: 'API endpoint not found',
+    path: req.path,
+    method: req.method
   });
 });
 
