@@ -13,7 +13,11 @@ let currentFilters = {
 };
 
 function renderModernCreatorCards(creators) {
-    return creators.map((creator, index) => `
+    return creators.map((creator, index) => {
+        // Check if avatar is a real image or placeholder
+        const hasRealAvatar = creator.avatar && !creator.avatar.includes('ui-avatars.com');
+        
+        return `
         <div class="creator-token-card" data-creator-id="${creator.id}" style="
             background: #FFFFFF;
             border-radius: 16px;
@@ -30,19 +34,21 @@ function renderModernCreatorCards(creators) {
                 position: relative;
                 width: 100%;
                 aspect-ratio: 1;
-                background: linear-gradient(135deg, rgba(151, 71, 255, 0.1) 0%, rgba(107, 70, 255, 0.1) 100%);
+                background: ${hasRealAvatar ? 'linear-gradient(135deg, rgba(151, 71, 255, 0.1) 0%, rgba(107, 70, 255, 0.1) 100%)' : '#F3E8FF'};
                 overflow: hidden;
             ">
-                <img src="${creator.avatar}" 
-                     alt="${creator.name}" 
-                     style="
-                        width: 100%;
-                        height: 100%;
-                        object-fit: cover;
-                        transition: transform 0.3s ease;
-                     "
-                     class="creator-card-img"
-                >
+                ${hasRealAvatar ? `
+                    <img src="${creator.avatar}" 
+                         alt="${creator.name}" 
+                         style="
+                            width: 100%;
+                            height: 100%;
+                            object-fit: cover;
+                            transition: transform 0.3s ease;
+                         "
+                         class="creator-card-img"
+                    >
+                ` : ''}
                 ${creator.verified ? `
                     <div style="
                         position: absolute;
@@ -71,12 +77,30 @@ function renderModernCreatorCards(creators) {
             <div style="padding: 20px; flex: 1; display: flex; flex-direction: column;">
                 <!-- Name -->
                 <h3 style="
-                    margin: 0 0 8px 0;
+                    margin: 0 0 6px 0;
                     font-size: 18px;
                     font-weight: 700;
                     color: var(--text-primary);
                     line-height: 1.3;
                 ">${creator.name}</h3>
+                
+                <!-- Location -->
+                ${creator.location ? `
+                    <div style="
+                        display: flex;
+                        align-items: center;
+                        gap: 4px;
+                        margin-bottom: 8px;
+                        font-size: 13px;
+                        color: var(--text-secondary);
+                    ">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                            <circle cx="12" cy="10" r="3"/>
+                        </svg>
+                        <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${creator.location}</span>
+                    </div>
+                ` : ''}
                 
                 <!-- Bio -->
                 <p style="
@@ -114,7 +138,7 @@ function renderModernCreatorCards(creators) {
                 </button>
             </div>
         </div>
-    `).join('');
+    `}).join('');
 }
 
 export async function renderHomePage() {

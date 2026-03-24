@@ -546,6 +546,9 @@ export function updateUserMenu() {
             notificationsBtn.addEventListener('click', () => navigateToPage('notifications'));
         }
 
+        // Load engaged creators for header avatars
+        loadEngagedCreators();
+
         updateNotificationBadge();
 
         if (!window.notificationInterval) {
@@ -632,6 +635,84 @@ function setupThemeToggle() {
             localStorage.setItem('theme', theme);
         });
     });
+}
+
+async function loadEngagedCreators() {
+    try {
+        // Get bookings to find engaged creators
+        const response = await api.getMyBookings();
+        if (!response.success || !response.data?.bookings) {
+            // No bookings - hide the avatars section
+            const navAvatars = document.getElementById('navAvatars');
+            if (navAvatars) navAvatars.style.display = 'none';
+            return;
+        }
+        
+        const bookings = response.data.bookings;
+        
+        // Extract unique creator IDs from bookings (both as client and creator)
+        const engagedCreatorIds = new Set();
+        bookings.forEach(booking => {
+            if (booking.creator && booking.creator._id) {
+                engagedCreatorIds.add(booking.creator._id);
+            }
+            if (booking.client && booking.client._id && booking.client._id !== appState.user?._id) {
+                // If I'm the creator, add the client
+                engagedCreatorIds.add(booking.client._id);
+            }
+        });
+        
+        // Convert to array and take first 3
+        const creatorIds = Array.from(engagedCreatorIds).slice(0, 3);
+        
+        if (creatorIds.length === 0) {
+            // No engaged creators - hide the section
+            const navAvatars = document.getElementById('navAvatars');
+            if (navAvatars) navAvatars.style.display = 'none';
+            return;
+        }
+        
+        // Fetch creator details
+        const creatorsResponse = await api.getCreators();
+        if (!creatorsResponse.success || !creatorsResponse.data?.creators) {
+            const navAvatars = document.getElementById('navAvatars');
+            if (navAvatars) navAvatars.style.display = 'none';
+            return;
+        }
+        
+        // Filter to get engaged creators
+        const allCreators = creatorsResponse.data.creators;
+        const engagedCreators = creatorIds.map(id => 
+            allCreators.find(c => c._id === id || c.id === id)
+        ).filter(Boolean);
+        
+        if (engagedCreators.length === 0) {
+            const navAvatars = document.getElementById('navAvatars');
+            if (navAvatars) navAvatars.style.display = 'none';
+            return;
+        }
+        
+        // Update the avatar stack HTML
+        const avatarStack = document.querySelector('.avatar-stack');
+        const navAvatars = document.getElementById('navAvatars');
+        
+        if (avatarStack && engagedCreators.length > 0) {
+            avatarStack.innerHTML = engagedCreators.map(creator => {
+                const avatarUrl = creator.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name || 'User')}&background=9747FF&color=fff`;
+                return `<img src="${avatarUrl}" alt="${creator.name || 'Creator'}" title="${creator.name || 'Creator'}">`;
+            }).join('');
+            
+            if (navAvatars) navAvatars.style.display = 'flex';
+        } else if (navAvatars) {
+            navAvatars.style.display = 'none';
+        }
+        
+    } catch (error) {
+        console.log('[Engaged Creators] Failed to load:', error.message);
+        // Hide avatars on error
+        const navAvatars = document.getElementById('navAvatars');
+        if (navAvatars) navAvatars.style.display = 'none';
+    }
 }
 
 async function updateNotificationBadge() {
