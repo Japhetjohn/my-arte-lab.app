@@ -398,77 +398,146 @@ export function updateUserMenu() {
 
         // Create dropdown menu in userMenuContainer
         if (userMenuContainer) {
+            const userRole = appState.user.role === 'creator' ? 'Creator' : 'Client';
+            
             userMenuContainer.innerHTML = `
                 <div class="nav-user-avatar" id="navUserAvatarImg">
                     <img src="${avatarUrl}" alt="${userName}">
                 </div>
                 <div class="user-dropdown" id="userDropdown">
-                    <div class="user-dropdown-header">
-                        <div class="user-dropdown-name">${userName}</div>
-                        <div class="user-dropdown-email">${appState.user.email}</div>
+                    <!-- Main Navigation -->
+                    <div class="dropdown-section">
+                        <button class="dropdown-item" onclick="navigateToPage('home')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                                <polyline points="9 22 9 12 15 12 15 22"/>
+                            </svg>
+                            Home
+                        </button>
+                        <button class="dropdown-item" onclick="navigateToPage('projects')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                            </svg>
+                            Projects
+                        </button>
+                        <button class="dropdown-item" onclick="navigateToPage('bookings')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                <line x1="16" y1="2" x2="16" y2="6"/>
+                                <line x1="8" y1="2" x2="8" y2="6"/>
+                                <line x1="3" y1="10" x2="21" y2="10"/>
+                            </svg>
+                            My bookings
+                        </button>
+                        <button class="dropdown-item" onclick="navigateToPage('wallet')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="2" y="5" width="20" height="14" rx="2"/>
+                                <line x1="16" y1="12" x2="16" y2="12"/>
+                            </svg>
+                            Wallet
+                        </button>
                     </div>
-                    <button class="user-dropdown-item" onclick="navigateToPage('profile')">
-                        <svg viewBox="0 0 24 24" fill="none">
-                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2"/>
-                            <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
-                        </svg>
-                        My profile
-                    </button>
-                    <button class="user-dropdown-item" onclick="navigateToPage('home')">
-                        <svg viewBox="0 0 24 24" fill="none">
-                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9z" stroke="currentColor" stroke-width="2"/>
-                            <path d="M9 22V12h6v10" stroke="currentColor" stroke-width="2"/>
-                        </svg>
-                        Home
-                    </button>
-                    <button class="user-dropdown-item" onclick="navigateToPage('bookings')">
-                        <svg viewBox="0 0 24 24" fill="none">
-                            <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
-                            <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" stroke-width="2"/>
-                        </svg>
-                        My bookings
-                    </button>
-                    <button class="user-dropdown-item" onclick="navigateToPage('projects')">
-                        <svg viewBox="0 0 24 24" fill="none">
-                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="2"/>
-                        </svg>
-                        Projects
-                    </button>
-                    <button class="user-dropdown-item" onclick="navigateToPage('wallet')">
-                        <svg viewBox="0 0 24 24" fill="none">
-                            <path d="M21 12V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5z" stroke="currentColor" stroke-width="2"/>
-                            <path d="M18 12h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                        </svg>
-                        Wallet
-                    </button>
-                    <button class="user-dropdown-item" onclick="navigateToPage('settings')">
-                        <svg viewBox="0 0 24 24" fill="none">
-                            <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
-                            <path d="M12 1v6m0 6v6M23 12h-6m-6 0H5" stroke="currentColor" stroke-width="2"/>
-                            <path d="M18.364 5.636l-4.243 4.243m-4.242 4.242L5.636 18.364M18.364 18.364l-4.243-4.243m-4.242-4.242L5.636 5.636" stroke="currentColor" stroke-width="2"/>
-                        </svg>
-                        Settings
-                    </button>
-                    <div class="user-dropdown-divider"></div>
-                    <button class="user-dropdown-item" onclick="showHelpSupportModal()">
-                        <svg viewBox="0 0 24 24" fill="none">
-                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-                            <path d="M12 16v-4M12 8h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                        </svg>
-                        Help & Support
-                    </button>
-                    <button class="user-dropdown-item danger" onclick="handleLogout()">
-                        <svg viewBox="0 0 24 24" fill="none">
-                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                        </svg>
-                        Logout
-                    </button>
+                    
+                    <div class="dropdown-divider"></div>
+                    
+                    <!-- User & Settings -->
+                    <div class="dropdown-section">
+                        <button class="dropdown-item" onclick="navigateToPage('profile')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                <circle cx="12" cy="7" r="4"/>
+                            </svg>
+                            My preferences & profile
+                        </button>
+                        <button class="dropdown-item" onclick="navigateToPage('settings')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="3"/>
+                                <path d="M12 1v6m0 6v6M4.22 4.22l4.24 4.24m7.07 7.07 4.24 4.24M1 12h6m6 0h6M4.22 19.78l4.24-4.24m7.07-7.07 4.24-4.24"/>
+                            </svg>
+                            Settings
+                        </button>
+                        <button class="dropdown-item" onclick="showHelpSupportModal()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14 2 14 8 20 8"/>
+                                <line x1="16" y1="13" x2="8" y2="13"/>
+                                <line x1="16" y1="17" x2="8" y2="17"/>
+                                <polyline points="10 9 9 9 8 9"/>
+                            </svg>
+                            Documentations
+                        </button>
+                    </div>
+                    
+                    <div class="dropdown-divider"></div>
+                    
+                    <!-- Sign Out -->
+                    <div class="dropdown-section">
+                        <button class="dropdown-item signout" onclick="handleLogout()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                                <polyline points="16 17 21 12 16 7"/>
+                                <line x1="21" y1="12" x2="9" y2="12"/>
+                            </svg>
+                            Sign out
+                        </button>
+                    </div>
+                    
+                    <!-- Theme Toggle -->
+                    <div class="theme-toggle-section">
+                        <button class="theme-btn active" data-theme="light" title="Light mode">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="5"/>
+                                <line x1="12" y1="1" x2="12" y2="3"/>
+                                <line x1="12" y1="21" x2="12" y2="23"/>
+                                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                                <line x1="1" y1="12" x2="3" y2="12"/>
+                                <line x1="21" y1="12" x2="23" y2="12"/>
+                                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                            </svg>
+                        </button>
+                        <button class="theme-btn" data-theme="dark" title="Dark mode">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                            </svg>
+                        </button>
+                        <button class="theme-btn" data-theme="system" title="System preference">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                                <line x1="8" y1="21" x2="16" y2="21"/>
+                                <line x1="12" y1="17" x2="12" y2="21"/>
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    <!-- User Profile Card -->
+                    <div class="dropdown-user-card">
+                        <img src="${avatarUrl}" alt="${userName}" class="dropdown-user-avatar">
+                        <div class="dropdown-user-info">
+                            <div class="dropdown-user-name">${userName} <span class="user-role">${userRole}</span></div>
+                            <div class="dropdown-user-email">${appState.user.email}</div>
+                        </div>
+                    </div>
                 </div>
             `;
             
+            // Setup theme toggle
+            setupThemeToggle();
+            
+            // Avatar click to toggle dropdown
             document.getElementById('navUserAvatarImg')?.addEventListener('click', (e) => {
                 e.stopPropagation();
                 document.getElementById('userDropdown')?.classList.toggle('active');
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                const dropdown = document.getElementById('userDropdown');
+                const avatar = document.getElementById('navUserAvatarImg');
+                if (dropdown && !dropdown.contains(e.target) && !avatar?.contains(e.target)) {
+                    dropdown.classList.remove('active');
+                }
             });
         }
 
@@ -529,6 +598,40 @@ export function updateUserMenu() {
             navigateToPage('home');
         }
     }
+}
+
+function setupThemeToggle() {
+    const themeButtons = document.querySelectorAll('.theme-btn');
+    const currentTheme = localStorage.getItem('theme') || 'light';
+    
+    // Set initial active state
+    themeButtons.forEach(btn => {
+        if (btn.dataset.theme === currentTheme) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+    
+    themeButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const theme = btn.dataset.theme;
+            
+            // Update active state
+            themeButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            // Apply theme
+            if (theme === 'system') {
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+            } else {
+                document.documentElement.setAttribute('data-theme', theme);
+            }
+            
+            localStorage.setItem('theme', theme);
+        });
+    });
 }
 
 async function updateNotificationBadge() {

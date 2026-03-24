@@ -9161,3 +9161,273 @@ select.form-select-modern:hover {
 .user-menu-container {
     position: relative;
 }
+
+/* =========================================
+   🎯 NEW CLEAN DROPDOWN MENU (2024)
+   Matching reference image design
+========================================= */
+
+.user-dropdown {
+    position: absolute;
+    top: calc(100% + 12px);
+    right: 0;
+    width: 280px;
+    background: #FFFFFF;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15), 0 8px 20px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px) scale(0.98);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1100;
+    overflow: hidden;
+    padding: 8px 0;
+}
+
+.user-dropdown.active {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+}
+
+/* Dropdown Sections */
+.dropdown-section {
+    padding: 4px 0;
+}
+
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 10px 16px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: #374151;
+    transition: all 0.15s ease;
+    text-align: left;
+}
+
+.dropdown-item:hover {
+    background: #F3F4F6;
+    color: #111827;
+}
+
+.dropdown-item svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    color: #6B7280;
+    transition: color 0.15s ease;
+}
+
+.dropdown-item:hover svg {
+    color: #111827;
+}
+
+/* Sign Out - Orange/Brown color like reference */
+.dropdown-item.signout {
+    color: #B45309;
+}
+
+.dropdown-item.signout:hover {
+    background: #FEF3C7;
+    color: #92400E;
+}
+
+.dropdown-item.signout svg {
+    color: #B45309;
+}
+
+/* Dividers */
+.dropdown-divider {
+    height: 1px;
+    background: #E5E7EB;
+    margin: 8px 16px;
+}
+
+/* Theme Toggle Section */
+.theme-toggle-section {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 16px;
+    margin: 0 16px 12px;
+    background: #F9FAFB;
+    border-radius: 12px;
+    border: 1px solid #E5E7EB;
+}
+
+.theme-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: #6B7280;
+    transition: all 0.2s ease;
+}
+
+.theme-btn:hover {
+    background: #E5E7EB;
+    color: #374151;
+}
+
+.theme-btn.active {
+    background: #FFFFFF;
+    color: #111827;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border: 1px solid #E5E7EB;
+}
+
+.theme-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* User Profile Card at Bottom */
+.dropdown-user-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    margin: 0 16px 8px;
+    background: #F9FAFB;
+    border-radius: 12px;
+    border: 1px solid #E5E7EB;
+}
+
+.dropdown-user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #FFFFFF;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.dropdown-user-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.dropdown-user-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #111827;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.user-role {
+    font-size: 11px;
+    font-weight: 500;
+    color: #6B7280;
+    background: #E5E7EB;
+    padding: 2px 8px;
+    border-radius: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.dropdown-user-email {
+    font-size: 12px;
+    color: #6B7280;
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* =========================================
+   🌙 DARK MODE SUPPORT
+========================================= */
+
+[data-theme="dark"] .user-dropdown {
+    background: #1F2937;
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4), 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .dropdown-item {
+    color: #D1D5DB;
+}
+
+[data-theme="dark"] .dropdown-item:hover {
+    background: #374151;
+    color: #FFFFFF;
+}
+
+[data-theme="dark"] .dropdown-item svg {
+    color: #9CA3AF;
+}
+
+[data-theme="dark"] .dropdown-item:hover svg {
+    color: #FFFFFF;
+}
+
+[data-theme="dark"] .dropdown-item.signout {
+    color: #F59E0B;
+}
+
+[data-theme="dark"] .dropdown-item.signout:hover {
+    background: rgba(245, 158, 11, 0.15);
+    color: #FBBF24;
+}
+
+[data-theme="dark"] .dropdown-divider {
+    background: #374151;
+}
+
+[data-theme="dark"] .theme-toggle-section {
+    background: #111827;
+    border-color: #374151;
+}
+
+[data-theme="dark"] .theme-btn {
+    color: #9CA3AF;
+}
+
+[data-theme="dark"] .theme-btn:hover {
+    background: #374151;
+    color: #D1D5DB;
+}
+
+[data-theme="dark"] .theme-btn.active {
+    background: #1F2937;
+    color: #FFFFFF;
+    border-color: #374151;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .dropdown-user-card {
+    background: #111827;
+    border-color: #374151;
+}
+
+[data-theme="dark"] .dropdown-user-name {
+    color: #FFFFFF;
+}
+
+[data-theme="dark"] .user-role {
+    background: #374151;
+    color: #9CA3AF;
+}
+
+[data-theme="dark"] .dropdown-user-email {
+    color: #9CA3AF;
+}
+
+[data-theme="dark"] .dropdown-user-avatar {
+    border-color: #1F2937;
+}
