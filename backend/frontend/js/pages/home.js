@@ -141,6 +141,12 @@ function renderModernCreatorCards(creators) {
     `}).join('');
 }
 
+let platformStats = {
+    totalCreators: 0,
+    totalBookings: 0,
+    totalEarnings: 0
+};
+
 export async function renderHomePage() {
     const mainContent = document.getElementById('mainContent');
 
@@ -162,16 +168,45 @@ export async function renderHomePage() {
             <!-- Hero Section -->
             <section class="home-hero">
                 <div class="container">
-                    <h1 class="home-hero-title">Discover African Creators</h1>
-                    <p class="home-hero-subtitle">Find and book talented photographers, designers, videographers, and more.</p>
+                    <h1 class="home-hero-title">Hire African Creators.<br>Delivered Globally.</h1>
+                    <p class="home-hero-subtitle">Connect with verified photographers, designers, videographers & more.</p>
                     
                     <div class="home-hero-search">
                         <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="11" cy="11" r="8"/>
                             <path d="m21 21-4.35-4.35"/>
                         </svg>
-                        <input type="text" id="homeHeroSearch" placeholder="Search for creators, services, or skills..." value="${currentFilters.search}">
-                        <button class="home-hero-search-btn" id="homeHeroSearchBtn">Search</button>
+                        <input type="text" id="homeHeroSearch" placeholder="What service do you need?" value="${currentFilters.search}">
+                        <button class="home-hero-search-btn" id="homeHeroSearchBtn">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="8"/>
+                                <path d="m21 21-4.35-4.35"/>
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    <div class="home-hero-trust">
+                        <div class="trust-item">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                            </svg>
+                            <span>4.9/5 avg rating</span>
+                        </div>
+                        <div class="trust-item">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                            </svg>
+                            <span>Secure payments</span>
+                        </div>
+                        <div class="trust-item">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <path d="M2 12h20"/>
+                                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                            </svg>
+                            <span>Global delivery</span>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -179,107 +214,163 @@ export async function renderHomePage() {
             <!-- Categories Section -->
             <section class="home-categories">
                 <div class="container">
-                    <div class="home-categories-grid">
+                    <div class="home-categories-scroll">
+                        <div class="home-category-card" data-category="all">
+                            <span class="home-category-name">All</span>
+                        </div>
                         <div class="home-category-card" data-category="photographer">
-                            <div class="home-category-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-                                    <circle cx="12" cy="13" r="4"/>
-                                </svg>
-                            </div>
                             <span class="home-category-name">Photography</span>
                         </div>
-                        
                         <div class="home-category-card" data-category="designer">
-                            <div class="home-category-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                    <path d="M12 19l7-7 3 3-7 7-3-3z"/>
-                                    <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
-                                    <path d="M2 2l7.586 7.586"/>
-                                    <circle cx="11" cy="11" r="2"/>
-                                </svg>
-                            </div>
                             <span class="home-category-name">Design</span>
                         </div>
-                        
                         <div class="home-category-card" data-category="videographer">
-                            <div class="home-category-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                    <polygon points="23 7 16 12 23 17 23 7"/>
-                                    <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
-                                </svg>
-                            </div>
                             <span class="home-category-name">Video</span>
                         </div>
-                        
                         <div class="home-category-card" data-category="illustrator">
-                            <div class="home-category-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                    <path d="M12 19l7-7 3 3-7 7-3-3z"/>
-                                    <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
-                                    <path d="M2 2l7.586 7.586"/>
-                                    <circle cx="11" cy="11" r="2"/>
-                                </svg>
-                            </div>
                             <span class="home-category-name">Illustration</span>
                         </div>
-                        
                         <div class="home-category-card" data-category="writer">
-                            <div class="home-category-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                                </svg>
-                            </div>
                             <span class="home-category-name">Writing</span>
                         </div>
-                        
                         <div class="home-category-card" data-category="musician">
-                            <div class="home-category-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                    <path d="M9 18V5l12-2v13"/>
-                                    <circle cx="6" cy="18" r="3"/>
-                                    <circle cx="18" cy="16" r="3"/>
-                                </svg>
-                            </div>
                             <span class="home-category-name">Music</span>
                         </div>
-                        
                         <div class="home-category-card" data-category="developer">
-                            <div class="home-category-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                    <polyline points="16 18 22 12 16 6"/>
-                                    <polyline points="8 6 2 12 8 18"/>
-                                </svg>
-                            </div>
                             <span class="home-category-name">Development</span>
                         </div>
-                        
                         <div class="home-category-card" data-category="marketing">
-                            <div class="home-category-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-                                    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-                                </svg>
-                            </div>
                             <span class="home-category-name">Marketing</span>
                         </div>
                     </div>
                 </div>
             </section>
 
-            <!-- Creators Section -->
-            <section class="home-creators" id="homeResults">
+            <!-- Main Content Area -->
+            <section class="home-main">
                 <div class="container">
-                    <div class="home-creators-header">
-                        <h2 class="home-section-title">Featured Creators</h2>
-                        <div class="home-creators-filters">
-                            <button class="home-filter-btn active" data-filter="all">All</button>
-                            <button class="home-filter-btn" data-filter="verified">Verified</button>
+                    <div class="home-layout">
+                        <!-- Left Column - Main Content -->
+                        <div class="home-content">
+                            <!-- Featured Creators -->
+                            <div class="home-section">
+                                <div class="home-section-header">
+                                    <h2>Featured Creators</h2>
+                                    <a href="#" class="view-all" onclick="document.getElementById('allCreators').scrollIntoView({behavior: 'smooth'}); return false;">View all</a>
+                                </div>
+                                <div class="home-featured-grid" id="featuredGrid">
+                                    <!-- Featured creators loaded here -->
+                                </div>
+                            </div>
+                            
+                            <!-- Recent Activity -->
+                            <div class="home-section">
+                                <div class="home-section-header">
+                                    <h2>Recent Activity</h2>
+                                </div>
+                                <div class="home-activity-list" id="activityList">
+                                    ${renderActivityFeed()}
+                                </div>
+                            </div>
+                            
+                            <!-- All Creators -->
+                            <div class="home-section" id="allCreators">
+                                <div class="home-section-header">
+                                    <h2>All Creators</h2>
+                                    <div class="home-filters">
+                                        <button class="home-filter-btn active" data-filter="all">All</button>
+                                        <button class="home-filter-btn" data-filter="verified">Verified</button>
+                                    </div>
+                                </div>
+                                <div id="homeGrid">
+                                    <!-- All creators loaded here -->
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <div id="homeGrid">
-                        <!-- Content will be loaded here -->
+                        
+                        <!-- Right Column - Sidebar -->
+                        <div class="home-sidebar">
+                            <!-- Stats Widget -->
+                            <div class="sidebar-widget stats-widget">
+                                <div class="stat-item">
+                                    <div class="stat-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                            <circle cx="12" cy="7" r="4"/>
+                                        </svg>
+                                    </div>
+                                    <div class="stat-info">
+                                        <span class="stat-value" id="statCreators">0</span>
+                                        <span class="stat-label">Creators</span>
+                                    </div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                            <line x1="16" y1="2" x2="16" y2="6"/>
+                                            <line x1="8" y1="2" x2="8" y2="6"/>
+                                            <line x1="3" y1="10" x2="21" y2="10"/>
+                                        </svg>
+                                    </div>
+                                    <div class="stat-info">
+                                        <span class="stat-value" id="statBookings">0</span>
+                                        <span class="stat-label">Bookings</span>
+                                    </div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <line x1="12" y1="1" x2="12" y2="23"/>
+                                            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                                        </svg>
+                                    </div>
+                                    <div class="stat-info">
+                                        <span class="stat-value" id="statEarnings">$0</span>
+                                        <span class="stat-label">Paid to creators</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- How It Works -->
+                            <div class="sidebar-widget how-it-works">
+                                <h3>How it works</h3>
+                                <div class="steps">
+                                    <div class="step">
+                                        <div class="step-number">1</div>
+                                        <div class="step-content">
+                                            <h4>Search</h4>
+                                            <p>Browse creators by category or skill</p>
+                                        </div>
+                                    </div>
+                                    <div class="step">
+                                        <div class="step-number">2</div>
+                                        <div class="step-content">
+                                            <h4>Book</h4>
+                                            <p>Send a request and agree on terms</p>
+                                        </div>
+                                    </div>
+                                    <div class="step">
+                                        <div class="step-number">3</div>
+                                        <div class="step-content">
+                                            <h4>Get Results</h4>
+                                            <p>Receive your work and release payment</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Top Earners -->
+                            <div class="sidebar-widget top-earners">
+                                <div class="widget-header">
+                                    <h3>Top Earners</h3>
+                                    <a href="#" class="view-all-link">Leaderboard</a>
+                                </div>
+                                <div class="earners-list" id="topEarnersList">
+                                    <!-- Top earners loaded here -->
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -287,8 +378,78 @@ export async function renderHomePage() {
     `;
 
     setupHomeEventListeners();
+    loadPlatformStats();
     window.showLoadingSpinner();
     await loadCreators();
+}
+
+function renderActivityFeed() {
+    // Mock activity data - in production this would come from API
+    const activities = [
+        { user: 'John D.', action: 'booked', target: 'Wedding Photography', time: '2 min ago' },
+        { user: 'Sarah M.', action: 'completed', target: 'Logo Design project', time: '5 min ago' },
+        { user: 'Mike K.', action: 'booked', target: 'Video Editing', time: '12 min ago' },
+        { user: 'Lisa A.', action: 'joined', target: 'as a creator', time: '25 min ago' },
+        { user: 'David R.', action: 'completed', target: 'Brand Identity project', time: '1 hour ago' }
+    ];
+    
+    return activities.map(activity => `
+        <div class="activity-item">
+            <div class="activity-dot"></div>
+            <div class="activity-content">
+                <span class="activity-user">${activity.user}</span>
+                <span class="activity-action">${activity.action}</span>
+                <span class="activity-target">${activity.target}</span>
+                <span class="activity-time">${activity.time}</span>
+            </div>
+        </div>
+    `).join('');
+}
+
+async function loadPlatformStats() {
+    try {
+        // In production, these would come from an API
+        // For now, animate the numbers
+        animateNumber('statCreators', 1240, '');
+        animateNumber('statBookings', 5680, '');
+        animateNumber('statEarnings', 2400000, '$');
+    } catch (error) {
+        console.log('Stats load failed:', error);
+    }
+}
+
+function animateNumber(elementId, target, prefix) {
+    const element = document.getElementById(elementId);
+    if (!element) return;
+    
+    const duration = 2000;
+    const steps = 60;
+    const increment = target / steps;
+    let current = 0;
+    
+    const timer = setInterval(() => {
+        current += increment;
+        if (current >= target) {
+            current = target;
+            clearInterval(timer);
+        }
+        
+        if (prefix === '$') {
+            element.textContent = prefix + formatCompactNumber(Math.floor(current));
+        } else {
+            element.textContent = formatCompactNumber(Math.floor(current));
+        }
+    }, duration / steps);
+}
+
+function formatCompactNumber(number) {
+    if (number >= 1000000) {
+        return (number / 1000000).toFixed(1) + 'M';
+    }
+    if (number >= 1000) {
+        return (number / 1000).toFixed(1) + 'K';
+    }
+    return number.toString();
 }
 
 function setupHomeEventListeners() {
@@ -429,63 +590,93 @@ async function loadCreators() {
 }
 
 function renderCreatorsList() {
-    const resultsContainer = document.getElementById('homeResults');
-
-    // Update filter chips active states - allow multiple filters to be active
-    document.querySelectorAll('.filter-chip').forEach(chip => {
-        const filter = chip.dataset.filter;
-
-        // Handle verified filter independently
-        if (filter === 'verified') {
-            if (currentFilters.verified) {
-                chip.classList.add('active');
-            } else {
-                chip.classList.remove('active');
-            }
-        }
-        // Handle category filters
-        else if (filter === 'all') {
-            if (!currentFilters.category) {
-                chip.classList.add('active');
-            } else {
-                chip.classList.remove('active');
-            }
-        } else if (filter === currentFilters.category) {
-            chip.classList.add('active');
-        } else {
-            // Only remove active if it's a category chip (not verified)
-            if (filter !== 'verified') {
-                chip.classList.remove('active');
-            }
-        }
-    });
-
-    // Update only the results section
-    resultsContainer.innerHTML = `
-        <div class="container">
-            ${creators.length > 0 ? `
-                <div class="section-header">
-                    <select class="form-select" style="width: auto;" id="sortSelect">
-                        <option value="relevance" ${currentFilters.sort === 'relevance' ? 'selected' : ''}>Sort by relevance</option>
-                        <option value="rating" ${currentFilters.sort === 'rating' ? 'selected' : ''}>Highest rated</option>
-                        <option value="newest" ${currentFilters.sort === 'newest' ? 'selected' : ''}>Newest</option>
-                    </select>
+    // Get top 4 creators for featured section
+    const featuredCreators = creators.slice(0, 4);
+    const remainingCreators = creators.slice(4);
+    
+    // Update Featured Grid
+    const featuredGrid = document.getElementById('featuredGrid');
+    if (featuredGrid) {
+        featuredGrid.innerHTML = featuredCreators.length > 0 
+            ? renderFeaturedCreatorCards(featuredCreators)
+            : '<p class="text-muted">No featured creators yet</p>';
+    }
+    
+    // Update Top Earners in sidebar
+    const topEarnersList = document.getElementById('topEarnersList');
+    if (topEarnersList) {
+        const topEarners = [...creators]
+            .sort((a, b) => (b.totalEarnings || 0) - (a.totalEarnings || 0))
+            .slice(0, 5);
+        topEarnersList.innerHTML = renderTopEarners(topEarners);
+    }
+    
+    // Update All Creators Grid
+    const allCreatorsGrid = document.getElementById('homeGrid');
+    if (allCreatorsGrid) {
+        const displayCreators = currentFilters.category || currentFilters.search ? creators : remainingCreators;
+        
+        allCreatorsGrid.innerHTML = displayCreators.length > 0 
+            ? `<div class="creators-grid-all">${renderModernCreatorCards(displayCreators)}</div>`
+            : `
+                <div class="empty-state" style="padding: 60px 20px; text-align: center;">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" style="color: #94A3B8; margin-bottom: 16px;">
+                        <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
+                        <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    <h3 style="font-size: 18px; color: #0F172A; margin-bottom: 8px;">No creators found</h3>
+                    <p style="color: #64748B; font-size: 14px;">Try adjusting your filters</p>
                 </div>
-                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px;" id="homeGrid">
-                    ${renderModernCreatorCards(creators)}
-                </div>
-            ` : `
-                <div class="empty-state" style="padding: 80px 20px; text-align: center; animation: fadeIn 0.3s ease-in;">
-                    <div style="background: linear-gradient(135deg, rgba(151, 71, 255, 0.1) 0%, rgba(107, 70, 255, 0.1) 100%); width: 120px; height: 120px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px;">
-                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" style="color: var(--primary);">
-                            <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
-                            <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                            <path d="M11 8v3M11 14h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            `;
+    }
+    
+    setupSortListener();
+    setupModernCreatorCardListeners();
+}
+
+function renderFeaturedCreatorCards(creators) {
+    return creators.map(creator => {
+        const hasRealAvatar = creator.avatar && !creator.avatar.includes('ui-avatars.com');
+        
+        return `
+        <div class="featured-creator-card" data-creator-id="${creator.id}">
+            <div class="featured-creator-image" style="background: ${hasRealAvatar ? 'linear-gradient(135deg, #F3E8FF 0%, #E9D5FF 100%)' : '#F3E8FF'};">
+                ${hasRealAvatar ? `<img src="${creator.avatar}" alt="${creator.name}">` : ''}
+                ${creator.verified ? `
+                    <div class="verified-badge">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                            <polyline points="20 6 9 17 4 12"></polyline>
                         </svg>
                     </div>
-                    <h3 style="font-size: 24px; margin-bottom: 12px; color: var(--text-primary);">No creators found</h3>
-                    <p style="color: var(--text-secondary); font-size: 16px; margin-bottom: 24px; max-width: 400px; margin-left: auto; margin-right: auto;">
-                        We couldn't find any creators matching your search. Try adjusting your filters or explore different categories.
+                ` : ''}
+            </div>
+            <div class="featured-creator-info">
+                <h4>${creator.name}</h4>
+                ${creator.location ? `<p class="location">${creator.location}</p>` : ''}
+                <div class="rating">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="#F59E0B" stroke="#F59E0B" stroke-width="2">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                    </svg>
+                    <span>${creator.rating}</span>
+                    <span class="reviews">(${creator.reviewCount})</span>
+                </div>
+            </div>
+        </div>
+    `}).join('');
+}
+
+function renderTopEarners(creators) {
+    return creators.map((creator, index) => `
+        <div class="earner-item" data-creator-id="${creator.id}">
+            <span class="earner-rank">${index + 1}</span>
+            <img src="${creator.avatar}" alt="${creator.name}" class="earner-avatar">
+            <div class="earner-info">
+                <span class="earner-name">${creator.name}</span>
+                <span class="earner-amount">$${(creator.totalEarnings || 0).toLocaleString()} earned</span>
+            </div>
+        </div>
+    `).join('');
+}
                     </p>
                     <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 24px;">
                         <button class="btn-primary" onclick="window.location.reload()" style="min-width: 140px;">
