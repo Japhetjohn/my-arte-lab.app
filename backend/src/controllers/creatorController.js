@@ -5,7 +5,6 @@ const { ErrorHandler, catchAsync } = require('../utils/errorHandler');
 const { escapeRegex } = require('../utils/sanitize');
 
 exports.getAllCreators = catchAsync(async (req, res, next) => {
-  console.log('getAllCreators called');
   const {
     category,
     search,
