@@ -187,7 +187,7 @@ export async function renderCreatorProfile(creatorIdOrObject) {
             .profile-header-content {
                 display: flex;
                 gap: 24px;
-                align-items: flex-end;
+                align-items: center;
                 position: relative;
                 z-index: 1;
             }
@@ -672,10 +672,7 @@ export async function renderCreatorProfile(creatorIdOrObject) {
                     <span class="profile-stat-value">${creator.completedJobs}</span>
                     <span class="profile-stat-label">Jobs Done</span>
                 </div>
-                <div class="profile-stat">
-                    <span class="profile-stat-value">${creator.responseTime}</span>
-                    <span class="profile-stat-label">Response</span>
-                </div>
+
             </div>
             
             <!-- Trust Badges -->
