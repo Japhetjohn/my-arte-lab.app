@@ -150,311 +150,267 @@ export async function renderCreatorProfile(creatorIdOrObject) {
 
     mainContent.innerHTML = `
         <style>
-            .creator-profile-container {
-                max-width: 900px;
-                margin: 0 auto;
-                padding: 24px 16px 48px;
-                animation: profileFadeIn 0.4s ease-out;
+            .pf-container { 
+                max-width: 680px; 
+                margin: 0 auto; 
+                padding: 32px 20px 60px; 
+                display: flex; 
+                flex-direction: column; 
+                gap: 24px; 
+                animation: pfFadeIn 0.4s ease-out;
             }
             
-            @keyframes profileFadeIn {
+            @keyframes pfFadeIn {
                 from { opacity: 0; transform: translateY(20px); }
                 to { opacity: 1; transform: translateY(0); }
             }
             
-            /* Header Section */
-            .profile-header-card {
-                background: linear-gradient(135deg, #7C3AED 0%, #6D28D9 50%, #5B21B6 100%);
-                border-radius: 24px;
-                padding: 32px;
-                position: relative;
-                overflow: hidden;
-                margin-bottom: 24px;
-                box-shadow: 0 20px 40px rgba(124, 58, 237, 0.3);
+            @media (max-width: 768px) { 
+                .pf-container { padding: 24px 16px; } 
             }
             
-            .profile-header-card::before {
-                content: '';
-                position: absolute;
-                top: -50%;
-                right: -20%;
-                width: 400px;
-                height: 400px;
-                background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-                pointer-events: none;
+            .pf-section { 
+                background: rgba(255,255,255,0.03); 
+                border: 1px solid rgba(255,255,255,0.08); 
+                border-radius: 24px; 
+                padding: 24px; 
             }
             
-            .profile-header-content {
+            .pf-section-title { 
+                font-size: 16px; 
+                font-weight: 700; 
+                color: var(--text-primary); 
+                margin-bottom: 24px; 
+                display: flex; 
+                align-items: center; 
+                gap: 10px; 
+            }
+            
+            /* Profile Header - Settings Style */
+            .pf-header {
                 display: flex;
-                gap: 24px;
                 align-items: center;
-                position: relative;
-                z-index: 1;
+                gap: 20px;
             }
             
-            .profile-avatar-container {
-                position: relative;
-                flex-shrink: 0;
-                align-self: center;
-                margin: 16px 0;
-            }
-            
-            .profile-avatar-img {
-                width: 120px;
-                height: 120px;
-                border-radius: 50%;
+            .pf-avatar {
+                width: 72px;
+                height: 72px;
+                border-radius: 20px;
                 object-fit: cover;
-                border: 4px solid rgba(255,255,255,0.3);
-                box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+                border: 2px solid rgba(255,255,255,0.1);
+                background: var(--background-alt);
+                flex-shrink: 0;
             }
             
-            .profile-verified-icon {
-                position: absolute;
-                bottom: 4px;
-                right: 4px;
-                width: 32px;
-                height: 32px;
-                background: #10B981;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                border: 3px solid #7C3AED;
-                color: white;
-            }
-            
-            .profile-header-info {
+            .pf-header-info {
                 flex: 1;
-                color: white;
+                min-width: 0;
             }
             
-            .profile-name {
-                font-size: 28px;
+            .pf-name {
+                font-size: 22px;
                 font-weight: 800;
-                margin: 0 0 8px 0;
-                text-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            }
-            
-            .profile-role-location {
-                font-size: 15px;
-                opacity: 0.9;
+                color: var(--text-primary);
+                margin: 0 0 6px 0;
                 display: flex;
                 align-items: center;
                 gap: 8px;
                 flex-wrap: wrap;
             }
             
-            .profile-dot-separator {
-                width: 4px;
-                height: 4px;
-                background: rgba(255,255,255,0.6);
-                border-radius: 50%;
-            }
-            
-            .profile-price-badge {
-                background: rgba(255,255,255,0.2);
-                padding: 6px 14px;
+            .pf-verified-badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+                background: rgba(16, 185, 129, 0.1);
+                color: #10B981;
+                padding: 4px 10px;
                 border-radius: 20px;
+                font-size: 11px;
+                font-weight: 700;
+                border: 1px solid rgba(16, 185, 129, 0.2);
+            }
+            
+            .pf-role-location {
+                font-size: 14px;
+                color: var(--text-secondary);
+                opacity: 0.8;
+                margin: 0 0 10px 0;
+            }
+            
+            .pf-price {
+                display: inline-block;
+                background: rgba(151,71,255,0.1);
+                color: var(--primary);
+                padding: 6px 14px;
+                border-radius: 10px;
                 font-size: 13px;
-                font-weight: 600;
-                backdrop-filter: blur(10px);
+                font-weight: 700;
             }
             
-            /* Stats Bar */
-            .profile-stats-bar {
+            /* Stats Row */
+            .pf-stats {
                 display: flex;
-                background: white;
-                border-radius: 16px;
-                padding: 20px 24px;
-                margin-bottom: 24px;
-                box-shadow: 0 4px 20px rgba(0,0,0,0.08);
                 gap: 32px;
+                padding-top: 20px;
+                border-top: 1px solid rgba(255,255,255,0.06);
+                margin-top: 20px;
             }
             
-            .profile-stat {
+            .pf-stat {
                 display: flex;
                 flex-direction: column;
                 gap: 4px;
             }
             
-            .profile-stat-value {
-                font-size: 24px;
+            .pf-stat-value {
+                font-size: 20px;
                 font-weight: 800;
-                color: #1E293B;
-            }
-            
-            .profile-stat-label {
-                font-size: 12px;
-                font-weight: 600;
-                color: #64748B;
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
-            }
-            
-            .profile-stat-rating {
+                color: var(--text-primary);
                 display: flex;
                 align-items: center;
                 gap: 6px;
             }
             
-            .profile-stars {
+            .pf-stat-stars {
                 color: #FBBF24;
-                font-size: 16px;
+                font-size: 14px;
+            }
+            
+            .pf-stat-label {
+                font-size: 11px;
+                font-weight: 700;
+                color: var(--text-secondary);
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                opacity: 0.6;
             }
             
             /* Trust Badges */
-            .profile-trust-badges {
+            .pf-trust-badges {
                 display: flex;
                 gap: 10px;
                 flex-wrap: wrap;
-                margin-bottom: 24px;
             }
             
-            .trust-badge {
+            .pf-trust-badge {
                 display: flex;
                 align-items: center;
                 gap: 6px;
-                background: #F0FDF4;
+                background: rgba(16, 185, 129, 0.08);
                 color: #15803D;
                 padding: 8px 14px;
                 border-radius: 10px;
                 font-size: 12px;
                 font-weight: 600;
-                border: 1px solid #BBF7D0;
+                border: 1px solid rgba(16, 185, 129, 0.15);
             }
             
-            /* Content Cards */
-            .profile-section {
-                background: white;
-                border-radius: 20px;
-                padding: 28px;
-                margin-bottom: 20px;
-                box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-                border: 1px solid #F1F5F9;
-            }
-            
-            .profile-section-header {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                margin-bottom: 20px;
-            }
-            
-            .profile-section-title {
-                font-size: 13px;
-                font-weight: 800;
-                color: #94A3B8;
-                text-transform: uppercase;
-                letter-spacing: 1px;
-            }
-            
-            .profile-section-count {
-                font-size: 12px;
-                font-weight: 600;
-                color: #CBD5E1;
-            }
-            
-            .profile-about-text {
+            /* About Text */
+            .pf-about {
                 font-size: 15px;
                 line-height: 1.7;
-                color: #475569;
+                color: var(--text-secondary);
                 margin: 0;
             }
             
             /* Services */
-            .profile-services-list {
+            .pf-services-list {
                 display: flex;
                 flex-direction: column;
                 gap: 16px;
             }
             
-            .profile-service-item {
+            .pf-service-item {
                 display: flex;
                 align-items: flex-start;
                 gap: 16px;
                 padding: 20px;
-                background: #F8FAFC;
+                background: rgba(255,255,255,0.02);
+                border: 1px solid rgba(255,255,255,0.06);
                 border-radius: 16px;
-                border: 1px solid #E2E8F0;
                 transition: all 0.2s ease;
             }
             
-            .profile-service-item:hover {
-                border-color: #7C3AED;
-                box-shadow: 0 4px 12px rgba(124, 58, 237, 0.1);
+            .pf-service-item:hover {
+                border-color: rgba(151,71,255,0.3);
             }
             
-            .profile-service-icon {
-                width: 48px;
-                height: 48px;
-                background: linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%);
+            .pf-service-icon {
+                width: 44px;
+                height: 44px;
+                background: rgba(151,71,255,0.1);
                 border-radius: 12px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                color: white;
+                color: var(--primary);
                 flex-shrink: 0;
             }
             
-            .profile-service-content {
+            .pf-service-content {
                 flex: 1;
+                min-width: 0;
             }
             
-            .profile-service-header {
+            .pf-service-header {
                 display: flex;
                 justify-content: space-between;
                 align-items: flex-start;
+                gap: 12px;
                 margin-bottom: 6px;
             }
             
-            .profile-service-title {
-                font-size: 16px;
+            .pf-service-title {
+                font-size: 15px;
                 font-weight: 700;
-                color: #1E293B;
+                color: var(--text-primary);
                 margin: 0;
             }
             
-            .profile-service-price {
-                font-size: 15px;
+            .pf-service-price {
+                font-size: 14px;
                 font-weight: 800;
-                color: #7C3AED;
+                color: var(--primary);
                 white-space: nowrap;
             }
             
-            .profile-service-desc {
-                font-size: 14px;
-                color: #64748B;
+            .pf-service-desc {
+                font-size: 13px;
+                color: var(--text-secondary);
                 line-height: 1.5;
                 margin: 0 0 12px 0;
+                opacity: 0.8;
             }
             
-            .profile-service-images {
+            .pf-service-images {
                 display: grid;
-                grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+                grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
                 gap: 8px;
             }
             
-            .profile-service-img {
+            .pf-service-img {
                 aspect-ratio: 1;
                 border-radius: 10px;
                 overflow: hidden;
                 cursor: pointer;
-                background: #E2E8F0;
+                background: rgba(255,255,255,0.05);
             }
             
-            .profile-service-img img {
+            .pf-service-img img {
                 width: 100%;
                 height: 100%;
                 object-fit: cover;
                 transition: transform 0.3s;
             }
             
-            .profile-service-img:hover img {
+            .pf-service-img:hover img {
                 transform: scale(1.05);
             }
             
-            .profile-service-select-btn {
-                background: #7C3AED;
+            .pf-service-btn {
+                background: var(--primary);
                 color: white;
                 border: none;
                 padding: 10px 20px;
@@ -466,39 +422,39 @@ export async function renderCreatorProfile(creatorIdOrObject) {
                 white-space: nowrap;
             }
             
-            .profile-service-select-btn:hover {
-                background: #6D28D9;
+            .pf-service-btn:hover {
+                opacity: 0.9;
                 transform: translateY(-1px);
             }
             
             /* Portfolio Grid */
-            .profile-portfolio-grid {
+            .pf-portfolio-grid {
                 display: grid;
                 grid-template-columns: repeat(3, 1fr);
                 gap: 12px;
             }
             
-            .profile-portfolio-item {
+            .pf-portfolio-item {
                 aspect-ratio: 1;
                 border-radius: 16px;
                 overflow: hidden;
                 cursor: pointer;
-                background: #F1F5F9;
+                background: rgba(255,255,255,0.05);
                 position: relative;
             }
             
-            .profile-portfolio-item img {
+            .pf-portfolio-item img {
                 width: 100%;
                 height: 100%;
                 object-fit: cover;
                 transition: transform 0.4s ease;
             }
             
-            .profile-portfolio-item:hover img {
+            .pf-portfolio-item:hover img {
                 transform: scale(1.08);
             }
             
-            .profile-portfolio-overlay {
+            .pf-portfolio-overlay {
                 position: absolute;
                 inset: 0;
                 background: linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 60%);
@@ -506,186 +462,161 @@ export async function renderCreatorProfile(creatorIdOrObject) {
                 transition: opacity 0.3s;
                 display: flex;
                 align-items: flex-end;
-                padding: 16px;
+                padding: 12px;
             }
             
-            .profile-portfolio-item:hover .profile-portfolio-overlay {
+            .pf-portfolio-item:hover .pf-portfolio-overlay {
                 opacity: 1;
             }
             
-            .profile-portfolio-title {
+            .pf-portfolio-title {
                 color: white;
-                font-size: 13px;
+                font-size: 12px;
                 font-weight: 600;
                 margin: 0;
             }
             
             /* Action Buttons */
-            .profile-actions {
+            .pf-actions {
                 display: flex;
                 gap: 12px;
-                margin-top: 24px;
             }
             
-            .profile-btn-primary {
+            .pf-btn-primary {
                 flex: 1;
-                background: linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%);
+                background: var(--primary);
                 color: white;
                 border: none;
                 padding: 16px 28px;
-                border-radius: 14px;
+                border-radius: 12px;
                 font-size: 15px;
                 font-weight: 700;
                 cursor: pointer;
                 transition: all 0.2s;
-                box-shadow: 0 4px 16px rgba(124, 58, 237, 0.35);
             }
             
-            .profile-btn-primary:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 8px 24px rgba(124, 58, 237, 0.45);
+            .pf-btn-primary:hover {
+                opacity: 0.9;
+                transform: translateY(-1px);
             }
             
-            .profile-btn-secondary {
+            .pf-btn-secondary {
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 gap: 8px;
-                background: white;
-                color: #475569;
-                border: 1px solid #E2E8F0;
+                background: rgba(255,255,255,0.05);
+                color: var(--text-primary);
+                border: 1px solid rgba(255,255,255,0.1);
                 padding: 16px 24px;
-                border-radius: 14px;
+                border-radius: 12px;
                 font-size: 14px;
                 font-weight: 600;
                 cursor: pointer;
                 transition: all 0.2s;
             }
             
-            .profile-btn-secondary:hover {
-                background: #F8FAFC;
-                border-color: #CBD5E1;
+            .pf-btn-secondary:hover {
+                background: rgba(255,255,255,0.08);
             }
             
             /* Mobile Responsive */
             @media (max-width: 640px) {
-                .creator-profile-container {
-                    padding: 16px 12px 32px;
+                .pf-container {
+                    padding: 16px;
+                    gap: 16px;
                 }
                 
-                .profile-header-card {
-                    padding: 24px 20px;
+                .pf-section {
+                    padding: 20px;
                     border-radius: 20px;
                 }
                 
-                .profile-header-content {
+                .pf-header {
                     flex-direction: column;
-                    align-items: center;
                     text-align: center;
                 }
                 
-                .profile-avatar-container {
-                    margin: 12px 0;
-                }
-                
-                .profile-avatar-img {
-                    width: 100px;
-                    height: 100px;
-                }
-                
-                .profile-name {
-                    font-size: 24px;
-                }
-                
-                .profile-role-location {
+                .pf-name {
                     justify-content: center;
-                }
-                
-                .profile-stats-bar {
-                    justify-content: space-around;
-                    gap: 16px;
-                    padding: 16px;
-                }
-                
-                .profile-stat-value {
                     font-size: 20px;
                 }
                 
-                .profile-section {
-                    padding: 20px;
-                    border-radius: 16px;
+                .pf-stats {
+                    justify-content: center;
+                    gap: 24px;
                 }
                 
-                .profile-service-item {
+                .pf-stat-value {
+                    font-size: 18px;
+                }
+                
+                .pf-service-item {
                     flex-direction: column;
                 }
                 
-                .profile-service-select-btn {
+                .pf-service-btn {
                     width: 100%;
                 }
                 
-                .profile-portfolio-grid {
+                .pf-portfolio-grid {
                     grid-template-columns: repeat(2, 1fr);
                     gap: 8px;
                 }
                 
-                .profile-actions {
+                .pf-actions {
                     flex-direction: column;
                 }
             }
         </style>
         
-        <div class="creator-profile-container">
-            <!-- Header Card -->
-            <div class="profile-header-card">
-                <div class="profile-header-content">
-                    <div class="profile-avatar-container">
-                        <img src="${avatarUrl}" alt="${creator.name}" class="profile-avatar-img">
-                        ${creator.verified ? `
-                            <div class="profile-verified-icon">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                                    <polyline points="20 6 9 17 4 12"></polyline>
-                                </svg>
-                            </div>
-                        ` : ''}
+        <div class="pf-container">
+            <!-- Profile Header Section -->
+            <div class="pf-section">
+                <div class="pf-header">
+                    <img src="${avatarUrl}" alt="${creator.name}" class="pf-avatar">
+                    <div class="pf-header-info">
+                        <h1 class="pf-name">
+                            ${creator.name}
+                            ${creator.verified ? `
+                                <span class="pf-verified-badge">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg>
+                                    Verified
+                                </span>
+                            ` : ''}
+                        </h1>
+                        <p class="pf-role-location">${creator.role} • ${creator.location}</p>
+                        <span class="pf-price">${creator.price}</span>
                     </div>
-                    <div class="profile-header-info">
-                        <h1 class="profile-name">${creator.name}</h1>
-                        <div class="profile-role-location">
-                            <span>${creator.role}</span>
-                            <span class="profile-dot-separator"></span>
-                            <span>${creator.location}</span>
-                            <span class="profile-price-badge">${creator.price}</span>
+                </div>
+                
+                <!-- Stats -->
+                <div class="pf-stats">
+                    <div class="pf-stat">
+                        <div class="pf-stat-value">
+                            ${creator.rating}
+                            <span class="pf-stat-stars">${renderStars(creator.rating)}</span>
                         </div>
+                        <span class="pf-stat-label">Rating</span>
+                    </div>
+                    <div class="pf-stat">
+                        <span class="pf-stat-value">${creator.reviewCount}</span>
+                        <span class="pf-stat-label">Reviews</span>
+                    </div>
+                    <div class="pf-stat">
+                        <span class="pf-stat-value">${creator.completedJobs}</span>
+                        <span class="pf-stat-label">Jobs Done</span>
                     </div>
                 </div>
-            </div>
-            
-            <!-- Stats Bar -->
-            <div class="profile-stats-bar">
-                <div class="profile-stat">
-                    <div class="profile-stat-rating">
-                        <span class="profile-stat-value">${creator.rating}</span>
-                        <span class="profile-stars">${renderStars(creator.rating)}</span>
-                    </div>
-                    <span class="profile-stat-label">Rating</span>
-                </div>
-                <div class="profile-stat">
-                    <span class="profile-stat-value">${creator.reviewCount}</span>
-                    <span class="profile-stat-label">Reviews</span>
-                </div>
-                <div class="profile-stat">
-                    <span class="profile-stat-value">${creator.completedJobs}</span>
-                    <span class="profile-stat-label">Jobs Done</span>
-                </div>
-
             </div>
             
             <!-- Trust Badges -->
             ${(creator.isEmailVerified || creator.isPhoneVerified || creator.isIdVerified) ? `
-                <div class="profile-trust-badges">
+                <div class="pf-trust-badges">
                     ${creator.isEmailVerified ? `
-                        <div class="trust-badge">
+                        <div class="pf-trust-badge">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                                 <polyline points="20 6 9 17 4 12"></polyline>
                             </svg>
@@ -693,7 +624,7 @@ export async function renderCreatorProfile(creatorIdOrObject) {
                         </div>
                     ` : ''}
                     ${creator.isPhoneVerified ? `
-                        <div class="trust-badge">
+                        <div class="pf-trust-badge">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                                 <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
                             </svg>
@@ -701,7 +632,7 @@ export async function renderCreatorProfile(creatorIdOrObject) {
                         </div>
                     ` : ''}
                     ${creator.isIdVerified ? `
-                        <div class="trust-badge">
+                        <div class="pf-trust-badge">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
                                 <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
@@ -713,47 +644,55 @@ export async function renderCreatorProfile(creatorIdOrObject) {
             ` : ''}
             
             <!-- About Section -->
-            <div class="profile-section">
-                <div class="profile-section-header">
-                    <h2 class="profile-section-title">About</h2>
-                </div>
-                <p class="profile-about-text">${creator.bio || 'No bio available.'}</p>
+            <div class="pf-section">
+                <h2 class="pf-section-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                    About
+                </h2>
+                <p class="pf-about">${creator.bio || 'No bio available.'}</p>
             </div>
             
             <!-- Services Section -->
             ${creator.services && creator.services.length > 0 ? `
-                <div class="profile-section">
-                    <div class="profile-section-header">
-                        <h2 class="profile-section-title">Services</h2>
-                        <span class="profile-section-count">${creator.services.length} service${creator.services.length !== 1 ? 's' : ''}</span>
-                    </div>
-                    <div class="profile-services-list">
+                <div class="pf-section">
+                    <h2 class="pf-section-title">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5">
+                            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                            <path d="M2 17l10 5 10-5"/>
+                            <path d="M2 12l10 5 10-5"/>
+                        </svg>
+                        Services (${creator.services.length})
+                    </h2>
+                    <div class="pf-services-list">
                         ${creator.services.map((service, index) => `
-                            <div class="profile-service-item">
-                                <div class="profile-service-icon">
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <div class="pf-service-item">
+                                <div class="pf-service-icon">
+                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <path d="M12 2L2 7l10 5 10-5-10-5z"/>
                                         <path d="M2 17l10 5 10-5"/>
                                         <path d="M2 12l10 5 10-5"/>
                                     </svg>
                                 </div>
-                                <div class="profile-service-content">
-                                    <div class="profile-service-header">
-                                        <h3 class="profile-service-title">${service.title}</h3>
-                                        ${service.suggestedPrice ? `<span class="profile-service-price">$${service.suggestedPrice}</span>` : ''}
+                                <div class="pf-service-content">
+                                    <div class="pf-service-header">
+                                        <h3 class="pf-service-title">${service.title}</h3>
+                                        ${service.suggestedPrice ? `<span class="pf-service-price">$${service.suggestedPrice}</span>` : ''}
                                     </div>
-                                    <p class="profile-service-desc">${service.description || ''}</p>
+                                    <p class="pf-service-desc">${service.description || ''}</p>
                                     ${service.images && service.images.length > 0 ? `
-                                        <div class="profile-service-images">
+                                        <div class="pf-service-images">
                                             ${service.images.slice(0, 4).map(img => `
-                                                <div class="profile-service-img" onclick="window.openImageModal('${img}')">
+                                                <div class="pf-service-img" onclick="window.openImageModal('${img}')">
                                                     <img src="${img}" alt="${service.title}">
                                                 </div>
                                             `).join('')}
                                         </div>
                                     ` : ''}
                                 </div>
-                                <button class="profile-service-select-btn" data-creator-id="${creator.id}" data-service-index="${index}">
+                                <button class="pf-service-btn" data-creator-id="${creator.id}" data-service-index="${index}">
                                     Select
                                 </button>
                             </div>
@@ -764,21 +703,25 @@ export async function renderCreatorProfile(creatorIdOrObject) {
             
             <!-- Portfolio Section -->
             ${portfolioItems.length > 0 ? `
-                <div class="profile-section">
-                    <div class="profile-section-header">
-                        <h2 class="profile-section-title">Portfolio</h2>
-                        <span class="profile-section-count">${portfolioItems.length} item${portfolioItems.length !== 1 ? 's' : ''}</span>
-                    </div>
-                    <div class="profile-portfolio-grid">
+                <div class="pf-section">
+                    <h2 class="pf-section-title">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                            <circle cx="8.5" cy="8.5" r="1.5"/>
+                            <path d="M21 15l-5-5L5 21"/>
+                        </svg>
+                        Portfolio (${portfolioItems.length} items)
+                    </h2>
+                    <div class="pf-portfolio-grid">
                         ${portfolioItems.slice(0, 6).map((item, i) => {
                             const src = (typeof item === 'string') ? item : item.image;
                             const title = (typeof item === 'object' && item.title) ? item.title : '';
                             return `
-                                <div class="profile-portfolio-item" data-creator-id="${creator.id}" data-image-index="${i}">
+                                <div class="pf-portfolio-item" data-creator-id="${creator.id}" data-image-index="${i}">
                                     <img src="${src}" alt="${title || 'Portfolio item'}" loading="lazy">
                                     ${title ? `
-                                        <div class="profile-portfolio-overlay">
-                                            <p class="profile-portfolio-title">${title}</p>
+                                        <div class="pf-portfolio-overlay">
+                                            <p class="pf-portfolio-title">${title}</p>
                                         </div>
                                     ` : ''}
                                 </div>
@@ -789,11 +732,11 @@ export async function renderCreatorProfile(creatorIdOrObject) {
             ` : ''}
             
             <!-- Action Buttons -->
-            <div class="profile-actions">
-                <button class="profile-btn-primary" data-creator-id="${creator.id}">
+            <div class="pf-actions">
+                <button class="pf-btn-primary" data-creator-id="${creator.id}">
                     Book Now
                 </button>
-                <button class="profile-btn-secondary profile-share-btn" data-creator-id="${creator.id}" data-creator-name="${creator.name}">
+                <button class="pf-btn-secondary profile-share-btn" data-creator-id="${creator.id}" data-creator-name="${creator.name}">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="18" cy="5" r="3"/>
                         <circle cx="6" cy="12" r="3"/>
@@ -813,7 +756,7 @@ export async function renderCreatorProfile(creatorIdOrObject) {
 
 function setupProfileButtonListeners(creator) {
     // Book Now button
-    const bookBtn = document.querySelector('.profile-btn-primary');
+    const bookBtn = document.querySelector('.pf-btn-primary');
     if (bookBtn) {
         bookBtn.addEventListener('click', () => {
             if (!appState.user) {
@@ -825,7 +768,7 @@ function setupProfileButtonListeners(creator) {
     }
 
     // Service select buttons
-    document.querySelectorAll('.profile-service-select-btn').forEach(btn => {
+    document.querySelectorAll('.pf-service-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             const creatorId = btn.dataset.creatorId;
             const serviceIndex = parseInt(btn.dataset.serviceIndex);
@@ -838,7 +781,7 @@ function setupProfileButtonListeners(creator) {
     });
 
     // Portfolio items
-    document.querySelectorAll('.profile-portfolio-item').forEach(item => {
+    document.querySelectorAll('.pf-portfolio-item').forEach(item => {
         item.addEventListener('click', () => {
             const creatorId = item.dataset.creatorId;
             const imageIndex = parseInt(item.dataset.imageIndex);
