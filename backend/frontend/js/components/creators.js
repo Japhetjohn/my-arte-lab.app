@@ -520,6 +520,271 @@ export async function renderCreatorProfile(creatorIdOrObject) {
                 background: rgba(255,255,255,0.08);
             }
             
+            /* Service Modal Styles */
+            .pf-service-modal-overlay {
+                position: fixed;
+                inset: 0;
+                background: rgba(0,0,0,0.8);
+                backdrop-filter: blur(8px);
+                z-index: 1000;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 20px;
+                animation: pfModalFadeIn 0.3s ease;
+            }
+            
+            @keyframes pfModalFadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            
+            .pf-service-modal {
+                background: var(--background);
+                border: 1px solid rgba(255,255,255,0.1);
+                border-radius: 24px;
+                max-width: 600px;
+                width: 100%;
+                max-height: 90vh;
+                overflow: hidden;
+                display: flex;
+                flex-direction: column;
+                animation: pfModalSlideUp 0.3s ease;
+            }
+            
+            @keyframes pfModalSlideUp {
+                from { opacity: 0; transform: translateY(40px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            
+            .pf-service-modal-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 20px 24px;
+                border-bottom: 1px solid rgba(255,255,255,0.06);
+            }
+            
+            .pf-service-modal-title {
+                font-size: 18px;
+                font-weight: 700;
+                color: var(--text-primary);
+            }
+            
+            .pf-service-modal-close {
+                width: 36px;
+                height: 36px;
+                border-radius: 10px;
+                border: none;
+                background: rgba(255,255,255,0.05);
+                color: var(--text-secondary);
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.2s;
+            }
+            
+            .pf-service-modal-close:hover {
+                background: rgba(255,255,255,0.1);
+                color: var(--text-primary);
+            }
+            
+            .pf-service-modal-body {
+                overflow-y: auto;
+                padding: 24px;
+            }
+            
+            /* Image Gallery */
+            .pf-service-gallery {
+                position: relative;
+                margin-bottom: 24px;
+            }
+            
+            .pf-service-gallery-main {
+                aspect-ratio: 16/10;
+                border-radius: 16px;
+                overflow: hidden;
+                background: rgba(255,255,255,0.05);
+                cursor: pointer;
+            }
+            
+            .pf-service-gallery-main img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+            
+            .pf-service-gallery-thumbs {
+                display: flex;
+                gap: 10px;
+                margin-top: 12px;
+                overflow-x: auto;
+                padding-bottom: 4px;
+            }
+            
+            .pf-service-gallery-thumb {
+                width: 70px;
+                height: 70px;
+                border-radius: 12px;
+                overflow: hidden;
+                cursor: pointer;
+                border: 2px solid transparent;
+                transition: all 0.2s;
+                flex-shrink: 0;
+            }
+            
+            .pf-service-gallery-thumb.active {
+                border-color: var(--primary);
+            }
+            
+            .pf-service-gallery-thumb:hover {
+                border-color: rgba(151,71,255,0.5);
+            }
+            
+            .pf-service-gallery-thumb img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+            
+            .pf-service-gallery-nav {
+                position: absolute;
+                top: 50%;
+                transform: translateY(-50%);
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                background: rgba(0,0,0,0.6);
+                border: none;
+                color: white;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.2s;
+                z-index: 10;
+            }
+            
+            .pf-service-gallery-nav:hover {
+                background: rgba(0,0,0,0.8);
+            }
+            
+            .pf-service-gallery-nav.prev { left: 12px; }
+            .pf-service-gallery-nav.next { right: 12px; }
+            
+            /* Modal Content */
+            .pf-service-modal-price {
+                font-size: 24px;
+                font-weight: 800;
+                color: var(--primary);
+                margin-bottom: 16px;
+            }
+            
+            .pf-service-modal-desc {
+                font-size: 15px;
+                line-height: 1.8;
+                color: var(--text-secondary);
+                margin-bottom: 24px;
+                white-space: pre-wrap;
+            }
+            
+            .pf-service-modal-links {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                margin-bottom: 24px;
+            }
+            
+            .pf-service-modal-link {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 14px 16px;
+                background: rgba(255,255,255,0.03);
+                border: 1px solid rgba(255,255,255,0.08);
+                border-radius: 12px;
+                color: var(--text-primary);
+                text-decoration: none;
+                font-size: 14px;
+                font-weight: 500;
+                transition: all 0.2s;
+            }
+            
+            .pf-service-modal-link:hover {
+                background: rgba(151,71,255,0.08);
+                border-color: rgba(151,71,255,0.2);
+            }
+            
+            .pf-service-modal-link svg {
+                color: var(--primary);
+                flex-shrink: 0;
+            }
+            
+            .pf-service-modal-footer {
+                display: flex;
+                gap: 12px;
+                padding: 20px 24px;
+                border-top: 1px solid rgba(255,255,255,0.06);
+                background: rgba(255,255,255,0.02);
+            }
+            
+            .pf-service-modal-btn {
+                flex: 1;
+                padding: 14px 24px;
+                border-radius: 12px;
+                font-size: 15px;
+                font-weight: 700;
+                cursor: pointer;
+                transition: all 0.2s;
+                border: none;
+            }
+            
+            .pf-service-modal-btn.primary {
+                background: var(--primary);
+                color: white;
+            }
+            
+            .pf-service-modal-btn.primary:hover {
+                opacity: 0.9;
+            }
+            
+            .pf-service-modal-btn.secondary {
+                background: rgba(255,255,255,0.05);
+                color: var(--text-primary);
+                border: 1px solid rgba(255,255,255,0.1);
+            }
+            
+            .pf-service-modal-btn.secondary:hover {
+                background: rgba(255,255,255,0.08);
+            }
+            
+            /* Image Counter */
+            .pf-service-gallery-counter {
+                position: absolute;
+                bottom: 20px;
+                right: 12px;
+                background: rgba(0,0,0,0.7);
+                color: white;
+                padding: 6px 12px;
+                border-radius: 20px;
+                font-size: 12px;
+                font-weight: 600;
+            }
+            
+            /* Make service items clickable */
+            .pf-service-item {
+                cursor: pointer;
+            }
+            
+            .pf-service-item:hover {
+                border-color: rgba(151,71,255,0.3);
+            }
+            
+            .pf-service-btn {
+                z-index: 5;
+            }
+            
             /* Mobile Responsive */
             @media (max-width: 640px) {
                 .pf-container {
@@ -567,6 +832,21 @@ export async function renderCreatorProfile(creatorIdOrObject) {
                 .pf-actions {
                     flex-direction: column;
                 }
+                
+                .pf-service-modal {
+                    max-height: 95vh;
+                    border-radius: 20px 20px 0 0;
+                }
+                
+                .pf-service-modal-overlay {
+                    align-items: flex-end;
+                    padding: 0;
+                }
+                
+                .pf-service-gallery-nav {
+                    width: 36px;
+                    height: 36px;
+                }
             }
         </style>
         
@@ -595,9 +875,8 @@ export async function renderCreatorProfile(creatorIdOrObject) {
                 <!-- Stats -->
                 <div class="pf-stats">
                     <div class="pf-stat">
-                        <div class="pf-stat-value">
-                            ${creator.rating}
-                            <span class="pf-stat-stars">${renderStars(creator.rating)}</span>
+                        <div class="pf-stat-value" style="font-size: 18px; letter-spacing: 2px;">
+                            ${renderStars(creator.rating)}
                         </div>
                         <span class="pf-stat-label">Rating</span>
                     </div>
@@ -668,7 +947,7 @@ export async function renderCreatorProfile(creatorIdOrObject) {
                     </h2>
                     <div class="pf-services-list">
                         ${creator.services.map((service, index) => `
-                            <div class="pf-service-item">
+                            <div class="pf-service-item" onclick="window.openServiceModal(${index})">
                                 <div class="pf-service-icon">
                                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <path d="M12 2L2 7l10 5 10-5-10-5z"/>
@@ -681,19 +960,20 @@ export async function renderCreatorProfile(creatorIdOrObject) {
                                         <h3 class="pf-service-title">${service.title}</h3>
                                         ${service.suggestedPrice ? `<span class="pf-service-price">$${service.suggestedPrice}</span>` : ''}
                                     </div>
-                                    <p class="pf-service-desc">${service.description || ''}</p>
+                                    <p class="pf-service-desc">${service.description ? (service.description.length > 100 ? service.description.substring(0, 100) + '...' : service.description) : ''}</p>
                                     ${service.images && service.images.length > 0 ? `
                                         <div class="pf-service-images">
                                             ${service.images.slice(0, 4).map(img => `
-                                                <div class="pf-service-img" onclick="window.openImageModal('${img}')">
+                                                <div class="pf-service-img" onclick="event.stopPropagation(); window.openImageModal('${img}')">
                                                     <img src="${img}" alt="${service.title}">
                                                 </div>
                                             `).join('')}
+                                            ${service.images.length > 4 ? `<div class="pf-service-img" style="display: flex; align-items: center; justify-content: center; background: rgba(151,71,255,0.1); color: var(--primary); font-size: 12px; font-weight: 700;">+${service.images.length - 4}</div>` : ''}
                                         </div>
                                     ` : ''}
                                 </div>
-                                <button class="pf-service-btn" data-creator-id="${creator.id}" data-service-index="${index}">
-                                    Select
+                                <button class="pf-service-btn" data-creator-id="${creator.id}" data-service-index="${index}" onclick="event.stopPropagation();">
+                                    View
                                 </button>
                             </div>
                         `).join('')}
@@ -755,6 +1035,10 @@ export async function renderCreatorProfile(creatorIdOrObject) {
 }
 
 function setupProfileButtonListeners(creator) {
+    // Store services for modal access
+    window._currentProfileServices = creator.services || [];
+    window._currentCreatorId = creator.id;
+
     // Book Now button
     const bookBtn = document.querySelector('.pf-btn-primary');
     if (bookBtn) {
@@ -767,16 +1051,12 @@ function setupProfileButtonListeners(creator) {
         });
     }
 
-    // Service select buttons
+    // Service select buttons (now opens modal)
     document.querySelectorAll('.pf-service-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const creatorId = btn.dataset.creatorId;
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
             const serviceIndex = parseInt(btn.dataset.serviceIndex);
-            if (!appState.user) {
-                window.showAuthModal('signin');
-            } else {
-                window.showBookingModal(creatorId, serviceIndex);
-            }
+            window.openServiceModal(serviceIndex);
         });
     });
 
@@ -862,6 +1142,142 @@ export function setupCreatorCardListeners() {
 }
 
 window.renderCreatorProfile = renderCreatorProfile;
+
+// Service Detail Modal
+window.openServiceModal = function(serviceIndex) {
+    const services = window._currentProfileServices || [];
+    const creatorId = window._currentCreatorId;
+    const service = services[serviceIndex];
+    
+    if (!service) return;
+    
+    const images = service.images || [];
+    let currentImageIndex = 0;
+    
+    const modal = document.createElement('div');
+    modal.className = 'pf-service-modal-overlay';
+    modal.innerHTML = `
+        <div class="pf-service-modal">
+            <div class="pf-service-modal-header">
+                <h3 class="pf-service-modal-title">${service.title}</h3>
+                <button class="pf-service-modal-close" onclick="this.closest('.pf-service-modal-overlay').remove()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <path d="M18 6L6 18M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="pf-service-modal-body">
+                ${images.length > 0 ? `
+                    <div class="pf-service-gallery">
+                        <div class="pf-service-gallery-main" onclick="window.openImageModal('${images[currentImageIndex]}')">
+                            <img src="${images[currentImageIndex]}" id="serviceGalleryMain" alt="${service.title}">
+                        </div>
+                        ${images.length > 1 ? `
+                            <button class="pf-service-gallery-nav prev" onclick="window.changeServiceImage(-1)">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                    <path d="M15 18l-6-6 6-6"/>
+                                </svg>
+                            </button>
+                            <button class="pf-service-gallery-nav next" onclick="window.changeServiceImage(1)">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                    <path d="M9 18l6-6-6-6"/>
+                                </svg>
+                            </button>
+                            <div class="pf-service-gallery-counter">
+                                <span id="serviceGalleryCounter">1</span> / ${images.length}
+                            </div>
+                        ` : ''}
+                        ${images.length > 1 ? `
+                            <div class="pf-service-gallery-thumbs">
+                                ${images.map((img, i) => `
+                                    <div class="pf-service-gallery-thumb ${i === 0 ? 'active' : ''}" data-index="${i}" onclick="window.selectServiceImage(${i})">
+                                        <img src="${img}" alt="${service.title} ${i + 1}">
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : ''}
+                    </div>
+                ` : ''}
+                
+                ${service.suggestedPrice ? `<div class="pf-service-modal-price">$${service.suggestedPrice}</div>` : ''}
+                
+                <p class="pf-service-modal-desc">${service.description || 'No description available.'}</p>
+                
+                ${service.links && service.links.length > 0 ? `
+                    <div class="pf-service-modal-links">
+                        ${service.links.map(link => `
+                            <a href="${link.url}" target="_blank" rel="noopener" class="pf-service-modal-link">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                                </svg>
+                                ${link.title || 'View Link'}
+                            </a>
+                        `).join('')}
+                    </div>
+                ` : ''}
+            </div>
+            
+            <div class="pf-service-modal-footer">
+                <button class="pf-service-modal-btn secondary" onclick="this.closest('.pf-service-modal-overlay').remove()">Close</button>
+                <button class="pf-service-modal-btn primary" onclick="window.bookServiceFromModal(${serviceIndex})">Book This Service</button>
+            </div>
+        </div>
+    `;
+    
+    // Store images array for navigation
+    window._serviceModalImages = images;
+    window._currentServiceImageIndex = 0;
+    window._currentServiceIndex = serviceIndex;
+    
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.remove();
+    });
+    
+    document.body.appendChild(modal);
+};
+
+window.changeServiceImage = function(direction) {
+    const images = window._serviceModalImages || [];
+    if (images.length === 0) return;
+    
+    let newIndex = window._currentServiceImageIndex + direction;
+    if (newIndex < 0) newIndex = images.length - 1;
+    if (newIndex >= images.length) newIndex = 0;
+    
+    window.selectServiceImage(newIndex);
+};
+
+window.selectServiceImage = function(index) {
+    const images = window._serviceModalImages || [];
+    if (images.length === 0 || index < 0 || index >= images.length) return;
+    
+    window._currentServiceImageIndex = index;
+    
+    const mainImg = document.getElementById('serviceGalleryMain');
+    if (mainImg) mainImg.src = images[index];
+    
+    const counter = document.getElementById('serviceGalleryCounter');
+    if (counter) counter.textContent = index + 1;
+    
+    // Update active thumbnail
+    document.querySelectorAll('.pf-service-gallery-thumb').forEach((thumb, i) => {
+        thumb.classList.toggle('active', i === index);
+    });
+};
+
+window.bookServiceFromModal = function(serviceIndex) {
+    const modal = document.querySelector('.pf-service-modal-overlay');
+    if (modal) modal.remove();
+    
+    const creatorId = window._currentCreatorId;
+    if (!appState.user) {
+        window.showAuthModal('signin');
+    } else {
+        window.showBookingModal(creatorId, serviceIndex);
+    }
+};
 
 export function renderCategories(categoryCounts = {}) {
     const categoryMap = {
