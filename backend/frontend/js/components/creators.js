@@ -66,6 +66,67 @@ export function renderCreatorCards(creators) {
     `).join('');
 }
 
+function renderProfileSkeleton() {
+    return `
+        <style>
+            .pf-skeleton-container { max-width: 680px; margin: 0 auto; padding: 32px 20px 60px; }
+            .pf-skeleton-section { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 24px; padding: 24px; margin-bottom: 20px; }
+            .pf-skeleton-header { display: flex; align-items: center; gap: 20px; margin-bottom: 20px; }
+            .pf-skeleton-avatar { width: 72px; height: 72px; border-radius: 20px; }
+            .pf-skeleton-lines { flex: 1; }
+            .pf-skeleton-line { height: 16px; margin-bottom: 12px; border-radius: 8px; }
+            .pf-skeleton-line.title { width: 60%; height: 22px; }
+            .pf-skeleton-line.subtitle { width: 40%; }
+            .pf-skeleton-stats { display: flex; gap: 32px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.06); }
+            .pf-skeleton-stat { width: 60px; height: 40px; border-radius: 8px; }
+            .pf-skeleton-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+            .pf-skeleton-grid-item { aspect-ratio: 1; border-radius: 16px; }
+            @media (max-width: 640px) {
+                .pf-skeleton-container { padding: 16px; }
+                .pf-skeleton-section { padding: 20px; }
+                .pf-skeleton-grid { grid-template-columns: repeat(2, 1fr); }
+            }
+        </style>
+        <div class="pf-skeleton-container">
+            <div class="pf-skeleton-section">
+                <div class="pf-skeleton-header">
+                    <div class="skeleton pf-skeleton-avatar"></div>
+                    <div class="pf-skeleton-lines">
+                        <div class="skeleton pf-skeleton-line title"></div>
+                        <div class="skeleton pf-skeleton-line subtitle"></div>
+                    </div>
+                </div>
+                <div class="pf-skeleton-stats">
+                    <div class="skeleton pf-skeleton-stat"></div>
+                    <div class="skeleton pf-skeleton-stat"></div>
+                    <div class="skeleton pf-skeleton-stat"></div>
+                </div>
+            </div>
+            <div class="pf-skeleton-section">
+                <div class="skeleton pf-skeleton-line title" style="width: 80px; margin-bottom: 16px;"></div>
+                <div class="skeleton pf-skeleton-line" style="width: 100%;"></div>
+                <div class="skeleton pf-skeleton-line" style="width: 90%;"></div>
+                <div class="skeleton pf-skeleton-line" style="width: 70%;"></div>
+            </div>
+            <div class="pf-skeleton-section">
+                <div class="skeleton pf-skeleton-line title" style="width: 120px; margin-bottom: 16px;"></div>
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <div class="skeleton" style="height: 80px; border-radius: 16px;"></div>
+                    <div class="skeleton" style="height: 80px; border-radius: 16px;"></div>
+                </div>
+            </div>
+            <div class="pf-skeleton-section">
+                <div class="skeleton pf-skeleton-line title" style="width: 100px; margin-bottom: 16px;"></div>
+                <div class="pf-skeleton-grid">
+                    <div class="skeleton pf-skeleton-grid-item"></div>
+                    <div class="skeleton pf-skeleton-grid-item"></div>
+                    <div class="skeleton pf-skeleton-grid-item"></div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
 export async function renderCreatorProfile(creatorIdOrObject) {
     if (!creatorIdOrObject) {
         return;
@@ -86,9 +147,10 @@ export async function renderCreatorProfile(creatorIdOrObject) {
     let creator = typeof creatorIdOrObject === 'object' ? creatorIdOrObject : null;
 
     if (creatorId) {
+        // Show skeleton while loading
+        mainContent.innerHTML = renderProfileSkeleton();
+        
         try {
-            window.showLoadingSpinner();
-
             const response = await api.getCreatorProfile(creatorId);
 
             if (response.success) {
@@ -115,12 +177,10 @@ export async function renderCreatorProfile(creatorIdOrObject) {
                     metrics: apiCreator.metrics || {},
                     badges: apiCreator.badges || []
                 };
-                window.hideLoadingSpinner();
             } else {
                 throw new Error('Failed to load creator profile');
             }
         } catch (error) {
-            window.hideLoadingSpinner();
             mainContent.innerHTML = `
                 <div class="section">
                     <div class="container">
@@ -838,6 +898,44 @@ export async function renderCreatorProfile(creatorIdOrObject) {
                     border-radius: 20px 20px 0 0;
                 }
                 
+                /* Footer Mobile Styles */
+                .home-footer {
+                    padding: 32px 16px !important;
+                }
+                
+                .home-footer-content {
+                    flex-direction: column;
+                    gap: 32px;
+                }
+                
+                .home-footer-brand {
+                    max-width: 100%;
+                    text-align: center;
+                }
+                
+                .home-footer-tagline {
+                    max-width: 100%;
+                }
+                
+                .home-footer-social {
+                    justify-content: center;
+                }
+                
+                .home-footer-links {
+                    flex-direction: column;
+                    gap: 24px;
+                }
+                
+                .home-footer-column {
+                    text-align: center;
+                }
+                
+                .home-footer-bottom {
+                    flex-direction: column;
+                    gap: 12px;
+                    text-align: center;
+                }
+                
                 .pf-service-modal-overlay {
                     align-items: flex-end;
                     padding: 0;
@@ -1029,8 +1127,8 @@ export async function renderCreatorProfile(creatorIdOrObject) {
             </div>
             
             <!-- Footer -->
-            <footer class="home-footer" style="margin-top: 40px;">
-                <div style="max-width: 900px; margin: 0 auto; padding: 0 20px;">
+            <footer class="home-footer" style="margin-top: 40px; padding: 40px 0;">
+                <div style="max-width: 900px; margin: 0 auto; padding: 0 20px; box-sizing: border-box;">
                     <div class="home-footer-content">
                         <div class="home-footer-brand">
                             <div class="home-footer-logo">

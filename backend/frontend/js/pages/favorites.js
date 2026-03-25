@@ -3,18 +3,53 @@ import api from '../services/api.js';
 import { updateBackButton } from '../navigation.js';
 import { renderCreatorProfile } from '../components/creators.js';
 
+function renderFavoritesSkeleton() {
+    return `
+        <style>
+            .fav-skeleton-container { max-width: 1200px; margin: 0 auto; padding: 32px 20px 60px; }
+            .fav-skeleton-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; padding: 24px; border-radius: 20px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); }
+            .fav-skeleton-title { width: 180px; height: 32px; border-radius: 8px; }
+            .fav-skeleton-badge { width: 80px; height: 32px; border-radius: 12px; }
+            .fav-skeleton-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; }
+            .fav-skeleton-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; overflow: hidden; }
+            .fav-skeleton-image { aspect-ratio: 1; width: 100%; }
+            .fav-skeleton-content { padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+            .fav-skeleton-line { height: 16px; border-radius: 8px; }
+            .fav-skeleton-line.title { width: 70%; }
+            .fav-skeleton-line.subtitle { width: 50%; }
+        </style>
+        <div class="fav-skeleton-container">
+            <div class="fav-skeleton-header">
+                <div class="skeleton fav-skeleton-title"></div>
+                <div class="skeleton fav-skeleton-badge"></div>
+            </div>
+            <div class="fav-skeleton-grid">
+                ${Array(4).fill(0).map(() => `
+                    <div class="fav-skeleton-card">
+                        <div class="skeleton fav-skeleton-image"></div>
+                        <div class="fav-skeleton-content">
+                            <div class="skeleton fav-skeleton-line title"></div>
+                            <div class="skeleton fav-skeleton-line subtitle"></div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+}
+
 export async function renderFavoritesPage() {
     setCurrentPage('favorites');
     const mainContent = document.getElementById('mainContent');
 
-    window.showLoadingSpinner();
+    // Show skeleton while loading
+    mainContent.innerHTML = renderFavoritesSkeleton();
 
     try {
         const response = await api.getFavorites();
 
         if (response.success) {
             const favorites = response.data.favorites;
-            window.hideLoadingSpinner();
 
             if (favorites && favorites.length > 0) {
                 mainContent.innerHTML = `
@@ -55,7 +90,6 @@ export async function renderFavoritesPage() {
         }
     } catch (error) {
         console.error('Failed to load favorites:', error);
-        window.hideLoadingSpinner();
         mainContent.innerHTML = `
             <div class="section">
                 <div class="container">

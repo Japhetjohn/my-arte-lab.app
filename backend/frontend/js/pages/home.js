@@ -12,6 +12,67 @@ let currentFilters = {
     sort: 'relevance'
 };
 
+function renderHomeSkeleton() {
+    return `
+        <style>
+            .home-skeleton-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+                gap: 24px;
+                padding: 20px 0;
+            }
+            .home-skeleton-card {
+                background: rgba(255,255,255,0.03);
+                border: 1px solid rgba(255,255,255,0.08);
+                border-radius: 16px;
+                overflow: hidden;
+            }
+            .home-skeleton-image {
+                aspect-ratio: 1;
+                width: 100%;
+            }
+            .home-skeleton-content {
+                padding: 20px;
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+            }
+            .home-skeleton-line {
+                height: 16px;
+                border-radius: 8px;
+            }
+            .home-skeleton-line.title { width: 70%; }
+            .home-skeleton-line.subtitle { width: 50%; }
+            .home-skeleton-line.short { width: 40%; }
+            @media (max-width: 640px) {
+                .home-skeleton-grid {
+                    grid-template-columns: repeat(2, 1fr);
+                    gap: 12px;
+                }
+                .home-skeleton-content {
+                    padding: 12px;
+                    gap: 8px;
+                }
+                .home-skeleton-line {
+                    height: 12px;
+                }
+            }
+        </style>
+        <div class="home-skeleton-grid">
+            ${Array(6).fill(0).map(() => `
+                <div class="home-skeleton-card">
+                    <div class="skeleton home-skeleton-image"></div>
+                    <div class="home-skeleton-content">
+                        <div class="skeleton home-skeleton-line title"></div>
+                        <div class="skeleton home-skeleton-line subtitle"></div>
+                        <div class="skeleton home-skeleton-line short"></div>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
 function renderModernCreatorCards(creators) {
     return creators.map((creator, index) => {
         // Check if avatar is a real image or placeholder
@@ -331,7 +392,8 @@ export async function renderHomePage() {
     `;
 
     setupHomeEventListeners();
-    window.showLoadingSpinner();
+    // Show skeleton in the creators section
+    document.getElementById('homeGrid').innerHTML = renderHomeSkeleton();
     await loadCreators();
 }
 
@@ -447,12 +509,10 @@ async function loadCreators() {
             }
 
             appState.creators = creators;
-            window.hideLoadingSpinner();
             renderCreatorsList();
         }
     } catch (error) {
         console.error('Failed to load creators:', error);
-        window.hideLoadingSpinner();
         const mainContent = document.getElementById('mainContent');
         mainContent.innerHTML = `
             <div class="section">

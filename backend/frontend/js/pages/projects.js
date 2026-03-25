@@ -1,21 +1,51 @@
 import api from '../services/api.js';
 import { appState } from '../state.js';
 
+function renderProjectsSkeleton() {
+    return `
+        <style>
+            .proj-skeleton-container { max-width: 680px; margin: 0 auto; padding: 32px 20px 60px; }
+            .proj-skeleton-header { display: flex; justify-content: space-between; margin-bottom: 32px; }
+            .proj-skeleton-title { width: 150px; height: 32px; border-radius: 8px; }
+            .proj-skeleton-btn { width: 120px; height: 40px; border-radius: 12px; }
+            .proj-skeleton-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 32px; }
+            .proj-skeleton-stat { height: 80px; border-radius: 20px; }
+            .proj-skeleton-list { display: flex; flex-direction: column; gap: 16px; }
+            .proj-skeleton-item { height: 120px; border-radius: 20px; }
+        </style>
+        <div class="proj-skeleton-container">
+            <div class="proj-skeleton-header">
+                <div class="skeleton proj-skeleton-title"></div>
+                <div class="skeleton proj-skeleton-btn"></div>
+            </div>
+            <div class="proj-skeleton-stats">
+                <div class="skeleton proj-skeleton-stat"></div>
+                <div class="skeleton proj-skeleton-stat"></div>
+                <div class="skeleton proj-skeleton-stat"></div>
+            </div>
+            <div class="proj-skeleton-list">
+                <div class="skeleton proj-skeleton-item"></div>
+                <div class="skeleton proj-skeleton-item"></div>
+                <div class="skeleton proj-skeleton-item"></div>
+            </div>
+        </div>
+    `;
+}
+
 export async function renderProjectsPage() {
     const mainContent = document.getElementById('mainContent');
 
-    window.showLoadingSpinner();
+    // Show skeleton while loading
+    mainContent.innerHTML = renderProjectsSkeleton();
 
     try {
         const response = await api.getProjects();
 
         if (!response.success) {
-            window.hideLoadingSpinner();
             throw new Error(response.message || 'Failed to load projects');
         }
 
         const projects = response.data.projects || [];
-        window.hideLoadingSpinner();
 
         mainContent.innerHTML = `
             <div style="max-width: 680px; margin: 0 auto; padding: 32px 20px 60px; display: flex; flex-direction: column; gap: 32px;">
@@ -175,15 +205,20 @@ function setupFilterListeners() {
 
 async function applyFilters() {
     try {
-        window.showLoadingSpinner();
+        // Show skeleton in grid
+        document.getElementById('projectsGrid').innerHTML = `
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                <div class="skeleton" style="height: 120px; border-radius: 20px;"></div>
+                <div class="skeleton" style="height: 120px; border-radius: 20px;"></div>
+                <div class="skeleton" style="height: 120px; border-radius: 20px;"></div>
+            </div>
+        `;
         const response = await api.getProjects(currentFilters);
         const projects = response.data.projects || [];
         document.getElementById('projectsGrid').innerHTML = renderProjectCards(projects);
         setupProjectCardListeners();
-        window.hideLoadingSpinner();
     } catch (error) {
         console.error('Error filtering projects:', error);
-        window.hideLoadingSpinner();
     }
 }
 
