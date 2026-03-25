@@ -5,6 +5,41 @@ import api from '../services/api.js';
 let notifications = [];
 let unreadCount = 0;
 
+function renderNotificationsSkeleton() {
+    return `
+        <style>
+            .notif-skeleton-container { max-width: 800px; margin: 0 auto; padding: 32px 20px 60px; }
+            .notif-skeleton-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding: 24px; border-radius: 20px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); }
+            .notif-skeleton-title { width: 150px; height: 28px; border-radius: 8px; }
+            .notif-skeleton-btn { width: 120px; height: 36px; border-radius: 10px; }
+            .notif-skeleton-list { display: flex; flex-direction: column; gap: 12px; }
+            .notif-skeleton-item { display: flex; align-items: center; gap: 16px; padding: 16px; border-radius: 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); }
+            .notif-skeleton-avatar { width: 48px; height: 48px; border-radius: 50%; flex-shrink: 0; }
+            .notif-skeleton-content { flex: 1; }
+            .notif-skeleton-line { height: 14px; margin-bottom: 8px; border-radius: 6px; }
+            .notif-skeleton-line.title { width: 60%; }
+            .notif-skeleton-line.subtitle { width: 40%; }
+        </style>
+        <div class="notif-skeleton-container">
+            <div class="notif-skeleton-header">
+                <div class="skeleton notif-skeleton-title"></div>
+                <div class="skeleton notif-skeleton-btn"></div>
+            </div>
+            <div class="notif-skeleton-list">
+                ${Array(5).fill(0).map(() => `
+                    <div class="notif-skeleton-item">
+                        <div class="skeleton notif-skeleton-avatar"></div>
+                        <div class="notif-skeleton-content">
+                            <div class="skeleton notif-skeleton-line title"></div>
+                            <div class="skeleton notif-skeleton-line subtitle"></div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+}
+
 export async function renderNotificationsPage() {
     const mainContent = document.getElementById('mainContent');
 
@@ -23,20 +58,8 @@ export async function renderNotificationsPage() {
         return;
     }
 
-    mainContent.innerHTML = `
-        <div class="section">
-            <div class="container glass-effect" style="border-radius: 20px; padding: 24px; margin-bottom: 24px;">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <h1 style="margin: 0; display: flex; align-items: center; gap: 12px;">
-                        Notifications
-                    </h1>
-                    <button class="btn-secondary" onclick="window.markAllNotificationsRead()">Mark all as read</button>
-                </div>
-            </div>
-        </div>
-    `;
-
-    window.showLoadingSpinner();
+    // Show skeleton while loading
+    mainContent.innerHTML = renderNotificationsSkeleton();
 
     try {
         const response = await api.getNotifications();
@@ -44,12 +67,10 @@ export async function renderNotificationsPage() {
         if (response.success) {
             notifications = response.data.notifications || [];
             unreadCount = response.data.unreadCount || 0;
-            window.hideLoadingSpinner();
             renderNotificationsList();
         }
     } catch (error) {
         console.error('Failed to load notifications:', error);
-        window.hideLoadingSpinner();
         mainContent.innerHTML = `
             <div class="section">
                 <div class="container">

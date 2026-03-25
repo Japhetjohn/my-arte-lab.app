@@ -6,7 +6,48 @@ let bookings = [];
 let currentFilter = 'all'; // all, active, completed
 
 const BOOKINGS_STYLES = ''; // Styles moved to styles.css
-;
+
+function renderBookingsSkeleton() {
+    return `
+        <style>
+            .bk-skeleton-container { max-width: 680px; margin: 0 auto; padding: 32px 20px 60px; }
+            .bk-skeleton-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
+            .bk-skeleton-title { width: 120px; height: 28px; border-radius: 8px; }
+            .bk-skeleton-btn { width: 80px; height: 36px; border-radius: 10px; }
+            .bk-skeleton-tabs { display: flex; gap: 8px; margin-bottom: 24px; }
+            .bk-skeleton-tab { width: 80px; height: 36px; border-radius: 20px; }
+            .bk-skeleton-list { display: flex; flex-direction: column; gap: 8px; }
+            .bk-skeleton-item { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 14px; }
+            .bk-skeleton-avatar { width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0; }
+            .bk-skeleton-content { flex: 1; }
+            .bk-skeleton-line { height: 14px; margin-bottom: 6px; border-radius: 6px; }
+            .bk-skeleton-line.title { width: 50%; }
+            .bk-skeleton-line.subtitle { width: 30%; }
+        </style>
+        <div class="bk-skeleton-container">
+            <div class="bk-skeleton-header">
+                <div class="skeleton bk-skeleton-title"></div>
+                <div class="skeleton bk-skeleton-btn"></div>
+            </div>
+            <div class="bk-skeleton-tabs">
+                <div class="skeleton bk-skeleton-tab"></div>
+                <div class="skeleton bk-skeleton-tab"></div>
+                <div class="skeleton bk-skeleton-tab"></div>
+            </div>
+            <div class="bk-skeleton-list">
+                ${Array(4).fill(0).map(() => `
+                    <div class="skeleton bk-skeleton-item">
+                        <div class="skeleton bk-skeleton-avatar"></div>
+                        <div class="bk-skeleton-content">
+                            <div class="skeleton bk-skeleton-line title"></div>
+                            <div class="skeleton bk-skeleton-line subtitle"></div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+}
 
 export async function renderBookingsPage() {
     const mainContent = document.getElementById('mainContent');
@@ -29,43 +70,8 @@ export async function renderBookingsPage() {
         return;
     }
 
-    mainContent.innerHTML = `
-        <div style="max-width: 680px; margin: 0 auto; padding: 32px 20px 60px;">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px;">
-                <div>
-                    <h1 style="font-size: 26px; font-weight: 700; margin: 0 0 4px;">Bookings</h1>
-                    <p style="color: var(--text-secondary); font-size: 14px; margin: 0;">Track your collaborations</p>
-                </div>
-                <button onclick="window.location.reload()" style="display: flex; align-items: center; gap: 6px; background: rgba(151,71,255,0.08); border: 1px solid rgba(151,71,255,0.2); color: var(--primary); padding: 8px 14px; border-radius: 10px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s;">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M4 12a8 8 0 1 1 16 0" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><path d="M4 12l-2-2m2 2l2-2" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
-                    Refresh
-                </button>
-            </div>
-            
-            <div id="bookingsContent" style="display:none;"></div>
-        </div>
-        <style>
-            @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
-            .bookings-section { animation: fadeIn 0.3s ease; }
-            .tx-item { 
-                display: flex; align-items: center; gap: 14px; padding: 14px 16px; 
-                border-radius: 14px; background: rgba(255,255,255,0.04); 
-                border: 1px solid rgba(255,255,255,0.07); margin-bottom: 8px; 
-                transition: all 0.2s; cursor: pointer; 
-            }
-            .tx-item:hover { background: rgba(255,255,255,0.08); transform: translateY(-1px); border-color: rgba(151,71,255,0.2); }
-            .section-header { font-size: 13px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; margin: 28px 0 12px; }
-            .filter-tabs { display: flex; gap: 8px; margin-bottom: 24px; }
-            .filter-tab { 
-                padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; 
-                cursor: pointer; transition: all 0.2s; border: 1px solid rgba(255,255,255,0.08); 
-                background: rgba(255,255,255,0.03); color: var(--text-secondary);
-            }
-            .filter-tab.active { background: rgba(151,71,255,0.15); color: var(--primary); border-color: rgba(151,71,255,0.3); }
-        </style>
-    `;
-
-    window.showLoadingSpinner();
+    // Show skeleton while loading
+    mainContent.innerHTML = renderBookingsSkeleton();
 
     try {
         const [bookingsResp, projectsResp] = await Promise.all([
@@ -88,14 +94,9 @@ export async function renderBookingsPage() {
         }));
 
         bookings = [...regularBookings, ...projectsAsJobs];
-
-        window.hideLoadingSpinner();
-        const content = document.getElementById('bookingsContent');
-        content.style.display = 'block';
         renderBookingsList();
     } catch (error) {
         console.error('Failed to load bookings:', error);
-        window.hideLoadingSpinner();
         const content = document.getElementById('bookingsContent');
         content.style.display = 'block';
         content.innerHTML = `
@@ -113,8 +114,8 @@ export async function renderBookingsPage() {
 
 
 function renderBookingsList() {
-    const listContainer = document.getElementById('bookingsContent');
-    if (!listContainer) return;
+    const mainContent = document.getElementById('mainContent');
+    if (!mainContent) return;
 
     const activeBookings = bookings.filter(b => !['completed', 'cancelled', 'completed_with_escrow'].includes(b.status));
     const completedBookings = bookings.filter(b => ['completed', 'completed_with_escrow'].includes(b.status));
@@ -129,7 +130,8 @@ function renderBookingsList() {
         displayBookings = completedBookings;
     }
 
-    listContainer.innerHTML = `
+    mainContent.innerHTML = `
+        <div style="max-width: 680px; margin: 0 auto; padding: 32px 20px 60px;">
         <div class="bookings-section">
             <!-- STATS CARD -->
             <div style="background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%); border-radius: 24px; padding: 24px; margin-bottom: 28px; position: relative; overflow: hidden; box-shadow: 0 12px 24px rgba(124, 58, 237, 0.2);">
