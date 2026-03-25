@@ -4,14 +4,24 @@ import { appState } from '../state.js';
 function renderProjectsSkeleton() {
     return `
         <style>
-            .proj-skeleton-container { max-width: 680px; margin: 0 auto; padding: 32px 20px 60px; }
+            :root {
+                --proj-skel-bg: #FFFFFF;
+                --proj-skel-surface: #F8FAFC;
+                --proj-skel-border: #E2E8F0;
+            }
+            [data-theme="dark"] {
+                --proj-skel-bg: #0F172A;
+                --proj-skel-surface: #1E293B;
+                --proj-skel-border: #334155;
+            }
+            .proj-skeleton-container { max-width: 680px; margin: 0 auto; padding: 32px 20px 60px; background: var(--proj-skel-bg); }
             .proj-skeleton-header { display: flex; justify-content: space-between; margin-bottom: 32px; }
             .proj-skeleton-title { width: 150px; height: 32px; border-radius: 8px; }
             .proj-skeleton-btn { width: 120px; height: 40px; border-radius: 12px; }
             .proj-skeleton-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 32px; }
-            .proj-skeleton-stat { height: 80px; border-radius: 20px; }
+            .proj-skeleton-stat { height: 80px; border-radius: 20px; background: var(--proj-skel-surface) !important; border: 1px solid var(--proj-skel-border); }
             .proj-skeleton-list { display: flex; flex-direction: column; gap: 16px; }
-            .proj-skeleton-item { height: 120px; border-radius: 20px; }
+            .proj-skeleton-item { height: 120px; border-radius: 20px; background: var(--proj-skel-surface) !important; border: 1px solid var(--proj-skel-border); }
         </style>
         <div class="proj-skeleton-container">
             <div class="proj-skeleton-header">

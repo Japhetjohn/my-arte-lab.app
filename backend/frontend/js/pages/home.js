@@ -15,15 +15,26 @@ let currentFilters = {
 function renderHomeSkeleton() {
     return `
         <style>
+            :root {
+                --home-skel-bg: #FFFFFF;
+                --home-skel-surface: #F8FAFC;
+                --home-skel-border: #E2E8F0;
+            }
+            [data-theme="dark"] {
+                --home-skel-bg: #0F172A;
+                --home-skel-surface: #1E293B;
+                --home-skel-border: #334155;
+            }
             .home-skeleton-grid {
                 display: grid;
                 grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
                 gap: 24px;
                 padding: 20px 0;
+                background: var(--home-skel-bg);
             }
             .home-skeleton-card {
-                background: rgba(255,255,255,0.03);
-                border: 1px solid rgba(255,255,255,0.08);
+                background: var(--home-skel-surface);
+                border: 1px solid var(--home-skel-border);
                 border-radius: 16px;
                 overflow: hidden;
             }
@@ -374,7 +385,6 @@ export async function renderHomePage() {
                                 <a href="/#/help" class="home-footer-link">Help Center</a>
                                 <a href="/#/contact" class="home-footer-link">Contact Us</a>
                                 <a href="/#/safety" class="home-footer-link">Safety</a>
-                                <a href="mailto:support@myartelab.com" class="home-footer-link">support@myartelab.com</a>
                             </div>
                         </div>
                     </div>

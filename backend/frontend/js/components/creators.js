@@ -69,8 +69,18 @@ export function renderCreatorCards(creators) {
 function renderProfileSkeleton() {
     return `
         <style>
-            .pf-skeleton-container { max-width: 680px; margin: 0 auto; padding: 32px 20px 60px; }
-            .pf-skeleton-section { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 24px; padding: 24px; margin-bottom: 20px; }
+            :root {
+                --pf-skel-bg: #FFFFFF;
+                --pf-skel-surface: #F8FAFC;
+                --pf-skel-border: #E2E8F0;
+            }
+            [data-theme="dark"] {
+                --pf-skel-bg: #0F172A;
+                --pf-skel-surface: #1E293B;
+                --pf-skel-border: #334155;
+            }
+            .pf-skeleton-container { max-width: 680px; margin: 0 auto; padding: 32px 20px 60px; background: var(--pf-skel-bg); }
+            .pf-skeleton-section { background: var(--pf-skel-surface); border: 1px solid var(--pf-skel-border); border-radius: 24px; padding: 24px; margin-bottom: 20px; }
             .pf-skeleton-header { display: flex; align-items: center; gap: 20px; margin-bottom: 20px; }
             .pf-skeleton-avatar { width: 72px; height: 72px; border-radius: 20px; }
             .pf-skeleton-lines { flex: 1; }
@@ -210,6 +220,23 @@ export async function renderCreatorProfile(creatorIdOrObject) {
 
     mainContent.innerHTML = `
         <style>
+            /* Dark Mode Support for Profile Page */
+            :root {
+                --pf-bg: #FFFFFF;
+                --pf-surface: #F8FAFC;
+                --pf-border: #E2E8F0;
+                --pf-text: #0F172A;
+                --pf-text-secondary: #64748B;
+            }
+            
+            [data-theme="dark"] {
+                --pf-bg: #0F172A;
+                --pf-surface: #1E293B;
+                --pf-border: #334155;
+                --pf-text: #F1F5F9;
+                --pf-text-secondary: #94A3B8;
+            }
+            
             .pf-container { 
                 max-width: 680px; 
                 margin: 0 auto; 
@@ -218,6 +245,7 @@ export async function renderCreatorProfile(creatorIdOrObject) {
                 flex-direction: column; 
                 gap: 24px; 
                 animation: pfFadeIn 0.4s ease-out;
+                background: var(--pf-bg);
             }
             
             @keyframes pfFadeIn {
@@ -230,8 +258,8 @@ export async function renderCreatorProfile(creatorIdOrObject) {
             }
             
             .pf-section { 
-                background: rgba(255,255,255,0.03); 
-                border: 1px solid rgba(255,255,255,0.08); 
+                background: var(--pf-surface); 
+                border: 1px solid var(--pf-border); 
                 border-radius: 24px; 
                 padding: 24px; 
             }
@@ -239,7 +267,7 @@ export async function renderCreatorProfile(creatorIdOrObject) {
             .pf-section-title { 
                 font-size: 16px; 
                 font-weight: 700; 
-                color: var(--text-primary); 
+                color: var(--pf-text); 
                 margin-bottom: 24px; 
                 display: flex; 
                 align-items: center; 
@@ -271,7 +299,7 @@ export async function renderCreatorProfile(creatorIdOrObject) {
             .pf-name {
                 font-size: 22px;
                 font-weight: 800;
-                color: var(--text-primary);
+                color: var(--pf-text);
                 margin: 0 0 6px 0;
                 display: flex;
                 align-items: center;
@@ -294,8 +322,7 @@ export async function renderCreatorProfile(creatorIdOrObject) {
             
             .pf-role-location {
                 font-size: 14px;
-                color: var(--text-secondary);
-                opacity: 0.8;
+                color: var(--pf-text-secondary);
                 margin: 0 0 10px 0;
             }
             
@@ -327,7 +354,7 @@ export async function renderCreatorProfile(creatorIdOrObject) {
             .pf-stat-value {
                 font-size: 20px;
                 font-weight: 800;
-                color: var(--text-primary);
+                color: var(--pf-text);
                 display: flex;
                 align-items: center;
                 gap: 6px;
@@ -341,7 +368,7 @@ export async function renderCreatorProfile(creatorIdOrObject) {
             .pf-stat-label {
                 font-size: 11px;
                 font-weight: 700;
-                color: var(--text-secondary);
+                color: var(--pf-text-secondary);
                 text-transform: uppercase;
                 letter-spacing: 0.5px;
                 opacity: 0.6;
@@ -371,7 +398,7 @@ export async function renderCreatorProfile(creatorIdOrObject) {
             .pf-about {
                 font-size: 15px;
                 line-height: 1.7;
-                color: var(--text-secondary);
+                color: var(--pf-text-secondary);
                 margin: 0;
             }
             
@@ -387,8 +414,8 @@ export async function renderCreatorProfile(creatorIdOrObject) {
                 align-items: flex-start;
                 gap: 16px;
                 padding: 20px;
-                background: rgba(255,255,255,0.02);
-                border: 1px solid rgba(255,255,255,0.06);
+                background: var(--pf-bg);
+                border: 1px solid var(--pf-border);
                 border-radius: 16px;
                 transition: all 0.2s ease;
             }
@@ -400,7 +427,7 @@ export async function renderCreatorProfile(creatorIdOrObject) {
             .pf-service-icon {
                 width: 44px;
                 height: 44px;
-                background: rgba(151,71,255,0.1);
+                background: rgba(151,71,255,0.15);
                 border-radius: 12px;
                 display: flex;
                 align-items: center;
@@ -425,7 +452,7 @@ export async function renderCreatorProfile(creatorIdOrObject) {
             .pf-service-title {
                 font-size: 15px;
                 font-weight: 700;
-                color: var(--text-primary);
+                color: var(--pf-text);
                 margin: 0;
             }
             
@@ -438,7 +465,7 @@ export async function renderCreatorProfile(creatorIdOrObject) {
             
             .pf-service-desc {
                 font-size: 13px;
-                color: var(--text-secondary);
+                color: var(--pf-text-secondary);
                 line-height: 1.5;
                 margin: 0 0 12px 0;
                 opacity: 0.8;
@@ -565,9 +592,9 @@ export async function renderCreatorProfile(creatorIdOrObject) {
                 align-items: center;
                 justify-content: center;
                 gap: 8px;
-                background: rgba(255,255,255,0.05);
-                color: var(--text-primary);
-                border: 1px solid rgba(255,255,255,0.1);
+                background: var(--pf-surface);
+                color: var(--pf-text);
+                border: 1px solid var(--pf-border);
                 padding: 16px 24px;
                 border-radius: 12px;
                 font-size: 14px;
@@ -600,8 +627,8 @@ export async function renderCreatorProfile(creatorIdOrObject) {
             }
             
             .pf-service-modal {
-                background: var(--background);
-                border: 1px solid rgba(255,255,255,0.1);
+                background: var(--pf-surface);
+                border: 1px solid var(--pf-border);
                 border-radius: 24px;
                 max-width: 600px;
                 width: 100%;
@@ -628,7 +655,7 @@ export async function renderCreatorProfile(creatorIdOrObject) {
             .pf-service-modal-title {
                 font-size: 18px;
                 font-weight: 700;
-                color: var(--text-primary);
+                color: var(--pf-text);
             }
             
             .pf-service-modal-close {
@@ -636,8 +663,8 @@ export async function renderCreatorProfile(creatorIdOrObject) {
                 height: 36px;
                 border-radius: 10px;
                 border: none;
-                background: rgba(255,255,255,0.05);
-                color: var(--text-secondary);
+                background: var(--pf-bg);
+                color: var(--pf-text-secondary);
                 cursor: pointer;
                 display: flex;
                 align-items: center;
@@ -646,8 +673,8 @@ export async function renderCreatorProfile(creatorIdOrObject) {
             }
             
             .pf-service-modal-close:hover {
-                background: rgba(255,255,255,0.1);
-                color: var(--text-primary);
+                background: var(--pf-border);
+                color: var(--pf-text);
             }
             
             .pf-service-modal-body {
@@ -665,7 +692,7 @@ export async function renderCreatorProfile(creatorIdOrObject) {
                 aspect-ratio: 16/10;
                 border-radius: 16px;
                 overflow: hidden;
-                background: rgba(255,255,255,0.05);
+                background: var(--pf-bg);
                 cursor: pointer;
             }
             
@@ -737,14 +764,14 @@ export async function renderCreatorProfile(creatorIdOrObject) {
             .pf-service-modal-price {
                 font-size: 24px;
                 font-weight: 800;
-                color: var(--primary);
+                color: #9747FF;
                 margin-bottom: 16px;
             }
             
             .pf-service-modal-desc {
                 font-size: 15px;
                 line-height: 1.8;
-                color: var(--text-secondary);
+                color: var(--pf-text-secondary);
                 margin-bottom: 24px;
                 white-space: pre-wrap;
             }
@@ -761,10 +788,10 @@ export async function renderCreatorProfile(creatorIdOrObject) {
                 align-items: center;
                 gap: 12px;
                 padding: 14px 16px;
-                background: rgba(255,255,255,0.03);
-                border: 1px solid rgba(255,255,255,0.08);
+                background: var(--pf-bg);
+                border: 1px solid var(--pf-border);
                 border-radius: 12px;
-                color: var(--text-primary);
+                color: var(--pf-text);
                 text-decoration: none;
                 font-size: 14px;
                 font-weight: 500;
@@ -772,8 +799,8 @@ export async function renderCreatorProfile(creatorIdOrObject) {
             }
             
             .pf-service-modal-link:hover {
-                background: rgba(151,71,255,0.08);
-                border-color: rgba(151,71,255,0.2);
+                background: rgba(151,71,255,0.1);
+                border-color: #9747FF;
             }
             
             .pf-service-modal-link svg {
@@ -785,8 +812,8 @@ export async function renderCreatorProfile(creatorIdOrObject) {
                 display: flex;
                 gap: 12px;
                 padding: 20px 24px;
-                border-top: 1px solid rgba(255,255,255,0.06);
-                background: rgba(255,255,255,0.02);
+                border-top: 1px solid var(--pf-border);
+                background: var(--pf-bg);
             }
             
             .pf-service-modal-btn {
@@ -810,13 +837,13 @@ export async function renderCreatorProfile(creatorIdOrObject) {
             }
             
             .pf-service-modal-btn.secondary {
-                background: rgba(255,255,255,0.05);
-                color: var(--text-primary);
-                border: 1px solid rgba(255,255,255,0.1);
+                background: var(--pf-surface);
+                color: var(--pf-text);
+                border: 1px solid var(--pf-border);
             }
             
             .pf-service-modal-btn.secondary:hover {
-                background: rgba(255,255,255,0.08);
+                background: var(--pf-border);
             }
             
             /* Image Counter */
@@ -898,7 +925,39 @@ export async function renderCreatorProfile(creatorIdOrObject) {
                     border-radius: 20px 20px 0 0;
                 }
                 
-                /* Footer Mobile Styles */
+                /* Dark Mode Footer Support */
+            [data-theme="dark"] .home-footer {
+                background: linear-gradient(180deg, rgba(15, 23, 42, 0.5) 0%, rgba(15, 23, 42, 0.8) 100%) !important;
+            }
+            
+            [data-theme="dark"] .home-footer-logo span {
+                background: linear-gradient(135deg, #A78BFA, #7C3AED) !important;
+                -webkit-background-clip: text !important;
+                -webkit-text-fill-color: transparent !important;
+            }
+            
+            [data-theme="dark"] .home-footer-tagline {
+                color: #94A3B8 !important;
+            }
+            
+            [data-theme="dark"] .home-footer-title {
+                color: #F1F5F9 !important;
+            }
+            
+            [data-theme="dark"] .home-footer-link {
+                color: #94A3B8 !important;
+            }
+            
+            [data-theme="dark"] .home-footer-link:hover {
+                color: #A78BFA !important;
+            }
+            
+            [data-theme="dark"] .home-footer-copyright,
+            [data-theme="dark"] .home-footer-legal a {
+                color: #64748B !important;
+            }
+            
+            /* Footer Mobile Styles */
                 .home-footer {
                     padding: 32px 16px !important;
                 }
@@ -1185,7 +1244,6 @@ export async function renderCreatorProfile(creatorIdOrObject) {
                                 <a href="/#/help" class="home-footer-link">Help Center</a>
                                 <a href="/#/contact" class="home-footer-link">Contact Us</a>
                                 <a href="/#/safety" class="home-footer-link">Safety</a>
-                                <a href="mailto:support@myartelab.com" class="home-footer-link">support@myartelab.com</a>
                             </div>
                         </div>
                     </div>

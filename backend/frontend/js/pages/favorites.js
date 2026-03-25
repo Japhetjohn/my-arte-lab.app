@@ -6,12 +6,22 @@ import { renderCreatorProfile } from '../components/creators.js';
 function renderFavoritesSkeleton() {
     return `
         <style>
-            .fav-skeleton-container { max-width: 1200px; margin: 0 auto; padding: 32px 20px 60px; }
-            .fav-skeleton-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; padding: 24px; border-radius: 20px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); }
+            :root {
+                --fav-skel-bg: #FFFFFF;
+                --fav-skel-surface: #F8FAFC;
+                --fav-skel-border: #E2E8F0;
+            }
+            [data-theme="dark"] {
+                --fav-skel-bg: #0F172A;
+                --fav-skel-surface: #1E293B;
+                --fav-skel-border: #334155;
+            }
+            .fav-skeleton-container { max-width: 1200px; margin: 0 auto; padding: 32px 20px 60px; background: var(--fav-skel-bg); }
+            .fav-skeleton-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; padding: 24px; border-radius: 20px; background: var(--fav-skel-surface); border: 1px solid var(--fav-skel-border); }
             .fav-skeleton-title { width: 180px; height: 32px; border-radius: 8px; }
             .fav-skeleton-badge { width: 80px; height: 32px; border-radius: 12px; }
             .fav-skeleton-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; }
-            .fav-skeleton-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; overflow: hidden; }
+            .fav-skeleton-card { background: var(--fav-skel-surface); border: 1px solid var(--fav-skel-border); border-radius: 16px; overflow: hidden; }
             .fav-skeleton-image { aspect-ratio: 1; width: 100%; }
             .fav-skeleton-content { padding: 20px; display: flex; flex-direction: column; gap: 12px; }
             .fav-skeleton-line { height: 16px; border-radius: 8px; }
