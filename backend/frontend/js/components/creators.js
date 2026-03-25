@@ -195,6 +195,8 @@ export async function renderCreatorProfile(creatorIdOrObject) {
             .profile-avatar-container {
                 position: relative;
                 flex-shrink: 0;
+                align-self: center;
+                margin: 16px 0;
             }
             
             .profile-avatar-img {
@@ -580,6 +582,10 @@ export async function renderCreatorProfile(creatorIdOrObject) {
                     flex-direction: column;
                     align-items: center;
                     text-align: center;
+                }
+                
+                .profile-avatar-container {
+                    margin: 12px 0;
                 }
                 
                 .profile-avatar-img {
