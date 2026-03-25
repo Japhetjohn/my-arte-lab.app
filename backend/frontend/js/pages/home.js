@@ -162,8 +162,8 @@ export async function renderHomePage() {
             <!-- Hero Section -->
             <section class="home-hero">
                 <div class="container">
-                    <h1 class="home-hero-title">Discover African Creators</h1>
-                    <p class="home-hero-subtitle">Find and book talented photographers, designers, videographers, and more.</p>
+                    <h1 class="home-hero-title">Discover, Book, and Pay African Visual Creatives</h1>
+                    <p class="home-hero-subtitle">Search by location. Book with clear terms. Pay securely.</p>
                     
                     <div class="home-hero-search">
                         <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -224,45 +224,15 @@ export async function renderHomePage() {
                             <span class="home-category-name">Illustration</span>
                         </div>
                         
-                        <div class="home-category-card" data-category="writer">
+                        <div class="home-category-card" data-category="visual-content">
                             <div class="home-category-icon">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                                    <path d="M21 15l-5-5L5 21"/>
                                 </svg>
                             </div>
-                            <span class="home-category-name">Writing</span>
-                        </div>
-                        
-                        <div class="home-category-card" data-category="musician">
-                            <div class="home-category-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                    <path d="M9 18V5l12-2v13"/>
-                                    <circle cx="6" cy="18" r="3"/>
-                                    <circle cx="18" cy="16" r="3"/>
-                                </svg>
-                            </div>
-                            <span class="home-category-name">Music</span>
-                        </div>
-                        
-                        <div class="home-category-card" data-category="developer">
-                            <div class="home-category-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                    <polyline points="16 18 22 12 16 6"/>
-                                    <polyline points="8 6 2 12 8 18"/>
-                                </svg>
-                            </div>
-                            <span class="home-category-name">Development</span>
-                        </div>
-                        
-                        <div class="home-category-card" data-category="marketing">
-                            <div class="home-category-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-                                    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-                                </svg>
-                            </div>
-                            <span class="home-category-name">Marketing</span>
+                            <span class="home-category-name">Visual Content</span>
                         </div>
                     </div>
                 </div>
