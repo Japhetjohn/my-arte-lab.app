@@ -442,13 +442,6 @@ export function updateUserMenu() {
                     
                     <!-- User & Settings -->
                     <div class="dropdown-section">
-                        <button class="dropdown-item" onclick="navigateToPage('profile')">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                                <circle cx="12" cy="7" r="4"/>
-                            </svg>
-                            My preferences & profile
-                        </button>
                         <button class="dropdown-item" onclick="navigateToPage('settings')">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <circle cx="12" cy="12" r="3"/>
@@ -500,13 +493,6 @@ export function updateUserMenu() {
                         <button class="theme-btn" data-theme="dark" title="Dark mode">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-                            </svg>
-                        </button>
-                        <button class="theme-btn" data-theme="system" title="System preference">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
-                                <line x1="8" y1="21" x2="16" y2="21"/>
-                                <line x1="12" y1="17" x2="12" y2="21"/>
                             </svg>
                         </button>
                     </div>
@@ -624,14 +610,8 @@ function setupThemeToggle() {
             themeButtons.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             
-            // Apply theme
-            if (theme === 'system') {
-                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
-            } else {
-                document.documentElement.setAttribute('data-theme', theme);
-            }
-            
+            // Apply theme (only light or dark)
+            document.documentElement.setAttribute('data-theme', theme);
             localStorage.setItem('theme', theme);
         });
     });

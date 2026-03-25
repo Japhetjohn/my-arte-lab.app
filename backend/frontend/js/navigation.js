@@ -2,7 +2,6 @@ import { appState, setCurrentPage, addToHistory, popHistory } from './state.js';
 import { renderHomePage } from './pages/home.js';
 import { renderProjectsPage } from './pages/projects.js';
 import { renderBookingsPage } from './pages/bookings.js';
-import { renderProfilePage } from './pages/profile.js';
 import { renderSettingsPage } from './pages/settings.js';
 import { renderFavoritesPage } from './pages/favorites.js';
 import { renderNotificationsPage } from './pages/notifications.js';
@@ -59,9 +58,6 @@ export function navigateToPage(page, addToHistoryFlag = true) {
             case 'wallet':
                 renderWalletPage();
                 startWalletPolling();
-                break;
-            case 'profile':
-                renderProfilePage();
                 break;
             case 'settings':
                 renderSettingsPage();
