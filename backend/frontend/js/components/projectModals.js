@@ -1,6 +1,145 @@
 import api from '../services/api.js';
 import { appState } from '../state.js';
-import { openModal } from '../utils.js';
+
+const MODAL_STYLES = `
+<style>
+    .pm-overlay { position: fixed; inset: 0; background: rgba(15, 23, 36, 0.6); backdrop-filter: blur(8px); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .pm-modal { background: var(--surface); border: 1px solid rgba(255,255,255,0.08); border-radius: 24px; max-width: 640px; width: 100%; max-height: 90vh; overflow: hidden; display: flex; flex-direction: column; }
+    [data-theme="dark"] .pm-modal { background: #1E293B; }
+    .pm-modal-lg { max-width: 800px; }
+    .pm-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .pm-header-title { display: flex; align-items: center; gap: 12px; }
+    .pm-header-icon { width: 40px; height: 40px; background: linear-gradient(135deg, var(--primary), var(--secondary)); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; }
+    .pm-title { font-size: 18px; font-weight: 700; color: var(--text-primary); }
+    .pm-subtitle { font-size: 13px; color: var(--text-secondary); }
+    .pm-close { width: 36px; height: 36px; border-radius: 10px; border: none; background: rgba(255,255,255,0.05); color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+    .pm-close:hover { background: rgba(255,255,255,0.1); color: var(--text-primary); }
+    .pm-body { padding: 24px; overflow-y: auto; flex: 1; }
+    
+    /* Info Cards */
+    .pm-info { background: rgba(151, 71, 255, 0.05); border: 1px solid rgba(151, 71, 255, 0.15); border-radius: 16px; padding: 16px; margin-bottom: 24px; display: flex; gap: 12px; }
+    .pm-info-icon { width: 32px; height: 32px; background: rgba(151, 71, 255, 0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: var(--primary); flex-shrink: 0; }
+    .pm-info-text { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+    .pm-info-text ol { margin: 0; padding-left: 16px; }
+    .pm-info-text li { margin-bottom: 4px; }
+    
+    /* Form Elements */
+    .pm-form { display: flex; flex-direction: column; gap: 20px; }
+    .pm-field { display: flex; flex-direction: column; gap: 8px; }
+    .pm-label { font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
+    .pm-input { width: 100%; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 12px 16px; color: var(--text-primary); font-size: 14px; outline: none; transition: all 0.2s; }
+    .pm-input:focus { border-color: var(--primary); background: rgba(255,255,255,0.05); }
+    .pm-textarea { min-height: 120px; resize: vertical; }
+    .pm-select { appearance: none; background-image: url('data:image/svg+xml,%3Csvg width=%2212%22 height=%2212%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%2394A3B8%22 stroke-width=%222%22%3E%3Cpath d=%22M6 9l6 6 6-6%22/%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 16px center; padding-right: 40px; }
+    .pm-input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .pm-char-count { text-align: right; font-size: 11px; color: var(--text-secondary); margin-top: 6px; }
+    
+    /* Tags */
+    .pm-tag { display: inline-flex; align-items: center; gap: 6px; background: rgba(151, 71, 255, 0.15); color: var(--primary); padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: 600; }
+    .pm-tag-remove { background: none; border: none; color: var(--primary); cursor: pointer; padding: 0; font-size: 16px; line-height: 1; }
+    .pm-tags-container { display: flex; flex-wrap: wrap; gap: 8px; }
+    .pm-tag-deliverable { background: rgba(16, 185, 129, 0.15); color: #10B981; }
+    .pm-tag-deliverable .pm-tag-remove { color: #10B981; }
+    
+    /* File Upload */
+    .pm-upload { position: relative; }
+    .pm-upload-input { position: absolute; inset: 0; opacity: 0; cursor: pointer; z-index: 2; }
+    .pm-upload-zone { border: 2px dashed rgba(151, 71, 255, 0.2); border-radius: 16px; padding: 32px; text-align: center; background: rgba(151, 71, 255, 0.03); transition: all 0.2s; }
+    .pm-upload-zone:hover { border-color: rgba(151, 71, 255, 0.4); background: rgba(151, 71, 255, 0.05); }
+    .pm-upload-icon { color: var(--primary); opacity: 0.5; margin-bottom: 12px; }
+    .pm-upload-text { font-size: 14px; color: var(--text-secondary); font-weight: 600; }
+    .pm-upload-hint { font-size: 12px; color: var(--text-secondary); opacity: 0.6; margin-top: 4px; }
+    
+    /* Buttons */
+    .pm-btn { padding: 12px 24px; border-radius: 12px; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.2s; border: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+    .pm-btn-primary { background: var(--primary); color: white; }
+    .pm-btn-primary:hover { background: #7c3aed; }
+    .pm-btn-secondary { background: rgba(255,255,255,0.05); color: var(--text-primary); border: 1px solid rgba(255,255,255,0.1); }
+    .pm-btn-secondary:hover { background: rgba(255,255,255,0.08); }
+    .pm-btn-success { background: #10B981; color: white; }
+    .pm-btn-success:hover { background: #059669; }
+    .pm-btn-danger { background: #EF4444; color: white; }
+    .pm-btn-danger:hover { background: #DC2626; }
+    .pm-btn-full { width: 100%; }
+    .pm-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .pm-actions { display: flex; gap: 12px; margin-top: 8px; }
+    .pm-actions .pm-btn { flex: 1; }
+    
+    /* Checkbox */
+    .pm-checkbox { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+    .pm-checkbox input { width: 18px; height: 18px; accent-color: var(--primary); }
+    .pm-checkbox span { font-size: 14px; color: var(--text-secondary); font-weight: 600; }
+    
+    /* Project Detail Specific */
+    .pm-detail-cover { border-radius: 20px; overflow: hidden; margin-bottom: 24px; border: 1px solid rgba(255,255,255,0.08); }
+    .pm-detail-cover img { width: 100%; max-height: 300px; object-fit: cover; display: block; }
+    .pm-stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 24px; }
+    .pm-stat { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 16px; }
+    .pm-stat-label { font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+    .pm-stat-value { font-size: 18px; font-weight: 800; color: var(--text-primary); }
+    .pm-stat-value.success { color: #10B981; }
+    .pm-stat-value.primary { color: var(--primary); }
+    .pm-section-title { font-size: 16px; font-weight: 700; color: var(--text-primary); margin-bottom: 16px; }
+    .pm-desc { font-size: 14px; color: var(--text-secondary); line-height: 1.7; white-space: pre-wrap; margin-bottom: 24px; }
+    .pm-client-card { background: rgba(151, 71, 255, 0.03); border: 1px solid rgba(151, 71, 255, 0.1); border-radius: 20px; padding: 20px; }
+    .pm-client-header { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
+    .pm-client-avatar { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); }
+    .pm-client-name { font-size: 16px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 6px; }
+    .pm-client-role { font-size: 13px; color: var(--text-secondary); }
+    .pm-deliverable { display: flex; align-items: start; gap: 12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 14px; margin-bottom: 10px; }
+    .pm-deliverable-icon { width: 24px; height: 24px; border-radius: 8px; background: rgba(16, 185, 129, 0.1); display: flex; align-items: center; justify-content: center; color: #10B981; flex-shrink: 0; }
+    .pm-deliverable-text { font-size: 14px; color: var(--text-secondary); line-height: 1.5; }
+    
+    /* Application Cards */
+    .pm-app-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 20px; padding: 20px; margin-bottom: 16px; }
+    .pm-app-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .pm-app-creator { display: flex; align-items: center; gap: 12px; }
+    .pm-app-avatar { width: 48px; height: 48px; border-radius: 14px; object-fit: cover; border: 2px solid var(--primary); }
+    .pm-app-name { font-weight: 700; color: var(--text-primary); font-size: 15px; }
+    .pm-app-role { font-size: 12px; color: var(--primary); font-weight: 600; }
+    .pm-app-bid { text-align: right; }
+    .pm-app-price { font-size: 22px; font-weight: 800; color: #10B981; }
+    .pm-app-time { font-size: 12px; color: var(--text-secondary); }
+    .pm-app-letter { background: rgba(151, 71, 255, 0.03); border: 1px solid rgba(151, 71, 255, 0.1); border-radius: 14px; padding: 16px; margin-bottom: 16px; font-size: 14px; color: var(--text-secondary); line-height: 1.7; white-space: pre-wrap; }
+    .pm-app-portfolio { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+    .pm-app-link { display: inline-flex; align-items: center; gap: 6px; background: rgba(151, 71, 255, 0.08); color: var(--primary); padding: 8px 14px; border-radius: 10px; font-size: 12px; font-weight: 600; text-decoration: none; border: 1px solid rgba(151, 71, 255, 0.15); }
+    .pm-app-footer { display: flex; align-items: center; justify-content: space-between; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.06); }
+    .pm-status { padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 800; text-transform: uppercase; }
+    .pm-status-pending { background: rgba(245, 158, 11, 0.1); color: #F59E0B; border: 1px solid rgba(245, 158, 11, 0.2); }
+    .pm-status-accepted { background: rgba(16, 185, 129, 0.1); color: #10B981; border: 1px solid rgba(16, 185, 129, 0.2); }
+    .pm-status-rejected { background: rgba(239, 68, 68, 0.1); color: #EF4444; border: 1px solid rgba(239, 68, 68, 0.2); }
+    .pm-app-actions { display: flex; gap: 10px; }
+    .pm-empty { text-align: center; padding: 60px 20px; }
+    .pm-empty-icon { width: 72px; height: 72px; background: rgba(151, 71, 255, 0.05); border-radius: 24px; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; color: var(--primary); }
+    .pm-empty-title { font-size: 18px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; }
+    .pm-empty-text { font-size: 14px; color: var(--text-secondary); }
+    
+    /* Tips Box */
+    .pm-tips { background: linear-gradient(135deg, rgba(151, 71, 255, 0.08), rgba(107, 70, 255, 0.04)); border: 1px solid rgba(151, 71, 255, 0.15); border-radius: 16px; padding: 20px; margin-bottom: 24px; display: flex; gap: 16px; }
+    .pm-tips-icon { width: 36px; height: 36px; background: rgba(151, 71, 255, 0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: var(--primary); flex-shrink: 0; }
+    .pm-tips-title { font-size: 14px; font-weight: 700; color: var(--text-primary); margin-bottom: 10px; }
+    .pm-tips-list { margin: 0; padding-left: 18px; font-size: 13px; color: var(--text-secondary); line-height: 1.9; }
+    .pm-tips-list li span { color: var(--primary); font-weight: 700; }
+    
+    /* Section Divider */
+    .pm-section-divider { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+    .pm-section-num { font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.1em; }
+    .pm-section-line { height: 1px; flex: 1; background: linear-gradient(to right, rgba(151,71,255,0.2), transparent); }
+    .pm-section-label { font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 12px; }
+    
+    /* Notice */
+    .pm-notice { background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.15); border-radius: 12px; padding: 14px; font-size: 13px; color: #10B981; font-weight: 600; display: flex; align-items: center; gap: 12px; }
+    .pm-notice-icon { width: 24px; height: 24px; border-radius: 50%; background: rgba(16, 185, 129, 0.1); display: flex; align-items: center; justify-content: center; }
+</style>
+`;
+
+function closeModal() {
+    const overlay = document.querySelector('.pm-overlay');
+    if (overlay) {
+        overlay.remove();
+        document.body.style.overflow = '';
+    }
+}
 
 /**
  * Show Post Project Modal
@@ -11,40 +150,48 @@ export function showPostProjectModal() {
         return;
     }
 
-    const modalContent = `
-        <div class="glass-modal-overlay" onclick="if(event.target === this) closeModal()">
-            <div class="glass-modal-content" style="max-width: 640px;">
-                <div class="glass-modal-header">
-                    <span class="glass-modal-title">Post a Project</span>
-                    <button class="glass-modal-close" onclick="closeModal()">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    const modalHTML = MODAL_STYLES + `
+        <div class="pm-overlay" onclick="if(event.target === this) window.closeProjectModal()">
+            <div class="pm-modal">
+                <div class="pm-header">
+                    <div class="pm-header-title">
+                        <div class="pm-header-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>
+                        </div>
+                        <div>
+                            <div class="pm-title">Post a Project</div>
+                            <div class="pm-subtitle">Create a new opportunity</div>
+                        </div>
+                    </div>
+                    <button class="pm-close" onclick="window.closeProjectModal()">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
                     </button>
                 </div>
-
-                <div class="glass-modal-body">
-                    <div style="background: rgba(151, 71, 255, 0.05); border: 1px solid rgba(151, 71, 255, 0.15); border-radius: 20px; padding: 20px; margin-bottom: 32px;">
-                        <div style="color: var(--primary); font-size: 14px; font-weight: 800; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                
+                <div class="pm-body">
+                    <div class="pm-info">
+                        <div class="pm-info-icon">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                            How it works:
                         </div>
-                        <ol style="color: var(--text-secondary); font-size: 13px; margin: 0; padding-left: 20px; line-height: 1.8; opacity: 0.8;">
-                            <li>Post your project with detailed requirements and budget</li>
-                            <li>Creators browse and apply with their proposals</li>
-                            <li>Review applications and select the best creator</li>
-                            <li>Work begins once you accept their application</li>
-                        </ol>
+                        <div class="pm-info-text">
+                            <ol>
+                                <li>Post your project with detailed requirements</li>
+                                <li>Creators browse and apply with proposals</li>
+                                <li>Review applications and select the best</li>
+                            </ol>
+                        </div>
                     </div>
-
-                    <form id="postProjectForm" style="display: flex; flex-direction: column; gap: 24px;">
-                        <div>
-                            <label class="glass-form-label">Project Title *</label>
-                            <input type="text" name="title" class="glass-input" placeholder="e.g., Need product photography for e-commerce store" required maxlength="200">
+                    
+                    <form class="pm-form" id="postProjectForm">
+                        <div class="pm-field">
+                            <label class="pm-label">Project Title *</label>
+                            <input type="text" name="title" class="pm-input" placeholder="e.g., Product photography for e-commerce" required maxlength="200">
                         </div>
-
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                            <div>
-                                <label class="glass-form-label">Category *</label>
-                                <select name="category" class="glass-input" required style="appearance: none; background-image: url('data:image/svg+xml,%3Csvg width=%2214%22 height=%2214%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22rgba(151,71,255,0.6)%22 stroke-width=%222.5%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M6 9l6 6 6-6%22/%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 16px center;">
+                        
+                        <div class="pm-input-grid">
+                            <div class="pm-field">
+                                <label class="pm-label">Category *</label>
+                                <select name="category" class="pm-input pm-select" required>
                                     <option value="">Select category</option>
                                     <option value="photography">Photography</option>
                                     <option value="videography">Videography</option>
@@ -54,71 +201,74 @@ export function showPostProjectModal() {
                                     <option value="other">Other</option>
                                 </select>
                             </div>
-                            <div>
-                                <label class="glass-form-label">Project Type *</label>
-                                <select name="projectType" class="glass-input" required style="appearance: none; background-image: url('data:image/svg+xml,%3Csvg width=%2214%22 height=%2214%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22rgba(151,71,255,0.6)%22 stroke-width=%222.5%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M6 9l6 6 6-6%22/%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 16px center;">
-                                    <option value="one-time">One-Time Project</option>
-                                    <option value="ongoing">Ongoing Work</option>
-                                    <option value="bounty">Bounty (Competition)</option>
+                            <div class="pm-field">
+                                <label class="pm-label">Project Type *</label>
+                                <select name="projectType" class="pm-input pm-select" required>
+                                    <option value="one-time">One-Time</option>
+                                    <option value="ongoing">Ongoing</option>
+                                    <option value="bounty">Bounty</option>
                                 </select>
                             </div>
                         </div>
-
-                        <div>
-                            <label class="glass-form-label">Description *</label>
-                            <textarea name="description" class="glass-input" rows="5" placeholder="Describe your project in detail..." required maxlength="5000" style="min-height: 120px;"></textarea>
-                            <div style="text-align: right; font-size: 11px; color: var(--text-secondary); margin-top: 6px; opacity: 0.6;"><span id="descCharCount">0</span>/5000</div>
+                        
+                        <div class="pm-field">
+                            <label class="pm-label">Description *</label>
+                            <textarea name="description" class="pm-input pm-textarea" placeholder="Describe your project in detail..." required maxlength="5000"></textarea>
+                            <div class="pm-char-count"><span id="descCharCount">0</span>/5000</div>
                         </div>
-
-                        <div>
-                            <label class="glass-form-label">Budget Range (USDC) *</label>
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                                <input type="number" name="budgetMin" class="glass-input" placeholder="Min $" required min="0">
-                                <input type="number" name="budgetMax" class="glass-input" placeholder="Max $" required min="0">
+                        
+                        <div class="pm-field">
+                            <label class="pm-label">Budget Range (USD) *</label>
+                            <div class="pm-input-grid">
+                                <input type="number" name="budgetMin" class="pm-input" placeholder="Min $" required min="0">
+                                <input type="number" name="budgetMax" class="pm-input" placeholder="Max $" required min="0">
                             </div>
-                            <label style="display: flex; align-items: center; gap: 10px; margin-top: 12px; cursor: pointer; user-select: none;">
-                                <input type="checkbox" name="negotiable" checked style="width: 18px; height: 18px; accent-color: var(--primary);">
-                                <span style="font-size: 14px; color: var(--text-secondary); font-weight: 600;">Budget is negotiable</span>
+                            <label class="pm-checkbox" style="margin-top: 12px;">
+                                <input type="checkbox" name="negotiable" checked>
+                                <span>Budget is negotiable</span>
                             </label>
                         </div>
-
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                            <div>
-                                <label class="glass-form-label">Start Date *</label>
-                                <input type="date" name="startDate" class="glass-input" required min="${new Date().toISOString().split('T')[0]}" onchange="updateProjectEndDateMin()">
+                        
+                        <div class="pm-input-grid">
+                            <div class="pm-field">
+                                <label class="pm-label">Start Date *</label>
+                                <input type="date" name="startDate" class="pm-input" required min="${new Date().toISOString().split('T')[0]}">
                             </div>
-                            <div>
-                                <label class="glass-form-label">Expected Completion *</label>
-                                <input type="date" name="deadline" class="glass-input" required min="${new Date().toISOString().split('T')[0]}">
-                            </div>
-                        </div>
-
-                        <div>
-                            <label class="glass-form-label">Skills & Deliverables</label>
-                            <div style="display: flex; flex-direction: column; gap: 12px;">
-                                <input type="text" id="skillsInput" class="glass-input" placeholder="Type skill and press Enter">
-                                <div id="skillsList" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
-                                
-                                <input type="text" id="deliverablesInput" class="glass-input" placeholder="Type deliverable and press Enter">
-                                <div id="deliverablesList" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
+                            <div class="pm-field">
+                                <label class="pm-label">Deadline *</label>
+                                <input type="date" name="deadline" class="pm-input" required min="${new Date().toISOString().split('T')[0]}">
                             </div>
                         </div>
-
-                        <div>
-                            <label class="glass-form-label">Project Image (Optional)</label>
-                            <div style="position: relative;">
-                                <input type="file" id="projectImage" class="glass-input" accept="image/*" style="opacity: 0; position: absolute; inset: 0; cursor: pointer; z-index: 2;">
-                                <div style="border: 2px dashed rgba(151, 71, 255, 0.2); border-radius: 16px; padding: 24px; text-align: center; background: rgba(151, 71, 255, 0.03); transition: all 0.2s;" id="imageDropzone">
-                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" style="margin-bottom: 12px; opacity: 0.5;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
-                                    <div style="font-size: 14px; color: var(--text-secondary); font-weight: 600;">Click or drag image to upload</div>
-                                    <div style="font-size: 12px; color: var(--text-secondary); opacity: 0.5; margin-top: 4px;">Max 10MB</div>
+                        
+                        <div class="pm-field">
+                            <label class="pm-label">Skills Required</label>
+                            <input type="text" id="skillsInput" class="pm-input" placeholder="Type skill and press Enter">
+                            <div class="pm-tags-container" id="skillsList"></div>
+                        </div>
+                        
+                        <div class="pm-field">
+                            <label class="pm-label">Deliverables</label>
+                            <input type="text" id="deliverablesInput" class="pm-input" placeholder="Type deliverable and press Enter">
+                            <div class="pm-tags-container" id="deliverablesList"></div>
+                        </div>
+                        
+                        <div class="pm-field">
+                            <label class="pm-label">Project Image (Optional)</label>
+                            <div class="pm-upload">
+                                <input type="file" id="projectImage" class="pm-upload-input" accept="image/*">
+                                <div class="pm-upload-zone" id="imageDropzone">
+                                    <div class="pm-upload-icon">
+                                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+                                    </div>
+                                    <div class="pm-upload-text">Click or drag image to upload</div>
+                                    <div class="pm-upload-hint">Max 10MB</div>
                                 </div>
                             </div>
                         </div>
-
-                        <div style="margin-top: 12px; display: flex; gap: 16px;">
-                            <button type="button" class="glass-btn-ghost" onclick="closeModal()" style="flex: 1;">Cancel</button>
-                            <button type="submit" class="glass-btn-primary" id="submitProjectBtn" style="flex: 2;">Post Project</button>
+                        
+                        <div class="pm-actions">
+                            <button type="button" class="pm-btn pm-btn-secondary" onclick="window.closeProjectModal()">Cancel</button>
+                            <button type="submit" class="pm-btn pm-btn-primary" id="submitProjectBtn">Post Project</button>
                         </div>
                     </form>
                 </div>
@@ -126,189 +276,145 @@ export function showPostProjectModal() {
         </div>
     `;
 
-    document.getElementById('modalsContainer').innerHTML = modalContent;
-    openModal();
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    document.body.style.overflow = 'hidden';
 
-    // Setup form handlers
+    // Setup form
     const skills = [];
     const deliverables = [];
 
     // Character counter
-    const descTextarea = document.querySelector('[name="description"]');
-    const charCount = document.getElementById('descCharCount');
-    descTextarea.addEventListener('input', () => {
-        charCount.textContent = descTextarea.value.length;
+    document.querySelector('[name="description"]')?.addEventListener('input', (e) => {
+        document.getElementById('descCharCount').textContent = e.target.value.length;
     });
 
     // Skills input
-    const skillsInput = document.getElementById('skillsInput');
-    const skillsList = document.getElementById('skillsList');
-
-    skillsInput.addEventListener('keypress', (e) => {
+    document.getElementById('skillsInput')?.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
-            const skill = skillsInput.value.trim();
+            const skill = e.target.value.trim();
             if (skill && !skills.includes(skill)) {
                 skills.push(skill);
-                renderSkills();
-                skillsInput.value = '';
+                renderSkills(skills);
+                e.target.value = '';
             }
         }
     });
 
-    function renderSkills() {
-        skillsList.innerHTML = skills.map(skill => `
-            <span style="background: rgba(151, 71, 255, 0.8); backdrop-filter: blur(4px); color: white; padding: 6px 12px; border-radius: 6px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid rgba(255,255,255,0.3);">
-                ${skill}
-                <button type="button" onclick="removeSkill('${skill}')" style="background: none; border: none; color: white; cursor: pointer; padding: 0; line-height: 1;">
-                    ×
-                </button>
-            </span>
+    function renderSkills(list) {
+        document.getElementById('skillsList').innerHTML = list.map(skill => `
+            <span class="pm-tag">${skill}<button type="button" class="pm-tag-remove" onclick="removeSkill('${skill}')">&times;</button></span>
         `).join('');
     }
 
     window.removeSkill = function (skill) {
-        const index = skills.indexOf(skill);
-        if (index > -1) {
-            skills.splice(index, 1);
-            renderSkills();
+        const idx = skills.indexOf(skill);
+        if (idx > -1) {
+            skills.splice(idx, 1);
+            renderSkills(skills);
         }
     };
 
     // Deliverables input
-    const deliverablesInput = document.getElementById('deliverablesInput');
-    const deliverablesList = document.getElementById('deliverablesList');
-
-    deliverablesInput.addEventListener('keypress', (e) => {
+    document.getElementById('deliverablesInput')?.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
-            const deliverable = deliverablesInput.value.trim();
-            if (deliverable && !deliverables.includes(deliverable)) {
-                deliverables.push(deliverable);
-                renderDeliverables();
-                deliverablesInput.value = '';
+            const item = e.target.value.trim();
+            if (item && !deliverables.includes(item)) {
+                deliverables.push(item);
+                renderDeliverables(deliverables);
+                e.target.value = '';
             }
         }
     });
 
-    function renderDeliverables() {
-        deliverablesList.innerHTML = deliverables.map(item => `
-            <span style="background: rgba(16, 185, 129, 0.8); backdrop-filter: blur(4px); color: white; padding: 6px 12px; border-radius: 6px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid rgba(255,255,255,0.3);">
-                ${item}
-                <button type="button" onclick="removeDeliverable('${item}')" style="background: none; border: none; color: white; cursor: pointer; padding: 0; line-height: 1;">
-                    ×
-                </button>
-            </span>
+    function renderDeliverables(list) {
+        document.getElementById('deliverablesList').innerHTML = list.map(item => `
+            <span class="pm-tag pm-tag-deliverable">${item}<button type="button" class="pm-tag-remove" onclick="removeDeliverable('${item}')">&times;</button></span>
         `).join('');
     }
 
     window.removeDeliverable = function (item) {
-        const index = deliverables.indexOf(item);
-        if (index > -1) {
-            deliverables.splice(index, 1);
-            renderDeliverables();
+        const idx = deliverables.indexOf(item);
+        if (idx > -1) {
+            deliverables.splice(idx, 1);
+            renderDeliverables(deliverables);
         }
     };
 
     // Form submission
-    const form = document.getElementById('postProjectForm');
-    const submitBtn = document.getElementById('submitProjectBtn');
-
-    form.addEventListener('submit', async (e) => {
+    document.getElementById('postProjectForm')?.addEventListener('submit', async (e) => {
         e.preventDefault();
-
-        const formData = new FormData(form);
+        const formData = new FormData(e.target);
+        const submitBtn = document.getElementById('submitProjectBtn');
+        
         const budgetMin = Number(formData.get('budgetMin'));
         const budgetMax = Number(formData.get('budgetMax'));
-        const startDate = formData.get('startDate');
-        const deadline = formData.get('deadline');
-
+        
         if (budgetMin > budgetMax) {
-            window.showToast('Minimum budget cannot be greater than maximum budget', 'error');
+            window.showToast('Min budget cannot exceed max', 'error');
             return;
         }
-
-        // Calculate timeline from dates
-        const start = new Date(startDate);
-        const end = new Date(deadline);
-        const daysDiff = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
-
-        let timeline = 'flexible';
-        if (daysDiff <= 2) timeline = 'urgent';
-        else if (daysDiff <= 7) timeline = '1-week';
-        else if (daysDiff <= 14) timeline = '2-weeks';
-        else if (daysDiff <= 30) timeline = '1-month';
-        else if (daysDiff <= 60) timeline = '2-months';
-        else if (daysDiff <= 90) timeline = '3-months';
 
         submitBtn.disabled = true;
         submitBtn.textContent = 'Posting...';
 
         try {
-            // Upload project image if provided
             let coverImageUrl = null;
-            const projectImageInput = document.getElementById('projectImage');
-            if (projectImageInput.files && projectImageInput.files[0]) {
-                const file = projectImageInput.files[0];
-
-                // Validate file size (max 10MB)
-                if (file.size > 10 * 1024 * 1024) {
-                    throw new Error('Image file exceeds 10MB limit');
+            const imageFile = document.getElementById('projectImage').files[0];
+            
+            if (imageFile) {
+                if (imageFile.size > 10 * 1024 * 1024) {
+                    throw new Error('Image exceeds 10MB limit');
                 }
-
-                submitBtn.textContent = 'Uploading image...';
-
-                const imageFormData = new FormData();
-                imageFormData.append('file', file);
-
-                const uploadResponse = await fetch('/api/upload/booking-attachment', {
+                submitBtn.textContent = 'Uploading...';
+                
+                const uploadForm = new FormData();
+                uploadForm.append('file', imageFile);
+                
+                const uploadRes = await fetch('/api/upload/booking-attachment', {
                     method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    },
-                    body: imageFormData
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+                    body: uploadForm
                 });
-
-                const uploadData = await uploadResponse.json();
-
-                if (!uploadData.success) {
-                    throw new Error('Failed to upload image');
-                }
-
+                
+                const uploadData = await uploadRes.json();
+                if (!uploadData.success) throw new Error('Upload failed');
                 coverImageUrl = uploadData.data.url;
-                submitBtn.textContent = 'Creating project...';
+                submitBtn.textContent = 'Creating...';
             }
+
+            const start = new Date(formData.get('startDate'));
+            const end = new Date(formData.get('deadline'));
+            const daysDiff = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+            
+            let timeline = 'flexible';
+            if (daysDiff <= 2) timeline = 'urgent';
+            else if (daysDiff <= 7) timeline = '1-week';
+            else if (daysDiff <= 14) timeline = '2-weeks';
+            else if (daysDiff <= 30) timeline = '1-month';
+            else if (daysDiff <= 60) timeline = '2-months';
+            else if (daysDiff <= 90) timeline = '3-months';
 
             const projectData = {
                 title: formData.get('title'),
                 description: formData.get('description'),
                 category: formData.get('category'),
                 projectType: formData.get('projectType'),
-                budget: {
-                    min: budgetMin,
-                    max: budgetMax,
-                    negotiable: formData.get('negotiable') === 'on'
-                },
-                timeline: timeline,
-                deadline: deadline,
-                skillsRequired: skills,
-                deliverables: deliverables,
-                coverImage: coverImageUrl
+                budget: { min: budgetMin, max: budgetMax, negotiable: formData.get('negotiable') === 'on' },
+                timeline, deadline: formData.get('deadline'),
+                skillsRequired: skills, deliverables, coverImage: coverImageUrl
             };
 
             const response = await api.createProject(projectData);
 
             if (response.success) {
-                window.showToast('Project posted successfully!', 'success');
-                window.closeModal();
-                window.navigateToPage('projects');
-            } else {
-                throw new Error(response.message || 'Failed to post project');
+                window.showToast('Project posted!', 'success');
+                window.closeProjectModal();
+                window.renderProjectsPage();
             }
         } catch (error) {
-            console.error('Error posting project:', error);
-            window.showToast(error.message || 'Failed to post project', 'error');
-        } finally {
+            window.showToast(error.message || 'Failed to post', 'error');
             submitBtn.disabled = false;
             submitBtn.textContent = 'Post Project';
         }
@@ -319,131 +425,102 @@ export function showPostProjectModal() {
  * Show Project Detail Modal
  */
 export async function showProjectDetail(projectId) {
-    window.showLoadingSpinner('Loading project details...');
+    window.showLoadingSpinner?.('Loading...');
 
     try {
         const response = await api.getProject(projectId);
-
-        if (!response.success) {
-            throw new Error(response.message || 'Failed to load project');
-        }
+        if (!response.success) throw new Error(response.message);
 
         const project = response.data.project;
         const hasApplied = response.data.hasApplied;
+        const isCreator = appState.user?.role === 'creator';
+        const isOwner = appState.user?._id === project.clientId?._id;
 
-        window.hideLoadingSpinner();
+        window.hideLoadingSpinner?.();
 
-        const modalContent = `
-            <div class="glass-modal-overlay" onclick="if(event.target === this) closeModal()">
-                <div class="glass-modal-content" style="max-width: 960px;">
-                    <div class="glass-modal-header" style="align-items: flex-start;">
+        const modalHTML = MODAL_STYLES + `
+            <div class="pm-overlay" onclick="if(event.target === this) window.closeProjectModal()">
+                <div class="pm-modal pm-modal-lg">
+                    <div class="pm-header">
                         <div>
-                            <span class="glass-tag" style="background: ${getProjectTypeBadgeColor(project.projectType)}20; color: ${getProjectTypeBadgeColor(project.projectType)}; border-color: ${getProjectTypeBadgeColor(project.projectType)}40; margin-bottom: 8px;">
-                                ${project.projectType.replace('-', ' ')}
-                            </span>
-                            <span class="glass-modal-title" style="display: block;">${project.title}</span>
+                            <span class="pm-tag" style="margin-bottom: 8px; display: inline-flex;">${project.projectType.replace('-', ' ')}</span>
+                            <div class="pm-title">${project.title}</div>
                         </div>
-                        <button class="glass-modal-close" onclick="closeModal()">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                        <button class="pm-close" onclick="window.closeProjectModal()">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
                         </button>
                     </div>
-
-                    <div class="glass-modal-body" style="padding-top: 0;">
-                        <style>
-                            .project-stat-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 4px; }
-                            .project-stat-label { font-size: 11px; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.6; }
-                            .project-stat-value { font-size: 20px; font-weight: 800; color: var(--text-primary); }
-                        </style>
-
+                    
+                    <div class="pm-body">
                         ${project.coverImage ? `
-                            <div style="position: relative; border-radius: 24px; overflow: hidden; margin: 0 0 32px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 16px 48px rgba(0,0,0,0.2);">
-                                <img src="${project.coverImage}"
-                                     alt="${project.title}"
-                                     style="width: 100%; max-height: 480px; object-fit: cover; cursor: pointer; display: block;"
-                                     onclick="window.openImageModal('${project.coverImage}')">
-                                <div style="position: absolute; inset: 0; background: linear-gradient(to bottom, transparent 60%, rgba(0,0,0,0.4)); pointer-events: none;"></div>
+                            <div class="pm-detail-cover">
+                                <img src="${project.coverImage}" alt="${project.title}" onclick="window.openImageModal('${project.coverImage}')">
                             </div>
                         ` : ''}
-
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 40px;">
-                            <div class="project-stat-card">
-                                <span class="project-stat-label">Budget Range</span>
-                                <span class="project-stat-value" style="color: #10B981;">$${project.budget.min} - $${project.budget.max}</span>
-                                ${project.budget.negotiable ? '<span style="font-size: 11px; color: #10B981; font-weight: 700;">Negotiable</span>' : ''}
+                        
+                        <div class="pm-stats-grid">
+                            <div class="pm-stat">
+                                <div class="pm-stat-label">Budget</div>
+                                <div class="pm-stat-value success">$${project.budget.min.toLocaleString()} - $${project.budget.max.toLocaleString()}</div>
+                                ${project.budget.negotiable ? '<span style="font-size: 11px; color: #10B981; font-weight: 600;">Negotiable</span>' : ''}
                             </div>
-                            <div class="project-stat-card">
-                                <span class="project-stat-label">Timeline</span>
-                                <span class="project-stat-value">${formatTimeline(project.timeline)}</span>
-                                ${project.deadline ? `<span style="font-size: 11px; color: var(--text-secondary); opacity: 0.7;">Ends: ${new Date(project.deadline).toLocaleDateString()}</span>` : ''}
+                            <div class="pm-stat">
+                                <div class="pm-stat-label">Timeline</div>
+                                <div class="pm-stat-value">${formatTimeline(project.timeline)}</div>
+                                ${project.deadline ? `<span style="font-size: 11px; color: var(--text-secondary);">Due: ${new Date(project.deadline).toLocaleDateString()}</span>` : ''}
                             </div>
-                            <div class="project-stat-card">
-                                <span class="project-stat-label">Applications</span>
-                                <span class="project-stat-value">${project.applicationsCount}</span>
-                                <span style="font-size: 11px; color: var(--text-secondary); opacity: 0.7;">Submissions</span>
+                            <div class="pm-stat">
+                                <div class="pm-stat-label">Applications</div>
+                                <div class="pm-stat-value primary">${project.applicationsCount}</div>
                             </div>
-                            <div class="project-stat-card">
-                                <span class="project-stat-label">Category</span>
-                                <span class="project-stat-value" style="text-transform: capitalize;">${project.category}</span>
-                                <span style="font-size: 11px; color: var(--text-secondary); opacity: 0.7;">${formatTimeAgo(project.createdAt)}</span>
+                            <div class="pm-stat">
+                                <div class="pm-stat-label">Category</div>
+                                <div class="pm-stat-value" style="text-transform: capitalize;">${project.category}</div>
                             </div>
                         </div>
-
-                        <div style="display: grid; grid-template-columns: 1fr 320px; gap: 40px;">
-                            <div style="display: flex; flex-direction: column; gap: 40px;">
-                                <div>
-                                    <h3 style="font-size: 20px; font-weight: 800; color: var(--text-primary); margin-bottom: 16px;">Description</h3>
-                                    <p style="white-space: pre-wrap; line-height: 1.8; color: var(--text-secondary); font-size: 16px; opacity: 0.9;">${project.description}</p>
-                                </div>
-
-                                ${project.skillsRequired && project.skillsRequired.length > 0 ? `
-                                    <div>
-                                        <h3 style="font-size: 18px; font-weight: 800; color: var(--text-primary); margin-bottom: 16px;">Skills Required</h3>
-                                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                                            ${project.skillsRequired.map(skill => `
-                                                <span class="glass-tag" style="background: rgba(151, 71, 255, 0.08); color: var(--primary); border-color: rgba(151, 71, 255, 0.15); padding: 8px 16px; font-size: 14px;">
-                                                    ${skill}
-                                                </span>
-                                            `).join('')}
-                                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 300px; gap: 24px;">
+                            <div>
+                                <div class="pm-section-title">Description</div>
+                                <div class="pm-desc">${project.description}</div>
+                                
+                                ${project.skillsRequired?.length ? `
+                                    <div class="pm-section-title">Skills Required</div>
+                                    <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px;">
+                                        ${project.skillsRequired.map(s => `<span class="pm-tag">${s}</span>`).join('')}
                                     </div>
                                 ` : ''}
-
-                                ${project.deliverables && project.deliverables.length > 0 ? `
-                                    <div>
-                                        <h3 style="font-size: 18px; font-weight: 800; color: var(--text-primary); margin-bottom: 16px;">Expected Deliverables</h3>
-                                        <div style="display: flex; flex-direction: column; gap: 12px;">
-                                            ${project.deliverables.map(item => `
-                                                <div style="display: flex; align-items: start; gap: 14px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 16px;">
-                                                    <div style="width: 24px; height: 24px; border-radius: 8px; background: rgba(16, 185, 129, 0.1); display: flex; align-items: center; justify-content: center; color: #10B981; flex-shrink: 0; margin-top: 2px;">
-                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-                                                    </div>
-                                                    <span style="color: var(--text-secondary); line-height: 1.6; font-weight: 500;">${item}</span>
+                                
+                                ${project.deliverables?.length ? `
+                                    <div class="pm-section-title">Deliverables</div>
+                                    <div style="margin-bottom: 24px;">
+                                        ${project.deliverables.map(d => `
+                                            <div class="pm-deliverable">
+                                                <div class="pm-deliverable-icon">
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
                                                 </div>
-                                            `).join('')}
-                                        </div>
+                                                <span class="pm-deliverable-text">${d}</span>
+                                            </div>
+                                        `).join('')}
                                     </div>
                                 ` : ''}
                             </div>
-
-                            <div style="display: flex; flex-direction: column; gap: 24px;">
-                                <div style="background: rgba(151, 71, 255, 0.03); border: 1px solid rgba(151, 71, 255, 0.1); border-radius: 24px; padding: 24px;">
-                                    <h4 style="font-size: 13px; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 20px; opacity: 0.6;">Posted By</h4>
-                                    <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px;">
-                                        <img src="${project.clientId.avatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(project.clientId.name)}"
-                                             alt="${project.clientId.name}"
-                                             style="width: 56px; height: 56px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary);">
+                            
+                            <div>
+                                <div class="pm-client-card">
+                                    <div class="pm-section-title">Posted By</div>
+                                    <div class="pm-client-header">
+                                        <img src="${project.clientId?.avatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(project.clientId?.name || 'Client')}" class="pm-client-avatar">
                                         <div>
-                                            <div style="font-weight: 800; font-size: 17px; color: var(--text-primary); margin-bottom: 2px; display: flex; align-items: center; gap: 6px;">
-                                                ${project.clientId.name}
-                                                ${project.clientId.isEmailVerified ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="var(--primary)" style="color: white;"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>' : ''}
+                                            <div class="pm-client-name">
+                                                ${project.clientId?.name || 'Client'}
+                                                ${project.clientId?.isEmailVerified ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="#10B981"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>' : ''}
                                             </div>
-                                            <div style="font-size: 13px; color: var(--text-secondary); opacity: 0.7;">Client</div>
+                                            <div class="pm-client-role">Client</div>
                                         </div>
                                     </div>
-                                    ${renderProjectActions(project, hasApplied)}
+                                    ${renderProjectActions(project, hasApplied, isCreator, isOwner)}
                                 </div>
-
-                                <button class="glass-btn-ghost" onclick="closeModal()">Close Details</button>
                             </div>
                         </div>
                     </div>
@@ -451,201 +528,127 @@ export async function showProjectDetail(projectId) {
             </div>
         `;
 
-        document.getElementById('modalsContainer').innerHTML = modalContent;
-        openModal();
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.style.overflow = 'hidden';
 
     } catch (error) {
-        console.error('Error loading project:', error);
-        window.hideLoadingSpinner();
-        window.showToast(error.message || 'Failed to load project details', 'error');
+        window.hideLoadingSpinner?.();
+        window.showToast(error.message || 'Failed to load', 'error');
     }
 }
 
-function renderProjectActions(project, hasApplied) {
-    // If user owns the project
-    if (appState.user && project.clientId._id === appState.user._id) {
+function renderProjectActions(project, hasApplied, isCreator, isOwner) {
+    if (isOwner) {
         return `
-            <button class="glass-btn-primary" onclick="window.viewProjectApplications('${project._id}')">
+            <button class="pm-btn pm-btn-primary pm-btn-full" onclick="window.viewProjectApplications('${project._id}')">
                 View Applications (${project.applicationsCount})
             </button>
         `;
     }
-
-    // If user is a creator
-    if (appState.user) {
-        if (hasApplied) {
-            return `
-                <button class="glass-btn-primary" disabled style="background: rgba(16, 185, 129, 0.1); color: #10B981; border-color: rgba(16, 185, 129, 0.2);">
-                    Applied Successfully
-                </button>
-            `;
-        }
-
-        return `
-            <button class="glass-btn-primary" onclick="window.showApplicationForm('${project._id}')">
-                Apply to Project
-            </button>
-        `;
+    
+    if (!appState.user) {
+        return `<button class="pm-btn pm-btn-primary pm-btn-full" onclick="window.showAuthModal('signin'); window.closeProjectModal();">Sign In to Apply</button>`;
     }
-
-    // Not logged in
-    return `
-        <button class="glass-btn-primary" onclick="window.showAuthModal('signin')">
-            Sign In to Apply
-        </button>
-    `;
-}
-
-function getProjectTypeBadgeColor(type) {
-    const colors = {
-        'one-time': '#9747FF',
-        'ongoing': '#10b981',
-        'bounty': '#f59e0b'
-    };
-    return colors[type] || '#6b7280';
-}
-
-function formatTimeline(timeline) {
-    const labels = {
-        'urgent': 'Urgent',
-        '1-week': '1 Week',
-        '2-weeks': '2 Weeks',
-        '1-month': '1 Month',
-        '2-months': '2 Months',
-        '3-months': '3 Months',
-        'flexible': 'Flexible'
-    };
-    return labels[timeline] || timeline;
-}
-
-function formatTimeAgo(date) {
-    const seconds = Math.floor((new Date() - new Date(date)) / 1000);
-
-    const intervals = {
-        year: 31536000,
-        month: 2592000,
-        week: 604800,
-        day: 86400,
-        hour: 3600,
-        minute: 60
-    };
-
-    for (const [key, value] of Object.entries(intervals)) {
-        const interval = Math.floor(seconds / value);
-        if (interval >= 1) {
-            return `${interval} ${key}${interval > 1 ? 's' : ''} ago`;
-        }
+    
+    if (!isCreator) {
+        return `<button class="pm-btn pm-btn-secondary pm-btn-full" disabled>Only creators can apply</button>`;
     }
-
-    return 'Just now';
+    
+    if (hasApplied) {
+        return `<button class="pm-btn pm-btn-success pm-btn-full" disabled>✓ Applied</button>`;
+    }
+    
+    return `<button class="pm-btn pm-btn-primary pm-btn-full" onclick="window.showApplicationForm('${project._id}')">Apply to Project</button>`;
 }
 
 /**
  * Show Application Form
  */
 export async function showApplicationForm(projectId) {
-    if (!appState.user) {
-        window.showAuthModal('signin');
-        return;
-    }
+    window.closeProjectModal();
 
-    const modalContent = `
-        <div class="glass-modal-overlay" onclick="if(event.target === this) closeModal()">
-            <div class="glass-modal-content" style="max-width: 650px; background: rgba(13, 13, 18, 0.95);">
-                <div class="glass-modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 24px;">
-                    <div style="display: flex; align-items: center; gap: 16px;">
-                        <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #9747FF, #6B46FF); border-radius: 14px; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(151,71,255,0.3);">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+    const modalHTML = MODAL_STYLES + `
+        <div class="pm-overlay" onclick="if(event.target === this) window.closeProjectModal()">
+            <div class="pm-modal">
+                <div class="pm-header">
+                    <div class="pm-header-title">
+                        <div class="pm-header-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                         </div>
                         <div>
-                            <span class="glass-modal-title" style="margin: 0; font-size: 22px;">Apply to Project</span>
-                            <div style="color: var(--text-secondary); font-size: 13px; opacity: 0.6; font-weight: 500; margin-top: 2px;">Submit your best proposal to standard out</div>
+                            <div class="pm-title">Apply to Project</div>
+                            <div class="pm-subtitle">Submit your proposal</div>
                         </div>
                     </div>
-                    <button class="glass-modal-close" onclick="closeModal()">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                    <button class="pm-close" onclick="window.closeProjectModal()">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
                     </button>
                 </div>
-
-                <div class="glass-modal-body" style="padding-top: 32px;">
-                    <div style="background: linear-gradient(135deg, rgba(151, 71, 255, 0.1), rgba(107, 70, 255, 0.05)); border: 1px solid rgba(151, 71, 255, 0.2); border-radius: 20px; padding: 24px; margin-bottom: 32px; display: flex; gap: 20px; align-items: flex-start;">
-                        <div style="color: var(--primary); background: rgba(151, 71, 255, 0.15); width: 32px; height: 32px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                
+                <div class="pm-body">
+                    <div class="pm-tips">
+                        <div class="pm-tips-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                         </div>
-                        <div style="flex: 1;">
-                            <div style="color: var(--text-primary); font-size: 14px; font-weight: 800; margin-bottom: 8px;">Pro-Tips for Success:</div>
-                            <ul style="color: var(--text-secondary); font-size: 13px; margin: 0; padding-left: 16px; line-height: 1.8; opacity: 0.9; font-weight: 500;">
-                                <li>Be specific about your <span style="color: var(--primary); font-weight: 700;">unique approach</span></li>
-                                <li>Include relevant links to your <span style="color: var(--primary); font-weight: 700;">best past work</span></li>
-                                <li>Propose a timeline that is <span style="color: var(--primary); font-weight: 700;">realistic and clear</span></li>
+                        <div>
+                            <div class="pm-tips-title">Pro Tips for Success</div>
+                            <ul class="pm-tips-list">
+                                <li>Be specific about your <span>unique approach</span></li>
+                                <li>Include links to your <span>best work</span></li>
+                                <li>Propose a <span>realistic timeline</span></li>
                             </ul>
                         </div>
                     </div>
-
-                    <form id="applicationForm" style="display: flex; flex-direction: column; gap: 32px;">
-                        <div style="display: flex; flex-direction: column; gap: 12px;">
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <span style="font-size: 11px; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 0.1em;">Section 01</span>
-                                <div style="height: 1px; flex: 1; background: linear-gradient(to right, rgba(151,71,255,0.2), transparent);"></div>
+                    
+                    <form class="pm-form" id="applicationForm">
+                        <div>
+                            <div class="pm-section-divider">
+                                <span class="pm-section-num">Section 01</span>
+                                <div class="pm-section-line"></div>
                             </div>
-                            <h4 style="margin: 0; font-size: 16px; font-weight: 800; color: var(--text-primary);">The Pitch (Cover Letter)</h4>
-                            <div style="position: relative;">
-                                <textarea name="coverLetter" class="glass-input" rows="7" placeholder="Why are you the perfect fit for this? Share your vision..." required maxlength="2000" style="padding: 16px; background: rgba(0,0,0,0.2); border-color: rgba(255,255,255,0.08);"></textarea>
-                                <div style="text-align: right; font-size: 11px; color: var(--text-secondary); margin-top: 8px; font-weight: 700; opacity: 0.6; font-family: 'JetBrains Mono', monospace;">
-                                    <span id="coverLetterCount">0</span>/2000
-                                </div>
-                            </div>
+                            <div class="pm-section-label">The Pitch</div>
+                            <textarea name="coverLetter" class="pm-input pm-textarea" placeholder="Why are you perfect for this project?" required maxlength="2000"></textarea>
+                            <div class="pm-char-count"><span id="coverLetterCount">0</span>/2000</div>
                         </div>
-
-                        <div style="display: flex; flex-direction: column; gap: 12px;">
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <span style="font-size: 11px; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 0.1em;">Section 02</span>
-                                <div style="height: 1px; flex: 1; background: linear-gradient(to right, rgba(151,71,255,0.2), transparent);"></div>
+                        
+                        <div>
+                            <div class="pm-section-divider">
+                                <span class="pm-section-num">Section 02</span>
+                                <div class="pm-section-line"></div>
                             </div>
-                            <h4 style="margin: 0; font-size: 16px; font-weight: 800; color: var(--text-primary);">The Offer (Price & Timing)</h4>
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                            <div class="pm-section-label">Your Offer</div>
+                            <div class="pm-input-grid">
                                 <div>
-                                    <label class="glass-form-label" style="margin-bottom: 8px; font-size: 12px; opacity: 0.8;">Budget (USDC) *</label>
-                                    <div style="position: relative;">
-                                        <input type="number" name="proposedBudget" class="glass-input" placeholder="0.00" required min="1" step="0.01" style="padding-left: 36px; background: rgba(0,0,0,0.2); border-color: rgba(255,255,255,0.08);">
-                                        <div style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--primary); font-weight: 800; font-size: 14px;">$</div>
-                                    </div>
+                                    <label class="pm-label">Budget (USD) *</label>
+                                    <input type="number" name="proposedBudget" class="pm-input" placeholder="0.00" required min="1" step="0.01">
                                 </div>
                                 <div>
-                                    <label class="glass-form-label" style="margin-bottom: 8px; font-size: 12px; opacity: 0.8;">Timeline *</label>
-                                    <div style="position: relative;">
-                                        <input type="text" name="proposedTimeline" class="glass-input" placeholder="e.g., 5-7 business days" required maxlength="200" style="padding-left: 36px; background: rgba(0,0,0,0.2); border-color: rgba(255,255,255,0.08);">
-                                        <div style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--primary);">
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-                                        </div>
-                                    </div>
+                                    <label class="pm-label">Timeline *</label>
+                                    <input type="text" name="proposedTimeline" class="pm-input" placeholder="e.g., 5-7 days" required maxlength="200">
                                 </div>
                             </div>
                         </div>
-
-                        <div style="display: flex; flex-direction: column; gap: 12px;">
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <span style="font-size: 11px; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 0.1em;">Section 03</span>
-                                <div style="height: 1px; flex: 1; background: linear-gradient(to right, rgba(151,71,255,0.2), transparent);"></div>
+                        
+                        <div>
+                            <div class="pm-section-divider">
+                                <span class="pm-section-num">Section 03</span>
+                                <div class="pm-section-line"></div>
                             </div>
-                            <h4 style="margin: 0; font-size: 16px; font-weight: 800; color: var(--text-primary);">Supporting Proof (Portfolio)</h4>
-                            <div style="position: relative;">
-                                <input type="text" id="portfolioLinkInput" class="glass-input" placeholder="Paste link and press Enter" style="padding-right: 100px; background: rgba(0,0,0,0.2); border-color: rgba(255,255,255,0.08);">
-                                <div style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: rgba(151,71,255,0.1); color: var(--primary); font-size: 10px; font-weight: 800; padding: 4px 10px; border-radius: 6px; letter-spacing: 0.05em; border: 1px solid rgba(151,71,255,0.2);">PRESS ENTER</div>
-                            </div>
-                            <div id="portfolioLinksList" style="margin-top: 12px; display: flex; flex-direction: column; gap: 10px;"></div>
+                            <div class="pm-section-label">Portfolio Links</div>
+                            <input type="text" id="portfolioInput" class="pm-input" placeholder="Paste link and press Enter">
+                            <div id="portfolioList" class="pm-tags-container"></div>
                         </div>
-
-                        <div style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.15); border-radius: 18px; padding: 16px; font-size: 12px; color: #10B981; font-weight: 600; display: flex; align-items: center; gap: 12px;">
-                            <div style="width: 24px; height: 24px; border-radius: 50%; background: rgba(16, 185, 129, 0.1); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        
+                        <div class="pm-notice">
+                            <div class="pm-notice-icon">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><path d="M20 6L9 17l-5-5"/></svg>
                             </div>
-                            <span>Editable before client review.</span>
+                            <span>You can edit before client review</span>
                         </div>
-
-                        <div style="display: flex; gap: 16px; margin-top: 8px;">
-                            <button type="button" class="glass-btn-ghost" onclick="closeModal()" style="flex: 1; font-weight: 700;">Cancel</button>
-                            <button type="submit" class="glass-btn-primary" id="submitApplicationBtn" style="flex: 2; font-weight: 800; font-size: 16px; box-shadow: 0 12px 24px rgba(151,71,255,0.25);">Submit Application</button>
+                        
+                        <div class="pm-actions">
+                            <button type="button" class="pm-btn pm-btn-secondary" onclick="window.closeProjectModal()">Cancel</button>
+                            <button type="submit" class="pm-btn pm-btn-primary" id="submitAppBtn">Submit Application</button>
                         </div>
                     </form>
                 </div>
@@ -653,97 +656,69 @@ export async function showApplicationForm(projectId) {
         </div>
     `;
 
-    document.getElementById('modalsContainer').innerHTML = modalContent;
-    openModal();
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    document.body.style.overflow = 'hidden';
 
     // Character counter
-    const coverLetterTextarea = document.querySelector('[name="coverLetter"]');
-    const charCount = document.getElementById('coverLetterCount');
-    coverLetterTextarea.addEventListener('input', () => {
-        charCount.textContent = coverLetterTextarea.value.length;
+    document.querySelector('[name="coverLetter"]')?.addEventListener('input', (e) => {
+        document.getElementById('coverLetterCount').textContent = e.target.value.length;
     });
 
     // Portfolio links
     const portfolioLinks = [];
-    const portfolioInput = document.getElementById('portfolioLinkInput');
-    const portfolioList = document.getElementById('portfolioLinksList');
-
-    portfolioInput.addEventListener('keypress', (e) => {
+    document.getElementById('portfolioInput')?.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
-            const url = portfolioInput.value.trim();
+            const url = e.target.value.trim();
             if (url && isValidUrl(url)) {
-                portfolioLinks.push({ url, title: new URL(url).hostname });
-                renderPortfolioLinks();
-                portfolioInput.value = '';
+                portfolioLinks.push(url);
+                renderPortfolio(portfolioLinks);
+                e.target.value = '';
             } else if (url) {
                 window.showToast('Please enter a valid URL', 'error');
             }
         }
     });
 
-    function renderPortfolioLinks() {
-        portfolioList.innerHTML = portfolioLinks.map((link, index) => `
-            <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px;">
-                <div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0;">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
-                    <span style="font-size: 13px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${link.url}</span>
-                </div>
-                <button type="button" onclick="removePortfolioLink(${index})" style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 4px; opacity: 0.6; transition: opacity 0.2s;">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6L6 18M6 6l12 12"/></svg>
-                </button>
-            </div>
+    function renderPortfolio(list) {
+        document.getElementById('portfolioList').innerHTML = list.map((url, i) => `
+            <span class="pm-tag">${new URL(url).hostname}<button type="button" class="pm-tag-remove" onclick="removePortfolioLink(${i})">&times;</button></span>
         `).join('');
     }
 
-    window.removePortfolioLink = function (index) {
-        portfolioLinks.splice(index, 1);
-        renderPortfolioLinks();
+    window.removePortfolioLink = function (i) {
+        portfolioLinks.splice(i, 1);
+        renderPortfolio(portfolioLinks);
     };
 
-    function isValidUrl(string) {
-        try {
-            new URL(string);
-            return true;
-        } catch (_) {
-            return false;
-        }
+    function isValidUrl(str) {
+        try { new URL(str); return true; } catch { return false; }
     }
 
     // Form submission
-    const form = document.getElementById('applicationForm');
-    const submitBtn = document.getElementById('submitApplicationBtn');
-
-    form.addEventListener('submit', async (e) => {
+    document.getElementById('applicationForm')?.addEventListener('submit', async (e) => {
         e.preventDefault();
-
-        const formData = new FormData(form);
-
-        const applicationData = {
-            coverLetter: formData.get('coverLetter'),
-            proposedBudget: {
-                amount: Number(formData.get('proposedBudget'))
-            },
-            proposedTimeline: formData.get('proposedTimeline'),
-            portfolioLinks: portfolioLinks
-        };
+        const formData = new FormData(e.target);
+        const submitBtn = document.getElementById('submitAppBtn');
 
         submitBtn.disabled = true;
         submitBtn.textContent = 'Submitting...';
 
         try {
-            const response = await api.applyToProject(projectId, applicationData);
+            const response = await api.applyToProject(projectId, {
+                coverLetter: formData.get('coverLetter'),
+                proposedBudget: { amount: Number(formData.get('proposedBudget')) },
+                proposedTimeline: formData.get('proposedTimeline'),
+                portfolioLinks: portfolioLinks.map(url => ({ url, title: new URL(url).hostname }))
+            });
 
             if (response.success) {
-                window.showToast('Application submitted successfully!', 'success');
-                window.closeModal();
+                window.showToast('Application submitted!', 'success');
+                window.closeProjectModal();
                 window.showProjectDetail(projectId);
-            } else {
-                throw new Error(response.message || 'Failed to submit application');
             }
         } catch (error) {
-            console.error('Error submitting application:', error);
-            window.showToast(error.message || 'Failed to submit application', 'error');
+            window.showToast(error.message || 'Failed to submit', 'error');
             submitBtn.disabled = false;
             submitBtn.textContent = 'Submit Application';
         }
@@ -751,165 +726,136 @@ export async function showApplicationForm(projectId) {
 }
 
 /**
- * View Project Applications (for project owner)
+ * View Project Applications
  */
 export async function viewProjectApplications(projectId) {
-    window.showLoadingSpinner('Loading applications...');
+    window.showLoadingSpinner?.('Loading applications...');
 
     try {
         const response = await api.getProjectApplications(projectId);
-
-        if (!response.success) {
-            throw new Error(response.message || 'Failed to load applications');
-        }
+        if (!response.success) throw new Error(response.message);
 
         const applications = response.data.applications || [];
+        window.hideLoadingSpinner?.();
 
-        window.hideLoadingSpinner();
-
-        const modalContent = `
-            <div class="glass-modal-overlay" onclick="if(event.target === this) closeModal()">
-                <div class="glass-modal-content" style="max-width: 800px;">
-                    <div class="glass-modal-header">
-                        <span class="glass-modal-title">Applications (${applications.length})</span>
-                        <button class="glass-modal-close" onclick="closeModal()">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        const modalHTML = MODAL_STYLES + `
+            <div class="pm-overlay" onclick="if(event.target === this) window.closeProjectModal()">
+                <div class="pm-modal pm-modal-lg">
+                    <div class="pm-header">
+                        <div>
+                            <div class="pm-title">Applications (${applications.length})</div>
+                        </div>
+                        <button class="pm-close" onclick="window.closeProjectModal()">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
                         </button>
                     </div>
-
-                    <div class="glass-modal-body" style="max-height: 70vh; overflow-y: auto; padding-right: 8px;">
-                        ${applications.length > 0 ? renderApplicationsList(applications) : `
-                            <div style="text-align: center; padding: 60px 20px;">
-                                <div style="width: 80px; height: 80px; background: rgba(151, 71, 255, 0.05); border-radius: 28px; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; color: var(--primary); opacity: 0.5;">
-                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M8.5 7a4 4 0 100-8 4 4 0 000 8zM20 8v6M23 11h-6"/></svg>
+                    
+                    <div class="pm-body">
+                        ${applications.length > 0 ? applications.map(app => `
+                            <div class="pm-app-card">
+                                <div class="pm-app-header">
+                                    <div class="pm-app-creator">
+                                        <img src="${app.creatorId?.avatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(app.creatorId?.name || 'Creator')}" class="pm-app-avatar">
+                                        <div>
+                                            <div class="pm-app-name">${app.creatorId?.name || 'Creator'}</div>
+                                            <div class="pm-app-role">${app.creatorId?.category || 'Creator'}</div>
+                                        </div>
+                                    </div>
+                                    <div class="pm-app-bid">
+                                        <div class="pm-app-price">$${app.proposedBudget?.amount || 0}</div>
+                                        <div class="pm-app-time">${app.proposedTimeline}</div>
+                                    </div>
                                 </div>
-                                <h3 style="font-weight: 800; font-size: 20px; color: var(--text-primary); margin-bottom: 8px;">No applications yet</h3>
-                                <p style="color: var(--text-secondary); font-size: 15px;">Check back soon for creator applications</p>
+                                
+                                <div class="pm-app-letter">${app.coverLetter}</div>
+                                
+                                ${app.portfolioLinks?.length ? `
+                                    <div class="pm-app-portfolio">
+                                        ${app.portfolioLinks.map(link => `
+                                            <a href="${link.url}" target="_blank" class="pm-app-link">
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+                                                View Work
+                                            </a>
+                                        `).join('')}
+                                    </div>
+                                ` : ''}
+                                
+                                <div class="pm-app-footer">
+                                    <span class="pm-status pm-status-${app.status}">${app.status}</span>
+                                    <span style="font-size: 12px; color: var(--text-secondary);">Applied ${formatTimeAgo(app.createdAt)}</span>
+                                    
+                                    ${app.status === 'pending' ? `
+                                        <div class="pm-app-actions">
+                                            <button class="pm-btn pm-btn-danger" style="padding: 8px 16px; font-size: 13px;" onclick="window.handleApplicationAction('${app._id}', 'rejected')">Decline</button>
+                                            <button class="pm-btn pm-btn-success" style="padding: 8px 20px; font-size: 13px;" onclick="window.handleApplicationAction('${app._id}', 'accepted')">Accept</button>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        `).join('') : `
+                            <div class="pm-empty">
+                                <div class="pm-empty-icon">
+                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+                                </div>
+                                <div class="pm-empty-title">No applications yet</div>
+                                <div class="pm-empty-text">Check back soon for creator proposals</div>
                             </div>
                         `}
-
-                        <div style="margin-top: 32px; text-align: center;">
-                            <button class="glass-btn-ghost" onclick="closeModal()">Close Window</button>
-                        </div>
                     </div>
                 </div>
             </div>
         `;
 
-        document.getElementById('modalsContainer').innerHTML = modalContent;
-        openModal();
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.style.overflow = 'hidden';
 
     } catch (error) {
-        console.error('Error loading applications:', error);
-        window.hideLoadingSpinner();
-        window.showToast(error.message || 'Failed to load applications', 'error');
+        window.hideLoadingSpinner?.();
+        window.showToast(error.message || 'Failed to load', 'error');
     }
-}
-
-function renderApplicationsList(applications) {
-    return applications.map(app => `
-        <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 24px; padding: 24px; margin-bottom: 20px;">
-            <div style="display: flex; align-items: start; justify-content: space-between; margin-bottom: 20px;">
-                <div style="display: flex; align-items: center; gap: 16px;">
-                    <img src="${app.creatorId.avatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(app.creatorId.name)}"
-                         alt="${app.creatorId.name}"
-                         style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary);">
-                    <div>
-                        <div style="font-weight: 800; font-size: 16px; color: var(--text-primary); margin-bottom: 2px;">${app.creatorId.name}</div>
-                        <div style="font-size: 13px; color: var(--primary); font-weight: 600; opacity: 0.8;">${app.creatorId.category || 'Creator'}</div>
-                    </div>
-                </div>
-                <div style="text-align: right;">
-                    <div style="font-size: 22px; font-weight: 800; color: #10B981; margin-bottom: 2px;">$${app.proposedBudget.amount}</div>
-                    <div style="font-size: 12px; color: var(--text-secondary); font-weight: 700; opacity: 0.6;">${app.proposedTimeline}</div>
-                </div>
-            </div>
-
-            <div style="background: rgba(151, 71, 255, 0.03); border: 1px solid rgba(151, 71, 255, 0.08); border-radius: 16px; padding: 16px; margin-bottom: 20px;">
-                <div style="font-size: 11px; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; opacity: 0.6;">Cover Letter</div>
-                <p style="white-space: pre-wrap; line-height: 1.6; color: var(--text-secondary); font-size: 14px; margin: 0;">${app.coverLetter}</p>
-            </div>
-
-            ${app.portfolioLinks && app.portfolioLinks.length > 0 ? `
-                <div style="margin-bottom: 20px;">
-                    <div style="font-size: 11px; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px; opacity: 0.6;">Portfolio</div>
-                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-                        ${app.portfolioLinks.map(link => `
-                            <a href="${link.url}" target="_blank" class="glass-btn-ghost" style="font-size: 12px; padding: 8px 16px; min-width: auto; background: rgba(151, 71, 255, 0.05);">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right: 6px; opacity: 0.6;"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
-                                View Portoflio
-                            </a>
-                        `).join('')}
-                    </div>
-                </div>
-            ` : ''}
-
-            <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.06);">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <span style="padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 800; text-transform: uppercase; background: ${getStatusColor(app.status)}15; color: ${getStatusColor(app.status)}; border: 1px solid ${getStatusColor(app.status)}30;">
-                        ${app.status}
-                    </span>
-                    <span style="font-size: 12px; color: var(--text-secondary); font-weight: 600; opacity: 0.6;">
-                        Applied ${formatTimeAgo(app.createdAt)}
-                    </span>
-                </div>
-
-                ${app.status === 'pending' ? `
-                    <div style="display: flex; gap: 8px;">
-                        <button class="glass-btn-ghost" onclick="window.handleApplicationAction('${app._id}', 'rejected')" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.2); background: rgba(239, 68, 68, 0.05); padding: 8px 16px; font-size: 14px; min-width: auto;">Reject</button>
-                        <button class="glass-btn-primary" onclick="window.handleApplicationAction('${app._id}', 'accepted')" style="padding: 8px 24px; font-size: 14px; min-width: auto; box-shadow: 0 8px 20px rgba(151, 71, 255, 0.2);">Accept Proposal</button>
-                    </div>
-                ` : ''}
-            </div>
-        </div>
-    `).join('');
-}
-
-function getStatusColor(status) {
-    const colors = {
-        'pending': '#f59e0b',
-        'accepted': '#10b981',
-        'rejected': '#ef4444',
-        'withdrawn': '#6b7280'
-    };
-    return colors[status] || '#6b7280';
 }
 
 /**
- * Handle Application Accept/Reject
+ * Handle Application Action
  */
 export async function handleApplicationAction(applicationId, status) {
     const action = status === 'accepted' ? 'accept' : 'reject';
-
-    if (!confirm(`Are you sure you want to ${action} this application?`)) {
-        return;
-    }
+    if (!confirm(`${action.charAt(0).toUpperCase() + action.slice(1)} this application?`)) return;
 
     try {
         const response = await api.updateApplicationStatus(applicationId, status);
-
         if (response.success) {
-            const successMsg = status === 'accepted'
-                ? 'Application accepted! Please go to "Bookings" to proceed with payment and start the project.'
-                : 'Application rejected successfully.';
-            window.showToast(successMsg, 'success');
-            window.closeModal();
-            // Optional: navigate to bookings if accepted
-            if (status === 'accepted') {
-                window.navigateToPage('bookings');
-            }
-        } else {
-            throw new Error(response.message || `Failed to ${action} application`);
+            window.showToast(status === 'accepted' ? 'Application accepted!' : 'Application declined', 'success');
+            window.closeProjectModal();
+            if (status === 'accepted') window.navigateToPage('bookings');
         }
     } catch (error) {
-        console.error(`Error ${action}ing application:`, error);
-        window.showToast(error.message || `Failed to ${action} application`, 'error');
+        window.showToast(error.message || 'Action failed', 'error');
     }
 }
 
-// Export and make globally available
+function formatTimeline(timeline) {
+    const labels = {
+        'urgent': 'Urgent', '1-week': '1 Week', '2-weeks': '2 Weeks',
+        '1-month': '1 Month', '2-months': '2 Months', '3-months': '3 Months', 'flexible': 'Flexible'
+    };
+    return labels[timeline] || timeline;
+}
+
+function formatTimeAgo(date) {
+    const seconds = Math.floor((new Date() - new Date(date)) / 1000);
+    const intervals = { year: 31536000, month: 2592000, week: 604800, day: 86400, hour: 3600, minute: 60 };
+    for (const [key, value] of Object.entries(intervals)) {
+        const interval = Math.floor(seconds / value);
+        if (interval >= 1) return `${interval} ${key}${interval > 1 ? 's' : ''} ago`;
+    }
+    return 'Just now';
+}
+
+// Global exports
 window.showPostProjectModal = showPostProjectModal;
 window.showProjectDetail = showProjectDetail;
 window.showApplicationForm = showApplicationForm;
 window.viewProjectApplications = viewProjectApplications;
 window.handleApplicationAction = handleApplicationAction;
+window.closeProjectModal = closeModal;
