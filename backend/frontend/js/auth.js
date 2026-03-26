@@ -132,16 +132,16 @@ export function showAuthModal(type = 'signin', userType = 'client') {
                         </div>
 
                         <label class="am-check-label">
-                            <input type="checkbox" required class="am-check-input">
-                            <span style="font-size: 13px;">I accept the <a href="#" class="am-footer-link">Terms & Conditions</a></span>
+                            <input type="checkbox" name="acceptTerms" required class="am-check-input">
+                            <span style="font-size: 13px;">I accept the <a href="/#/terms" class="am-footer-link" onclick="navigateToPage('terms'); closeModal(); return false;">Terms & Conditions</a> and <a href="/#/privacy" class="am-footer-link" onclick="navigateToPage('privacy'); closeModal(); return false;">Privacy Policy</a></span>
                         </label>
                         ` : `
                         <div style="display: flex; justify-content: space-between; align-items: center; margin: 24px 0;">
                             <label class="am-check-label" style="margin: 0;">
-                                <input type="checkbox" name="rememberMe" id="rememberMeCheckbox" class="am-check-input">
+                                <input type="checkbox" name="rememberMe" id="rememberMeCheckbox" class="am-check-input" ${localStorage.getItem('rememberMe') === 'true' ? 'checked' : ''}>
                                 <span style="font-size: 13px;">Remember me</span>
                             </label>
-                            <a href="#" class="am-footer-link" style="font-size: 13px;">Forgot password?</a>
+                            <a href="#" class="am-footer-link" style="font-size: 13px;" onclick="showForgotPasswordModal(); return false;">Forgot password?</a>
                         </div>
                         `}
 
@@ -198,6 +198,14 @@ export async function handleAuth(event, type) {
 
     try {
         const formData = new FormData(form);
+        
+        // Handle Remember Me for sign in
+        const rememberMe = formData.get('rememberMe') === 'on';
+        if (type === 'signin' && rememberMe) {
+            localStorage.setItem('rememberMe', 'true');
+        } else if (type === 'signin') {
+            localStorage.removeItem('rememberMe');
+        }
 
         if (type === 'signup') {
             const password = formData.get('password');
@@ -320,6 +328,7 @@ export async function handleLogout() {
 export async function initAuth() {
     const token = api.getToken();
     const cachedUser = api.getUserData();
+    const rememberMe = localStorage.getItem('rememberMe') === 'true';
 
     if (token && cachedUser) {
         setUser(cachedUser);
@@ -350,9 +359,12 @@ export async function initAuth() {
                 return response.data.user;
             }
         } catch (error) {
-            api.setToken(null);
-            api.setUserData(null);
-            clearUser();
+            // If rememberMe is not set, clear token on auth failure
+            if (!rememberMe) {
+                api.setToken(null);
+                api.setUserData(null);
+                clearUser();
+            }
         }
     }
 
@@ -1041,6 +1053,85 @@ window.toggleCategoryField = toggleCategoryField;
 window.validatePassword = validatePassword;
 window.validatePasswordMatch = validatePasswordMatch;
 window.showHelpSupportModal = showHelpSupportModal;
+window.showForgotPasswordModal = showForgotPasswordModal;
+
+/**
+ * Show Forgot Password modal
+ */
+function showForgotPasswordModal() {
+    const modalContent = `
+        ${AUTH_MODAL_STYLES}
+        <div class="glass-modal-overlay" onclick="if(event.target === this) closeModal()">
+            <div class="glass-modal-content" style="max-width: 440px;">
+                <div class="glass-modal-header">
+                    <span class="glass-modal-title">Reset Password</span>
+                    <button class="glass-modal-close" onclick="closeModal()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                    </button>
+                </div>
+
+                <div class="glass-modal-body">
+                    <div style="text-align: center; margin-bottom: 24px;">
+                        <div style="width: 64px; height: 64px; background: rgba(151, 71, 255, 0.1); border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; border: 1px solid rgba(151, 71, 255, 0.2);">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" style="color: #9747FF;"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </div>
+                        <p style="color: var(--text-secondary); font-size: 14px; line-height: 1.6;">
+                            Enter your email address and we'll send you a link to reset your password.
+                        </p>
+                    </div>
+
+                    <form onsubmit="handleForgotPassword(event)">
+                        <div style="margin-bottom: 20px;">
+                            <label class="glass-form-label">Email Address</label>
+                            <input type="email" name="email" class="glass-input" required placeholder="john@example.com">
+                        </div>
+
+                        <button type="submit" class="glass-btn-primary" id="forgotPasswordBtn">Send Reset Link</button>
+                    </form>
+
+                    <div style="text-align: center; margin-top: 20px;">
+                        <button onclick="showAuthModal('signin'); return false;" class="am-footer-link" style="background: none; border: none; font-family: inherit; font-size: 14px; cursor: pointer;">
+                            Back to Sign In
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    openModal(modalContent);
+}
+
+/**
+ * Handle forgot password form submission
+ */
+async function handleForgotPassword(event) {
+    event.preventDefault();
+
+    const form = event.target;
+    const submitBtn = document.getElementById('forgotPasswordBtn');
+    const originalBtnText = submitBtn.textContent;
+    const email = form.email.value;
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Sending...';
+
+    try {
+        const response = await api.forgotPassword({ email });
+
+        if (response.success) {
+            showToast('Password reset link sent to your email', 'success');
+            closeModal();
+        } else {
+            showToast(response.message || 'Failed to send reset link', 'error');
+        }
+    } catch (error) {
+        showToast(error.message || 'Failed to send reset link. Please try again.', 'error');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalBtnText;
+    }
+}
+window.handleForgotPassword = handleForgotPassword;
 
 // Toggle password visibility
 window.togglePasswordVisibility = function (inputId, button) {

@@ -187,6 +187,10 @@ class ApiService {
         return this.post(API_ENDPOINTS.resendVerification);
     }
 
+    async forgotPassword(data) {
+        return this.post(API_ENDPOINTS.forgotPassword, data, { auth: false });
+    }
+
     async getMe() {
         return this.get(API_ENDPOINTS.me);
     }

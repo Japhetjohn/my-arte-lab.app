@@ -36,5 +36,6 @@ export const API_ENDPOINTS = {
 
     updateProfile: '/auth/update-profile',
     updatePassword: '/auth/update-password',
-    deleteAccount: '/auth/delete-account'
+    deleteAccount: '/auth/delete-account',
+    forgotPassword: '/auth/forgot-password'
 };

@@ -14,7 +14,8 @@ const SETTINGS_STYLES = `
     .st-section { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 24px; padding: 24px; }
     .st-section-title { font-size: 16px; font-weight: 700; color: var(--text-primary); margin-bottom: 24px; display: flex; align-items: center; gap: 10px; }
     
-    .st-label { font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; display: block; opacity: 0.7; }
+    .st-label { font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; display: block; }
+    [data-theme="dark"] .st-label { color: #94A3B8; }
     .st-input { width: 100%; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 12px 16px; color: var(--text-primary); font-size: 14px; transition: all 0.2s; }
     .st-input:focus { border-color: var(--primary); background: rgba(255,255,255,0.05); outline: none; box-shadow: 0 0 0 4px rgba(151,71,255,0.1); }
     
@@ -22,7 +23,8 @@ const SETTINGS_STYLES = `
     .st-item:last-child { border-bottom: none; }
     .st-item-info { display: flex; flex-direction: column; gap: 4px; }
     .st-item-title { font-size: 14px; font-weight: 600; color: var(--text-primary); }
-    .st-item-desc { font-size: 12px; color: var(--text-secondary); opacity: 0.6; }
+    .st-item-desc { font-size: 12px; color: var(--text-secondary); }
+    [data-theme="dark"] .st-item-desc { color: #94A3B8; }
     
     .st-avatar-group { display: flex; align-items: center; gap: 20px; margin-bottom: 28px; }
     .st-avatar-preview { width: 72px; height: 72px; border-radius: 20px; object-fit: cover; border: 2px solid rgba(255,255,255,0.1); background: var(--background-alt); }
@@ -63,7 +65,7 @@ export function renderSettingsPage() {
             <div class="st-content">
                 <div style="margin-bottom: 8px;">
                     <h1 class="st-title">Settings</h1>
-                    <p style="color: var(--text-secondary); font-size: 15px; margin: 0; opacity: 0.7;">Manage your account preferences and professional profile.</p>
+                    <p style="color: var(--text-secondary); font-size: 15px; margin: 0;">Manage your account preferences and professional profile.</p>
                 </div>
 
                 <!-- Profile Section -->
@@ -77,7 +79,7 @@ export function renderSettingsPage() {
                         <img src="${userAvatar}" class="st-avatar-preview" id="avatarPreview">
                         <div>
                             <button class="st-avatar-btn" onclick="handleAvatarUpload()">Change Photo</button>
-                            <p style="font-size: 11px; color: var(--text-secondary); margin-top: 8px; opacity: 0.5;">JPG, PNG or GIF. Max 5MB.</p>
+                            <p style="font-size: 11px; color: var(--text-secondary); margin-top: 8px;">JPG, PNG or GIF. Max 5MB.</p>
                         </div>
                     </div>
 
