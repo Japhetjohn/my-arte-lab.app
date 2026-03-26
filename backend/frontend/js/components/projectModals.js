@@ -355,7 +355,27 @@ window.removeTag = function(type, idx) {
 
 // ===== PROJECT DETAIL MODAL =====
 export async function showProjectDetail(projectId) {
-    window.showLoadingSpinner?.('Loading...');
+    // Show inline skeleton in modal
+    const skeletonHtml = STYLES + `
+        <div class="pm-overlay" onclick="if(event.target===this)window.closeProjectModal()">
+            <div class="pm-modal">
+                <div class="pm-header">
+                    <span class="pm-header-title">Project Details</span>
+                    <button class="pm-close" onclick="window.closeProjectModal()">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                <div class="pm-body">
+                    <div class="skeleton" style="height: 180px; border-radius: 12px; margin-bottom: 20px;"></div>
+                    <div class="skeleton" style="height: 60px; border-radius: 12px; margin-bottom: 20px;"></div>
+                    <div class="skeleton" style="height: 100px; border-radius: 12px; margin-bottom: 20px;"></div>
+                    <div class="skeleton" style="height: 80px; border-radius: 12px;"></div>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', skeletonHtml);
+    document.body.style.overflow = 'hidden';
     
     try {
         const res = await api.getProject(projectId);
