@@ -5,7 +5,7 @@
 
 import { api } from '../services/api.js';
 import { appState } from '../state.js';
-import { showToast } from './toast.js';
+import { showToast } from '../utils.js';
 
 // Current DM state
 let currentDMInterval = null;
