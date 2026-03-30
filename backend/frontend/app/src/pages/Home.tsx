@@ -1,14 +1,11 @@
-import { useState } from 'react';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, TrendingUp, Star, ArrowRight } from 'lucide-react';
+import { TrendingUp, Star, ArrowRight } from 'lucide-react';
 import { CreatorCard } from '@/components/ui-custom/CreatorCard';
 import { CategoryCard } from '@/components/ui-custom/CategoryCard';
 import { creators, categories } from '@/lib/data/mockData';
 import type { Creator, Category } from '@/types';
 
 export function Home() {
-  const [searchQuery, setSearchQuery] = useState('');
   const verifiedCreators = creators.filter(c => c.isVerified).slice(0, 4);
 
   const handleViewProfile = (creator: Creator) => {
@@ -21,14 +18,6 @@ export function Home() {
 
   const handleCategoryClick = (category: Category) => {
     window.location.href = `/explore?category=${category.id}`;
-  };
-
-  const handleSearch = () => {
-    if (searchQuery.trim()) {
-      window.location.href = `/explore?q=${encodeURIComponent(searchQuery)}`;
-    } else {
-      window.location.href = '/explore';
-    }
   };
 
   return (
@@ -50,26 +39,7 @@ export function Home() {
               <p className="text-white/80 text-sm sm:text-base mb-4 sm:mb-6">
                 Connect with talented professionals for your next project
               </p>
-              {/* Search - Desktop only */}
-              <div className="hidden sm:flex items-center gap-2 w-full">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <Input
-                    type="search"
-                    placeholder="What service do you need?"
-                    className="pl-10 h-12 bg-white border-0 text-sm w-full"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                  />
-                </div>
-                <Button 
-                  className="h-12 px-6 bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white"
-                  onClick={handleSearch}
-                >
-                  Search
-                </Button>
-              </div>
+
             </div>
             
             {/* Right Content - Hidden on very small screens, shown on sm+ */}
