@@ -48,9 +48,9 @@ export function TopNavigation({
 
   return (
     <header className="sticky top-0 z-50 w-full bg-white/90 backdrop-blur-md border-b border-gray-200">
-      <div className="flex items-center justify-between h-14 sm:h-16 px-3 sm:px-4 lg:px-6">
+      <div className="flex items-center justify-between h-14 sm:h-16 px-2 sm:px-4 lg:px-6">
         {/* Left - Logo & Menu */}
-        <div className="flex items-center gap-2 sm:gap-4">
+        <div className="flex items-center gap-1 sm:gap-4 min-w-0 flex-shrink-0">
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger asChild>
               <Button
@@ -103,9 +103,9 @@ export function TopNavigation({
             </SheetContent>
           </Sheet>
           
-          <a href="/" className="flex items-center gap-2">
-            <img src="/images/logo.png" alt="MyArtelab" className="w-7 h-7 sm:w-8 sm:h-8" />
-            <span className="font-bold text-lg sm:text-xl hidden sm:block">MyArtelab</span>
+          <a href="/" className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+            <img src="/images/logo.png" alt="MyArtelab" className="w-7 h-7 sm:w-8 sm:h-8 flex-shrink-0" />
+            <span className="font-bold text-base sm:text-xl hidden sm:block truncate">MyArtelab</span>
           </a>
         </div>
 
@@ -124,7 +124,7 @@ export function TopNavigation({
         </form>
 
         {/* Right - Actions */}
-        <div className="flex items-center gap-1 sm:gap-2">
+        <div className="flex items-center gap-0.5 sm:gap-2 flex-shrink-0">
           <Button
             variant="ghost"
             size="icon"
@@ -137,13 +137,13 @@ export function TopNavigation({
           <Button
             variant="ghost"
             size="icon"
-            className="relative h-9 w-9"
+            className="relative h-8 w-8 sm:h-9 sm:w-9"
             onClick={() => window.location.href = '/messages'}
           >
-            <MessageSquare className="w-5 h-5" />
+            <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5" />
             {unreadMessages > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 sm:w-5 sm:h-5 bg-[#8A2BE2] text-white text-[10px] sm:text-xs rounded-full flex items-center justify-center">
-                {unreadMessages}
+              <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 sm:min-w-[18px] sm:h-4.5 bg-[#8A2BE2] text-white text-[9px] sm:text-xs rounded-full flex items-center justify-center px-1">
+                {unreadMessages > 99 ? '99+' : unreadMessages}
               </span>
             )}
           </Button>
@@ -151,26 +151,26 @@ export function TopNavigation({
           <Button
             variant="ghost"
             size="icon"
-            className="relative h-9 w-9"
+            className="relative h-8 w-8 sm:h-9 sm:w-9"
             onClick={() => window.location.href = '/notifications'}
           >
-            <Bell className="w-5 h-5" />
+            <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
             {unreadNotifications > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 sm:w-5 sm:h-5 bg-red-500 text-white text-[10px] sm:text-xs rounded-full flex items-center justify-center">
-                {unreadNotifications}
+              <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 sm:min-w-[18px] sm:h-4.5 bg-red-500 text-white text-[9px] sm:text-xs rounded-full flex items-center justify-center px-1">
+                {unreadNotifications > 99 ? '99+' : unreadNotifications}
               </span>
             )}
           </Button>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="flex items-center gap-2 px-1.5 sm:px-2 h-9">
+              <Button variant="ghost" className="flex items-center gap-1.5 sm:gap-2 px-1 sm:px-2 h-8 sm:h-9 ml-0.5 sm:ml-0">
                 <img
                   src={user.avatar}
                   alt={user.name}
-                  className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover"
+                  className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover flex-shrink-0"
                 />
-                <span className="hidden sm:block font-medium text-sm">{user.name}</span>
+                <span className="hidden sm:block font-medium text-sm max-w-[80px] lg:max-w-[120px] truncate">{user.name}</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-52">
