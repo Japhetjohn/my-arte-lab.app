@@ -277,33 +277,54 @@ export async function renderWalletPage() {
         return;
     }
     
-    mainContent.innerHTML = WALLET_STYLES + renderSkeleton();
+    // Show cached data immediately if available
+    if (walletData) {
+        mainContent.innerHTML = WALLET_STYLES + buildWalletHTML();
+        // Add subtle loading indicator for refresh
+        const txSection = document.querySelector('.w-section:last-of-type');
+        if (txSection) txSection.style.opacity = '0.7';
+    } else {
+        mainContent.innerHTML = WALLET_STYLES + renderSkeleton();
+    }
     
     try {
-        const [walletRes, txRes, bookingsRes] = await Promise.all([
-            api.getHostfiWallet?.() || Promise.resolve({ success: false }),
-            api.getHostfiTransactions?.(1, 10) || Promise.resolve({ success: false }),
-            api.getMyBookings?.() || Promise.resolve({ success: false })
+        // Helper to add timeout to promises
+        const withTimeout = (promise, timeout = 5000, fallback = { success: false }) => {
+            return Promise.race([
+                promise,
+                new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Request timed out')), timeout)
+                )
+            ]).catch(() => fallback);
+        };
+        
+        // Load wallet and transactions in parallel with timeout
+        const [walletRes, txRes] = await Promise.all([
+            withTimeout(api.getHostfiWallet?.(), 8000, { success: false }),
+            withTimeout(api.getHostfiTransactions?.(1, 10), 5000, { success: false })
         ]);
         
-        walletData = walletRes.success ? walletRes.data.wallet : { balance: 0, totalEarnings: 0, inEscrow: 0 };
+        walletData = walletRes.success ? walletRes.data.wallet : (walletData || { balance: 0, totalEarnings: 0, inEscrow: 0 });
         transactions = txRes.success ? (txRes.data?.transactions || []) : [];
-        
-        const bookings = bookingsRes.success ? (bookingsRes.data?.bookings || []) : [];
-        escrowProjects = bookings.filter(b => ['confirmed', 'in_progress', 'delivered'].includes(b.status));
         
         mainContent.innerHTML = WALLET_STYLES + buildWalletHTML();
     } catch (error) {
-        mainContent.innerHTML = WALLET_STYLES + `
-            <div class="w-container" style="text-align: center; padding-top: 60px;">
-                <div style="width: 64px; height: 64px; background: rgba(239,68,68,0.1); border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" style="color: #EF4444;"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        // If we have cached data, show it with error toast
+        if (walletData) {
+            showToast('Using cached data - refresh failed', 'warning');
+            mainContent.innerHTML = WALLET_STYLES + buildWalletHTML();
+        } else {
+            mainContent.innerHTML = WALLET_STYLES + `
+                <div class="w-container" style="text-align: center; padding-top: 60px;">
+                    <div style="width: 64px; height: 64px; background: rgba(239,68,68,0.1); border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" style="color: #EF4444;"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                    </div>
+                    <h3 style="margin-bottom: 8px; color: var(--text-primary);">Failed to load wallet</h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 14px;">${error.message}</p>
+                    <button class="btn-primary" onclick="window.renderWalletPage()" style="height: 44px; padding: 0 24px; border-radius: 12px;">Try Again</button>
                 </div>
-                <h3 style="margin-bottom: 8px; color: var(--text-primary);">Failed to load wallet</h3>
-                <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 14px;">${error.message}</p>
-                <button class="btn-primary" onclick="window.renderWalletPage()" style="height: 44px; padding: 0 24px; border-radius: 12px;">Try Again</button>
-            </div>
-        `;
+            `;
+        }
     }
 }
 
