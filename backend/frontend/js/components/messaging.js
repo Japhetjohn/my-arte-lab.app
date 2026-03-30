@@ -3,7 +3,7 @@
  * Real-time messaging with polling and localStorage caching
  */
 
-import { api } from '../services/api.js';
+import api from '../services/api.js';
 import { appState } from '../state.js';
 import { showToast } from '../utils.js';
 
