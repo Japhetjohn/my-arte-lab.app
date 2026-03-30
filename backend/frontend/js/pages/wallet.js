@@ -572,3 +572,14 @@ export function stopWalletPolling() {
         walletPollingInterval = null;
     }
 }
+
+// Sync wallet data in background (called after auth)
+export async function syncWalletBackground() {
+    if (!appState.user) return;
+    try {
+        const res = await api.getHostfiWallet?.();
+        if (res?.success) walletData = res.data.wallet;
+    } catch (e) {
+        // Silent fail for background sync
+    }
+}
