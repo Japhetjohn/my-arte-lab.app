@@ -454,6 +454,13 @@ export function updateUserMenu() {
                     
                     <!-- User & Settings -->
                     <div class="dropdown-section">
+                        <button class="dropdown-item" onclick="window.showConversationsList()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                            </svg>
+                            Messages
+                            <span id="dmBadge" class="notification-badge" style="display:none;margin-left:auto;">0</span>
+                        </button>
                         <button class="dropdown-item" onclick="navigateToPage('settings')">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <circle cx="12" cy="12" r="3"/>

@@ -592,6 +592,30 @@ class ApiService {
     async addProjectMessage(projectId, message) {
         return this.post(`/projects/${projectId}/messages`, { message });
     }
+
+    // ==========================================
+    // MESSAGES / DM API
+    // ==========================================
+
+    async sendMessage(recipientId, content) {
+        return this.post('/messages', { recipientId, content });
+    }
+
+    async getMessages(otherUserId, page = 1, limit = 50) {
+        return this.get(`/messages/${otherUserId}?page=${page}&limit=${limit}`);
+    }
+
+    async getConversations() {
+        return this.get('/messages/conversations');
+    }
+
+    async getUnreadMessageCount() {
+        return this.get('/messages/unread-count');
+    }
+
+    async markMessagesAsRead(otherUserId) {
+        return this.request(`/messages/${otherUserId}/read`, { method: 'PATCH' });
+    }
 }
 
 export default new ApiService();

@@ -6,6 +6,7 @@ import { checkAndClearCache } from './utils/clearCache.js';
 import { renderCreatorProfile } from './components/creators.js';
 import './utils/serviceManagement.js';
 import './components/projectModals.js';
+import { initMessaging } from './components/messaging.js';
 import {
     showBookingModal,
     handleBookingSubmit,
@@ -67,6 +68,9 @@ async function initializeApp() {
     checkAndClearCache();
 
     await initAuth();
+    
+    // Initialize messaging system
+    initMessaging();
 
 }
 

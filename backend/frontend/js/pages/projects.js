@@ -153,10 +153,15 @@ function renderProjectsList(projects) {
 }
 
 function renderProjectCard(project) {
+    const clientId = project.clientId?._id || project.clientId?.id;
     return `
         <div class="pj-card" data-id="${project._id}">
             <div class="pj-card-top">
-                <img src="${project.clientId?.avatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(project.clientId?.name || 'C')}" class="pj-card-avatar">
+                <img src="${project.clientId?.avatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(project.clientId?.name || 'C')}" 
+                     class="pj-card-avatar" 
+                     onclick="event.stopPropagation(); window.renderCreatorProfile('${clientId}')"
+                     style="cursor: pointer;" 
+                     title="View ${project.clientId?.name || 'Client'}'s profile">
                 <div class="pj-card-meta">
                     <div class="pj-card-client">${project.clientId?.name || 'Client'}</div>
                     <div class="pj-card-time">${formatTimeAgo(project.createdAt)}</div>

@@ -41,6 +41,7 @@ const servicesRoutes = require('./routes/servicesRoutes');
 const favoritesRoutes = require('./routes/favoritesRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const projectRoutes = require('./routes/projects');
+const messagesRoutes = require('./routes/messagesRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 
 const app = express();
@@ -292,6 +293,7 @@ app.use('/api/services', servicesRoutes);
 app.use('/api/favorites', favoritesRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/projects', projectRoutes);
+app.use('/api/messages', messagesRoutes);
 app.use('/api/admin', adminLimiter, verifyAdminAuth, adminRoutes);
 
 app.get('/api', (req, res) => {
