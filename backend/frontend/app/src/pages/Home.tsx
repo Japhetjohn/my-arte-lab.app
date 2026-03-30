@@ -50,27 +50,28 @@ export function Home() {
               <p className="text-white/80 text-sm sm:text-base mb-4 sm:mb-6">
                 Connect with talented professionals for your next project
               </p>
-              {/* Search - Desktop only */}
-              <div className="hidden md:block">
-                <div className="flex items-center gap-2 w-full">
-                  <div className="relative flex-1 min-w-0">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <Input
-                      type="search"
-                      placeholder="What service do you need?"
-                      className="pl-10 h-12 bg-white border-0 text-sm w-full"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                    />
-                  </div>
-                  <Button 
-                    className="h-12 px-6 bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white whitespace-nowrap"
-                    onClick={handleSearch}
-                  >
-                    Search
-                  </Button>
+              {/* Search - All screens */}
+              <div className="flex items-center w-full">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Input
+                    type="search"
+                    placeholder="What service do you need?"
+                    className="pl-10 pr-20 h-11 sm:h-12 bg-white border-0 text-sm w-full rounded-r-none"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                  />
                 </div>
+                <Button 
+                  className="h-11 sm:h-12 px-3 sm:px-6 bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white rounded-l-none border-l border-white/20"
+                  onClick={handleSearch}
+                >
+                  <span className="hidden sm:inline">Search</span>
+                  <svg className="w-4 h-4 sm:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </Button>
               </div>
             </div>
             
