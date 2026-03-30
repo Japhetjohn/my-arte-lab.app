@@ -87,17 +87,42 @@ body {
 
 [data-theme="dark"] .top-nav,
 [data-theme="dark"] .bottom-nav {
-    background: rgba(30, 41, 59, 0.65) !important;
-    border-color: rgba(255, 255, 255, 0.05) !important;
+    background: rgba(17, 24, 39, 0.95) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .top-nav .nav-brand-text h1,
+[data-theme="dark"] .top-nav .nav-brand-text p,
+[data-theme="dark"] .nav-item span,
+[data-theme="dark"] .icon-btn {
+    color: #F8FAFC !important;
+}
+
+[data-theme="dark"] .nav-item {
+    color: #94A3B8 !important;
+}
+
+[data-theme="dark"] .nav-item.active {
+    color: var(--primary) !important;
+}
+
+[data-theme="dark"] .nav-item.active span {
+    color: var(--primary) !important;
 }
 
 /* 3. Search Overlay & Modals */
 .search-overlay,
 .modal-overlay,
 .overlay {
-    background: rgba(15, 23, 36, 0.4) !important;
+    background: rgba(15, 23, 36, 0.6) !important;
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
+}
+
+[data-theme="dark"] .search-overlay,
+[data-theme="dark"] .modal-overlay,
+[data-theme="dark"] .overlay {
+    background: rgba(0, 0, 0, 0.7) !important;
 }
 
 .overlay-content,
@@ -111,9 +136,10 @@ body {
 [data-theme="dark"] .overlay-content,
 [data-theme="dark"] .modal-content,
 [data-theme="dark"] .user-dropdown {
-    background: #1F2937 !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4), 0 8px 20px rgba(0, 0, 0, 0.3) !important;
+    background: #1E293B !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 8px 20px rgba(0, 0, 0, 0.4) !important;
+    color: #F8FAFC !important;
 }
 
 /* 4. Cards & Containers (Soft Glass) */
@@ -137,8 +163,15 @@ body {
 [data-theme="dark"] .service-card,
 [data-theme="dark"] .quick-action-btn,
 [data-theme="dark"] .wallet-card-item {
-    background: rgba(30, 41, 59, 0.5) !important;
-    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    background: rgba(30, 41, 59, 0.8) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    color: #F8FAFC !important;
+}
+
+[data-theme="dark"] .card *,
+[data-theme="dark"] .creator-card *,
+[data-theme="dark"] .service-card * {
+    color: inherit;
 }
 
 /* 5. Inputs and Search Bars */
@@ -162,20 +195,44 @@ body {
 [data-theme="dark"] .form-input,
 [data-theme="dark"] .form-textarea,
 [data-theme="dark"] .form-select {
-    background: rgba(15, 23, 36, 0.5) !important;
-    border-color: rgba(255, 255, 255, 0.1) !important;
+    background: #111827 !important;
+    border-color: #374151 !important;
+    color: #F8FAFC !important;
 }
 
-/* Dark Mode Theme */
+[data-theme="dark"] .search-input::placeholder,
+[data-theme="dark"] .form-input::placeholder,
+[data-theme="dark"] .form-textarea::placeholder {
+    color: #64748B !important;
+}
+
+[data-theme="dark"] .search-input:focus,
+[data-theme="dark"] .form-input:focus,
+[data-theme="dark"] .form-textarea:focus {
+    background: #1F2937 !important;
+    border-color: var(--primary) !important;
+}
+
+/* Dark Mode Theme - Comprehensive */
 [data-theme="dark"] {
-    --background: #0F1724;
-    --background-alt: #1E293B;
-    --border: #334155;
-    --shadow: rgba(0, 0, 0, 0.3);
+    /* Background Colors */
+    --background: #0B1120;
+    --background-alt: #111827;
+    --border: #1F2937;
+    --shadow: rgba(0, 0, 0, 0.5);
+    
+    /* Text Colors - High Contrast */
+    --text-primary: #F8FAFC;
+    --text-secondary: #94A3B8;
+    --text-muted: #64748B;
 
     /* Surface colors for cards and containers */
     --surface: #1E293B;
-    --surface-hover: #334155;
+    --surface-hover: #27354F;
+    
+    /* Glass effect adjustments */
+    --glass-bg: rgba(30, 41, 59, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.08);
 }
 
 /* Light Mode (explicit for better clarity) */
