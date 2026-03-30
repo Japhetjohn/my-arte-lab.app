@@ -397,10 +397,10 @@ export function updateUserMenu() {
             });
         }
         
-        // Show add button for creators
+        // Show add button for creators - opens add service modal
         if (navAddBtn && appState.user.role === 'creator') {
             navAddBtn.style.display = 'flex';
-            navAddBtn.addEventListener('click', () => navigateToPage('projects'));
+            navAddBtn.onclick = () => window.showAddServiceModal();
         }
         
         // Show featured creators avatars
