@@ -12202,3 +12202,105 @@ body {
     height: 200px;
     background: linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%);
 }
+
+/* ===================================
+   Home Page Styles with Dark Mode
+   =================================== */
+
+.home-app {
+    min-height: calc(100vh - 140px);
+    background: var(--background);
+}
+
+[data-theme="dark"] .home-app {
+    background: var(--background);
+}
+
+.home-hero {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    padding: 80px 0 60px;
+    position: relative;
+    overflow: hidden;
+}
+
+[data-theme="dark"] .home-hero {
+    background: linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%);
+}
+
+/* Creator Token Card Dark Mode */
+.creator-token-card {
+    background: var(--surface) !important;
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .creator-token-card {
+    background: #1E293B !important;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .creator-token-card h3 {
+    color: #F8FAFC !important;
+}
+
+[data-theme="dark"] .creator-token-card p {
+    color: #94A3B8 !important;
+}
+
+/* Home Footer Dark Mode */
+.home-footer {
+    background: var(--background-alt);
+    border-top: 1px solid var(--border);
+    padding: 60px 0 30px;
+    margin-top: auto;
+}
+
+[data-theme="dark"] .home-footer {
+    background: #0B1120;
+    border-top-color: #1F2937;
+}
+
+[data-theme="dark"] .home-footer-logo {
+    color: #F8FAFC;
+}
+
+[data-theme="dark"] .home-footer-tagline {
+    color: #94A3B8;
+}
+
+[data-theme="dark"] .home-footer-title {
+    color: #F8FAFC;
+}
+
+[data-theme="dark"] .home-footer-link {
+    color: #94A3B8;
+}
+
+[data-theme="dark"] .home-footer-link:hover {
+    color: var(--primary);
+}
+
+[data-theme="dark"] .home-footer-copyright {
+    color: #64748B;
+}
+
+/* Ensure footer stays at bottom */
+.main-content {
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - 80px);
+}
+
+.page-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.page-container > footer,
+.page-container > .footer,
+.w-footer,
+.bk-footer,
+.pj-footer,
+.home-footer {
+    margin-top: auto;
+}

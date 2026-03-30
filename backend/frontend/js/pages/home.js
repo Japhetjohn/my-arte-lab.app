@@ -91,10 +91,10 @@ function renderModernCreatorCards(creators) {
         
         return `
         <div class="creator-token-card" data-creator-id="${creator.id}" style="
-            background: #FFFFFF;
+            background: var(--surface);
             border-radius: 16px;
             overflow: hidden;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 4px 20px var(--shadow);
             transition: all 0.3s ease;
             cursor: pointer;
             height: 100%;
