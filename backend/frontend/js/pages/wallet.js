@@ -549,3 +549,26 @@ function formatShortDate(date) {
 }
 
 window.renderWalletPage = renderWalletPage;
+
+// Wallet polling functions for auto-refresh
+let walletPollingInterval = null;
+
+export function startWalletPolling() {
+    // Poll wallet data every 30 seconds when on wallet page
+    if (walletPollingInterval) clearInterval(walletPollingInterval);
+    walletPollingInterval = setInterval(() => {
+        // Silent refresh of wallet data
+        if (appState.user && typeof api?.getHostfiWallet === 'function') {
+            api.getHostfiWallet().then(res => {
+                if (res.success) walletData = res.data.wallet;
+            }).catch(() => {});
+        }
+    }, 30000);
+}
+
+export function stopWalletPolling() {
+    if (walletPollingInterval) {
+        clearInterval(walletPollingInterval);
+        walletPollingInterval = null;
+    }
+}
