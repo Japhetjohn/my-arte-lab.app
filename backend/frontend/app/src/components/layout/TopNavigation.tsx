@@ -9,8 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { Search, Bell, MessageSquare, Menu, User, Settings, LogOut, Wallet, Home, Compass, Calendar, FolderOpen } from 'lucide-react';
+import { Search, Bell, MessageSquare, User, Settings, LogOut, Wallet } from 'lucide-react';
 import type { User as UserType } from '@/types';
 
 interface TopNavigationProps {
@@ -20,13 +19,6 @@ interface TopNavigationProps {
   onSearch?: (query: string) => void;
 }
 
-const navItems = [
-  { path: '/home', label: 'Home', icon: Home },
-  { path: '/explore', label: 'Explore', icon: Compass },
-  { path: '/bookings', label: 'Bookings', icon: Calendar },
-  { path: '/projects', label: 'Projects', icon: FolderOpen },
-];
-
 export function TopNavigation({ 
   user, 
   unreadNotifications, 
@@ -34,75 +26,17 @@ export function TopNavigation({
   onSearch 
 }: TopNavigationProps) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     onSearch?.(searchQuery);
   };
 
-  const handleNavClick = (path: string) => {
-    window.location.href = path;
-    setMobileMenuOpen(false);
-  };
-
   return (
     <header className="sticky top-0 z-50 w-full bg-white/90 backdrop-blur-md border-b border-gray-200">
       <div className="flex items-center justify-between h-14 sm:h-16 px-2 sm:px-4 lg:px-6">
-        {/* Left - Logo & Menu */}
+        {/* Left - Logo */}
         <div className="flex items-center gap-1 sm:gap-4 min-w-0 flex-shrink-0">
-          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-            <SheetTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="lg:hidden h-9 w-9"
-              >
-                <Menu className="w-5 h-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-72 p-0">
-              <SheetHeader className="p-4 border-b border-gray-200">
-                <SheetTitle className="flex items-center gap-2">
-                  <img src="/images/logo.png" alt="MyArtelab" className="w-8 h-8" />
-                  <span className="font-bold text-xl">MyArtelab</span>
-                </SheetTitle>
-              </SheetHeader>
-              <nav className="p-3 space-y-1">
-                {navItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = window.location.pathname === item.path;
-                  return (
-                    <button
-                      key={item.path}
-                      onClick={() => handleNavClick(item.path)}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-left ${
-                        isActive 
-                          ? 'bg-[#8A2BE2]/10 text-[#8A2BE2]' 
-                          : 'text-gray-700 hover:bg-gray-100'
-                      }`}
-                    >
-                      <Icon className={`w-5 h-5 ${isActive ? 'fill-current' : ''}`} />
-                      {item.label}
-                    </button>
-                  );
-                })}
-              </nav>
-              <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 bg-white">
-                <div className="bg-gradient-to-br from-[#8A2BE2]/10 to-[#8A2BE2]/5 rounded-lg p-4">
-                  <p className="text-sm font-medium text-gray-900">Become a Creator</p>
-                  <p className="text-xs text-gray-500 mt-1">Start earning on MyArtelab</p>
-                  <button 
-                    onClick={() => handleNavClick('/become-creator')}
-                    className="inline-flex items-center text-sm font-medium text-[#8A2BE2] mt-2 hover:underline"
-                  >
-                    Learn more
-                  </button>
-                </div>
-              </div>
-            </SheetContent>
-          </Sheet>
-          
           <a href="/" className="flex items-center gap-1.5 sm:gap-2 min-w-0">
             <img src="/images/logo.png" alt="MyArtelab" className="w-7 h-7 sm:w-8 sm:h-8 flex-shrink-0" />
             <span className="font-bold text-base sm:text-xl hidden sm:block truncate">MyArtelab</span>
