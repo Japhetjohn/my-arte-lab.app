@@ -38,36 +38,52 @@ export function Home() {
         <img 
           src="/images/hero-bg.jpg" 
           alt="Hero" 
-          className="w-full h-48 sm:h-64 md:h-80 object-cover"
+          className="w-full h-64 md:h-80 object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-transparent flex items-center">
-          <div className="px-4 sm:px-6 md:px-10 max-w-lg">
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-2 sm:mb-3">
-              Find Top Creators
-            </h1>
-            <p className="text-white/80 text-sm sm:text-base mb-4 sm:mb-6">
-              Connect with talented professionals for your next project
-            </p>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <Input
-                  type="search"
-                  placeholder="What service do you need?"
-                  className="pl-10 h-11 sm:h-12 bg-white border-0 text-sm"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                />
+          <div className="w-full px-4 sm:px-6 md:px-10 flex items-center justify-between">
+            {/* Left Content */}
+            <div className="max-w-lg">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-2 sm:mb-3">
+                Find Top Creators
+              </h1>
+              <p className="text-white/80 text-sm sm:text-base mb-4 sm:mb-6">
+                Connect with talented professionals for your next project
+              </p>
+              <div className="flex flex-row gap-2">
+                <div className="relative flex-1 max-w-[280px]">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Input
+                    type="search"
+                    placeholder="What service do you need?"
+                    className="pl-10 h-11 sm:h-12 bg-white border-0 text-sm"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                  />
+                </div>
+                <Button 
+                  className="h-11 sm:h-12 px-4 sm:px-6 bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white"
+                  onClick={handleSearch}
+                >
+                  Search
+                </Button>
               </div>
-              <Button 
-                className="h-11 sm:h-12 px-4 sm:px-6 bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white"
-                onClick={handleSearch}
-              >
-                <span className="sm:hidden">Search</span>
-                <span className="hidden sm:inline">Search</span>
-                <ArrowRight className="w-4 h-4 ml-2 sm:hidden" />
-              </Button>
+            </div>
+            
+            {/* Right Content - Hidden on very small screens, shown on sm+ */}
+            <div className="hidden sm:flex flex-col items-center text-center">
+              <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white/90 tracking-wider">
+                CREATE. CONNECT. THRIVE.
+              </h2>
+              <p className="text-white/70 text-base md:text-lg mt-2">
+                Your Creator Marketplace
+              </p>
+              <img 
+                src="/images/logo.png" 
+                alt="MyArtelab" 
+                className="w-12 h-12 md:w-16 md:h-16 mt-4 opacity-80"
+              />
             </div>
           </div>
         </div>
