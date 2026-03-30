@@ -50,8 +50,8 @@ export function Home() {
               <p className="text-white/80 text-sm sm:text-base mb-4 sm:mb-6">
                 Connect with talented professionals for your next project
               </p>
-              <div className="flex flex-row items-center gap-2">
-                <div className="relative flex-1">
+              <div className="flex items-center gap-2 w-full" style={{ flexDirection: 'row', display: 'flex' }}>
+                <div className="relative flex-1 min-w-0">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <Input
                     type="search"
@@ -63,7 +63,7 @@ export function Home() {
                   />
                 </div>
                 <Button 
-                  className="h-11 sm:h-12 px-3 sm:px-6 bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white flex-shrink-0"
+                  className="h-11 sm:h-12 px-4 sm:px-6 bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white whitespace-nowrap"
                   onClick={handleSearch}
                 >
                   Search
