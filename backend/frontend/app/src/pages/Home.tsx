@@ -50,20 +50,20 @@ export function Home() {
               <p className="text-white/80 text-sm sm:text-base mb-4 sm:mb-6">
                 Connect with talented professionals for your next project
               </p>
-              <div className="flex flex-row gap-2">
-                <div className="relative flex-1 max-w-[280px]">
+              <div className="flex flex-row items-center gap-2">
+                <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <Input
                     type="search"
                     placeholder="What service do you need?"
-                    className="pl-10 h-11 sm:h-12 bg-white border-0 text-sm"
+                    className="pl-10 h-11 sm:h-12 bg-white border-0 text-sm w-full"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                   />
                 </div>
                 <Button 
-                  className="h-11 sm:h-12 px-4 sm:px-6 bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white"
+                  className="h-11 sm:h-12 px-3 sm:px-6 bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white flex-shrink-0"
                   onClick={handleSearch}
                 >
                   Search
