@@ -354,55 +354,6 @@ function buildWalletHTML() {
                 </div>
             </div>
             
-            <!-- Active Escrow Projects -->
-            <div class="w-section">
-                <div class="w-section-header">
-                    <h2 class="w-section-title">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5">
-                            <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-                        </svg>
-                        Active Escrow Projects
-                    </h2>
-                    ${escrowProjects.length > 0 ? '<span class="w-section-link" onclick="window.navigateToPage(\'bookings\')">View All</span>' : ''}
-                </div>
-                
-                ${escrowProjects.length > 0 ? `
-                    <div class="w-list">
-                        ${escrowProjects.slice(0, 3).map(p => `
-                            <div class="w-item" onclick="window.viewBookingDetails?.('${p._id}')">
-                                <div class="w-item-icon">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-                                    </svg>
-                                </div>
-                                <div class="w-item-info">
-                                    <div class="w-item-title">${p.serviceTitle || 'Project'}</div>
-                                    <div class="w-item-meta">
-                                        <span>${p.client?.name || 'Client'}</span>
-                                        <span class="w-item-meta-dot"></span>
-                                        <span>${formatStatus(p.status)}</span>
-                                    </div>
-                                </div>
-                                <div class="w-item-amount">
-                                    <div class="w-item-price">$${(p.amount || 0).toLocaleString()}</div>
-                                    <div class="w-item-status">In Escrow</div>
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                ` : `
-                    <div class="w-empty">
-                        <div class="w-empty-icon">
-                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-                            </svg>
-                        </div>
-                        <div class="w-empty-title">No Active Projects</div>
-                        <div class="w-empty-text">Your escrow projects will appear here</div>
-                    </div>
-                `}
-            </div>
-            
             <!-- Recent Transactions -->
             <div class="w-section">
                 <div class="w-section-header">
@@ -468,48 +419,6 @@ function buildWalletHTML() {
                         <div class="w-empty-text">Your transaction history will appear here</div>
                     </div>
                 `}
-            </div>
-            
-            <!-- Payout Methods -->
-            <div class="w-section">
-                <h2 class="w-section-title">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5">
-                        <rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>
-                    </svg>
-                    Payout Methods
-                </h2>
-                
-                <div class="w-payout-list">
-                    <div class="w-payout-item">
-                        <div class="w-payout-icon" style="color: #3B82F6;">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <rect x="2" y="4" width="20" height="16" rx="2"/><line x1="6" y1="8" x2="6.01" y2="8"/><line x1="2" y1="12" x2="22" y2="12"/>
-                            </svg>
-                        </div>
-                        <div class="w-payout-info">
-                            <div class="w-payout-name">Bank Account</div>
-                            <div class="w-payout-detail">**** 4291</div>
-                        </div>
-                        <span class="w-payout-badge">Default</span>
-                    </div>
-                    
-                    <div class="w-payout-item">
-                        <div class="w-payout-icon" style="color: #8B5CF6;">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2" stroke-linecap="round"/>
-                            </svg>
-                        </div>
-                        <div class="w-payout-info">
-                            <div class="w-payout-name">USDC Wallet</div>
-                            <div class="w-payout-detail">Crypto</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <button class="w-payout-add" onclick="showToast('Add payment method coming soon', 'info')">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>
-                    Add Payment Method
-                </button>
             </div>
             
             <!-- Escrow Protection -->
