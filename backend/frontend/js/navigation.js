@@ -4,6 +4,7 @@ import { renderProjectsPage } from './pages/projects.js';
 import { renderBookingsPage } from './pages/bookings.js';
 import { renderSettingsPage } from './pages/settings.js';
 import { renderNotificationsPage } from './pages/notifications.js';
+import { initMessagesPage } from './pages/messages.js';
 import { renderWalletPage, startWalletPolling, stopWalletPolling } from './pages/wallet.js';
 import { addPageTransition, initScrollAnimations, init2025Effects } from './utils.js';
 
@@ -60,6 +61,9 @@ export function navigateToPage(page, addToHistoryFlag = true) {
                 break;
             case 'settings':
                 renderSettingsPage();
+                break;
+            case 'messages':
+                initMessagesPage();
                 break;
     
         }
