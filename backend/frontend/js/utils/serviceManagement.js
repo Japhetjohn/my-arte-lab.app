@@ -16,31 +16,32 @@ export async function loadServices() {
 window.showAddServiceModal = function() {
     const modal = `
         <style>
-            .svc-modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 36, 0.8); backdrop-filter: blur(12px); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; animation: fadeIn 0.2s ease; }
-            .svc-modal { background: linear-gradient(145deg, #1a1f2e, #0f1724); border: 1px solid rgba(151, 71, 255, 0.2); border-radius: 24px; max-width: 560px; width: 100%; max-height: 90vh; overflow: hidden; display: flex; flex-direction: column; animation: slideUp 0.3s ease; }
-            .svc-modal-header { display: flex; align-items: center; justify-content: space-between; padding: 24px 28px; border-bottom: 1px solid rgba(255,255,255,0.06); }
-            .svc-modal-title { font-size: 20px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 12px; }
-            .svc-modal-close { width: 40px; height: 40px; border-radius: 12px; border: none; background: rgba(255,255,255,0.05); color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
-            .svc-modal-close:hover { background: rgba(255,255,255,0.1); color: var(--text-primary); }
-            .svc-modal-body { padding: 28px; overflow-y: auto; }
+            .svc-modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 36, 0.4); backdrop-filter: blur(8px); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; animation: fadeIn 0.2s ease; }
+            .svc-modal { background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 24px; max-width: 560px; width: 100%; max-height: 90vh; overflow: hidden; display: flex; flex-direction: column; animation: slideUp 0.3s ease; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15); }
+            .svc-modal-header { display: flex; align-items: center; justify-content: space-between; padding: 24px 28px; border-bottom: 1px solid #E2E8F0; background: #FAFAFA; }
+            .svc-modal-title { font-size: 20px; font-weight: 700; color: #0F1724; display: flex; align-items: center; gap: 12px; }
+            .svc-modal-close { width: 40px; height: 40px; border-radius: 12px; border: none; background: #F1F5F9; color: #64748B; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+            .svc-modal-close:hover { background: #E2E8F0; color: #0F1724; }
+            .svc-modal-body { padding: 28px; overflow-y: auto; background: #FFFFFF; }
             .svc-form-group { margin-bottom: 24px; }
-            .svc-label { display: block; font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.05em; }
-            .svc-input { width: 100%; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 14px 18px; color: var(--text-primary); font-size: 15px; transition: all 0.2s; }
-            .svc-input:focus { border-color: var(--primary); background: rgba(255,255,255,0.05); outline: none; }
+            .svc-label { display: block; font-size: 13px; font-weight: 600; color: #64748B; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.05em; }
+            .svc-input { width: 100%; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 14px; padding: 14px 18px; color: #0F1724; font-size: 15px; transition: all 0.2s; }
+            .svc-input:focus { border-color: #9747FF; background: #FFFFFF; outline: none; box-shadow: 0 0 0 3px rgba(151, 71, 255, 0.1); }
             .svc-textarea { min-height: 120px; resize: vertical; line-height: 1.6; }
-            .svc-image-upload { border: 2px dashed rgba(151, 71, 255, 0.3); border-radius: 16px; padding: 32px; text-align: center; cursor: pointer; transition: all 0.2s; background: rgba(151, 71, 255, 0.02); }
-            .svc-image-upload:hover { border-color: var(--primary); background: rgba(151, 71, 255, 0.05); }
-            .svc-image-upload svg { margin-bottom: 12px; color: var(--primary); }
+            .svc-image-upload { border: 2px dashed #CBD5E1; border-radius: 16px; padding: 32px; text-align: center; cursor: pointer; transition: all 0.2s; background: #F8FAFC; }
+            .svc-image-upload:hover { border-color: #9747FF; background: #F5F3FF; }
+            .svc-image-upload svg { margin-bottom: 12px; color: #9747FF; }
             .svc-image-preview { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; }
-            .svc-image-item { aspect-ratio: 1; border-radius: 12px; overflow: hidden; position: relative; background: rgba(255,255,255,0.05); }
+            .svc-image-item { aspect-ratio: 1; border-radius: 12px; overflow: hidden; position: relative; background: #F1F5F9; border: 1px solid #E2E8F0; }
             .svc-image-item img { width: 100%; height: 100%; object-fit: cover; }
-            .svc-image-remove { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; background: rgba(239, 68, 68, 0.9); border: none; border-radius: 8px; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-            .svc-actions { display: flex; gap: 12px; padding: 24px 28px; border-top: 1px solid rgba(255,255,255,0.06); }
+            .svc-image-remove { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; background: #EF4444; border: none; border-radius: 8px; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+            .svc-actions { display: flex; gap: 12px; padding: 24px 28px; border-top: 1px solid #E2E8F0; background: #FAFAFA; }
             .svc-btn { flex: 1; padding: 14px 24px; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; border: none; }
-            .svc-btn-secondary { background: rgba(255,255,255,0.05); color: var(--text-primary); border: 1px solid rgba(255,255,255,0.1); }
-            .svc-btn-secondary:hover { background: rgba(255,255,255,0.1); }
-            .svc-btn-primary { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; }
+            .svc-btn-secondary { background: #F1F5F9; color: #475569; border: 1px solid #E2E8F0; }
+            .svc-btn-secondary:hover { background: #E2E8F0; }
+            .svc-btn-primary { background: linear-gradient(135deg, #9747FF, #7C3AED); color: white; }
             .svc-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(151, 71, 255, 0.3); }
+            .svc-btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
             .svc-price-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
             @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
             @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
