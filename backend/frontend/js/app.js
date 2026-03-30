@@ -175,7 +175,7 @@ function handleHistoryRoute() {
     } else {
         // Match other pages (wallet, bookings, etc)
         const page = path.substring(1);
-        const validPages = ['projects', 'bookings', 'notifications', 'wallet', 'profile', 'settings', 'favorites'];
+        const validPages = ['projects', 'bookings', 'notifications', 'wallet', 'profile', 'settings'];
         if (validPages.includes(page)) {
             navigateToPage(page, false);
         } else {

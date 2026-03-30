@@ -5400,28 +5400,6 @@ select:focus-visible {
     color: var(--text-secondary);
 }
 
-/* Favorites Grid */
-.favorites-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 24px;
-}
-
-.favorite-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    overflow: hidden;
-    transition: all 0.2s;
-    cursor: pointer;
-}
-
-.favorite-card:hover {
-    border-color: var(--primary);
-    box-shadow: 0 4px 16px rgba(151, 71, 255, 0.15);
-    transform: translateY(-4px);
-}
-
 /* Section Headers with Actions */
 .section-header {
     display: flex;

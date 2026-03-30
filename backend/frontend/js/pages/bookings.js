@@ -344,6 +344,17 @@ function renderBookingsList() {
                 </div>
             </div>
 
+            <!-- Escrow Flow Info -->
+            <div style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.15); border-radius: 16px; padding: 16px 20px; display: flex; align-items: center; gap: 14px;">
+                <div style="width: 40px; height: 40px; background: rgba(16, 185, 129, 0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #10B981; flex-shrink: 0;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </div>
+                <div>
+                    <div style="font-size: 14px; font-weight: 700; color: var(--text-primary); margin-bottom: 2px;">Secure Escrow Protection</div>
+                    <div style="font-size: 12px; color: var(--text-secondary);">Funds are held safely until work is delivered and approved</div>
+                </div>
+            </div>
+
             <!-- Filter Tabs -->
             <div class="bk-filter-tabs">
                 <div class="bk-filter-tab ${currentFilter === 'all' ? 'active' : ''}" onclick="window.filterBookings('all')">All History</div>
@@ -385,7 +396,19 @@ function buildBookingItemHTML(booking) {
         delivered: 'delivered'
     };
     const statusClass = statusClasses[booking.status] || 'pending';
-    const statusLabel = formatStatus(booking.status);
+    
+    // Enhanced status labels showing escrow state
+    const statusLabels = {
+        'pending': 'Awaiting Response',
+        'awaiting_payment': 'Awaiting Payment',
+        'confirmed': 'In Escrow • Not Started',
+        'in_progress': 'In Escrow • In Progress',
+        'delivered': 'In Escrow • Review Pending',
+        'completed': 'Completed • Paid',
+        'completed_with_escrow': 'Completed • Paid',
+        'cancelled': 'Cancelled'
+    };
+    const statusLabel = statusLabels[booking.status] || formatStatus(booking.status);
 
     return `
         <div class="bk-item" onclick="window.viewBookingDetails('${booking._id}')">

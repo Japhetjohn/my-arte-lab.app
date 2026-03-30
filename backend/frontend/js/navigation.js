@@ -3,7 +3,6 @@ import { renderHomePage } from './pages/home.js';
 import { renderProjectsPage } from './pages/projects.js';
 import { renderBookingsPage } from './pages/bookings.js';
 import { renderSettingsPage } from './pages/settings.js';
-import { renderFavoritesPage } from './pages/favorites.js';
 import { renderNotificationsPage } from './pages/notifications.js';
 import { renderWalletPage, startWalletPolling, stopWalletPolling } from './pages/wallet.js';
 import { addPageTransition, initScrollAnimations, init2025Effects } from './utils.js';
@@ -62,9 +61,7 @@ export function navigateToPage(page, addToHistoryFlag = true) {
             case 'settings':
                 renderSettingsPage();
                 break;
-            case 'favorites':
-                renderFavoritesPage();
-                break;
+    
         }
 
         requestAnimationFrame(() => {

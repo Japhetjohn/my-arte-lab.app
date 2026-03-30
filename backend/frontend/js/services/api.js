@@ -500,23 +500,6 @@ class ApiService {
     }
 
 
-    async getFavorites() {
-        return this.get('/favorites');
-    }
-
-    async addToFavorites(creatorId) {
-        return this.post(`/favorites/${creatorId}`);
-    }
-
-    async removeFromFavorites(creatorId) {
-        return this.delete(`/favorites/${creatorId}`);
-    }
-
-    async isFavorited(creatorId) {
-        return this.get(`/favorites/${creatorId}/status`);
-    }
-
-
     async getNotifications(filters = {}) {
         const queryParams = new URLSearchParams(filters).toString();
         const endpoint = queryParams ? `/notifications?${queryParams}` : '/notifications';
