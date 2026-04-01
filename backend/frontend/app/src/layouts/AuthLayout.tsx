@@ -19,7 +19,7 @@ export function AuthLayout({
   return (
     <div className="min-h-screen flex">
       {/* Left Side - Form */}
-      <div className="flex-1 flex flex-col justify-center px-4 sm:px-6 lg:px-8 xl:px-12 py-12 bg-white">
+      <div className="flex-1 flex flex-col justify-center px-4 sm:px-6 lg:px-8 xl:px-12 py-6 sm:py-12 bg-white w-full min-w-0">
         <div className="max-w-md w-full mx-auto">
           {/* Logo */}
           <div className="flex items-center justify-between mb-8">

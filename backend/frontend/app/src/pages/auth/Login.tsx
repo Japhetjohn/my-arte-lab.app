@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,6 +14,7 @@ import { Loader2, Mail } from 'lucide-react';
 
 export function Login() {
   const { login } = useAuth();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
 
   const {
@@ -30,7 +32,7 @@ export function Login() {
     setIsLoading(true);
     try {
       await login(data.email, data.password, data.rememberMe);
-      window.location.href = '/home';
+      navigate('/home');
     } catch (error) {
       // Error is handled in login function
     } finally {
@@ -104,9 +106,9 @@ export function Login() {
 
         <p className="text-center text-sm text-gray-600 pt-4">
           Don't have an account?{' '}
-          <a href="/register" className="text-[#8A2BE2] hover:underline font-medium">
+          <Link to="/register" className="text-[#8A2BE2] hover:underline font-medium">
             Sign up
-          </a>
+          </Link>
         </p>
       </form>
     </AuthLayout>
