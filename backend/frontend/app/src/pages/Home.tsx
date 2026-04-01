@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, TrendingUp, Star, ArrowRight } from 'lucide-react';
-import { CreatorCard } from '@/components/ui-custom/CreatorCard';
-import { CategoryCard } from '@/components/ui-custom/CategoryCard';
+import { CreatorCard } from '@/components/shared/CreatorCard';
+import { CategoryCard } from '@/components/shared/CategoryCard';
 import { creators, categories } from '@/lib/data/mockData';
 import type { Creator, Category } from '@/types';
 

@@ -3,8 +3,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { EmptyState } from '@/components/ui-custom/EmptyState';
-import { StatusBadge } from '@/components/ui-custom/StatusBadge';
+import { EmptyState } from '@/components/shared/EmptyState';
+import { StatusBadge } from '@/components/shared/StatusBadge';
 import { projects as mockProjects } from '@/lib/data/mockData';
 import { Plus, Calendar, DollarSign, Users, MoreVertical } from 'lucide-react';
 import {

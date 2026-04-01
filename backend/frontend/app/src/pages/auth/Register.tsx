@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ImageUpload } from '@/components/ui-custom/ImageUpload';
-import { PasswordInput } from '@/components/ui-custom/PasswordInput';
+import { ImageUpload } from '@/components/shared/ImageUpload';
+import { PasswordInput } from '@/components/shared/PasswordInput';
 import { AuthLayout } from '@/layouts/AuthLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import {

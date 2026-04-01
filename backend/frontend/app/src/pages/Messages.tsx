@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { EmptyState } from '@/components/ui-custom/EmptyState';
+import { EmptyState } from '@/components/shared/EmptyState';
 import { conversations as mockConversations } from '@/lib/data/mockData';
 import { Search, Send, Phone, Video, MoreVertical, ChevronLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';

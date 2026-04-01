@@ -3,9 +3,9 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Search, SlidersHorizontal, Grid3X3, List } from 'lucide-react';
-import { CreatorCard } from '@/components/ui-custom/CreatorCard';
-import { CategoryCard } from '@/components/ui-custom/CategoryCard';
-import { EmptyState } from '@/components/ui-custom/EmptyState';
+import { CreatorCard } from '@/components/shared/CreatorCard';
+import { CategoryCard } from '@/components/shared/CategoryCard';
+import { EmptyState } from '@/components/shared/EmptyState';
 import { creators, categories } from '@/lib/data/mockData';
 import type { Creator, Category } from '@/types';
 

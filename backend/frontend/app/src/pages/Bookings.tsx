@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { EmptyState } from '@/components/ui-custom/EmptyState';
-import { StatusBadge } from '@/components/ui-custom/StatusBadge';
-import { BookingTracker } from '@/components/ui-custom/BookingTracker';
+import { EmptyState } from '@/components/shared/EmptyState';
+import { StatusBadge } from '@/components/shared/StatusBadge';
+import { BookingTracker } from '@/components/shared/BookingTracker';
 import { bookings as mockBookings } from '@/lib/data/mockData';
 import { Calendar, MessageSquare, MoreVertical, DollarSign } from 'lucide-react';
 import {

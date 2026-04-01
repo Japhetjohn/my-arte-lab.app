@@ -19,7 +19,7 @@ import { Projects } from '@/pages/Projects';
 import { CreatorProfile } from '@/pages/CreatorProfile';
 import { Explore } from '@/pages/Explore';
 import { Creators } from '@/pages/Creators';
-import { EmptyState } from '@/components/ui-custom/EmptyState';
+import { EmptyState } from '@/components/shared/EmptyState';
 import { Toaster } from '@/components/ui/sonner';
 import './App.css';
 

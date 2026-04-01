@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { EmptyState } from '@/components/ui-custom/EmptyState';
+import { EmptyState } from '@/components/shared/EmptyState';
 import { notifications as mockNotifications } from '@/lib/data/mockData';
 import { 
   Check, 

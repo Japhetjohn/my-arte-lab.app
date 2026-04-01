@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, Star } from 'lucide-react';
-import { CreatorCard } from '@/components/ui-custom/CreatorCard';
-import { EmptyState } from '@/components/ui-custom/EmptyState';
+import { CreatorCard } from '@/components/shared/CreatorCard';
+import { EmptyState } from '@/components/shared/EmptyState';
 import { creators } from '@/lib/data/mockData';
 import type { Creator } from '@/types';
 
