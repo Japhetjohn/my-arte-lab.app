@@ -69,7 +69,7 @@ export function Settings() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="location">Location</Label>
-                  <Input id="location" defaultValue={user.location} />
+                  <Input id="location" defaultValue={user.location ? `${user.location.localArea || ''}, ${user.location.state || ''}, ${user.location.country || ''}`.replace(/^,\s*|,\s*$/g, '').replace(/,\s*,/g, ',') : ''} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone</Label>

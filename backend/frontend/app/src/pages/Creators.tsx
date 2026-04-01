@@ -12,12 +12,12 @@ export function Creators() {
   const [filter, setFilter] = useState<'all' | 'verified' | 'top'>('all');
 
   const filteredCreators = creators.filter(creator => {
-    const matchesSearch = creator.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    const matchesSearch = (creator.name || 'Unknown').toLowerCase().includes(searchQuery.toLowerCase()) ||
                          creator.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          creator.skills.some(s => s.toLowerCase().includes(searchQuery.toLowerCase()));
     
     if (filter === 'verified') return matchesSearch && creator.isVerified;
-    if (filter === 'top') return matchesSearch && creator.rating >= 4.8;
+    if (filter === 'top') return matchesSearch && (creator.rating || 0) >= 4.8;
     return matchesSearch;
   });
 

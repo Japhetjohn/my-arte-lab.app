@@ -1,15 +1,25 @@
 export interface User {
   id: string;
-  name: string;
   email: string;
-  avatar: string;
-  isVerified: boolean;
-  role: 'creator' | 'client' | 'admin';
+  firstName: string;
+  lastName: string;
+  name?: string; // computed getter
+  avatar?: string;
+  coverImage?: string;
+  role: 'client' | 'creator' | 'admin';
+  isEmailVerified: boolean;
+  isVerified?: boolean;
+  location?: {
+    localArea?: string;
+    state?: string;
+    country?: string;
+  };
+  category?: string;
   bio?: string;
-  location?: string;
-  rating: number;
-  reviewCount: number;
-  joinedAt: string;
+  rating?: number;
+  reviewCount?: number;
+  joinedAt?: string;
+  createdAt?: string;
 }
 
 export interface Creator extends User {

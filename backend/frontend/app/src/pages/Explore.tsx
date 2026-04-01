@@ -15,7 +15,7 @@ export function Explore() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   const filteredCreators = creators.filter(creator => {
-    const matchesSearch = creator.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    const matchesSearch = (creator.name || 'Unknown').toLowerCase().includes(searchQuery.toLowerCase()) ||
                          creator.skills.some(s => s.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesCategory = !selectedCategory || creator.category === selectedCategory;
     return matchesSearch && matchesCategory;
@@ -90,7 +90,7 @@ export function Explore() {
       {!selectedCategory && !searchQuery && (
         <div>
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Categories</h2>
-          <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             {categories.map((category) => (
               <CategoryCard 
                 key={category.id} 
@@ -190,9 +190,9 @@ export function Explore() {
         </TabsContent>
 
         <TabsContent value="top-rated" className="mt-6">
-          {filteredCreators.filter(c => c.rating >= 4.8).length > 0 ? (
+          {filteredCreators.filter(c => (c.rating || 0) >= 4.8).length > 0 ? (
             <div className={`grid gap-4 ${viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1'}`}>
-              {filteredCreators.filter(c => c.rating >= 4.8).map((creator) => (
+              {filteredCreators.filter(c => (c.rating || 0) >= 4.8).map((creator) => (
                 <CreatorCard 
                   key={creator.id} 
                   creator={creator}

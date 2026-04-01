@@ -2,6 +2,13 @@ import { useState, useEffect } from 'react';
 import { TopNavigation } from '@/components/layout/TopNavigation';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { BottomNavigation } from '@/components/layout/BottomNavigation';
+import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+
+import { Login } from '@/pages/auth/Login';
+import { Register } from '@/pages/auth/Register';
+import { VerifyEmail } from '@/pages/auth/VerifyEmail';
+import { ForgotPassword } from '@/pages/auth/ForgotPassword';
+import { ResetPassword } from '@/pages/auth/ResetPassword';
 import { Home } from '@/pages/Home';
 import { Bookings } from '@/pages/Bookings';
 import { Wallet } from '@/pages/Wallet';
@@ -12,13 +19,15 @@ import { Projects } from '@/pages/Projects';
 import { CreatorProfile } from '@/pages/CreatorProfile';
 import { Explore } from '@/pages/Explore';
 import { Creators } from '@/pages/Creators';
-import { currentUser, notifications, conversations, creators } from '@/lib/data/mockData';
 import { EmptyState } from '@/components/ui-custom/EmptyState';
+import { Toaster } from '@/components/ui/sonner';
 import './App.css';
 
-function App() {
+// Main App Content Component
+function AppContent() {
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const { user, isAuthenticated, isLoading, logout } = useAuth();
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -42,9 +51,6 @@ function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  const unreadNotifications = notifications.filter(n => !n.isRead).length;
-  const unreadMessages = conversations.reduce((acc, conv) => acc + conv.unreadCount, 0);
-
   const navigate = (path: string) => {
     window.history.pushState({}, '', path);
     setCurrentPath(path);
@@ -54,11 +60,45 @@ function App() {
   const getCreatorFromPath = (path: string) => {
     const match = path.match(/\/creator\/(.+)/);
     if (match) {
-      const creatorId = match[1];
-      return creators.find(c => c.id === creatorId) || null;
+      return match[1];
     }
     return null;
   };
+
+  // Public routes (no auth required)
+  const publicRoutes = ['/login', '/register', '/forgot-password', '/reset-password'];
+  const isPublicRoute = publicRoutes.some(route => currentPath.startsWith(route));
+
+  // If on public route, render auth pages
+  if (isPublicRoute) {
+    switch (true) {
+      case currentPath === '/login':
+        return isAuthenticated ? <NavigateToHome /> : <Login />;
+      case currentPath === '/register':
+        return isAuthenticated ? <NavigateToHome /> : <Register />;
+      case currentPath === '/forgot-password':
+        return <ForgotPassword />;
+      case currentPath.startsWith('/reset-password'):
+        return <ResetPassword />;
+      default:
+        return <Login />;
+    }
+  }
+
+  // If not authenticated, redirect to login
+  if (!isAuthenticated && !isLoading) {
+    window.location.href = '/login';
+    return null;
+  }
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#8A2BE2]"></div>
+      </div>
+    );
+  }
 
   const renderPage = () => {
     if (!isOnline) {
@@ -74,9 +114,9 @@ function App() {
     }
 
     // Check if it's a creator profile page
-    const creator = getCreatorFromPath(currentPath);
-    if (creator) {
-      return <CreatorProfile creatorId={creator.id} />;
+    const creatorId = getCreatorFromPath(currentPath);
+    if (creatorId) {
+      return <CreatorProfile creatorId={creatorId} />;
     }
 
     switch (currentPath) {
@@ -101,6 +141,8 @@ function App() {
         return <Creators />;
       case '/profile':
         return <Settings />;
+      case '/verify-email':
+        return <VerifyEmail />;
       default:
         return (
           <EmptyState
@@ -117,10 +159,11 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-50">
       <TopNavigation
-        user={currentUser}
-        unreadNotifications={unreadNotifications}
-        unreadMessages={unreadMessages}
+        user={user}
+        unreadNotifications={0}
+        unreadMessages={0}
         onSearch={(query) => navigate(`/explore?q=${query}`)}
+        onLogout={logout}
       />
       
       <div className="flex">
@@ -135,6 +178,20 @@ function App() {
       
       <BottomNavigation currentPath={currentPath} />
     </div>
+  );
+}
+
+function NavigateToHome() {
+  window.location.href = '/home';
+  return null;
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+      <Toaster position="top-right" richColors />
+    </AuthProvider>
   );
 }
 

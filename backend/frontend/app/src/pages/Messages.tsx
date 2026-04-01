@@ -78,7 +78,7 @@ export function Messages() {
   };
 
   const filteredConversations = conversations.filter(conv =>
-    conv.participant.name.toLowerCase().includes(searchQuery.toLowerCase())
+    (conv.participant.name || 'Unknown').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (

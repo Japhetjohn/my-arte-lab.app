@@ -97,7 +97,7 @@ export function CreatorProfile({ creatorId }: CreatorProfileProps) {
                     </div>
                     <div className="flex items-center gap-1">
                       <MapPin className="w-4 h-4" />
-                      {creator.location}
+                      {creator.location && (creator.location.localArea || creator.location.state || creator.location.country) ? `${creator.location.localArea || ''}, ${creator.location.state || ''}, ${creator.location.country || ''}`.replace(/^,\s*|,\s*$/g, '').replace(/,\s*,/g, ',') : 'No location set'}
                     </div>
                   </div>
                 </div>
