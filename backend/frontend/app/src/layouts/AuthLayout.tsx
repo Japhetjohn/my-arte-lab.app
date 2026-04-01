@@ -62,7 +62,7 @@ export function AuthLayout({
             <img
               src={illustration}
               alt="Auth Illustration"
-              className="w-full max-w-md mx-auto mb-8 rounded-2xl shadow-2xl"
+              className="w-full max-w-md mx-auto mb-8"
             />
             <h2 className="text-2xl font-bold mb-2">
               Connect with Top Creators

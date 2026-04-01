@@ -426,7 +426,7 @@ export function Register() {
     <AuthLayout
       title="Create Account"
       subtitle="Join MyArtelab and start your journey"
-      illustration="/images/register-hero.png"
+      illustration="/images/welcome.png"
     >
       {renderStepIndicator()}
       {currentStep === 1 && renderStep1()}
