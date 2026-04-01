@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,7 +13,6 @@ import { Loader2, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function Login() {
-  const navigate = useNavigate();
   const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -33,7 +31,7 @@ export function Login() {
     setIsLoading(true);
     try {
       await login(data.email, data.password, data.rememberMe);
-      navigate('/home');
+      window.location.href = '/home';
     } catch (error) {
       // Error is handled in login function
     } finally {
@@ -68,12 +66,12 @@ export function Login() {
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label htmlFor="password">Password</Label>
-            <Link
-              to="/forgot-password"
+            <a
+              href="/forgot-password"
               className="text-sm text-[#8A2BE2] hover:underline"
             >
               Forgot password?
-            </Link>
+            </a>
           </div>
           <PasswordInput
             id="password"
@@ -143,9 +141,9 @@ export function Login() {
 
         <p className="text-center text-sm text-gray-600">
           Don't have an account?{' '}
-          <Link to="/register" className="text-[#8A2BE2] hover:underline font-medium">
+          <a href="/register" className="text-[#8A2BE2] hover:underline font-medium">
             Sign up
-          </Link>
+          </a>
         </p>
       </form>
     </AuthLayout>

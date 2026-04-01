@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { BrowserRouter } from 'react-router-dom';
 import { TopNavigation } from '@/components/layout/TopNavigation';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { BottomNavigation } from '@/components/layout/BottomNavigation';
@@ -188,10 +189,12 @@ function NavigateToHome() {
 
 function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-      <Toaster position="top-right" richColors />
-    </AuthProvider>
+    <BrowserRouter>
+      <AuthProvider>
+        <AppContent />
+        <Toaster position="top-right" richColors />
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
 
