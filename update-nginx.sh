@@ -1,9 +1,27 @@
+#!/bin/bash
+# Update nginx configuration for SPA support
+
+cat << 'EOF'
+
+═══════════════════════════════════════════════════════════════════
+
+🔧 NGINX CONFIG UPDATE REQUIRED
+
+═══════════════════════════════════════════════════════════════════
+
+SSH into server and run these commands:
+
+ssh root@72.61.97.210
+(password: @Kuulsinim45)
+
+# Then run:
+cat > /etc/nginx/sites-available/myartelab << 'NGINX_CONFIG'
 server {
     server_name app.myartelab.com;
 
     client_max_body_size 50M;
 
-    # Uploaded Images (served directly by Nginx)
+    # Uploaded Images
     location ^~ /uploads/ {
         alias /var/www/myartelab/backend/uploads/;
         expires 7d;
@@ -26,7 +44,7 @@ server {
         proxy_connect_timeout 75s;
     }
 
-    # Static assets - exact files first
+    # Static assets
     location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
         root /var/www/myartelab/backend/frontend;
         expires 1y;
@@ -57,3 +75,13 @@ server {
     server_name app.myartelab.com;
     return 404;
 }
+NGINX_CONFIG
+
+# Test and reload nginx
+nginx -t && systemctl reload nginx
+
+echo "✅ Nginx updated!"
+
+═══════════════════════════════════════════════════════════════════
+
+EOF
