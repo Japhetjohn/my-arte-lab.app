@@ -84,13 +84,13 @@ export function Login() {
           />
         </div>
 
-        <div className="flex items-center space-x-2 sm:space-x-3">
+        <div className="flex items-center space-x-2">
           <Checkbox 
             id="rememberMe" 
             {...register('rememberMe')} 
-            className="h-4 w-4 sm:h-5 sm:w-5 border-2 data-[state=checked]:bg-[#8A2BE2] data-[state=checked]:border-[#8A2BE2]"
+            className="h-4 w-4 border-2 data-[state=checked]:bg-[#8A2BE2] data-[state=checked]:border-[#8A2BE2]"
           />
-          <Label htmlFor="rememberMe" className="text-xs sm:text-sm font-normal cursor-pointer">
+          <Label htmlFor="rememberMe" className="text-xs font-normal cursor-pointer">
             Remember me for 30 days
           </Label>
         </div>

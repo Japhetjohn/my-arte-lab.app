@@ -2,8 +2,8 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import axios from 'axios';
 import { toast } from 'sonner';
 
-// API base URL
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+// API base URL - use relative path for production, fallback to localhost for dev
+const API_URL = '/api';
 
 // Create axios instance
 const api = axios.create({
