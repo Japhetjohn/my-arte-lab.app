@@ -24,9 +24,9 @@ const requirements: StrengthRequirement[] = [
 ];
 
 export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
-  ({ showStrength = false, label, error, className, value = '', ...props }, ref) => {
+  ({ showStrength = false, label, error, className, ...props }, ref) => {
     const [showPassword, setShowPassword] = useState(false);
-    const password = String(value);
+    const password = String(props.value || '');
 
     const getStrength = () => {
       const passed = requirements.filter((req) => req.test(password)).length;
@@ -64,7 +64,6 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
               error && 'border-red-500 focus-visible:ring-red-500',
               className
             )}
-            value={value}
             {...props}
           />
           <Button
