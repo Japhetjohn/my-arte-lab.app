@@ -1,14 +1,11 @@
-import { useState } from 'react';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, TrendingUp, Star, ArrowRight } from 'lucide-react';
+import { TrendingUp, Star, ArrowRight } from 'lucide-react';
 import { CreatorCard } from '@/components/shared/CreatorCard';
 import { CategoryCard } from '@/components/shared/CategoryCard';
 import { creators, categories } from '@/lib/data/mockData';
 import type { Creator, Category } from '@/types';
 
 export function Home() {
-  const [searchQuery, setSearchQuery] = useState('');
   const verifiedCreators = creators.filter(c => c.isVerified).slice(0, 4);
 
   const handleViewProfile = (creator: Creator) => {
@@ -23,14 +20,6 @@ export function Home() {
     window.location.href = `/explore?category=${category.id}`;
   };
 
-  const handleSearch = () => {
-    if (searchQuery.trim()) {
-      window.location.href = `/explore?q=${encodeURIComponent(searchQuery)}`;
-    } else {
-      window.location.href = '/explore';
-    }
-  };
-
   return (
     <div className="space-y-8 pb-20 lg:pb-8">
       {/* Hero Section */}
@@ -40,37 +29,6 @@ export function Home() {
           alt="Hero" 
           className="w-full h-48 sm:h-64 md:h-80 object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-transparent flex items-center">
-          <div className="px-4 sm:px-6 md:px-10 max-w-lg">
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-2 sm:mb-3">
-              Find Top Creators
-            </h1>
-            <p className="text-white/80 text-sm sm:text-base mb-4 sm:mb-6">
-              Connect with talented professionals for your next project
-            </p>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <Input
-                  type="search"
-                  placeholder="What service do you need?"
-                  className="pl-10 h-11 sm:h-12 bg-white border-0 text-sm"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                />
-              </div>
-              <Button 
-                className="h-11 sm:h-12 px-4 sm:px-6 bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white"
-                onClick={handleSearch}
-              >
-                <span className="sm:hidden">Search</span>
-                <span className="hidden sm:inline">Search</span>
-                <ArrowRight className="w-4 h-4 ml-2 sm:hidden" />
-              </Button>
-            </div>
-          </div>
-        </div>
       </section>
 
       {/* Categories Section */}
