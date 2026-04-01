@@ -434,6 +434,7 @@ export function Register() {
       title="Create Account"
       subtitle="Join MyArtelab and start your journey"
       illustration="/images/welcome.png"
+      showBackButton={false}
     >
       {renderStepIndicator()}
       {currentStep === 1 && renderStep1()}

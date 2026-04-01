@@ -45,6 +45,7 @@ export function Login() {
       title="Welcome Back"
       subtitle="Sign in to your MyArtelab account"
       illustration="/images/welcome.png"
+      showBackButton={false}
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 sm:space-y-5">
         <div className="space-y-2">
@@ -83,13 +84,13 @@ export function Login() {
           />
         </div>
 
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-2 sm:space-x-3">
           <Checkbox 
             id="rememberMe" 
             {...register('rememberMe')} 
-            className="h-5 w-5 border-2 data-[state=checked]:bg-[#8A2BE2] data-[state=checked]:border-[#8A2BE2]"
+            className="h-4 w-4 sm:h-5 sm:w-5 border-2 data-[state=checked]:bg-[#8A2BE2] data-[state=checked]:border-[#8A2BE2]"
           />
-          <Label htmlFor="rememberMe" className="text-sm font-normal cursor-pointer">
+          <Label htmlFor="rememberMe" className="text-xs sm:text-sm font-normal cursor-pointer">
             Remember me for 30 days
           </Label>
         </div>
