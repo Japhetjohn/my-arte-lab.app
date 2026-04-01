@@ -134,16 +134,16 @@ export function Register() {
   );
 
   const renderStep1 = () => (
-    <form onSubmit={step1Form.handleSubmit(handleStep1Submit)} className="space-y-5">
-      <div className="grid grid-cols-2 gap-4">
+    <form onSubmit={step1Form.handleSubmit(handleStep1Submit)} className="space-y-4 sm:space-y-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="firstName">First Name</Label>
+          <Label htmlFor="firstName" className="text-sm sm:text-base">First Name</Label>
           <div className="relative">
             <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <Input
               id="firstName"
               placeholder="John"
-              className="pl-10"
+              className="pl-10 h-12 sm:h-11 text-base"
               {...step1Form.register('firstName')}
             />
           </div>
@@ -155,10 +155,11 @@ export function Register() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="lastName">Last Name</Label>
+          <Label htmlFor="lastName" className="text-sm sm:text-base">Last Name</Label>
           <Input
             id="lastName"
             placeholder="Doe"
+            className="h-12 sm:h-11 text-base"
             {...step1Form.register('lastName')}
           />
           {step1Form.formState.errors.lastName && (
@@ -170,14 +171,14 @@ export function Register() {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="email">Email Address</Label>
+        <Label htmlFor="email" className="text-sm sm:text-base">Email Address</Label>
         <div className="relative">
           <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <Input
             id="email"
             type="email"
             placeholder="you@example.com"
-            className="pl-10"
+            className="pl-10 h-12 sm:h-11 text-base"
             {...step1Form.register('email')}
           />
         </div>
@@ -189,34 +190,36 @@ export function Register() {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="password">Password</Label>
+        <Label htmlFor="password" className="text-sm sm:text-base">Password</Label>
         <PasswordInput
           id="password"
           showStrength
           placeholder="Create a strong password"
           error={step1Form.formState.errors.password?.message}
+          className="h-12 sm:h-11 text-base"
           {...step1Form.register('password')}
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="confirmPassword">Confirm Password</Label>
+        <Label htmlFor="confirmPassword" className="text-sm sm:text-base">Confirm Password</Label>
         <PasswordInput
           id="confirmPassword"
           placeholder="Confirm your password"
           error={step1Form.formState.errors.confirmPassword?.message}
+          className="h-12 sm:h-11 text-base"
           {...step1Form.register('confirmPassword')}
         />
       </div>
 
       <Button
         type="submit"
-        className="w-full bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white h-11"
+        className="w-full bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white h-12 sm:h-11 text-base mt-2"
       >
         Continue
       </Button>
 
-      <p className="text-center text-sm text-gray-600">
+      <p className="text-center text-sm text-gray-600 pt-2">
         Already have an account?{' '}
         <Link to="/login" className="text-[#8A2BE2] hover:underline font-medium">
           Sign in
@@ -282,15 +285,15 @@ export function Register() {
     const role = step3Form.watch('role');
 
     return (
-      <form onSubmit={step3Form.handleSubmit(handleStep3Submit)} className="space-y-5">
+      <form onSubmit={step3Form.handleSubmit(handleStep3Submit)} className="space-y-4 sm:space-y-5">
         <div className="space-y-2">
-          <Label>I want to join as</Label>
-          <div className="grid grid-cols-2 gap-4">
+          <Label className="text-sm sm:text-base">I want to join as</Label>
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
             <button
               type="button"
               onClick={() => step3Form.setValue('role', 'client')}
               className={cn(
-                'p-4 border rounded-lg text-left transition-all',
+                'p-3 sm:p-4 border rounded-lg text-left transition-all',
                 role === 'client'
                   ? 'border-[#8A2BE2] bg-[#8A2BE2]/5'
                   : 'border-gray-200 hover:border-gray-300'
@@ -299,15 +302,15 @@ export function Register() {
               <div className="w-10 h-10 bg-[#8A2BE2]/10 rounded-full flex items-center justify-center mb-2">
                 <User className="w-5 h-5 text-[#8A2BE2]" />
               </div>
-              <p className="font-medium">Client</p>
-              <p className="text-sm text-gray-500">I want to hire creators</p>
+              <p className="font-medium text-sm sm:text-base">Client</p>
+              <p className="text-xs sm:text-sm text-gray-500">I want to hire creators</p>
             </button>
 
             <button
               type="button"
               onClick={() => step3Form.setValue('role', 'creator')}
               className={cn(
-                'p-4 border rounded-lg text-left transition-all',
+                'p-3 sm:p-4 border rounded-lg text-left transition-all',
                 role === 'creator'
                   ? 'border-[#8A2BE2] bg-[#8A2BE2]/5'
                   : 'border-gray-200 hover:border-gray-300'
@@ -316,8 +319,8 @@ export function Register() {
               <div className="w-10 h-10 bg-[#8A2BE2]/10 rounded-full flex items-center justify-center mb-2">
                 <Briefcase className="w-5 h-5 text-[#8A2BE2]" />
               </div>
-              <p className="font-medium">Creator</p>
-              <p className="text-sm text-gray-500">I want to offer services</p>
+              <p className="font-medium text-sm sm:text-base">Creator</p>
+              <p className="text-xs sm:text-sm text-gray-500">I want to offer services</p>
             </button>
           </div>
         </div>
@@ -351,31 +354,35 @@ export function Register() {
         )}
 
         <div className="space-y-2">
-          <Label>Location</Label>
+          <Label className="text-sm sm:text-base">Location</Label>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Input
                 placeholder="City/Area"
+                className="h-12 sm:h-11 text-base"
                 {...step3Form.register('location.localArea')}
               />
             </div>
             <div>
               <Input
                 placeholder="State"
+                className="h-12 sm:h-11 text-base"
                 {...step3Form.register('location.state')}
               />
             </div>
           </div>
           <Input
             placeholder="Country"
+            className="h-12 sm:h-11 text-base"
             {...step3Form.register('location.country')}
           />
         </div>
 
-        <div className="flex items-start space-x-2">
+        <div className="flex items-start space-x-3">
           <Checkbox
             id="agreeToTerms"
             {...step3Form.register('agreeToTerms')}
+            className="h-5 w-5 mt-0.5 border-2 data-[state=checked]:bg-[#8A2BE2] data-[state=checked]:border-[#8A2BE2]"
           />
           <Label htmlFor="agreeToTerms" className="text-sm font-normal leading-normal cursor-pointer">
             I agree to the{' '}
@@ -398,7 +405,7 @@ export function Register() {
           <Button
             type="button"
             variant="outline"
-            className="flex-1 h-11"
+            className="flex-1 h-12 sm:h-11 text-base"
             onClick={() => setCurrentStep(2)}
           >
             Back
@@ -406,7 +413,7 @@ export function Register() {
           <Button
             type="submit"
             disabled={isLoading}
-            className="flex-1 bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white h-11"
+            className="flex-1 bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white h-12 sm:h-11 text-base"
           >
             {isLoading ? (
               <>

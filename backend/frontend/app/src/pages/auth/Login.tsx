@@ -46,16 +46,16 @@ export function Login() {
       subtitle="Sign in to your MyArtelab account"
       illustration="/images/welcome.png"
     >
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 sm:space-y-5">
         <div className="space-y-2">
-          <Label htmlFor="email">Email Address</Label>
+          <Label htmlFor="email" className="text-sm sm:text-base">Email Address</Label>
           <div className="relative">
             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <Input
               id="email"
               type="email"
               placeholder="you@example.com"
-              className="pl-10"
+              className="pl-10 h-12 sm:h-11 text-base"
               {...register('email')}
             />
           </div>
@@ -66,24 +66,29 @@ export function Login() {
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label htmlFor="password">Password</Label>
-            <a
-              href="/forgot-password"
+            <Label htmlFor="password" className="text-sm sm:text-base">Password</Label>
+            <Link
+              to="/forgot-password"
               className="text-sm text-[#8A2BE2] hover:underline"
             >
               Forgot password?
-            </a>
+            </Link>
           </div>
           <PasswordInput
             id="password"
             placeholder="Enter your password"
             error={errors.password?.message}
+            className="h-12 sm:h-11 text-base"
             {...register('password')}
           />
         </div>
 
-        <div className="flex items-center space-x-2">
-          <Checkbox id="rememberMe" {...register('rememberMe')} />
+        <div className="flex items-center space-x-3">
+          <Checkbox 
+            id="rememberMe" 
+            {...register('rememberMe')} 
+            className="h-5 w-5 border-2 data-[state=checked]:bg-[#8A2BE2] data-[state=checked]:border-[#8A2BE2]"
+          />
           <Label htmlFor="rememberMe" className="text-sm font-normal cursor-pointer">
             Remember me for 30 days
           </Label>
@@ -92,7 +97,7 @@ export function Login() {
         <Button
           type="submit"
           disabled={isLoading}
-          className="w-full bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white h-11"
+          className="w-full bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white h-12 sm:h-11 text-base mt-2"
         >
           {isLoading ? (
             <>
@@ -104,7 +109,7 @@ export function Login() {
           )}
         </Button>
 
-        <p className="text-center text-sm text-gray-600 pt-4">
+        <p className="text-center text-sm text-gray-600 pt-2 sm:pt-4">
           Don't have an account?{' '}
           <Link to="/register" className="text-[#8A2BE2] hover:underline font-medium">
             Sign up
