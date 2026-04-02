@@ -55,12 +55,14 @@ export function Home() {
     fetchCreators();
   }, []);
 
-  const handleViewProfile = (creator: Creator) => {
-    window.location.href = `/creator/${creator.id}`;
+  const handleViewProfile = (creator: Creator & { _id?: string }) => {
+    const id = creator.id || creator._id;
+    window.location.href = `/creator/${id}`;
   };
 
-  const handleBook = (creator: Creator) => {
-    window.location.href = `/bookings?creator=${creator.id}`;
+  const handleBook = (creator: Creator & { _id?: string }) => {
+    const id = creator.id || creator._id;
+    window.location.href = `/bookings?creator=${id}`;
   };
 
   const handleCategoryClick = (category: Category) => {

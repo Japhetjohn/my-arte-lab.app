@@ -6,32 +6,38 @@ import { StatusBadge } from './StatusBadge';
 import { VerifiedBadge } from './VerifiedBadge';
 
 interface CreatorCardProps {
-  creator: Creator & { rating?: number | { average?: number; count?: number } };
-  onViewProfile?: (creator: Creator) => void;
-  onBook?: (creator: Creator) => void;
+  creator: Creator & { rating?: number | { average?: number; count?: number }; _id?: string };
+  onViewProfile?: (creator: Creator & { _id?: string }) => void;
+  onBook?: (creator: Creator & { _id?: string }) => void;
 }
 
 export function CreatorCard({ creator, onViewProfile, onBook }: CreatorCardProps) {
+  // Get the creator ID (handle both _id from backend and id from frontend)
+  const getCreatorId = () => creator.id || (creator as any)._id;
+
   const handleView = (e: React.MouseEvent) => {
     e.stopPropagation();
+    const id = getCreatorId();
     if (onViewProfile) {
       onViewProfile(creator);
     } else {
-      window.location.href = `/creator/${creator.id}`;
+      window.location.href = `/creator/${id}`;
     }
   };
 
   const handleBook = (e: React.MouseEvent) => {
     e.stopPropagation();
+    const id = getCreatorId();
     if (onBook) {
       onBook(creator);
     } else {
-      window.location.href = `/bookings?creator=${creator.id}`;
+      window.location.href = `/bookings?creator=${id}`;
     }
   };
 
   const handleCardClick = () => {
-    window.location.href = `/creator/${creator.id}`;
+    const id = getCreatorId();
+    window.location.href = `/creator/${id}`;
   };
 
   // Handle both rating formats: number or {average, count}

@@ -67,9 +67,10 @@ exports.getAllCreators = catchAsync(async (req, res, next) => {
     .skip(skip)
     .lean();
 
-  // Add name virtual field to each creator
+  // Add name virtual field and id to each creator
   const creatorsWithName = creators.map(creator => ({
     ...creator,
+    id: creator._id.toString(),
     name: `${creator.firstName || ''} ${creator.lastName || ''}`.trim()
   }));
 
@@ -123,9 +124,10 @@ exports.getFeaturedCreators = catchAsync(async (req, res, next) => {
     .limit(parseInt(limit))
     .lean();
 
-  // Add name virtual field to each creator
+  // Add name virtual field and id to each creator
   const creatorsWithName = creators.map(creator => ({
     ...creator,
+    id: creator._id.toString(),
     name: `${creator.firstName || ''} ${creator.lastName || ''}`.trim()
   }));
 

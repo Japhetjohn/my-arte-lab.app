@@ -521,8 +521,11 @@ userSchema.methods.updateWalletBalance = async function (amount, type = 'add') {
 userSchema.methods.getPublicProfile = function () {
   const obj = this.toObject();
 
+  // Add virtual fields
+  obj.id = obj._id.toString();
   obj.name = this.name;
 
+  // Remove sensitive fields
   delete obj.password;
   delete obj.emailVerificationToken;
   delete obj.emailVerificationExpire;
