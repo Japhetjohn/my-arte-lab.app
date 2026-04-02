@@ -27,7 +27,7 @@ router.post('/image', upload.single('image'), catchAsync(async (req, res, next) 
   successResponse(res, 200, 'Image uploaded successfully', {
     url: result.secure_url,
     publicId: result.public_id
-  }));
+  });
 }));
 
 router.post('/avatar', upload.single('avatar'), uploadAvatar);
