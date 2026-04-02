@@ -367,8 +367,16 @@ export function CreatorProfile({ creatorId }: CreatorProfileProps) {
                   <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 sm:gap-4 mt-2 text-sm text-gray-500">
                     <div className="flex items-center gap-1">
                       <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                      <span className="font-medium">{creator.rating?.toFixed(1) || '0.0'}</span>
-                      <span>({creator.reviewCount || 0})</span>
+                      <span className="font-medium">
+                        {typeof creator.rating === 'object' && creator.rating !== null
+                          ? ((creator.rating as any).average || 0).toFixed(1)
+                          : typeof creator.rating === 'number'
+                            ? creator.rating.toFixed(1)
+                            : '0.0'}
+                      </span>
+                      <span>({typeof creator.rating === 'object' && creator.rating !== null
+                        ? ((creator.rating as any).count || 0)
+                        : (creator.reviewCount || 0)})</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <MapPin className="w-4 h-4" />
@@ -664,9 +672,19 @@ export function CreatorProfile({ creatorId }: CreatorProfileProps) {
               <div className="text-center py-6 sm:py-8">
                 <div className="flex items-center justify-center gap-2 mb-4">
                   <Star className="w-6 h-6 sm:w-8 sm:h-8 fill-amber-400 text-amber-400" />
-                  <span className="text-3xl sm:text-4xl font-bold">{creator.rating?.toFixed(1) || '0.0'}</span>
+                  <span className="text-3xl sm:text-4xl font-bold">
+                    {typeof creator.rating === 'object' && creator.rating !== null
+                      ? ((creator.rating as any).average || 0).toFixed(1)
+                      : typeof creator.rating === 'number'
+                        ? creator.rating.toFixed(1)
+                        : '0.0'}
+                  </span>
                 </div>
-                <p className="text-gray-500 text-sm sm:text-base">Based on {creator.reviewCount || 0} reviews</p>
+                <p className="text-gray-500 text-sm sm:text-base">
+                  Based on {typeof creator.rating === 'object' && creator.rating !== null
+                    ? ((creator.rating as any).count || 0)
+                    : (creator.reviewCount || 0)} reviews
+                </p>
               </div>
               
               {reviews.length > 0 && (
