@@ -19,10 +19,12 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
+  name?: string;
   avatar?: string;
   coverImage?: string;
   role: 'client' | 'creator' | 'admin';
   isEmailVerified: boolean;
+  isVerified?: boolean;
   location?: {
     localArea?: string;
     state?: string;
@@ -30,6 +32,29 @@ export interface User {
   };
   category?: string;
   bio?: string;
+  skills?: string[];
+  phoneNumber?: string;
+  rating?: number;
+  reviewCount?: number;
+  portfolio?: PortfolioItem[];
+  services?: Service[];
+  createdAt: string;
+}
+
+export interface PortfolioItem {
+  _id?: string;
+  title: string;
+  image: string;
+  description: string;
+  createdAt?: string;
+}
+
+export interface Service {
+  _id: string;
+  title: string;
+  description: string;
+  images: string[];
+  directLink?: string;
   createdAt: string;
 }
 
@@ -50,6 +75,7 @@ interface AuthContextType extends AuthState {
   resetPassword: (token: string, newPassword: string) => Promise<void>;
   updateProfile: (data: Partial<User>) => Promise<void>;
   refreshToken: () => Promise<void>;
+  updateUser: (user: User) => void;
 }
 
 interface RegisterData {
@@ -182,7 +208,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
 
       const response = await api.post('/auth/register', transformedData);
-      const { user, token } = response.data;
+      const { user, token } = response.data.data || response.data;
 
       sessionStorage.setItem('token', token);
       sessionStorage.setItem('user', JSON.stringify(user));
@@ -309,6 +335,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [logout]);
 
+  // Direct user state update (for components that manage their own API calls)
+  const updateUser = useCallback((user: User) => {
+    setState(prev => ({ ...prev, user }));
+    const storage = localStorage.getItem('token') ? localStorage : sessionStorage;
+    storage.setItem('user', JSON.stringify(user));
+  }, []);
+
   return (
     <AuthContext.Provider
       value={{
@@ -322,6 +355,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         resetPassword,
         updateProfile,
         refreshToken,
+        updateUser,
       }}
     >
       {children}
