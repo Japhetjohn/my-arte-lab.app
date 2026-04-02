@@ -6,7 +6,7 @@ import { StatusBadge } from './StatusBadge';
 import { VerifiedBadge } from './VerifiedBadge';
 
 interface CreatorCardProps {
-  creator: Creator;
+  creator: Creator & { rating?: number | { average?: number; count?: number } };
   onViewProfile?: (creator: Creator) => void;
   onBook?: (creator: Creator) => void;
 }
@@ -34,6 +34,23 @@ export function CreatorCard({ creator, onViewProfile, onBook }: CreatorCardProps
     window.location.href = `/creator/${creator.id}`;
   };
 
+  // Handle both rating formats: number or {average, count}
+  const getRatingDisplay = () => {
+    const rating = creator.rating as any;
+    if (typeof rating === 'object' && rating !== null && 'average' in rating) {
+      return {
+        value: ((rating.average as number) || 0).toFixed(1),
+        count: (rating.count as number) || 0
+      };
+    }
+    return {
+      value: typeof rating === 'number' ? rating.toFixed(1) : '0.0',
+      count: creator.reviewCount || 0
+    };
+  };
+
+  const ratingDisplay = getRatingDisplay();
+
   return (
     <Card 
       className="group hover:shadow-lg transition-all duration-300 border border-gray-200 overflow-hidden cursor-pointer"
@@ -43,12 +60,12 @@ export function CreatorCard({ creator, onViewProfile, onBook }: CreatorCardProps
         <div className="flex items-start gap-3 sm:gap-4">
           <div className="relative flex-shrink-0">
             <img
-              src={creator.avatar}
-              alt={creator.name}
+              src={creator.avatar || '/images/avatar-1.png'}
+              alt={creator.name || 'Creator'}
               className="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-gray-100"
             />
             <div className="absolute -bottom-1 -right-1">
-              <StatusBadge status={creator.availability} />
+              <StatusBadge status={creator.availability || 'available'} />
             </div>
           </div>
           <div className="flex-1 min-w-0">
@@ -56,19 +73,19 @@ export function CreatorCard({ creator, onViewProfile, onBook }: CreatorCardProps
               <h3 className="font-semibold text-gray-900 truncate text-sm sm:text-base">{creator.name}</h3>
               {creator.isVerified && <VerifiedBadge className="w-4 h-4" />}
             </div>
-            <p className="text-xs sm:text-sm text-gray-500 capitalize">{creator.category}</p>
+            <p className="text-xs sm:text-sm text-gray-500 capitalize">{creator.category || 'Creator'}</p>
             <div className="flex items-center gap-1 mt-0.5">
               <Star className="w-3 h-3 sm:w-4 sm:h-4 fill-amber-400 text-amber-400" />
-              <span className="text-xs sm:text-sm font-medium">{creator.rating}</span>
-              <span className="text-xs text-gray-400">({creator.reviewCount})</span>
+              <span className="text-xs sm:text-sm font-medium">{ratingDisplay.value}</span>
+              <span className="text-xs text-gray-400">({ratingDisplay.count})</span>
             </div>
           </div>
         </div>
         
-        <p className="mt-2 sm:mt-3 text-xs sm:text-sm text-gray-600 line-clamp-2">{creator.bio}</p>
+        <p className="mt-2 sm:mt-3 text-xs sm:text-sm text-gray-600 line-clamp-2">{creator.bio || 'No bio available'}</p>
         
         <div className="flex flex-wrap gap-1 sm:gap-1.5 mt-2 sm:mt-3">
-          {creator.skills.slice(0, 3).map((skill) => (
+          {(creator.skills || []).slice(0, 3).map((skill) => (
             <span
               key={skill}
               className="px-1.5 sm:px-2 py-0.5 bg-gray-100 text-gray-600 text-[10px] sm:text-xs rounded-full"
@@ -76,9 +93,9 @@ export function CreatorCard({ creator, onViewProfile, onBook }: CreatorCardProps
               {skill}
             </span>
           ))}
-          {creator.skills.length > 3 && (
+          {(creator.skills || []).length > 3 && (
             <span className="px-1.5 sm:px-2 py-0.5 bg-gray-100 text-gray-600 text-[10px] sm:text-xs rounded-full">
-              +{creator.skills.length - 3}
+              +{(creator.skills || []).length - 3}
             </span>
           )}
         </div>
@@ -86,7 +103,7 @@ export function CreatorCard({ creator, onViewProfile, onBook }: CreatorCardProps
         <div className="flex items-center justify-between mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-100">
           <div>
             <span className="text-[10px] sm:text-xs text-gray-500">From</span>
-            <p className="font-semibold text-[#8A2BE2] text-sm sm:text-base">${creator.startingPrice}</p>
+            <p className="font-semibold text-[#8A2BE2] text-sm sm:text-base">${creator.startingPrice || 0}</p>
           </div>
           <div className="flex gap-1.5 sm:gap-2">
             <Button
