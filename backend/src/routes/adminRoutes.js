@@ -196,4 +196,98 @@ router.post('/recalculate-metrics', async (req, res) => {
   }
 });
 
+// Verify a creator (add verified badge)
+router.post('/verify-creator', async (req, res) => {
+  try {
+    const { adminSecret, userId, email } = req.body;
+
+    // Check admin secret
+    if (adminSecret !== process.env.ADMIN_SECRET) {
+      return errorResponse(res, 403, 'Unauthorized - Invalid admin secret');
+    }
+
+    if (!userId && !email) {
+      return errorResponse(res, 400, 'Either userId or email is required');
+    }
+
+    const User = require('../models/User');
+
+    // Find user by ID or email
+    const query = userId ? { _id: userId } : { email };
+    const user = await User.findOne(query);
+
+    if (!user) {
+      return errorResponse(res, 404, `User not found`);
+    }
+
+    if (user.role !== 'creator') {
+      return errorResponse(res, 400, 'User is not a creator');
+    }
+
+    // Update verified status
+    user.isVerified = true;
+    await user.save();
+
+    console.log(`[ADMIN] Verified creator: ${user.name} (${user.email})`);
+
+    return successResponse(res, 200, `Creator ${user.name} is now verified`, {
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        isVerified: user.isVerified
+      }
+    });
+
+  } catch (error) {
+    console.error('Verify creator error:', error);
+    return errorResponse(res, 500, 'Failed to verify creator', error.message);
+  }
+});
+
+// Unverify a creator (remove verified badge)
+router.post('/unverify-creator', async (req, res) => {
+  try {
+    const { adminSecret, userId, email } = req.body;
+
+    // Check admin secret
+    if (adminSecret !== process.env.ADMIN_SECRET) {
+      return errorResponse(res, 403, 'Unauthorized - Invalid admin secret');
+    }
+
+    if (!userId && !email) {
+      return errorResponse(res, 400, 'Either userId or email is required');
+    }
+
+    const User = require('../models/User');
+
+    // Find user by ID or email
+    const query = userId ? { _id: userId } : { email };
+    const user = await User.findOne(query);
+
+    if (!user) {
+      return errorResponse(res, 404, `User not found`);
+    }
+
+    // Update verified status
+    user.isVerified = false;
+    await user.save();
+
+    console.log(`[ADMIN] Unverified creator: ${user.name} (${user.email})`);
+
+    return successResponse(res, 200, `Creator ${user.name} is now unverified`, {
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        isVerified: user.isVerified
+      }
+    });
+
+  } catch (error) {
+    console.error('Unverify creator error:', error);
+    return errorResponse(res, 500, 'Failed to unverify creator', error.message);
+  }
+});
+
 module.exports = router;

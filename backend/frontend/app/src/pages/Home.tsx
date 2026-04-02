@@ -1,12 +1,58 @@
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { TrendingUp, Star, ArrowRight } from 'lucide-react';
+import { TrendingUp, Star, ArrowRight, Loader2 } from 'lucide-react';
 import { CreatorCard } from '@/components/shared/CreatorCard';
 import { CategoryCard } from '@/components/shared/CategoryCard';
-import { creators, categories } from '@/lib/data/mockData';
+import { api } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 import type { Creator, Category } from '@/types';
 
+// Static categories (these don't need to be dynamic)
+const categories: Category[] = [
+  { id: 'photography', name: 'Photography', icon: '/images/category-photography.png', description: 'Professional photos for any occasion', creatorCount: 1250 },
+  { id: 'design', name: 'Design', icon: '/images/category-design.png', description: 'Graphic design and branding', creatorCount: 2100 },
+  { id: 'music', name: 'Music', icon: '/images/category-music.png', description: 'Original music and sound design', creatorCount: 890 },
+  { id: 'video', name: 'Video', icon: '/images/category-video.png', description: 'Video editing and production', creatorCount: 1560 },
+  { id: 'writing', name: 'Writing', icon: '/images/category-writing.png', description: 'Content writing and copywriting', creatorCount: 1800 },
+  { id: 'marketing', name: 'Marketing', icon: '/images/category-marketing.png', description: 'Digital marketing services', creatorCount: 980 },
+];
+
 export function Home() {
-  const verifiedCreators = creators.filter(c => c.isVerified).slice(0, 4);
+  const [featuredCreators, setFeaturedCreators] = useState<Creator[]>([]);
+  const [trendingCreators, setTrendingCreators] = useState<Creator[]>([]);
+  const [verifiedCreators, setVerifiedCreators] = useState<Creator[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch creators from backend
+  useEffect(() => {
+    const fetchCreators = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Fetch featured creators (verified, high rated)
+        const featuredResponse = await api.get('/creators/featured?limit=4');
+        const featured = featuredResponse.data.data?.creators || [];
+        setFeaturedCreators(featured);
+        
+        // Fetch trending creators (all creators, sorted by rating/popularity)
+        const trendingResponse = await api.get('/creators?limit=4&sortBy=popular');
+        const trending = trendingResponse.data.data?.results || [];
+        setTrendingCreators(trending);
+        
+        // Fetch verified creators
+        const verifiedResponse = await api.get('/creators?limit=4&minRating=4.5');
+        const verified = verifiedResponse.data.data?.results || [];
+        setVerifiedCreators(verified);
+      } catch (error: any) {
+        console.error('Error fetching creators:', error);
+        toast.error('Failed to load creators');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCreators();
+  }, []);
 
   const handleViewProfile = (creator: Creator) => {
     window.location.href = `/creator/${creator.id}`;
@@ -19,6 +65,14 @@ export function Home() {
   const handleCategoryClick = (category: Category) => {
     window.location.href = `/explore?category=${category.id}`;
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="w-8 h-8 animate-spin text-[#8A2BE2]" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 pb-20 lg:pb-8">
@@ -54,59 +108,107 @@ export function Home() {
         </div>
       </section>
 
-      {/* Verified Creators Section */}
-      <section>
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <h2 className="text-lg sm:text-xl font-bold text-gray-900">Verified Creators</h2>
-            <Star className="w-4 h-4 sm:w-5 sm:h-5 fill-amber-400 text-amber-400" />
+      {/* Featured Creators Section */}
+      {featuredCreators.length > 0 && (
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900">Featured Creators</h2>
+              <Star className="w-4 h-4 sm:w-5 sm:h-5 fill-amber-400 text-amber-400" />
+            </div>
+            <a 
+              href="/creators" 
+              className="text-sm text-[#8A2BE2] hover:underline flex items-center gap-1"
+            >
+              View all
+              <ArrowRight className="w-4 h-4" />
+            </a>
           </div>
-          <a 
-            href="/creators" 
-            className="text-sm text-[#8A2BE2] hover:underline flex items-center gap-1"
-          >
-            View all
-            <ArrowRight className="w-4 h-4" />
-          </a>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {verifiedCreators.map((creator) => (
-            <CreatorCard 
-              key={creator.id} 
-              creator={creator}
-              onViewProfile={handleViewProfile}
-              onBook={handleBook}
-            />
-          ))}
-        </div>
-      </section>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {featuredCreators.map((creator) => (
+              <CreatorCard 
+                key={creator.id} 
+                creator={creator}
+                onViewProfile={handleViewProfile}
+                onBook={handleBook}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Verified Creators Section */}
+      {verifiedCreators.length > 0 && (
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900">Verified Creators</h2>
+              <div className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full font-medium">
+                VERIFIED
+              </div>
+            </div>
+            <a 
+              href="/creators" 
+              className="text-sm text-[#8A2BE2] hover:underline flex items-center gap-1"
+            >
+              View all
+              <ArrowRight className="w-4 h-4" />
+            </a>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {verifiedCreators.map((creator) => (
+              <CreatorCard 
+                key={creator.id} 
+                creator={creator}
+                onViewProfile={handleViewProfile}
+                onBook={handleBook}
+              />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Trending Section */}
-      <section>
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-[#8A2BE2]" />
-            <h2 className="text-lg sm:text-xl font-bold text-gray-900">Trending Now</h2>
+      {trendingCreators.length > 0 && (
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-[#8A2BE2]" />
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900">Trending Now</h2>
+            </div>
+            <a 
+              href="/explore" 
+              className="text-sm text-[#8A2BE2] hover:underline flex items-center gap-1"
+            >
+              Explore
+              <ArrowRight className="w-4 h-4" />
+            </a>
           </div>
-          <a 
-            href="/explore" 
-            className="text-sm text-[#8A2BE2] hover:underline flex items-center gap-1"
-          >
-            Explore
-            <ArrowRight className="w-4 h-4" />
-          </a>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {creators.slice(0, 4).map((creator) => (
-            <CreatorCard 
-              key={creator.id} 
-              creator={creator}
-              onViewProfile={handleViewProfile}
-              onBook={handleBook}
-            />
-          ))}
-        </div>
-      </section>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {trendingCreators.map((creator) => (
+              <CreatorCard 
+                key={creator.id} 
+                creator={creator}
+                onViewProfile={handleViewProfile}
+                onBook={handleBook}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Empty State */}
+      {!isLoading && featuredCreators.length === 0 && trendingCreators.length === 0 && (
+        <section className="text-center py-12">
+          <img 
+            src="/images/empty-search.png" 
+            alt="No creators" 
+            className="w-32 h-32 mx-auto mb-4 opacity-50"
+          />
+          <h3 className="text-lg font-semibold text-gray-900">No creators yet</h3>
+          <p className="text-gray-500">Check back soon for talented creators!</p>
+        </section>
+      )}
 
       {/* CTA Section */}
       <section className="bg-gradient-to-r from-[#8A2BE2] to-[#6B21A8] rounded-2xl p-6 sm:p-8 text-white text-center">
