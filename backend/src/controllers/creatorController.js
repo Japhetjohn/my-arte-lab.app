@@ -123,7 +123,13 @@ exports.getFeaturedCreators = catchAsync(async (req, res, next) => {
     .limit(parseInt(limit))
     .lean();
 
-  successResponse(res, 200, 'Featured creators retrieved successfully', { creators });
+  // Add name virtual field to each creator
+  const creatorsWithName = creators.map(creator => ({
+    ...creator,
+    name: `${creator.firstName || ''} ${creator.lastName || ''}`.trim()
+  }));
+
+  successResponse(res, 200, 'Featured creators retrieved successfully', { creators: creatorsWithName });
 });
 
 exports.getCreatorStats = catchAsync(async (req, res, next) => {

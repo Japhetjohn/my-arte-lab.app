@@ -29,23 +29,29 @@ export function Home() {
       try {
         setIsLoading(true);
         
-        // Fetch featured creators (verified, high rated)
-        const featuredResponse = await api.get('/creators/featured?limit=4');
-        const featured = featuredResponse.data.data?.creators || [];
-        setFeaturedCreators(featured);
+        // Fetch all creators with pagination
+        const response = await api.get('/creators?limit=12&sortBy=rating');
+        const allCreators = response.data.data?.results || response.data.data || [];
         
-        // Fetch trending creators (all creators, sorted by rating/popularity)
-        const trendingResponse = await api.get('/creators?limit=4&sortBy=popular');
-        const trending = trendingResponse.data.data?.results || [];
-        setTrendingCreators(trending);
-        
-        // Fetch verified creators
-        const verifiedResponse = await api.get('/creators?limit=4&minRating=4.5');
-        const verified = verifiedResponse.data.data?.results || [];
-        setVerifiedCreators(verified);
+        // Split creators into sections
+        if (allCreators.length > 0) {
+          // Featured: first 4 (highest rated)
+          setFeaturedCreators(allCreators.slice(0, 4));
+          
+          // Verified: creators with isVerified flag
+          const verified = allCreators.filter((c: Creator) => c.isVerified);
+          setVerifiedCreators(verified.slice(0, 4));
+          
+          // Trending: next 4 (or shuffle if not enough)
+          const remaining = allCreators.slice(4, 8);
+          setTrendingCreators(remaining.length > 0 ? remaining : allCreators.slice(0, 4));
+        }
       } catch (error: any) {
         console.error('Error fetching creators:', error);
-        toast.error('Failed to load creators');
+        // Don't show toast on 502 errors (server down) to avoid spam
+        if (error.response?.status !== 502) {
+          toast.error('Failed to load creators');
+        }
       } finally {
         setIsLoading(false);
       }
@@ -207,6 +213,7 @@ export function Home() {
           />
           <h3 className="text-lg font-semibold text-gray-900">No creators yet</h3>
           <p className="text-gray-500">Check back soon for talented creators!</p>
+          <p className="text-gray-400 text-sm mt-2">Server may be temporarily unavailable</p>
         </section>
       )}
 
