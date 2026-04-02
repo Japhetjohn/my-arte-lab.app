@@ -4,7 +4,6 @@ import { TrendingUp, Star, ArrowRight, Loader2 } from 'lucide-react';
 import { CreatorCard } from '@/components/shared/CreatorCard';
 import { CategoryCard } from '@/components/shared/CategoryCard';
 import { api } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
 import type { Creator, Category } from '@/types';
 
 // Static categories (these don't need to be dynamic)
@@ -48,10 +47,6 @@ export function Home() {
         }
       } catch (error: any) {
         console.error('Error fetching creators:', error);
-        // Don't show toast on 502 errors (server down) to avoid spam
-        if (error.response?.status !== 502) {
-          toast.error('Failed to load creators');
-        }
       } finally {
         setIsLoading(false);
       }
@@ -82,7 +77,7 @@ export function Home() {
 
   return (
     <div className="space-y-8 pb-20 lg:pb-8">
-      {/* Hero Section */}
+      {/* Hero Section - Image only */}
       <section className="relative rounded-2xl overflow-hidden">
         <img 
           src="/images/hero-bg.jpg" 
