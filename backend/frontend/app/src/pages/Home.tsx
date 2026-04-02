@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { TrendingUp, Star, ArrowRight, Loader2 } from 'lucide-react';
+import { TrendingUp, Star, ArrowRight, Loader2, MapPin, Sparkles } from 'lucide-react';
 import { CreatorCard } from '@/components/shared/CreatorCard';
 import { CategoryCard } from '@/components/shared/CategoryCard';
 import { api } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { recommendationService } from '@/services/recommendationService';
+import { toast } from 'sonner';
 import type { Creator, Category } from '@/types';
 
-// Static categories (these don't need to be dynamic)
+// Static categories
 const categories: Category[] = [
   { id: 'photography', name: 'Photography', icon: '/images/category-photography.png', description: 'Professional photos for any occasion', creatorCount: 1250 },
   { id: 'design', name: 'Design', icon: '/images/category-design.png', description: 'Graphic design and branding', creatorCount: 2100 },
@@ -17,43 +20,81 @@ const categories: Category[] = [
 ];
 
 export function Home() {
-  const [featuredCreators, setFeaturedCreators] = useState<Creator[]>([]);
-  const [trendingCreators, setTrendingCreators] = useState<Creator[]>([]);
+  const { user: currentUser } = useAuth();
+  const [recommendedCreators, setRecommendedCreators] = useState<Array<{ creator: Creator; score: number; reasons: string[] }>>([]);
   const [verifiedCreators, setVerifiedCreators] = useState<Creator[]>([]);
+  const [trendingCreators, setTrendingCreators] = useState<Array<{ creator: Creator; trendScore: number }>>([]);
+  const [allCreators, setAllCreators] = useState<Creator[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [userLocation, setUserLocation] = useState<string>('');
 
-  // Fetch creators from backend
+  // Fetch creators and apply recommendations
   useEffect(() => {
     const fetchCreators = async () => {
       try {
         setIsLoading(true);
         
-        // Fetch all creators with pagination
-        const response = await api.get('/creators?limit=12&sortBy=rating');
-        const allCreators = response.data.data?.results || response.data.data || [];
+        // Fetch all creators
+        const response = await api.get('/creators?limit=50&sortBy=rating');
+        const creators = response.data.data?.results || response.data.data || [];
+        setAllCreators(creators);
         
-        // Split creators into sections
-        if (allCreators.length > 0) {
-          // Featured: first 4 (highest rated)
-          setFeaturedCreators(allCreators.slice(0, 4));
-          
-          // Verified: creators with isVerified flag
-          const verified = allCreators.filter((c: Creator) => c.isVerified);
-          setVerifiedCreators(verified.slice(0, 4));
-          
-          // Trending: next 4 (or shuffle if not enough)
-          const remaining = allCreators.slice(4, 8);
-          setTrendingCreators(remaining.length > 0 ? remaining : allCreators.slice(0, 4));
+        // Set user location display
+        if (currentUser?.location) {
+          const loc = currentUser.location;
+          setUserLocation(loc.localArea || loc.state || loc.country || '');
         }
+        
+        // 1. AI-Powered Recommendations (if user is logged in)
+        if (currentUser) {
+          const recommendations = recommendationService.getRecommendations(
+            currentUser,
+            creators,
+            { limit: 8, minScore: 0.15 }
+          );
+          setRecommendedCreators(recommendations);
+        } else {
+          // If not logged in, show top rated as recommendations
+          setRecommendedCreators(
+            creators.slice(0, 8).map((c: Creator) => ({ creator: c, score: 0, reasons: [] }))
+          );
+        }
+        
+        // 2. Verified Creators
+        const verified = creators.filter((c: Creator) => c.isVerified);
+        setVerifiedCreators(verified.slice(0, 8));
+        
+        // 3. Trending Creators (Weekly Activity)
+        // For now, use a simple algorithm based on rating and review count
+        // TODO: Replace with actual activity data from backend
+        const trending = creators
+          .map((c: Creator) => {
+            const rating = typeof c.rating === 'object' 
+              ? (c.rating as any).average || 0
+              : (c.rating || 0);
+            const reviewCount = typeof c.rating === 'object'
+              ? (c.rating as any).count || 0
+              : (c.reviewCount || 0);
+            
+            // Trend score based on recent activity (simulated)
+            const trendScore = (rating * 0.3) + (Math.min(reviewCount, 100) * 0.01);
+            
+            return { creator: c, trendScore };
+          })
+          .sort((a: any, b: any) => b.trendScore - a.trendScore)
+          .slice(0, 8);
+        setTrendingCreators(trending);
+        
       } catch (error: any) {
         console.error('Error fetching creators:', error);
+        toast.error('Failed to load creators');
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchCreators();
-  }, []);
+  }, [currentUser]);
 
   const handleViewProfile = (creator: Creator & { _id?: string }) => {
     const id = creator.id || creator._id;
@@ -111,13 +152,21 @@ export function Home() {
         </div>
       </section>
 
-      {/* Featured Creators Section */}
-      {featuredCreators.length > 0 && (
+      {/* Recommended For You - AI Powered */}
+      {recommendedCreators.length > 0 && (
         <section>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <h2 className="text-lg sm:text-xl font-bold text-gray-900">Featured Creators</h2>
-              <Star className="w-4 h-4 sm:w-5 sm:h-5 fill-amber-400 text-amber-400" />
+              <Sparkles className="w-5 h-5 text-[#8A2BE2]" />
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900">
+                Recommended For You
+              </h2>
+              {userLocation && (
+                <span className="text-xs text-gray-500 flex items-center gap-1">
+                  <MapPin className="w-3 h-3" />
+                  {userLocation}
+                </span>
+              )}
             </div>
             <a 
               href="/creators" 
@@ -127,14 +176,36 @@ export function Home() {
               <ArrowRight className="w-4 h-4" />
             </a>
           </div>
+          
+          {/* Recommendation reasons */}
+          {currentUser && recommendedCreators[0]?.reasons.length > 0 && (
+            <p className="text-xs text-gray-500 mb-3">
+              Based on your {currentUser.skills && currentUser.skills.length > 0 ? 'skills and ' : ''}location
+            </p>
+          )}
+          
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {featuredCreators.map((creator) => (
-              <CreatorCard 
-                key={creator.id} 
-                creator={creator}
-                onViewProfile={handleViewProfile}
-                onBook={handleBook}
-              />
+            {recommendedCreators.map(({ creator, reasons }) => (
+              <div key={creator.id} className="relative">
+                <CreatorCard 
+                  creator={creator}
+                  onViewProfile={handleViewProfile}
+                  onBook={handleBook}
+                />
+                {/* Show recommendation reasons */}
+                {reasons.length > 0 && (
+                  <div className="absolute top-2 left-2 right-2 flex flex-wrap gap-1">
+                    {reasons.map((reason, idx) => (
+                      <span 
+                        key={idx}
+                        className="text-[10px] bg-[#8A2BE2]/90 text-white px-2 py-0.5 rounded-full"
+                      >
+                        {reason}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         </section>
@@ -146,12 +217,13 @@ export function Home() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <h2 className="text-lg sm:text-xl font-bold text-gray-900">Verified Creators</h2>
-              <div className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full font-medium">
+              <div className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+                <Star className="w-3 h-3 fill-white" />
                 VERIFIED
               </div>
             </div>
             <a 
-              href="/creators" 
+              href="/creators?filter=verified" 
               className="text-sm text-[#8A2BE2] hover:underline flex items-center gap-1"
             >
               View all
@@ -171,13 +243,14 @@ export function Home() {
         </section>
       )}
 
-      {/* Trending Section */}
+      {/* Trending Section - Weekly Activity */}
       {trendingCreators.length > 0 && (
         <section>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-[#8A2BE2]" />
               <h2 className="text-lg sm:text-xl font-bold text-gray-900">Trending Now</h2>
+              <span className="text-xs text-gray-500">This week</span>
             </div>
             <a 
               href="/explore" 
@@ -188,20 +261,28 @@ export function Home() {
             </a>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {trendingCreators.map((creator) => (
-              <CreatorCard 
-                key={creator.id} 
-                creator={creator}
-                onViewProfile={handleViewProfile}
-                onBook={handleBook}
-              />
+            {trendingCreators.map(({ creator }) => (
+              <div key={creator.id} className="relative">
+                <CreatorCard 
+                  creator={creator}
+                  onViewProfile={handleViewProfile}
+                  onBook={handleBook}
+                />
+                {/* Trending badge */}
+                <div className="absolute top-2 right-2">
+                  <span className="text-[10px] bg-red-500 text-white px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <TrendingUp className="w-3 h-3" />
+                    Hot
+                  </span>
+                </div>
+              </div>
             ))}
           </div>
         </section>
       )}
 
       {/* Empty State */}
-      {!isLoading && featuredCreators.length === 0 && trendingCreators.length === 0 && (
+      {!isLoading && allCreators.length === 0 && (
         <section className="text-center py-12">
           <img 
             src="/images/empty-search.png" 
@@ -210,7 +291,6 @@ export function Home() {
           />
           <h3 className="text-lg font-semibold text-gray-900">No creators yet</h3>
           <p className="text-gray-500">Check back soon for talented creators!</p>
-          <p className="text-gray-400 text-sm mt-2">Server may be temporarily unavailable</p>
         </section>
       )}
 

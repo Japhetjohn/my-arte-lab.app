@@ -16,6 +16,7 @@ export interface User {
   };
   category?: string;
   bio?: string;
+  skills?: string[];
   rating?: number;
   reviewCount?: number;
   joinedAt?: string;
