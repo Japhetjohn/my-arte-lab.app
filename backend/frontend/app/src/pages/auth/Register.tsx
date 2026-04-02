@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ImageUpload } from '@/components/shared/ImageUpload';
+
 import { PasswordInput } from '@/components/shared/PasswordInput';
 import { AuthLayout } from '@/layouts/AuthLayout';
 import { useAuth } from '@/contexts/AuthContext';
@@ -42,6 +42,9 @@ export function Register() {
   // Step 2 Form
   const step2Form = useForm<RegisterStep2Data>({
     resolver: zodResolver(registerStep2Schema),
+    defaultValues: {
+      gender: undefined,
+    },
   });
 
   // Step 3 Form
@@ -49,6 +52,7 @@ export function Register() {
     resolver: zodResolver(registerStep3Schema),
     defaultValues: {
       role: 'client',
+      gender: undefined,
       location: {
         localArea: '',
         state: '',
@@ -88,7 +92,7 @@ export function Register() {
 
   const steps = [
     { number: 1, label: 'Personal Info' },
-    { number: 2, label: 'Profile' },
+    { number: 2, label: 'Avatar' },
     { number: 3, label: 'Role' },
   ];
 
@@ -228,58 +232,120 @@ export function Register() {
     </form>
   );
 
-  const renderStep2 = () => (
-    <form onSubmit={step2Form.handleSubmit(handleStep2Submit)} className="space-y-5">
-      <div className="space-y-4">
-        <ImageUpload
-          label="Profile Photo *"
-          description="Upload a clear photo of yourself"
-          aspectRatio="square"
-          value={step2Form.watch('avatar')}
-          onChange={(value) => step2Form.setValue('avatar', value)}
-          placeholderImage="/images/image-upload.png"
-        />
-        {step2Form.formState.errors.avatar && (
-          <p className="text-sm text-red-500">
-            {step2Form.formState.errors.avatar.message}
-          </p>
-        )}
-      </div>
+  const renderStep2 = () => {
+    const gender = step2Form.watch('gender');
+    
+    const getAvatarUrl = (g: string) => {
+      switch (g) {
+        case 'male': return '/images/avatar-1.png';
+        case 'female': return '/images/avatar-2.png';
+        default: return '/images/avatar-3.png';
+      }
+    };
 
-      <div className="space-y-4">
-        <ImageUpload
-          label="Cover Image *"
-          description="Upload a cover image for your profile"
-          aspectRatio="cover"
-          value={step2Form.watch('coverImage')}
-          onChange={(value) => step2Form.setValue('coverImage', value)}
-          placeholderImage="/images/image-upload.png"
-        />
-        {step2Form.formState.errors.coverImage && (
-          <p className="text-sm text-red-500">
-            {step2Form.formState.errors.coverImage.message}
-          </p>
-        )}
-      </div>
+    return (
+      <form onSubmit={step2Form.handleSubmit(handleStep2Submit)} className="space-y-5">
+        <div className="text-center mb-6">
+          <h3 className="text-lg font-semibold mb-2">Choose Your Avatar</h3>
+          <p className="text-gray-500 text-sm">Select your gender to get a cool default avatar</p>
+        </div>
 
-      <div className="flex gap-3">
-        <Button
-          type="button"
-          variant="outline"
-          className="flex-1 h-11"
-          onClick={() => setCurrentStep(1)}
-        >
-          Back
-        </Button>
-        <Button
-          type="submit"
-          className="flex-1 bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white h-11"
-        >
-          Continue
-        </Button>
-      </div>
-    </form>
-  );
+        {/* Avatar Preview */}
+        <div className="flex justify-center mb-6">
+          <div className="relative">
+            <img
+              src={gender ? getAvatarUrl(gender) : '/images/avatar-3.png'}
+              alt="Avatar Preview"
+              className="w-32 h-32 rounded-full object-cover border-4 border-[#8A2BE2]/20"
+            />
+            <div className="absolute bottom-0 right-0 w-8 h-8 bg-[#8A2BE2] rounded-full flex items-center justify-center">
+              <User className="w-4 h-4 text-white" />
+            </div>
+          </div>
+        </div>
+
+        {/* Gender Selection */}
+        <div className="space-y-2">
+          <Label className="text-sm sm:text-base">Select your gender</Label>
+          <div className="grid grid-cols-3 gap-3">
+            <button
+              type="button"
+              onClick={() => step2Form.setValue('gender', 'male')}
+              className={cn(
+                'p-3 border rounded-lg text-center transition-all',
+                gender === 'male'
+                  ? 'border-[#8A2BE2] bg-[#8A2BE2]/5'
+                  : 'border-gray-200 hover:border-gray-300'
+              )}
+            >
+              <div className="w-10 h-10 mx-auto bg-blue-100 rounded-full flex items-center justify-center mb-2">
+                <span className="text-xl">👨</span>
+              </div>
+              <p className="font-medium text-sm">Male</p>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => step2Form.setValue('gender', 'female')}
+              className={cn(
+                'p-3 border rounded-lg text-center transition-all',
+                gender === 'female'
+                  ? 'border-[#8A2BE2] bg-[#8A2BE2]/5'
+                  : 'border-gray-200 hover:border-gray-300'
+              )}
+            >
+              <div className="w-10 h-10 mx-auto bg-pink-100 rounded-full flex items-center justify-center mb-2">
+                <span className="text-xl">👩</span>
+              </div>
+              <p className="font-medium text-sm">Female</p>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => step2Form.setValue('gender', 'other')}
+              className={cn(
+                'p-3 border rounded-lg text-center transition-all',
+                gender === 'other'
+                  ? 'border-[#8A2BE2] bg-[#8A2BE2]/5'
+                  : 'border-gray-200 hover:border-gray-300'
+              )}
+            >
+              <div className="w-10 h-10 mx-auto bg-purple-100 rounded-full flex items-center justify-center mb-2">
+                <span className="text-xl">🧑</span>
+              </div>
+              <p className="font-medium text-sm">Other</p>
+            </button>
+          </div>
+          {step2Form.formState.errors.gender && (
+            <p className="text-sm text-red-500">
+              {step2Form.formState.errors.gender.message}
+            </p>
+          )}
+        </div>
+
+        <p className="text-xs text-gray-500 text-center">
+          You can change your avatar later in your profile settings
+        </p>
+
+        <div className="flex gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            className="flex-1 h-12 sm:h-11 text-base"
+            onClick={() => setCurrentStep(1)}
+          >
+            Back
+          </Button>
+          <Button
+            type="submit"
+            className="flex-1 bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white h-12 sm:h-11 text-base"
+          >
+            Continue
+          </Button>
+        </div>
+      </form>
+    );
+  };
 
   const renderStep3 = () => {
     const role = step3Form.watch('role');

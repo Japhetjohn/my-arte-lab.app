@@ -34,8 +34,9 @@ export type RegisterStep1Data = z.infer<typeof registerStep1Schema>;
 
 // Registration step 2 schema
 export const registerStep2Schema = z.object({
-  avatar: z.string().min(1, 'Profile photo is required'),
-  coverImage: z.string().min(1, 'Cover image is required'),
+  gender: z.enum(['male', 'female', 'other']),
+  avatar: z.string().optional(),
+  coverImage: z.string().optional(),
 });
 
 export type RegisterStep2Data = z.infer<typeof registerStep2Schema>;
@@ -43,6 +44,7 @@ export type RegisterStep2Data = z.infer<typeof registerStep2Schema>;
 // Registration step 3 schema
 export const registerStep3Schema = z.object({
   role: z.enum(['client', 'creator']),
+  gender: z.enum(['male', 'female', 'other']).optional(),
   location: z.object({
     localArea: z.string().min(1, 'Local area is required'),
     state: z.string().min(1, 'State is required'),

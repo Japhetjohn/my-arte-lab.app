@@ -57,8 +57,9 @@ interface RegisterData {
   lastName: string;
   email: string;
   password: string;
-  avatar: string;
-  coverImage: string;
+  gender: 'male' | 'female' | 'other';
+  avatar?: string;
+  coverImage?: string;
   role: 'client' | 'creator';
   location: {
     localArea: string;
@@ -157,13 +158,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const register = useCallback(async (userData: RegisterData) => {
     try {
       // Transform data to match backend expectations (flat structure)
-      const { location, confirmPassword, agreeToTerms, ...rest } = userData as any;
+      const { location, confirmPassword, agreeToTerms, gender, ...rest } = userData as any;
+      
+      // Auto-assign avatar based on gender
+      const getAvatarUrl = (g: string) => {
+        switch (g) {
+          case 'male': return '/images/avatar-1.png';
+          case 'female': return '/images/avatar-2.png';
+          default: return '/images/avatar-3.png';
+        }
+      };
+      
+      // Auto-assign cover image (using hero-bg as default)
+      const getCoverImageUrl = () => '/images/hero-bg.jpg';
       
       const transformedData = {
         ...rest,
         localArea: location?.localArea,
         state: location?.state,
         country: location?.country,
+        avatar: getAvatarUrl(gender),
+        coverImage: getCoverImageUrl(),
       };
 
       const response = await api.post('/auth/register', transformedData);
