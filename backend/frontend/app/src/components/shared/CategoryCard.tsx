@@ -9,21 +9,21 @@ interface CategoryCardProps {
 export function CategoryCard({ category, onClick }: CategoryCardProps) {
   return (
     <Card 
-      className="group cursor-pointer hover:shadow-lg transition-all duration-300 border border-gray-200 hover:border-[#8A2BE2]/30 overflow-hidden h-full"
+      className="group cursor-pointer hover:shadow-lg transition-all duration-300 border border-gray-200 hover:border-[#8A2BE2]/30 overflow-hidden h-full min-h-[180px]"
       onClick={() => onClick?.(category)}
     >
-      <CardContent className="p-4 sm:p-5 flex flex-col items-center text-center gap-3">
+      <CardContent className="p-5 flex flex-col items-center justify-center text-center h-full gap-4">
         <img
           src={category.icon}
           alt={category.name}
-          className="w-12 h-12 sm:w-14 sm:h-14 object-contain group-hover:scale-110 transition-transform duration-300"
+          className="w-16 h-16 object-contain group-hover:scale-110 transition-transform duration-300"
         />
         <div className="w-full">
-          <h3 className="font-semibold text-gray-900 group-hover:text-[#8A2BE2] transition-colors text-sm sm:text-base truncate">
+          <h3 className="font-semibold text-gray-900 group-hover:text-[#8A2BE2] transition-colors text-base">
             {category.name}
           </h3>
-          <p className="text-xs sm:text-sm text-gray-500 truncate">{category.description}</p>
-          <p className="text-xs text-gray-400 mt-1">{category.creatorCount.toLocaleString()} creators</p>
+          <p className="text-sm text-gray-500 mt-1">{category.description}</p>
+          <p className="text-xs text-gray-400 mt-2">{category.creatorCount.toLocaleString()} creators</p>
         </div>
       </CardContent>
     </Card>

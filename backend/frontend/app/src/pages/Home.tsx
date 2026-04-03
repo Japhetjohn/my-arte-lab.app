@@ -152,7 +152,7 @@ export function Home() {
             <ArrowRight className="w-4 h-4" />
           </a>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           {categories.map((category) => (
             <CategoryCard key={category.id} category={category} onClick={handleCategoryClick} />
           ))}
