@@ -18,6 +18,7 @@ import { Messages } from '@/pages/Messages';
 import { Notifications } from '@/pages/Notifications';
 import { Settings } from '@/pages/Settings';
 import { Projects } from '@/pages/Projects';
+import { ProjectDetail } from '@/pages/ProjectDetail';
 import { CreatorProfile } from '@/pages/CreatorProfile';
 import { Explore } from '@/pages/Explore';
 import { Creators } from '@/pages/Creators';
@@ -150,6 +151,12 @@ function AppContent() {
     const bookingMatch = currentPath.match(/\/bookings\/(.+)/);
     if (bookingMatch) {
       return <BookingDetail bookingId={bookingMatch[1]} />;
+    }
+
+    // Check if it's a project detail page
+    const projectMatch = currentPath.match(/\/projects\/(.+)/);
+    if (projectMatch) {
+      return <ProjectDetail />;
     }
 
     switch (currentPath) {
