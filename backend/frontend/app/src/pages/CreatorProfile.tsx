@@ -424,37 +424,53 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                     </Button>
                   )}
                   {isOwner ? (
-                    // Simple toggle between Available and Busy
-                    <button
-                      onClick={async () => {
-                        const currentStatus = creator.availability || 'available';
-                        const newStatus = currentStatus === 'available' ? 'busy' : 'available';
-                        try {
-                          await api.post('/creators/availability', { availability: newStatus });
-                          setCreator(prev => prev ? { ...prev, availability: newStatus as 'available' | 'busy' | 'unavailable' } : null);
-                          toast.success(`You are now ${newStatus}`);
-                        } catch (error: any) {
-                          toast.error(error.response?.data?.error || 'Failed to update status');
-                        }
-                      }}
-                      className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
-                        (creator.availability || 'available') === 'available'
-                          ? 'bg-green-100 text-green-700 hover:bg-green-200 border border-green-300'
-                          : 'bg-amber-100 text-amber-700 hover:bg-amber-200 border border-amber-300'
-                      }`}
-                    >
-                      {(creator.availability || 'available') === 'available' ? (
-                        <>
-                          <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                    // Toggle Switch for Availability
+                    <div className="flex items-center gap-3 bg-gray-100 rounded-full p-1">
+                      <button
+                        onClick={async () => {
+                          if ((creator.availability || 'available') === 'available') return;
+                          try {
+                            await api.post('/creators/availability', { availability: 'available' });
+                            setCreator(prev => prev ? { ...prev, availability: 'available' } : null);
+                            toast.success('You are now available');
+                          } catch (error: any) {
+                            toast.error(error.response?.data?.error || 'Failed to update status');
+                          }
+                        }}
+                        className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+                          (creator.availability || 'available') === 'available'
+                            ? 'bg-green-500 text-white shadow-md'
+                            : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                      >
+                        <span className="flex items-center gap-2">
+                          <span className={`w-2 h-2 rounded-full ${(creator.availability || 'available') === 'available' ? 'bg-white animate-pulse' : 'bg-gray-400'}`}></span>
                           Available
-                        </>
-                      ) : (
-                        <>
-                          <span className="w-2 h-2 bg-amber-500 rounded-full"></span>
+                        </span>
+                      </button>
+                      <button
+                        onClick={async () => {
+                          if ((creator.availability || 'available') === 'busy') return;
+                          try {
+                            await api.post('/creators/availability', { availability: 'busy' });
+                            setCreator(prev => prev ? { ...prev, availability: 'busy' } : null);
+                            toast.success('You are now busy');
+                          } catch (error: any) {
+                            toast.error(error.response?.data?.error || 'Failed to update status');
+                          }
+                        }}
+                        className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+                          (creator.availability || 'available') === 'busy'
+                            ? 'bg-amber-500 text-white shadow-md'
+                            : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                      >
+                        <span className="flex items-center gap-2">
+                          <span className={`w-2 h-2 rounded-full ${(creator.availability || 'available') === 'busy' ? 'bg-white' : 'bg-gray-400'}`}></span>
                           Busy
-                        </>
-                      )}
-                    </button>
+                        </span>
+                      </button>
+                    </div>
                   ) : (
                     <StatusBadge status={creator.availability || 'available'} />
                   )}

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, SlidersHorizontal, Grid3X3, List, Loader2 } from 'lucide-react';
+import { Search, Grid3X3, List, Loader2, X } from 'lucide-react';
 import { CreatorCard } from '@/components/shared/CreatorCard';
 import { CategoryCard } from '@/components/shared/CategoryCard';
 import { EmptyState } from '@/components/shared/EmptyState';
@@ -10,14 +10,13 @@ import { api } from '@/contexts/AuthContext';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Creator, Category } from '@/types';
 
-// Categories with icons - counts will be fetched from backend
+// Categories must match backend CREATOR_CATEGORIES
 const defaultCategories: Category[] = [
-  { id: 'photography', name: 'Photography', icon: '/images/category-photography.png', description: 'Professional photos', creatorCount: 0 },
-  { id: 'design', name: 'Design', icon: '/images/category-design.png', description: 'Graphic design', creatorCount: 0 },
-  { id: 'music', name: 'Music', icon: '/images/category-music.png', description: 'Music production', creatorCount: 0 },
-  { id: 'video', name: 'Video', icon: '/images/category-video.png', description: 'Video editing', creatorCount: 0 },
-  { id: 'writing', name: 'Writing', icon: '/images/category-writing.png', description: 'Content writing', creatorCount: 0 },
-  { id: 'marketing', name: 'Marketing', icon: '/images/category-marketing.png', description: 'Digital marketing', creatorCount: 0 },
+  { id: 'photographer', name: 'Photography', icon: '/images/category-photography.png', description: 'Professional photos', creatorCount: 0 },
+  { id: 'designer', name: 'Design', icon: '/images/category-design.png', description: 'Graphic design', creatorCount: 0 },
+  { id: 'videographer', name: 'Video', icon: '/images/category-video.png', description: 'Video editing', creatorCount: 0 },
+  { id: 'illustrator', name: 'Illustration', icon: '/images/category-music.png', description: 'Digital art', creatorCount: 0 },
+  { id: 'other', name: 'Other', icon: '/images/category-writing.png', description: 'Other services', creatorCount: 0 },
 ];
 
 export function Explore() {
@@ -30,31 +29,39 @@ export function Explore() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
 
+  // Read category from URL on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const categoryFromUrl = params.get('category');
+    if (categoryFromUrl) {
+      setSelectedCategory(categoryFromUrl);
+    }
+  }, []);
+
   // Fetch creators and category stats on mount
   useEffect(() => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
         
-        // Fetch category stats and creators in parallel
-        const [statsResponse, creatorsResponse] = await Promise.all([
-          api.get('/creators/stats').catch(() => ({ data: { data: { byCategory: [] } } })),
-          api.get('/creators?limit=100')
-        ]);
-        
-        // Update category counts from backend
-        const categoryStats = statsResponse.data.data?.byCategory || [];
-        if (categoryStats.length > 0) {
-          setCategories(prev => prev.map(cat => {
-            const stat = categoryStats.find((s: any) => s._id === cat.id);
-            return {
-              ...cat,
-              creatorCount: stat?.count || 0
-            };
-          }));
-        }
-        
+        // Fetch creators
+        const creatorsResponse = await api.get('/creators?limit=100');
         const allCreators = creatorsResponse.data.data?.results || creatorsResponse.data.data || [];
+        
+        // Calculate category counts from actual creators
+        const categoryCounts: Record<string, number> = {};
+        allCreators.forEach((creator: Creator) => {
+          const cat = creator.category;
+          if (cat) {
+            categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+          }
+        });
+        
+        // Update categories with real counts
+        setCategories(prev => prev.map(cat => ({
+          ...cat,
+          creatorCount: categoryCounts[cat.id] || 0
+        })));
         
         // Filter out current user
         if (currentUser) {
@@ -103,7 +110,6 @@ export function Explore() {
       return (ratingB || 0) - (ratingA || 0);
     }
     if (activeTab === 'available') {
-      // Available creators first
       if (a.availability === 'available' && b.availability !== 'available') return -1;
       if (b.availability === 'available' && a.availability !== 'available') return 1;
       return 0;
@@ -123,12 +129,25 @@ export function Explore() {
 
   const handleCategoryClick = (category: Category) => {
     setSelectedCategory(category.id);
+    // Update URL without reloading
+    const url = new URL(window.location.href);
+    url.searchParams.set('category', category.id);
+    window.history.pushState({}, '', url);
   };
 
   const clearFilters = () => {
     setSearchQuery('');
     setSelectedCategory(null);
     setActiveTab('all');
+    // Clear URL params
+    const url = new URL(window.location.href);
+    url.searchParams.delete('category');
+    window.history.pushState({}, '', url);
+  };
+
+  const getSelectedCategoryName = () => {
+    const cat = categories.find(c => c.id === selectedCategory);
+    return cat?.name || selectedCategory;
   };
 
   if (isLoading) {
@@ -176,22 +195,19 @@ export function Explore() {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <Button variant="outline" className="gap-2">
-          <SlidersHorizontal className="w-4 h-4" />
-          Filters
-        </Button>
         {(searchQuery || selectedCategory || activeTab !== 'all') && (
-          <Button variant="ghost" onClick={clearFilters}>
+          <Button variant="ghost" onClick={clearFilters} className="gap-2">
+            <X className="w-4 h-4" />
             Clear
           </Button>
         )}
       </div>
 
-      {/* Categories */}
-      {!selectedCategory && !searchQuery && (
+      {/* Categories - Only show when no category selected */}
+      {!selectedCategory && (
         <div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Categories</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Browse Categories</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
             {categories.map((category) => (
               <CategoryCard 
                 key={category.id} 
@@ -205,23 +221,26 @@ export function Explore() {
 
       {/* Selected Category Badge */}
       {selectedCategory && (
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-500">Filtered by:</span>
-          <span className="px-3 py-1 bg-[#8A2BE2]/10 text-[#8A2BE2] text-sm rounded-full capitalize">
-            {selectedCategory}
+        <div className="flex items-center gap-2 bg-[#8A2BE2]/10 px-4 py-3 rounded-lg">
+          <span className="text-sm text-gray-600">Showing:</span>
+          <span className="px-3 py-1 bg-[#8A2BE2] text-white text-sm rounded-full font-medium capitalize">
+            {getSelectedCategoryName()}
           </span>
-          <Button variant="ghost" size="sm" onClick={() => setSelectedCategory(null)}>
-            Remove
+          <span className="text-sm text-gray-500">({sortedCreators.length} creators)</span>
+          <Button variant="ghost" size="sm" className="ml-auto" onClick={clearFilters}>
+            Remove Filter
           </Button>
         </div>
       )}
 
       {/* Results Count */}
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-500">
-          {sortedCreators.length} creator{sortedCreators.length !== 1 ? 's' : ''} found
-        </p>
-      </div>
+      {!selectedCategory && (
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-gray-500">
+            {sortedCreators.length} creator{sortedCreators.length !== 1 ? 's' : ''} found
+          </p>
+        </div>
+      )}
 
       {/* Creators Grid/List */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -248,7 +267,9 @@ export function Explore() {
             <EmptyState
               image="/images/empty-search.png"
               title="No creators found"
-              description="Try adjusting your search or filters"
+              description={selectedCategory 
+                ? `No creators found in ${getSelectedCategoryName()} category. Try another category.` 
+                : "Try adjusting your search or filters"}
               actionLabel="Clear Filters"
               onAction={clearFilters}
             />
