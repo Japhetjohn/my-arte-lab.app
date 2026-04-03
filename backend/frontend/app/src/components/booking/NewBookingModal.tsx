@@ -4,6 +4,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -84,6 +85,9 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Book {creator.name}</DialogTitle>
+          <DialogDescription>
+            Send a booking request. Payment will only be required after the creator accepts.
+          </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-6 py-4">

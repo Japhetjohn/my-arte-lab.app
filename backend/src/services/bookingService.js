@@ -380,11 +380,7 @@ class BookingService {
       throw new ErrorHandler('Creator not found', 404);
     }
 
-    const client = await User.findById(clientId);
-    if (client.wallet.balance < amount) {
-      throw new ErrorHandler('Insufficient balance to create booking', 400);
-    }
-
+    // No balance check at booking creation - payment happens after creator accepts
     const platformCommission = PLATFORM_CONFIG.COMMISSION_RATE;
     const platformFee = (amount * platformCommission) / 100;
     const creatorAmount = amount - platformFee;

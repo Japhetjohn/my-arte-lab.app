@@ -22,6 +22,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogTrigger,
 } from '@/components/ui/dialog';
 
@@ -489,6 +490,9 @@ export function BookingDetail() {
                     <DialogContent>
                       <DialogHeader>
                         <DialogTitle>Make Counter Proposal</DialogTitle>
+                        <DialogDescription>
+                          Propose a different price for this booking.
+                        </DialogDescription>
                       </DialogHeader>
                       <div className="space-y-4">
                         <p>Current amount: {booking.amount} {booking.currency}</p>
