@@ -12,6 +12,7 @@ import { ForgotPassword } from '@/pages/auth/ForgotPassword';
 import { ResetPassword } from '@/pages/auth/ResetPassword';
 import { Home } from '@/pages/Home';
 import { Bookings } from '@/pages/Bookings';
+import { BookingDetail } from '@/pages/BookingDetail';
 import { Wallet } from '@/pages/Wallet';
 import { Messages } from '@/pages/Messages';
 import { Notifications } from '@/pages/Notifications';
@@ -118,6 +119,12 @@ function AppContent() {
     const creatorId = getCreatorFromPath(currentPath);
     if (creatorId) {
       return <CreatorProfile creatorId={creatorId} />;
+    }
+
+    // Check if it's a booking detail page
+    const bookingMatch = currentPath.match(/\/bookings\/(.+)/);
+    if (bookingMatch) {
+      return <BookingDetail />;
     }
 
     switch (currentPath) {
