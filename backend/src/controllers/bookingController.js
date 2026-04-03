@@ -60,7 +60,7 @@ exports.createBooking = catchAsync(async (req, res, next) => {
 
     const { booking } = result;
 
-    await booking.populate('creator', 'name email');
+    await booking.populate('creator', 'firstName lastName name email');
 
     emailConfig.sendEmail({
       to: booking.creator.email,
@@ -361,7 +361,30 @@ exports.addMessage = catchAsync(async (req, res, next) => {
 });
 
 exports.acceptBooking = catchAsync(async (req, res, next) => {
-  const idempotencyKey = req.headers['idempotency-key'];
+  const idempotencyKey = req.headers['idempotency-key'] || `accept-${req.params.id}-${req.user._id}-${Date.now()}`;
+
+  // Check if booking exists and is in correct status first
+  const existingBooking = await Booking.findById(req.params.id);
+  if (!existingBooking) {
+    return next(new ErrorHandler('Booking not found', 404));
+  }
+  
+  if (existingBooking.creator.toString() !== req.user._id.toString()) {
+    return next(new ErrorHandler('Only the creator can accept this booking', 403));
+  }
+  
+  // If already accepted, return success immediately (prevents double-click errors)
+  if (existingBooking.status === 'awaiting_payment') {
+    await existingBooking.populate('creator', 'firstName lastName name email');
+    await existingBooking.populate('client', 'firstName lastName name email');
+    return successResponse(res, 200, 'Booking already accepted', {
+      booking: existingBooking
+    });
+  }
+  
+  if (existingBooking.status !== 'pending') {
+    return next(new ErrorHandler(`Booking cannot be accepted (current status: ${existingBooking.status})`, 400));
+  }
 
   try {
     const result = await bookingService.acceptBookingWithTransaction(
@@ -378,8 +401,8 @@ exports.acceptBooking = catchAsync(async (req, res, next) => {
 
     const { booking, client } = result;
 
-    await booking.populate('creator', 'name email');
-    await booking.populate('client', 'name email');
+    await booking.populate('creator', 'firstName lastName name email');
+    await booking.populate('client', 'firstName lastName name email');
 
     await Notification.createNotification({
       recipient: client._id,
@@ -570,7 +593,7 @@ exports.payBooking = catchAsync(async (req, res, next) => {
   const result = await bookingService.processBookingPayment(req.params.id, req.user._id);
   const { booking, client } = result;
 
-  await booking.populate('creator', 'name email');
+  await booking.populate('creator', 'firstName lastName name email');
 
   await Notification.createNotification({
     recipient: booking.creator._id,
@@ -603,7 +626,7 @@ exports.submitDeliverable = catchAsync(async (req, res, next) => {
     { message, url }
   );
 
-  await booking.populate('client', 'name email');
+  await booking.populate('client', 'firstName lastName name email');
 
   await Notification.createNotification({
     recipient: booking.client._id,

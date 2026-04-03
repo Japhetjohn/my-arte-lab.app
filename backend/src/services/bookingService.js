@@ -18,8 +18,10 @@ class BookingService {
         const existingBooking = await Booking.findOne({ idempotencyKey }).session(session);
         if (existingBooking && existingBooking.status !== 'pending') {
           await session.commitTransaction();
+          const client = await User.findById(existingBooking.client).session(session);
           return {
             booking: existingBooking,
+            client,
             alreadyProcessed: true
           };
         }
@@ -41,6 +43,9 @@ class BookingService {
       }
       await booking.save({ session });
 
+      // Get client data for return
+      const client = await User.findById(booking.client).session(session);
+
       // Notify client that booking was accepted
       await notificationService.createNotification({
         recipient: booking.client,
@@ -55,6 +60,7 @@ class BookingService {
 
       return {
         booking,
+        client,
         alreadyProcessed: false
       };
     } catch (error) {
@@ -222,8 +228,8 @@ class BookingService {
         _id: bookingId,
         client: clientId
       })
-        .populate('creator', 'wallet.address name email')
-        .populate('client', 'name')
+        .populate('creator', 'wallet.address firstName lastName name email')
+        .populate('client', 'firstName lastName name')
         .session(session);
 
       if (!booking) {
