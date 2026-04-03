@@ -153,8 +153,8 @@ exports.getMyBookings = catchAsync(async (req, res, next) => {
 
   const bookings = await Booking.find(query)
     .select('-messages') // Exclude messages array to prevent N+1 queries and reduce payload
-    .populate('client', 'name avatar email')
-    .populate('creator', 'name avatar email category')
+    .populate('client', 'firstName lastName name avatar email')
+    .populate('creator', 'firstName lastName name avatar email category')
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limitNum);
@@ -172,8 +172,8 @@ exports.getMyBookings = catchAsync(async (req, res, next) => {
 
 exports.getBooking = catchAsync(async (req, res, next) => {
   const booking = await Booking.findById(req.params.id)
-    .populate('client', 'name avatar email')
-    .populate('creator', 'name avatar email category wallet.address');
+    .populate('client', 'firstName lastName name avatar email')
+    .populate('creator', 'firstName lastName name avatar email category wallet.address');
 
   if (!booking) {
     return next(new ErrorHandler('Booking not found', 404));
