@@ -328,7 +328,10 @@ exports.cancelBooking = catchAsync(async (req, res, next) => {
   }
 
   if (!booking.canBeCancelled()) {
-    return next(new ErrorHandler('This booking cannot be cancelled', 400));
+    const reason = booking.paymentStatus === 'paid' 
+      ? 'Payment has already been made for this booking'
+      : `Booking status is '${booking.status}'`;
+    return next(new ErrorHandler(`This booking cannot be cancelled. ${reason}`, 400));
   }
 
   booking.status = 'cancelled';

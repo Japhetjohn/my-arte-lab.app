@@ -224,7 +224,12 @@ bookingSchema.pre('save', async function (next) {
 });
 
 bookingSchema.methods.canBeCancelled = function () {
-  return ['pending', 'confirmed'].includes(this.status);
+  // Can only cancel if payment hasn't been made yet
+  if (this.paymentStatus === 'paid') {
+    return false;
+  }
+  // Allow cancellation for these statuses before payment
+  return ['pending', 'awaiting_payment', 'confirmed'].includes(this.status);
 };
 
 bookingSchema.methods.canReleaseFunds = function () {
