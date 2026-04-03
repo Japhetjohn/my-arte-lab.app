@@ -43,6 +43,7 @@ const notificationRoutes = require('./routes/notificationRoutes');
 const projectRoutes = require('./routes/projects');
 const messagesRoutes = require('./routes/messagesRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const { trackActivity } = require('./middleware/activityTracker');
 
 const app = express();
 
@@ -285,15 +286,15 @@ app.use('/api/auth', authRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/wallet', walletRoutes);
 app.use('/api/hostfi', hostfiWalletRoutes);
-app.use('/api/creators', creatorRoutes);
+app.use('/api/creators', trackActivity, creatorRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/stats', statsRoutes);
-app.use('/api/services', servicesRoutes);
-app.use('/api/favorites', favoritesRoutes);
+app.use('/api/services', trackActivity, servicesRoutes);
+app.use('/api/favorites', trackActivity, favoritesRoutes);
 app.use('/api/notifications', notificationRoutes);
-app.use('/api/projects', projectRoutes);
-app.use('/api/messages', messagesRoutes);
+app.use('/api/projects', trackActivity, projectRoutes);
+app.use('/api/messages', trackActivity, messagesRoutes);
 app.use('/api/admin', adminLimiter, verifyAdminAuth, adminRoutes);
 
 app.get('/api', (req, res) => {

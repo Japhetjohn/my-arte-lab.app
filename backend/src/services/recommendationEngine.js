@@ -1,6 +1,6 @@
 /**
  * Recommendation Engine
- * Sorts creators by location proximity (HEAVILY weighted) and skill similarity
+ * Sorts creators by: Activity, Location proximity, Skill similarity, Rating
  * Backend-only implementation - no frontend changes
  */
 class RecommendationEngine {
@@ -13,9 +13,9 @@ class RecommendationEngine {
    * @returns distance in kilometers
    */
   calculateDistance(lat1, lon1, lat2, lon2) {
-    if (!lat1 || !lon1 || !lat2 || !lon2) return 10000; // Max distance if no coords
+    if (!lat1 || !lon1 || !lat2 || !lon2) return 10000;
     
-    const R = 6371; // Earth's radius in km
+    const R = 6371;
     const dLat = this.toRadians(lat2 - lat1);
     const dLon = this.toRadians(lon2 - lon1);
     
@@ -32,8 +32,7 @@ class RecommendationEngine {
   }
 
   /**
-   * Convert distance to score (closer = higher score)
-   * Using STEEP exponential decay - closer creators get MUCH higher scores
+   * Calculate location score based on distance
    */
   calculateLocationScore(distanceKm) {
     if (distanceKm === 0) return 1.0;
@@ -46,14 +45,35 @@ class RecommendationEngine {
     if (distanceKm >= 20) return 0.7;
     if (distanceKm >= 10) return 0.85;
     if (distanceKm >= 5) return 0.92;
-    
-    // Within 5km - very high score
     return 0.95 + (0.05 * (1 - distanceKm / 5));
   }
 
   /**
-   * Generate skill embeddings using simple hashing
-   * Returns array of 16 normalized values
+   * Calculate ACTIVITY SCORE - Most important factor
+   * Active creators get boosted, inactive get penalized
+   */
+  calculateActivityScore(lastActive) {
+    if (!lastActive) return 0.3; // No activity data = low score
+    
+    const now = new Date();
+    const lastActiveDate = new Date(lastActive);
+    const hoursSinceActive = (now - lastActiveDate) / (1000 * 60 * 60);
+    
+    // Activity scoring based on last active time
+    if (hoursSinceActive < 1) return 1.0;      // Active within 1 hour
+    if (hoursSinceActive < 6) return 0.95;     // Active within 6 hours
+    if (hoursSinceActive < 24) return 0.9;     // Active within 1 day
+    if (hoursSinceActive < 48) return 0.8;     // Active within 2 days
+    if (hoursSinceActive < 72) return 0.7;     // Active within 3 days
+    if (hoursSinceActive < 168) return 0.6;    // Active within 1 week
+    if (hoursSinceActive < 336) return 0.5;    // Active within 2 weeks
+    if (hoursSinceActive < 720) return 0.4;    // Active within 1 month
+    if (hoursSinceActive < 1440) return 0.3;   // Active within 2 months
+    return 0.2;                                 // Inactive > 2 months
+  }
+
+  /**
+   * Generate skill embeddings
    */
   getSkillEmbedding(skills) {
     if (!skills || skills.length === 0) {
@@ -61,7 +81,6 @@ class RecommendationEngine {
     }
 
     const cacheKey = skills.sort().join(',').toLowerCase();
-    
     if (this.skillEmbeddingCache.has(cacheKey)) {
       return this.skillEmbeddingCache.get(cacheKey);
     }
@@ -78,7 +97,6 @@ class RecommendationEngine {
       }
     }
     
-    // Normalize
     const magnitude = Math.sqrt(embedding.reduce((a, b) => a + b * b, 0));
     const normalizedEmbedding = magnitude > 0 ? embedding.map(v => v / magnitude) : embedding;
     
@@ -87,7 +105,7 @@ class RecommendationEngine {
   }
 
   /**
-   * Calculate cosine similarity between two skill embeddings
+   * Calculate skill similarity
    */
   calculateSkillSimilarity(userSkills, creatorSkills) {
     if (!userSkills?.length || !creatorSkills?.length) {
@@ -97,10 +115,7 @@ class RecommendationEngine {
     const emb1 = this.getSkillEmbedding(userSkills);
     const emb2 = this.getSkillEmbedding(creatorSkills);
 
-    let dotProduct = 0;
-    let norm1 = 0;
-    let norm2 = 0;
-
+    let dotProduct = 0, norm1 = 0, norm2 = 0;
     for (let i = 0; i < 16; i++) {
       dotProduct += emb1[i] * emb2[i];
       norm1 += emb1[i] * emb1[i];
@@ -109,14 +124,13 @@ class RecommendationEngine {
 
     norm1 = Math.sqrt(norm1);
     norm2 = Math.sqrt(norm2);
-
     if (norm1 === 0 || norm2 === 0) return 0;
     
     return Math.max(0, dotProduct / (norm1 * norm2));
   }
 
   /**
-   * Calculate rating score (0-1)
+   * Calculate rating score
    */
   calculateRatingScore(rating) {
     const avg = typeof rating === 'object' ? (rating?.average || 0) : (rating || 0);
@@ -137,75 +151,75 @@ class RecommendationEngine {
 
   /**
    * Get recommendations using weighted algorithm
-   * LOCATION HEAVILY PRIORITIZED:
-   * - Location: 60% (was 40%) - MUCH heavier weight
-   * - Skills: 25% (was 35%)
-   * - Rating: 10% (was 15%)
-   * - Availability: 5% (was 10%)
+   * ACTIVITY IS NOW THE MOST IMPORTANT FACTOR:
+   * - Activity: 35% (NEW - heavily weighted)
+   * - Location: 30% 
+   * - Skills: 25%
+   * - Rating: 7%
+   * - Availability: 3%
    */
   async getRecommendations(user, creators, options = {}) {
     const { limit = 50, maxDistance = 1000 } = options;
     
-    // Get user coordinates
     const userLat = user.location?.coordinates?.[1] || user.location?.lat;
     const userLon = user.location?.coordinates?.[0] || user.location?.lon;
     
-    // Calculate scores for each creator
     const scoredCreators = creators.map(creator => {
-      // 1. Location Score (60% weight - HEAVILY PRIORITIZED)
+      // 1. ACTIVITY SCORE (35% weight) - MOST IMPORTANT
+      const activityScore = this.calculateActivityScore(creator.lastActive);
+      
+      // 2. LOCATION SCORE (30% weight)
       const creatorLat = creator.location?.coordinates?.[1] || creator.location?.lat;
       const creatorLon = creator.location?.coordinates?.[0] || creator.location?.lon;
       const distance = this.calculateDistance(userLat, userLon, creatorLat, creatorLon);
       const locationScore = this.calculateLocationScore(distance);
       
-      // 2. Skill Similarity (25% weight)
-      const skillScore = this.calculateSkillSimilarity(
-        user.skills || [],
-        creator.skills || []
-      );
+      // 3. SKILL SIMILARITY (25% weight)
+      const skillScore = this.calculateSkillSimilarity(user.skills || [], creator.skills || []);
       
-      // 3. Rating Score (10% weight)
+      // 4. RATING SCORE (7% weight)
       const ratingScore = this.calculateRatingScore(creator.rating);
       
-      // 4. Availability Score (5% weight)
+      // 5. AVAILABILITY SCORE (3% weight)
       const availabilityScore = this.calculateAvailabilityScore(creator.availability);
       
-      // Combined score using weighted average - LOCATION HEAVILY WEIGHTED
+      // Combined score with ACTIVITY heavily weighted
       const totalScore = (
-        locationScore * 0.60 +
+        activityScore * 0.35 +
+        locationScore * 0.30 +
         skillScore * 0.25 +
-        ratingScore * 0.10 +
-        availabilityScore * 0.05
+        ratingScore * 0.07 +
+        availabilityScore * 0.03
       );
       
       return {
         creator,
         distance,
+        activityScore,
         locationScore,
         skillScore,
         ratingScore,
         availabilityScore,
-        totalScore
+        totalScore,
+        // Mark as inactive for filtering
+        isInactive: activityScore < 0.3
       };
     });
 
-    // Sort by total score and return
-    // Also apply distance cutoff - creators beyond maxDistance get heavily penalized
+    // Sort by total score
+    // Inactive creators (no activity > 2 months) get pushed to bottom
     return scoredCreators
-      .map(scored => {
-        // Penalize creators that are too far
-        if (scored.distance > maxDistance) {
-          scored.totalScore *= 0.5;
-        }
-        return scored;
+      .sort((a, b) => {
+        // Push inactive creators to the bottom
+        if (a.isInactive && !b.isInactive) return 1;
+        if (!a.isInactive && b.isInactive) return -1;
+        return b.totalScore - a.totalScore;
       })
-      .sort((a, b) => b.totalScore - a.totalScore)
       .slice(0, limit);
   }
 
   /**
-   * Get nearby creators sorted purely by distance (no other factors)
-   * Use this for "Creators Near You" if you want pure proximity
+   * Get nearby creators sorted by distance
    */
   async getNearbyCreators(user, creators, options = {}) {
     const { limit = 50, maxDistance = 500 } = options;
@@ -218,17 +232,19 @@ class RecommendationEngine {
       const creatorLon = creator.location?.coordinates?.[0] || creator.location?.lon;
       const distance = this.calculateDistance(userLat, userLon, creatorLat, creatorLon);
       
+      // Activity penalty for inactive creators
+      const activityScore = this.calculateActivityScore(creator.lastActive);
+      
       return {
         creator,
         distance,
-        // Pure distance score - closer is better
-        totalScore: 1 / (1 + distance / 10) // Normalize so closer creators score higher
+        totalScore: (1 / (1 + distance / 10)) * activityScore // Distance + activity
       };
     });
 
     return scoredCreators
       .filter(s => s.distance <= maxDistance)
-      .sort((a, b) => a.distance - b.distance) // Pure distance sort
+      .sort((a, b) => b.totalScore - a.totalScore)
       .slice(0, limit);
   }
 
@@ -245,10 +261,13 @@ class RecommendationEngine {
       const activity = activityData.get(creatorId);
       let trendScore = 0;
       
+      // Base score from lastActive
+      const activityScore = this.calculateActivityScore(creator.lastActive);
+      trendScore += activityScore * 50;
+      
       if (activity && activity.lastActive >= oneWeekAgo) {
-        // Weight recent activity heavily
         const daysSinceActive = (now - activity.lastActive) / (24 * 60 * 60 * 1000);
-        const recencyBoost = Math.exp(-daysSinceActive / 3); // Decay over 3 days
+        const recencyBoost = Math.exp(-daysSinceActive / 3);
         
         trendScore += (activity.profileViews || 0) * 1 * recencyBoost;
         trendScore += (activity.bookings || 0) * 10 * recencyBoost;
@@ -256,19 +275,14 @@ class RecommendationEngine {
         trendScore += (activity.completedProjects || 0) * 15 * recencyBoost;
       }
       
-      // Boost verified creators slightly
       if (creator.isVerified) trendScore *= 1.1;
       
-      // Boost by rating
       const rating = typeof creator.rating === 'object' 
         ? (creator.rating?.average || 0)
         : (creator.rating || 0);
       trendScore *= (1 + rating / 10);
       
-      return {
-        creator,
-        trendScore
-      };
+      return { creator, trendScore };
     });
     
     return scored

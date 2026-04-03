@@ -155,6 +155,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  // Activity tracking - ping server every 5 minutes when user is active
+  useEffect(() => {
+    if (!state.isAuthenticated || !state.token) return;
+
+    // Ping immediately on login
+    api.post('/creators/ping').catch(() => {});
+
+    // Set up interval to ping every 5 minutes
+    const pingInterval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        api.post('/creators/ping').catch(() => {});
+      }
+    }, 5 * 60 * 1000); // 5 minutes
+
+    // Ping on user activity (throttled)
+    let lastPing = Date.now();
+    const pingOnActivity = () => {
+      const now = Date.now();
+      if (now - lastPing > 60000) { // Max once per minute
+        lastPing = now;
+        api.post('/creators/ping').catch(() => {});
+      }
+    };
+
+    window.addEventListener('click', pingOnActivity);
+    window.addEventListener('scroll', pingOnActivity);
+    window.addEventListener('keypress', pingOnActivity);
+
+    return () => {
+      clearInterval(pingInterval);
+      window.removeEventListener('click', pingOnActivity);
+      window.removeEventListener('scroll', pingOnActivity);
+      window.removeEventListener('keypress', pingOnActivity);
+    };
+  }, [state.isAuthenticated, state.token]);
+
   const login = useCallback(async (email: string, password: string, rememberMe = false) => {
     try {
       const response = await api.post('/auth/login', { email, password });
