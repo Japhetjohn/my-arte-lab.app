@@ -184,27 +184,51 @@ export function Bookings() {
             </div>
           </div>
 
-          {/* Progress Steps */}
-          <div className="flex items-center gap-2 mb-4">
-            <div className={`flex-1 h-2 rounded-full ${
-              ['pending', 'awaiting_payment', 'confirmed', 'in_progress', 'delivered', 'completed'].includes(booking.status) 
-                ? 'bg-[#8A2BE2]' : 'bg-gray-200'
-            }`} />
-            <div className={`flex-1 h-2 rounded-full ${
-              ['confirmed', 'in_progress', 'delivered', 'completed'].includes(booking.status) 
-                ? 'bg-[#8A2BE2]' : 'bg-gray-200'
-            }`} />
-            <div className={`flex-1 h-2 rounded-full ${
-              ['in_progress', 'delivered', 'completed'].includes(booking.status) 
-                ? 'bg-[#8A2BE2]' : 'bg-gray-200'
-            }`} />
-            <div className={`flex-1 h-2 rounded-full ${
-              ['delivered', 'completed'].includes(booking.status) 
-                ? 'bg-[#8A2BE2]' : 'bg-gray-200'
-            }`} />
-            <div className={`flex-1 h-2 rounded-full ${
-              booking.status === 'completed' ? 'bg-[#8A2BE2]' : 'bg-gray-200'
-            }`} />
+          {/* Progress Steps with Circles */}
+          <div className="flex items-center gap-1 mb-4">
+            {[
+              { key: 'pending', label: 'Request', icon: '1' },
+              { key: 'awaiting_payment', label: 'Payment', icon: '2' },
+              { key: 'confirmed', label: 'Confirmed', icon: '3' },
+              { key: 'in_progress', label: 'In Progress', icon: '4' },
+              { key: 'delivered', label: 'Delivered', icon: '5' },
+              { key: 'completed', label: 'Completed', icon: '✓' }
+            ].map((step, index) => {
+              const stepStatuses = [
+                ['pending', 'awaiting_payment', 'confirmed', 'in_progress', 'delivered', 'completed'],
+                ['awaiting_payment', 'confirmed', 'in_progress', 'delivered', 'completed'],
+                ['confirmed', 'in_progress', 'delivered', 'completed'],
+                ['in_progress', 'delivered', 'completed'],
+                ['delivered', 'completed'],
+                ['completed']
+              ];
+              const isActive = stepStatuses[index].includes(booking.status);
+              const isCurrent = booking.status === step.key;
+              
+              return (
+                <div key={step.key} className="flex items-center flex-1">
+                  <div className="flex flex-col items-center">
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium transition-all ${
+                      isActive 
+                        ? 'bg-green-500 text-white' 
+                        : 'bg-gray-200 text-gray-400'
+                    } ${isCurrent ? 'ring-2 ring-green-500 ring-offset-2' : ''}`}>
+                      {isActive ? '✓' : step.icon}
+                    </div>
+                    <span className={`text-[10px] mt-1 text-center ${isActive ? 'text-green-600 font-medium' : 'text-gray-400'}`}>
+                      {step.label}
+                    </span>
+                  </div>
+                  {index < 5 && (
+                    <div className={`flex-1 h-1 mx-1 rounded-full ${
+                      isActive && stepStatuses[index + 1].includes(booking.status)
+                        ? 'bg-green-500' 
+                        : 'bg-gray-200'
+                    }`} />
+                  )}
+                </div>
+              );
+            })}
           </div>
 
           <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
