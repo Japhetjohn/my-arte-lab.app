@@ -424,24 +424,37 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                     </Button>
                   )}
                   {isOwner ? (
-                    <select
-                      value={creator.availability || 'available'}
-                      onChange={async (e) => {
-                        const newStatus = e.target.value;
+                    // Simple toggle between Available and Busy
+                    <button
+                      onClick={async () => {
+                        const currentStatus = creator.availability || 'available';
+                        const newStatus = currentStatus === 'available' ? 'busy' : 'available';
                         try {
                           await api.post('/creators/availability', { availability: newStatus });
                           setCreator(prev => prev ? { ...prev, availability: newStatus as 'available' | 'busy' | 'unavailable' } : null);
-                          toast.success(`Status updated to ${newStatus}`);
+                          toast.success(`You are now ${newStatus}`);
                         } catch (error: any) {
                           toast.error(error.response?.data?.error || 'Failed to update status');
                         }
                       }}
-                      className="px-3 py-1.5 text-sm border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#8A2BE2]"
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                        (creator.availability || 'available') === 'available'
+                          ? 'bg-green-100 text-green-700 hover:bg-green-200 border border-green-300'
+                          : 'bg-amber-100 text-amber-700 hover:bg-amber-200 border border-amber-300'
+                      }`}
                     >
-                      <option value="available">🟢 Available</option>
-                      <option value="busy">🟡 Busy</option>
-                      <option value="unavailable">⚫ Unavailable</option>
-                    </select>
+                      {(creator.availability || 'available') === 'available' ? (
+                        <>
+                          <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                          Available
+                        </>
+                      ) : (
+                        <>
+                          <span className="w-2 h-2 bg-amber-500 rounded-full"></span>
+                          Busy
+                        </>
+                      )}
+                    </button>
                   ) : (
                     <StatusBadge status={creator.availability || 'available'} />
                   )}
