@@ -262,6 +262,22 @@ exports.updateProfile = catchAsync(async (req, res, next) => {
     }
   });
   
+  // Handle skills parsing - if skills is a string, split it into array
+  if (updates.skills !== undefined) {
+    if (typeof updates.skills === 'string') {
+      // Split by comma, space, or both, then clean up
+      updates.skills = updates.skills
+        .split(/[,\s]+/)
+        .map(s => s.trim())
+        .filter(s => s.length > 0 && s !== ',');
+    } else if (Array.isArray(updates.skills)) {
+      // Clean up array items
+      updates.skills = updates.skills
+        .map(s => typeof s === 'string' ? s.trim() : s)
+        .filter(s => s && s.length > 0);
+    }
+  }
+  
   // Validate that avatar and coverImage cannot be removed
   if (updates.avatar === '' || updates.avatar === null) {
     return next(new ErrorHandler('Profile photo cannot be removed. Please upload a new profile picture.', 400));

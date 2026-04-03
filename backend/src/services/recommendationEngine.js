@@ -1,51 +1,11 @@
 /**
- * Recommendation Engine using TensorFlow.js
- * Sorts creators by location proximity and skill similarity
+ * Recommendation Engine
+ * Sorts creators by location proximity (HEAVILY weighted) and skill similarity
  * Backend-only implementation - no frontend changes
  */
 class RecommendationEngine {
   constructor() {
     this.skillEmbeddingCache = new Map();
-    this.tf = null;
-    this.model = null;
-    this.initialized = false;
-  }
-
-  /**
-   * Initialize TensorFlow.js (lazy loading)
-   */
-  async initialize() {
-    if (this.initialized) return;
-
-    try {
-      // Lazy load TensorFlow to avoid startup issues
-      if (!this.tf) {
-        this.tf = require('@tensorflow/tfjs');
-      }
-
-      // Create a simple neural network for scoring
-      // Input: [distance_score, skill_similarity, rating, availability]
-      // Output: recommendation_score
-      this.model = this.tf.sequential({
-        layers: [
-          this.tf.layers.dense({ inputShape: [4], units: 8, activation: 'relu' }),
-          this.tf.layers.dense({ units: 4, activation: 'relu' }),
-          this.tf.layers.dense({ units: 1, activation: 'sigmoid' })
-        ]
-      });
-
-      // Compile with optimized weights
-      this.model.compile({
-        optimizer: 'adam',
-        loss: 'meanSquaredError'
-      });
-
-      this.initialized = true;
-      console.log('[RecommendationEngine] Initialized successfully');
-    } catch (error) {
-      console.warn('[RecommendationEngine] TensorFlow not available, using fallback:', error.message);
-      this.initialized = false;
-    }
   }
 
   /**
@@ -73,13 +33,22 @@ class RecommendationEngine {
 
   /**
    * Convert distance to score (closer = higher score)
+   * Using STEEP exponential decay - closer creators get MUCH higher scores
    */
   calculateLocationScore(distanceKm) {
     if (distanceKm === 0) return 1.0;
-    if (distanceKm > 1000) return 0.1;
+    if (distanceKm >= 5000) return 0.01;
+    if (distanceKm >= 1000) return 0.05;
+    if (distanceKm >= 500) return 0.1;
+    if (distanceKm >= 200) return 0.2;
+    if (distanceKm >= 100) return 0.35;
+    if (distanceKm >= 50) return 0.5;
+    if (distanceKm >= 20) return 0.7;
+    if (distanceKm >= 10) return 0.85;
+    if (distanceKm >= 5) return 0.92;
     
-    // Exponential decay: closer creators get much higher scores
-    return Math.exp(-distanceKm / 200); // Half-life at 200km
+    // Within 5km - very high score
+    return 0.95 + (0.05 * (1 - distanceKm / 5));
   }
 
   /**
@@ -168,10 +137,14 @@ class RecommendationEngine {
 
   /**
    * Get recommendations using weighted algorithm
-   * Location: 40%, Skills: 35%, Rating: 15%, Availability: 10%
+   * LOCATION HEAVILY PRIORITIZED:
+   * - Location: 60% (was 40%) - MUCH heavier weight
+   * - Skills: 25% (was 35%)
+   * - Rating: 10% (was 15%)
+   * - Availability: 5% (was 10%)
    */
   async getRecommendations(user, creators, options = {}) {
-    const { limit = 50 } = options;
+    const { limit = 50, maxDistance = 1000 } = options;
     
     // Get user coordinates
     const userLat = user.location?.coordinates?.[1] || user.location?.lat;
@@ -179,30 +152,30 @@ class RecommendationEngine {
     
     // Calculate scores for each creator
     const scoredCreators = creators.map(creator => {
-      // 1. Location Score (40% weight)
+      // 1. Location Score (60% weight - HEAVILY PRIORITIZED)
       const creatorLat = creator.location?.coordinates?.[1] || creator.location?.lat;
       const creatorLon = creator.location?.coordinates?.[0] || creator.location?.lon;
       const distance = this.calculateDistance(userLat, userLon, creatorLat, creatorLon);
       const locationScore = this.calculateLocationScore(distance);
       
-      // 2. Skill Similarity (35% weight)
+      // 2. Skill Similarity (25% weight)
       const skillScore = this.calculateSkillSimilarity(
         user.skills || [],
         creator.skills || []
       );
       
-      // 3. Rating Score (15% weight)
+      // 3. Rating Score (10% weight)
       const ratingScore = this.calculateRatingScore(creator.rating);
       
-      // 4. Availability Score (10% weight)
+      // 4. Availability Score (5% weight)
       const availabilityScore = this.calculateAvailabilityScore(creator.availability);
       
-      // Combined score using weighted average
+      // Combined score using weighted average - LOCATION HEAVILY WEIGHTED
       const totalScore = (
-        locationScore * 0.40 +
-        skillScore * 0.35 +
-        ratingScore * 0.15 +
-        availabilityScore * 0.10
+        locationScore * 0.60 +
+        skillScore * 0.25 +
+        ratingScore * 0.10 +
+        availabilityScore * 0.05
       );
       
       return {
@@ -217,8 +190,45 @@ class RecommendationEngine {
     });
 
     // Sort by total score and return
+    // Also apply distance cutoff - creators beyond maxDistance get heavily penalized
     return scoredCreators
+      .map(scored => {
+        // Penalize creators that are too far
+        if (scored.distance > maxDistance) {
+          scored.totalScore *= 0.5;
+        }
+        return scored;
+      })
       .sort((a, b) => b.totalScore - a.totalScore)
+      .slice(0, limit);
+  }
+
+  /**
+   * Get nearby creators sorted purely by distance (no other factors)
+   * Use this for "Creators Near You" if you want pure proximity
+   */
+  async getNearbyCreators(user, creators, options = {}) {
+    const { limit = 50, maxDistance = 500 } = options;
+    
+    const userLat = user.location?.coordinates?.[1] || user.location?.lat;
+    const userLon = user.location?.coordinates?.[0] || user.location?.lon;
+    
+    const scoredCreators = creators.map(creator => {
+      const creatorLat = creator.location?.coordinates?.[1] || creator.location?.lat;
+      const creatorLon = creator.location?.coordinates?.[0] || creator.location?.lon;
+      const distance = this.calculateDistance(userLat, userLon, creatorLat, creatorLon);
+      
+      return {
+        creator,
+        distance,
+        // Pure distance score - closer is better
+        totalScore: 1 / (1 + distance / 10) // Normalize so closer creators score higher
+      };
+    });
+
+    return scoredCreators
+      .filter(s => s.distance <= maxDistance)
+      .sort((a, b) => a.distance - b.distance) // Pure distance sort
       .slice(0, limit);
   }
 

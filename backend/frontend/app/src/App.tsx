@@ -141,7 +141,7 @@ function AppContent() {
       case '/creators':
         return <Creators />;
       case '/profile':
-        return <Settings />;
+        return user ? <CreatorProfile creatorId={user.id} isOwnProfile={true} /> : <Settings />;
       case '/verify-email':
         return <VerifyEmail />;
       default:

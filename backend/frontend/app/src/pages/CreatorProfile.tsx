@@ -23,6 +23,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 interface CreatorProfileProps {
   creatorId?: string;
+  isOwnProfile?: boolean;
 }
 
 interface Service {
@@ -53,7 +54,7 @@ interface Review {
   };
 }
 
-export function CreatorProfile({ creatorId }: CreatorProfileProps) {
+export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: CreatorProfileProps) {
   const { user: currentUser } = useAuth();
   const [creator, setCreator] = useState<Creator | null>(null);
   const [services, setServices] = useState<Service[]>([]);
@@ -90,29 +91,61 @@ export function CreatorProfile({ creatorId }: CreatorProfileProps) {
   const fetchCreatorData = useCallback(async (id: string) => {
     try {
       setIsLoading(true);
-      const response = await api.get(`/creators/${id}`);
-      const { creator: creatorData, reviews: reviewsData } = response.data.data;
       
-      setCreator(creatorData);
-      setPortfolio(creatorData.portfolio || []);
-      setServices(creatorData.services || []);
-      setReviews(reviewsData || []);
-      
-      // Check if current user is the owner
-      if (currentUser && currentUser.id === creatorData.id) {
+      // If isOwnProfile is passed as prop, use current user's data directly
+      if (propIsOwnProfile && currentUser) {
+        // Fetch current user's full profile
+        const response = await api.get('/auth/me');
+        const userData = response.data.data.user;
+        
+        setCreator(userData);
+        setPortfolio(userData.portfolio || []);
+        setServices(userData.services || []);
+        setReviews([]); // Reviews come from separate endpoint
         setIsOwner(true);
-      }
 
-      // Set profile form
-      setProfileForm({
-        bio: creatorData.bio || '',
-        skills: creatorData.skills || [],
-        category: creatorData.category || '',
-      });
+        // Set profile form
+        setProfileForm({
+          bio: userData.bio || '',
+          skills: userData.skills || [],
+          category: userData.category || '',
+        });
+        
+        // Fetch user's reviews if they are a creator
+        if (userData.role === 'creator') {
+          try {
+            const reviewsResponse = await api.get(`/reviews/creator/${userData.id}`);
+            setReviews(reviewsResponse.data.data?.reviews || []);
+          } catch {
+            // Ignore error - just no reviews
+          }
+        }
+      } else {
+        // Normal creator profile fetch
+        const response = await api.get(`/creators/${id}`);
+        const { creator: creatorData, reviews: reviewsData } = response.data.data;
+        
+        setCreator(creatorData);
+        setPortfolio(creatorData.portfolio || []);
+        setServices(creatorData.services || []);
+        setReviews(reviewsData || []);
+        
+        // Check if current user is the owner
+        if (currentUser && currentUser.id === creatorData.id) {
+          setIsOwner(true);
+        }
 
-      // Check favorite status if user is logged in
-      if (currentUser) {
-        checkFavoriteStatus(id);
+        // Set profile form
+        setProfileForm({
+          bio: creatorData.bio || '',
+          skills: creatorData.skills || [],
+          category: creatorData.category || '',
+        });
+
+        // Check favorite status if user is logged in
+        if (currentUser) {
+          checkFavoriteStatus(id);
+        }
       }
     } catch (error: any) {
       console.error('Error fetching creator:', error);
@@ -124,7 +157,7 @@ export function CreatorProfile({ creatorId }: CreatorProfileProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [currentUser]);
+  }, [currentUser, propIsOwnProfile]);
 
   // Check if creator is favorited
   const checkFavoriteStatus = async (id: string) => {
@@ -744,15 +777,33 @@ export function CreatorProfile({ creatorId }: CreatorProfileProps) {
               />
             </div>
             <div>
-              <Label>Skills (comma separated)</Label>
+              <Label>Skills (comma or space separated)</Label>
               <Input
                 value={profileForm.skills.join(', ')}
-                onChange={(e) => setProfileForm(prev => ({ 
-                  ...prev, 
-                  skills: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
-                }))}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  // Split by comma, space, or both, then clean up
+                  const skills = value
+                    .split(/[,\s]+/)  // Split by comma or whitespace
+                    .map(s => s.trim())
+                    .filter(s => s.length > 0 && s !== ',');
+                  setProfileForm(prev => ({ ...prev, skills }));
+                }}
                 placeholder="e.g., Photoshop, Writing, Video Editing"
               />
+              <p className="text-xs text-gray-500 mt-1">
+                Separate skills with commas or spaces
+              </p>
+              {/* Preview of skills */}
+              {profileForm.skills.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {profileForm.skills.map((skill, idx) => (
+                    <span key={idx} className="px-2 py-0.5 bg-[#8A2BE2]/10 text-[#8A2BE2] text-xs rounded-full">
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
             <Button onClick={handleUpdateProfile} className="w-full bg-[#8A2BE2] hover:bg-[#7B1FD1]">
               Save Changes
