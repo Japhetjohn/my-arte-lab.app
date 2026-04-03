@@ -22,7 +22,7 @@ import { ProjectDetail } from '@/pages/ProjectDetail';
 import { CreatorProfile } from '@/pages/CreatorProfile';
 import { Explore } from '@/pages/Explore';
 import { Creators } from '@/pages/Creators';
-import { EmptyState } from '@/components/shared/EmptyState';
+import { EmptyState, preloadOfflineImage } from '@/components/shared/EmptyState';
 import { Toaster } from '@/components/ui/sonner';
 import './App.css';
 
@@ -40,6 +40,9 @@ function AppContent() {
     
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
+    
+    // Preload offline image for when user goes offline
+    preloadOfflineImage();
     
     return () => {
       window.removeEventListener('online', handleOnline);
