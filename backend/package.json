@@ -30,6 +30,8 @@
     "@sendgrid/mail": "^8.1.6",
     "@solana/spl-token": "^0.4.14",
     "@solana/web3.js": "^1.98.4",
+    "@tensorflow/tfjs": "^4.22.0",
+    "@tensorflow/tfjs-node": "^4.22.0",
     "axios": "^1.13.5",
     "axios-retry": "^4.5.0",
     "bcryptjs": "^2.4.3",

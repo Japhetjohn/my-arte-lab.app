@@ -5,7 +5,6 @@ import { CreatorCard } from '@/components/shared/CreatorCard';
 import { CategoryCard } from '@/components/shared/CategoryCard';
 import { api } from '@/contexts/AuthContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { recommendationService } from '@/services/recommendationService';
 import type { Creator, Category } from '@/types';
 
 // Static categories
@@ -19,46 +18,61 @@ const categories: Category[] = [
 ];
 
 export function Home() {
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, token } = useAuth();
   const [creators, setCreators] = useState<Creator[]>([]);
   const [verifiedCreators, setVerifiedCreators] = useState<Creator[]>([]);
   const [trendingCreators, setTrendingCreators] = useState<Creator[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch creators - backend handles location-based sorting
+  // Fetch creators - backend handles recommendation algorithm behind the scenes
   useEffect(() => {
     const fetchCreators = async () => {
       try {
         setIsLoading(true);
         
-        // Fetch creators - backend sorts by location proximity if user is logged in
-        const params = new URLSearchParams();
-        params.append('limit', '50');
-        params.append('sortBy', 'rating');
+        // Fetch all creators
+        const allResponse = await api.get('/creators?limit=50');
+        const allCreators = allResponse.data.data?.results || allResponse.data.data || [];
         
-        // The backend will use the user's location from JWT token to sort by proximity
-        const response = await api.get(`/creators?${params.toString()}`);
-        const allCreators = response.data.data?.results || response.data.data || [];
-        
-        // Apply AI recommendation sorting locally (behind the scenes)
-        let sortedCreators = allCreators;
-        if (currentUser && allCreators.length > 0) {
-          const recommendations = recommendationService.getRecommendations(
-            currentUser,
-            allCreators,
-            { limit: 50, minScore: 0 }
-          );
-          sortedCreators = recommendations.map(r => r.creator);
+        // If user is logged in, get personalized recommendations from backend
+        if (currentUser && token) {
+          try {
+            const recResponse = await api.get('/creators/recommended?limit=16');
+            const recommended = recResponse.data.data?.creators || [];
+            if (recommended.length > 0) {
+              setCreators(recommended.slice(0, 8));
+            } else {
+              // Fallback to all creators
+              setCreators(allCreators.slice(0, 8));
+            }
+          } catch {
+            // Fallback on error
+            setCreators(allCreators.slice(0, 8));
+          }
+        } else {
+          // Not logged in - show top rated
+          setCreators(allCreators.slice(0, 8));
         }
         
-        setCreators(sortedCreators.slice(0, 8));
+        // Verified Creators - from featured endpoint
+        try {
+          const featuredResponse = await api.get('/creators/featured?limit=12');
+          const featured = featuredResponse.data.data?.creators || [];
+          setVerifiedCreators(featured);
+        } catch {
+          // Fallback to filtering local
+          const verified = allCreators.filter((c: Creator) => c.isVerified);
+          setVerifiedCreators(verified.slice(0, 8));
+        }
         
-        // Verified Creators
-        const verified = sortedCreators.filter((c: Creator) => c.isVerified);
-        setVerifiedCreators(verified.slice(0, 8));
-        
-        // Trending - empty for now until live data
-        setTrendingCreators([]);
+        // Trending - will be populated when activity tracking is live
+        try {
+          const trendingResponse = await api.get('/creators/trending?limit=8');
+          const trending = trendingResponse.data.data?.creators || [];
+          setTrendingCreators(trending);
+        } catch {
+          setTrendingCreators([]);
+        }
         
       } catch (error) {
         console.error('Error fetching creators:', error);
@@ -68,7 +82,7 @@ export function Home() {
     };
 
     fetchCreators();
-  }, [currentUser]);
+  }, [currentUser, token]);
 
   const handleViewProfile = (creator: Creator & { _id?: string }) => {
     const id = creator.id || creator._id;
@@ -119,7 +133,7 @@ export function Home() {
         </div>
       </section>
 
-      {/* All Creators - Location & Skill Sorted (Behind the scenes) */}
+      {/* Creators Near You - Sorted by AI recommendation algorithm (backend) */}
       {creators.length > 0 && (
         <section>
           <div className="flex items-center justify-between mb-4">

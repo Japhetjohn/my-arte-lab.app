@@ -73,6 +73,17 @@ const userSchema = new mongoose.Schema({
   },
 
   location: {
+    // Geospatial coordinates [longitude, latitude]
+    type: {
+      type: String,
+      enum: ['Point'],
+      default: null
+    },
+    coordinates: {
+      type: [Number],
+      default: null,
+      index: '2dsphere'
+    },
     localArea: {
       type: String,
       trim: true,
@@ -444,6 +455,9 @@ userSchema.index({ category: 1 });
 userSchema.index({ 'rating.average': -1 });
 userSchema.index({ email: 1, googleId: 1 });
 userSchema.index({ role: 1, category: 1, 'rating.average': -1 });
+
+// Geospatial index for location-based queries
+userSchema.index({ 'location.coordinates': '2dsphere' });
 
 userSchema.virtual('name').get(function () {
   return `${this.firstName} ${this.lastName}`;
