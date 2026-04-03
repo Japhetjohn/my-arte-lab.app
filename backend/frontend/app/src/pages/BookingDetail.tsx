@@ -316,7 +316,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                 <p className="text-gray-600 mt-2">{booking.serviceDescription}</p>
               </div>
               
-              {booking.counterProposal && !booking.counterProposal.applied && (
+              {booking.counterProposal && booking.counterProposal.amount && !booking.counterProposal.applied && (
                 <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg">
                   <p className="font-medium text-amber-800">Counter Proposal Pending</p>
                   <p className="text-amber-700">
@@ -327,8 +327,8 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                   </p>
                   {isClient && (
                     <div className="flex gap-2 mt-3">
-                      <Button size="sm" onClick={() => {}}>Accept</Button>
-                      <Button size="sm" variant="outline" onClick={() => {}}>Reject</Button>
+                      <Button size="sm" onClick={handlePayBooking}>Accept & Pay</Button>
+                      <Button size="sm" variant="outline" onClick={() => toast.info('Counter proposal rejected')}>Reject</Button>
                     </div>
                   )}
                 </div>
