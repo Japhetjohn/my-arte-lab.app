@@ -2,7 +2,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs').promises;
 const crypto = require('crypto');
-const sharp = require('sharp');
+const Jimp = require('jimp');
 
 // Define upload directories
 const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(__dirname, '../../uploads');
@@ -43,7 +43,7 @@ const upload = multer({
 
 // Generate unique filename
 const generateFileName = (originalName) => {
-  const ext = path.extname(originalName);
+  const ext = '.jpg'; // Always convert to jpg
   const randomName = crypto.randomBytes(16).toString('hex');
   return `${Date.now()}-${randomName}${ext}`;
 };
@@ -54,7 +54,20 @@ const getBaseUrl = () => {
   return apiUrl;
 };
 
-// Upload and process image
+// Jimp resize fitting modes mapping
+const getResizeMode = (fit) => {
+  switch (fit) {
+    case 'cover':
+      return Jimp.RESIZE_COVER;
+    case 'contain':
+      return Jimp.RESIZE_CONTAIN;
+    case 'inside':
+    default:
+      return Jimp.RESIZE_INSIDE;
+  }
+};
+
+// Upload and process image using Jimp
 const uploadImage = async (fileBuffer, options = {}) => {
   const {
     folder = 'portfolio',
@@ -85,11 +98,15 @@ const uploadImage = async (fileBuffer, options = {}) => {
   const fileName = generateFileName(originalName);
   const filePath = path.join(uploadDir, fileName);
 
-  // Process and save image with sharp
-  await sharp(fileBuffer)
-    .resize(width, height, { fit, withoutEnlargement: true })
-    .jpeg({ quality, progressive: true })
-    .toFile(filePath);
+  // Process and save image with Jimp
+  const image = await Jimp.read(fileBuffer);
+  
+  // Resize image
+  const resizeMode = getResizeMode(fit);
+  image.resize(width, height, resizeMode);
+  
+  // Set JPEG quality and save
+  await image.quality(quality).writeAsync(filePath);
 
   // Return result in Cloudinary-compatible format
   const baseUrl = getBaseUrl();
