@@ -54,20 +54,6 @@ export function CreatorCard({ creator, onViewProfile, onBook }: CreatorCardProps
     };
   };
 
-  // Get price display
-  const getPriceDisplay = () => {
-    if (creator.priceRange) {
-      const { min, max } = creator.priceRange;
-      if (min === max) return `$${min}`;
-      if (max === 0 || !max) return `$${min}+`;
-      return `$${min}-${max}`;
-    }
-    if (creator.startingPrice && creator.startingPrice > 0) {
-      return `$${creator.startingPrice}+`;
-    }
-    return 'Contact for price';
-  };
-
   const ratingDisplay = getRatingDisplay();
 
   return (
@@ -119,30 +105,22 @@ export function CreatorCard({ creator, onViewProfile, onBook }: CreatorCardProps
           )}
         </div>
         
-        <div className="flex items-center justify-between mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-100">
-          <div>
-            <span className="text-[10px] sm:text-xs text-gray-500">
-              {creator.priceRange ? 'Price range' : 'Starting from'}
-            </span>
-            <p className="font-semibold text-[#8A2BE2] text-sm sm:text-base">{getPriceDisplay()}</p>
-          </div>
-          <div className="flex gap-1.5 sm:gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleView}
-              className="border-gray-200 text-xs sm:text-sm h-8 sm:h-9"
-            >
-              View
-            </Button>
-            <Button
-              size="sm"
-              onClick={handleBook}
-              className="bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white text-xs sm:text-sm h-8 sm:h-9"
-            >
-              Book
-            </Button>
-          </div>
+        <div className="flex items-center justify-end mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-100 gap-1.5 sm:gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleView}
+            className="border-gray-200 text-xs sm:text-sm h-8 sm:h-9"
+          >
+            View
+          </Button>
+          <Button
+            size="sm"
+            onClick={handleBook}
+            className="bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white text-xs sm:text-sm h-8 sm:h-9"
+          >
+            Book
+          </Button>
         </div>
       </CardContent>
     </Card>
