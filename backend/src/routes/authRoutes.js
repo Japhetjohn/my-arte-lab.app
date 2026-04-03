@@ -18,6 +18,7 @@ router.post('/verify-email', authController.verifyEmail);
 router.use(protect);
 
 router.get('/me', authController.getMe);
+router.post('/ping', authController.pingActivity);
 router.post('/logout', authController.logout);
 router.put('/update-password', authController.updatePassword);
 router.put('/update-profile', validateProfileUpdate, handleValidationErrors, authController.updateProfile);

@@ -144,6 +144,7 @@ exports.login = catchAsync(async (req, res, next) => {
   }
 
   user.lastLogin = new Date();
+  user.lastActive = new Date();
   await user.save({ validateBeforeSave: false });
 
   const token = generateToken(user._id);
@@ -163,9 +164,20 @@ exports.getMe = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('User not found', 404));
   }
 
+  // Update lastActive in background
+  user.lastActive = new Date();
+  user.save({ validateBeforeSave: false }).catch(() => {});
+
   successResponse(res, 200, 'User retrieved successfully', {
     user: user.getPublicProfile()
   });
+});
+
+exports.pingActivity = catchAsync(async (req, res, next) => {
+  // Update lastActive timestamp
+  await User.findByIdAndUpdate(req.user._id, { lastActive: new Date() });
+  
+  successResponse(res, 200, 'Activity recorded');
 });
 
 exports.logout = catchAsync(async (req, res, next) => {

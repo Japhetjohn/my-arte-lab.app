@@ -11,7 +11,7 @@ exports.getAllCreators = catchAsync(async (req, res, next) => {
     search,
     minRating,
     location,
-    sortBy = 'rating',
+    sortBy = 'trending', // Default to trending (activity-based)
     page = 1,
     limit = 12
   } = req.query;
@@ -44,40 +44,78 @@ exports.getAllCreators = catchAsync(async (req, res, next) => {
     query['location.country'] = { $regex: escapedLocation, $options: 'i' };
   }
 
-  let sort = {};
-  switch (sortBy) {
-    case 'rating':
-      sort = { 'rating.average': -1, 'rating.count': -1 };
-      break;
-    case 'newest':
-      sort = { createdAt: -1 };
-      break;
-    case 'popular':
-      sort = { completedBookings: -1 };
-      break;
-    default:
-      sort = { 'rating.average': -1 };
-  }
-
   const skip = (parseInt(page) - 1) * parseInt(limit);
 
-  const creators = await User.find(query)
+  // Fetch all matching creators first (for activity-based sorting)
+  let creators = await User.find(query)
     .select('-password -encryptedPrivateKey -twoFactorSecret -twoFactorBackupCodes -emailVerificationToken -passwordResetToken -loginAttempts -lockUntil -wallet.tsaraMnemonic -wallet.tsaraEncryptedPrivateKey')
-    .sort(sort)
-    .limit(parseInt(limit))
-    .skip(skip)
     .lean();
 
-  // Add name virtual field to each creator
-  const creatorsWithName = creators.map(creator => ({
-    ...creator,
-    id: creator._id.toString(),
-    name: `${creator.firstName || ''} ${creator.lastName || ''}`.trim()
-  }));
+  // Apply sorting based on sortBy parameter
+  if (sortBy === 'trending') {
+    // Use recommendation engine for activity-based sorting
+    const sorted = await recommendationEngine.getCreatorsByActivity(creators, { limit: creators.length });
+    creators = sorted.map(s => s.creator);
+  } else {
+    // Apply traditional sorting
+    let sort = {};
+    switch (sortBy) {
+      case 'rating':
+        sort = { 'rating.average': -1, 'rating.count': -1 };
+        break;
+      case 'newest':
+        sort = { createdAt: -1 };
+        break;
+      case 'popular':
+        sort = { completedBookings: -1 };
+        break;
+      case 'active':
+        sort = { lastActive: -1 };
+        break;
+      default:
+        sort = { 'rating.average': -1 };
+    }
+    
+    // Sort creators array
+    creators = creators.sort((a, b) => {
+      if (sortBy === 'rating') {
+        const aRating = a.rating?.average || 0;
+        const bRating = b.rating?.average || 0;
+        if (bRating !== aRating) return bRating - aRating;
+        return (b.rating?.count || 0) - (a.rating?.count || 0);
+      }
+      if (sortBy === 'newest') {
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      }
+      if (sortBy === 'popular') {
+        return (b.completedBookings || 0) - (a.completedBookings || 0);
+      }
+      if (sortBy === 'active') {
+        return new Date(b.lastActive || 0) - new Date(a.lastActive || 0);
+      }
+      return 0;
+    });
+  }
 
-  const total = await User.countDocuments(query);
+  // Apply pagination
+  const total = creators.length;
+  const paginatedCreators = creators.slice(skip, skip + parseInt(limit));
 
-  paginatedResponse(res, 200, 'Creators retrieved successfully', creatorsWithName, {
+  // Add name virtual field and profile completeness score to each creator
+  const creatorsWithMeta = paginatedCreators.map(creator => {
+    const profileScore = recommendationEngine.calculateProfileCompleteness(creator);
+    const activityScore = recommendationEngine.calculateActivityScore(creator.lastActive);
+    
+    return {
+      ...creator,
+      id: creator._id.toString(),
+      name: `${creator.firstName || ''} ${creator.lastName || ''}`.trim(),
+      _profileScore: Math.round(profileScore * 100),
+      _activityScore: Math.round(activityScore * 100)
+    };
+  });
+
+  paginatedResponse(res, 200, 'Creators retrieved successfully', creatorsWithMeta, {
     page: parseInt(page),
     limit: parseInt(limit),
     total
@@ -146,14 +184,12 @@ exports.getRecommendedCreators = catchAsync(async (req, res, next) => {
 
 /**
  * Get trending creators based on weekly activity
+ * Prioritizes: Active creators > Complete profiles > High ratings
  */
 exports.getTrendingCreators = catchAsync(async (req, res, next) => {
   const { limit = 10 } = req.query;
 
-  // For now, return empty until activity tracking is implemented
-  // TODO: Fetch real activity data from Redis or activity collection
-  const activityData = new Map(); // Will be populated from activity service
-
+  // Fetch all active creators
   const allCreators = await User.find({
     role: 'creator',
     isActive: true
@@ -161,20 +197,32 @@ exports.getTrendingCreators = catchAsync(async (req, res, next) => {
     .select('-password -wallet.tsaraMnemonic -wallet.tsaraEncryptedPrivateKey')
     .lean();
 
+  // Get trending with new algorithm
   const trending = await recommendationEngine.getTrendingCreators(
     allCreators,
-    activityData,
-    { limit: parseInt(limit) }
+    new Map(), // Activity data from tracking service (optional)
+    { 
+      limit: parseInt(limit),
+      minProfileCompleteness: 0.25 // At least 25% profile complete
+    }
   );
 
-  const creators = trending.map(({ creator, trendScore }) => ({
+  const creators = trending.map(({ creator, trendScore, activityScore, profileScore }) => ({
     ...creator,
     id: creator._id.toString(),
     name: `${creator.firstName || ''} ${creator.lastName || ''}`.trim(),
-    _trendScore: trendScore
+    _trendScore: Math.round(trendScore),
+    _activityScore: Math.round(activityScore * 100),
+    _profileScore: Math.round(profileScore * 100)
   }));
 
-  successResponse(res, 200, 'Trending creators retrieved', { creators });
+  successResponse(res, 200, 'Trending creators retrieved', { 
+    creators,
+    total: creators.length,
+    message: creators.length === 0 ? 
+      'No trending creators found. Creators need to be active and have at least 25% profile completion.' : 
+      undefined
+  });
 });
 
 exports.getCreatorProfile = catchAsync(async (req, res, next) => {
