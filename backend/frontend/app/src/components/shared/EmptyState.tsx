@@ -1,21 +1,35 @@
 import { Button } from '@/components/ui/button';
 import { useState, useEffect } from 'react';
-import { WifiOff } from 'lucide-react';
+import { WifiOff, Search, FileX, Package, MessageSquare, Bell, Wallet, User, FolderOpen } from 'lucide-react';
 
 interface EmptyStateProps {
-  image: string;
+  image?: string;
+  icon?: 'offline' | 'search' | 'file' | 'package' | 'message' | 'notification' | 'wallet' | 'user' | 'folder';
   title: string;
   description?: string;
   actionLabel?: string;
   onAction?: () => void;
 }
 
+const iconMap = {
+  offline: WifiOff,
+  search: Search,
+  file: FileX,
+  package: Package,
+  message: MessageSquare,
+  notification: Bell,
+  wallet: Wallet,
+  user: User,
+  folder: FolderOpen,
+};
+
 const OFFLINE_IMAGE_KEY = 'myartelab_offline_image';
 
-export function EmptyState({ image, title, description, actionLabel, onAction }: EmptyStateProps) {
-  const [imgSrc, setImgSrc] = useState<string>(image);
+export function EmptyState({ image, icon, title, description, actionLabel, onAction }: EmptyStateProps) {
+  const [imgSrc, setImgSrc] = useState<string>(image || '');
   const [imgError, setImgError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const IconComponent = icon ? iconMap[icon] : null;
 
   useEffect(() => {
     // If this is the offline image, try to use cached version
@@ -59,11 +73,15 @@ export function EmptyState({ image, title, description, actionLabel, onAction }:
   };
 
   // Show fallback when image fails or while loading offline image
-  const showFallback = imgError || (image === '/images/offline.png' && imgError);
+  const showFallback = imgError || !image || (image === '/images/offline.png' && imgError);
   
   return (
     <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-      {showFallback ? (
+      {IconComponent ? (
+        <div className="w-32 h-32 mb-6 rounded-full bg-gray-100 flex items-center justify-center">
+          <IconComponent className="w-16 h-16 text-gray-400" />
+        </div>
+      ) : showFallback ? (
         <div className="w-32 h-32 mb-6 rounded-full bg-gray-100 flex items-center justify-center animate-pulse">
           <WifiOff className="w-16 h-16 text-gray-400" />
         </div>

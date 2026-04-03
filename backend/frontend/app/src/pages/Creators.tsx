@@ -85,11 +85,19 @@ export function Creators() {
       const response = await api.get(`/creators?${params.toString()}`);
       const data = response.data.data;
       
-      setCreators(data?.creators || []);
+      const fetchedCreators = data?.creators || [];
+      setCreators(fetchedCreators);
       setTotal(data?.pagination?.total || 0);
       setTotalPages(data?.pagination?.totalPages || 1);
+      
+      // Show message if no creators found
+      if (fetchedCreators.length === 0 && !searchQuery && selectedCategory === 'all') {
+        console.log('[Creators] No creators found in database');
+      }
     } catch (error: any) {
+      console.error('[Creators] Error fetching:', error);
       toast.error(error.response?.data?.message || 'Failed to fetch creators');
+      setCreators([]);
     } finally {
       setIsLoading(false);
     }
@@ -202,7 +210,7 @@ export function Creators() {
       {/* Results Info */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-gray-500">
-          Showing {creators.length} of {total} creators
+          {isLoading ? 'Loading...' : `Showing ${creators.length} of ${total} creators`}
           {sortBy === 'trending' && (
             <span className="text-[#8A2BE2] ml-1">• Sorted by most active first</span>
           )}
@@ -248,17 +256,23 @@ export function Creators() {
         </div>
       ) : (
         <EmptyState
-          image="/images/empty-search.png"
+          icon="search"
           title="No creators found"
           description={searchQuery 
             ? `No creators match "${searchQuery}". Try a different search.`
-            : "No creators available in this category."
+            : total === 0 
+              ? "There are no creators registered yet. Be the first to sign up as a creator!"
+              : "No creators match your filters. Try different criteria."
           }
-          actionLabel="Clear Filters"
+          actionLabel={total === 0 ? "Become a Creator" : "Clear Filters"}
           onAction={() => {
-            setSearchQuery('');
-            setSelectedCategory('all');
-            setSortBy('trending');
+            if (total === 0) {
+              window.location.href = '/settings';
+            } else {
+              setSearchQuery('');
+              setSelectedCategory('all');
+              setSortBy('trending');
+            }
           }}
         />
       )}
