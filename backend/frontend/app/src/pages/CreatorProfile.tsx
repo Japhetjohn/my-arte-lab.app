@@ -423,7 +423,28 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                       Edit Profile
                     </Button>
                   )}
-                  <StatusBadge status={creator.availability || 'available'} />
+                  {isOwner ? (
+                    <select
+                      value={creator.availability || 'available'}
+                      onChange={async (e) => {
+                        const newStatus = e.target.value;
+                        try {
+                          await api.post('/creators/availability', { availability: newStatus });
+                          setCreator(prev => prev ? { ...prev, availability: newStatus as 'available' | 'busy' | 'unavailable' } : null);
+                          toast.success(`Status updated to ${newStatus}`);
+                        } catch (error: any) {
+                          toast.error(error.response?.data?.error || 'Failed to update status');
+                        }
+                      }}
+                      className="px-3 py-1.5 text-sm border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#8A2BE2]"
+                    >
+                      <option value="available">🟢 Available</option>
+                      <option value="busy">🟡 Busy</option>
+                      <option value="unavailable">⚫ Unavailable</option>
+                    </select>
+                  ) : (
+                    <StatusBadge status={creator.availability || 'available'} />
+                  )}
                 </div>
               </div>
 

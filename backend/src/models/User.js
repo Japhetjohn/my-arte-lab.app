@@ -339,6 +339,13 @@ const userSchema = new mongoose.Schema({
     default: false
   },
 
+  // Creator availability status
+  availability: {
+    type: String,
+    enum: ['available', 'busy', 'unavailable'],
+    default: 'available'
+  },
+
   emailVerificationToken: String,
   emailVerificationExpire: Date,
   resetPasswordToken: String,

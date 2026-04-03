@@ -256,3 +256,54 @@ exports.getCreatorStats = catchAsync(async (req, res, next) => {
     byCategory: categoryStats
   });
 });
+
+/**
+ * Update creator availability status
+ * POST /api/creators/availability
+ */
+exports.updateAvailability = catchAsync(async (req, res, next) => {
+  const { availability } = req.body;
+  const userId = req.user._id;
+
+  // Validate availability value
+  const validStatuses = ['available', 'busy', 'unavailable'];
+  if (!validStatuses.includes(availability)) {
+    return next(new ErrorHandler('Invalid availability status. Must be: available, busy, or unavailable', 400));
+  }
+
+  // Update user availability
+  const user = await User.findByIdAndUpdate(
+    userId,
+    { availability },
+    { new: true, runValidators: true }
+  );
+
+  if (!user) {
+    return next(new ErrorHandler('User not found', 404));
+  }
+
+  successResponse(res, 200, 'Availability updated successfully', {
+    availability: user.availability
+  });
+});
+
+/**
+ * Get creator availability status
+ * GET /api/creators/:id/availability
+ */
+exports.getAvailability = catchAsync(async (req, res, next) => {
+  const creatorId = req.params.id;
+
+  const creator = await User.findById(creatorId)
+    .select('availability firstName lastName')
+    .lean();
+
+  if (!creator) {
+    return next(new ErrorHandler('Creator not found', 404));
+  }
+
+  successResponse(res, 200, 'Availability retrieved', {
+    availability: creator.availability || 'available',
+    lastUpdated: creator.updatedAt
+  });
+});
