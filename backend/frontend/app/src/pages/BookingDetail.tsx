@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -77,9 +76,15 @@ interface Booking {
   };
 }
 
-export function BookingDetail() {
-  const { id } = useParams<{ id: string }>();
+interface BookingDetailProps {
+  bookingId?: string;
+}
+
+export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps = {}) {
   const { user } = useAuth();
+  // Get booking ID from URL if not passed as prop
+  const urlMatch = typeof window !== 'undefined' ? window.location.pathname.match(/\/bookings\/(.+)/) : null;
+  const id = propBookingId || urlMatch?.[1];
   const [booking, setBooking] = useState<Booking | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

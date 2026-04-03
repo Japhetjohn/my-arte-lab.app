@@ -124,7 +124,7 @@ function AppContent() {
     // Check if it's a booking detail page
     const bookingMatch = currentPath.match(/\/bookings\/(.+)/);
     if (bookingMatch) {
-      return <BookingDetail />;
+      return <BookingDetail bookingId={bookingMatch[1]} />;
     }
 
     switch (currentPath) {
