@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
-
-import { Search, Loader2 } from 'lucide-react';
+import { Search, Loader2, TrendingUp, Star, Clock, Award } from 'lucide-react';
 import { CreatorCard } from '@/components/shared/CreatorCard';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { api } from '@/contexts/AuthContext';
@@ -13,11 +12,12 @@ export function Creators() {
   const [filteredCreators, setFilteredCreators] = useState<Creator[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<'trending' | 'rating' | 'newest' | 'popular'>('trending');
 
   // Fetch all creators on mount
   useEffect(() => {
     fetchCreators();
-  }, []);
+  }, [sortBy]);
 
   // Filter creators when search changes
   useEffect(() => {
@@ -46,9 +46,10 @@ export function Creators() {
     try {
       setIsLoading(true);
       
-      // Fetch all creators - same endpoint as Home page
-      const response = await api.get('/creators?limit=100');
-      const creators = response.data.data?.results || response.data.data?.creators || response.data.data || [];
+      // Fetch ALL creators using the algorithm for sorting
+      // No limit - gets all creators from database
+      const response = await api.get(`/creators?sortBy=${sortBy}&limit=1000`);
+      const creators = response.data.data?.creators || response.data.data?.results || response.data.data || [];
       
       setAllCreators(creators);
       setFilteredCreators(creators);
@@ -83,7 +84,57 @@ export function Creators() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900">All Creators</h1>
-        <p className="text-gray-500">Discover talented professionals ({filteredCreators.length} total)</p>
+        <p className="text-gray-500">
+          {filteredCreators.length} creators • Sorted by {sortBy === 'trending' ? 'activity' : sortBy}
+        </p>
+      </div>
+
+      {/* Sort Options */}
+      <div className="flex flex-wrap gap-2">
+        <button
+          onClick={() => setSortBy('trending')}
+          className={`flex items-center gap-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            sortBy === 'trending' 
+              ? 'bg-[#8A2BE2] text-white' 
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
+        >
+          <TrendingUp className="w-4 h-4" />
+          Most Active
+        </button>
+        <button
+          onClick={() => setSortBy('rating')}
+          className={`flex items-center gap-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            sortBy === 'rating' 
+              ? 'bg-[#8A2BE2] text-white' 
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
+        >
+          <Star className="w-4 h-4" />
+          Top Rated
+        </button>
+        <button
+          onClick={() => setSortBy('popular')}
+          className={`flex items-center gap-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            sortBy === 'popular' 
+              ? 'bg-[#8A2BE2] text-white' 
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
+        >
+          <Award className="w-4 h-4" />
+          Most Booked
+        </button>
+        <button
+          onClick={() => setSortBy('newest')}
+          className={`flex items-center gap-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            sortBy === 'newest' 
+              ? 'bg-[#8A2BE2] text-white' 
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
+        >
+          <Clock className="w-4 h-4" />
+          Newest
+        </button>
       </div>
 
       {/* Search */}

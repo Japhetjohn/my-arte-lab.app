@@ -15,6 +15,9 @@ exports.getAllCreators = catchAsync(async (req, res, next) => {
     page = 1,
     limit = 12
   } = req.query;
+  
+  // Support fetching all creators (up to 1000)
+  const actualLimit = parseInt(limit) === 1000 ? 1000 : parseInt(limit) || 12;
 
   const query = { role: 'creator', isActive: true };
 
@@ -44,7 +47,7 @@ exports.getAllCreators = catchAsync(async (req, res, next) => {
     query['location.country'] = { $regex: escapedLocation, $options: 'i' };
   }
 
-  const skip = (parseInt(page) - 1) * parseInt(limit);
+  const skip = actualLimit === 1000 ? 0 : (parseInt(page) - 1) * actualLimit;
 
   // Fetch all matching creators first (for activity-based sorting)
   let creators = await User.find(query)
@@ -97,9 +100,11 @@ exports.getAllCreators = catchAsync(async (req, res, next) => {
     });
   }
 
-  // Apply pagination
+  // Apply pagination (skip if fetching all)
   const total = creators.length;
-  const paginatedCreators = creators.slice(skip, skip + parseInt(limit));
+  const paginatedCreators = actualLimit === 1000 
+    ? creators 
+    : creators.slice(skip, skip + actualLimit);
 
   // Add name virtual field and profile completeness score to each creator
   const creatorsWithMeta = paginatedCreators.map(creator => {
@@ -116,8 +121,8 @@ exports.getAllCreators = catchAsync(async (req, res, next) => {
   });
 
   paginatedResponse(res, 200, 'Creators retrieved successfully', creatorsWithMeta, {
-    page: parseInt(page),
-    limit: parseInt(limit),
+    page: actualLimit === 1000 ? 1 : parseInt(page),
+    limit: actualLimit,
     total
   });
 });
