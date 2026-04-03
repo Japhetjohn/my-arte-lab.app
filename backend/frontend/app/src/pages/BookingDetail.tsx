@@ -14,7 +14,9 @@ import {
   DollarSign, 
   CheckCircle,
   Star,
-  Upload
+  Upload,
+  AlertCircle,
+  User
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -47,13 +49,17 @@ interface Booking {
   };
   client: {
     _id: string;
-    name: string;
+    name?: string;
+    firstName?: string;
+    lastName?: string;
     avatar?: string;
     email?: string;
   };
   creator: {
     _id: string;
-    name: string;
+    name?: string;
+    firstName?: string;
+    lastName?: string;
     avatar?: string;
     email?: string;
     category?: string;
@@ -76,6 +82,7 @@ export function BookingDetail() {
   const { user } = useAuth();
   const [booking, setBooking] = useState<Booking | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' });
   const [deliverableForm, setDeliverableForm] = useState({ title: '', description: '', fileUrl: '' });
   const [counterAmount, setCounterAmount] = useState('');
@@ -87,17 +94,46 @@ export function BookingDetail() {
   const fetchBooking = async () => {
     try {
       setIsLoading(true);
+      setError(null);
       const response = await api.get(`/bookings/${id}`);
-      setBooking(response.data.data?.booking);
+      const bookingData = response.data.data?.booking;
+      
+      if (!bookingData) {
+        setError('Booking not found');
+        return;
+      }
+      
+      // Ensure client and creator have names
+      if (bookingData.client) {
+        bookingData.client.name = bookingData.client.name || 
+          `${bookingData.client.firstName || ''} ${bookingData.client.lastName || ''}`.trim() || 
+          'Unknown Client';
+      }
+      if (bookingData.creator) {
+        bookingData.creator.name = bookingData.creator.name || 
+          `${bookingData.creator.firstName || ''} ${bookingData.creator.lastName || ''}`.trim() || 
+          'Unknown Creator';
+      }
+      
+      setBooking(bookingData);
     } catch (error: any) {
+      console.error('Error fetching booking:', error);
+      setError(error.response?.data?.error || 'Failed to fetch booking');
       toast.error(error.response?.data?.error || 'Failed to fetch booking');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const isClient = booking?.client._id === user?.id;
-  const isCreator = booking?.creator._id === user?.id;
+  const getUserName = (userObj: any) => {
+    if (!userObj) return 'Unknown';
+    return userObj.name || 
+      `${userObj.firstName || ''} ${userObj.lastName || ''}`.trim() || 
+      'Unknown User';
+  };
+
+  const isClient = booking?.client?._id === user?.id;
+  const isCreator = booking?.creator?._id === user?.id;
 
   const handleAcceptBooking = async () => {
     try {
@@ -194,11 +230,13 @@ export function BookingDetail() {
     );
   }
 
-  if (!booking) {
+  if (error || !booking) {
     return (
       <div className="text-center py-20">
-        <p className="text-gray-500">Booking not found</p>
+        <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+        <p className="text-gray-500">{error || 'Booking not found'}</p>
         <Button className="mt-4" onClick={() => window.location.href = '/bookings'}>
+          <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Bookings
         </Button>
       </div>
@@ -209,6 +247,9 @@ export function BookingDetail() {
     const steps = ['pending', 'awaiting_payment', 'confirmed', 'in_progress', 'delivered', 'completed'];
     return steps.indexOf(booking.status);
   };
+
+  const clientName = getUserName(booking.client);
+  const creatorName = getUserName(booking.creator);
 
   return (
     <div className="space-y-6 pb-20 lg:pb-8 max-w-4xl mx-auto">
@@ -228,12 +269,12 @@ export function BookingDetail() {
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
             {[
-              { key: 'pending', label: 'Request Sent' },
-              { key: 'awaiting_payment', label: 'Payment' },
-              { key: 'confirmed', label: 'Confirmed' },
-              { key: 'in_progress', label: 'In Progress' },
-              { key: 'delivered', label: 'Delivered' },
-              { key: 'completed', label: 'Completed' }
+              { key: 'pending', label: 'Request Sent', icon: '1' },
+              { key: 'awaiting_payment', label: 'Payment', icon: '2' },
+              { key: 'confirmed', label: 'Confirmed', icon: '3' },
+              { key: 'in_progress', label: 'In Progress', icon: '4' },
+              { key: 'delivered', label: 'Delivered', icon: '5' },
+              { key: 'completed', label: 'Completed', icon: '✓' }
             ].map((step, index) => {
               const currentStep = getStatusStep();
               const isActive = index <= currentStep;
@@ -241,12 +282,12 @@ export function BookingDetail() {
               
               return (
                 <div key={step.key} className="flex flex-col items-center flex-1">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all ${
                     isActive ? 'bg-[#8A2BE2] text-white' : 'bg-gray-200 text-gray-500'
                   } ${isCurrent ? 'ring-4 ring-[#8A2BE2]/20' : ''}`}>
-                    {index + 1}
+                    {isActive ? step.icon : index + 1}
                   </div>
-                  <span className={`text-xs mt-2 text-center ${isActive ? 'text-gray-900 font-medium' : 'text-gray-400'}`}>
+                  <span className={`text-[10px] mt-2 text-center ${isActive ? 'text-gray-900 font-medium' : 'text-gray-400'}`}>
                     {step.label}
                   </span>
                 </div>
@@ -275,7 +316,7 @@ export function BookingDetail() {
                   <p className="font-medium text-amber-800">Counter Proposal Pending</p>
                   <p className="text-amber-700">
                     {isClient 
-                      ? `Creator proposed ${booking.counterProposal.amount} ${booking.currency}`
+                      ? `${creatorName} proposed ${booking.counterProposal.amount} ${booking.currency}`
                       : `You proposed ${booking.counterProposal.amount} ${booking.currency}`
                     }
                   </p>
@@ -320,6 +361,9 @@ export function BookingDetail() {
                   <DialogContent>
                     <DialogHeader>
                       <DialogTitle>Submit Deliverable</DialogTitle>
+                      <DialogDescription>
+                        Submit your completed work for client review.
+                      </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4">
                       <div>
@@ -448,14 +492,34 @@ export function BookingDetail() {
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-3">
-                <img 
-                  src={(isClient ? booking.creator.avatar : booking.client.avatar) || '/images/avatar-1.png'}
-                  alt=""
-                  className="w-12 h-12 rounded-full"
-                />
+                {isClient ? (
+                  booking.creator?.avatar ? (
+                    <img 
+                      src={booking.creator.avatar}
+                      alt={creatorName}
+                      className="w-12 h-12 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                      <User className="w-6 h-6 text-gray-400" />
+                    </div>
+                  )
+                ) : (
+                  booking.client?.avatar ? (
+                    <img 
+                      src={booking.client.avatar}
+                      alt={clientName}
+                      className="w-12 h-12 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                      <User className="w-6 h-6 text-gray-400" />
+                    </div>
+                  )
+                )}
                 <div>
-                  <p className="font-medium">{isClient ? booking.creator.name : booking.client.name}</p>
-                  {isClient && booking.creator.category && (
+                  <p className="font-medium">{isClient ? creatorName : clientName}</p>
+                  {isClient && booking.creator?.category && (
                     <p className="text-sm text-gray-500">{booking.creator.category}</p>
                   )}
                 </div>
