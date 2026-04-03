@@ -7,6 +7,7 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { api } from '@/contexts/AuthContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { NewBookingModal } from '@/components/booking/NewBookingModal';
 import { 
   Calendar, 
   MessageSquare, 
@@ -54,15 +55,58 @@ interface Booking {
   };
 }
 
+interface CreatorInfo {
+  id: string;
+  name: string;
+  avatar?: string;
+  category?: string;
+}
+
 export function Bookings() {
   const { user } = useAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
+  
+  // For new booking modal
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const [selectedCreator, setSelectedCreator] = useState<CreatorInfo | null>(null);
+
+  // Check for creator in URL on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const creatorId = params.get('creator');
+    if (creatorId) {
+      // Fetch creator details and open booking modal
+      fetchCreatorAndOpenModal(creatorId);
+      // Clear the query param from URL
+      const url = new URL(window.location.href);
+      url.searchParams.delete('creator');
+      window.history.replaceState({}, '', url);
+    }
+  }, []);
 
   useEffect(() => {
     fetchBookings();
   }, []);
+
+  const fetchCreatorAndOpenModal = async (creatorId: string) => {
+    try {
+      const response = await api.get(`/creators/${creatorId}`);
+      const creator = response.data.data?.creator;
+      if (creator) {
+        setSelectedCreator({
+          id: creator.id || creator._id,
+          name: creator.name,
+          avatar: creator.avatar,
+          category: creator.category
+        });
+        setIsBookingModalOpen(true);
+      }
+    } catch (error) {
+      toast.error('Failed to load creator details');
+    }
+  };
 
   const fetchBookings = async () => {
     try {
@@ -80,8 +124,6 @@ export function Bookings() {
     if (status === 'all') return bookings;
     return bookings.filter(b => b.status === status);
   };
-
-
 
   const getOtherParty = (booking: Booking) => {
     if (user?.id === booking.client._id) {
@@ -308,6 +350,21 @@ export function Bookings() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* New Booking Modal */}
+      {selectedCreator && (
+        <NewBookingModal
+          isOpen={isBookingModalOpen}
+          onClose={() => {
+            setIsBookingModalOpen(false);
+            setSelectedCreator(null);
+          }}
+          creator={selectedCreator}
+          onSuccess={() => {
+            fetchBookings();
+          }}
+        />
+      )}
     </div>
   );
 }
