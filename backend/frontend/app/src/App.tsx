@@ -53,13 +53,13 @@ function AppContent() {
     const fetchCounts = async () => {
       try {
         const [notifRes, msgRes] = await Promise.all([
-          api.get('/notifications/unread-count').catch(() => ({ data: { data: { unreadCount: 0 } } })),
-          api.get('/messages/unread-count').catch(() => ({ data: { data: { unreadCount: 0 } } }))
+          api.get('/notifications/unread-count').catch(() => null),
+          api.get('/messages/unread-count').catch(() => null)
         ]);
-        setUnreadNotifications(notifRes.data.data?.unreadCount || 0);
-        setUnreadMessages(msgRes.data.data?.unreadCount || 0);
+        setUnreadNotifications(notifRes?.data?.data?.unreadCount || 0);
+        setUnreadMessages(msgRes?.data?.data?.unreadCount || 0);
       } catch (error) {
-        console.error('Failed to fetch counts:', error);
+        // Silently fail - don't spam console with server errors
       }
     };
     

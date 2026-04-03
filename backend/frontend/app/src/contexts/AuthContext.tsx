@@ -146,6 +146,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           window.location.href = '/login';
         }
 
+        // Handle 502/503 errors (server down) - silently reject without logging
+        if (error.response?.status === 502 || error.response?.status === 503) {
+          return Promise.reject(error);
+        }
+
         return Promise.reject(error);
       }
     );
