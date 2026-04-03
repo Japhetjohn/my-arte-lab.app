@@ -31,24 +31,8 @@ export function Home() {
       try {
         setIsLoading(true);
         
-        // Fetch category stats and all creators in parallel
-        const [statsResponse, allResponse] = await Promise.all([
-          api.get('/creators/stats').catch(() => ({ data: { data: { byCategory: [] } } })),
-          api.get('/creators?limit=50')
-        ]);
-        
-        // Update category counts from backend
-        const categoryStats = statsResponse.data.data?.byCategory || [];
-        if (categoryStats.length > 0) {
-          setCategories(prev => prev.map(cat => {
-            const stat = categoryStats.find((s: any) => s._id === cat.id);
-            return {
-              ...cat,
-              creatorCount: stat?.count || 0
-            };
-          }));
-        }
-        
+        // Fetch all creators first (needed for categories count and fallback)
+        const allResponse = await api.get('/creators?limit=100');
         let allCreators = allResponse.data.data?.results || allResponse.data.data || [];
         
         // Filter out current user from all creators
@@ -57,6 +41,21 @@ export function Home() {
             c.id !== currentUser.id && c._id !== currentUser.id
           );
         }
+
+        // Calculate category counts from actual creators data
+        const categoryCounts: Record<string, number> = {};
+        allCreators.forEach((creator: Creator) => {
+          const cat = creator.category;
+          if (cat) {
+            categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+          }
+        });
+        
+        // Update categories with real counts
+        setCategories(prev => prev.map(cat => ({
+          ...cat,
+          creatorCount: categoryCounts[cat.id] || 0
+        })));
         
         // If user is logged in, get personalized recommendations from backend
         if (currentUser && token) {
@@ -82,22 +81,10 @@ export function Home() {
           setCreators(allCreators.slice(0, 8));
         }
         
-        // Verified Creators - from featured endpoint
-        try {
-          const featuredResponse = await api.get('/creators/featured?limit=12');
-          let featured = featuredResponse.data.data?.creators || [];
-          // Filter out current user
-          if (currentUser) {
-            featured = featured.filter((c: Creator & { _id?: string }) => 
-              c.id !== currentUser.id && c._id !== currentUser.id
-            );
-          }
-          setVerifiedCreators(featured);
-        } catch {
-          // Fallback to filtering local
-          let verified = allCreators.filter((c: Creator) => c.isVerified);
-          setVerifiedCreators(verified.slice(0, 8));
-        }
+        // Verified Creators - Filter from all creators (not just featured)
+        // This ensures ALL verified creators show up, not just featured ones
+        let verified = allCreators.filter((c: Creator) => c.isVerified === true);
+        setVerifiedCreators(verified.slice(0, 8));
         
         // Trending - will be populated when activity tracking is live
         try {
