@@ -166,7 +166,7 @@ router.patch('/:id', protect, async (req, res) => {
       });
     }
 
-    const allowedUpdates = ['title', 'description', 'budget', 'timeline', 'deadline', 'skillsRequired', 'deliverables', 'status'];
+    const allowedUpdates = ['title', 'description', 'category', 'budget', 'timeline', 'deadline', 'skillsRequired', 'deliverables', 'status'];
     const updates = Object.keys(req.body);
     const isValidUpdate = updates.every(update => allowedUpdates.includes(update));
 
