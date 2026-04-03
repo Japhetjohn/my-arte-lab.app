@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const Notification = require('../models/Notification');
 const { generateToken, generateRefreshToken } = require('../utils/jwtUtils');
 const { successResponse, errorResponse } = require('../utils/apiResponse');
 const { ErrorHandler, catchAsync } = require('../utils/errorHandler');
@@ -101,6 +102,15 @@ exports.register = catchAsync(async (req, res, next) => {
 
   adminNotificationService.notifyNewUserRegistration(user)
     .catch(err => console.error('Admin notification failed:', err));
+
+  // Create welcome notification for new user
+  Notification.createNotification({
+    recipient: user._id,
+    type: 'system',
+    title: 'Welcome to MyArteLab!',
+    message: 'Your account has been created successfully. Complete your profile to start connecting with artists and creators.',
+    link: '/profile'
+  }).catch(err => console.error('Welcome notification failed:', err));
 
   successResponse(res, 201, 'Registration successful', {
     user: user.getPublicProfile(),

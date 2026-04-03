@@ -1,5 +1,6 @@
 const Message = require('../models/Message');
 const User = require('../models/User');
+const Notification = require('../models/Notification');
 const { successResponse, errorResponse } = require('../utils/apiResponse');
 
 /**
@@ -39,6 +40,18 @@ exports.sendMessage = async (req, res) => {
     });
 
     await message.save();
+
+    // Create notification for recipient
+    const sender = await User.findById(senderId).select('name firstName lastName');
+    const senderName = sender.firstName || sender.name || 'Someone';
+    Notification.createNotification({
+      recipient: recipientId,
+      type: 'message',
+      title: 'New Message',
+      message: `${senderName} sent you a message`,
+      link: `/messages/${senderId}`,
+      sender: senderId
+    }).catch(err => console.error('Message notification failed:', err));
 
     // Populate sender info for response
     await message.populate('senderId', 'name avatar');

@@ -3,7 +3,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { TopNavigation } from '@/components/layout/TopNavigation';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { BottomNavigation } from '@/components/layout/BottomNavigation';
-import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { AuthProvider, useAuth, api } from '@/contexts/AuthContext';
 
 import { Login } from '@/pages/auth/Login';
 import { Register } from '@/pages/auth/Register';
@@ -29,6 +29,8 @@ import './App.css';
 function AppContent() {
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const [unreadMessages, setUnreadMessages] = useState(0);
   const { user, isAuthenticated, isLoading, logout } = useAuth();
 
   useEffect(() => {
@@ -43,6 +45,29 @@ function AppContent() {
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
+
+  // Fetch notification counts
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    
+    const fetchCounts = async () => {
+      try {
+        const [notifRes, msgRes] = await Promise.all([
+          api.get('/notifications/unread-count').catch(() => ({ data: { data: { unreadCount: 0 } } })),
+          api.get('/messages/unread-count').catch(() => ({ data: { data: { unreadCount: 0 } } }))
+        ]);
+        setUnreadNotifications(notifRes.data.data?.unreadCount || 0);
+        setUnreadMessages(msgRes.data.data?.unreadCount || 0);
+      } catch (error) {
+        console.error('Failed to fetch counts:', error);
+      }
+    };
+    
+    fetchCounts();
+    // Poll every 30 seconds
+    const interval = setInterval(fetchCounts, 30000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated]);
 
   useEffect(() => {
     const handlePopState = () => {
@@ -168,8 +193,8 @@ function AppContent() {
     <div className="min-h-screen bg-gray-50">
       <TopNavigation
         user={user}
-        unreadNotifications={0}
-        unreadMessages={0}
+        unreadNotifications={unreadNotifications}
+        unreadMessages={unreadMessages}
         onSearch={(query) => navigate(`/explore?q=${query}`)}
         onLogout={logout}
       />
