@@ -19,6 +19,7 @@ import { Notifications } from '@/pages/Notifications';
 import { Settings } from '@/pages/Settings';
 import { Projects } from '@/pages/Projects';
 import { ProjectDetail } from '@/pages/ProjectDetail';
+import { EditProject } from '@/pages/EditProject';
 import { CreatorProfile } from '@/pages/CreatorProfile';
 import { Explore } from '@/pages/Explore';
 import { Creators } from '@/pages/Creators';
@@ -154,6 +155,12 @@ function AppContent() {
     const bookingMatch = currentPath.match(/\/bookings\/(.+)/);
     if (bookingMatch) {
       return <BookingDetail bookingId={bookingMatch[1]} />;
+    }
+
+    // Check if it's a project edit page (must be before detail)
+    const projectEditMatch = currentPath.match(/\/projects\/(.+)\/edit/);
+    if (projectEditMatch) {
+      return <EditProject />;
     }
 
     // Check if it's a project detail page
