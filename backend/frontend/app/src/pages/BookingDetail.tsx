@@ -483,9 +483,23 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                 <span className="text-green-600 font-medium">{(booking.amount * 0.9).toFixed(2)} {booking.currency}</span>
               </div>
               <div className="pt-4 border-t">
-                <Badge variant={booking.paymentStatus === 'paid' ? 'default' : 'secondary'} className="w-full justify-center py-2">
-                  {booking.paymentStatus === 'paid' ? '✓ Paid (In Escrow)' : '⏳ Pending Payment'}
-                </Badge>
+                {booking.status === 'pending' ? (
+                  <Badge variant="secondary" className="w-full justify-center py-2">
+                    ⏳ Awaiting Creator Response
+                  </Badge>
+                ) : booking.status === 'awaiting_payment' ? (
+                  <Badge variant="secondary" className="w-full justify-center py-2 bg-amber-100 text-amber-800 hover:bg-amber-100">
+                    💳 Payment Required
+                  </Badge>
+                ) : booking.paymentStatus === 'paid' ? (
+                  <Badge variant="default" className="w-full justify-center py-2 bg-green-600">
+                    ✓ Paid (In Escrow)
+                  </Badge>
+                ) : (
+                  <Badge variant="secondary" className="w-full justify-center py-2">
+                    ⏳ {booking.paymentStatus}
+                  </Badge>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -590,7 +604,17 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                 </>
               )}
 
-              {/* Client Payment */}
+              {/* Client - Waiting for Creator Response */}
+              {isClient && booking.status === 'pending' && (
+                <div className="text-center p-4 bg-amber-50 rounded-lg">
+                  <p className="text-amber-800 font-medium">⏳ Waiting for Creator</p>
+                  <p className="text-amber-600 text-sm mt-1">
+                    {creatorName} needs to accept your booking before you can proceed to payment.
+                  </p>
+                </div>
+              )}
+
+              {/* Client Payment - Only after creator accepts */}
               {isClient && booking.status === 'awaiting_payment' && (
                 <Button onClick={handlePayBooking} className="w-full bg-green-600 hover:bg-green-700">
                   <DollarSign className="w-4 h-4 mr-2" />
