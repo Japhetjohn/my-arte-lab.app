@@ -6,13 +6,12 @@ import { StatusBadge } from './StatusBadge';
 import { VerifiedBadge } from './VerifiedBadge';
 
 interface CreatorCardProps {
-  creator: Creator & { rating?: number | { average?: number; count?: number }; _id?: string };
+  creator: Creator & { rating?: number | { average?: number; count?: number }; _id?: string; priceRange?: { min: number; max: number } };
   onViewProfile?: (creator: Creator & { _id?: string }) => void;
   onBook?: (creator: Creator & { _id?: string }) => void;
 }
 
 export function CreatorCard({ creator, onViewProfile, onBook }: CreatorCardProps) {
-  // Get the creator ID (handle both _id from backend and id from frontend)
   const getCreatorId = () => creator.id || (creator as any)._id;
 
   const handleView = (e: React.MouseEvent) => {
@@ -53,6 +52,20 @@ export function CreatorCard({ creator, onViewProfile, onBook }: CreatorCardProps
       value: typeof rating === 'number' ? rating.toFixed(1) : '0.0',
       count: creator.reviewCount || 0
     };
+  };
+
+  // Get price display
+  const getPriceDisplay = () => {
+    if (creator.priceRange) {
+      const { min, max } = creator.priceRange;
+      if (min === max) return `$${min}`;
+      if (max === 0 || !max) return `$${min}+`;
+      return `$${min}-${max}`;
+    }
+    if (creator.startingPrice && creator.startingPrice > 0) {
+      return `$${creator.startingPrice}+`;
+    }
+    return 'Contact for price';
   };
 
   const ratingDisplay = getRatingDisplay();
@@ -108,8 +121,10 @@ export function CreatorCard({ creator, onViewProfile, onBook }: CreatorCardProps
         
         <div className="flex items-center justify-between mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-100">
           <div>
-            <span className="text-[10px] sm:text-xs text-gray-500">From</span>
-            <p className="font-semibold text-[#8A2BE2] text-sm sm:text-base">${creator.startingPrice || 0}</p>
+            <span className="text-[10px] sm:text-xs text-gray-500">
+              {creator.priceRange ? 'Price range' : 'Starting from'}
+            </span>
+            <p className="font-semibold text-[#8A2BE2] text-sm sm:text-base">{getPriceDisplay()}</p>
           </div>
           <div className="flex gap-1.5 sm:gap-2">
             <Button

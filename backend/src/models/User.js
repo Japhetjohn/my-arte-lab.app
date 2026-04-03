@@ -180,6 +180,20 @@ const userSchema = new mongoose.Schema({
     count: { type: Number, default: 0 }
   },
 
+  // Pricing range for services
+  priceRange: {
+    min: { type: Number, default: 0, min: 0 },
+    max: { type: Number, default: 0, min: 0 },
+    currency: { type: String, default: 'USD' }
+  },
+
+  // Legacy field for backward compatibility
+  startingPrice: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+
   wallet: {
     // Tsara Integration (Local Wallet Management)
     tsaraWalletId: String,    // Internal ID or reference
