@@ -22,7 +22,7 @@ exports.sendMessage = async (req, res) => {
     }
 
     // Check if recipient exists
-    const recipient = await User.findById(recipientId).select('name avatar');
+    const recipient = await User.findById(recipientId).select('name avatar blockedUsers');
     if (!recipient) {
       return errorResponse(res, 'Recipient not found', 404);
     }
@@ -30,6 +30,17 @@ exports.sendMessage = async (req, res) => {
     // Prevent messaging yourself
     if (recipientId === senderId) {
       return errorResponse(res, 'You cannot message yourself', 400);
+    }
+
+    // Check if sender has blocked recipient
+    const sender = await User.findById(senderId).select('blockedUsers');
+    if (sender.blockedUsers.includes(recipientId)) {
+      return errorResponse(res, 'You have blocked this user. Unblock them to send messages.', 403);
+    }
+
+    // Check if recipient has blocked sender
+    if (recipient.blockedUsers.includes(senderId)) {
+      return errorResponse(res, 'You cannot message this user.', 403);
     }
 
     // Create message
@@ -108,11 +119,21 @@ exports.getConversations = async (req, res) => {
   try {
     const userId = req.user.id;
 
+    // Get current user's blocked users
+    const currentUser = await User.findById(userId).select('blockedUsers');
+    const blockedUserIds = currentUser.blockedUsers.map(id => id.toString());
+
     const conversations = await Message.getConversations(userId);
 
+    // Filter out conversations with blocked users
+    const filteredConversations = conversations.filter(conv => {
+      const otherUserId = conv.otherUser?._id?.toString() || conv._id?.toString();
+      return !blockedUserIds.includes(otherUserId);
+    });
+
     return successResponse(res, {
-      conversations,
-      count: conversations.length
+      conversations: filteredConversations,
+      count: filteredConversations.length
     });
 
   } catch (error) {

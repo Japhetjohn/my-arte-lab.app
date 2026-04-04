@@ -42,6 +42,7 @@ const favoritesRoutes = require('./routes/favoritesRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const projectRoutes = require('./routes/projects');
 const messagesRoutes = require('./routes/messagesRoutes');
+const blockRoutes = require('./routes/blockRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const { trackActivity } = require('./middleware/activityTracker');
 
@@ -295,6 +296,7 @@ app.use('/api/favorites', trackActivity, favoritesRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/projects', trackActivity, projectRoutes);
 app.use('/api/messages', trackActivity, messagesRoutes);
+app.use('/api/blocks', trackActivity, blockRoutes);
 app.use('/api/admin', adminLimiter, verifyAdminAuth, adminRoutes);
 
 app.get('/api', (req, res) => {

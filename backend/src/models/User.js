@@ -449,7 +449,12 @@ const userSchema = new mongoose.Schema({
     type: String,
     unique: true,
     sparse: true
-  }
+  },
+
+  blockedUsers: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }]
 
 }, {
   timestamps: true,

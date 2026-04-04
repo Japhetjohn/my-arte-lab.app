@@ -1,85 +1,284 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/shared/EmptyState';
-import { conversations as mockConversations } from '@/lib/data/mockData';
-import { Search, Send, Phone, Video, MoreVertical, ChevronLeft } from 'lucide-react';
+import { api, useAuth } from '@/contexts/AuthContext';
+import { Search, Send, Phone, Video, MoreVertical, ChevronLeft, Ban, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { Conversation, Message } from '@/types';
+import { toast } from 'sonner';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
-// Mock messages for a conversation
-const mockMessages: Message[] = [
-  {
-    id: 'm1',
-    senderId: 'u1',
-    receiverId: 'c1',
-    content: 'Hi Sarah! I saw your portfolio and love your work.',
-    createdAt: '2024-03-25T14:00:00',
-    isRead: true,
-  },
-  {
-    id: 'm2',
-    senderId: 'c1',
-    receiverId: 'u1',
-    content: 'Thank you so much! I would love to work with you.',
-    createdAt: '2024-03-25T14:05:00',
-    isRead: true,
-  },
-  {
-    id: 'm3',
-    senderId: 'u1',
-    receiverId: 'c1',
-    content: 'Great! I have a product photography project. Are you available next week?',
-    createdAt: '2024-03-25T14:10:00',
-    isRead: true,
-  },
-  {
-    id: 'm4',
-    senderId: 'c1',
-    receiverId: 'u1',
-    content: 'Yes, I am available! Can you share more details about the project?',
-    createdAt: '2024-03-25T14:15:00',
-    isRead: true,
-  },
-  {
-    id: 'm5',
-    senderId: 'u1',
-    receiverId: 'c1',
-    content: 'I need 20 product photos for my e-commerce website. The products are jewelry items.',
-    createdAt: '2024-03-25T14:20:00',
-    isRead: true,
-  },
-  {
-    id: 'm6',
-    senderId: 'c1',
-    receiverId: 'u1',
-    content: 'That sounds perfect! I have experience with jewelry photography. I will send the first draft tomorrow.',
-    createdAt: '2024-03-25T14:30:00',
-    isRead: false,
-  },
-];
+interface Participant {
+  _id: string;
+  name?: string;
+  firstName?: string;
+  lastName?: string;
+  avatar?: string;
+}
+
+interface Message {
+  _id: string;
+  senderId: string | Participant;
+  recipientId: string | Participant;
+  content: string;
+  createdAt: string;
+  read?: boolean;
+}
+
+interface Conversation {
+  _id: string;
+  otherUser: Participant;
+  lastMessage: {
+    content: string;
+    createdAt: string;
+    senderId?: string;
+  };
+  unreadCount: number;
+}
 
 export function Messages() {
-  const [conversations] = useState<Conversation[]>(mockConversations);
+  const { user: currentUser } = useAuth();
+  const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
-  const [messages] = useState<Message[]>(mockMessages);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSending, setIsSending] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const handleSendMessage = () => {
-    if (!newMessage.trim()) return;
-    // In a real app, this would send the message
+  // Fetch conversations
+  const fetchConversations = useCallback(async () => {
+    try {
+      const response = await api.get('/messages/conversations');
+      setConversations(response.data.data?.conversations || []);
+    } catch (error: any) {
+      console.error('Error fetching conversations:', error);
+    }
+  }, []);
+
+  // Initial load
+  useEffect(() => {
+    fetchConversations();
+    setIsLoading(false);
+
+    // Poll for new conversations every 5 seconds
+    pollIntervalRef.current = window.setInterval(fetchConversations, 5000);
+
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+      }
+    };
+  }, [fetchConversations]);
+
+  // Fetch messages when conversation is selected
+  const fetchMessages = useCallback(async (conversation: Conversation) => {
+    try {
+      const otherUserId = conversation.otherUser?._id || conversation._id;
+      const response = await api.get(`/messages/${otherUserId}`);
+      setMessages(response.data.data?.messages || []);
+      
+      // Refresh conversations to update unread count
+      fetchConversations();
+    } catch (error: any) {
+      console.error('Error fetching messages:', error);
+      toast.error('Failed to load messages');
+    }
+  }, [fetchConversations]);
+
+  // Check block status
+  const checkBlockStatus = useCallback(async (conversation: Conversation) => {
+    try {
+      const otherUserId = conversation.otherUser?._id || conversation._id;
+      const response = await api.get(`/blocks/${otherUserId}/status`);
+      setIsBlocked(response.data.data?.isBlocked || false);
+    } catch (error) {
+      console.error('Error checking block status:', error);
+    }
+  }, []);
+
+  // When conversation is selected
+  useEffect(() => {
+    if (selectedConversation) {
+      fetchMessages(selectedConversation);
+      checkBlockStatus(selectedConversation);
+
+      // Poll for new messages every 3 seconds
+      const messagePoll = setInterval(() => {
+        fetchMessages(selectedConversation);
+      }, 3000);
+
+      return () => clearInterval(messagePoll);
+    }
+  }, [selectedConversation, fetchMessages, checkBlockStatus]);
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || !selectedConversation) return;
+    if (isBlocked) {
+      toast.error('You have blocked this user. Unblock them to send messages.');
+      return;
+    }
+
+    const otherUserId = selectedConversation.otherUser?._id || selectedConversation._id;
+    const messageContent = newMessage.trim();
+    
+    setIsSending(true);
     setNewMessage('');
+
+    // Optimistically add message
+    const tempMessage: Message = {
+      _id: `temp-${Date.now()}`,
+      senderId: currentUser?.id || '',
+      recipientId: otherUserId,
+      content: messageContent,
+      createdAt: new Date().toISOString(),
+      read: false,
+    };
+    setMessages(prev => [...prev, tempMessage]);
+
+    try {
+      const response = await api.post('/messages', {
+        recipientId: otherUserId,
+        content: messageContent,
+      });
+
+      // Replace temp message with real one
+      const savedMessage = response.data.data?.message;
+      if (savedMessage) {
+        setMessages(prev => prev.map(m => m._id === tempMessage._id ? savedMessage : m));
+      }
+
+      // Refresh conversations
+      fetchConversations();
+    } catch (error: any) {
+      // Remove temp message on error
+      setMessages(prev => prev.filter(m => m._id !== tempMessage._id));
+      setNewMessage(messageContent); // Restore input
+      
+      const errorMsg = error.response?.data?.message || 'Failed to send message';
+      toast.error(errorMsg);
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const handleBlockUser = async () => {
+    if (!selectedConversation) return;
+    
+    const otherUserId = selectedConversation.otherUser?._id || selectedConversation._id;
+    const otherUserName = getParticipantName(selectedConversation.otherUser);
+
+    if (!confirm(`Are you sure you want to block ${otherUserName}? You won't see their messages anymore.`)) {
+      return;
+    }
+
+    try {
+      await api.post(`/blocks/${otherUserId}`);
+      setIsBlocked(true);
+      toast.success(`${otherUserName} has been blocked`);
+      
+      // Remove conversation from list
+      setConversations(prev => prev.filter(c => {
+        const cUserId = c.otherUser?._id || c._id;
+        return cUserId !== otherUserId;
+      }));
+      
+      // Close conversation
+      setSelectedConversation(null);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to block user');
+    }
+  };
+
+  const handleUnblockUser = async () => {
+    if (!selectedConversation) return;
+    
+    const otherUserId = selectedConversation.otherUser?._id || selectedConversation._id;
+    const otherUserName = getParticipantName(selectedConversation.otherUser);
+
+    try {
+      await api.delete(`/blocks/${otherUserId}`);
+      setIsBlocked(false);
+      toast.success(`${otherUserName} has been unblocked`);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to unblock user');
+    }
   };
 
   const formatTime = (dateString: string) => {
+    if (!dateString) return '';
     return new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
+  const formatDate = (dateString: string) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (date.toDateString() === today.toDateString()) {
+      return 'Today';
+    } else if (date.toDateString() === yesterday.toDateString()) {
+      return 'Yesterday';
+    } else {
+      return date.toLocaleDateString();
+    }
+  };
+
+  const getParticipantName = (participant?: Participant) => {
+    if (!participant) return 'Unknown';
+    return participant.name || 
+           `${participant.firstName || ''} ${participant.lastName || ''}`.trim() || 
+           'Unknown';
+  };
+
+  const getParticipantAvatar = (participant?: Participant) => {
+    return participant?.avatar || '/images/avatar-1.png';
+  };
+
+  const isMyMessage = (message: Message) => {
+    const senderId = typeof message.senderId === 'string' 
+      ? message.senderId 
+      : message.senderId?._id;
+    return senderId === currentUser?.id;
+  };
+
   const filteredConversations = conversations.filter(conv =>
-    (conv.participant.name || 'Unknown').toLowerCase().includes(searchQuery.toLowerCase())
+    getParticipantName(conv.otherUser).toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Group messages by date
+  const groupedMessages = messages.reduce((groups, message) => {
+    const date = formatDate(message.createdAt);
+    if (!groups[date]) {
+      groups[date] = [];
+    }
+    groups[date].push(message);
+    return groups;
+  }, {} as Record<string, Message[]>);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-[calc(100vh-8rem)]">
+        <Loader2 className="w-8 h-8 animate-spin text-[#8A2BE2]" />
+      </div>
+    );
+  }
 
   return (
     <div className="h-[calc(100vh-8rem)] pb-20 lg:pb-8">
@@ -106,17 +305,17 @@ export function Messages() {
               {filteredConversations.length > 0 ? (
                 filteredConversations.map((conversation) => (
                   <button
-                    key={conversation.id}
+                    key={conversation._id}
                     onClick={() => setSelectedConversation(conversation)}
                     className={cn(
                       'w-full p-4 flex items-start gap-3 hover:bg-gray-50 transition-colors border-b border-gray-100 text-left',
-                      selectedConversation?.id === conversation.id && 'bg-[#8A2BE2]/5'
+                      selectedConversation?._id === conversation._id && 'bg-[#8A2BE2]/5'
                     )}
                   >
                     <div className="relative">
                       <img
-                        src={conversation.participant.avatar}
-                        alt={conversation.participant.name}
+                        src={getParticipantAvatar(conversation.otherUser)}
+                        alt={getParticipantName(conversation.otherUser)}
                         className="w-12 h-12 rounded-full object-cover"
                       />
                       {conversation.unreadCount > 0 && (
@@ -128,17 +327,17 @@ export function Messages() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
                         <h3 className="font-medium text-gray-900 truncate">
-                          {conversation.participant.name}
+                          {getParticipantName(conversation.otherUser)}
                         </h3>
                         <span className="text-xs text-gray-400">
-                          {formatTime(conversation.lastMessage.createdAt)}
+                          {formatTime(conversation.lastMessage?.createdAt)}
                         </span>
                       </div>
                       <p className={cn(
                         'text-sm truncate',
                         conversation.unreadCount > 0 ? 'text-gray-900 font-medium' : 'text-gray-500'
                       )}>
-                        {conversation.lastMessage.content}
+                        {conversation.lastMessage?.content || 'No messages yet'}
                       </p>
                     </div>
                   </button>
@@ -147,7 +346,7 @@ export function Messages() {
                 <EmptyState
                   image="/images/empty-messages.png"
                   title="No conversations"
-                  description="Start messaging with creators"
+                  description={searchQuery ? 'No conversations match your search' : 'Start messaging with creators or clients'}
                 />
               )}
             </div>
@@ -172,15 +371,17 @@ export function Messages() {
                       <ChevronLeft className="w-5 h-5" />
                     </Button>
                     <img
-                      src={selectedConversation.participant.avatar}
-                      alt={selectedConversation.participant.name}
+                      src={getParticipantAvatar(selectedConversation.otherUser)}
+                      alt={getParticipantName(selectedConversation.otherUser)}
                       className="w-10 h-10 rounded-full object-cover"
                     />
                     <div>
                       <h3 className="font-medium text-gray-900">
-                        {selectedConversation.participant.name}
+                        {getParticipantName(selectedConversation.otherUser)}
                       </h3>
-                      <p className="text-xs text-green-600">Online</p>
+                      <p className="text-xs text-green-600">
+                        {isBlocked ? 'Blocked' : 'Online'}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -190,62 +391,107 @@ export function Messages() {
                     <Button variant="ghost" size="icon">
                       <Video className="w-5 h-5" />
                     </Button>
-                    <Button variant="ghost" size="icon">
-                      <MoreVertical className="w-5 h-5" />
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreVertical className="w-5 h-5" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {isBlocked ? (
+                          <DropdownMenuItem onClick={handleUnblockUser}>
+                            <Ban className="w-4 h-4 mr-2 text-green-600" />
+                            <span className="text-green-600">Unblock User</span>
+                          </DropdownMenuItem>
+                        ) : (
+                          <DropdownMenuItem onClick={handleBlockUser}>
+                            <Ban className="w-4 h-4 mr-2 text-red-600" />
+                            <span className="text-red-600">Block User</span>
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
 
                 {/* Messages */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                  {messages.map((message) => {
-                    const isMe = message.senderId === 'u1';
-                    return (
-                      <div
-                        key={message.id}
-                        className={cn(
-                          'flex',
-                          isMe ? 'justify-end' : 'justify-start'
-                        )}
-                      >
-                        <div
-                          className={cn(
-                            'max-w-[70%] px-4 py-2 rounded-2xl',
-                            isMe
-                              ? 'bg-[#8A2BE2] text-white rounded-br-md'
-                              : 'bg-gray-100 text-gray-900 rounded-bl-md'
-                          )}
-                        >
-                          <p>{message.content}</p>
-                          <span className={cn(
-                            'text-xs mt-1 block',
-                            isMe ? 'text-white/70' : 'text-gray-500'
-                          )}>
-                            {formatTime(message.createdAt)}
-                          </span>
-                        </div>
+                  {Object.entries(groupedMessages).map(([date, dateMessages]) => (
+                    <div key={date} className="space-y-4">
+                      <div className="flex justify-center">
+                        <span className="text-xs text-gray-400 bg-gray-100 px-3 py-1 rounded-full">
+                          {date}
+                        </span>
                       </div>
-                    );
-                  })}
+                      {dateMessages.map((message) => {
+                        const isMe = isMyMessage(message);
+                        return (
+                          <div
+                            key={message._id}
+                            className={cn(
+                              'flex',
+                              isMe ? 'justify-end' : 'justify-start'
+                            )}
+                          >
+                            <div
+                              className={cn(
+                                'max-w-[70%] px-4 py-2 rounded-2xl',
+                                isMe
+                                  ? 'bg-[#8A2BE2] text-white rounded-br-md'
+                                  : 'bg-gray-100 text-gray-900 rounded-bl-md'
+                              )}
+                            >
+                              <p>{message.content}</p>
+                              <span className={cn(
+                                'text-xs mt-1 block',
+                                isMe ? 'text-white/70' : 'text-gray-500'
+                              )}>
+                                {formatTime(message.createdAt)}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ))}
+                  <div ref={messagesEndRef} />
                 </div>
 
                 {/* Input */}
                 <div className="p-4 border-t border-gray-200">
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Type a message..."
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                      className="flex-1"
-                    />
-                    <Button
-                      onClick={handleSendMessage}
-                      className="bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white"
-                    >
-                      <Send className="w-4 h-4" />
-                    </Button>
-                  </div>
+                  {isBlocked ? (
+                    <div className="text-center py-2 px-4 bg-red-50 text-red-600 rounded-lg">
+                      You have blocked this user. 
+                      <button 
+                        onClick={handleUnblockUser}
+                        className="underline ml-1 font-medium"
+                      >
+                        Unblock to send messages
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Type a message..."
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && !isSending && handleSendMessage()}
+                        className="flex-1"
+                        disabled={isSending}
+                      />
+                      <Button
+                        onClick={handleSendMessage}
+                        disabled={isSending || !newMessage.trim()}
+                        className="bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white"
+                      >
+                        {isSending ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Send className="w-4 h-4" />
+                        )}
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </>
             ) : (
