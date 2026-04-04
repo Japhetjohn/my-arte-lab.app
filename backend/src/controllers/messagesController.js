@@ -118,9 +118,9 @@ exports.getConversations = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    // Get current user's blocked users
+    // Get current user's blocked users (handle undefined)
     const currentUser = await User.findById(userId).select('blockedUsers');
-    const blockedUserIds = currentUser.blockedUsers.map(id => id.toString());
+    const blockedUserIds = (currentUser.blockedUsers || []).map(id => id.toString());
 
     const conversations = await Message.getConversations(userId);
 

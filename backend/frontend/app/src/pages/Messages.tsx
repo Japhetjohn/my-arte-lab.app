@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -52,116 +52,65 @@ export function Messages() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
-  const [initialUserId, setInitialUserId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Fetch conversations - non-blocking
-  const fetchConversations = useCallback(async (showLoading = false) => {
-    if (showLoading) setIsLoading(true);
+  // Fetch conversations on mount
+  useEffect(() => {
+    fetchConversations();
+  }, []);
+
+  const fetchConversations = async () => {
     try {
+      setIsLoading(true);
       const response = await api.get('/messages/conversations');
-      setConversations(response.data.data?.conversations || []);
-      return response.data.data?.conversations || [];
+      const convs = response.data.data?.conversations || [];
+      setConversations(convs);
+      
+      // Check URL for user param
+      const params = new URLSearchParams(window.location.search);
+      const userId = params.get('user');
+      
+      if (userId && convs.length > 0) {
+        const existingConv = convs.find((c: Conversation) => 
+          c.otherUser?._id === userId || c._id === userId
+        );
+        
+        if (existingConv) {
+          setSelectedConversation(existingConv);
+        }
+        
+        // Clear URL param
+        const url = new URL(window.location.href);
+        url.searchParams.delete('user');
+        window.history.replaceState({}, '', url);
+      }
     } catch (error: any) {
       console.error('Error fetching conversations:', error);
-      return [];
+      toast.error('Failed to load conversations');
     } finally {
-      if (showLoading) setIsLoading(false);
+      setIsLoading(false);
     }
-  }, []);
+  };
 
-  // Check URL for user parameter on mount - IMMEDIATE
+  // Fetch messages when conversation selected
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const userId = params.get('user');
-    if (userId) {
-      setInitialUserId(userId);
-      // IMMEDIATELY create a placeholder conversation so UI renders fast
-      const placeholderConv: Conversation = {
-        _id: userId,
-        otherUser: {
-          _id: userId,
-          name: 'Loading...',
-          avatar: '/images/avatar-1.png',
-        },
-        lastMessage: {
-          content: 'Starting conversation...',
-          createdAt: new Date().toISOString(),
-        },
-        unreadCount: 0,
-      };
-      setConversations([placeholderConv]);
-      setSelectedConversation(placeholderConv);
+    if (selectedConversation) {
+      fetchMessages(selectedConversation);
+      checkBlockStatus(selectedConversation);
     }
-  }, []);
+  }, [selectedConversation]);
 
-  // Initial load - runs AFTER first render
-  useEffect(() => {
-    // Start loading conversations in background
-    fetchConversations(true);
-
-    // If there's a user param, fetch real user details and update
-    if (initialUserId) {
-      api.get(`/creators/${initialUserId}`)
-        .then(userResponse => {
-          const userData = userResponse?.data?.data?.creator || userResponse?.data?.data;
-          if (userData) {
-            // Update the placeholder with real data
-            setConversations(prev => prev.map(c => 
-              c._id === initialUserId ? {
-                ...c,
-                otherUser: {
-                  _id: initialUserId,
-                  name: userData.name,
-                  firstName: userData.firstName,
-                  lastName: userData.lastName,
-                  avatar: userData.avatar,
-                },
-                lastMessage: {
-                  content: 'Start a conversation...',
-                  createdAt: new Date().toISOString(),
-                },
-              } : c
-            ));
-          }
-          // Clear URL
-          const url = new URL(window.location.href);
-          url.searchParams.delete('user');
-          window.history.replaceState({}, '', url);
-        })
-        .catch(() => {
-          toast.error('Could not load user');
-        });
-    }
-
-    // Poll for new conversations every 10 seconds (less aggressive)
-    pollIntervalRef.current = window.setInterval(() => fetchConversations(false), 10000);
-
-    return () => {
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current);
-      }
-    };
-  }, [fetchConversations, initialUserId]);
-
-  // Fetch messages when conversation is selected
-  const fetchMessages = useCallback(async (conversation: Conversation) => {
+  const fetchMessages = async (conversation: Conversation) => {
     try {
       const otherUserId = conversation.otherUser?._id || conversation._id;
       const response = await api.get(`/messages/${otherUserId}`);
       setMessages(response.data.data?.messages || []);
-      
-      // Refresh conversations to update unread count
-      fetchConversations();
     } catch (error: any) {
       console.error('Error fetching messages:', error);
-      toast.error('Failed to load messages');
     }
-  }, [fetchConversations]);
+  };
 
-  // Check block status
-  const checkBlockStatus = useCallback(async (conversation: Conversation) => {
+  const checkBlockStatus = async (conversation: Conversation) => {
     try {
       const otherUserId = conversation.otherUser?._id || conversation._id;
       const response = await api.get(`/blocks/${otherUserId}/status`);
@@ -169,22 +118,7 @@ export function Messages() {
     } catch (error) {
       console.error('Error checking block status:', error);
     }
-  }, []);
-
-  // When conversation is selected
-  useEffect(() => {
-    if (selectedConversation) {
-      fetchMessages(selectedConversation);
-      checkBlockStatus(selectedConversation);
-
-      // Poll for new messages every 3 seconds
-      const messagePoll = setInterval(() => {
-        fetchMessages(selectedConversation);
-      }, 3000);
-
-      return () => clearInterval(messagePoll);
-    }
-  }, [selectedConversation, fetchMessages, checkBlockStatus]);
+  };
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -221,21 +155,17 @@ export function Messages() {
         content: messageContent,
       });
 
-      // Replace temp message with real one
       const savedMessage = response.data.data?.message;
       if (savedMessage) {
         setMessages(prev => prev.map(m => m._id === tempMessage._id ? savedMessage : m));
       }
-
+      
       // Refresh conversations
       fetchConversations();
     } catch (error: any) {
-      // Remove temp message on error
       setMessages(prev => prev.filter(m => m._id !== tempMessage._id));
-      setNewMessage(messageContent); // Restore input
-      
-      const errorMsg = error.response?.data?.message || 'Failed to send message';
-      toast.error(errorMsg);
+      setNewMessage(messageContent);
+      toast.error(error.response?.data?.message || 'Failed to send message');
     } finally {
       setIsSending(false);
     }
@@ -247,25 +177,21 @@ export function Messages() {
     const otherUserId = selectedConversation.otherUser?._id || selectedConversation._id;
     const otherUserName = getParticipantName(selectedConversation.otherUser);
 
-    if (!confirm(`Are you sure you want to block ${otherUserName}? You won't see their messages anymore.`)) {
-      return;
-    }
+    if (!confirm(`Block ${otherUserName}?`)) return;
 
     try {
       await api.post(`/blocks/${otherUserId}`);
       setIsBlocked(true);
-      toast.success(`${otherUserName} has been blocked`);
+      toast.success(`${otherUserName} blocked`);
       
-      // Remove conversation from list
+      // Remove from list
       setConversations(prev => prev.filter(c => {
         const cUserId = c.otherUser?._id || c._id;
         return cUserId !== otherUserId;
       }));
-      
-      // Close conversation
       setSelectedConversation(null);
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to block user');
+      toast.error(error.response?.data?.message || 'Failed to block');
     }
   };
 
@@ -273,14 +199,13 @@ export function Messages() {
     if (!selectedConversation) return;
     
     const otherUserId = selectedConversation.otherUser?._id || selectedConversation._id;
-    const otherUserName = getParticipantName(selectedConversation.otherUser);
 
     try {
       await api.delete(`/blocks/${otherUserId}`);
       setIsBlocked(false);
-      toast.success(`${otherUserName} has been unblocked`);
+      toast.success('User unblocked');
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to unblock user');
+      toast.error(error.response?.data?.message || 'Failed to unblock');
     }
   };
 
@@ -296,13 +221,9 @@ export function Messages() {
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
 
-    if (date.toDateString() === today.toDateString()) {
-      return 'Today';
-    } else if (date.toDateString() === yesterday.toDateString()) {
-      return 'Yesterday';
-    } else {
-      return date.toLocaleDateString();
-    }
+    if (date.toDateString() === today.toDateString()) return 'Today';
+    if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
+    return date.toLocaleDateString();
   };
 
   const getParticipantName = (participant?: Participant) => {
@@ -330,9 +251,7 @@ export function Messages() {
   // Group messages by date
   const groupedMessages = messages.reduce((groups, message) => {
     const date = formatDate(message.createdAt);
-    if (!groups[date]) {
-      groups[date] = [];
-    }
+    if (!groups[date]) groups[date] = [];
     groups[date].push(message);
     return groups;
   }, {} as Record<string, Message[]>);
@@ -359,7 +278,7 @@ export function Messages() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input
-                  placeholder="Search conversations..."
+                  placeholder="Search..."
                   className="pl-10"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -402,7 +321,7 @@ export function Messages() {
                         'text-sm truncate',
                         conversation.unreadCount > 0 ? 'text-gray-900 font-medium' : 'text-gray-500'
                       )}>
-                        {conversation.lastMessage?.content || 'No messages yet'}
+                        {conversation.lastMessage?.content || 'No messages'}
                       </p>
                     </div>
                   </button>
@@ -411,7 +330,7 @@ export function Messages() {
                 <EmptyState
                   image="/images/empty-messages.png"
                   title="No conversations"
-                  description={searchQuery ? 'No conversations match your search' : 'Start messaging with creators or clients'}
+                  description={searchQuery ? 'No matches' : 'Start messaging'}
                 />
               )}
             </div>
@@ -466,12 +385,12 @@ export function Messages() {
                         {isBlocked ? (
                           <DropdownMenuItem onClick={handleUnblockUser}>
                             <Ban className="w-4 h-4 mr-2 text-green-600" />
-                            <span className="text-green-600">Unblock User</span>
+                            <span className="text-green-600">Unblock</span>
                           </DropdownMenuItem>
                         ) : (
                           <DropdownMenuItem onClick={handleBlockUser}>
                             <Ban className="w-4 h-4 mr-2 text-red-600" />
-                            <span className="text-red-600">Block User</span>
+                            <span className="text-red-600">Block</span>
                           </DropdownMenuItem>
                         )}
                       </DropdownMenuContent>
@@ -493,10 +412,7 @@ export function Messages() {
                         return (
                           <div
                             key={message._id}
-                            className={cn(
-                              'flex',
-                              isMe ? 'justify-end' : 'justify-start'
-                            )}
+                            className={cn('flex', isMe ? 'justify-end' : 'justify-start')}
                           >
                             <div
                               className={cn(
@@ -526,12 +442,9 @@ export function Messages() {
                 <div className="p-4 border-t border-gray-200">
                   {isBlocked ? (
                     <div className="text-center py-2 px-4 bg-red-50 text-red-600 rounded-lg">
-                      You have blocked this user. 
-                      <button 
-                        onClick={handleUnblockUser}
-                        className="underline ml-1 font-medium"
-                      >
-                        Unblock to send messages
+                      You blocked this user.
+                      <button onClick={handleUnblockUser} className="underline ml-1 font-medium">
+                        Unblock to message
                       </button>
                     </div>
                   ) : (
@@ -549,11 +462,7 @@ export function Messages() {
                         disabled={isSending || !newMessage.trim()}
                         className="bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white"
                       >
-                        {isSending ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Send className="w-4 h-4" />
-                        )}
+                        {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                       </Button>
                     </div>
                   )}
@@ -564,7 +473,7 @@ export function Messages() {
                 <EmptyState
                   image="/images/welcome.png"
                   title="Select a conversation"
-                  description="Choose a conversation from the list to start messaging"
+                  description="Choose someone to message"
                 />
               </div>
             )}
