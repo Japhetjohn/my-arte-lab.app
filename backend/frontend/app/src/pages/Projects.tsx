@@ -75,7 +75,8 @@ export function Projects() {
   const fetchProjects = async () => {
     try {
       setIsLoading(true);
-      const response = await api.get('/projects/my/posted');
+      // Fetch ALL open projects (public browse), not just my projects
+      const response = await api.get('/projects');
       setProjects(response.data.data?.projects || []);
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to fetch projects');
@@ -120,7 +121,7 @@ export function Projects() {
             </div>
             <div className="flex items-center gap-2">
               <StatusBadge status={project.status} />
-              {isOwner && (
+              {isOwner ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon">
@@ -149,6 +150,15 @@ export function Projects() {
                     )}
                   </DropdownMenuContent>
                 </DropdownMenu>
+              ) : (
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  className="border-[#8A2BE2] text-[#8A2BE2] hover:bg-[#8A2BE2] hover:text-white"
+                  onClick={() => window.location.href = `/projects/${project._id}`}
+                >
+                  Apply Now
+                </Button>
               )}
             </div>
           </div>
@@ -178,7 +188,22 @@ export function Projects() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              {hasCreator && (
+              {/* Show client info for browsing creators */}
+              {!isOwner && project.clientId && (
+                <div className="flex items-center gap-2 mr-4">
+                  <img
+                    src={project.clientId?.avatar || '/images/avatar-1.png'}
+                    alt="Client"
+                    className="w-6 h-6 rounded-full object-cover"
+                  />
+                  <span className="text-sm text-gray-600">
+                    {project.clientId?.name || 
+                     `${project.clientId?.firstName || ''} ${project.clientId?.lastName || ''}`.trim()}
+                  </span>
+                </div>
+              )}
+              {/* Show selected creator for project owner */}
+              {isOwner && hasCreator && (
                 <div className="flex items-center gap-2 mr-4">
                   <img
                     src={project.selectedCreatorId?.avatar || '/images/avatar-1.png'}
@@ -187,7 +212,7 @@ export function Projects() {
                   />
                   <span className="text-sm text-gray-600">
                     {project.selectedCreatorId?.name || 
-                     `${project.selectedCreatorId?.firstName} ${project.selectedCreatorId?.lastName}`}
+                     `${project.selectedCreatorId?.firstName || ''} ${project.selectedCreatorId?.lastName || ''}`.trim()}
                   </span>
                 </div>
               )}
@@ -196,7 +221,7 @@ export function Projects() {
                 className="bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white"
                 onClick={() => window.location.href = `/projects/${project._id}`}
               >
-                View Details
+                {isOwner ? 'View Details' : 'View & Apply'}
               </Button>
             </div>
           </div>
@@ -216,7 +241,7 @@ export function Projects() {
   return (
     <div className="space-y-6 pb-20 lg:pb-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">My Projects</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Browse Projects</h1>
         <Button 
           className="bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white"
           onClick={() => setIsCreateModalOpen(true)}
@@ -240,10 +265,8 @@ export function Projects() {
           ) : (
             <EmptyState
               image="/images/empty-projects.png"
-              title="No projects yet"
-              description="Create your first project to find talented creators"
-              actionLabel="Create Project"
-              onAction={() => setIsCreateModalOpen(true)}
+              title="No open projects"
+              description="There are no open projects available right now. Check back later!"
             />
           )}
         </TabsContent>
@@ -255,7 +278,7 @@ export function Projects() {
             <EmptyState
               image="/images/empty-projects.png"
               title="No open projects"
-              description="Your open projects will appear here"
+              description="There are no open projects available right now. Check back later!"
             />
           )}
         </TabsContent>
