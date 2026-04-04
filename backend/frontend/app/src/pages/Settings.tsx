@@ -23,7 +23,6 @@ export function Settings() {
   const [isSaving, setIsSaving] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const coverInputRef = useRef<HTMLInputElement>(null);
 
   // Profile form state
   const [profileForm, setProfileForm] = useState({
@@ -37,7 +36,6 @@ export function Settings() {
     country: '',
     skills: [] as string[],
     avatar: '',
-    coverImage: '',
   });
 
   const [notifications, setNotifications] = useState({
@@ -75,7 +73,6 @@ export function Settings() {
         country: currentUser.location?.country || '',
         skills: currentUser.skills || [],
         avatar: currentUser.avatar || '',
-        coverImage: currentUser.coverImage || '',
       });
     }
   }, [currentUser]);
@@ -112,8 +109,8 @@ export function Settings() {
     }
   };
 
-  // Handle image upload
-  const handleImageUpload = async (file: File, type: 'avatar' | 'cover') => {
+  // Handle avatar upload
+  const handleAvatarUpload = async (file: File) => {
     try {
       setIsLoading(true);
       const formData = new FormData();
@@ -125,26 +122,18 @@ export function Settings() {
 
       const imageUrl = response.data.data.url;
 
-      // Update profile with new image
-      await api.put('/auth/update-profile', {
-        [type === 'avatar' ? 'avatar' : 'coverImage']: imageUrl,
-      });
+      // Update profile with new avatar
+      await api.put('/auth/update-profile', { avatar: imageUrl });
 
       // Update local state
-      setProfileForm(prev => ({
-        ...prev,
-        [type === 'avatar' ? 'avatar' : 'coverImage']: imageUrl,
-      }));
+      setProfileForm(prev => ({ ...prev, avatar: imageUrl }));
 
       // Update user context
       if (updateUser && currentUser) {
-        updateUser({
-          ...currentUser,
-          [type === 'avatar' ? 'avatar' : 'coverImage']: imageUrl,
-        });
+        updateUser({ ...currentUser, avatar: imageUrl });
       }
 
-      toast.success(`${type === 'avatar' ? 'Profile' : 'Cover'} photo updated`);
+      toast.success('Profile photo updated');
     } catch (error: any) {
       toast.error(error.response?.data?.error || 'Failed to upload image');
     } finally {
@@ -233,7 +222,7 @@ export function Settings() {
                       className="hidden"
                       onChange={(e) => {
                         const file = e.target.files?.[0];
-                        if (file) handleImageUpload(file, 'avatar');
+                        if (file) handleAvatarUpload(file);
                       }}
                     />
                   </div>
@@ -243,36 +232,6 @@ export function Settings() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4">
-                  <div className="relative">
-                    <img
-                      src={profileForm.coverImage || '/images/hero-bg.jpg'}
-                      alt="Cover"
-                      className="w-32 h-20 object-cover rounded-lg border-2 border-gray-200"
-                    />
-                    <button
-                      onClick={() => coverInputRef.current?.click()}
-                      disabled={isLoading}
-                      className="absolute bottom-1 right-1 bg-[#8A2BE2] text-white p-1 rounded-full hover:bg-[#7B1FD1] disabled:opacity-50"
-                    >
-                      {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Camera className="w-3 h-3" />}
-                    </button>
-                    <input
-                      ref={coverInputRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) handleImageUpload(file, 'cover');
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <p className="font-medium">Cover Image</p>
-                    <p className="text-xs text-gray-500">Recommended: 1200x400px</p>
-                  </div>
-                </div>
               </div>
 
               <Separator />
