@@ -33,8 +33,8 @@ exports.sendMessage = async (req, res) => {
     }
 
     // Check if sender has blocked recipient
-    const sender = await User.findById(senderId).select('blockedUsers');
-    if (sender.blockedUsers.includes(recipientId)) {
+    const senderWithBlocks = await User.findById(senderId).select('blockedUsers name firstName lastName');
+    if (senderWithBlocks.blockedUsers.includes(recipientId)) {
       return errorResponse(res, 'You have blocked this user. Unblock them to send messages.', 403);
     }
 
@@ -53,8 +53,7 @@ exports.sendMessage = async (req, res) => {
     await message.save();
 
     // Create notification for recipient
-    const sender = await User.findById(senderId).select('name firstName lastName');
-    const senderName = sender.firstName || sender.name || 'Someone';
+    const senderName = senderWithBlocks.firstName || senderWithBlocks.name || 'Someone';
     Notification.createNotification({
       recipient: recipientId,
       type: 'message',
