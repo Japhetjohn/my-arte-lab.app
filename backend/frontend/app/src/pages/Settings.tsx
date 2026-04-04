@@ -74,6 +74,15 @@ export function Settings() {
         skills: currentUser.skills || [],
         avatar: currentUser.avatar || '',
       });
+      
+      // Load privacy settings
+      if (currentUser.privacy) {
+        setPrivacy({
+          publicProfile: currentUser.privacy.publicProfile ?? true,
+          showActivity: currentUser.privacy.showActivity ?? true,
+          allowMessages: currentUser.privacy.allowMessages ?? true,
+        });
+      }
     }
   }, [currentUser]);
 
@@ -104,6 +113,25 @@ export function Settings() {
       toast.success('Profile updated successfully');
     } catch (error: any) {
       toast.error(error.response?.data?.error || 'Failed to update profile');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Handle privacy settings save
+  const handleSavePrivacy = async () => {
+    setIsSaving(true);
+    try {
+      const response = await api.put('/auth/update-profile', { privacy });
+      
+      // Update local user context
+      if (updateUser) {
+        updateUser(response.data.data.user);
+      }
+      
+      toast.success('Privacy settings saved');
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || 'Failed to save privacy settings');
     } finally {
       setIsSaving(false);
     }
@@ -475,6 +503,16 @@ export function Settings() {
                     setPrivacy(prev => ({ ...prev, allowMessages: checked }))
                   }
                 />
+              </div>
+
+              <div className="pt-4">
+                <Button 
+                  className="bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white"
+                  onClick={handleSavePrivacy}
+                  disabled={isSaving}
+                >
+                  {isSaving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...</> : 'Save Privacy Settings'}
+                </Button>
               </div>
             </CardContent>
           </Card>

@@ -39,6 +39,11 @@ export interface User {
   portfolio?: PortfolioItem[];
   services?: Service[];
   createdAt: string;
+  privacy?: {
+    publicProfile: boolean;
+    showActivity: boolean;
+    allowMessages: boolean;
+  };
 }
 
 export interface PortfolioItem {

@@ -21,6 +21,11 @@ export interface User {
   reviewCount?: number;
   joinedAt?: string;
   createdAt?: string;
+  privacy?: {
+    publicProfile: boolean;
+    showActivity: boolean;
+    allowMessages: boolean;
+  };
 }
 
 export interface Creator extends User {

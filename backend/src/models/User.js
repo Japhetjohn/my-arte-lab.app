@@ -380,6 +380,21 @@ const userSchema = new mongoose.Schema({
     default: 'public'
   },
 
+  privacy: {
+    publicProfile: {
+      type: Boolean,
+      default: true
+    },
+    showActivity: {
+      type: Boolean,
+      default: true
+    },
+    allowMessages: {
+      type: Boolean,
+      default: true
+    }
+  },
+
   lastLogin: Date,
   lastActive: Date,
 
