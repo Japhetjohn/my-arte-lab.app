@@ -34,6 +34,9 @@ const messageSchema = new mongoose.Schema({
 // Compound indexes for efficient queries
 messageSchema.index({ senderId: 1, recipientId: 1, createdAt: -1 });
 messageSchema.index({ recipientId: 1, read: 1, createdAt: -1 });
+messageSchema.index({ senderId: 1, createdAt: -1 });
+messageSchema.index({ recipientId: 1, createdAt: -1 });
+messageSchema.index({ createdAt: -1 });
 
 // Static method to get conversation between two users
 messageSchema.statics.getConversation = async function(userId1, userId2, options = {}) {

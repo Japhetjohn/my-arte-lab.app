@@ -56,8 +56,9 @@ export function Messages() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Fetch conversations
-  const fetchConversations = useCallback(async () => {
+  // Fetch conversations - non-blocking
+  const fetchConversations = useCallback(async (showLoading = false) => {
+    if (showLoading) setIsLoading(true);
     try {
       const response = await api.get('/messages/conversations');
       setConversations(response.data.data?.conversations || []);
@@ -65,83 +66,77 @@ export function Messages() {
     } catch (error: any) {
       console.error('Error fetching conversations:', error);
       return [];
+    } finally {
+      if (showLoading) setIsLoading(false);
     }
   }, []);
 
-  // Check URL for user parameter on mount
+  // Check URL for user parameter on mount - IMMEDIATE
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const userId = params.get('user');
     if (userId) {
       setInitialUserId(userId);
+      // IMMEDIATELY create a placeholder conversation so UI renders fast
+      const placeholderConv: Conversation = {
+        _id: userId,
+        otherUser: {
+          _id: userId,
+          name: 'Loading...',
+          avatar: '/images/avatar-1.png',
+        },
+        lastMessage: {
+          content: 'Starting conversation...',
+          createdAt: new Date().toISOString(),
+        },
+        unreadCount: 0,
+      };
+      setConversations([placeholderConv]);
+      setSelectedConversation(placeholderConv);
     }
   }, []);
 
-  // Initial load and handle user param
+  // Initial load - runs AFTER first render
   useEffect(() => {
-    const init = async () => {
-      setIsLoading(true);
-      
-      // If there's a user param, fetch user details FIRST while loading conversations
-      let userData = null;
-      if (initialUserId) {
-        try {
-          // Fetch user details in parallel with conversations
-          const userPromise = api.get(`/creators/${initialUserId}`).catch(() => null);
-          const convsPromise = fetchConversations();
-          
-          const [userResponse, convs] = await Promise.all([userPromise, convsPromise]);
-          userData = userResponse?.data?.data?.creator || userResponse?.data?.data;
-          
-          // Check if conversation exists
-          const existingConv = convs.find((c: Conversation) => 
-            c.otherUser?._id === initialUserId || c._id === initialUserId
-          );
+    // Start loading conversations in background
+    fetchConversations(true);
 
-          if (existingConv) {
-            setSelectedConversation(existingConv);
-          } else if (userData) {
-            // Create a temporary conversation
-            const newConv: Conversation = {
-              _id: initialUserId,
-              otherUser: {
-                _id: initialUserId,
-                name: userData.name,
-                firstName: userData.firstName,
-                lastName: userData.lastName,
-                avatar: userData.avatar,
-              },
-              lastMessage: {
-                content: 'Start a conversation...',
-                createdAt: new Date().toISOString(),
-              },
-              unreadCount: 0,
-            };
-            setConversations(prev => [newConv, ...prev]);
-            setSelectedConversation(newConv);
-          } else {
-            toast.error('Could not find this user');
+    // If there's a user param, fetch real user details and update
+    if (initialUserId) {
+      api.get(`/creators/${initialUserId}`)
+        .then(userResponse => {
+          const userData = userResponse?.data?.data?.creator || userResponse?.data?.data;
+          if (userData) {
+            // Update the placeholder with real data
+            setConversations(prev => prev.map(c => 
+              c._id === initialUserId ? {
+                ...c,
+                otherUser: {
+                  _id: initialUserId,
+                  name: userData.name,
+                  firstName: userData.firstName,
+                  lastName: userData.lastName,
+                  avatar: userData.avatar,
+                },
+                lastMessage: {
+                  content: 'Start a conversation...',
+                  createdAt: new Date().toISOString(),
+                },
+              } : c
+            ));
           }
-
-          // Clear the URL parameter
+          // Clear URL
           const url = new URL(window.location.href);
           url.searchParams.delete('user');
           window.history.replaceState({}, '', url);
-        } catch (error) {
-          console.error('Error:', error);
-          toast.error('Could not start conversation');
-        }
-      } else {
-        await fetchConversations();
-      }
-      
-      setIsLoading(false);
-    };
+        })
+        .catch(() => {
+          toast.error('Could not load user');
+        });
+    }
 
-    init();
-
-    // Poll for new conversations every 5 seconds
-    pollIntervalRef.current = window.setInterval(fetchConversations, 5000);
+    // Poll for new conversations every 10 seconds (less aggressive)
+    pollIntervalRef.current = window.setInterval(() => fetchConversations(false), 10000);
 
     return () => {
       if (pollIntervalRef.current) {
