@@ -52,6 +52,7 @@ export function Messages() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
+  const [initialUserId, setInitialUserId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -60,15 +61,76 @@ export function Messages() {
     try {
       const response = await api.get('/messages/conversations');
       setConversations(response.data.data?.conversations || []);
+      return response.data.data?.conversations || [];
     } catch (error: any) {
       console.error('Error fetching conversations:', error);
+      return [];
     }
   }, []);
 
-  // Initial load
+  // Check URL for user parameter on mount
   useEffect(() => {
-    fetchConversations();
-    setIsLoading(false);
+    const params = new URLSearchParams(window.location.search);
+    const userId = params.get('user');
+    if (userId) {
+      setInitialUserId(userId);
+    }
+  }, []);
+
+  // Initial load and handle user param
+  useEffect(() => {
+    const init = async () => {
+      const convs = await fetchConversations();
+      setIsLoading(false);
+
+      // If there's a user param, find or create conversation
+      if (initialUserId) {
+        // Check if conversation exists
+        const existingConv = convs.find((c: Conversation) => 
+          c.otherUser?._id === initialUserId || c._id === initialUserId
+        );
+
+        if (existingConv) {
+          setSelectedConversation(existingConv);
+        } else {
+          // Fetch user info and create a temporary conversation
+          try {
+            const userResponse = await api.get(`/creators/${initialUserId}`);
+            const userData = userResponse.data.data?.creator || userResponse.data.data;
+            
+            if (userData) {
+              const newConv: Conversation = {
+                _id: initialUserId,
+                otherUser: {
+                  _id: initialUserId,
+                  name: userData.name,
+                  firstName: userData.firstName,
+                  lastName: userData.lastName,
+                  avatar: userData.avatar,
+                },
+                lastMessage: {
+                  content: 'No messages yet',
+                  createdAt: new Date().toISOString(),
+                },
+                unreadCount: 0,
+              };
+              setConversations(prev => [newConv, ...prev]);
+              setSelectedConversation(newConv);
+            }
+          } catch (error) {
+            console.error('Error fetching user:', error);
+            toast.error('Could not start conversation with this user');
+          }
+        }
+
+        // Clear the URL parameter
+        const url = new URL(window.location.href);
+        url.searchParams.delete('user');
+        window.history.replaceState({}, '', url);
+      }
+    };
+
+    init();
 
     // Poll for new conversations every 5 seconds
     pollIntervalRef.current = window.setInterval(fetchConversations, 5000);
@@ -78,7 +140,7 @@ export function Messages() {
         clearInterval(pollIntervalRef.current);
       }
     };
-  }, [fetchConversations]);
+  }, [fetchConversations, initialUserId]);
 
   // Fetch messages when conversation is selected
   const fetchMessages = useCallback(async (conversation: Conversation) => {
