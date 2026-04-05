@@ -75,12 +75,23 @@ export function Register() {
   const handleStep3Submit = async (data: RegisterStep3Data) => {
     if (!step1Data || !step2Data) return;
 
+    // Get avatar URL based on gender
+    const getAvatarUrl = (g?: string) => {
+      switch (g) {
+        case 'male': return '/images/avatar-2.png';
+        case 'female': return '/images/avatar-1.png';
+        default: return '/images/avatar-3.png';
+      }
+    };
+
     setIsLoading(true);
     try {
       await registerUser({
         ...step1Data,
         ...step2Data,
         ...data,
+        avatar: getAvatarUrl(step2Data.gender),
+        coverImage: '/images/hero-bg.jpg', // Default cover image
       });
       navigate('/verify-email');
     } catch (error) {

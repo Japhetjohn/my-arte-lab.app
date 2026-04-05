@@ -54,7 +54,7 @@ export function Messages() {
   const [isBlocked, setIsBlocked] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Fetch conversations on mount
+  // Fetch conversations on mount and handle user param
   useEffect(() => {
     fetchConversations();
   }, []);
@@ -62,21 +62,58 @@ export function Messages() {
   const fetchConversations = async () => {
     try {
       setIsLoading(true);
+      
+      // Check URL for user param FIRST
+      const params = new URLSearchParams(window.location.search);
+      const userId = params.get('user');
+      
+      // Fetch conversations
       const response = await api.get('/messages/conversations');
       const convs = response.data.data?.conversations || [];
       setConversations(convs);
       
-      // Check URL for user param
-      const params = new URLSearchParams(window.location.search);
-      const userId = params.get('user');
-      
-      if (userId && convs.length > 0) {
+      // Handle user param - start new conversation if needed
+      if (userId) {
         const existingConv = convs.find((c: Conversation) => 
           c.otherUser?._id === userId || c._id === userId
         );
         
         if (existingConv) {
+          // Existing conversation found - select it
           setSelectedConversation(existingConv);
+        } else {
+          // No existing conversation - fetch user info and create new one
+          try {
+            const userRes = await api.get(`/creators/${userId}`);
+            const userData = userRes.data.data?.creator || userRes.data.data;
+            
+            if (userData) {
+              const newConv: Conversation = {
+                _id: userId,
+                otherUser: {
+                  _id: userId,
+                  name: userData.name,
+                  firstName: userData.firstName,
+                  lastName: userData.lastName,
+                  avatar: userData.avatar,
+                },
+                lastMessage: {
+                  content: 'Start a conversation...',
+                  createdAt: new Date().toISOString(),
+                },
+                unreadCount: 0,
+              };
+              
+              // Add to conversations and select it
+              setConversations(prev => [newConv, ...prev]);
+              setSelectedConversation(newConv);
+            } else {
+              toast.error('User not found');
+            }
+          } catch (err) {
+            console.error('Error fetching user:', err);
+            toast.error('Could not start conversation');
+          }
         }
         
         // Clear URL param
