@@ -294,8 +294,71 @@ export function ProjectDetail() {
         </CardContent>
       </Card>
 
+      {/* My Application (Creator View) */}
+      {hasApplied && !isOwner && (
+        <Card>
+          <CardHeader>
+            <CardTitle>My Application</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {(() => {
+              const myApp = applications.find(app => app.creatorId?._id === user?.id);
+              if (!myApp) return <p className="text-gray-500">Loading your application...</p>;
+              return (
+                <div className="space-y-4">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h4 className="font-semibold">Your Proposal</h4>
+                      <p className="text-sm text-gray-500">Submitted {new Date(myApp.createdAt).toLocaleDateString()}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold text-[#8A2BE2]">
+                        ${myApp.proposedBudget?.amount} {myApp.proposedBudget?.currency}
+                      </p>
+                      <p className="text-sm text-gray-500">{myApp.proposedTimeline}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h5 className="font-medium text-sm mb-2">Cover Letter:</h5>
+                    <p className="text-sm text-gray-700">{myApp.coverLetter}</p>
+                  </div>
+                  
+                  {myApp.status === 'pending' && (
+                    <Badge variant="outline" className="text-amber-600 border-amber-600">
+                      Pending Review
+                    </Badge>
+                  )}
+                  {myApp.status === 'accepted' && (
+                    <div className="space-y-3">
+                      <Badge className="bg-green-100 text-green-800">
+                        Accepted! 🎉
+                      </Badge>
+                      <p className="text-sm text-gray-600">
+                        The client has accepted your proposal. Check your bookings for next steps.
+                      </p>
+                      <Button 
+                        className="bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white"
+                        onClick={() => window.location.href = '/bookings'}
+                      >
+                        View in Bookings
+                      </Button>
+                    </div>
+                  )}
+                  {myApp.status === 'rejected' && (
+                    <Badge className="bg-red-100 text-red-800">
+                      Not Selected
+                    </Badge>
+                  )}
+                </div>
+              );
+            })()}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Applications Section (Owner Only) */}
-      {isOwner && project.status === 'open' && (
+      {isOwner && (
         <Card>
           <CardHeader>
             <CardTitle>Applications ({applications.length})</CardTitle>
@@ -335,7 +398,7 @@ export function ProjectDetail() {
                       
                       <p className="mt-3 text-sm text-gray-700">{app.coverLetter}</p>
                       
-                      {app.status === 'pending' && (
+                      {app.status === 'pending' && project.status === 'open' && (
                         <div className="flex gap-2 mt-4">
                           <Button
                             size="sm"

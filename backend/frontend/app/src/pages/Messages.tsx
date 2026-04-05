@@ -401,7 +401,7 @@ export function Messages() {
                         {getParticipantName(selectedConversation.otherUser)}
                       </h3>
                       <p className="text-xs text-green-600">
-                        {isBlocked ? 'Blocked' : 'Online'}
+                        {isBlocked ? 'Blocked' : ''}
                       </p>
                     </div>
                   </div>

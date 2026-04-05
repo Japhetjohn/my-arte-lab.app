@@ -1,6 +1,5 @@
 const Message = require('../models/Message');
 const User = require('../models/User');
-const Notification = require('../models/Notification');
 const { successResponse, errorResponse } = require('../utils/apiResponse');
 
 /**
@@ -52,16 +51,8 @@ exports.sendMessage = async (req, res) => {
 
     await message.save();
 
-    // Create notification for recipient
-    const senderName = senderWithBlocks.firstName || senderWithBlocks.name || 'Someone';
-    Notification.createNotification({
-      recipient: recipientId,
-      type: 'message',
-      title: 'New Message',
-      message: `${senderName} sent you a message`,
-      link: `/messages/${senderId}`,
-      sender: senderId
-    }).catch(err => console.error('Message notification failed:', err));
+    // Don't create notification for messages - they show in the message icon badge only
+    // This prevents message notifications from appearing in the notification bell
 
     // Populate sender info for response
     await message.populate('senderId', 'name avatar');
