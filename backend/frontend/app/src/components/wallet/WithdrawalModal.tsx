@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -8,9 +8,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-
-import { AccountVerification } from './AccountVerification';
-import { WITHDRAWAL_METHODS } from '@/lib/validations/walletSchemas';
 import {
   Building2,
   Smartphone,
@@ -36,6 +33,45 @@ interface WithdrawalModalProps {
 type WithdrawalStep = 'method' | 'details' | 'amount' | 'confirm';
 type WithdrawalMethod = 'bank' | 'mobile_money' | 'crypto';
 
+interface Bank {
+  id: string;
+  name: string;
+  code: string;
+}
+
+const METHODS = [
+  {
+    id: 'bank' as WithdrawalMethod,
+    name: 'Bank Transfer',
+    description: 'Transfer to your bank account',
+    fee: 0.01,
+    minAmount: 1000,
+    maxAmount: 10000000,
+    processingTime: '1-2 business days',
+    icon: Building2,
+  },
+  {
+    id: 'mobile_money' as WithdrawalMethod,
+    name: 'Mobile Money',
+    description: 'Send to mobile money wallet',
+    fee: 0.015,
+    minAmount: 100,
+    maxAmount: 500000,
+    processingTime: 'Instant',
+    icon: Smartphone,
+  },
+  {
+    id: 'crypto' as WithdrawalMethod,
+    name: 'Crypto (Solana USDC)',
+    description: 'Withdraw to Solana wallet',
+    fee: 0,
+    minAmount: 10,
+    maxAmount: 1000000,
+    processingTime: '5-30 minutes',
+    icon: Bitcoin,
+  },
+];
+
 export function WithdrawalModal({
   isOpen,
   onClose,
@@ -50,12 +86,12 @@ export function WithdrawalModal({
   const [transactionReference, setTransactionReference] = useState('');
 
   // Bank withdrawal state
+  const [banks, setBanks] = useState<Bank[]>([]);
   const [bankId, setBankId] = useState('');
   const [bankName, setBankName] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
   const [accountName, setAccountName] = useState('');
-  const [saveAsBeneficiary, setSaveAsBeneficiary] = useState(false);
-  const [beneficiaryName, setBeneficiaryName] = useState('');
+  const [isVerifying, setIsVerifying] = useState(false);
 
   // Mobile money state
   const [provider, setProvider] = useState('');
@@ -66,8 +102,57 @@ export function WithdrawalModal({
 
   // Amount state
   const [amount, setAmount] = useState('');
+  const [targetCurrency, setTargetCurrency] = useState('NGN');
 
-  const methodConfig = WITHDRAWAL_METHODS.find((m) => m.id === method);
+  const methodConfig = METHODS.find((m) => m.id === method);
+
+  useEffect(() => {
+    if (method === 'bank' && banks.length === 0) {
+      fetchBanks();
+    }
+  }, [method]);
+
+  const fetchBanks = async () => {
+    try {
+      const response = await api.get('/hostfi/banks/NG');
+      setBanks(response.data?.banks || []);
+    } catch (error: any) {
+      toast.error('Failed to load banks');
+    }
+  };
+
+  const verifyAccount = async () => {
+    if (!bankId || !accountNumber || accountNumber.length < 10) return;
+    
+    setIsVerifying(true);
+    try {
+      const response = await api.post('/hostfi/withdrawal/verify-account', {
+        country: 'NG',
+        bankId,
+        accountNumber,
+      });
+      
+      const accountInfo = response.data?.account;
+      if (accountInfo?.accountName) {
+        setAccountName(accountInfo.accountName);
+        toast.success('Account verified!');
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to verify account');
+      setAccountName('');
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (bankId && accountNumber.length === 10 && !accountName) {
+        verifyAccount();
+      }
+    }, 500);
+    return () => clearTimeout(timeout);
+  }, [bankId, accountNumber]);
 
   const calculateFee = () => {
     if (!methodConfig || !amount) return 0;
@@ -111,7 +196,7 @@ export function WithdrawalModal({
       return;
     }
     if (methodConfig && numAmount < methodConfig.minAmount) {
-      toast.error(`Minimum withdrawal is ${methodConfig.minAmount}`);
+      toast.error(`Minimum withdrawal is ${methodConfig.minAmount} ${currency}`);
       return;
     }
     setStep('confirm');
@@ -123,27 +208,42 @@ export function WithdrawalModal({
 
     try {
       const payload: any = {
-        method,
         amount: parseFloat(amount),
         currency,
+        targetCurrency,
       };
 
       if (method === 'bank') {
-        payload.bankId = bankId;
-        payload.accountNumber = accountNumber;
-        payload.accountName = accountName;
-        payload.saveAsBeneficiary = saveAsBeneficiary;
-        if (saveAsBeneficiary) payload.beneficiaryName = beneficiaryName;
+        payload.methodId = 'BANK_TRANSFER';
+        payload.recipient = {
+          bankId,
+          accountNumber,
+          accountName,
+          bankName,
+          country: 'NG',
+          type: 'BANK',
+        };
       } else if (method === 'mobile_money') {
-        payload.provider = provider;
-        payload.phoneNumber = phoneNumber;
+        payload.methodId = 'MOBILE_MONEY';
+        payload.recipient = {
+          accountNumber: phoneNumber,
+          accountName: phoneNumber,
+          country: 'NG',
+          type: 'MOMO',
+        };
+        payload.targetCurrency = targetCurrency || 'NGN';
       } else if (method === 'crypto') {
-        payload.walletAddress = walletAddress;
-        payload.network = 'solana';
+        payload.methodId = 'CRYPTO';
+        payload.recipient = {
+          walletAddress,
+          address: walletAddress,
+          type: 'CRYPTO',
+          network: 'SOL',
+        };
       }
 
       const response = await api.post('/hostfi/withdrawal/initiate', payload);
-      setTransactionReference(response.data.reference);
+      setTransactionReference(response.data?.withdrawal?.reference || '');
       setTransactionStatus('completed');
       setShowSuccess(true);
     } catch (error: any) {
@@ -165,8 +265,6 @@ export function WithdrawalModal({
     setPhoneNumber('');
     setWalletAddress('');
     setAmount('');
-    setSaveAsBeneficiary(false);
-    setBeneficiaryName('');
     setTransactionStatus(null);
     setShowSuccess(false);
     onClose();
@@ -176,17 +274,15 @@ export function WithdrawalModal({
     <div className="space-y-4">
       <p className="text-sm text-gray-500">Select your preferred withdrawal method</p>
       <div className="space-y-2">
-        {WITHDRAWAL_METHODS.map((m) => (
+        {METHODS.map((m) => (
           <button
             key={m.id}
-            onClick={() => handleMethodSelect(m.id as WithdrawalMethod)}
+            onClick={() => handleMethodSelect(m.id)}
             className="w-full p-4 border rounded-lg hover:border-[#8A2BE2] hover:bg-[#8A2BE2]/5 transition-all text-left"
           >
             <div className="flex items-start gap-3">
               <div className="w-10 h-10 bg-[#8A2BE2]/10 rounded-full flex items-center justify-center flex-shrink-0">
-                {m.id === 'bank' && <Building2 className="w-5 h-5 text-[#8A2BE2]" />}
-                {m.id === 'mobile_money' && <Smartphone className="w-5 h-5 text-[#8A2BE2]" />}
-                {m.id === 'crypto' && <Bitcoin className="w-5 h-5 text-[#8A2BE2]" />}
+                <m.icon className="w-5 h-5 text-[#8A2BE2]" />
               </div>
               <div className="flex-1">
                 <p className="font-medium text-gray-900">{m.name}</p>
@@ -194,7 +290,7 @@ export function WithdrawalModal({
                 <div className="flex items-center gap-3 mt-2 text-xs text-gray-400">
                   <span>Fee: {(m.fee * 100).toFixed(1)}%</span>
                   <span>•</span>
-                  <span>{m.processingTime}</span>
+                  <span>Min: {m.minAmount} {currency}</span>
                 </div>
               </div>
               <ArrowRight className="w-5 h-5 text-gray-400" />
@@ -210,28 +306,85 @@ export function WithdrawalModal({
       <div className="flex items-center gap-2 mb-4">
         <Button variant="ghost" size="sm" onClick={() => setStep('method')}>
           <ArrowLeft className="w-4 h-4" />
-        Back
+          Back
         </Button>
         <span className="font-medium">Enter Details</span>
       </div>
 
       {method === 'bank' && (
-        <AccountVerification
-          bankId={bankId}
-          accountNumber={accountNumber}
-          onBankChange={(bank) => {
-            setBankId(bank.id);
-            setBankName(bank.name);
-          }}
-          onAccountNumberChange={setAccountNumber}
-          onVerified={setAccountName}
-        />
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label>Select Bank</Label>
+            <select
+              value={bankId}
+              onChange={(e) => {
+                const selected = banks.find((b) => b.id === e.target.value);
+                setBankId(e.target.value);
+                setBankName(selected?.name || '');
+                setAccountName('');
+              }}
+              className="w-full px-3 py-2 border rounded-lg bg-white"
+            >
+              <option value="">Select a bank</option>
+              {banks.map((bank) => (
+                <option key={bank.id} value={bank.id}>
+                  {bank.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Account Number</Label>
+            <Input
+              type="text"
+              placeholder="10 digit account number"
+              value={accountNumber}
+              onChange={(e) => {
+                const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+                setAccountNumber(value);
+                setAccountName('');
+              }}
+              maxLength={10}
+            />
+          </div>
+
+          {isVerifying && (
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Verifying account...
+            </div>
+          )}
+
+          {accountName && (
+            <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+              <p className="text-sm text-green-800">
+                <span className="font-medium">Account Name:</span> {accountName}
+              </p>
+            </div>
+          )}
+        </div>
       )}
 
       {method === 'mobile_money' && (
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label>Provider</Label>
+            <Label>Target Currency</Label>
+            <select
+              value={targetCurrency}
+              onChange={(e) => setTargetCurrency(e.target.value)}
+              className="w-full px-3 py-2 border rounded-lg bg-white"
+            >
+              <option value="NGN">🇳🇬 NGN - Nigeria</option>
+              <option value="KES">🇰🇪 KES - Kenya</option>
+              <option value="GHS">🇬🇭 GHS - Ghana</option>
+              <option value="TZS">🇹🇿 TZS - Tanzania</option>
+              <option value="UGX">🇺🇬 UGX - Uganda</option>
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Mobile Network</Label>
             <div className="grid grid-cols-2 gap-2">
               {['mtn', 'airtel', 'glo', '9mobile'].map((p) => (
                 <button
@@ -248,6 +401,7 @@ export function WithdrawalModal({
               ))}
             </div>
           </div>
+
           <div className="space-y-2">
             <Label>Phone Number</Label>
             <Input
@@ -265,14 +419,14 @@ export function WithdrawalModal({
         <div className="space-y-4">
           <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
             <p className="text-sm text-amber-800">
-              <span className="font-medium">Note:</span> Only Solana (SOL) addresses are supported.
+              <span className="font-medium">Note:</span> Only Solana (SOL) addresses are supported for USDC withdrawals.
               Double-check your address before proceeding.
             </p>
           </div>
           <div className="space-y-2">
             <Label>Solana Wallet Address</Label>
             <Input
-              placeholder="Enter Solana wallet address"
+              placeholder="Enter Solana wallet address (e.g., 7xKXtg2..."
               value={walletAddress}
               onChange={(e) => setWalletAddress(e.target.value)}
             />
@@ -282,6 +436,7 @@ export function WithdrawalModal({
 
       <Button
         onClick={handleDetailsNext}
+        disabled={method === 'bank' && (!bankId || !accountNumber || !accountName)}
         className="w-full bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white"
       >
         Continue
@@ -415,7 +570,7 @@ export function WithdrawalModal({
           <span className="font-medium">{calculateFee().toLocaleString()} {currency}</span>
         </div>
         <div className="flex justify-between text-lg font-bold">
-          <span>Total</span>
+          <span>Total to Receive</span>
           <span className="text-[#8A2BE2]">{calculateTotal().toLocaleString()} {currency}</span>
         </div>
       </div>

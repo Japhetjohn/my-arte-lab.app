@@ -102,12 +102,15 @@ export interface Wallet {
 
 export interface Transaction {
   id: string;
-  type: 'deposit' | 'withdrawal' | 'payment' | 'earning';
+  _id?: string;
+  type: 'deposit' | 'withdrawal' | 'payment' | 'earning' | 'refund';
   amount: number;
   currency: string;
-  status: 'pending' | 'completed' | 'failed';
+  status: 'pending' | 'completed' | 'failed' | 'cancelled';
   description: string;
   createdAt: string;
+  updatedAt?: string;
+  metadata?: Record<string, any>;
 }
 
 export interface Project {

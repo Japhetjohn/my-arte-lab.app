@@ -4,7 +4,6 @@ const { successResponse } = require('../utils/apiResponse');
 const { ErrorHandler, catchAsync } = require('../utils/errorHandler');
 const hostfiService = require('../services/hostfiService');
 const hostfiWalletService = require('../services/hostfiWalletService');
-const tsaraService = require('../services/tsaraService');
 const { v4: uuidv4 } = require('uuid');
 
 // ============================================
@@ -224,69 +223,18 @@ exports.getSupportedCurrencies = catchAsync(async (req, res, next) => {
 
 /**
  * Create crypto collection address (for receiving crypto deposits)
- * User gets a Solana address to receive USDC
+ * User gets a HostFi Solana address to receive USDC
+ * All deposits go through HostFi - no local wallet management
  */
 exports.createCryptoAddress = catchAsync(async (req, res, next) => {
   const user = await User.findById(req.user._id);
-
-  // 1. If user has a Tsara address, return it (Prioritize local Solana wallet)
-  if (user.wallet.tsaraAddress) {
-    return successResponse(res, 200, 'Solana USDC address retrieved', {
-      address: {
-        address: user.wallet.tsaraAddress,
-        currency: 'USDC',
-        network: 'Solana',
-        reference: user.wallet.tsaraReference,
-        instructions: `Send USDC on Solana network to this address. Your wallet will be credited automatically.`
-      }
-    });
-  }
-
-  // 2. If no Tsara address, try to create one locally (REQUIRED for USDC support)
-  try {
-    const tsaraService = require('../services/tsaraService');
-    const tsaraWallet = await tsaraService.createWallet(
-      `${user.firstName} ${user.lastName}`,
-      `tsara_${user._id}`,
-      { userId: user._id }
-    );
-
-    if (tsaraWallet.success) {
-      user.wallet.tsaraWalletId = tsaraWallet.data.id;
-      user.wallet.tsaraAddress = tsaraWallet.data.primary_address;
-      user.wallet.tsaraReference = tsaraWallet.data.reference;
-      user.wallet.tsaraMnemonic = tsaraWallet.data.mnemonic;
-      user.wallet.tsaraEncryptedPrivateKey = tsaraWallet.data.secretKey;
-
-      // Update primary address and network for display
-      user.wallet.address = tsaraWallet.data.primary_address;
-      user.wallet.network = 'Solana';
-      user.wallet.lastUpdated = new Date();
-      await user.save();
-
-      return successResponse(res, 201, 'Solana USDC address created', {
-        address: {
-          address: user.wallet.tsaraAddress,
-          currency: 'USDC',
-          network: 'Solana',
-          reference: user.wallet.tsaraReference,
-          instructions: `Send USDC on Solana network to this address. Your wallet will be credited automatically.`
-        }
-      });
-    }
-  } catch (tsaraErr) {
-    console.error('[Controller:createCryptoAddress] Local Tsara wallet creation failed:', tsaraErr.message);
-    return next(new ErrorHandler('Failed to initialize your Solana USDC wallet. Please try again.', 500));
-  }
-
-  // 3. Fallback to HostFi (Legacy)
   const currency = 'USDC';
   const network = 'SOL';
 
-  // Get wallet asset ID for the crypto
+  // Get wallet asset ID for USDC
   const assetId = await hostfiWalletService.getWalletAssetId(req.user._id, currency);
   if (!assetId) {
-    return next(new ErrorHandler(`Wallet for currency ${currency} not found`, 404));
+    return next(new ErrorHandler(`Wallet for currency ${currency} not found. Please contact support.`, 404));
   }
 
   // Check if user already has a crypto address for this currency in HostFi
@@ -299,75 +247,60 @@ exports.createCryptoAddress = catchAsync(async (req, res, next) => {
 
     if (existingAddresses && existingAddresses.length > 0) {
       const existingAddress = existingAddresses[0];
-      return successResponse(res, 200, 'HostFi crypto address retrieved', {
+      
+      // Save to user record for quick reference
+      user.wallet.address = existingAddress.address;
+      user.wallet.network = 'Solana';
+      user.wallet.lastUpdated = new Date();
+      await user.save();
+      
+      return successResponse(res, 200, 'Solana USDC address retrieved', {
         address: {
           address: existingAddress.address,
-          currency: existingAddress.currency,
-          network: existingAddress.network,
-          reference: existingAddress.id,
-          instructions: `Send ${currency} on ${network} network to this address. Your wallet will be credited automatically after 1% platform fee.`
+          currency: existingAddress.currency || currency,
+          network: existingAddress.network || network,
+          reference: existingAddress.id || existingAddress.reference,
+          instructions: `Send ${currency} on ${network} network to this address. Your wallet will be credited automatically.`
         }
       });
     }
   } catch (err) {
-    console.log('Error checking existing HostFi addresses:', err.message);
+    console.log('[HostFi] No existing addresses found, creating new one:', err.message);
   }
 
-  // Create crypto collection address
-  const address = await hostfiService.createCryptoCollectionAddress({
-    assetId,
-    currency,
-    network,
-    customId: req.user._id.toString()
-  });
-
-  if (!address || !address.address) {
-    throw new Error('Failed to generate address: No address returned from provider');
-  }
-
-  // Save address to user wallet for quick access
-  user.wallet.address = address.address;
-  user.wallet.network = 'Solana';
-  user.wallet.lastUpdated = new Date();
-  await user.save();
-
-  // Create pending transaction record
-  const transaction = await Transaction.create({
-    transactionId: `CRYPTO-ADDR-${uuidv4()}`,
-    user: req.user._id,
-    type: 'deposit',
-    amount: 0, // Amount not known yet
-    currency,
-    status: 'pending',
-    paymentMethod: 'crypto',
-    paymentDetails: {
-      network,
-      walletAddress: address.address,
-      reference: address.id
-    },
-    reference: address.id,
-    metadata: {
-      collectionAddressId: address.id,
-      provider: 'hostfi',
-      type: 'crypto_collection'
-    }
-  });
-
-  successResponse(res, 201, 'Crypto collection address created successfully', {
-    address: {
-      address: address.address,
+  // Create new crypto collection address via HostFi
+  try {
+    const address = await hostfiService.createCryptoCollectionAddress({
+      assetId,
       currency,
       network,
-      qrCode: address.qrCode,
-      reference: address.id,
-      instructions: `Send ${currency} on ${network} network to this address. Your wallet will be credited automatically after 1% platform fee.`
-    },
-    transaction: {
-      id: transaction._id,
-      transactionId: transaction.transactionId,
-      reference: transaction.reference
+      customId: req.user._id.toString()
+    });
+
+    if (!address || !address.address) {
+      throw new Error('Failed to generate address: No address returned from provider');
     }
-  });
+
+    // Save address to user wallet for quick access
+    user.wallet.address = address.address;
+    user.wallet.network = 'Solana';
+    user.wallet.lastUpdated = new Date();
+    await user.save();
+
+    successResponse(res, 201, 'Solana USDC address created successfully', {
+      address: {
+        address: address.address,
+        currency,
+        network,
+        qrCode: address.qrCode,
+        reference: address.id || address.reference,
+        instructions: `Send ${currency} on ${network} network to this address. Your wallet will be credited automatically.`
+      }
+    });
+  } catch (error) {
+    console.error('[HostFi] Failed to create crypto address:', error.message);
+    return next(new ErrorHandler('Failed to generate deposit address. Please try again later.', 500));
+  }
 });
 
 /**
@@ -697,89 +630,33 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
   await user.save();
 
   try {
-    let withdrawal;
+    // Use HostFi for ALL withdrawals (crypto and fiat)
+    // This ensures consistent processing and eliminates gas sponsor dependencies
+    console.log(`[Withdrawal] Initiating HostFi withdrawal for user ${req.user._id}, method: ${effectiveMethodId}`);
 
-    // Check if this is a local Tsara transfer (direct Solana USDC)
-    if (methodId === 'CRYPTO' || methodId === 'SOL') {
-      const gasSponsorService = require('../services/gasSponsorService');
-      const userWithSecrets = await User.findById(req.user._id).select('+wallet.tsaraMnemonic +wallet.tsaraEncryptedPrivateKey +encryptedPrivateKey');
+    const withdrawal = await hostfiService.initiateWithdrawal({
+      walletAssetId: assetId,
+      amount: amountToTransfer,
+      currency: currency, // Source currency (e.g. USDC)
+      methodId: effectiveMethodId,
+      recipient: {
+        type: recipient.type || (effectiveMethodId === 'BANK_TRANSFER' ? 'BANK' : (effectiveMethodId === 'MOBILE_MONEY' ? 'MOMO' : (effectiveMethodId === 'EFT' ? 'BANK' : 'CRYPTO'))),
+        method: effectiveMethodId,
+        currency: effectiveTargetCurrency, // Target currency (e.g. NGN)
+        accountNumber: recipient.accountNumber || recipient.walletAddress,
+        accountName: (recipient.accountName === 'undefined' || !recipient.accountName) ? 'Verified Recipient' : recipient.accountName,
+        bankId: recipient.bankId,
+        bankName: recipient.bankName,
+        country: recipient.country || config.country || 'NG',
+        accountType: recipient.accountType || 'SAVINGS',
+        walletAddress: recipient.walletAddress,
+        address: recipient.walletAddress || recipient.address
+      },
+      clientReference,
+      memo: `Withdrawal of ${amountToTransfer} ${currency} to ${recipient.accountName || 'beneficiary'}`
+    });
 
-      console.log(`[Withdrawal] Initiating local Tsara transfer for user ${req.user._id}`);
-
-      let estimatedGasFeeInSOL = 0.000005; // Standard fee (approx)
-      let gasRefundInUSDC = 0;
-      let payFeesWithFunder = true;
-
-      // Check if funder has AT LEAST basic fee (0.0005 SOL is plenty for a simple transfer)
-      const hasSufficientSponsorGas = await gasSponsorService.hasSufficientGas(0.0005);
-      if (!hasSufficientSponsorGas) {
-        throw new ErrorHandler('Gas sponsor wallet has insufficient funds (critical: < 0.0005 SOL).', 500);
-      }
-
-      // Calculate matching USDC refund if gas sponsorship is being used
-      try {
-        const rateData = await hostfiService.getCurrencyRates('SOL', 'USDC', true);
-        const solToUsdcRate = rateData.rate || rateData.data?.rate || 0;
-        if (solToUsdcRate > 0) {
-          gasRefundInUSDC = parseFloat((0.001 * solToUsdcRate).toFixed(6)); // Still charge a small flat 0.001 SOL equiv as platform fee
-        } else {
-          gasRefundInUSDC = 0.2; // Default flat fee if rate fails
-        }
-      } catch (e) {
-        gasRefundInUSDC = 0.2;
-      }
-
-      // Execute refund by charging the user balance for the gas 
-      if (gasRefundInUSDC > 0) {
-        console.log(`[Withdrawal Gas] Deducting ~${gasRefundInUSDC} USDC from user for gas sponsorship fee.`);
-        user.wallet.balance -= gasRefundInUSDC;
-      }
-
-      const transferResult = await tsaraService.transfer({
-        to: recipient.walletAddress || recipient.accountNumber,
-        amount: amountToTransfer,
-        currency: 'USDC',
-        userSecrets: {
-          tsaraMnemonic: userWithSecrets.wallet.tsaraMnemonic,
-          tsaraEncryptedPrivateKey: userWithSecrets.wallet.tsaraEncryptedPrivateKey,
-          encryptedPrivateKey: userWithSecrets.encryptedPrivateKey
-        },
-        fee: gasRefundInUSDC, // This will send the USDC equivalent to the platform wallet
-        userId: req.user._id,
-        payFeesWithFunder: payFeesWithFunder
-      });
-
-      withdrawal = {
-        reference: transferResult.signature,
-        status: 'completed', // Local transfers are usually instant-broadcasted
-        amount: amount,
-        gasFee: estimatedGasFeeInSOL,
-        gasRefundUSDC: gasRefundInUSDC
-      };
-    } else {
-      // Initiate withdrawal with HostFi (Legacy/Fiat)
-      withdrawal = await hostfiService.initiateWithdrawal({
-        walletAssetId: assetId,
-        amount: amountToTransfer,
-        currency: currency, // Source currency (e.g. USDC)
-        methodId: effectiveMethodId,
-        recipient: {
-          type: recipient.type || (effectiveMethodId === 'BANK_TRANSFER' ? 'BANK' : (effectiveMethodId === 'MOBILE_MONEY' ? 'MOMO' : (effectiveMethodId === 'EFT' ? 'BANK' : 'CRYPTO'))),
-          method: effectiveMethodId,
-          currency: effectiveTargetCurrency, // Target currency (e.g. NGN)
-          accountNumber: recipient.accountNumber,
-          accountName: (recipient.accountName === 'undefined' || !recipient.accountName) ? 'Verified Recipient' : recipient.accountName,
-          bankId: recipient.bankId,
-          bankName: recipient.bankName,
-          country: recipient.country || 'NG',
-          accountType: recipient.accountType || 'SAVINGS'
-        },
-        clientReference,
-        memo: `Withdrawal of ${amountToTransfer} ${currency} to ${recipient.accountName || 'beneficiary'}`
-      });
-    }
-
-    // Create transaction record with fee details
+    // Create transaction record
     const recipientDisplay = (recipient.walletAddress || recipient.accountNumber || '');
     const shortRecipient = recipientDisplay.length > 8 ? `${recipientDisplay.slice(0, 4)}...${recipientDisplay.slice(-4)}` : recipientDisplay;
     const txDescription = (methodId === 'CRYPTO' || methodId === 'SOL')
@@ -792,22 +669,21 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
       type: 'withdrawal',
       amount,
       currency,
-      status: (methodId === 'CRYPTO' || methodId === 'SOL') ? 'completed' : 'pending',
+      status: 'pending',
       description: txDescription,
-      paymentMethod: methodId.toLowerCase(),
-      platformFee: withdrawal.gasRefundUSDC || 0,
-      gasFee: withdrawal.gasFee || 0,
-      gasRefundAmount: withdrawal.gasRefundUSDC || 0,
+      paymentMethod: methodId?.toLowerCase() || effectiveMethodId.toLowerCase(),
+      platformFee: 0,
+      gasFee: 0,
       netAmount: amountToTransfer,
-      fromAddress: user.wallet.tsaraAddress || user.wallet.address,
+      fromAddress: user.wallet.address,
       toAddress: recipient.walletAddress || recipient.accountNumber,
       blockchainNetwork: (methodId === 'CRYPTO' || methodId === 'SOL') ? 'Solana' : null,
       paymentDetails: {
         beneficiaryAccountNumber: recipient.accountNumber || recipient.walletAddress,
-        beneficiaryAccountName: recipient.accountName || 'Solana Wallet',
-        beneficiaryBankName: recipient.bankName || 'Solana',
+        beneficiaryAccountName: recipient.accountName || 'Verified Recipient',
+        beneficiaryBankName: recipient.bankName || (methodId === 'CRYPTO' ? 'Solana Blockchain' : 'HostFi'),
         beneficiaryBankCode: recipient.bankId,
-        targetCurrency,
+        targetCurrency: effectiveTargetCurrency,
         targetAmount: withdrawal.amount || amountToTransfer,
         reference: clientReference,
         signature: withdrawal.reference
@@ -815,24 +691,14 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
       reference: clientReference,
       transactionHash: withdrawal.reference,
       metadata: {
-        hostfiReference: methodId === 'CRYPTO' ? null : withdrawal.reference,
-        provider: (methodId === 'CRYPTO' || methodId === 'SOL') ? 'tsara' : 'hostfi',
-        methodId,
+        hostfiReference: withdrawal.reference,
+        provider: 'hostfi',
+        methodId: effectiveMethodId,
         feeBreakdown: { ...feeBreakdown, networkFee: 0 },
-        country: recipient.country,
+        country: recipient.country || config.country || 'NG',
         explorerUrl: (methodId === 'CRYPTO' || methodId === 'SOL') ? `https://explorer.solana.com/tx/${withdrawal.reference}` : null
       }
     });
-
-    // If local CRYPTO transfer succeeded, we keep the deduction
-    // If it was HostFi and succeeds, same. 
-    // Wait, the balance was already deducted on line 669.
-    // If it was local CRYPTO and completed, we move it out of pending immediately.
-    if (methodId === 'CRYPTO' || methodId === 'SOL') {
-      user.wallet.pendingBalance -= amountInPrimary;
-      // Note: user.wallet.balance was already decremented on line 669
-      await user.save();
-    }
 
     successResponse(res, 201, 'Withdrawal initiated successfully', {
       withdrawal: {
@@ -845,8 +711,8 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
         status: 'pending',
         recipient: {
           accountName: recipient.accountName,
-          accountNumber: recipient.accountNumber,
-          bankName: recipient.bankName
+          accountNumber: recipient.accountNumber || recipient.walletAddress,
+          bankName: recipient.bankName || (methodId === 'CRYPTO' ? 'Solana' : 'HostFi')
         }
       },
       transaction: {

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -23,6 +23,7 @@ interface CryptoAddress {
   address: string;
   network: string;
   currency: string;
+  instructions?: string;
 }
 
 interface FiatChannel {
@@ -30,7 +31,7 @@ interface FiatChannel {
   accountNumber: string;
   accountName: string;
   reference: string;
-  expiresAt: string;
+  currency: string;
 }
 
 export function DepositModal({ isOpen, onClose }: DepositModalProps) {
@@ -47,20 +48,47 @@ export function DepositModal({ isOpen, onClose }: DepositModalProps) {
   const [fiatAmount, setFiatAmount] = useState('');
   const [fiatCurrency, setFiatCurrency] = useState('NGN');
 
-  const handleGetCryptoAddress = async () => {
+  // Fetch existing crypto address when modal opens
+  useEffect(() => {
+    if (isOpen && activeTab === 'crypto' && !cryptoAddress) {
+      fetchCryptoAddress();
+    }
+  }, [isOpen, activeTab]);
+
+  const fetchCryptoAddress = async () => {
     setIsLoading(true);
     try {
-      const response = await api.post('/hostfi/collections/crypto/address');
-      setCryptoAddress(response.data);
-      toast.success('Deposit address generated!');
+      // Try to get existing addresses first
+      const response = await api.get('/hostfi/collections/crypto/addresses');
+      const addresses = response.data?.addresses || [];
+      
+      // Find USDC on Solana address
+      const usdcAddress = addresses.find(
+        (addr: any) => addr.currency === 'USDC' && addr.network === 'SOL'
+      );
+
+      if (usdcAddress) {
+        setCryptoAddress({
+          address: usdcAddress.address,
+          network: 'Solana',
+          currency: 'USDC',
+          instructions: 'Send only USDC on Solana network to this address.',
+        });
+      } else {
+        // Create new address if none exists
+        const createResponse = await api.post('/hostfi/collections/crypto/address');
+        const newAddress = createResponse.data?.address;
+        if (newAddress) {
+          setCryptoAddress({
+            address: newAddress.address,
+            network: newAddress.network || 'Solana',
+            currency: newAddress.currency || 'USDC',
+            instructions: newAddress.instructions || 'Send only USDC on Solana network to this address.',
+          });
+        }
+      }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to generate address');
-      // Mock data for demo
-      setCryptoAddress({
-        address: '7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU',
-        network: 'Solana',
-        currency: 'USDC',
-      });
+      toast.error(error.response?.data?.message || 'Failed to get deposit address');
     } finally {
       setIsLoading(false);
     }
@@ -78,18 +106,20 @@ export function DepositModal({ isOpen, onClose }: DepositModalProps) {
         currency: fiatCurrency,
         amount: parseFloat(fiatAmount),
       });
-      setFiatChannel(response.data);
-      toast.success('Bank account generated!');
+      
+      const channel = response.data?.channel;
+      if (channel) {
+        setFiatChannel({
+          bankName: channel.bankName,
+          accountNumber: channel.accountNumber,
+          accountName: channel.accountName,
+          reference: channel.reference,
+          currency: channel.currency,
+        });
+        toast.success('Bank account generated!');
+      }
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to generate account');
-      // Mock data for demo
-      setFiatChannel({
-        bankName: 'Wema Bank',
-        accountNumber: '1234567890',
-        accountName: 'MyArtelab - John Doe',
-        reference: 'MYA123456789',
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-      });
     } finally {
       setIsLoading(false);
     }
@@ -136,18 +166,26 @@ export function DepositModal({ isOpen, onClose }: DepositModalProps) {
 
             {/* Crypto Deposit */}
             <TabsContent value="crypto" className="space-y-4">
-              {!cryptoAddress ? (
+              {isLoading ? (
+                <div className="text-center py-8">
+                  <Loader2 className="w-8 h-8 animate-spin text-[#8A2BE2] mx-auto mb-4" />
+                  <p className="text-sm text-gray-500">Generating your Solana USDC address...</p>
+                </div>
+              ) : !cryptoAddress ? (
                 <div className="text-center py-6">
                   <img
                     src="/images/crypto-deposit.png"
                     alt="Crypto Deposit"
                     className="w-24 h-24 mx-auto mb-4"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
                   />
                   <p className="text-sm text-gray-500 mb-4">
-                    Generate a Solana USDC address to deposit funds
+                    Get your unique Solana USDC address for deposits
                   </p>
                   <Button
-                    onClick={handleGetCryptoAddress}
+                    onClick={fetchCryptoAddress}
                     disabled={isLoading}
                     className="bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white"
                   >
@@ -156,7 +194,7 @@ export function DepositModal({ isOpen, onClose }: DepositModalProps) {
                     ) : (
                       <Bitcoin className="w-4 h-4 mr-2" />
                     )}
-                    Generate Address
+                    Get Deposit Address
                   </Button>
                 </div>
               ) : (
@@ -166,26 +204,18 @@ export function DepositModal({ isOpen, onClose }: DepositModalProps) {
                       <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
                       <div className="text-sm text-amber-800">
                         <p className="font-medium">Important:</p>
-                        <p>Send only USDC on Solana network. Other tokens may be lost.</p>
+                        <p>Send only USDC on Solana network. Sending other tokens may result in permanent loss.</p>
                       </div>
                     </div>
                   </div>
 
                   <div className="flex justify-center">
                     <div className="p-4 bg-white border rounded-lg">
-                      {/* QR Code placeholder */}
+                      {/* QR Code display */}
                       <div className="w-40 h-40 bg-gray-100 flex items-center justify-center">
                         <div className="text-center">
-                          <div className="grid grid-cols-5 gap-1 w-32 h-32">
-                            {Array.from({ length: 25 }).map((_, i) => (
-                              <div
-                                key={i}
-                                className={`w-full aspect-square ${
-                                  Math.random() > 0.5 ? 'bg-gray-900' : 'bg-white'
-                                }`}
-                              />
-                            ))}
-                          </div>
+                          <Bitcoin className="w-16 h-16 text-[#8A2BE2] mx-auto" />
+                          <p className="text-xs text-gray-500 mt-2">Scan to copy</p>
                         </div>
                       </div>
                     </div>
@@ -215,10 +245,16 @@ export function DepositModal({ isOpen, onClose }: DepositModalProps) {
                     </div>
                   </div>
 
-                  <div className="text-xs text-gray-500 text-center">
-                    Network: {cryptoAddress.network} • Currency:{' '}
-                    {cryptoAddress.currency}
+                  <div className="text-xs text-gray-500 text-center space-y-1">
+                    <p>Network: <span className="font-medium">{cryptoAddress.network}</span></p>
+                    <p>Currency: <span className="font-medium">{cryptoAddress.currency}</span></p>
                   </div>
+
+                  {cryptoAddress.instructions && (
+                    <p className="text-xs text-gray-500 text-center">
+                      {cryptoAddress.instructions}
+                    </p>
+                  )}
                 </div>
               )}
             </TabsContent>
@@ -231,26 +267,39 @@ export function DepositModal({ isOpen, onClose }: DepositModalProps) {
                     src="/images/bank-transfer.png"
                     alt="Bank Transfer"
                     className="w-24 h-24 mx-auto"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
                   />
 
                   <div className="space-y-2">
+                    <Label>Select Currency</Label>
+                    <select
+                      value={fiatCurrency}
+                      onChange={(e) => setFiatCurrency(e.target.value)}
+                      className="w-full px-3 py-2 border rounded-lg bg-white"
+                    >
+                      <option value="NGN">🇳🇬 NGN (Nigerian Naira)</option>
+                      <option value="KES">🇰🇪 KES (Kenyan Shilling)</option>
+                      <option value="GHS">🇬🇭 GHS (Ghanaian Cedi)</option>
+                      <option value="ZAR">🇿🇦 ZAR (South African Rand)</option>
+                      <option value="USD">🇺🇸 USD (US Dollar)</option>
+                      <option value="EUR">🇪🇺 EUR (Euro)</option>
+                      <option value="GBP">🇬🇧 GBP (British Pound)</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-2">
                     <Label>Amount</Label>
-                    <div className="flex gap-2">
-                      <select
-                        value={fiatCurrency}
-                        onChange={(e) => setFiatCurrency(e.target.value)}
-                        className="px-3 py-2 border rounded-lg bg-white"
-                      >
-                        <option value="NGN">NGN</option>
-                        <option value="USD">USD</option>
-                      </select>
-                      <Input
-                        type="number"
-                        placeholder="Enter amount"
-                        value={fiatAmount}
-                        onChange={(e) => setFiatAmount(e.target.value)}
-                      />
-                    </div>
+                    <Input
+                      type="number"
+                      placeholder="Enter amount"
+                      value={fiatAmount}
+                      onChange={(e) => setFiatAmount(e.target.value)}
+                    />
+                    <p className="text-xs text-gray-500">
+                      Minimum: {fiatCurrency === 'NGN' ? '₦1,000' : fiatCurrency === 'KES' ? 'KSh 100' : fiatCurrency === 'GHS' ? 'GH₵ 10' : '$1'}
+                    </p>
                   </div>
 
                   <Button
@@ -263,19 +312,20 @@ export function DepositModal({ isOpen, onClose }: DepositModalProps) {
                     ) : (
                       <Building2 className="w-4 h-4 mr-2" />
                     )}
-                    Generate Account
+                    Generate Bank Account
                   </Button>
 
                   <p className="text-xs text-gray-500 text-center">
-                    A unique bank account will be generated for your deposit
+                    A unique bank account will be generated for your deposit.
+                    Funds will be credited to your wallet instantly.
                   </p>
                 </div>
               ) : (
                 <div className="space-y-4">
                   <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                     <p className="text-sm text-blue-800">
-                      <span className="font-medium">Note:</span> This account expires in 24 hours.
-                      Transfer exactly the amount you specified.
+                      <span className="font-medium">Note:</span> Transfer exactly the amount you specified. 
+                      Use the reference number when making the transfer.
                     </p>
                   </div>
 
@@ -330,12 +380,12 @@ export function DepositModal({ isOpen, onClose }: DepositModalProps) {
                     </div>
 
                     <div className="space-y-1">
-                      <Label className="text-xs text-gray-500">Reference</Label>
+                      <Label className="text-xs text-gray-500">Reference (Important!)</Label>
                       <div className="flex gap-2">
                         <Input
                           value={fiatChannel.reference}
                           readOnly
-                          className="font-mono"
+                          className="font-mono bg-yellow-50"
                         />
                         <Button
                           variant="outline"
@@ -354,8 +404,14 @@ export function DepositModal({ isOpen, onClose }: DepositModalProps) {
                     </div>
                   </div>
 
-                  <div className="text-xs text-gray-500">
-                    Expires: {new Date(fiatChannel.expiresAt).toLocaleString()}
+                  <div className="p-3 bg-gray-100 rounded-lg text-xs text-gray-600">
+                    <p className="font-medium mb-1">How it works:</p>
+                    <ol className="list-decimal list-inside space-y-1">
+                      <li>Copy the account details above</li>
+                      <li>Make a transfer from your bank app</li>
+                      <li>Include the reference number in the transfer description</li>
+                      <li>Your wallet will be credited automatically</li>
+                    </ol>
                   </div>
                 </div>
               )}
