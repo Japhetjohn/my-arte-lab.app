@@ -158,8 +158,9 @@ router.patch('/:id', protect, async (req, res) => {
       });
     }
 
-    // Check if user owns this project
-    if (project.clientId.toString() !== req.user._id.toString()) {
+    // Check if user owns this project (handle both populated and unpopulated cases)
+    const clientId = project.clientId._id ? project.clientId._id.toString() : project.clientId.toString();
+    if (clientId !== req.user._id.toString()) {
       return res.status(403).json({
         success: false,
         message: 'Unauthorized to update this project'
@@ -221,7 +222,7 @@ router.get('/my/posted', protect, async (req, res) => {
   }
 });
 
-// Get applications for a project (project owner only)
+// Get applications for a project (owner sees all, creator sees their own)
 router.get('/:id/applications', protect, async (req, res) => {
   try {
     const project = await Project.findById(req.params.id);
@@ -233,15 +234,29 @@ router.get('/:id/applications', protect, async (req, res) => {
       });
     }
 
-    // Check if user owns this project
-    if (project.clientId.toString() !== req.user._id.toString().toString()) {
+    // Handle both populated and unpopulated clientId
+    const clientId = project.clientId._id ? project.clientId._id.toString() : project.clientId.toString();
+    const isOwner = clientId === req.user._id.toString();
+    const isCreator = req.user.role === 'creator';
+
+    if (!isOwner && !isCreator) {
       return res.status(403).json({
         success: false,
         message: 'Unauthorized to view applications'
       });
     }
 
-    const applications = await Application.findByProject(req.params.id);
+    let applications;
+    if (isOwner) {
+      // Owner sees all applications
+      applications = await Application.findByProject(req.params.id);
+    } else {
+      // Creator sees only their own application
+      applications = await Application.find({ 
+        projectId: req.params.id, 
+        creatorId: req.user._id 
+      }).populate('creatorId', 'firstName lastName name avatar email category portfolio rating isEmailVerified');
+    }
 
     res.json({
       success: true,
@@ -463,8 +478,9 @@ router.patch('/applications/:id', protect, async (req, res) => {
 
       const project = application.projectId;
 
-      // Check if user owns the project
-      if (project.clientId.toString() !== req.user._id.toString()) {
+      // Check if user owns the project (handle both populated and unpopulated cases)
+      const clientId = project.clientId._id ? project.clientId._id.toString() : project.clientId.toString();
+      if (clientId !== req.user._id.toString()) {
         return res.status(403).json({
           success: false,
           message: 'Unauthorized'
@@ -643,9 +659,12 @@ router.post('/:id/messages', protect, async (req, res) => {
       });
     }
 
+    // Handle both populated and unpopulated IDs
+    const clientId = project.clientId._id ? project.clientId._id.toString() : project.clientId.toString();
+    const selectedCreatorId = project.selectedCreatorId?._id ? project.selectedCreatorId._id.toString() : project.selectedCreatorId?.toString();
     const isAuthorized =
-      project.clientId.toString() === req.user._id.toString() ||
-      project.selectedCreatorId?.toString() === req.user._id.toString();
+      clientId === req.user._id.toString() ||
+      selectedCreatorId === req.user._id.toString();
 
     if (!isAuthorized) {
       return res.status(403).json({
@@ -657,9 +676,9 @@ router.post('/:id/messages', protect, async (req, res) => {
     await project.addMessage(req.user._id, message);
 
     // Create notification for the other party
-    const recipient = project.clientId.toString() === req.user._id.toString()
-      ? project.selectedCreatorId
-      : project.clientId;
+    const recipient = clientId === req.user._id.toString()
+      ? (project.selectedCreatorId?._id || project.selectedCreatorId)
+      : (project.clientId?._id || project.clientId);
 
     if (recipient) {
       await Notification.createNotification({

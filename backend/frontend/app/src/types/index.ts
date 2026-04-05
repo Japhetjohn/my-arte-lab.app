@@ -112,7 +112,14 @@ export interface Transaction {
 
 export interface Project {
   id: string;
-  clientId: string;
+  clientId: string | {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    name?: string;
+    avatar?: string;
+    email?: string;
+  };
   title: string;
   description: string;
   category: string;
@@ -120,9 +127,18 @@ export interface Project {
     min: number;
     max: number;
   };
-  status: 'open' | 'in_progress' | 'completed';
+  status: 'open' | 'in_progress' | 'completed' | 'awaiting_payment' | 'delivered';
   createdAt: string;
-  proposals: Proposal[];
+  applicationsCount?: number;
+  selectedCreatorId?: string | {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    name?: string;
+    avatar?: string;
+    category?: string;
+  };
+  proposals?: Proposal[];
 }
 
 export interface Proposal {
@@ -134,6 +150,31 @@ export interface Proposal {
   price: number;
   timeline: string;
   status: 'pending' | 'accepted' | 'rejected';
+  createdAt: string;
+}
+
+export interface Application {
+  id: string;
+  _id?: string;
+  projectId: string | Project;
+  creatorId: string | {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    name?: string;
+    avatar?: string;
+    category?: string;
+    bio?: string;
+    email?: string;
+  };
+  coverLetter: string;
+  proposedBudget: {
+    amount: number;
+    currency: string;
+  };
+  proposedTimeline: string;
+  portfolioLinks?: string[];
+  status: 'pending' | 'accepted' | 'rejected' | 'withdrawn';
   createdAt: string;
 }
 

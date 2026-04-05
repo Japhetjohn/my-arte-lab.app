@@ -30,7 +30,9 @@ class ProjectService {
 
       const project = application.projectId;
 
-      if (project.clientId.toString() !== clientId.toString()) {
+      // Handle both populated and unpopulated clientId
+      const projectClientId = project.clientId._id ? project.clientId._id.toString() : project.clientId.toString();
+      if (projectClientId !== clientId.toString()) {
         throw new ErrorHandler('Unauthorized to accept this application', 403);
       }
 
