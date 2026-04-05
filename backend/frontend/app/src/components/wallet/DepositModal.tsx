@@ -302,7 +302,7 @@ export function DepositModal({ isOpen, onClose }: DepositModalProps) {
                   <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                     <p className="text-sm text-blue-800">
                       <span className="font-medium">Note:</span> Transfer exactly the amount you specified. 
-                      Use the reference number when making the transfer.
+                      Your wallet will be credited automatically.
                     </p>
                   </div>
 
@@ -352,27 +352,6 @@ export function DepositModal({ isOpen, onClose }: DepositModalProps) {
                       <Input value={fiatChannel.accountName} readOnly />
                     </div>
 
-                    <div className="space-y-1">
-                      <Label className="text-xs text-gray-500">Reference (Important!)</Label>
-                      <div className="flex gap-2">
-                        <Input
-                          value={fiatChannel.reference}
-                          readOnly
-                          className="font-mono bg-yellow-50"
-                        />
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => copyToClipboard(fiatChannel.reference, 'Reference')}
-                        >
-                          {copied === 'Reference' ? (
-                            <Check className="w-4 h-4 text-green-500" />
-                          ) : (
-                            <Copy className="w-4 h-4" />
-                          )}
-                        </Button>
-                      </div>
-                    </div>
                   </div>
 
                   <div className="p-3 bg-gray-100 rounded-lg text-xs text-gray-600">
@@ -380,7 +359,6 @@ export function DepositModal({ isOpen, onClose }: DepositModalProps) {
                     <ol className="list-decimal list-inside space-y-1">
                       <li>Copy the account details above</li>
                       <li>Make a transfer from your bank app</li>
-                      <li>Include the reference number in the transfer description</li>
                       <li>Your wallet will be credited automatically</li>
                     </ol>
                   </div>
