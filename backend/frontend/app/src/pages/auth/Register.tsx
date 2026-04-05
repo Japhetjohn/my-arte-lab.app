@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useNavigate } from 'react-router-dom';
@@ -6,10 +6,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 import { PasswordInput } from '@/components/shared/PasswordInput';
 import { AuthLayout } from '@/layouts/AuthLayout';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth, api } from '@/contexts/AuthContext';
 import {
   registerStep1Schema,
   registerStep2Schema,
@@ -21,14 +27,23 @@ import {
 } from '@/lib/validations/authSchemas';
 import { Loader2, User, Mail, Briefcase, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 type Step = 1 | 2 | 3;
 
 export function Register() {
   const navigate = useNavigate();
-  const { register: registerUser } = useAuth();
+  const { register: registerUser, login } = useAuth();
   const [currentStep, setCurrentStep] = useState<Step>(1);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Verification modal state
+  const [showVerifyModal, setShowVerifyModal] = useState(false);
+  const [verifyCode, setVerifyCode] = useState(['', '', '', '', '', '']);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState('');
+  const [registeredPassword, setRegisteredPassword] = useState('');
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Form data state
   const [step1Data, setStep1Data] = useState<RegisterStep1Data | null>(null);
@@ -93,11 +108,69 @@ export function Register() {
         avatar: getAvatarUrl(step2Data.gender),
         coverImage: '/images/hero-bg.jpg', // Default cover image
       });
-      navigate('/verify-email');
+      // Store credentials for auto-login after verification
+      setRegisteredEmail(step1Data.email);
+      setRegisteredPassword(step1Data.password);
+      setShowVerifyModal(true);
     } catch (error) {
       // Error handled in register function
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Handle verification code input
+  const handleCodeChange = (index: number, value: string) => {
+    if (value.length > 1) value = value[0]; // Only allow single digit
+    if (!/^\d*$/.test(value)) return; // Only allow numbers
+
+    const newCode = [...verifyCode];
+    newCode[index] = value;
+    setVerifyCode(newCode);
+
+    // Auto-focus next input
+    if (value && index < 5) {
+      inputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  // Handle backspace
+  const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === 'Backspace' && !verifyCode[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  // Verify email
+  const handleVerify = async () => {
+    const code = verifyCode.join('');
+    if (code.length !== 6) {
+      toast.error('Please enter all 6 digits');
+      return;
+    }
+
+    setIsVerifying(true);
+    try {
+      await api.post('/auth/verify-email', { code });
+      toast.success('Email verified!');
+      
+      // Auto-login after verification
+      await login(registeredEmail, registeredPassword);
+      navigate('/home');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Invalid code');
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  // Resend code
+  const handleResend = async () => {
+    try {
+      await api.post('/auth/resend-verification', { email: registeredEmail });
+      toast.success('Code resent!');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to resend');
     }
   };
 
@@ -518,6 +591,69 @@ export function Register() {
       {currentStep === 1 && renderStep1()}
       {currentStep === 2 && renderStep2()}
       {currentStep === 3 && renderStep3()}
+      
+      {/* Email Verification Modal */}
+      <Dialog open={showVerifyModal} onOpenChange={() => {}}>
+        <DialogContent className="sm:max-w-md" showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle className="text-center text-2xl">Verify Your Email</DialogTitle>
+          </DialogHeader>
+          
+          <div className="py-6">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-[#8A2BE2]/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Mail className="w-8 h-8 text-[#8A2BE2]" />
+              </div>
+              <p className="text-gray-600">
+                Enter the 6-digit code sent to<br />
+                <span className="font-medium text-gray-900">{registeredEmail}</span>
+              </p>
+            </div>
+
+            {/* Code Input */}
+            <div className="flex justify-center gap-2 mb-6">
+              {verifyCode.map((digit, index) => (
+                <Input
+                  key={index}
+                  ref={el => { inputRefs.current[index] = el; }}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={1}
+                  value={digit}
+                  onChange={(e) => handleCodeChange(index, e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(index, e)}
+                  className="w-12 h-14 text-center text-2xl font-bold border-2 focus:border-[#8A2BE2]"
+                />
+              ))}
+            </div>
+
+            <Button
+              onClick={handleVerify}
+              disabled={isVerifying}
+              className="w-full bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white h-12"
+            >
+              {isVerifying ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Verifying...
+                </>
+              ) : (
+                'Verify Email'
+              )}
+            </Button>
+
+            <p className="text-center text-sm text-gray-500 mt-4">
+              Didn't receive the code?{' '}
+              <button
+                onClick={handleResend}
+                className="text-[#8A2BE2] hover:underline font-medium"
+              >
+                Resend
+              </button>
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </AuthLayout>
   );
 }
