@@ -232,11 +232,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Transform data to match backend expectations (flat structure)
       const { location, confirmPassword, agreeToTerms, gender, ...rest } = userData as any;
       
-      // Auto-assign avatar based on gender
+      // Auto-assign avatar based on gender (SWAPPED - avatar-1 is female, avatar-2 is male)
       const getAvatarUrl = (g: string) => {
         switch (g) {
-          case 'male': return '/images/avatar-1.png';
-          case 'female': return '/images/avatar-2.png';
+          case 'male': return '/images/avatar-2.png';
+          case 'female': return '/images/avatar-1.png';
           default: return '/images/avatar-3.png';
         }
       };
@@ -253,22 +253,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         coverImage: getCoverImageUrl(),
       };
 
-      const response = await api.post('/auth/register', transformedData);
-      const { user, token } = response.data.data || response.data;
-
-      sessionStorage.setItem('token', token);
-      sessionStorage.setItem('user', JSON.stringify(user));
-
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-
-      setState({
-        user,
-        isAuthenticated: true,
-        isLoading: false,
-        token,
-      });
-
-      toast.success('Registration successful! Please verify your email.');
+      await api.post('/auth/register', transformedData);
+      
+      // DON'T auto-login - let user verify email first
+      toast.success('Account created! Please check your email for verification code.');
     } catch (error: any) {
       const message = error.response?.data?.error || error.response?.data?.message || 'Registration failed';
       toast.error(message);

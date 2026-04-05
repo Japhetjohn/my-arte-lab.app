@@ -43,7 +43,7 @@ interface Project {
   timeline: string;
   status: 'open' | 'in_progress' | 'completed' | 'cancelled';
   createdAt: string;
-  applicationCount?: number;
+  applicationsCount?: number;
   clientId?: {
     _id: string;
     firstName: string;
@@ -184,7 +184,7 @@ export function Projects() {
               </div>
               <div className="flex items-center gap-1">
                 <Users className="w-4 h-4" />
-                {project.applicationCount || 0} applications
+                {project.applicationsCount || 0} applications
               </div>
             </div>
             <div className="flex items-center gap-2">

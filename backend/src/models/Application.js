@@ -106,7 +106,7 @@ applicationSchema.methods.withdraw = function() {
 // Statics
 applicationSchema.statics.findByProject = function(projectId) {
   return this.find({ projectId })
-    .populate('creatorId', 'name avatar email category portfolio rating isEmailVerified')
+    .populate('creatorId', 'firstName lastName name avatar email category portfolio rating isEmailVerified')
     .sort({ createdAt: -1 });
 };
 
