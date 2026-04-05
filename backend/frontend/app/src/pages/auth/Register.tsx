@@ -237,9 +237,9 @@ export function Register() {
     
     const getAvatarUrl = (g: string) => {
       switch (g) {
-        case 'male': return '/images/avatar-1.png';
-        case 'female': return '/images/avatar-2.png';
-        default: return '/images/avatar-3.png';
+        case 'male': return '/images/avatar-2.png';  // Male avatar
+        case 'female': return '/images/avatar-1.png';  // Female avatar
+        default: return '/images/avatar-3.png';  // Neutral avatar
       }
     };
 
@@ -447,7 +447,8 @@ export function Register() {
         <div className="flex items-start space-x-3">
           <Checkbox
             id="agreeToTerms"
-            {...step3Form.register('agreeToTerms')}
+            checked={step3Form.watch('agreeToTerms')}
+            onCheckedChange={(checked) => step3Form.setValue('agreeToTerms', checked === true, { shouldValidate: true })}
             className="h-5 w-5 mt-0.5 border-2 data-[state=checked]:bg-[#8A2BE2] data-[state=checked]:border-[#8A2BE2]"
           />
           <Label htmlFor="agreeToTerms" className="text-sm font-normal leading-normal cursor-pointer">

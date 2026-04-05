@@ -64,75 +64,77 @@ messageSchema.statics.getConversation = async function(userId1, userId2, options
 
 // Static method to get all conversations for a user
 messageSchema.statics.getConversations = async function(userId) {
-  const conversations = await this.aggregate([
-    {
-      $match: {
-        $or: [
-          { senderId: new mongoose.Types.ObjectId(userId) },
-          { recipientId: new mongoose.Types.ObjectId(userId) }
-        ]
-      }
-    },
-    {
-      $sort: { createdAt: -1 }
-    },
-    {
-      $group: {
-        _id: {
-          $cond: [
-            { $eq: ['$senderId', new mongoose.Types.ObjectId(userId)] },
-            '$recipientId',
-            '$senderId'
-          ]
-        },
-        lastMessage: { $first: '$$ROOT' },
-        unreadCount: {
-          $sum: {
-            $cond: [
-              { 
-                $and: [
-                  { $eq: ['$recipientId', new mongoose.Types.ObjectId(userId)] },
-                  { $eq: ['$read', false] }
-                ]
-              },
-              1,
-              0
-            ]
-          }
-        }
-      }
-    },
-    {
-      $lookup: {
-        from: 'users',
-        localField: '_id',
-        foreignField: '_id',
-        as: 'otherUser'
-      }
-    },
-    {
-      $unwind: '$otherUser'
-    },
-    {
-      $project: {
+  const userObjectId = new mongoose.Types.ObjectId(userId);
+  
+  // Find all messages where user is sender or recipient
+  const messages = await this.find({
+    $or: [
+      { senderId: userObjectId },
+      { recipientId: userObjectId }
+    ]
+  })
+  .sort({ createdAt: -1 })
+  .limit(1000)
+  .lean();
+
+  // Group by conversation partner
+  const conversationMap = new Map();
+  
+  for (const msg of messages) {
+    const otherUserId = msg.senderId.toString() === userId 
+      ? msg.recipientId.toString() 
+      : msg.senderId.toString();
+    
+    if (!conversationMap.has(otherUserId)) {
+      conversationMap.set(otherUserId, {
+        _id: otherUserId,
+        lastMessage: msg,
+        unreadCount: 0
+      });
+    }
+    
+    // Count unread messages
+    if (msg.recipientId.toString() === userId && !msg.read) {
+      conversationMap.get(otherUserId).unreadCount++;
+    }
+  }
+  
+  // Get unique user IDs
+  const userIds = Array.from(conversationMap.keys()).map(id => new mongoose.Types.ObjectId(id));
+  
+  // Fetch user details
+  const users = await mongoose.model('User').find({
+    _id: { $in: userIds }
+  }).select('_id name firstName lastName avatar').lean();
+  
+  // Build final conversations array
+  const conversations = [];
+  for (const [userId, conv] of conversationMap) {
+    const user = users.find(u => u._id.toString() === userId);
+    if (user) {
+      conversations.push({
+        _id: userId,
         otherUser: {
-          _id: 1,
-          name: 1,
-          avatar: 1,
-          isCreator: 1
+          _id: userId,
+          name: user.name,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          avatar: user.avatar
         },
         lastMessage: {
-          content: 1,
-          createdAt: 1,
-          senderId: 1
+          content: conv.lastMessage.content,
+          createdAt: conv.lastMessage.createdAt,
+          senderId: conv.lastMessage.senderId
         },
-        unreadCount: 1
-      }
-    },
-    {
-      $sort: { 'lastMessage.createdAt': -1 }
+        unreadCount: conv.unreadCount
+      });
     }
-  ]);
+  }
+  
+  // Sort by last message date
+  conversations.sort((a, b) => 
+    new Date(b.lastMessage.createdAt).getTime() - new Date(a.lastMessage.createdAt).getTime()
+  );
 
   return conversations;
 };
