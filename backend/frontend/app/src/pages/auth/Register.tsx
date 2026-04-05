@@ -309,9 +309,9 @@ export function Register() {
 
       <p className="text-center text-sm text-gray-600 pt-2">
         Already have an account?{' '}
-        <Link to="/login" className="text-[#8A2BE2] hover:underline font-medium">
+        <a href="/login" className="text-[#8A2BE2] hover:underline font-medium">
           Sign in
-        </Link>
+        </a>
       </p>
     </form>
   );

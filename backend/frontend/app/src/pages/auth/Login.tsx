@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useNavigate, Link } from 'react-router-dom';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
 import { PasswordInput } from '@/components/shared/PasswordInput';
 import { AuthLayout } from '@/layouts/AuthLayout';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,7 +13,6 @@ import { Loader2, Mail } from 'lucide-react';
 
 export function Login() {
   const { login } = useAuth();
-  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
 
   const {
@@ -23,16 +21,13 @@ export function Login() {
     formState: { errors },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
-    defaultValues: {
-      rememberMe: false,
-    },
   });
 
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     try {
-      await login(data.email, data.password, data.rememberMe);
-      navigate('/home');
+      await login(data.email, data.password);
+      window.location.href = '/home'; // Force full page reload
     } catch (error) {
       // Error is handled in login function
     } finally {
@@ -68,12 +63,12 @@ export function Login() {
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label htmlFor="password" className="text-sm sm:text-base">Password</Label>
-            <Link
-              to="/forgot-password"
+            <a
+              href="/forgot-password"
               className="text-sm text-[#8A2BE2] hover:underline"
             >
               Forgot password?
-            </Link>
+            </a>
           </div>
           <PasswordInput
             id="password"
@@ -82,17 +77,6 @@ export function Login() {
             className="h-12 sm:h-11 text-base"
             {...register('password')}
           />
-        </div>
-
-        <div className="flex items-center space-x-2">
-          <Checkbox 
-            id="rememberMe" 
-            {...register('rememberMe')} 
-            className="h-4 w-4 border-2 data-[state=checked]:bg-[#8A2BE2] data-[state=checked]:border-[#8A2BE2]"
-          />
-          <Label htmlFor="rememberMe" className="text-xs font-normal cursor-pointer">
-            Remember me for 30 days
-          </Label>
         </div>
 
         <Button
@@ -112,9 +96,9 @@ export function Login() {
 
         <p className="text-center text-sm text-gray-600 pt-2 sm:pt-4">
           Don't have an account?{' '}
-          <Link to="/register" className="text-[#8A2BE2] hover:underline font-medium">
+          <a href="/register" className="text-[#8A2BE2] hover:underline font-medium">
             Sign up
-          </Link>
+          </a>
         </p>
       </form>
     </AuthLayout>
