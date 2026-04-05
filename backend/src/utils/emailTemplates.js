@@ -487,39 +487,29 @@ const emailTemplates = {
    * Welcome & Email Verification
    */
   welcome: (firstName, verificationCode) => baseTemplate(`
-    <h1 class="greeting">Welcome to MyArteLab, ${firstName}! 🎉</h1>
-    
-    <p class="body-text">
+    <p class="body-text" style="font-size: 18px; margin-bottom: 24px;">
+        Welcome to MyArteLab,<br>
         Your account has been created successfully. We're thrilled to have you join our community of talented creators and clients!
     </p>
 
-    <div class="info-box">
-        <div class="info-box-title">💰 Payment Wallet Ready</div>
-        <p class="info-box-text">
-            Deposit from 65+ countries and receive USDC instantly. Once verified, you can fund your wallet from any supported country.
-        </p>
-    </div>
-
-    <p class="body-text">
-        <strong>Please verify your email address using the code below:</strong>
+    <p class="body-text" style="margin-bottom: 16px;">
+        Please verify your email address using the code below:
     </p>
 
-    <div class="code-container">
+    <div class="code-container" style="margin: 24px 0;">
         <div class="code-label">Verification Code</div>
         <div class="code">${verificationCode}</div>
-        <div class="code-expiry">⏰ Expires in 30 minutes for security</div>
+        <div class="code-expiry">Expires in 30 minutes for security</div>
     </div>
 
-    <p class="body-text">
+    <p class="body-text" style="margin-bottom: 32px;">
         Once verified, you'll have full access to all MyArteLab features including booking creators, managing your portfolio, and processing secure payments.
     </p>
 
-    <div class="signature">
-        <p class="signature-text">
-            Best regards,<br>
-            <span class="signature-team">The MyArteLab Team</span>
-        </p>
-    </div>
+    <p class="body-text" style="margin-top: 32px;">
+        Best regards,<br>
+        <span style="font-weight: 600;">The MyArteLab Team</span>
+    </p>
   `, `Welcome to MyArteLab! Your verification code is ${verificationCode}`, { title: 'Welcome' }),
 
   /**
