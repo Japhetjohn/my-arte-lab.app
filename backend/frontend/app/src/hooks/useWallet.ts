@@ -10,6 +10,7 @@ interface WalletState {
   beneficiaries: Beneficiary[];
   isLoading: boolean;
   error: string | null;
+  balance: number;
 }
 
 export function useWallet() {
@@ -20,18 +21,24 @@ export function useWallet() {
     beneficiaries: [],
     isLoading: false,
     error: null,
+    balance: 0,
   });
 
   const fetchWallet = useCallback(async () => {
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
     try {
       const response = await hostfiWalletService.getWallet();
+      console.log('Wallet response:', response.data);
+      // Backend returns { success: true, data: { wallet: {...} } }
+      const walletData = response.data?.data?.wallet;
       setState((prev) => ({
         ...prev,
-        assets: response.data.assets || [],
+        assets: walletData?.assets || [],
+        balance: walletData?.balance || 0,
         isLoading: false,
       }));
     } catch (error: any) {
+      console.error('Fetch wallet error:', error);
       setState((prev) => ({
         ...prev,
         isLoading: false,
@@ -44,9 +51,10 @@ export function useWallet() {
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
     try {
       const response = await hostfiWalletService.getTransactions(params);
+      // Backend returns { success: true, data: { transactions: [...] } }
       setState((prev) => ({
         ...prev,
-        transactions: response.data.transactions || [],
+        transactions: response.data?.data?.transactions || [],
         isLoading: false,
       }));
     } catch (error: any) {
@@ -63,7 +71,7 @@ export function useWallet() {
       const response = await hostfiWalletService.getBanks(countryCode);
       setState((prev) => ({
         ...prev,
-        banks: response.data.banks || [],
+        banks: response.data?.data?.banks || [],
       }));
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to fetch banks');
@@ -75,7 +83,7 @@ export function useWallet() {
       const response = await hostfiWalletService.getBeneficiaries();
       setState((prev) => ({
         ...prev,
-        beneficiaries: response.data.beneficiaries || [],
+        beneficiaries: response.data?.data?.beneficiaries || [],
       }));
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to fetch beneficiaries');
@@ -147,14 +155,14 @@ export function useWallet() {
   }, [fetchBeneficiaries]);
 
   // Calculate total balance in USD
-  const totalBalanceUSD = state.assets.reduce((sum, asset) => sum + asset.usdEquivalent, 0);
+  const totalBalanceUSD = state.assets.reduce((sum, asset) => sum + (asset.usdEquivalent || 0), 0);
 
   // Get primary asset (USDC or first asset)
   const primaryAsset = state.assets.find((a) => a.currency === 'USDC') || state.assets[0];
 
   return {
     ...state,
-    totalBalanceUSD,
+    totalBalanceUSD: state.balance || totalBalanceUSD,
     primaryAsset,
     fetchWallet,
     fetchTransactions,

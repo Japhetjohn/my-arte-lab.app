@@ -210,7 +210,14 @@ export function Wallet() {
       </Card>
 
       {/* Deposit Modal */}
-      <DepositModal isOpen={addFundsOpen} onClose={() => setAddFundsOpen(false)} />
+      <DepositModal 
+        isOpen={addFundsOpen} 
+        onClose={() => setAddFundsOpen(false)} 
+        onDepositComplete={async () => {
+          await fetchWallet();
+          await fetchTransactions();
+        }}
+      />
 
       {/* Withdrawal Modal */}
       <WithdrawalModal

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -9,14 +9,14 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Copy, Check, Bitcoin, Building2, AlertTriangle, Loader2 } from 'lucide-react';
+import { Copy, Check, Bitcoin, Building2, AlertTriangle, Loader2, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '@/contexts/AuthContext';
-import { SuccessModal } from '@/components/modals/SuccessModal';
 
 interface DepositModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onDepositComplete?: () => void;
 }
 
 interface CryptoAddress {
@@ -34,11 +34,11 @@ interface FiatChannel {
   currency: string;
 }
 
-export function DepositModal({ isOpen, onClose }: DepositModalProps) {
+export function DepositModal({ isOpen, onClose, onDepositComplete }: DepositModalProps) {
   const [activeTab, setActiveTab] = useState('crypto');
   const [isLoading, setIsLoading] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
-  const [showSuccess, setShowSuccess] = useState(false);
 
   // Crypto deposit state
   const [cryptoAddress, setCryptoAddress] = useState<CryptoAddress | null>(null);
@@ -55,14 +55,22 @@ export function DepositModal({ isOpen, onClose }: DepositModalProps) {
     }
   }, [isOpen, activeTab]);
 
+  // Reset state when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setCryptoAddress(null);
+      setFiatChannel(null);
+      setFiatAmount('');
+      setIsProcessing(false);
+    }
+  }, [isOpen]);
+
   const fetchCryptoAddress = async () => {
     setIsLoading(true);
     try {
-      // Create new address via HostFi
       const response = await api.post('/hostfi/collections/crypto/address');
       console.log('Crypto address response:', response.data);
       
-      // Backend returns { success: true, data: { address: {...} } }
       const addressData = response.data?.data?.address;
       
       if (addressData) {
@@ -98,7 +106,6 @@ export function DepositModal({ isOpen, onClose }: DepositModalProps) {
       
       console.log('Fiat channel response:', response.data);
       
-      // Backend returns { success: true, data: { channel: {...} } }
       const channel = response.data?.data?.channel;
       
       if (channel) {
@@ -132,22 +139,69 @@ export function DepositModal({ isOpen, onClose }: DepositModalProps) {
     }
   };
 
+  const handlePaidClick = useCallback(async () => {
+    setIsProcessing(true);
+    toast.info('Processing your deposit... This may take a few minutes.');
+    
+    // Poll for wallet updates every 5 seconds for up to 2 minutes
+    let attempts = 0;
+    const maxAttempts = 24; // 2 minutes (24 * 5 seconds)
+    
+    const checkBalance = setInterval(async () => {
+      attempts++;
+      
+      try {
+        // Trigger wallet refresh via parent
+        if (onDepositComplete) {
+          await onDepositComplete();
+        }
+        
+        if (attempts >= maxAttempts) {
+          clearInterval(checkBalance);
+          setIsProcessing(false);
+          toast.success('Deposit is being processed. Your wallet will update shortly.');
+          handleClose();
+        }
+      } catch (error) {
+        console.error('Error checking balance:', error);
+      }
+    }, 5000);
+    
+    // Clean up on unmount
+    return () => clearInterval(checkBalance);
+  }, [onDepositComplete]);
+
   const handleClose = () => {
     setCryptoAddress(null);
     setFiatChannel(null);
     setFiatAmount('');
-    setShowSuccess(false);
+    setIsProcessing(false);
     onClose();
   };
 
   return (
-    <>
-      <Dialog open={isOpen} onOpenChange={handleClose}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Add Funds</DialogTitle>
-          </DialogHeader>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Add Funds</DialogTitle>
+        </DialogHeader>
 
+        {isProcessing ? (
+          <div className="py-8 text-center space-y-4">
+            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
+              <Clock className="w-8 h-8 text-blue-600 animate-pulse" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900">Processing Deposit</h3>
+            <p className="text-sm text-gray-500">
+              We&apos;re confirming your deposit. This usually takes 1-5 minutes.
+              Please don&apos;t close this window.
+            </p>
+            <div className="flex items-center justify-center gap-2 text-sm text-blue-600">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Checking for funds...
+            </div>
+          </div>
+        ) : (
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="crypto">
@@ -216,6 +270,14 @@ export function DepositModal({ isOpen, onClose }: DepositModalProps) {
                     <p>Network: <span className="font-medium">{cryptoAddress.network}</span></p>
                     <p>Currency: <span className="font-medium">{cryptoAddress.currency}</span></p>
                   </div>
+
+                  <Button
+                    onClick={handlePaidClick}
+                    className="w-full bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    <Check className="w-4 h-4 mr-2" />
+                    I&apos;ve Made the Transfer
+                  </Button>
                 </div>
               ) : (
                 <div className="text-center py-6">
@@ -351,14 +413,22 @@ export function DepositModal({ isOpen, onClose }: DepositModalProps) {
                       <Label className="text-xs text-gray-500">Account Name</Label>
                       <Input value={fiatChannel.accountName} readOnly />
                     </div>
-
                   </div>
+
+                  <Button
+                    onClick={handlePaidClick}
+                    className="w-full bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    <Check className="w-4 h-4 mr-2" />
+                    I&apos;ve Made the Transfer
+                  </Button>
 
                   <div className="p-3 bg-gray-100 rounded-lg text-xs text-gray-600">
                     <p className="font-medium mb-1">How it works:</p>
                     <ol className="list-decimal list-inside space-y-1">
                       <li>Copy the account details above</li>
                       <li>Make a transfer from your bank app</li>
+                      <li>Click &quot;I&apos;ve Made the Transfer&quot; when done</li>
                       <li>Your wallet will be credited automatically</li>
                     </ol>
                   </div>
@@ -366,17 +436,8 @@ export function DepositModal({ isOpen, onClose }: DepositModalProps) {
               )}
             </TabsContent>
           </Tabs>
-        </DialogContent>
-      </Dialog>
-
-      <SuccessModal
-        isOpen={showSuccess}
-        onClose={handleClose}
-        title="Deposit Initiated!"
-        message="Your deposit has been initiated. Funds will appear in your wallet once confirmed."
-        actionLabel="Done"
-        onAction={handleClose}
-      />
-    </>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
