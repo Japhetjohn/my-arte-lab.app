@@ -50,8 +50,8 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
       return;
     }
 
-    if (amount < 10) {
-      toast.error('Minimum booking amount is $10');
+    if (amount < 1) {
+      toast.error('Minimum booking amount is $1');
       return;
     }
 
@@ -143,7 +143,7 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
               />
             </div>
             <p className="text-xs text-gray-500">
-              Minimum $10. Platform fee (10%) will be deducted.
+              Minimum $1. Platform fee (10%) will be deducted.
             </p>
           </div>
 

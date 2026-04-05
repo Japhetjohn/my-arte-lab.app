@@ -145,8 +145,8 @@ exports.validateReview = [
 exports.validateWithdrawal = [
   body('amount')
     .notEmpty().withMessage('Amount is required')
-    .isFloat({ min: parseFloat(process.env.MINIMUM_WITHDRAWAL) || 20 })
-    .withMessage(`Minimum withdrawal amount is ${process.env.MINIMUM_WITHDRAWAL || 20}`),
+    .isFloat({ min: parseFloat(process.env.MINIMUM_WITHDRAWAL) || 1 })
+    .withMessage(`Minimum withdrawal amount is ${process.env.MINIMUM_WITHDRAWAL || 1} USDC`),
 
   body('externalAddress')
     .notEmpty().withMessage('Withdrawal address is required')

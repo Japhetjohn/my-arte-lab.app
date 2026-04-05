@@ -120,7 +120,7 @@ export function Wallet() {
                 usdcTransactions.map(renderTransaction)
               ) : (
                 <EmptyState
-                  icon="wallet"
+                  image="/images/empty-wallet.png"
                   title="No transactions yet"
                   description="Your USDC transaction history will appear here"
                 />
@@ -134,7 +134,7 @@ export function Wallet() {
                   .map(renderTransaction)
               ) : (
                 <EmptyState
-                  icon="wallet"
+                  image="/images/empty-wallet.png"
                   title="No deposits yet"
                   description="Your USDC deposits will appear here"
                 />
@@ -148,7 +148,7 @@ export function Wallet() {
                   .map(renderTransaction)
               ) : (
                 <EmptyState
-                  icon="wallet"
+                  image="/images/empty-wallet.png"
                   title="No payments yet"
                   description="Your USDC payments will appear here"
                 />
@@ -163,7 +163,7 @@ export function Wallet() {
                   .map(renderTransaction)
               ) : (
                 <EmptyState
-                  icon="wallet"
+                  image="/images/empty-wallet.png"
                   title="No withdrawals yet"
                   description="Your USDC withdrawals will appear here"
                 />
