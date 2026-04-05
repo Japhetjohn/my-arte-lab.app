@@ -10,7 +10,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   Building2,
-  Smartphone,
   Bitcoin,
   ArrowRight,
   ArrowLeft,
@@ -31,7 +30,7 @@ interface WithdrawalModalProps {
 }
 
 type WithdrawalStep = 'method' | 'details' | 'amount' | 'confirm';
-type WithdrawalMethod = 'bank' | 'mobile_money' | 'crypto';
+type WithdrawalMethod = 'bank' | 'crypto';
 
 interface Bank {
   id: string;
@@ -49,16 +48,6 @@ const METHODS = [
     maxAmount: 10000000,
     processingTime: '1-2 business days',
     icon: Building2,
-  },
-  {
-    id: 'mobile_money' as WithdrawalMethod,
-    name: 'Mobile Money',
-    description: 'Send to mobile money wallet',
-    fee: 0.015,
-    minAmount: 100,
-    maxAmount: 500000,
-    processingTime: 'Instant',
-    icon: Smartphone,
   },
   {
     id: 'crypto' as WithdrawalMethod,
@@ -93,16 +82,11 @@ export function WithdrawalModal({
   const [accountName, setAccountName] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
 
-  // Mobile money state
-  const [provider, setProvider] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
-
   // Crypto state
   const [walletAddress, setWalletAddress] = useState('');
 
   // Amount state
   const [amount, setAmount] = useState('');
-  const [targetCurrency, setTargetCurrency] = useState('NGN');
 
   const methodConfig = METHODS.find((m) => m.id === method);
 
@@ -174,10 +158,6 @@ export function WithdrawalModal({
       toast.error('Please verify your account first');
       return;
     }
-    if (method === 'mobile_money' && (!provider || !phoneNumber)) {
-      toast.error('Please fill in all fields');
-      return;
-    }
     if (method === 'crypto' && !walletAddress) {
       toast.error('Please enter a wallet address');
       return;
@@ -210,7 +190,6 @@ export function WithdrawalModal({
       const payload: any = {
         amount: parseFloat(amount),
         currency,
-        targetCurrency,
       };
 
       if (method === 'bank') {
@@ -223,15 +202,6 @@ export function WithdrawalModal({
           country: 'NG',
           type: 'BANK',
         };
-      } else if (method === 'mobile_money') {
-        payload.methodId = 'MOBILE_MONEY';
-        payload.recipient = {
-          accountNumber: phoneNumber,
-          accountName: phoneNumber,
-          country: 'NG',
-          type: 'MOMO',
-        };
-        payload.targetCurrency = targetCurrency || 'NGN';
       } else if (method === 'crypto') {
         payload.methodId = 'CRYPTO';
         payload.recipient = {
@@ -261,8 +231,6 @@ export function WithdrawalModal({
     setBankName('');
     setAccountNumber('');
     setAccountName('');
-    setProvider('');
-    setPhoneNumber('');
     setWalletAddress('');
     setAmount('');
     setTransactionStatus(null);
@@ -363,55 +331,6 @@ export function WithdrawalModal({
               </p>
             </div>
           )}
-        </div>
-      )}
-
-      {method === 'mobile_money' && (
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label>Target Currency</Label>
-            <select
-              value={targetCurrency}
-              onChange={(e) => setTargetCurrency(e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg bg-white"
-            >
-              <option value="NGN">🇳🇬 NGN - Nigeria</option>
-              <option value="KES">🇰🇪 KES - Kenya</option>
-              <option value="GHS">🇬🇭 GHS - Ghana</option>
-              <option value="TZS">🇹🇿 TZS - Tanzania</option>
-              <option value="UGX">🇺🇬 UGX - Uganda</option>
-            </select>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Mobile Network</Label>
-            <div className="grid grid-cols-2 gap-2">
-              {['mtn', 'airtel', 'glo', '9mobile'].map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setProvider(p)}
-                  className={`p-3 border rounded-lg capitalize text-sm font-medium transition-all ${
-                    provider === p
-                      ? 'border-[#8A2BE2] bg-[#8A2BE2]/10 text-[#8A2BE2]'
-                      : 'hover:border-gray-400'
-                  }`}
-                >
-                  {p === '9mobile' ? '9mobile' : p}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Phone Number</Label>
-            <Input
-              type="tel"
-              placeholder="08012345678"
-              value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, '').slice(0, 11))}
-              maxLength={11}
-            />
-          </div>
         </div>
       )}
 
@@ -535,19 +454,6 @@ export function WithdrawalModal({
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Account</span>
               <span className="font-medium">{accountName}</span>
-            </div>
-          </>
-        )}
-
-        {method === 'mobile_money' && (
-          <>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Provider</span>
-              <span className="font-medium capitalize">{provider}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Phone</span>
-              <span className="font-medium">{phoneNumber}</span>
             </div>
           </>
         )}

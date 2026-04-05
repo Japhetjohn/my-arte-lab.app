@@ -12,6 +12,7 @@ ssh ${VPS_USER}@${VPS_IP} << 'REMOTE_SCRIPT'
   echo "📥 Pulling latest code from git..."
   cd /var/www/myartelab
   git reset --hard HEAD
+  git clean -fd
   git pull origin main
   
   echo ""
