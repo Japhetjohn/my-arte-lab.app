@@ -99,8 +99,11 @@ export function WithdrawalModal({
   const fetchBanks = async () => {
     try {
       const response = await api.get('/hostfi/banks/NG');
-      setBanks(response.data?.banks || []);
+      console.log('Banks response:', response.data);
+      // Backend returns { success: true, data: { banks: [...] } }
+      setBanks(response.data?.data?.banks || []);
     } catch (error: any) {
+      console.error('Fetch banks error:', error);
       toast.error('Failed to load banks');
     }
   };
@@ -116,7 +119,8 @@ export function WithdrawalModal({
         accountNumber,
       });
       
-      const accountInfo = response.data?.account;
+      // Backend returns { success: true, data: { account: {...} } }
+      const accountInfo = response.data?.data?.account;
       if (accountInfo?.accountName) {
         setAccountName(accountInfo.accountName);
         toast.success('Account verified!');
@@ -212,11 +216,17 @@ export function WithdrawalModal({
         };
       }
 
+      console.log('Withdrawal payload:', payload);
       const response = await api.post('/hostfi/withdrawal/initiate', payload);
-      setTransactionReference(response.data?.withdrawal?.reference || '');
+      console.log('Withdrawal response:', response.data);
+      
+      // Backend returns { success: true, data: { withdrawal: {...} } }
+      const reference = response.data?.data?.withdrawal?.reference;
+      setTransactionReference(reference || '');
       setTransactionStatus('completed');
       setShowSuccess(true);
     } catch (error: any) {
+      console.error('Withdrawal error:', error);
       setTransactionStatus('failed');
       toast.error(error.response?.data?.message || 'Withdrawal failed');
     } finally {

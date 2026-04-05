@@ -50,7 +50,7 @@ export function DepositModal({ isOpen, onClose }: DepositModalProps) {
 
   // Fetch existing crypto address when modal opens
   useEffect(() => {
-    if (isOpen && activeTab === 'crypto' && !cryptoAddress) {
+    if (isOpen && activeTab === 'crypto') {
       fetchCryptoAddress();
     }
   }, [isOpen, activeTab]);
@@ -58,36 +58,25 @@ export function DepositModal({ isOpen, onClose }: DepositModalProps) {
   const fetchCryptoAddress = async () => {
     setIsLoading(true);
     try {
-      // Try to get existing addresses first
-      const response = await api.get('/hostfi/collections/crypto/addresses');
-      const addresses = response.data?.addresses || [];
+      // Create new address via HostFi
+      const response = await api.post('/hostfi/collections/crypto/address');
+      console.log('Crypto address response:', response.data);
       
-      // Find USDC on Solana address
-      const usdcAddress = addresses.find(
-        (addr: any) => addr.currency === 'USDC' && addr.network === 'SOL'
-      );
-
-      if (usdcAddress) {
+      // Backend returns { success: true, data: { address: {...} } }
+      const addressData = response.data?.data?.address;
+      
+      if (addressData) {
         setCryptoAddress({
-          address: usdcAddress.address,
-          network: 'Solana',
-          currency: 'USDC',
-          instructions: 'Send only USDC on Solana network to this address.',
+          address: addressData.address,
+          network: addressData.network || 'Solana',
+          currency: addressData.currency || 'USDC',
+          instructions: addressData.instructions || 'Send only USDC on Solana network to this address.',
         });
       } else {
-        // Create new address if none exists
-        const createResponse = await api.post('/hostfi/collections/crypto/address');
-        const newAddress = createResponse.data?.address;
-        if (newAddress) {
-          setCryptoAddress({
-            address: newAddress.address,
-            network: newAddress.network || 'Solana',
-            currency: newAddress.currency || 'USDC',
-            instructions: newAddress.instructions || 'Send only USDC on Solana network to this address.',
-          });
-        }
+        toast.error('Invalid response from server');
       }
     } catch (error: any) {
+      console.error('Crypto address error:', error);
       toast.error(error.response?.data?.message || 'Failed to get deposit address');
     } finally {
       setIsLoading(false);
@@ -107,7 +96,11 @@ export function DepositModal({ isOpen, onClose }: DepositModalProps) {
         amount: parseFloat(fiatAmount),
       });
       
-      const channel = response.data?.channel;
+      console.log('Fiat channel response:', response.data);
+      
+      // Backend returns { success: true, data: { channel: {...} } }
+      const channel = response.data?.data?.channel;
+      
       if (channel) {
         setFiatChannel({
           bankName: channel.bankName,
@@ -117,8 +110,11 @@ export function DepositModal({ isOpen, onClose }: DepositModalProps) {
           currency: channel.currency,
         });
         toast.success('Bank account generated!');
+      } else {
+        toast.error('Invalid response from server');
       }
     } catch (error: any) {
+      console.error('Fiat channel error:', error);
       toast.error(error.response?.data?.message || 'Failed to generate account');
     } finally {
       setIsLoading(false);
@@ -171,33 +167,7 @@ export function DepositModal({ isOpen, onClose }: DepositModalProps) {
                   <Loader2 className="w-8 h-8 animate-spin text-[#8A2BE2] mx-auto mb-4" />
                   <p className="text-sm text-gray-500">Generating your Solana USDC address...</p>
                 </div>
-              ) : !cryptoAddress ? (
-                <div className="text-center py-6">
-                  <img
-                    src="/images/crypto-deposit.png"
-                    alt="Crypto Deposit"
-                    className="w-24 h-24 mx-auto mb-4"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = 'none';
-                    }}
-                  />
-                  <p className="text-sm text-gray-500 mb-4">
-                    Get your unique Solana USDC address for deposits
-                  </p>
-                  <Button
-                    onClick={fetchCryptoAddress}
-                    disabled={isLoading}
-                    className="bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white"
-                  >
-                    {isLoading ? (
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    ) : (
-                      <Bitcoin className="w-4 h-4 mr-2" />
-                    )}
-                    Get Deposit Address
-                  </Button>
-                </div>
-              ) : (
+              ) : cryptoAddress ? (
                 <div className="space-y-4">
                   <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
                     <div className="flex items-start gap-2">
@@ -211,11 +181,10 @@ export function DepositModal({ isOpen, onClose }: DepositModalProps) {
 
                   <div className="flex justify-center">
                     <div className="p-4 bg-white border rounded-lg">
-                      {/* QR Code display */}
                       <div className="w-40 h-40 bg-gray-100 flex items-center justify-center">
                         <div className="text-center">
                           <Bitcoin className="w-16 h-16 text-[#8A2BE2] mx-auto" />
-                          <p className="text-xs text-gray-500 mt-2">Scan to copy</p>
+                          <p className="text-xs text-gray-500 mt-2">USDC on Solana</p>
                         </div>
                       </div>
                     </div>
@@ -232,9 +201,7 @@ export function DepositModal({ isOpen, onClose }: DepositModalProps) {
                       <Button
                         variant="outline"
                         size="icon"
-                        onClick={() =>
-                          copyToClipboard(cryptoAddress.address, 'Address')
-                        }
+                        onClick={() => copyToClipboard(cryptoAddress.address, 'Address')}
                       >
                         {copied === 'Address' ? (
                           <Check className="w-4 h-4 text-green-500" />
@@ -249,12 +216,27 @@ export function DepositModal({ isOpen, onClose }: DepositModalProps) {
                     <p>Network: <span className="font-medium">{cryptoAddress.network}</span></p>
                     <p>Currency: <span className="font-medium">{cryptoAddress.currency}</span></p>
                   </div>
-
-                  {cryptoAddress.instructions && (
-                    <p className="text-xs text-gray-500 text-center">
-                      {cryptoAddress.instructions}
-                    </p>
-                  )}
+                </div>
+              ) : (
+                <div className="text-center py-6">
+                  <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Bitcoin className="w-12 h-12 text-[#8A2BE2]" />
+                  </div>
+                  <p className="text-sm text-gray-500 mb-4">
+                    Get your unique Solana USDC address for deposits
+                  </p>
+                  <Button
+                    onClick={fetchCryptoAddress}
+                    disabled={isLoading}
+                    className="bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white"
+                  >
+                    {isLoading ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Bitcoin className="w-4 h-4 mr-2" />
+                    )}
+                    Get Deposit Address
+                  </Button>
                 </div>
               )}
             </TabsContent>
@@ -263,14 +245,9 @@ export function DepositModal({ isOpen, onClose }: DepositModalProps) {
             <TabsContent value="fiat" className="space-y-4">
               {!fiatChannel ? (
                 <div className="space-y-4">
-                  <img
-                    src="/images/bank-transfer.png"
-                    alt="Bank Transfer"
-                    className="w-24 h-24 mx-auto"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = 'none';
-                    }}
-                  />
+                  <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto">
+                    <Building2 className="w-12 h-12 text-[#8A2BE2]" />
+                  </div>
 
                   <div className="space-y-2">
                     <Label>Select Currency</Label>
@@ -337,9 +314,7 @@ export function DepositModal({ isOpen, onClose }: DepositModalProps) {
                         <Button
                           variant="outline"
                           size="icon"
-                          onClick={() =>
-                            copyToClipboard(fiatChannel.bankName, 'Bank')
-                          }
+                          onClick={() => copyToClipboard(fiatChannel.bankName, 'Bank')}
                         >
                           {copied === 'Bank' ? (
                             <Check className="w-4 h-4 text-green-500" />
@@ -361,9 +336,7 @@ export function DepositModal({ isOpen, onClose }: DepositModalProps) {
                         <Button
                           variant="outline"
                           size="icon"
-                          onClick={() =>
-                            copyToClipboard(fiatChannel.accountNumber, 'Account')
-                          }
+                          onClick={() => copyToClipboard(fiatChannel.accountNumber, 'Account')}
                         >
                           {copied === 'Account' ? (
                             <Check className="w-4 h-4 text-green-500" />
@@ -390,9 +363,7 @@ export function DepositModal({ isOpen, onClose }: DepositModalProps) {
                         <Button
                           variant="outline"
                           size="icon"
-                          onClick={() =>
-                            copyToClipboard(fiatChannel.reference, 'Reference')
-                          }
+                          onClick={() => copyToClipboard(fiatChannel.reference, 'Reference')}
                         >
                           {copied === 'Reference' ? (
                             <Check className="w-4 h-4 text-green-500" />
