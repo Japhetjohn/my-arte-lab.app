@@ -643,12 +643,13 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
       // For bank transfers to Nigeria, we need to check methods with targetCurrency=NGN
       // The source currency might be USDC but target should be NGN for bank payouts
       const methodQueryCurrency = isCrypto ? currency : (targetCurrency || config.fiatCurrency || 'NGN');
+      console.log(`[Withdrawal] Querying HostFi methods for ${currency}->${methodQueryCurrency}`);
+      
       const methods = await hostfiService.getWithdrawalMethods(currency, methodQueryCurrency);
-      console.log(`[Withdrawal] Available HostFi methods for ${currency}->${methodQueryCurrency}:`, methods.map(m => ({ type: m.type, enabled: m.enabled, source: m.sourceCurrency, target: m.targetCurrency })));
+      console.log(`[Withdrawal] Available HostFi methods (${methods.length}):`, methods.map(m => ({ type: m.type, enabled: m.enabled, source: m.sourceCurrency, target: m.targetCurrency })));
       
       // Find matching method based on type field
       const isBankTransfer = effectiveMethodId === 'BANK_TRANSFER' || effectiveMethodId === 'EFT';
-      const isCrypto = effectiveMethodId === 'CRYPTO' || effectiveMethodId === 'SOL';
       
       const matchingMethod = methods.find(m => {
         if (!m.enabled) return false;
@@ -660,12 +661,19 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
       if (matchingMethod) {
         hostFiMethodId = matchingMethod.type; // Use 'type' field as methodId
         console.log(`[Withdrawal] Found matching HostFi method: ${hostFiMethodId}`);
+      } else if (methods.length > 0) {
+        // If no match but methods exist, use first enabled one as fallback
+        const firstEnabled = methods.find(m => m.enabled);
+        if (firstEnabled) {
+          console.log(`[Withdrawal] No exact match, falling back to: ${firstEnabled.type}`);
+          hostFiMethodId = firstEnabled.type;
+        }
       } else {
-        // Don't fallback to wrong method type - use the requested methodId
-        console.log(`[Withdrawal] No matching HostFi method found, using requested: ${hostFiMethodId}`);
+        console.log(`[Withdrawal] No methods returned from HostFi, using requested: ${hostFiMethodId}`);
       }
     } catch (methodError) {
-      console.warn(`[Withdrawal] Could not fetch HostFi methods, using default: ${hostFiMethodId}`);
+      console.error(`[Withdrawal] Could not fetch HostFi methods:`, methodError.message);
+      console.log(`[Withdrawal] Using default methodId: ${hostFiMethodId}`);
     }
 
     // Use HostFi for ALL withdrawals (crypto and fiat)
