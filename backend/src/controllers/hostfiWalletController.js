@@ -570,8 +570,6 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Valid amount is required', 400));
   }
 
-  const isCrypto = effectiveMethodId === 'CRYPTO' || effectiveMethodId === 'SOL';
-
   // Basic validation based on method
   if (!recipient) {
     return next(new ErrorHandler('Recipient details are required', 400));
