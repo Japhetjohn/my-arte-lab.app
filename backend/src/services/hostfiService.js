@@ -868,12 +868,32 @@ class HostFiService {
           category: 'SWAP'
         });
 
+        console.log(`[HostFi Service] Swap result:`, JSON.stringify(swapResult, null, 2));
+
         // Update parameters for final payout
         effectiveAssetId = targetAsset.id || targetAsset.assetId;
-        effectiveAmount = swapResult.data?.targetAmount?.value || swapResult.targetAmount?.value || effectiveAmount;
+        
+        // Extract target amount from swap response - handle various response structures
+        let swappedAmount = swapResult.data?.targetAmount?.value || 
+                           swapResult.data?.amount?.value ||
+                           swapResult.targetAmount?.value || 
+                           swapResult.amount?.value;
+        
+        // Validate swap actually happened (amount should be different for different currencies)
+        if (!swappedAmount || swappedAmount === swapAmount) {
+          console.warn(`[HostFi Service] Swap may have failed - amount unchanged. Response:`, JSON.stringify(swapResult));
+          throw new Error(`Swap failed: Could not convert ${swapAmount} ${sourceCurrency} to ${targetCurrency}. Please try again.`);
+        }
+        
+        effectiveAmount = swappedAmount;
         effectiveCurrency = targetCurrency;
 
-        console.log(`[HostFi Service] Swap successful. Payout will proceed with ${effectiveAmount} ${effectiveCurrency}`);
+        console.log(`[HostFi Service] Swap successful. ${swapAmount} ${sourceCurrency} → ${effectiveAmount} ${effectiveCurrency}`);
+        
+        // Validate minimum payout amount for NGN
+        if (targetCurrency === 'NGN' && effectiveAmount < 100) {
+          throw new Error(`Minimum withdrawal amount is ₦100 NGN. You attempted to withdraw ₦${effectiveAmount.toFixed(2)}. Please add more USDC to your wallet.`);
+        }
       }
 
       const config = this.getCurrencyConfig(effectiveCurrency);
