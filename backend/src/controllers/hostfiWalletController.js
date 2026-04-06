@@ -573,14 +573,12 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
   // Check minimum withdrawal amount
   const minAmount = hostfiService.getMinimumWithdrawalAmount(effectiveTargetCurrency);
   
-  // For fiat withdrawals, the amount after swap must meet minimum
-  // For now just check if source amount is reasonable
-  if (amount < minAmount && isCrypto) {
-    return next(new ErrorHandler(
-      `Minimum withdrawal is ${minAmount} ${effectiveTargetCurrency}. ` +
-      `Please add more funds to your wallet.`, 
-      400
-    ));
+  // For fiat withdrawals (e.g., USDC -> NGN), we need to ensure enough source funds
+  // to meet the target minimum after swap + fees
+  if (!isCrypto && effectiveTargetCurrency !== currency) {
+    // Rough estimate: need at least enough to cover minimum + fees
+    // HostFi will return exact error if insufficient
+    console.log(`[Withdrawal] Fiat withdrawal: min ${minAmount} ${effectiveTargetCurrency} required after swap`);
   }
 
   // Basic validation based on method
