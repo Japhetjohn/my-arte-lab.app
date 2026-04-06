@@ -1004,28 +1004,33 @@ class HostFiService {
   getCurrencyConfig(currency) {
     const mapping = {
       // African Countries
-      'NGN': { country: 'NG', method: 'BANK_TRANSFER' },
-      'KES': { country: 'KE', method: 'MOBILE_MONEY' },
-      'GHS': { country: 'GH', method: 'MOBILE_MONEY' },
-      'ZAR': { country: 'ZA', method: 'EFT' },
-      'TZS': { country: 'TZ', method: 'MOBILE_MONEY' },
-      'UGX': { country: 'UG', method: 'MOBILE_MONEY' },
-      'ZMW': { country: 'ZM', method: 'MOBILE_MONEY' },
-      'RWF': { country: 'RW', method: 'MOBILE_MONEY' },
-      'XOF': { country: 'SN', method: 'MOBILE_MONEY' },
-      'XAF': { country: 'CM', method: 'MOBILE_MONEY' },
-      'EGP': { country: 'EG', method: 'BANK_TRANSFER' },
+      'NGN': { country: 'NG', method: 'BANK_TRANSFER', fiatCurrency: 'NGN' },
+      'KES': { country: 'KE', method: 'MOBILE_MONEY', fiatCurrency: 'KES' },
+      'GHS': { country: 'GH', method: 'MOBILE_MONEY', fiatCurrency: 'GHS' },
+      'ZAR': { country: 'ZA', method: 'EFT', fiatCurrency: 'ZAR' },
+      'TZS': { country: 'TZ', method: 'MOBILE_MONEY', fiatCurrency: 'TZS' },
+      'UGX': { country: 'UG', method: 'MOBILE_MONEY', fiatCurrency: 'UGX' },
+      'ZMW': { country: 'ZM', method: 'MOBILE_MONEY', fiatCurrency: 'ZMW' },
+      'RWF': { country: 'RW', method: 'MOBILE_MONEY', fiatCurrency: 'RWF' },
+      'XOF': { country: 'SN', method: 'MOBILE_MONEY', fiatCurrency: 'XOF' },
+      'XAF': { country: 'CM', method: 'MOBILE_MONEY', fiatCurrency: 'XAF' },
+      'EGP': { country: 'EG', method: 'BANK_TRANSFER', fiatCurrency: 'EGP' },
 
       // Major Currencies
-      'USD': { country: 'US', method: 'BANK_TRANSFER' },
-      'EUR': { country: 'FR', method: 'BANK_TRANSFER' },
-      'GBP': { country: 'GB', method: 'BANK_TRANSFER' },
-      'CAD': { country: 'CA', method: 'BANK_TRANSFER' },
-      'AUD': { country: 'AU', method: 'BANK_TRANSFER' },
-      'JPY': { country: 'JP', method: 'BANK_TRANSFER' }
+      'USD': { country: 'US', method: 'BANK_TRANSFER', fiatCurrency: 'USD' },
+      'EUR': { country: 'FR', method: 'BANK_TRANSFER', fiatCurrency: 'EUR' },
+      'GBP': { country: 'GB', method: 'BANK_TRANSFER', fiatCurrency: 'GBP' },
+      'CAD': { country: 'CA', method: 'BANK_TRANSFER', fiatCurrency: 'CAD' },
+      'AUD': { country: 'AU', method: 'BANK_TRANSFER', fiatCurrency: 'AUD' },
+      'JPY': { country: 'JP', method: 'BANK_TRANSFER', fiatCurrency: 'JPY' },
+
+      // Crypto currencies (default to NGN for off-ramp)
+      'USDC': { country: 'NG', method: 'BANK_TRANSFER', fiatCurrency: 'NGN' },
+      'USDT': { country: 'NG', method: 'BANK_TRANSFER', fiatCurrency: 'NGN' },
+      'SOL': { country: 'NG', method: 'CRYPTO', fiatCurrency: 'NGN' }
     };
 
-    return mapping[currency] || { country: 'NG', method: 'BANK_TRANSFER' };
+    return mapping[currency] || { country: 'NG', method: 'BANK_TRANSFER', fiatCurrency: 'NGN' };
   }
 
   // CURRENCY & RATES
