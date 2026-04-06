@@ -635,30 +635,35 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
 
   try {
     // Get the correct methodId from HostFi
+    // HostFi API uses 'type' field as the method identifier (not 'id')
     let hostFiMethodId = effectiveMethodId;
     
     // Fetch available withdrawal methods from HostFi
     try {
       const methods = await hostfiService.getWithdrawalMethods(currency, effectiveTargetCurrency);
-      console.log(`[Withdrawal] Available HostFi methods:`, methods.map(m => ({ id: m.id, name: m.name, type: m.type })));
+      console.log(`[Withdrawal] Available HostFi methods:`, methods.map(m => ({ type: m.type, enabled: m.enabled, source: m.sourceCurrency, target: m.targetCurrency })));
       
-      // Find matching method based on type
+      // Find matching method based on type field
       const isBankTransfer = effectiveMethodId === 'BANK_TRANSFER' || effectiveMethodId === 'EFT';
       const isCrypto = effectiveMethodId === 'CRYPTO' || effectiveMethodId === 'SOL';
       
       const matchingMethod = methods.find(m => {
-        if (isBankTransfer && (m.type === 'BANK' || m.name?.toLowerCase().includes('bank'))) return true;
-        if (isCrypto && (m.type === 'CRYPTO' || m.name?.toLowerCase().includes('crypto'))) return true;
-        return m.id === effectiveMethodId;
+        if (!m.enabled) return false;
+        if (isBankTransfer && m.type?.includes('BANK_TRANSFER')) return true;
+        if (isCrypto && m.type === 'CRYPTO') return true;
+        return m.type === effectiveMethodId;
       });
       
       if (matchingMethod) {
-        hostFiMethodId = matchingMethod.id;
+        hostFiMethodId = matchingMethod.type; // Use 'type' field as methodId
         console.log(`[Withdrawal] Found matching HostFi method: ${hostFiMethodId}`);
       } else if (methods.length > 0) {
-        // Fallback to first available method if no match
-        hostFiMethodId = methods[0].id;
-        console.log(`[Withdrawal] Using fallback HostFi method: ${hostFiMethodId}`);
+        // Fallback to first enabled method
+        const firstEnabled = methods.find(m => m.enabled);
+        if (firstEnabled) {
+          hostFiMethodId = firstEnabled.type;
+          console.log(`[Withdrawal] Using fallback HostFi method: ${hostFiMethodId}`);
+        }
       }
     } catch (methodError) {
       console.warn(`[Withdrawal] Could not fetch HostFi methods, using default: ${hostFiMethodId}`);

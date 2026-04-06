@@ -744,9 +744,10 @@ class HostFiService {
     try {
       const params = { sourceCurrency, targetCurrency };
       const response = await this.makeRequest('GET', '/v1/payout/methods', null, params);
-      // Hanle direct array or nested methods property
-      if (Array.isArray(response)) return response;
+      console.log(`[HostFi Service] getWithdrawalMethods response:`, JSON.stringify(response, null, 2));
+      // Handle { methods: [...] } structure from HostFi API
       if (response && response.methods && Array.isArray(response.methods)) return response.methods;
+      if (Array.isArray(response)) return response;
       if (response && response.data && Array.isArray(response.data)) return response.data;
       return [];
     } catch (error) {
