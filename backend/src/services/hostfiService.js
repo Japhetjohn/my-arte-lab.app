@@ -934,14 +934,28 @@ class HostFiService {
    */
   async getBanksList(countryCode) {
     try {
+      console.log(`[HostFi Service] Fetching banks for country: ${countryCode}`);
       const response = await this.makeRequest('GET', `/v1/payout/banks/${countryCode}/list`);
+      console.log(`[HostFi Service] Raw banks response type:`, typeof response, Array.isArray(response) ? 'array' : '');
+      console.log(`[HostFi Service] Raw banks response keys:`, Object.keys(response || {}));
+      
       // Handle direct array or nested banks property
-      if (Array.isArray(response)) return response;
-      if (response && response.banks && Array.isArray(response.banks)) return response.banks;
-      if (response && response.data && Array.isArray(response.data)) return response.data;
-      return [];
+      let banks = [];
+      if (Array.isArray(response)) {
+        banks = response;
+      } else if (response && response.banks && Array.isArray(response.banks)) {
+        banks = response.banks;
+      } else if (response && response.data && Array.isArray(response.data)) {
+        banks = response.data;
+      }
+      
+      console.log(`[HostFi Service] Parsed ${banks.length} banks`);
+      if (banks.length > 0) {
+        console.log(`[HostFi Service] First bank sample:`, JSON.stringify(banks[0]));
+      }
+      return banks;
     } catch (error) {
-      console.error(`Failed to get banks list for ${countryCode}:`, error.message);
+      console.error(`[HostFi Service] Failed to get banks list for ${countryCode}:`, error.message);
       throw error;
     }
   }

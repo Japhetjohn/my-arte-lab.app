@@ -71,29 +71,42 @@ export function WithdrawalModal({
     setBanksLoading(true);
     setBanksError('');
     try {
+      console.log('[Frontend] Fetching banks...');
       const response = await api.get('/hostfi/banks/NG');
-      console.log('Banks API response:', response.data);
+      console.log('[Frontend] Banks API full response:', response);
+      console.log('[Frontend] Banks API response.data:', response.data);
       
       // Handle different response structures
       let banksList = [];
+      
+      // Try all possible response paths
       if (response.data?.data?.banks && Array.isArray(response.data.data.banks)) {
+        console.log('[Frontend] Found banks in response.data.data.banks');
         banksList = response.data.data.banks;
       } else if (response.data?.banks && Array.isArray(response.data.banks)) {
+        console.log('[Frontend] Found banks in response.data.banks');
         banksList = response.data.banks;
+      } else if (response.data?.data && Array.isArray(response.data.data)) {
+        console.log('[Frontend] Found banks in response.data.data (array)');
+        banksList = response.data.data;
       } else if (Array.isArray(response.data)) {
+        console.log('[Frontend] Found banks in response.data (array)');
         banksList = response.data;
+      } else {
+        console.log('[Frontend] Could not find banks array. Response structure:', JSON.stringify(response.data, null, 2));
       }
       
-      console.log('Parsed banks:', banksList);
+      console.log(`[Frontend] Parsed ${banksList.length} banks:`, banksList);
       setBanks(banksList);
       
       if (banksList.length === 0) {
-        setBanksError('No banks available. Please try again later.');
+        setBanksError('No banks returned from server. Please check server logs or try again later.');
       }
     } catch (error: any) {
-      console.error('Fetch banks error:', error);
-      setBanksError(error.response?.data?.message || 'Failed to load banks. Please try again.');
-      toast.error('Failed to load banks');
+      console.error('[Frontend] Fetch banks error:', error);
+      console.error('[Frontend] Error response:', error.response);
+      setBanksError(error.response?.data?.message || error.message || 'Failed to load banks. Please try again.');
+      toast.error('Failed to load banks: ' + (error.response?.data?.message || error.message));
     } finally {
       setBanksLoading(false);
     }

@@ -507,8 +507,12 @@ exports.getWithdrawalMethods = catchAsync(async (req, res, next) => {
  */
 exports.getBanksList = catchAsync(async (req, res, next) => {
   const { countryCode = 'NG' } = req.params;
+  
+  console.log(`[Controller] Getting banks list for country: ${countryCode}`);
 
   const banks = await hostfiService.getBanksList(countryCode);
+  
+  console.log(`[Controller] Returning ${banks?.length || 0} banks to client`);
 
   successResponse(res, 200, 'Banks list retrieved successfully', {
     banks
