@@ -640,8 +640,11 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
     
     // Fetch available withdrawal methods from HostFi
     try {
-      const methods = await hostfiService.getWithdrawalMethods(currency, effectiveTargetCurrency);
-      console.log(`[Withdrawal] Available HostFi methods:`, methods.map(m => ({ type: m.type, enabled: m.enabled, source: m.sourceCurrency, target: m.targetCurrency })));
+      // For bank transfers to Nigeria, we need to check methods with targetCurrency=NGN
+      // The source currency might be USDC but target should be NGN for bank payouts
+      const methodQueryCurrency = isCrypto ? currency : (targetCurrency || config.fiatCurrency || 'NGN');
+      const methods = await hostfiService.getWithdrawalMethods(currency, methodQueryCurrency);
+      console.log(`[Withdrawal] Available HostFi methods for ${currency}->${methodQueryCurrency}:`, methods.map(m => ({ type: m.type, enabled: m.enabled, source: m.sourceCurrency, target: m.targetCurrency })));
       
       // Find matching method based on type field
       const isBankTransfer = effectiveMethodId === 'BANK_TRANSFER' || effectiveMethodId === 'EFT';
@@ -657,13 +660,9 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
       if (matchingMethod) {
         hostFiMethodId = matchingMethod.type; // Use 'type' field as methodId
         console.log(`[Withdrawal] Found matching HostFi method: ${hostFiMethodId}`);
-      } else if (methods.length > 0) {
-        // Fallback to first enabled method
-        const firstEnabled = methods.find(m => m.enabled);
-        if (firstEnabled) {
-          hostFiMethodId = firstEnabled.type;
-          console.log(`[Withdrawal] Using fallback HostFi method: ${hostFiMethodId}`);
-        }
+      } else {
+        // Don't fallback to wrong method type - use the requested methodId
+        console.log(`[Withdrawal] No matching HostFi method found, using requested: ${hostFiMethodId}`);
       }
     } catch (methodError) {
       console.warn(`[Withdrawal] Could not fetch HostFi methods, using default: ${hostFiMethodId}`);
