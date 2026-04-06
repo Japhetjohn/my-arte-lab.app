@@ -112,7 +112,11 @@ class HostFiService {
    * @returns {number} Estimated network fee in the given currency
    */
   calculateNetworkFee(currency = 'USDC', network = 'SOL') {
-    return 0; // Removed hardcoded fee as requested
+    // Return a small buffer for Solana network fees when swapping
+    if (currency.toUpperCase() === 'USDC' || currency.toUpperCase() === 'USDT') {
+      return 0.01; // Leave 0.01 USDC for network fees
+    }
+    return 0;
   }
 
   /**
@@ -846,11 +850,21 @@ class HostFiService {
           throw new Error(`Target currency ${targetCurrency} asset not found in wallet`);
         }
 
+        // Deduct network fee buffer before swap to ensure sufficient funds for gas
+        const networkFeeBuffer = this.calculateNetworkFee(sourceCurrency);
+        const swapAmount = Math.max(0, Number(payoutAmount) - networkFeeBuffer);
+        
+        if (swapAmount <= 0) {
+          throw new Error(`Amount too small for swap. Minimum required: ${networkFeeBuffer + 0.01} ${sourceCurrency}`);
+        }
+        
+        console.log(`[HostFi Service] Swapping ${swapAmount} ${sourceCurrency} (buffer: ${networkFeeBuffer} for network fees)`);
+
         // Perform Swap
         const swapResult = await this.swapAssets({
           source: { currency: sourceCurrency, assetId: walletAssetId },
           target: { currency: targetCurrency, assetId: targetAsset.id || targetAsset.assetId },
-          amount: { value: Number(payoutAmount), currency: sourceCurrency },
+          amount: { value: swapAmount, currency: sourceCurrency },
           category: 'SWAP'
         });
 
