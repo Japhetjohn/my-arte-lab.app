@@ -554,7 +554,12 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
 
   const config = hostfiService.getCurrencyConfig(targetCurrency || currency);
   const effectiveMethodId = methodId || config.method;
-  const effectiveTargetCurrency = targetCurrency || currency;
+  // For fiat withdrawals, use the config's fiat currency (e.g., NGN for Nigeria)
+  // For crypto withdrawals, use the source currency
+  const isCrypto = (methodId || config.method) === 'CRYPTO' || (methodId || config.method) === 'SOL';
+  const effectiveTargetCurrency = isCrypto ? currency : (targetCurrency || config.fiatCurrency || currency);
+  
+  console.log(`[Withdrawal] Config: source=${currency}, target=${effectiveTargetCurrency}, method=${effectiveMethodId}, isCrypto=${isCrypto}`);
 
   // 1. SYNC BALANCES FIRST (Critical to ensure we don't check against stale 0 balance)
   console.log(`[Withdrawal] Forcing sync before withdrawal for user=${req.user._id}`);

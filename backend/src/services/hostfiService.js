@@ -830,6 +830,8 @@ class HostFiService {
       let effectiveAmount = payoutAmount;
       let effectiveCurrency = sourceCurrency;
 
+      console.log(`[HostFi Service] Swap check: source=${sourceCurrency}, target=${targetCurrency}, isCrypto=${isCryptoPayout}, recipient.currency=${recipient.currency}`);
+
       if (sourceCurrency !== targetCurrency && !isCryptoPayout) {
         console.log(`[HostFi Service] Currency mismatch (${sourceCurrency} -> ${targetCurrency}). Initiating swap first...`);
 
