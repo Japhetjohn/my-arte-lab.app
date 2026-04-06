@@ -106,17 +106,49 @@ class HostFiService {
   }
 
   /**
-   * Calculate network (gas) fee for withdrawal
+   * Get minimum withdrawal amount for a currency from HostFi
    * @param {string} currency - Currency code
-   * @param {string} network - Network name
-   * @returns {number} Estimated network fee in the given currency
+   * @returns {number} Minimum amount
    */
-  calculateNetworkFee(currency = 'USDC', network = 'SOL') {
-    // Return a small buffer for Solana network fees when swapping
-    if (currency.toUpperCase() === 'USDC' || currency.toUpperCase() === 'USDT') {
-      return 0.01; // Leave 0.01 USDC for network fees
+  getMinimumWithdrawalAmount(currency) {
+    const minimums = {
+      'NGN': 1000,     // HostFi requires min ₦1000 for NGN bank withdrawals
+      'KES': 100,
+      'GHS': 10,
+      'USDC': 1,
+      'USDT': 1,
+      'SOL': 0.01
+    };
+    return minimums[currency.toUpperCase()] || 10;
+  }
+
+  /**
+   * Get exchange fees from HostFi API
+   * @param {string} sourceCurrency - Source currency
+   * @param {string} targetCurrency - Target currency
+   * @param {number} amount - Amount to convert
+   * @returns {Promise<Object>} Fee information including network fees
+   */
+  async getSwapFees(sourceCurrency, targetCurrency, amount) {
+    try {
+      const params = { 
+        sourceCurrency, 
+        targetCurrency, 
+        amount,
+        type: 'swap'
+      };
+      const response = await this.makeRequest('GET', '/v1/fees', null, params, true);
+      return response;
+    } catch (error) {
+      console.log(`[HostFi Service] Could not get swap fees: ${error.message}`);
+      // Return zero fees - let HostFi handle it and return actual error if insufficient
+      return { 
+        networkFee: 0, 
+        platformFee: 0, 
+        totalFee: 0,
+        estimated: true 
+      };
     }
-    return 0;
   }
 
   /**

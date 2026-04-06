@@ -570,6 +570,19 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Valid amount is required', 400));
   }
 
+  // Check minimum withdrawal amount
+  const minAmount = hostfiService.getMinimumWithdrawalAmount(currency);
+  const networkFeeBuffer = hostfiService.calculateNetworkFee(currency);
+  const totalRequired = minAmount + networkFeeBuffer;
+  
+  if (amount < totalRequired) {
+    return next(new ErrorHandler(
+      `Minimum withdrawal is ${minAmount} ${currency} + ${networkFeeBuffer} ${currency} network fee buffer. ` +
+      `You need at least ${totalRequired.toFixed(2)} ${currency} to withdraw.`, 
+      400
+    ));
+  }
+
   // Basic validation based on method
   if (!recipient) {
     return next(new ErrorHandler('Recipient details are required', 400));
