@@ -949,11 +949,18 @@ class HostFiService {
         banks = response.data;
       }
       
-      console.log(`[HostFi Service] Parsed ${banks.length} banks`);
-      if (banks.length > 0) {
-        console.log(`[HostFi Service] First bank sample:`, JSON.stringify(banks[0]));
+      // Map HostFi field names to our expected format (bankId -> id, bankName -> name)
+      const mappedBanks = banks.map(bank => ({
+        id: bank.bankId || bank.id,
+        name: bank.bankName || bank.name,
+        code: bank.bankCode || bank.code || bank.bankId
+      })).filter(bank => bank.id && bank.name); // Only include banks with both id and name
+      
+      console.log(`[HostFi Service] Parsed ${banks.length} banks, mapped to ${mappedBanks.length}`);
+      if (mappedBanks.length > 0) {
+        console.log(`[HostFi Service] First bank sample:`, JSON.stringify(mappedBanks[0]));
       }
-      return banks;
+      return mappedBanks;
     } catch (error) {
       console.error(`[HostFi Service] Failed to get banks list for ${countryCode}:`, error.message);
       throw error;
