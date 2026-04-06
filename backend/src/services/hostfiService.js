@@ -882,23 +882,56 @@ class HostFiService {
           throw new Error(`Target currency ${targetCurrency} asset not found in wallet`);
         }
 
-        // Deduct network fee buffer before swap to ensure sufficient funds for gas
-        const networkFeeBuffer = this.calculateNetworkFee(sourceCurrency);
-        const swapAmount = Math.max(0, Number(payoutAmount) - networkFeeBuffer);
-        
-        if (swapAmount <= 0) {
-          throw new Error(`Amount too small for swap. Minimum required: ${networkFeeBuffer + 0.01} ${sourceCurrency}`);
+        // Try to get swap fees from HostFi API first
+        let swapFees;
+        try {
+          swapFees = await this.getSwapFees(sourceCurrency, targetCurrency, payoutAmount);
+          console.log(`[HostFi Service] Estimated swap fees:`, JSON.stringify(swapFees));
+        } catch (feeError) {
+          console.log(`[HostFi Service] Could not estimate fees, will attempt swap anyway`);
+          swapFees = { networkFee: 0, totalFee: 0 };
         }
         
-        console.log(`[HostFi Service] Swapping ${swapAmount} ${sourceCurrency} (buffer: ${networkFeeBuffer} for network fees)`);
+        const networkFee = swapFees.networkFee || swapFees.totalFee || 0;
+        const swapAmount = Math.max(0, Number(payoutAmount) - networkFee);
+        
+        console.log(`[HostFi Service] Swapping ${swapAmount} ${sourceCurrency} (after estimated network fee: ${networkFee})`);
 
         // Perform Swap
-        const swapResult = await this.swapAssets({
-          source: { currency: sourceCurrency, assetId: walletAssetId },
-          target: { currency: targetCurrency, assetId: targetAsset.id || targetAsset.assetId },
-          amount: { value: swapAmount, currency: sourceCurrency },
-          category: 'SWAP'
-        });
+        let swapResult;
+        try {
+          swapResult = await this.swapAssets({
+            source: { currency: sourceCurrency, assetId: walletAssetId },
+            target: { currency: targetCurrency, assetId: targetAsset.id || targetAsset.assetId },
+            amount: { value: swapAmount, currency: sourceCurrency },
+            category: 'SWAP'
+          });
+        } catch (swapError) {
+          // If swap failed due to insufficient funds, calculate how much more is needed
+          if (swapError.hostfiError?.code === 'INSUFFICIENT_FUNDS' || 
+              swapError.message?.includes('sufficient funds')) {
+            
+            // Get user's current balance
+            const wallets = await this.getUserWallets();
+            const sourceWallet = wallets.find(w => 
+              (w.currency?.code || w.currency || '').toUpperCase() === sourceCurrency
+            );
+            const currentBalance = sourceWallet?.balance || 0;
+            
+            // Estimate needed amount (swap amount + ~0.5 USDC for fees)
+            const estimatedNeeded = Number(payoutAmount) + 0.5;
+            const additionalNeeded = Math.max(0, estimatedNeeded - currentBalance);
+            
+            const errorMsg = additionalNeeded > 0 
+              ? `Insufficient funds for swap. You have ${currentBalance} ${sourceCurrency}, ` +
+                `but need approximately ${estimatedNeeded.toFixed(2)} ${sourceCurrency} ` +
+                `(including network fees). Please add ${additionalNeeded.toFixed(2)} ${sourceCurrency} more to your wallet.`
+              : `Insufficient funds for swap. Please add more ${sourceCurrency} to cover network fees.`;
+            
+            throw new Error(errorMsg);
+          }
+          throw swapError;
+        }
 
         console.log(`[HostFi Service] Swap result:`, JSON.stringify(swapResult, null, 2));
 
