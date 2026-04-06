@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -16,6 +16,7 @@ import {
   Check,
   Loader2,
   AlertCircle,
+  Search,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '@/contexts/AuthContext';
@@ -48,6 +49,7 @@ export function WithdrawalModal({
   const [banks, setBanks] = useState<Bank[]>([]);
   const [banksLoading, setBanksLoading] = useState(false);
   const [banksError, setBanksError] = useState('');
+  const [bankSearch, setBankSearch] = useState('');
   const [bankId, setBankId] = useState('');
   const [bankName, setBankName] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
@@ -60,6 +62,13 @@ export function WithdrawalModal({
   // Amount state
   const [amount, setAmount] = useState('');
 
+  // Filter banks based on search
+  const filteredBanks = useMemo(() => {
+    if (!bankSearch.trim()) return banks;
+    const search = bankSearch.toLowerCase();
+    return banks.filter(b => b.name.toLowerCase().includes(search));
+  }, [banks, bankSearch]);
+
   // Fetch banks when entering bank step
   useEffect(() => {
     if (step === 'bank' && banks.length === 0) {
@@ -71,42 +80,25 @@ export function WithdrawalModal({
     setBanksLoading(true);
     setBanksError('');
     try {
-      console.log('[Frontend] Fetching banks...');
       const response = await api.get('/hostfi/banks/NG');
-      console.log('[Frontend] Banks API full response:', response);
-      console.log('[Frontend] Banks API response.data:', response.data);
-      
-      // Handle different response structures
       let banksList = [];
       
-      // Try all possible response paths
       if (response.data?.data?.banks && Array.isArray(response.data.data.banks)) {
-        console.log('[Frontend] Found banks in response.data.data.banks');
         banksList = response.data.data.banks;
       } else if (response.data?.banks && Array.isArray(response.data.banks)) {
-        console.log('[Frontend] Found banks in response.data.banks');
         banksList = response.data.banks;
-      } else if (response.data?.data && Array.isArray(response.data.data)) {
-        console.log('[Frontend] Found banks in response.data.data (array)');
-        banksList = response.data.data;
       } else if (Array.isArray(response.data)) {
-        console.log('[Frontend] Found banks in response.data (array)');
         banksList = response.data;
-      } else {
-        console.log('[Frontend] Could not find banks array. Response structure:', JSON.stringify(response.data, null, 2));
       }
       
-      console.log(`[Frontend] Parsed ${banksList.length} banks:`, banksList);
       setBanks(banksList);
       
       if (banksList.length === 0) {
-        setBanksError('No banks returned from server. Please check server logs or try again later.');
+        setBanksError('No banks available. Please try again later.');
       }
     } catch (error: any) {
-      console.error('[Frontend] Fetch banks error:', error);
-      console.error('[Frontend] Error response:', error.response);
-      setBanksError(error.response?.data?.message || error.message || 'Failed to load banks. Please try again.');
-      toast.error('Failed to load banks: ' + (error.response?.data?.message || error.message));
+      setBanksError(error.response?.data?.message || 'Failed to load banks. Please try again.');
+      toast.error('Failed to load banks');
     } finally {
       setBanksLoading(false);
     }
@@ -162,6 +154,10 @@ export function WithdrawalModal({
     setStep('amount');
   };
 
+  const handleMaxAmount = () => {
+    setAmount(availableBalance.toString());
+  };
+
   const handleAmountNext = () => {
     const numAmount = parseFloat(amount);
     if (!numAmount || numAmount <= 0) {
@@ -187,7 +183,7 @@ export function WithdrawalModal({
         currency,
       };
 
-      if (step === 'confirm' && bankId) {
+      if (bankId) {
         payload.methodId = 'BANK_TRANSFER';
         payload.recipient = {
           bankId,
@@ -207,9 +203,7 @@ export function WithdrawalModal({
         };
       }
 
-      console.log('Withdrawal payload:', payload);
-      const response = await api.post('/hostfi/withdrawal/initiate', payload);
-      console.log('Withdrawal response:', response.data);
+      await api.post('/hostfi/withdrawal/initiate', payload);
       
       toast.success('Withdrawal initiated successfully!');
       handleClose();
@@ -227,6 +221,7 @@ export function WithdrawalModal({
     setBankName('');
     setAccountNumber('');
     setAccountName('');
+    setBankSearch('');
     setWalletAddress('');
     setAmount('');
     setBanksError('');
@@ -248,7 +243,7 @@ export function WithdrawalModal({
             <div className="flex-1">
               <p className="font-semibold text-gray-900">Bank Transfer</p>
               <p className="text-sm text-gray-500">Withdraw to your Nigerian bank account</p>
-              <p className="text-xs text-gray-400 mt-1">Fee: 1% • Min: 1 USDC</p>
+              <p className="text-xs text-green-600 mt-1 font-medium">No fee • Min: 1 USDC</p>
             </div>
             <ArrowRight className="w-5 h-5 text-gray-400" />
           </div>
@@ -265,7 +260,7 @@ export function WithdrawalModal({
             <div className="flex-1">
               <p className="font-semibold text-gray-900">Crypto (Solana USDC)</p>
               <p className="text-sm text-gray-500">Withdraw to Solana wallet</p>
-              <p className="text-xs text-gray-400 mt-1">Fee: 0% • Min: 1 USDC</p>
+              <p className="text-xs text-green-600 mt-1 font-medium">No fee • Min: 1 USDC</p>
             </div>
             <ArrowRight className="w-5 h-5 text-gray-400" />
           </div>
@@ -295,12 +290,7 @@ export function WithdrawalModal({
             <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
             <div>
               <p className="text-sm text-red-700">{banksError}</p>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={loadBanks}
-                className="mt-2"
-              >
+              <Button variant="outline" size="sm" onClick={loadBanks} className="mt-2">
                 Try Again
               </Button>
             </div>
@@ -308,6 +298,22 @@ export function WithdrawalModal({
         </div>
       ) : (
         <>
+          {/* Bank Search */}
+          <div className="space-y-2">
+            <Label htmlFor="bankSearch">Search Bank</Label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Input
+                id="bankSearch"
+                placeholder="Type to search banks..."
+                value={bankSearch}
+                onChange={(e) => setBankSearch(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+          </div>
+
+          {/* Bank Select */}
           <div className="space-y-2">
             <Label htmlFor="bank">Select Bank *</Label>
             <select
@@ -319,15 +325,19 @@ export function WithdrawalModal({
                 setBankName(selected?.name || '');
                 setAccountName('');
               }}
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[#8A2BE2] focus:border-[#8A2BE2]"
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[#8A2BE2] focus:border-[#8A2BE2] max-h-48"
+              size={5}
             >
               <option value="">-- Select a bank --</option>
-              {banks.map((bank) => (
+              {filteredBanks.map((bank) => (
                 <option key={bank.id} value={bank.id}>
                   {bank.name}
                 </option>
               ))}
             </select>
+            {filteredBanks.length === 0 && bankSearch && (
+              <p className="text-xs text-gray-500">No banks found matching "{bankSearch}"</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -440,14 +450,23 @@ export function WithdrawalModal({
             placeholder="0.00"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            className="py-2.5 pr-16"
+            className="py-2.5 pr-20"
             min="1"
             max={availableBalance}
             step="0.01"
           />
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 font-medium">
-            {currency}
-          </span>
+          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={handleMaxAmount}
+              className="h-7 text-xs bg-[#8A2BE2]/10 text-[#8A2BE2] hover:bg-[#8A2BE2]/20 px-2"
+            >
+              MAX
+            </Button>
+            <span className="text-gray-500 font-medium text-sm">{currency}</span>
+          </div>
         </div>
         <p className="text-xs text-gray-500">
           Min: 1 {currency} • Max: {availableBalance.toLocaleString()} {currency}
@@ -461,14 +480,12 @@ export function WithdrawalModal({
             <span>{parseFloat(amount).toLocaleString()} {currency}</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-gray-500">Fee ({bankId ? '1%' : '0%'})</span>
-            <span>{(parseFloat(amount) * (bankId ? 0.01 : 0)).toLocaleString()} {currency}</span>
+            <span className="text-gray-500">Fee</span>
+            <span className="text-green-600 font-medium">FREE</span>
           </div>
           <div className="border-t pt-2 flex justify-between font-semibold">
             <span>You Receive</span>
-            <span className="text-[#8A2BE2]">
-              {(parseFloat(amount) * (bankId ? 0.99 : 1)).toLocaleString()} {currency}
-            </span>
+            <span className="text-[#8A2BE2]">{parseFloat(amount).toLocaleString()} {currency}</span>
           </div>
         </div>
       )}
@@ -485,8 +502,7 @@ export function WithdrawalModal({
   );
 
   const renderConfirmation = () => {
-    const fee = parseFloat(amount) * (bankId ? 0.01 : 0);
-    const receive = parseFloat(amount) - fee;
+    const numAmount = parseFloat(amount);
     
     return (
       <div className="space-y-4">
@@ -511,7 +527,7 @@ export function WithdrawalModal({
                 <span className="font-medium">{bankName}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Account</span>
+                <span className="text-gray-500">Account Name</span>
                 <span className="font-medium">{accountName}</span>
               </div>
               <div className="flex justify-between text-sm">
@@ -531,15 +547,15 @@ export function WithdrawalModal({
           <div className="border-t pt-3 mt-3 space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Amount</span>
-              <span className="font-medium">{parseFloat(amount).toLocaleString()} {currency}</span>
+              <span className="font-medium">{numAmount.toLocaleString()} {currency}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Fee</span>
-              <span className="font-medium">{fee.toLocaleString()} {currency}</span>
+              <span className="text-green-600 font-medium">FREE</span>
             </div>
             <div className="flex justify-between text-lg font-bold">
               <span>Total to Receive</span>
-              <span className="text-[#8A2BE2]">{receive.toLocaleString()} {currency}</span>
+              <span className="text-[#8A2BE2]">{numAmount.toLocaleString()} {currency}</span>
             </div>
           </div>
         </div>

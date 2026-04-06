@@ -634,18 +634,47 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
   await user.save();
 
   try {
+    // Get the correct methodId from HostFi
+    let hostFiMethodId = effectiveMethodId;
+    
+    // Fetch available withdrawal methods from HostFi
+    try {
+      const methods = await hostfiService.getWithdrawalMethods(currency, effectiveTargetCurrency);
+      console.log(`[Withdrawal] Available HostFi methods:`, methods.map(m => ({ id: m.id, name: m.name, type: m.type })));
+      
+      // Find matching method based on type
+      const isBankTransfer = effectiveMethodId === 'BANK_TRANSFER' || effectiveMethodId === 'EFT';
+      const isCrypto = effectiveMethodId === 'CRYPTO' || effectiveMethodId === 'SOL';
+      
+      const matchingMethod = methods.find(m => {
+        if (isBankTransfer && (m.type === 'BANK' || m.name?.toLowerCase().includes('bank'))) return true;
+        if (isCrypto && (m.type === 'CRYPTO' || m.name?.toLowerCase().includes('crypto'))) return true;
+        return m.id === effectiveMethodId;
+      });
+      
+      if (matchingMethod) {
+        hostFiMethodId = matchingMethod.id;
+        console.log(`[Withdrawal] Found matching HostFi method: ${hostFiMethodId}`);
+      } else if (methods.length > 0) {
+        // Fallback to first available method if no match
+        hostFiMethodId = methods[0].id;
+        console.log(`[Withdrawal] Using fallback HostFi method: ${hostFiMethodId}`);
+      }
+    } catch (methodError) {
+      console.warn(`[Withdrawal] Could not fetch HostFi methods, using default: ${hostFiMethodId}`);
+    }
+
     // Use HostFi for ALL withdrawals (crypto and fiat)
-    // This ensures consistent processing and eliminates gas sponsor dependencies
-    console.log(`[Withdrawal] Initiating HostFi withdrawal for user ${req.user._id}, method: ${effectiveMethodId}`);
+    console.log(`[Withdrawal] Initiating HostFi withdrawal for user ${req.user._id}, method: ${hostFiMethodId}`);
 
     const withdrawal = await hostfiService.initiateWithdrawal({
       walletAssetId: assetId,
       amount: amountToTransfer,
       currency: currency, // Source currency (e.g. USDC)
-      methodId: effectiveMethodId,
+      methodId: hostFiMethodId,
       recipient: {
         type: recipient.type || (effectiveMethodId === 'BANK_TRANSFER' ? 'BANK' : (effectiveMethodId === 'MOBILE_MONEY' ? 'MOMO' : (effectiveMethodId === 'EFT' ? 'BANK' : 'CRYPTO'))),
-        method: effectiveMethodId,
+        method: hostFiMethodId,
         currency: effectiveTargetCurrency, // Target currency (e.g. NGN)
         accountNumber: recipient.accountNumber || recipient.walletAddress,
         accountName: (recipient.accountName === 'undefined' || !recipient.accountName) ? 'Verified Recipient' : recipient.accountName,
