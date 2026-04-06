@@ -571,14 +571,14 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
   }
 
   // Check minimum withdrawal amount
-  const minAmount = hostfiService.getMinimumWithdrawalAmount(currency);
-  const networkFeeBuffer = hostfiService.calculateNetworkFee(currency);
-  const totalRequired = minAmount + networkFeeBuffer;
+  const minAmount = hostfiService.getMinimumWithdrawalAmount(effectiveTargetCurrency);
   
-  if (amount < totalRequired) {
+  // For fiat withdrawals, the amount after swap must meet minimum
+  // For now just check if source amount is reasonable
+  if (amount < minAmount && isCrypto) {
     return next(new ErrorHandler(
-      `Minimum withdrawal is ${minAmount} ${currency} + ${networkFeeBuffer} ${currency} network fee buffer. ` +
-      `You need at least ${totalRequired.toFixed(2)} ${currency} to withdraw.`, 
+      `Minimum withdrawal is ${minAmount} ${effectiveTargetCurrency}. ` +
+      `Please add more funds to your wallet.`, 
       400
     ));
   }
