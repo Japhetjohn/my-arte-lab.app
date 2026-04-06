@@ -15,12 +15,10 @@ import {
   ArrowLeft,
   Check,
   Loader2,
-  Info,
+  AlertCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '@/contexts/AuthContext';
-import { SuccessModal } from '@/components/modals/SuccessModal';
-import { TransactionStatusModal } from '@/components/modals/TransactionStatusModal';
 
 interface WithdrawalModalProps {
   isOpen: boolean;
@@ -29,8 +27,7 @@ interface WithdrawalModalProps {
   currency?: string;
 }
 
-type WithdrawalStep = 'method' | 'details' | 'amount' | 'confirm';
-type WithdrawalMethod = 'bank' | 'crypto';
+type Step = 'method' | 'bank' | 'crypto' | 'amount' | 'confirm';
 
 interface Bank {
   id: string;
@@ -38,44 +35,19 @@ interface Bank {
   code: string;
 }
 
-const METHODS = [
-  {
-    id: 'bank' as WithdrawalMethod,
-    name: 'Bank Transfer',
-    description: 'Transfer to your bank account',
-    fee: 0.01,
-    minAmount: 1,
-    maxAmount: 10000000,
-    processingTime: '1-2 business days',
-    icon: Building2,
-  },
-  {
-    id: 'crypto' as WithdrawalMethod,
-    name: 'Crypto (Solana USDC)',
-    description: 'Withdraw to Solana wallet',
-    fee: 0,
-    minAmount: 1,
-    maxAmount: 1000000,
-    processingTime: '5-30 minutes',
-    icon: Bitcoin,
-  },
-];
-
 export function WithdrawalModal({
   isOpen,
   onClose,
   availableBalance,
   currency = 'USDC',
 }: WithdrawalModalProps) {
-  const [step, setStep] = useState<WithdrawalStep>('method');
-  const [method, setMethod] = useState<WithdrawalMethod | null>(null);
+  const [step, setStep] = useState<Step>('method');
   const [isLoading, setIsLoading] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [transactionStatus, setTransactionStatus] = useState<'pending' | 'completed' | 'failed' | null>(null);
-  const [transactionReference, setTransactionReference] = useState('');
-
+  
   // Bank withdrawal state
   const [banks, setBanks] = useState<Bank[]>([]);
+  const [banksLoading, setBanksLoading] = useState(false);
+  const [banksError, setBanksError] = useState('');
   const [bankId, setBankId] = useState('');
   const [bankName, setBankName] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
@@ -88,82 +60,90 @@ export function WithdrawalModal({
   // Amount state
   const [amount, setAmount] = useState('');
 
-  const methodConfig = METHODS.find((m) => m.id === method);
-
+  // Fetch banks when entering bank step
   useEffect(() => {
-    if (method === 'bank' && banks.length === 0) {
-      fetchBanks();
+    if (step === 'bank' && banks.length === 0) {
+      loadBanks();
     }
-  }, [method]);
+  }, [step]);
 
-  const fetchBanks = async () => {
+  const loadBanks = async () => {
+    setBanksLoading(true);
+    setBanksError('');
     try {
       const response = await api.get('/hostfi/banks/NG');
-      console.log('Banks response:', response.data);
-      // Backend returns { success: true, data: { banks: [...] } }
-      setBanks(response.data?.data?.banks || []);
+      console.log('Banks API response:', response.data);
+      
+      // Handle different response structures
+      let banksList = [];
+      if (response.data?.data?.banks && Array.isArray(response.data.data.banks)) {
+        banksList = response.data.data.banks;
+      } else if (response.data?.banks && Array.isArray(response.data.banks)) {
+        banksList = response.data.banks;
+      } else if (Array.isArray(response.data)) {
+        banksList = response.data;
+      }
+      
+      console.log('Parsed banks:', banksList);
+      setBanks(banksList);
+      
+      if (banksList.length === 0) {
+        setBanksError('No banks available. Please try again later.');
+      }
     } catch (error: any) {
       console.error('Fetch banks error:', error);
+      setBanksError(error.response?.data?.message || 'Failed to load banks. Please try again.');
       toast.error('Failed to load banks');
-    }
-  };
-
-  const verifyAccount = async () => {
-    if (!bankId || !accountNumber || accountNumber.length < 10) return;
-    
-    setIsVerifying(true);
-    try {
-      const response = await api.post('/hostfi/withdrawal/verify-account', {
-        country: 'NG',
-        bankId,
-        accountNumber,
-      });
-      
-      // Backend returns { success: true, data: { account: {...} } }
-      const accountInfo = response.data?.data?.account;
-      if (accountInfo?.accountName) {
-        setAccountName(accountInfo.accountName);
-        toast.success('Account verified!');
-      }
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to verify account');
-      setAccountName('');
     } finally {
-      setIsVerifying(false);
+      setBanksLoading(false);
     }
   };
 
+  // Verify account when bank and account number are entered
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      if (bankId && accountNumber.length === 10 && !accountName) {
-        verifyAccount();
+    const verify = async () => {
+      if (bankId && accountNumber.length === 10 && !accountName && !isVerifying) {
+        setIsVerifying(true);
+        try {
+          const response = await api.post('/hostfi/withdrawal/verify-account', {
+            country: 'NG',
+            bankId,
+            accountNumber,
+          });
+          
+          const accountInfo = response.data?.data?.account || response.data?.account;
+          if (accountInfo?.accountName) {
+            setAccountName(accountInfo.accountName);
+            toast.success('Account verified!');
+          }
+        } catch (error: any) {
+          toast.error(error.response?.data?.message || 'Failed to verify account');
+          setAccountName('');
+        } finally {
+          setIsVerifying(false);
+        }
       }
-    }, 500);
+    };
+    
+    const timeout = setTimeout(verify, 800);
     return () => clearTimeout(timeout);
   }, [bankId, accountNumber]);
 
-  const calculateFee = () => {
-    if (!methodConfig || !amount) return 0;
-    return parseFloat(amount) * methodConfig.fee;
-  };
-
-  const calculateTotal = () => {
-    if (!amount) return 0;
-    return parseFloat(amount) - calculateFee();
-  };
-
-  const handleMethodSelect = (selectedMethod: WithdrawalMethod) => {
-    setMethod(selectedMethod);
-    setStep('details');
-  };
-
-  const handleDetailsNext = () => {
-    if (method === 'bank' && !accountName) {
-      toast.error('Please verify your account first');
+  const handleBankNext = () => {
+    if (!bankId || !accountNumber) {
+      toast.error('Please select bank and enter account number');
       return;
     }
-    if (method === 'crypto' && !walletAddress) {
-      toast.error('Please enter a wallet address');
+    if (!accountName) {
+      toast.error('Please wait for account verification');
+      return;
+    }
+    setStep('amount');
+  };
+
+  const handleCryptoNext = () => {
+    if (!walletAddress || walletAddress.length < 32) {
+      toast.error('Please enter a valid Solana wallet address');
       return;
     }
     setStep('amount');
@@ -179,8 +159,8 @@ export function WithdrawalModal({
       toast.error('Insufficient balance');
       return;
     }
-    if (methodConfig && numAmount < methodConfig.minAmount) {
-      toast.error(`Minimum withdrawal is ${methodConfig.minAmount} ${currency}`);
+    if (numAmount < 1) {
+      toast.error(`Minimum withdrawal is 1 ${currency}`);
       return;
     }
     setStep('confirm');
@@ -188,15 +168,13 @@ export function WithdrawalModal({
 
   const handleSubmit = async () => {
     setIsLoading(true);
-    setTransactionStatus('pending');
-
     try {
       const payload: any = {
         amount: parseFloat(amount),
         currency,
       };
 
-      if (method === 'bank') {
+      if (step === 'confirm' && bankId) {
         payload.methodId = 'BANK_TRANSFER';
         payload.recipient = {
           bankId,
@@ -206,7 +184,7 @@ export function WithdrawalModal({
           country: 'NG',
           type: 'BANK',
         };
-      } else if (method === 'crypto') {
+      } else {
         payload.methodId = 'CRYPTO';
         payload.recipient = {
           walletAddress,
@@ -220,14 +198,10 @@ export function WithdrawalModal({
       const response = await api.post('/hostfi/withdrawal/initiate', payload);
       console.log('Withdrawal response:', response.data);
       
-      // Backend returns { success: true, data: { withdrawal: {...} } }
-      const reference = response.data?.data?.withdrawal?.reference;
-      setTransactionReference(reference || '');
-      setTransactionStatus('completed');
-      setShowSuccess(true);
+      toast.success('Withdrawal initiated successfully!');
+      handleClose();
     } catch (error: any) {
       console.error('Withdrawal error:', error);
-      setTransactionStatus('failed');
       toast.error(error.response?.data?.message || 'Withdrawal failed');
     } finally {
       setIsLoading(false);
@@ -236,64 +210,95 @@ export function WithdrawalModal({
 
   const handleClose = () => {
     setStep('method');
-    setMethod(null);
     setBankId('');
     setBankName('');
     setAccountNumber('');
     setAccountName('');
     setWalletAddress('');
     setAmount('');
-    setTransactionStatus(null);
-    setShowSuccess(false);
+    setBanksError('');
     onClose();
   };
 
   const renderMethodSelection = () => (
     <div className="space-y-4">
-      <p className="text-sm text-gray-500">Select your preferred withdrawal method</p>
-      <div className="space-y-2">
-        {METHODS.map((m) => (
-          <button
-            key={m.id}
-            onClick={() => handleMethodSelect(m.id)}
-            className="w-full p-4 border rounded-lg hover:border-[#8A2BE2] hover:bg-[#8A2BE2]/5 transition-all text-left"
-          >
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 bg-[#8A2BE2]/10 rounded-full flex items-center justify-center flex-shrink-0">
-                <m.icon className="w-5 h-5 text-[#8A2BE2]" />
-              </div>
-              <div className="flex-1">
-                <p className="font-medium text-gray-900">{m.name}</p>
-                <p className="text-sm text-gray-500">{m.description}</p>
-                <div className="flex items-center gap-3 mt-2 text-xs text-gray-400">
-                  <span>Fee: {(m.fee * 100).toFixed(1)}%</span>
-                  <span>•</span>
-                  <span>Min: {m.minAmount} {currency}</span>
-                </div>
-              </div>
-              <ArrowRight className="w-5 h-5 text-gray-400" />
+      <p className="text-sm text-gray-500">Choose how you want to withdraw your funds</p>
+      <div className="space-y-3">
+        <button
+          onClick={() => setStep('bank')}
+          className="w-full p-4 border-2 border-gray-200 rounded-xl hover:border-[#8A2BE2] hover:bg-[#8A2BE2]/5 transition-all text-left"
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-[#8A2BE2]/10 rounded-full flex items-center justify-center flex-shrink-0">
+              <Building2 className="w-6 h-6 text-[#8A2BE2]" />
             </div>
-          </button>
-        ))}
+            <div className="flex-1">
+              <p className="font-semibold text-gray-900">Bank Transfer</p>
+              <p className="text-sm text-gray-500">Withdraw to your Nigerian bank account</p>
+              <p className="text-xs text-gray-400 mt-1">Fee: 1% • Min: 1 USDC</p>
+            </div>
+            <ArrowRight className="w-5 h-5 text-gray-400" />
+          </div>
+        </button>
+
+        <button
+          onClick={() => setStep('crypto')}
+          className="w-full p-4 border-2 border-gray-200 rounded-xl hover:border-[#8A2BE2] hover:bg-[#8A2BE2]/5 transition-all text-left"
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-[#8A2BE2]/10 rounded-full flex items-center justify-center flex-shrink-0">
+              <Bitcoin className="w-6 h-6 text-[#8A2BE2]" />
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold text-gray-900">Crypto (Solana USDC)</p>
+              <p className="text-sm text-gray-500">Withdraw to Solana wallet</p>
+              <p className="text-xs text-gray-400 mt-1">Fee: 0% • Min: 1 USDC</p>
+            </div>
+            <ArrowRight className="w-5 h-5 text-gray-400" />
+          </div>
+        </button>
       </div>
     </div>
   );
 
-  const renderDetailsForm = () => (
+  const renderBankForm = () => (
     <div className="space-y-4">
       <div className="flex items-center gap-2 mb-4">
         <Button variant="ghost" size="sm" onClick={() => setStep('method')}>
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="w-4 h-4 mr-1" />
           Back
         </Button>
-        <span className="font-medium">Enter Details</span>
+        <span className="font-semibold">Bank Transfer</span>
       </div>
 
-      {method === 'bank' && (
-        <div className="space-y-4">
+      {banksLoading ? (
+        <div className="flex flex-col items-center justify-center py-8">
+          <Loader2 className="w-8 h-8 animate-spin text-[#8A2BE2] mb-2" />
+          <p className="text-sm text-gray-500">Loading banks...</p>
+        </div>
+      ) : banksError ? (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm text-red-700">{banksError}</p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={loadBanks}
+                className="mt-2"
+              >
+                Try Again
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <>
           <div className="space-y-2">
-            <Label>Select Bank</Label>
+            <Label htmlFor="bank">Select Bank *</Label>
             <select
+              id="bank"
               value={bankId}
               onChange={(e) => {
                 const selected = banks.find((b) => b.id === e.target.value);
@@ -301,9 +306,9 @@ export function WithdrawalModal({
                 setBankName(selected?.name || '');
                 setAccountName('');
               }}
-              className="w-full px-3 py-2 border rounded-lg bg-white"
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[#8A2BE2] focus:border-[#8A2BE2]"
             >
-              <option value="">Select a bank</option>
+              <option value="">-- Select a bank --</option>
               {banks.map((bank) => (
                 <option key={bank.id} value={bank.id}>
                   {bank.name}
@@ -313,22 +318,24 @@ export function WithdrawalModal({
           </div>
 
           <div className="space-y-2">
-            <Label>Account Number</Label>
+            <Label htmlFor="accountNumber">Account Number *</Label>
             <Input
+              id="accountNumber"
               type="text"
-              placeholder="10 digit account number"
+              placeholder="Enter 10 digit account number"
               value={accountNumber}
               onChange={(e) => {
                 const value = e.target.value.replace(/\D/g, '').slice(0, 10);
                 setAccountNumber(value);
-                setAccountName('');
+                if (value.length !== 10) setAccountName('');
               }}
               maxLength={10}
+              className="py-2.5"
             />
           </div>
 
           {isVerifying && (
-            <div className="flex items-center gap-2 text-sm text-gray-500">
+            <div className="flex items-center gap-2 text-sm text-gray-500 py-2">
               <Loader2 className="w-4 h-4 animate-spin" />
               Verifying account...
             </div>
@@ -341,32 +348,52 @@ export function WithdrawalModal({
               </p>
             </div>
           )}
-        </div>
-      )}
 
-      {method === 'crypto' && (
-        <div className="space-y-4">
-          <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
-            <p className="text-sm text-amber-800">
-              <span className="font-medium">Note:</span> Only Solana (SOL) addresses are supported for USDC withdrawals.
-              Double-check your address before proceeding.
-            </p>
-          </div>
-          <div className="space-y-2">
-            <Label>Solana Wallet Address</Label>
-            <Input
-              placeholder="Enter Solana wallet address (e.g., 7xKXtg2..."
-              value={walletAddress}
-              onChange={(e) => setWalletAddress(e.target.value)}
-            />
-          </div>
-        </div>
+          <Button
+            onClick={handleBankNext}
+            disabled={!bankId || !accountNumber || !accountName}
+            className="w-full bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white py-2.5 mt-4"
+          >
+            Continue
+            <ArrowRight className="w-4 h-4 ml-2" />
+          </Button>
+        </>
       )}
+    </div>
+  );
+
+  const renderCryptoForm = () => (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 mb-4">
+        <Button variant="ghost" size="sm" onClick={() => setStep('method')}>
+          <ArrowLeft className="w-4 h-4 mr-1" />
+          Back
+        </Button>
+        <span className="font-semibold">Crypto Withdrawal</span>
+      </div>
+
+      <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+        <p className="text-sm text-amber-800">
+          <span className="font-medium">Important:</span> Only Solana (SOL) wallet addresses are supported. 
+          Make sure your wallet supports USDC on Solana.
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="walletAddress">Solana Wallet Address *</Label>
+        <Input
+          id="walletAddress"
+          placeholder="Enter Solana address (e.g., 7xKXtg2...)"
+          value={walletAddress}
+          onChange={(e) => setWalletAddress(e.target.value)}
+          className="py-2.5 font-mono text-sm"
+        />
+      </div>
 
       <Button
-        onClick={handleDetailsNext}
-        disabled={method === 'bank' && (!bankId || !accountNumber || !accountName)}
-        className="w-full bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white"
+        onClick={handleCryptoNext}
+        disabled={!walletAddress || walletAddress.length < 32}
+        className="w-full bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white py-2.5 mt-4"
       >
         Continue
         <ArrowRight className="w-4 h-4 ml-2" />
@@ -377,14 +404,14 @@ export function WithdrawalModal({
   const renderAmountForm = () => (
     <div className="space-y-4">
       <div className="flex items-center gap-2 mb-4">
-        <Button variant="ghost" size="sm" onClick={() => setStep('details')}>
-          <ArrowLeft className="w-4 h-4" />
+        <Button variant="ghost" size="sm" onClick={() => setStep(bankId ? 'bank' : 'crypto')}>
+          <ArrowLeft className="w-4 h-4 mr-1" />
           Back
         </Button>
-        <span className="font-medium">Enter Amount</span>
+        <span className="font-semibold">Enter Amount</span>
       </div>
 
-      <div className="p-4 bg-gray-50 rounded-lg">
+      <div className="p-4 bg-gray-50 rounded-xl">
         <p className="text-sm text-gray-500">Available Balance</p>
         <p className="text-2xl font-bold text-gray-900">
           {availableBalance.toLocaleString()} {currency}
@@ -392,161 +419,165 @@ export function WithdrawalModal({
       </div>
 
       <div className="space-y-2">
-        <Label>Amount to Withdraw</Label>
+        <Label htmlFor="amount">Amount to Withdraw *</Label>
         <div className="relative">
           <Input
+            id="amount"
             type="number"
             placeholder="0.00"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
+            className="py-2.5 pr-16"
+            min="1"
+            max={availableBalance}
+            step="0.01"
           />
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 font-medium">
             {currency}
           </span>
         </div>
-        {methodConfig && (
-          <p className="text-xs text-gray-500">
-            Min: {methodConfig.minAmount} {currency} • Max: {methodConfig.maxAmount.toLocaleString()} {currency}
-          </p>
-        )}
+        <p className="text-xs text-gray-500">
+          Min: 1 {currency} • Max: {availableBalance.toLocaleString()} {currency}
+        </p>
       </div>
 
-      {amount && (
-        <div className="p-4 border rounded-lg space-y-2">
+      {amount && parseFloat(amount) > 0 && (
+        <div className="p-4 border border-gray-200 rounded-xl space-y-2">
           <div className="flex justify-between text-sm">
             <span className="text-gray-500">Amount</span>
-            <span>{parseFloat(amount || '0').toLocaleString()} {currency}</span>
+            <span>{parseFloat(amount).toLocaleString()} {currency}</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-gray-500">Fee ({(methodConfig?.fee || 0) * 100}%)</span>
-            <span>{calculateFee().toLocaleString()} {currency}</span>
+            <span className="text-gray-500">Fee ({bankId ? '1%' : '0%'})</span>
+            <span>{(parseFloat(amount) * (bankId ? 0.01 : 0)).toLocaleString()} {currency}</span>
           </div>
-          <div className="border-t pt-2 flex justify-between font-medium">
-            <span>Total to Receive</span>
-            <span className="text-[#8A2BE2]">{calculateTotal().toLocaleString()} {currency}</span>
+          <div className="border-t pt-2 flex justify-between font-semibold">
+            <span>You Receive</span>
+            <span className="text-[#8A2BE2]">
+              {(parseFloat(amount) * (bankId ? 0.99 : 1)).toLocaleString()} {currency}
+            </span>
           </div>
         </div>
       )}
 
       <Button
         onClick={handleAmountNext}
-        disabled={!amount || parseFloat(amount) <= 0 || parseFloat(amount) > availableBalance}
-        className="w-full bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white"
+        disabled={!amount || parseFloat(amount) <= 0 || parseFloat(amount) > availableBalance || parseFloat(amount) < 1}
+        className="w-full bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white py-2.5 mt-4"
       >
-        Continue
+        Review
         <ArrowRight className="w-4 h-4 ml-2" />
       </Button>
     </div>
   );
 
-  const renderConfirmation = () => (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2 mb-4">
-        <Button variant="ghost" size="sm" onClick={() => setStep('amount')}>
-          <ArrowLeft className="w-4 h-4" />
-          Back
-        </Button>
-        <span className="font-medium">Confirm Withdrawal</span>
-      </div>
-
-      <div className="p-4 bg-gray-50 rounded-lg space-y-3">
-        <div className="flex justify-between text-sm">
-          <span className="text-gray-500">Method</span>
-          <span className="font-medium capitalize">{method?.replace('_', ' ')}</span>
+  const renderConfirmation = () => {
+    const fee = parseFloat(amount) * (bankId ? 0.01 : 0);
+    const receive = parseFloat(amount) - fee;
+    
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 mb-4">
+          <Button variant="ghost" size="sm" onClick={() => setStep('amount')}>
+            <ArrowLeft className="w-4 h-4 mr-1" />
+            Back
+          </Button>
+          <span className="font-semibold">Confirm Withdrawal</span>
         </div>
 
-        {method === 'bank' && (
-          <>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Bank</span>
-              <span className="font-medium">{bankName}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Account</span>
-              <span className="font-medium">{accountName}</span>
-            </div>
-          </>
-        )}
-
-        {method === 'crypto' && (
+        <div className="p-4 bg-gray-50 rounded-xl space-y-3">
           <div className="flex justify-between text-sm">
-            <span className="text-gray-500">Address</span>
-            <span className="font-medium font-mono">
-              {walletAddress.slice(0, 8)}...{walletAddress.slice(-8)}
-            </span>
+            <span className="text-gray-500">Method</span>
+            <span className="font-medium">{bankId ? 'Bank Transfer' : 'Crypto (Solana)'}</span>
           </div>
-        )}
 
-        <div className="border-t pt-2 flex justify-between text-sm">
-          <span className="text-gray-500">Amount</span>
-          <span className="font-medium">{parseFloat(amount).toLocaleString()} {currency}</span>
+          {bankId ? (
+            <>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Bank</span>
+                <span className="font-medium">{bankName}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Account</span>
+                <span className="font-medium">{accountName}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Account Number</span>
+                <span className="font-medium">{accountNumber}</span>
+              </div>
+            </>
+          ) : (
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-500">Wallet Address</span>
+              <span className="font-medium font-mono">
+                {walletAddress.slice(0, 6)}...{walletAddress.slice(-6)}
+              </span>
+            </div>
+          )}
+
+          <div className="border-t pt-3 mt-3 space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-500">Amount</span>
+              <span className="font-medium">{parseFloat(amount).toLocaleString()} {currency}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-500">Fee</span>
+              <span className="font-medium">{fee.toLocaleString()} {currency}</span>
+            </div>
+            <div className="flex justify-between text-lg font-bold">
+              <span>Total to Receive</span>
+              <span className="text-[#8A2BE2]">{receive.toLocaleString()} {currency}</span>
+            </div>
+          </div>
         </div>
-        <div className="flex justify-between text-sm">
-          <span className="text-gray-500">Fee</span>
-          <span className="font-medium">{calculateFee().toLocaleString()} {currency}</span>
+
+        <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg flex gap-3">
+          <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
+          <p className="text-sm text-amber-800">
+            Please verify all details. Withdrawals cannot be reversed once processed.
+          </p>
         </div>
-        <div className="flex justify-between text-lg font-bold">
-          <span>Total to Receive</span>
-          <span className="text-[#8A2BE2]">{calculateTotal().toLocaleString()} {currency}</span>
-        </div>
+
+        <Button
+          onClick={handleSubmit}
+          disabled={isLoading}
+          className="w-full bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white py-2.5"
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Processing...
+            </>
+          ) : (
+            <>
+              <Check className="w-4 h-4 mr-2" />
+              Confirm Withdrawal
+            </>
+          )}
+        </Button>
       </div>
-
-      <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg flex gap-2">
-        <Info className="w-5 h-5 text-amber-600 flex-shrink-0" />
-        <p className="text-sm text-amber-800">
-          Please verify all details before confirming. Withdrawals cannot be reversed.
-        </p>
-      </div>
-
-      <Button
-        onClick={handleSubmit}
-        disabled={isLoading}
-        className="w-full bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white"
-      >
-        {isLoading ? (
-          <>
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            Processing...
-          </>
-        ) : (
-          <>
-            <Check className="w-4 h-4 mr-2" />
-            Confirm Withdrawal
-          </>
-        )}
-      </Button>
-    </div>
-  );
+    );
+  };
 
   return (
-    <>
-      <Dialog open={isOpen} onOpenChange={handleClose}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Withdraw Funds</DialogTitle>
-          </DialogHeader>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>
+            {step === 'method' && 'Withdraw Funds'}
+            {step === 'bank' && 'Bank Transfer'}
+            {step === 'crypto' && 'Crypto Withdrawal'}
+            {step === 'amount' && 'Enter Amount'}
+            {step === 'confirm' && 'Confirm'}
+          </DialogTitle>
+        </DialogHeader>
 
-          {step === 'method' && renderMethodSelection()}
-          {step === 'details' && renderDetailsForm()}
-          {step === 'amount' && renderAmountForm()}
-          {step === 'confirm' && renderConfirmation()}
-        </DialogContent>
-      </Dialog>
-
-      <SuccessModal
-        isOpen={showSuccess}
-        onClose={handleClose}
-        title="Withdrawal Submitted!"
-        message={`Your withdrawal of ${calculateTotal().toLocaleString()} ${currency} has been submitted. Reference: ${transactionReference}`}
-        actionLabel="Done"
-        onAction={handleClose}
-      />
-
-      <TransactionStatusModal
-        isOpen={!!transactionStatus && transactionStatus !== 'completed'}
-        onClose={() => setTransactionStatus(null)}
-        status={transactionStatus || 'pending'}
-      />
-    </>
+        {step === 'method' && renderMethodSelection()}
+        {step === 'bank' && renderBankForm()}
+        {step === 'crypto' && renderCryptoForm()}
+        {step === 'amount' && renderAmountForm()}
+        {step === 'confirm' && renderConfirmation()}
+      </DialogContent>
+    </Dialog>
   );
 }
