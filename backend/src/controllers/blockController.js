@@ -12,20 +12,20 @@ exports.blockUser = async (req, res) => {
 
     // Prevent blocking yourself
     if (userId === currentUserId) {
-      return errorResponse(res, 'You cannot block yourself', 400);
+      return errorResponse(res, 400, 'You cannot block yourself');
     }
 
     // Check if user exists
     const userToBlock = await User.findById(userId);
     if (!userToBlock) {
-      return errorResponse(res, 'User not found', 404);
+      return errorResponse(res, 404, 'User not found');
     }
 
     // Add to blocked users if not already blocked
     const currentUser = await User.findById(currentUserId);
     
     if (currentUser.blockedUsers.includes(userId)) {
-      return errorResponse(res, 'User is already blocked', 400);
+      return errorResponse(res, 400, 'User is already blocked');
     }
 
     currentUser.blockedUsers.push(userId);
@@ -37,7 +37,7 @@ exports.blockUser = async (req, res) => {
 
   } catch (error) {
     console.error('Error blocking user:', error);
-    return errorResponse(res, 'Failed to block user', 500);
+    return errorResponse(res, 500, 'Failed to block user');
   }
 };
 
@@ -53,7 +53,7 @@ exports.unblockUser = async (req, res) => {
     const currentUser = await User.findById(currentUserId);
     
     if (!currentUser.blockedUsers.includes(userId)) {
-      return errorResponse(res, 'User is not blocked', 400);
+      return errorResponse(res, 400, 'User is not blocked');
     }
 
     currentUser.blockedUsers = currentUser.blockedUsers.filter(
@@ -67,7 +67,7 @@ exports.unblockUser = async (req, res) => {
 
   } catch (error) {
     console.error('Error unblocking user:', error);
-    return errorResponse(res, 'Failed to unblock user', 500);
+    return errorResponse(res, 500, 'Failed to unblock user');
   }
 };
 
@@ -88,7 +88,7 @@ exports.getBlockedUsers = async (req, res) => {
 
   } catch (error) {
     console.error('Error getting blocked users:', error);
-    return errorResponse(res, 'Failed to get blocked users', 500);
+    return errorResponse(res, 500, 'Failed to get blocked users');
   }
 };
 
@@ -116,6 +116,6 @@ exports.checkBlockStatus = async (req, res) => {
 
   } catch (error) {
     console.error('Error checking block status:', error);
-    return errorResponse(res, 'Failed to check block status', 500);
+    return errorResponse(res, 500, 'Failed to check block status');
   }
 };
