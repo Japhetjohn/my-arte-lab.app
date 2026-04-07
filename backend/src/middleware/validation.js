@@ -39,19 +39,19 @@ exports.validateRegister = [
     .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&_\-#])/).withMessage('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&_-#)'),
 
   body('localArea')
-    .optional()
+    .optional({ nullable: true, checkFalsy: true })
     .trim()
-    .isLength({ min: 2, max: 100 }).withMessage('Local area must be between 2 and 100 characters'),
+    .isLength({ min: 0, max: 100 }).withMessage('Local area must be less than 100 characters'),
 
   body('state')
-    .optional()
+    .optional({ nullable: true, checkFalsy: true })
     .trim()
-    .isLength({ min: 2, max: 100 }).withMessage('State must be between 2 and 100 characters'),
+    .isLength({ min: 0, max: 100 }).withMessage('State must be less than 100 characters'),
 
   body('country')
-    .optional()
+    .optional({ nullable: true, checkFalsy: true })
     .trim()
-    .isLength({ min: 2, max: 100 }).withMessage('Country must be between 2 and 100 characters'),
+    .isLength({ min: 0, max: 100 }).withMessage('Country must be less than 100 characters'),
 
   body('role')
     .optional()
@@ -60,7 +60,7 @@ exports.validateRegister = [
   body('category')
     .if(body('role').equals('creator'))
     .notEmpty().withMessage('Category is required for creators')
-    .isIn(['photographer', 'designer', 'videographer', 'illustrator', 'other']).withMessage('Invalid category')
+    .isIn(['photography', 'design', 'music', 'video', 'writing', 'marketing', 'programming', 'business', 'other']).withMessage('Invalid category')
 ];
 
 exports.validateLogin = [

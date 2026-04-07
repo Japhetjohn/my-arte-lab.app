@@ -58,10 +58,14 @@ const USER_ROLES = {
 };
 
 const CREATOR_CATEGORIES = {
-  PHOTOGRAPHER: 'photographer',
-  DESIGNER: 'designer',
-  VIDEOGRAPHER: 'videographer',
-  ILLUSTRATOR: 'illustrator',
+  PHOTOGRAPHY: 'photography',
+  DESIGN: 'design',
+  MUSIC: 'music',
+  VIDEO: 'video',
+  WRITING: 'writing',
+  MARKETING: 'marketing',
+  PROGRAMMING: 'programming',
+  BUSINESS: 'business',
   OTHER: 'other'
 };
 
