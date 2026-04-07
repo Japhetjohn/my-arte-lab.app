@@ -1,230 +1,151 @@
 #!/usr/bin/env node
 /**
- * Manual NGN Payout Script
- * Use this to payout existing NGN balance without swapping
+ * Manual NGN Payout Script - Uses existing HostFi service
+ * This pays out from existing NGN balance without swapping USDC
  * 
- * Usage: node scripts/payout-ngn.js <user_id> <amount_in_ngn> <account_number> <bank_id> <account_name>
- * Example: node scripts/payout-ngn.js 6983ea1691b5040eb0fb0276 4500 7031632438 NG::100004 "John Doe"
+ * Usage: node scripts/payout-ngn.js <amount_in_ngn> <account_number>
+ * Example: node scripts/payout-ngn.js 4000 7031632438
  */
 
 require('dotenv').config();
-const axios = require('axios');
 const mongoose = require('mongoose');
 
-// Config
-const HOSTFI_API_URL = process.env.HOSTFI_API_URL || 'https://api.hostfi.co';
-const HOSTFI_CLIENT_ID = process.env.HOSTFI_CLIENT_ID;
-const HOSTFI_SECRET_KEY = process.env.HOSTFI_SECRET_KEY;
 const MONGODB_URI = process.env.MONGODB_URI;
+const USER_ID = '6983ea1691b5040eb0fb0276';
 
-// Bank mapping (common Nigerian banks)
-const BANK_NAMES = {
-  'NG::100004': 'Opay',
-  'NG::000014': 'Access Bank',
-  'NG::000003': 'First Bank',
-  'NG::000016': 'GTBank',
-  'NG::000013': 'UBA',
-  'NG::000012': 'Zenith Bank',
-  'NG::000008': 'Union Bank',
-  'NG::000011': 'FCMB',
-  'NG::000015': 'Polaris Bank',
-  'NG::000017': 'Fidelity Bank',
-  'NG::000018': 'Wema Bank',
-  'NG::000021': 'Stanbic IBTC',
-  'NG::000033': 'Kuda Bank',
-  'NG::000035': 'PalmPay'
-};
-
-let accessToken = null;
-let tokenExpiry = null;
-
-async function getHostFiToken() {
-  if (accessToken && tokenExpiry && Date.now() < tokenExpiry) {
-    return accessToken;
-  }
-
-  console.log('[HostFi] Fetching new access token...');
-  
-  try {
-    const response = await axios.post(`${HOSTFI_API_URL}/v1/auth/token`, {
-      clientId: HOSTFI_CLIENT_ID,
-      secretKey: HOSTFI_SECRET_KEY
-    });
-
-    accessToken = response.data.accessToken;
-    // Set expiry to 50 minutes (tokens are valid for 1 hour)
-    tokenExpiry = Date.now() + (50 * 60 * 1000);
-    
-    console.log('[HostFi] Token obtained successfully');
-    return accessToken;
-  } catch (error) {
-    console.error('[HostFi] Failed to get token:', error.response?.data || error.message);
-    throw error;
-  }
-}
-
-async function makeHostFiRequest(method, endpoint, data = null, params = null) {
-  const token = await getHostFiToken();
-  
-  try {
-    const response = await axios({
-      method,
-      url: `${HOSTFI_API_URL}${endpoint}`,
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-      data,
-      params
-    });
-    
-    return response.data;
-  } catch (error) {
-    console.error(`[HostFi] API Error ${method} ${endpoint}:`, 
-      error.response?.status, 
-      error.response?.data || error.message
-    );
-    throw error;
-  }
-}
-
-async function getUserWallets() {
-  return await makeHostFiRequest('GET', '/v1/wallets');
-}
-
-async function initiatePayout(ngnAssetId, amount, recipient, clientReference) {
-  const payload = {
-    assetId: ngnAssetId,
-    clientReference,
-    methodId: 'BANK_TRANSFER',
-    amount: amount,
-    currency: 'NGN',
-    recipient: {
-      type: 'BANK',
-      method: 'BANK_TRANSFER',
-      currency: 'NGN',
-      accountNumber: recipient.accountNumber,
-      accountName: recipient.accountName,
-      bankId: recipient.bankId,
-      bankName: recipient.bankName,
-      country: 'NG'
-    },
-    memo: `Manual payout ${clientReference}`
-  };
-
-  console.log('[Payout] Request payload:', JSON.stringify(payload, null, 2));
-  
-  return await makeHostFiRequest('POST', '/v1/payout/transactions', payload);
-}
+// Your bank details
+const BANK_ID = 'NG::100004';
+const BANK_NAME = 'Opay';
+const ACCOUNT_NAME = 'John Kuulsinim Japhet';
 
 async function main() {
   const args = process.argv.slice(2);
   
-  if (args.length < 5) {
+  if (args.length < 2) {
     console.log(`
-Usage: node scripts/payout-ngn.js <user_id> <amount_in_ngn> <account_number> <bank_id> <account_name>
-
-Example:
-  node scripts/payout-ngn.js 6983ea1691b5040eb0fb0276 4500 7031632438 NG::100004 "John Doe"
-
-Common Nigerian Bank IDs:
-  NG::100004 - Opay
-  NG::000014 - Access Bank
-  NG::000016 - GTBank
-  NG::000013 - UBA
-  NG::000012 - Zenith Bank
-  NG::000003 - First Bank
-  NG::000033 - Kuda Bank
-    `);
+╔══════════════════════════════════════════════════════════╗
+║          MANUAL NGN PAYOUT SCRIPT                        ║
+╠══════════════════════════════════════════════════════════╣
+║  Usage: node scripts/payout-ngn.js <amount> <account>    ║
+║                                                          ║
+║  Example:                                                ║
+║    node scripts/payout-ngn.js 4000 7031632438            ║
+╚══════════════════════════════════════════════════════════╝
+`);
     process.exit(1);
   }
 
-  const [userId, amountNgn, accountNumber, bankId, ...accountNameParts] = args;
-  const accountName = accountNameParts.join(' ');
+  const [amountNgn, accountNumber] = args;
   
-  console.log('='.repeat(60));
-  console.log('MANUAL NGN PAYOUT SCRIPT');
-  console.log('='.repeat(60));
-  console.log(`User ID: ${userId}`);
-  console.log(`Amount: ₦${amountNgn} NGN`);
-  console.log(`Account: ${accountNumber}`);
-  console.log(`Bank: ${BANK_NAMES[bankId] || bankId} (${bankId})`);
-  console.log(`Account Name: ${accountName}`);
-  console.log('='.repeat(60));
+  console.log('╔══════════════════════════════════════════════════════════╗');
+  console.log('║              MANUAL NGN PAYOUT                           ║');
+  console.log('╠══════════════════════════════════════════════════════════╣');
+  console.log(`║  Amount:        ₦${amountNgn.toString().padEnd(38)} ║`);
+  console.log(`║  Account:       ${accountNumber.toString().padEnd(38)} ║`);
+  console.log(`║  Bank:          ${BANK_NAME.toString().padEnd(38)} ║`);
+  console.log(`║  Account Name:  ${ACCOUNT_NAME.toString().padEnd(38)} ║`);
+  console.log('╚══════════════════════════════════════════════════════════╝');
 
   try {
     // Connect to MongoDB
-    console.log('\n[DB] Connecting to MongoDB...');
+    console.log('\n[1/4] Connecting to database...');
     await mongoose.connect(MONGODB_URI);
-    console.log('[DB] Connected');
+    console.log('      ✓ Connected');
 
-    // Get wallets from HostFi
-    console.log('\n[HostFi] Fetching wallets...');
-    const wallets = await getUserWallets();
+    // Load services
+    console.log('[2/4] Loading services...');
+    const hostfiService = require('../src/services/hostfiService');
+    const User = require('../src/models/User');
+    console.log('      ✓ Services loaded');
+
+    // Get user
+    console.log('[3/4] Fetching user...');
+    const user = await User.findById(USER_ID);
+    if (!user) {
+      console.error('      ✗ User not found');
+      process.exit(1);
+    }
+    console.log(`      ✓ User: ${user.email}`);
+
+    // Get wallets
+    console.log('[4/4] Checking NGN balance...');
+    const wallets = await hostfiService.getUserWallets();
     
-    // Find NGN wallet
     const ngnWallet = wallets.find(w => {
       const code = (w.currency?.code || w.currency || '').toUpperCase();
       return code === 'NGN';
     });
 
     if (!ngnWallet) {
-      console.error('\n❌ ERROR: No NGN wallet found!');
-      console.log('Available wallets:', wallets.map(w => ({
-        currency: w.currency?.code || w.currency,
-        balance: w.balance,
-        id: w.id
-      })));
+      console.error('      ✗ No NGN wallet found!');
+      console.log('\nAvailable wallets:');
+      wallets.forEach(w => {
+        console.log(`  - ${w.currency?.code || w.currency}: ${w.balance}`);
+      });
       process.exit(1);
     }
 
-    console.log('\n✓ NGN Wallet found:');
-    console.log(`  Asset ID: ${ngnWallet.id}`);
-    console.log(`  Balance: ₦${ngnWallet.balance} NGN`);
+    console.log(`      ✓ NGN Balance: ₦${ngnWallet.balance}`);
     
     if (parseFloat(ngnWallet.balance) < parseFloat(amountNgn)) {
-      console.error(`\n❌ ERROR: Insufficient NGN balance!`);
-      console.error(`  Available: ₦${ngnWallet.balance} NGN`);
-      console.error(`  Requested: ₦${amountNgn} NGN`);
+      console.error(`\n❌ INSUFFICIENT BALANCE!`);
+      console.error(`   Available: ₦${ngnWallet.balance} NGN`);
+      console.error(`   Requested: ₦${amountNgn} NGN`);
+      console.error(`\n   Try withdrawing less (e.g., ${Math.floor(parseFloat(ngnWallet.balance) * 0.95)})`);
       process.exit(1);
     }
 
-    // Confirm with user
-    console.log('\n' + '!'.repeat(60));
+    // Confirm
+    console.log('\n' + '⚠'.repeat(30));
     console.log('⚠️  READY TO INITIATE PAYOUT');
-    console.log('!'.repeat(60));
-    console.log(`This will payout ₦${amountNgn} NGN from existing balance.`);
-    console.log(`No USDC swap needed!`);
-    console.log('\nPress Ctrl+C to cancel, or wait 3 seconds to proceed...');
+    console.log('⚠'.repeat(30));
+    console.log('   This will payout from your EXISTING NGN balance.');
+    console.log('   No USDC swap needed!');
+    console.log('\n   Waiting 5 seconds... (Press Ctrl+C to cancel)');
     
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    for (let i = 5; i > 0; i--) {
+      process.stdout.write(`   ${i}... `);
+      await new Promise(r => setTimeout(r, 1000));
+    }
+    console.log('\n');
 
     // Initiate payout
     const clientReference = `MANUAL-NGN-${Date.now()}`;
-    console.log(`\n[Payout] Initiating payout with reference: ${clientReference}`);
+    console.log(`[Payout] Initiating... (Ref: ${clientReference})`);
     
-    const result = await initiatePayout(
-      ngnWallet.id,
-      parseFloat(amountNgn),
-      {
-        accountNumber,
-        accountName,
-        bankId,
-        bankName: BANK_NAMES[bankId] || bankId
+    const result = await hostfiService.initiateWithdrawal({
+      walletAssetId: ngnWallet.id,
+      amount: parseFloat(amountNgn),
+      currency: 'NGN',
+      methodId: 'BANK_TRANSFER',
+      recipient: {
+        type: 'BANK',
+        method: 'BANK_TRANSFER',
+        currency: 'NGN',
+        accountNumber: accountNumber,
+        accountName: ACCOUNT_NAME,
+        bankId: BANK_ID,
+        bankName: BANK_NAME,
+        country: 'NG'
       },
-      clientReference
-    );
+      clientReference,
+      memo: `Manual payout ${clientReference}`
+    });
 
-    console.log('\n' + '='.repeat(60));
-    console.log('✅ PAYOUT INITIATED SUCCESSFULLY!');
-    console.log('='.repeat(60));
-    console.log('Response:', JSON.stringify(result, null, 2));
-    console.log('\nCheck status in HostFi dashboard or with reference:', clientReference);
+    console.log('\n' + '╔══════════════════════════════════════════════════════════╗');
+    console.log('║  ✅ PAYOUT INITIATED SUCCESSFULLY!                       ║');
+    console.log('╠══════════════════════════════════════════════════════════╣');
+    console.log(`║  Reference:  ${clientReference.padEnd(38)} ║`);
+    console.log(`║  Status:     ${(result.status || 'PENDING').padEnd(38)} ║`);
+    console.log(`║  Amount:     ₦${amountNgn.toString().padEnd(37)} ║`);
+    console.log('╚══════════════════════════════════════════════════════════╝');
+    console.log('\nTrack in HostFi dashboard or check your bank account.');
 
   } catch (error) {
-    console.error('\n❌ ERROR:', error.message);
-    if (error.response?.data) {
-      console.error('HostFi Response:', JSON.stringify(error.response.data, null, 2));
+    console.error('\n❌ PAYOUT FAILED!');
+    console.error('Error:', error.message);
+    if (error.hostfiError) {
+      console.error('HostFi:', error.hostfiError);
     }
     process.exit(1);
   } finally {
