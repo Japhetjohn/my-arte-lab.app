@@ -594,41 +594,53 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
     }
   }
 
-  // Check balance - account for HostFi swap fees on fiat withdrawals
-  // Crypto withdrawals (USDC->USDC) don't need swap fees
-  // Fiat withdrawals (USDC->NGN) need ~$1.00 reserve for HostFi swap fees
   const sourceCurr = currency.toUpperCase();
   const targetCurr = effectiveTargetCurrency.toUpperCase();
 
-  // Get wallet asset ID and actual USDC balance
+  // Get wallet asset ID
   const assetId = await hostfiWalletService.getWalletAssetId(req.user._id, currency);
   if (!assetId) {
     return next(new ErrorHandler(`Wallet for currency ${currency} not found`, 404));
   }
 
-  // Get actual USDC balance from the specific wallet asset (not aggregate)
+  // Get actual wallet assets
   const walletAssets = await hostfiWalletService.getUserWalletAssets(req.user._id);
   const usdcAsset = walletAssets.find(a => a.currency === currency);
   const actualUsdcBalance = usdcAsset ? (usdcAsset.balance || 0) : 0;
   
+  // Check for existing target currency balance (e.g., NGN)
+  const targetAsset = walletAssets.find(a => a.currency === targetCurr);
+  const targetBalance = targetAsset ? (targetAsset.balance || 0) : 0;
+  
   console.log(`[Withdrawal] User aggregate balance: ${user.wallet.balance} ${user.wallet.currency}`);
   console.log(`[Withdrawal] Actual ${currency} balance: ${actualUsdcBalance}`);
+  console.log(`[Withdrawal] Actual ${targetCurr} balance: ${targetBalance}`);
 
-  // For fiat withdrawals, check actual USDC balance against amount + swap fees
+  // For fiat withdrawals (USDC -> NGN)
   if (!isCrypto && sourceCurr !== targetCurr) {
-    const swapFeeReserve = hostfiService.getSwapFeeReserve(); // 0.5 USDC
-    const requiredUsdc = amount + swapFeeReserve;
+    // Check if user has sufficient TARGET currency (NGN) to skip swap
+    // Rough estimate: 1 USDC ≈ 1500-1600 NGN
+    const estimatedTargetNeeded = amount * 1500;
+    const hasSufficientTarget = targetBalance >= (estimatedTargetNeeded * 0.8); // 80% threshold
     
-    if (actualUsdcBalance < requiredUsdc) {
-      const maxWithdraw = Math.max(0, actualUsdcBalance - swapFeeReserve);
-      return next(new ErrorHandler(
-        `Insufficient USDC for swap. You have ${actualUsdcBalance.toFixed(4)} USDC available, ` +
-        `but tried to withdraw ${amount} USDC. ` +
-        `Maximum you can withdraw: ${maxWithdraw.toFixed(4)} USDC (keeping ${swapFeeReserve} USDC for swap fees). ` +
-        `Note: Your total balance includes other currencies converted to USDC value. ` +
-        `Please reduce amount or deposit more USDC.`,
-        400
-      ));
+    if (hasSufficientTarget) {
+      console.log(`[Withdrawal] User has sufficient ${targetCurr} balance (${targetBalance}). Will skip swap.`);
+    } else {
+      console.log(`[Withdrawal] Need to swap ${amount} ${sourceCurr} to ${targetCurr}`);
+      const swapFeeReserve = hostfiService.getSwapFeeReserve(); // 1.0 USDC
+      const requiredUsdc = amount + swapFeeReserve;
+      
+      if (actualUsdcBalance < requiredUsdc) {
+        const maxWithdraw = Math.max(0, actualUsdcBalance - swapFeeReserve);
+        return next(new ErrorHandler(
+          `Insufficient USDC for swap. You have ${actualUsdcBalance.toFixed(4)} USDC available, ` +
+          `but tried to withdraw ${amount} USDC. ` +
+          `Maximum you can withdraw: ${maxWithdraw.toFixed(4)} USDC (keeping ${swapFeeReserve} USDC for swap fees). ` +
+          `Note: Your total balance includes other currencies converted to USDC value. ` +
+          `Please reduce amount or deposit more USDC.`,
+          400
+        ));
+      }
     }
   }
 
