@@ -640,23 +640,30 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
   // Calculate fees
   const feeBreakdown = hostfiService.calculateOffRampFee(amount);
   
-  // For fiat withdrawals (USDC -> NGN), HostFi charges swap fees on top of swap amount
-  // We need to leave some USDC in the wallet to cover these fees
-  // Based on testing, HostFi needs ~0.5 USDC for swap fees
+  // For fiat withdrawals (USDC -> NGN), HostFi charges swap fees ON TOP of swap amount
+  // The fee is deducted from the wallet balance, not from the swap amount
+  // So if user wants to withdraw 2.8 USDC and fee is 0.5 USDC:
+  // - Total needed: 2.8 USDC
+  // - Fee: 0.5 USDC (charged separately by HostFi)
+  // - We send full 2.8 USDC to swap, but user needs 3.3 USDC total in wallet
   const isFiatWithdrawal = !isCrypto && effectiveTargetCurrency !== currency;
-  const swapFeeBuffer = isFiatWithdrawal ? 0.5 : 0;
-  const amountToTransfer = Math.max(0, amount - swapFeeBuffer);
+  const estimatedSwapFee = isFiatWithdrawal ? 0.5 : 0;
+  const totalNeeded = amount + estimatedSwapFee;
   
-  if (amountToTransfer <= 0) {
+  // Check if user has enough balance for amount + fees
+  if (user.wallet.balance < totalNeeded) {
     return next(new ErrorHandler(
-      `Amount too small for withdrawal. You need at least ${swapFeeBuffer + 0.01} ${currency} ` +
-      `to cover network fees.`, 400
+      `Insufficient balance. You have ${user.wallet.balance.toFixed(4)} ${currency}, ` +
+      `but need ${totalNeeded.toFixed(4)} ${currency} (including ~${estimatedSwapFee} ${currency} network fee). ` +
+      `Please add ${(totalNeeded - user.wallet.balance).toFixed(4)} ${currency} more or reduce withdrawal amount.`, 
+      400
     ));
   }
   
-  console.log(`[Withdrawal] Transferring ${amountToTransfer} ${currency} (reserved ${swapFeeBuffer} for swap fees)`);
+  const amountToTransfer = amount;
+  console.log(`[Withdrawal] Withdrawing ${amountToTransfer} ${currency} (ensuring ${estimatedSwapFee} ${currency} available for HostFi fees)`);
 
-  // Deduct from balance and add to pending (using converted amounts where appropriate)
+  // Deduct only the withdrawal amount from balance (fees are handled by HostFi)
   user.wallet.balance -= amountInPrimary;
   user.wallet.pendingBalance += amountInPrimary;
   user.wallet.lastUpdated = new Date();
