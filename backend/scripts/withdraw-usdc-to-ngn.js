@@ -90,15 +90,12 @@ async function main() {
     const usdcBalance = parseFloat(usdcWallet.balance || 0);
     console.log(`      ✓ USDC Balance: ${usdcBalance} USDC`);
     
-    // Check if enough balance (amount + 0.2 USDC for swap fees)
-    const swapFeeReserve = 0.2;
-    const requiredUsdc = usdcAmount + swapFeeReserve;
-    
-    if (usdcBalance < requiredUsdc) {
+    // Check if enough balance - no reserve needed, HostFi handles fees
+    if (usdcBalance < usdcAmount) {
       console.error(`\n❌ INSUFFICIENT USDC!`);
       console.error(`   Available: ${usdcBalance} USDC`);
-      console.error(`   Required: ${usdcAmount} USDC + ${swapFeeReserve} USDC (swap fee) = ${requiredUsdc} USDC`);
-      console.error(`\n   Maximum you can withdraw: ${Math.max(0, usdcBalance - swapFeeReserve).toFixed(4)} USDC`);
+      console.error(`   Requested: ${usdcAmount} USDC`);
+      console.error(`\n   Maximum you can withdraw: ${usdcBalance.toFixed(4)} USDC`);
       process.exit(1);
     }
 
@@ -109,7 +106,6 @@ async function main() {
     console.log(`   This will:`);
     console.log(`   1. Swap ${usdcAmount} USDC → NGN`);
     console.log(`   2. Payout NGN to your ${BANK_NAME} account`);
-    console.log(`   3. Reserve ${swapFeeReserve} USDC for swap fees`);
     console.log('\n   Waiting 5 seconds... (Ctrl+C to cancel)');
     
     for (let i = 5; i > 0; i--) {
