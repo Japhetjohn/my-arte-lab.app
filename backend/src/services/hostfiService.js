@@ -19,8 +19,8 @@ class HostFiService {
     this.platformWalletAddress = process.env.PLATFORM_WALLET_ADDRESS;
     
     // HostFi swap fee reserve - amount to keep for HostFi swap fees (USDC)
-    // HostFi charges fees for swaps, we reserve $1.00 to be safe
-    this.swapFeeReserve = 1.0;
+    // HostFi charges ~0.5-1% for swaps, we reserve $0.20 to be safe
+    this.swapFeeReserve = 0.2;
 
     // Token cache
     this.accessToken = null;
@@ -946,6 +946,10 @@ class HostFiService {
           effectiveCurrency = targetCurrency;
 
           console.log(`[HostFi Service] Swap successful. ${swapAmount} ${sourceCurrency} → ${effectiveAmount} ${effectiveCurrency}`);
+          
+          // Add small delay for swap to settle in HostFi's system
+          console.log(`[HostFi Service] Waiting 2 seconds for swap to settle...`);
+          await new Promise(resolve => setTimeout(resolve, 2000));
           
           if (targetCurrency === 'NGN' && effectiveAmount < 1000) {
             throw new Error(`Minimum withdrawal amount is ₦1,000 NGN. You received ₦${effectiveAmount.toFixed(2)} after swap. Please add more USDC to your wallet.`);

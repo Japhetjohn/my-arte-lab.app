@@ -90,8 +90,8 @@ async function main() {
     const usdcBalance = parseFloat(usdcWallet.balance || 0);
     console.log(`      ✓ USDC Balance: ${usdcBalance} USDC`);
     
-    // Check if enough balance (amount + 1 USDC for swap fees)
-    const swapFeeReserve = 1.0;
+    // Check if enough balance (amount + 0.2 USDC for swap fees)
+    const swapFeeReserve = 0.2;
     const requiredUsdc = usdcAmount + swapFeeReserve;
     
     if (usdcBalance < requiredUsdc) {
