@@ -907,26 +907,17 @@ class HostFiService {
             category: 'SWAP'
           });
         } catch (swapError) {
-          // If swap failed due to insufficient funds, calculate how much more is needed
+          // If swap failed due to insufficient funds, provide helpful message
           if (swapError.hostfiError?.code === 'INSUFFICIENT_FUNDS' || 
               swapError.message?.includes('sufficient funds')) {
             
-            // Get user's current balance
-            const wallets = await this.getUserWallets();
-            const sourceWallet = wallets.find(w => 
-              (w.currency?.code || w.currency || '').toUpperCase() === sourceCurrency
-            );
-            const currentBalance = sourceWallet?.balance || 0;
+            // HostFi swap fees are typically 0.3-0.5 USDC
+            const estimatedFee = sourceCurrency === 'USDC' || sourceCurrency === 'USDT' ? 0.5 : 0;
+            const estimatedNeeded = Number(payoutAmount) + estimatedFee;
             
-            // Estimate needed amount (swap amount + ~0.5 USDC for fees)
-            const estimatedNeeded = Number(payoutAmount) + 0.5;
-            const additionalNeeded = Math.max(0, estimatedNeeded - currentBalance);
-            
-            const errorMsg = additionalNeeded > 0 
-              ? `Insufficient funds for swap. You have ${currentBalance} ${sourceCurrency}, ` +
-                `but need approximately ${estimatedNeeded.toFixed(2)} ${sourceCurrency} ` +
-                `(including network fees). Please add ${additionalNeeded.toFixed(2)} ${sourceCurrency} more to your wallet.`
-              : `Insufficient funds for swap. Please add more ${sourceCurrency} to cover network fees.`;
+            const errorMsg = `Insufficient funds for swap. You attempted to swap ${payoutAmount} ${sourceCurrency}, ` +
+              `but HostFi requires additional funds for network fees (approximately ${estimatedFee} ${sourceCurrency}). ` +
+              `Please ensure you have at least ${estimatedNeeded.toFixed(2)} ${sourceCurrency} available for withdrawal.`;
             
             throw new Error(errorMsg);
           }
