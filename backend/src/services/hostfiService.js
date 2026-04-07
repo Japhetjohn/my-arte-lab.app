@@ -827,7 +827,7 @@ class HostFiService {
 
   /**
    * Initiate withdrawal (bank transfer or mobile money)
-   * Automatically deducts 1% platform fee
+   * No platform fees - HostFi handles network fees
    * @param {Object} params - Withdrawal parameters
    * @param {string} params.walletAssetId - Source wallet asset ID
    * @param {number} params.amount - Amount to withdraw
@@ -839,24 +839,11 @@ class HostFiService {
    */
   async initiateWithdrawal({ walletAssetId, amount, currency, methodId, recipient, clientReference, memo }) {
     try {
-      // Calculate platform fee (1% for off-ramp)
-      const feeBreakdown = this.calculateOffRampFee(amount);
       const isCryptoPayout = recipient.type === 'CRYPTO' || methodId === 'CRYPTO';
+      console.log(`[HostFi Service] Initiating withdrawal of ${amount} ${currency}`);
 
-      console.log(`[HostFi Service] Initiating withdrawal of ${amount} ${currency}. Fee: ${feeBreakdown.platformFee}`);
-
-      // 1. Collect Commission (1%)
-      // For off-ramp, we send the fee to the platform wallet
-      const safeRef = clientReference ? clientReference.substring(0, 8) : Date.now().toString().substring(5);
-      await this.collectCommission({
-        assetId: walletAssetId,
-        amount: feeBreakdown.platformFee,
-        currency,
-        clientReference: `COMM-OFF-${safeRef}`
-      });
-
-      // 2. Send the remainder to the recipient
-      const payoutAmount = feeBreakdown.amountAfterFee;
+      // Use full amount - HostFi handles their own fees
+      const payoutAmount = amount;
 
       // Automatic Currency Conversion (Off-ramp Flow)
       // If source currency (USDC) != target currency (NGN, etc.), perform swap first
@@ -882,7 +869,7 @@ class HostFiService {
           throw new Error(`Target currency ${targetCurrency} asset not found in wallet`);
         }
 
-        // Swap the payout amount (controller already reserved fees)
+        // Swap the full payout amount
         const swapAmount = Number(payoutAmount);
         
         console.log(`[HostFi Service] Swapping ${swapAmount} ${sourceCurrency} to ${targetCurrency}`);

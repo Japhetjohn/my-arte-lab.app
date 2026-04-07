@@ -541,28 +541,24 @@ exports.verifyBankAccount = catchAsync(async (req, res, next) => {
 });
 
 /**
- * Initiate withdrawal (with 1% platform fee deduction)
+ * Initiate withdrawal - Clean implementation without hardcoded fees
  */
 exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
   const {
     amount,
     currency = 'USDC',
-    targetCurrency, // Allow dynamic target currency
-    methodId, // Will be determined by currency if missing
+    targetCurrency,
+    methodId,
     recipient
   } = req.body;
 
   const config = hostfiService.getCurrencyConfig(targetCurrency || currency);
   const effectiveMethodId = methodId || config.method;
-  // For fiat withdrawals, use the config's fiat currency (e.g., NGN for Nigeria)
-  // For crypto withdrawals, use the source currency
   const isCrypto = (methodId || config.method) === 'CRYPTO' || (methodId || config.method) === 'SOL';
   const effectiveTargetCurrency = isCrypto ? currency : (targetCurrency || config.fiatCurrency || currency);
-  
-  console.log(`[Withdrawal] Config: source=${currency}, target=${effectiveTargetCurrency}, method=${effectiveMethodId}, isCrypto=${isCrypto}`);
 
-  // 1. SYNC BALANCES FIRST (Critical to ensure we don't check against stale 0 balance)
-  console.log(`[Withdrawal] Forcing sync before withdrawal for user=${req.user._id}`);
+  // 1. SYNC BALANCES FIRST
+  console.log(`[Withdrawal] Starting withdrawal: ${amount} ${currency} -> ${effectiveTargetCurrency}, method=${effectiveMethodId}`);
   const user = await hostfiWalletService.syncWalletBalances(req.user._id);
 
   // Validation
@@ -570,18 +566,7 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Valid amount is required', 400));
   }
 
-  // Check minimum withdrawal amount
-  const minAmount = hostfiService.getMinimumWithdrawalAmount(effectiveTargetCurrency);
-  
-  // For fiat withdrawals (e.g., USDC -> NGN), we need to ensure enough source funds
-  // to meet the target minimum after swap + fees
-  if (!isCrypto && effectiveTargetCurrency !== currency) {
-    // Rough estimate: need at least enough to cover minimum + fees
-    // HostFi will return exact error if insufficient
-    console.log(`[Withdrawal] Fiat withdrawal: min ${minAmount} ${effectiveTargetCurrency} required after swap`);
-  }
-
-  // Basic validation based on method
+  // Basic validation
   if (!recipient) {
     return next(new ErrorHandler('Recipient details are required', 400));
   }
@@ -600,32 +585,22 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
   let amountInPrimary = amount;
   if (currency !== user.wallet.currency) {
     try {
-      let rateData;
-      try {
-        rateData = await hostfiService.getCurrencyRates(currency, user.wallet.currency, true);
-      } catch (directError) {
-        // Fallback to USDT bridge
-        console.log(`[Withdrawal] Direct rate ${currency}/${user.wallet.currency} failed, trying USDT bridge...`);
-        const bridgeRateData = await hostfiService.getCurrencyRates(currency, 'USDT');
-        const toFinalRateData = await hostfiService.getCurrencyRates('USDT', user.wallet.currency);
-
-        const bridgeRate = bridgeRateData.rate || bridgeRateData.data?.rate || 0;
-        const toFinalRate = toFinalRateData.rate || toFinalRateData.data?.rate || 0;
-
-        rateData = { rate: bridgeRate * toFinalRate };
-      }
-
+      const rateData = await hostfiService.getCurrencyRates(currency, user.wallet.currency, true);
       const rate = rateData.rate || rateData.data?.rate || 0;
       amountInPrimary = amount * rate;
     } catch (error) {
-      console.error(`Withdrawal conversion failed (${currency} to ${user.wallet.currency}):`, error.message);
+      console.error(`[Withdrawal] Rate conversion failed:`, error.message);
       return next(new ErrorHandler(`Unable to verify balance for ${currency}. Rate API error.`, 500));
     }
   }
 
-  // Check balance using the primary currency equivalent (with small epsilon for precision)
-  if (user.wallet.balance < (amountInPrimary - 0.000001)) {
-    return next(new ErrorHandler(`Insufficient balance. Available: ${user.wallet.balance.toFixed(4)} ${user.wallet.currency}`, 400));
+  // Check balance - simple and clean
+  if (user.wallet.balance < amountInPrimary) {
+    return next(new ErrorHandler(
+      `Insufficient balance. Available: ${user.wallet.balance.toFixed(4)} ${user.wallet.currency}, ` +
+      `Requested: ${amountInPrimary.toFixed(4)} ${user.wallet.currency}`,
+      400
+    ));
   }
 
   // Get wallet asset ID
@@ -634,37 +609,12 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler(`Wallet for currency ${currency} not found`, 404));
   }
 
-  // Generate unique reference
   const clientReference = `WD-${uuidv4()}`;
+  console.log(`[Withdrawal] Processing ${amount} ${currency} for user ${req.user._id}`);
 
-  // Calculate fees
-  const feeBreakdown = hostfiService.calculateOffRampFee(amount);
-  
-  // For fiat withdrawals (USDC -> NGN), HostFi charges swap fees ON TOP of swap amount
-  // The fee is deducted from the wallet balance, not from the swap amount
-  // Based on testing, HostFi needs ~1.0 USDC for swap fees (high due to Solana network fees)
-  const isFiatWithdrawal = !isCrypto && effectiveTargetCurrency !== currency;
-  const estimatedSwapFee = isFiatWithdrawal ? 1.0 : 0;
-  const totalNeeded = amount + estimatedSwapFee;
-  
-  // Check if user has enough balance for amount + fees
-  if (user.wallet.balance < totalNeeded) {
-    const maxWithdrawable = Math.max(0, user.wallet.balance - estimatedSwapFee);
-    return next(new ErrorHandler(
-      `Insufficient balance. You have ${user.wallet.balance.toFixed(4)} ${currency}, ` +
-      `but need ${totalNeeded.toFixed(4)} ${currency} (including ~${estimatedSwapFee} ${currency} network fee). ` +
-      `Maximum you can withdraw: ${maxWithdrawable.toFixed(4)} ${currency}. ` +
-      `Please add more ${currency} or reduce withdrawal amount.`, 
-      400
-    ));
-  }
-  
-  const amountToTransfer = amount;
-  console.log(`[Withdrawal] Withdrawing ${amountToTransfer} ${currency} (ensuring ~${estimatedSwapFee} ${currency} available for HostFi fees)`);
-
-  // Deduct only the withdrawal amount from balance (fees are handled by HostFi)
+  // Deduct amount from balance
   user.wallet.balance -= amountInPrimary;
-  user.wallet.pendingBalance += amountInPrimary;
+  user.wallet.pendingBalance = (user.wallet.pendingBalance || 0) + amountInPrimary;
   user.wallet.lastUpdated = new Date();
   await user.save();
 
@@ -676,7 +626,7 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
 
     const withdrawal = await hostfiService.initiateWithdrawal({
       walletAssetId: assetId,
-      amount: amountToTransfer,
+      amount: amount,
       currency: currency, // Source currency (e.g. USDC)
       methodId: effectiveMethodId,
       recipient: {
@@ -700,7 +650,7 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
     const recipientDisplay = (recipient.walletAddress || recipient.accountNumber || '');
     const shortRecipient = recipientDisplay.length > 8 ? `${recipientDisplay.slice(0, 4)}...${recipientDisplay.slice(-4)}` : recipientDisplay;
     const txDescription = (methodId === 'CRYPTO' || methodId === 'SOL')
-      ? `Sent ${amountToTransfer} USDC to ${shortRecipient}`
+      ? `Sent ${amount} USDC to ${shortRecipient}`
       : `Bank withdrawal to ${recipient.accountName || 'beneficiary'}`;
 
     const transaction = await Transaction.create({
@@ -714,7 +664,7 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
       paymentMethod: methodId?.toLowerCase() || effectiveMethodId.toLowerCase(),
       platformFee: 0,
       gasFee: 0,
-      netAmount: amountToTransfer,
+      netAmount: amount,
       fromAddress: user.wallet.address,
       toAddress: recipient.walletAddress || recipient.accountNumber,
       blockchainNetwork: (methodId === 'CRYPTO' || methodId === 'SOL') ? 'Solana' : null,
@@ -724,7 +674,7 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
         beneficiaryBankName: recipient.bankName || (methodId === 'CRYPTO' ? 'Solana Blockchain' : 'HostFi'),
         beneficiaryBankCode: recipient.bankId,
         targetCurrency: effectiveTargetCurrency,
-        targetAmount: withdrawal.amount || amountToTransfer,
+        targetAmount: withdrawal.amount || amount,
         reference: clientReference,
         signature: withdrawal.reference
       },
@@ -734,7 +684,7 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
         hostfiReference: withdrawal.reference,
         provider: 'hostfi',
         methodId: effectiveMethodId,
-        feeBreakdown: { ...feeBreakdown, networkFee: 0 },
+        feeBreakdown: { platformFee: 0, networkFee: 0 },
         country: recipient.country || config.country || 'NG',
         explorerUrl: (methodId === 'CRYPTO' || methodId === 'SOL') ? `https://explorer.solana.com/tx/${withdrawal.reference}` : null
       }
@@ -747,7 +697,7 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
         currency,
         platformFee: 0,
         networkFee: 0,
-        amountAfterFee: amount,
+        netAmount: amount,
         status: 'pending',
         recipient: {
           accountName: recipient.accountName,
