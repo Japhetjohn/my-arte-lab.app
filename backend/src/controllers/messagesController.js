@@ -122,7 +122,7 @@ exports.getConversations = async (req, res) => {
 
   } catch (error) {
     console.error('Error getting conversations:', error);
-    return successResponse(res, {
+    return successResponse(res, 200, 'Conversations retrieved', {
       conversations: [],
       count: 0
     });

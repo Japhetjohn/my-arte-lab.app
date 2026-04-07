@@ -31,8 +31,7 @@ exports.blockUser = async (req, res) => {
     currentUser.blockedUsers.push(userId);
     await currentUser.save();
 
-    return successResponse(res, {
-      message: 'User blocked successfully',
+    return successResponse(res, 200, 'User blocked successfully', {
       blockedUserId: userId
     });
 
@@ -62,8 +61,7 @@ exports.unblockUser = async (req, res) => {
     );
     await currentUser.save();
 
-    return successResponse(res, {
-      message: 'User unblocked successfully',
+    return successResponse(res, 200, 'User unblocked successfully', {
       unblockedUserId: userId
     });
 
@@ -84,7 +82,7 @@ exports.getBlockedUsers = async (req, res) => {
     const currentUser = await User.findById(currentUserId)
       .populate('blockedUsers', 'firstName lastName name avatar');
 
-    return successResponse(res, {
+    return successResponse(res, 200, 'Blocked users retrieved', {
       blockedUsers: currentUser.blockedUsers || []
     });
 
@@ -110,7 +108,7 @@ exports.checkBlockStatus = async (req, res) => {
     const otherUser = await User.findById(userId);
     const hasBlockedMe = otherUser.blockedUsers.includes(currentUserId);
 
-    return successResponse(res, {
+    return successResponse(res, 200, 'Block status retrieved', {
       isBlocked,
       hasBlockedMe,
       canMessage: !isBlocked && !hasBlockedMe
