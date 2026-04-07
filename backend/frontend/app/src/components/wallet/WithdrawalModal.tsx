@@ -72,9 +72,9 @@ function BankSelect({ banks, selectedBank, onSelect, searchValue, onSearchChange
     };
   }, [isOpen, onToggle]);
 
-  // Split banks into popular and others based on the sorted list
-  const popularBanks = filteredBanks.slice(0, 15);
-  const otherBanks = filteredBanks.slice(15);
+  // Split banks into popular and others
+  const popularBanks = banks.slice(0, 15);
+  const otherBanks = banks.slice(15);
 
   return (
     <div className="space-y-2" ref={dropdownRef}>
@@ -133,7 +133,7 @@ function BankSelect({ banks, selectedBank, onSelect, searchValue, onSearchChange
                       <div className="px-3 py-2 bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                         Popular Banks
                       </div>
-                      {popularBanks.map((bank) => (
+                      {popularBanks.map((bank: Bank) => (
                         <button
                           key={bank.id}
                           type="button"
@@ -152,7 +152,7 @@ function BankSelect({ banks, selectedBank, onSelect, searchValue, onSearchChange
                       <div className="px-3 py-2 bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wider border-t">
                         Other Banks
                       </div>
-                      {otherBanks.map((bank) => (
+                      {otherBanks.map((bank: Bank) => (
                         <button
                           key={bank.id}
                           type="button"
