@@ -882,40 +882,19 @@ class HostFiService {
           throw new Error(`Target currency ${targetCurrency} asset not found in wallet`);
         }
 
-        // Get source wallet to check actual balance
-        const sourceWallet = assets.find(a => {
-          const code = (a.currencyCode || (a.currency && a.currency.code) || a.currency || '').toUpperCase();
-          return code === sourceCurrency;
-        });
-        
-        if (!sourceWallet) {
-          throw new Error(`Source currency ${sourceCurrency} wallet not found`);
-        }
-        
-        const sourceBalance = parseFloat(sourceWallet.balance || sourceWallet.availableBalance || 0);
-        console.log(`[HostFi Service] Source wallet balance: ${sourceBalance} ${sourceCurrency}`);
-        
-        // HostFi charges network fees on top of swap amount, so we need to reduce swap amount
-        // to leave room for fees. Estimate 0.5 USDC/USDT for network fees.
+        // HostFi charges network fees on top of swap amount, so we reduce swap amount
+        // to leave room for fees. The fee is charged on top, not deducted from swap amount.
+        // Estimate 0.5 USDC/USDT for network fees.
         const estimatedNetworkFee = (sourceCurrency === 'USDC' || sourceCurrency === 'USDT') ? 0.5 : 0.01;
         
-        // Calculate max amount we can swap (leave room for fees)
-        let swapAmount = Math.min(Number(payoutAmount), sourceBalance - estimatedNetworkFee);
-        
-        // Ensure we don't try to swap negative or zero
-        if (swapAmount <= 0) {
-          throw new Error(
-            `Insufficient balance for swap. You have ${sourceBalance} ${sourceCurrency}, ` +
-            `but need at least ${estimatedNetworkFee + 0.01} ${sourceCurrency} ` +
-            `(including ${estimatedNetworkFee} ${sourceCurrency} network fee). ` +
-            `Please add more funds to your wallet.`
-          );
-        }
+        // Reduce swap amount to leave room for network fees
+        // Example: If user wants to withdraw 2.8 USDC, we swap 2.3 USDC and keep 0.5 for fees
+        let swapAmount = Math.max(0, Number(payoutAmount) - estimatedNetworkFee);
         
         // Round to 6 decimal places to avoid precision issues
         swapAmount = Math.floor(swapAmount * 1000000) / 1000000;
         
-        console.log(`[HostFi Service] Swapping ${swapAmount} ${sourceCurrency} (keeping ${estimatedNetworkFee} for network fees)`);
+        console.log(`[HostFi Service] Swapping ${swapAmount} ${sourceCurrency} (keeping ~${estimatedNetworkFee} for network fees)`);
 
         // Perform Swap
         let swapResult;
@@ -932,7 +911,7 @@ class HostFiService {
               swapError.message?.includes('sufficient funds')) {
             
             const errorMsg = `Swap failed: ${swapError.message}. ` +
-              `You have ${sourceBalance} ${sourceCurrency}, attempted to swap ${swapAmount} ${sourceCurrency}. ` +
+              `Attempted to swap ${swapAmount} ${sourceCurrency} (reserved ${estimatedNetworkFee} for fees). ` +
               `Please ensure you have sufficient funds to cover both the swap amount and network fees.`;
             
             throw new Error(errorMsg);
