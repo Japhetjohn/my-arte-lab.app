@@ -620,10 +620,13 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
     const requiredUsdc = amount + swapFeeReserve;
     
     if (actualUsdcBalance < requiredUsdc) {
+      const maxWithdraw = Math.max(0, actualUsdcBalance - swapFeeReserve);
       return next(new ErrorHandler(
-        `Insufficient USDC for swap. Available: ${actualUsdcBalance.toFixed(4)} USDC, ` +
-        `Required: ${amount} USDC + ~${swapFeeReserve} USDC swap fee = ${requiredUsdc.toFixed(2)} USDC. ` +
-        `Please reduce withdrawal amount or add more USDC.`,
+        `Insufficient USDC for swap. You have ${actualUsdcBalance.toFixed(4)} USDC available, ` +
+        `but tried to withdraw ${amount} USDC. ` +
+        `Maximum you can withdraw: ${maxWithdraw.toFixed(4)} USDC (keeping ${swapFeeReserve} USDC for swap fees). ` +
+        `Note: Your total balance includes other currencies converted to USDC value. ` +
+        `Please reduce amount or deposit more USDC.`,
         400
       ));
     }

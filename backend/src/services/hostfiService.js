@@ -869,9 +869,7 @@ class HostFiService {
       console.log(`[HostFi Service] Swap check: source=${sourceCurrency}, target=${targetCurrency}, isCrypto=${isCryptoPayout}, recipient.currency=${recipient.currency}`);
 
       if (sourceCurrency !== targetCurrency && !isCryptoPayout) {
-        console.log(`[HostFi Service] Currency mismatch (${sourceCurrency} -> ${targetCurrency}). Initiating swap first...`);
-
-        // Find target asset ID
+        // Check if user already has sufficient target currency balance
         const assets = await this.getUserWallets();
         const targetAsset = assets.find(a => {
           const code = (a.currencyCode || (a.currency && a.currency.code) || a.currency || '').toUpperCase();
@@ -882,60 +880,76 @@ class HostFiService {
           throw new Error(`Target currency ${targetCurrency} asset not found in wallet`);
         }
 
-        // Swap the full payout amount
-        const swapAmount = Number(payoutAmount);
+        // Check existing target currency balance
+        const targetBalance = parseFloat(targetAsset.balance || 0);
+        const targetAmountNeeded = parseFloat(payoutAmount); // This is in source currency, need to estimate
         
-        console.log(`[HostFi Service] Swapping ${swapAmount} ${sourceCurrency} to ${targetCurrency}`);
-
-        // Perform Swap
-        const swapResult = await this.swapAssets({
-          source: { currency: sourceCurrency, assetId: walletAssetId },
-          target: { currency: targetCurrency, assetId: targetAsset.id || targetAsset.assetId },
-          amount: { value: swapAmount, currency: sourceCurrency },
-          category: 'SWAP'
-        });
-
-        console.log(`[HostFi Service] Swap result:`, JSON.stringify(swapResult, null, 2));
-
-        // Update parameters for final payout
-        effectiveAssetId = targetAsset.id || targetAsset.assetId;
+        // Rough estimate: 1 USDC ≈ 1500-1600 NGN (adjust as needed)
+        const estimatedTargetNeeded = sourceCurrency === 'USDC' && targetCurrency === 'NGN' 
+          ? targetAmountNeeded * 1500 
+          : targetAmountNeeded;
         
-        // Extract target amount from swap response
-        // HostFi returns transactions array with DEBIT (source) and CREDIT (target)
-        let swappedAmount = null;
-        
-        if (swapResult.transactions && Array.isArray(swapResult.transactions)) {
-          // Find the CREDIT transaction (target currency received)
-          const creditTx = swapResult.transactions.find(tx => 
-            tx.type === 'CREDIT' && tx.status === 'SUCCESS'
-          );
-          if (creditTx && creditTx.amount) {
-            swappedAmount = parseFloat(creditTx.amount.value || creditTx.amount);
+        console.log(`[HostFi Service] Checking target balance: ${targetBalance} ${targetCurrency} available, need ~${estimatedTargetNeeded} ${targetCurrency}`);
+
+        // If user has sufficient target currency, skip swap and payout directly
+        if (targetBalance >= estimatedTargetNeeded * 0.9) { // 0.9 factor for rate fluctuation
+          console.log(`[HostFi Service] Sufficient ${targetCurrency} balance available. Skipping swap, doing direct payout.`);
+          effectiveAssetId = targetAsset.id || targetAsset.assetId;
+          effectiveAmount = targetBalance; // Use available balance
+          effectiveCurrency = targetCurrency;
+        } else {
+          console.log(`[HostFi Service] Currency mismatch (${sourceCurrency} -> ${targetCurrency}). Initiating swap first...`);
+
+          // Swap the full payout amount
+          const swapAmount = Number(payoutAmount);
+          
+          console.log(`[HostFi Service] Swapping ${swapAmount} ${sourceCurrency} to ${targetCurrency}`);
+
+          // Perform Swap
+          const swapResult = await this.swapAssets({
+            source: { currency: sourceCurrency, assetId: walletAssetId },
+            target: { currency: targetCurrency, assetId: targetAsset.id || targetAsset.assetId },
+            amount: { value: swapAmount, currency: sourceCurrency },
+            category: 'SWAP'
+          });
+
+          console.log(`[HostFi Service] Swap result:`, JSON.stringify(swapResult, null, 2));
+
+          // Update parameters for final payout
+          effectiveAssetId = targetAsset.id || targetAsset.assetId;
+          
+          // Extract target amount from swap response
+          let swappedAmount = null;
+          
+          if (swapResult.transactions && Array.isArray(swapResult.transactions)) {
+            const creditTx = swapResult.transactions.find(tx => 
+              tx.type === 'CREDIT' && tx.status === 'SUCCESS'
+            );
+            if (creditTx && creditTx.amount) {
+              swappedAmount = parseFloat(creditTx.amount.value || creditTx.amount);
+            }
           }
-        }
-        
-        // Fallback to other response structures
-        if (!swappedAmount) {
-          swappedAmount = swapResult.data?.targetAmount?.value || 
-                         swapResult.data?.amount?.value ||
-                         swapResult.targetAmount?.value || 
-                         swapResult.amount?.value;
-        }
-        
-        // Validate swap succeeded
-        if (!swappedAmount || swappedAmount <= 0) {
-          console.warn(`[HostFi Service] Swap may have failed. Response:`, JSON.stringify(swapResult));
-          throw new Error(`Swap failed: Could not convert ${swapAmount} ${sourceCurrency} to ${targetCurrency}. Please try again.`);
-        }
-        
-        effectiveAmount = swappedAmount;
-        effectiveCurrency = targetCurrency;
+          
+          if (!swappedAmount) {
+            swappedAmount = swapResult.data?.targetAmount?.value || 
+                           swapResult.data?.amount?.value ||
+                           swapResult.targetAmount?.value || 
+                           swapResult.amount?.value;
+          }
+          
+          if (!swappedAmount || swappedAmount <= 0) {
+            console.warn(`[HostFi Service] Swap may have failed. Response:`, JSON.stringify(swapResult));
+            throw new Error(`Swap failed: Could not convert ${swapAmount} ${sourceCurrency} to ${targetCurrency}. Please try again.`);
+          }
+          
+          effectiveAmount = swappedAmount;
+          effectiveCurrency = targetCurrency;
 
-        console.log(`[HostFi Service] Swap successful. ${swapAmount} ${sourceCurrency} → ${effectiveAmount} ${effectiveCurrency}`);
-        
-        // Validate minimum payout amount for NGN
-        if (targetCurrency === 'NGN' && effectiveAmount < 1000) {
-          throw new Error(`Minimum withdrawal amount is ₦1,000 NGN. You received ₦${effectiveAmount.toFixed(2)} after swap. Please add more USDC to your wallet.`);
+          console.log(`[HostFi Service] Swap successful. ${swapAmount} ${sourceCurrency} → ${effectiveAmount} ${effectiveCurrency}`);
+          
+          if (targetCurrency === 'NGN' && effectiveAmount < 1000) {
+            throw new Error(`Minimum withdrawal amount is ₦1,000 NGN. You received ₦${effectiveAmount.toFixed(2)} after swap. Please add more USDC to your wallet.`);
+          }
         }
       }
 
