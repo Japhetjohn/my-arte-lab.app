@@ -642,26 +642,25 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
   
   // For fiat withdrawals (USDC -> NGN), HostFi charges swap fees ON TOP of swap amount
   // The fee is deducted from the wallet balance, not from the swap amount
-  // So if user wants to withdraw 2.8 USDC and fee is 0.5 USDC:
-  // - Total needed: 2.8 USDC
-  // - Fee: 0.5 USDC (charged separately by HostFi)
-  // - We send full 2.8 USDC to swap, but user needs 3.3 USDC total in wallet
+  // Based on testing, HostFi needs ~0.8 USDC for swap fees (not 0.5)
   const isFiatWithdrawal = !isCrypto && effectiveTargetCurrency !== currency;
-  const estimatedSwapFee = isFiatWithdrawal ? 0.5 : 0;
+  const estimatedSwapFee = isFiatWithdrawal ? 0.8 : 0;
   const totalNeeded = amount + estimatedSwapFee;
   
   // Check if user has enough balance for amount + fees
   if (user.wallet.balance < totalNeeded) {
+    const maxWithdrawable = Math.max(0, user.wallet.balance - estimatedSwapFee);
     return next(new ErrorHandler(
       `Insufficient balance. You have ${user.wallet.balance.toFixed(4)} ${currency}, ` +
       `but need ${totalNeeded.toFixed(4)} ${currency} (including ~${estimatedSwapFee} ${currency} network fee). ` +
-      `Please add ${(totalNeeded - user.wallet.balance).toFixed(4)} ${currency} more or reduce withdrawal amount.`, 
+      `Maximum you can withdraw: ${maxWithdrawable.toFixed(4)} ${currency}. ` +
+      `Please add more ${currency} or reduce withdrawal amount.`, 
       400
     ));
   }
   
   const amountToTransfer = amount;
-  console.log(`[Withdrawal] Withdrawing ${amountToTransfer} ${currency} (ensuring ${estimatedSwapFee} ${currency} available for HostFi fees)`);
+  console.log(`[Withdrawal] Withdrawing ${amountToTransfer} ${currency} (ensuring ~${estimatedSwapFee} ${currency} available for HostFi fees)`);
 
   // Deduct only the withdrawal amount from balance (fees are handled by HostFi)
   user.wallet.balance -= amountInPrimary;
