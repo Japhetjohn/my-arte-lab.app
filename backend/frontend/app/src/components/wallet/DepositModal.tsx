@@ -143,32 +143,16 @@ export function DepositModal({ isOpen, onClose, onDepositComplete }: DepositModa
     setIsProcessing(true);
     toast.info('Processing your deposit... This may take a few minutes.');
     
-    // Poll for wallet updates every 5 seconds for up to 2 minutes
-    let attempts = 0;
-    const maxAttempts = 24; // 2 minutes (24 * 5 seconds)
-    
-    const checkBalance = setInterval(async () => {
-      attempts++;
-      
-      try {
-        // Trigger wallet refresh via parent
-        if (onDepositComplete) {
-          await onDepositComplete();
-        }
-        
-        if (attempts >= maxAttempts) {
-          clearInterval(checkBalance);
-          setIsProcessing(false);
-          toast.success('Deposit is being processed. Your wallet will update shortly.');
-          handleClose();
-        }
-      } catch (error) {
-        console.error('Error checking balance:', error);
+    // Just wait 2 seconds then close - actual deposit is handled by webhooks
+    setTimeout(() => {
+      setIsProcessing(false);
+      toast.success('Deposit submitted! Your wallet will be credited shortly.');
+      handleClose();
+      // Trigger wallet refresh
+      if (onDepositComplete) {
+        onDepositComplete();
       }
-    }, 5000);
-    
-    // Clean up on unmount
-    return () => clearInterval(checkBalance);
+    }, 2000);
   }, [onDepositComplete]);
 
   const handleClose = () => {

@@ -12,9 +12,46 @@ interface WalletState {
   error: string | null;
   balance: number;
   usdcBalance: number;
+  isInitialLoad: boolean;
 }
 
+const CACHE_KEY = 'wallet_balance_cache';
+
+// Load cached balance from localStorage
+const loadCachedBalance = () => {
+  if (typeof window === 'undefined') return { balance: 0, usdcBalance: 0 };
+  try {
+    const cached = localStorage.getItem(CACHE_KEY);
+    if (cached) {
+      const { balance, usdcBalance, timestamp } = JSON.parse(cached);
+      // Cache is valid for 24 hours
+      if (Date.now() - timestamp < 24 * 60 * 60 * 1000) {
+        return { balance, usdcBalance };
+      }
+    }
+  } catch {
+    // Ignore errors
+  }
+  return { balance: 0, usdcBalance: 0 };
+};
+
+// Save balance to localStorage
+const saveCachedBalance = (balance: number, usdcBalance: number) => {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({
+      balance,
+      usdcBalance,
+      timestamp: Date.now()
+    }));
+  } catch {
+    // Ignore errors
+  }
+};
+
 export function useWallet() {
+  const cached = loadCachedBalance();
+  
   const [state, setState] = useState<WalletState>({
     assets: [],
     transactions: [],
@@ -22,29 +59,40 @@ export function useWallet() {
     beneficiaries: [],
     isLoading: false,
     error: null,
-    balance: 0,
-    usdcBalance: 0,
+    balance: cached.balance,
+    usdcBalance: cached.usdcBalance,
+    isInitialLoad: true,
   });
 
-  const fetchWallet = useCallback(async () => {
-    setState((prev) => ({ ...prev, isLoading: true, error: null }));
+  const fetchWallet = useCallback(async (showLoading = true) => {
+    if (showLoading) {
+      setState((prev) => ({ ...prev, isLoading: true, error: null }));
+    }
     try {
       const response = await hostfiWalletService.getWallet();
       console.log('Wallet response:', response.data);
       // Backend returns { success: true, data: { wallet: {...} } }
       const walletData = response.data?.data?.wallet;
+      const newBalance = walletData?.balance || 0;
+      const newUsdcBalance = walletData?.usdcBalance || 0;
+      
+      // Save to cache
+      saveCachedBalance(newBalance, newUsdcBalance);
+      
       setState((prev) => ({
         ...prev,
         assets: walletData?.assets || [],
-        balance: walletData?.balance || 0,
-        usdcBalance: walletData?.usdcBalance || 0,
+        balance: newBalance,
+        usdcBalance: newUsdcBalance,
         isLoading: false,
+        isInitialLoad: false,
       }));
     } catch (error: any) {
       console.error('Fetch wallet error:', error);
       setState((prev) => ({
         ...prev,
         isLoading: false,
+        isInitialLoad: false,
         error: error.response?.data?.message || 'Failed to fetch wallet',
       }));
     }
@@ -127,12 +175,16 @@ export function useWallet() {
     try {
       const response = await hostfiWalletService.initiateWithdrawal(data);
       toast.success('Withdrawal initiated successfully!');
+      // Refresh wallet after withdrawal
+      setTimeout(() => {
+        fetchWallet(false); // Don't show loading spinner
+      }, 1000);
       return response.data;
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to initiate withdrawal');
       throw error;
     }
-  }, []);
+  }, [fetchWallet]);
 
   const addBeneficiary = useCallback(async (data: any) => {
     try {

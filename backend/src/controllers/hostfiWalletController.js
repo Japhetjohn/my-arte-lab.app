@@ -700,7 +700,7 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
         beneficiaryBankName: recipient.bankName || (methodId === 'CRYPTO' ? 'Solana Blockchain' : 'HostFi'),
         beneficiaryBankCode: recipient.bankId,
         targetCurrency: effectiveTargetCurrency,
-        targetAmount: withdrawal.amount || amount,
+        targetAmount: typeof withdrawal.amount === 'object' ? withdrawal.amount?.value : (withdrawal.amount || amount),
         reference: clientReference,
         signature: withdrawal.reference
       },
