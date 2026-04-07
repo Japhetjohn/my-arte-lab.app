@@ -882,34 +882,18 @@ class HostFiService {
           throw new Error(`Target currency ${targetCurrency} asset not found in wallet`);
         }
 
-        // Simply attempt to swap the payout amount - let HostFi handle fees
-        // HostFi will deduct fees from the source wallet on top of swap amount
+        // Swap the payout amount (controller already reserved fees)
         const swapAmount = Number(payoutAmount);
         
         console.log(`[HostFi Service] Swapping ${swapAmount} ${sourceCurrency} to ${targetCurrency}`);
 
         // Perform Swap
-        let swapResult;
-        try {
-          swapResult = await this.swapAssets({
-            source: { currency: sourceCurrency, assetId: walletAssetId },
-            target: { currency: targetCurrency, assetId: targetAsset.id || targetAsset.assetId },
-            amount: { value: swapAmount, currency: sourceCurrency },
-            category: 'SWAP'
-          });
-        } catch (swapError) {
-          // If swap failed due to insufficient funds, provide clear message
-          if (swapError.hostfiError?.code === 'INSUFFICIENT_FUNDS' || 
-              swapError.message?.includes('sufficient funds')) {
-            
-            throw new Error(
-              `Insufficient funds for withdrawal. You attempted to withdraw ${swapAmount} ${sourceCurrency}, ` +
-              `but HostFi requires additional funds to cover network fees. ` +
-              `Please add more ${sourceCurrency} to your wallet or reduce the withdrawal amount.`
-            );
-          }
-          throw swapError;
-        }
+        const swapResult = await this.swapAssets({
+          source: { currency: sourceCurrency, assetId: walletAssetId },
+          target: { currency: targetCurrency, assetId: targetAsset.id || targetAsset.assetId },
+          amount: { value: swapAmount, currency: sourceCurrency },
+          category: 'SWAP'
+        });
 
         console.log(`[HostFi Service] Swap result:`, JSON.stringify(swapResult, null, 2));
 

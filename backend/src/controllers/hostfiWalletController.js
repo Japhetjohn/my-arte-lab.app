@@ -639,7 +639,22 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
 
   // Calculate fees
   const feeBreakdown = hostfiService.calculateOffRampFee(amount);
-  const amountToTransfer = amount; // No network fee deduction
+  
+  // For fiat withdrawals (USDC -> NGN), HostFi charges swap fees on top of swap amount
+  // We need to leave some USDC in the wallet to cover these fees
+  // Based on testing, HostFi needs ~0.5 USDC for swap fees
+  const isFiatWithdrawal = !isCrypto && effectiveTargetCurrency !== currency;
+  const swapFeeBuffer = isFiatWithdrawal ? 0.5 : 0;
+  const amountToTransfer = Math.max(0, amount - swapFeeBuffer);
+  
+  if (amountToTransfer <= 0) {
+    return next(new ErrorHandler(
+      `Amount too small for withdrawal. You need at least ${swapFeeBuffer + 0.01} ${currency} ` +
+      `to cover network fees.`, 400
+    ));
+  }
+  
+  console.log(`[Withdrawal] Transferring ${amountToTransfer} ${currency} (reserved ${swapFeeBuffer} for swap fees)`);
 
   // Deduct from balance and add to pending (using converted amounts where appropriate)
   user.wallet.balance -= amountInPrimary;
