@@ -594,11 +594,14 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
     }
   }
 
-  // Check balance - simple and clean
-  if (user.wallet.balance < amountInPrimary) {
+  // Check balance with small tolerance for floating point precision
+  // Users can withdraw up to 99.9% of their balance (leaving tiny dust for fees)
+  const maxWithdrawable = user.wallet.balance * 0.999;
+  if (amountInPrimary > maxWithdrawable) {
     return next(new ErrorHandler(
       `Insufficient balance. Available: ${user.wallet.balance.toFixed(4)} ${user.wallet.currency}, ` +
-      `Requested: ${amountInPrimary.toFixed(4)} ${user.wallet.currency}`,
+      `Requested: ${amountInPrimary.toFixed(4)} ${user.wallet.currency}. ` +
+      `Please leave a small amount for network fees.`,
       400
     ));
   }
