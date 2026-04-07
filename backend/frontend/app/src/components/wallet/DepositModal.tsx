@@ -140,19 +140,16 @@ export function DepositModal({ isOpen, onClose, onDepositComplete }: DepositModa
   };
 
   const handlePaidClick = useCallback(async () => {
-    setIsProcessing(true);
-    toast.info('Processing your deposit... This may take a few minutes.');
+    // Show success immediately - deposit is tracked by webhook
+    toast.success('Deposit submitted!');
     
-    // Just wait 2 seconds then close - actual deposit is handled by webhooks
-    setTimeout(() => {
-      setIsProcessing(false);
-      toast.success('Deposit submitted! Your wallet will be credited shortly.');
-      handleClose();
-      // Trigger wallet refresh
-      if (onDepositComplete) {
-        onDepositComplete();
-      }
-    }, 2000);
+    // Close modal immediately
+    handleClose();
+    
+    // Trigger wallet refresh in background
+    if (onDepositComplete) {
+      onDepositComplete();
+    }
   }, [onDepositComplete]);
 
   const handleClose = () => {

@@ -10,7 +10,12 @@ const crypto = require('crypto');
 const { escapeHtml } = require('../utils/sanitize');
 
 exports.register = catchAsync(async (req, res, next) => {
-  const { firstName, lastName, email, password, role, category, localArea, state, country, avatar, coverImage } = req.body;
+  const { firstName, lastName, email, password, role, category, avatar, coverImage } = req.body;
+  
+  // Handle location fields - support both nested and flat formats
+  const localArea = req.body.localArea || req.body.location?.localArea;
+  const state = req.body.state || req.body.location?.state;
+  const country = req.body.country || req.body.location?.country;
 
   // Validate required fields
   if (!firstName || !lastName || !email || !password) {

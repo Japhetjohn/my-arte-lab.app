@@ -51,9 +51,7 @@ export const registerStep3Schema = z.object({
     country: z.string().min(1, 'Country is required'),
   }),
   category: z.string().optional(),
-  agreeToTerms: z.boolean().refine((val) => val === true, {
-    message: 'You must agree to the terms and conditions',
-  }),
+  agreeToTerms: z.boolean().optional(),
 }).refine(
   (data) => {
     if (data.role === 'creator') {

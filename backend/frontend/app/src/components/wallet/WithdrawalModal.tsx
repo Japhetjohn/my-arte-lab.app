@@ -72,9 +72,9 @@ function BankSelect({ banks, selectedBank, onSelect, searchValue, onSearchChange
     };
   }, [isOpen, onToggle]);
 
-  // Split banks into popular and others
-  const popularBanks = banks.slice(0, 15);
-  const otherBanks = banks.slice(15);
+  // Split banks into popular and others based on the sorted list
+  const popularBanks = filteredBanks.slice(0, 15);
+  const otherBanks = filteredBanks.slice(15);
 
   return (
     <div className="space-y-2" ref={dropdownRef}>

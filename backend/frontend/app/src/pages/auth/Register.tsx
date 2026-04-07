@@ -73,7 +73,7 @@ export function Register() {
         state: '',
         country: 'Nigeria',
       },
-      agreeToTerms: false,
+      agreeToTerms: true, // Auto-agree to terms
     },
   });
 
@@ -528,29 +528,17 @@ export function Register() {
           />
         </div>
 
-        <div className="flex items-start space-x-3">
-          <Checkbox
-            id="agreeToTerms"
-            checked={step3Form.watch('agreeToTerms')}
-            onCheckedChange={(checked) => step3Form.setValue('agreeToTerms', checked === true, { shouldValidate: true })}
-            className="h-5 w-5 mt-0.5 border-2 data-[state=checked]:bg-[#8A2BE2] data-[state=checked]:border-[#8A2BE2]"
-          />
-          <Label htmlFor="agreeToTerms" className="text-sm font-normal leading-normal cursor-pointer">
-            I agree to the{' '}
-            <Link to="/terms" className="text-[#8A2BE2] hover:underline">
-              Terms of Service
-            </Link>{' '}
-            and{' '}
-            <Link to="/privacy" className="text-[#8A2BE2] hover:underline">
-              Privacy Policy
-            </Link>
-          </Label>
-        </div>
-        {step3Form.formState.errors.agreeToTerms && (
-          <p className="text-sm text-red-500">
-            {step3Form.formState.errors.agreeToTerms.message}
-          </p>
-        )}
+        {/* Auto-agree to terms - checkbox removed */}
+        <p className="text-xs text-gray-500 text-center">
+          By creating an account, you agree to our{' '}
+          <Link to="/terms" className="text-[#8A2BE2] hover:underline">
+            Terms of Service
+          </Link>{' '}
+          and{' '}
+          <Link to="/privacy" className="text-[#8A2BE2] hover:underline">
+            Privacy Policy
+          </Link>
+        </p>
 
         <div className="flex gap-3">
           <Button
