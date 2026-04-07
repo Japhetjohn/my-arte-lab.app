@@ -884,8 +884,8 @@ class HostFiService {
 
         // HostFi charges network fees on top of swap amount, so we reduce swap amount
         // to leave room for fees. The fee is charged on top, not deducted from swap amount.
-        // Estimate 0.5 USDC/USDT for network fees.
-        const estimatedNetworkFee = (sourceCurrency === 'USDC' || sourceCurrency === 'USDT') ? 0.5 : 0.01;
+        // Based on testing, HostFi needs ~0.8 USDC/USDT for swap network fees.
+        const estimatedNetworkFee = (sourceCurrency === 'USDC' || sourceCurrency === 'USDT') ? 0.8 : 0.01;
         
         // Reduce swap amount to leave room for network fees
         // Example: If user wants to withdraw 2.8 USDC, we swap 2.3 USDC and keep 0.5 for fees
