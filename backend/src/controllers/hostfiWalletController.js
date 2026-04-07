@@ -64,11 +64,16 @@ exports.getWallet = catchAsync(async (req, res, next) => {
 
   // Use USDC balance as display balance if it's the primary currency
   const displayBalance = user.wallet.balance || totalBalanceUsd || 0;
+  
+  // Get specific USDC balance for withdrawal reference
+  const usdcAsset = assetsWithUsd.find(a => a.currency === 'USDC');
+  const usdcBalance = usdcAsset ? usdcAsset.balance : 0;
 
   successResponse(res, 200, 'Wallet retrieved successfully', {
     wallet: {
       assets: assetsWithUsd,
       balance: displayBalance,
+      usdcBalance: usdcBalance, // Actual USDC available for withdrawal
       pendingBalance: user.wallet.pendingBalance || 0,
       totalEarnings: user.wallet.totalEarnings || 0,
       balanceUsd: totalBalanceUsd,
@@ -615,12 +620,16 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
   if (!isCrypto && sourceCurr !== targetCurr) {
     console.log(`[Withdrawal] Will swap ${amount} ${sourceCurr} to ${targetCurr} then payout`);
     
-    // Check if enough USDC for the swap
-    if (actualUsdcBalance < amount) {
+    // Round to 6 decimal places (USDC precision) to avoid floating point issues
+    const roundedActualBalance = Math.floor(actualUsdcBalance * 1000000) / 1000000;
+    const roundedRequestAmount = Math.floor(amount * 1000000) / 1000000;
+    
+    // Check if enough USDC for the swap (with small tolerance for precision)
+    if (roundedActualBalance < roundedRequestAmount) {
       return next(new ErrorHandler(
-        `Insufficient USDC. You have ${actualUsdcBalance.toFixed(4)} USDC available, ` +
-        `but tried to withdraw ${amount} USDC. ` +
-        `Maximum you can withdraw: ${actualUsdcBalance.toFixed(4)} USDC.`,
+        `Insufficient USDC. You have ${roundedActualBalance.toFixed(6)} USDC available, ` +
+        `but tried to withdraw ${roundedRequestAmount.toFixed(6)} USDC. ` +
+        `Maximum you can withdraw: ${roundedActualBalance.toFixed(6)} USDC.`,
         400
       ));
     }
