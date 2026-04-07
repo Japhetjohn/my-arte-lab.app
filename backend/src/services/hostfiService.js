@@ -996,9 +996,9 @@ class HostFiService {
 
       return {
         ...response,
-        platformFee: feeBreakdown.platformFee,
+        platformFee: 0,
         netAmount: payoutAmount,
-        feeBreakdown
+        feeBreakdown: { platformFee: 0, networkFee: 0 }
       };
     } catch (error) {
       console.error('Withdrawal initiation failed:', error.message);
