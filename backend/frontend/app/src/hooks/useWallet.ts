@@ -11,6 +11,7 @@ interface WalletState {
   isLoading: boolean;
   error: string | null;
   balance: number;
+  usdcBalance: number;
 }
 
 export function useWallet() {
@@ -22,6 +23,7 @@ export function useWallet() {
     isLoading: false,
     error: null,
     balance: 0,
+    usdcBalance: 0,
   });
 
   const fetchWallet = useCallback(async () => {
@@ -35,6 +37,7 @@ export function useWallet() {
         ...prev,
         assets: walletData?.assets || [],
         balance: walletData?.balance || 0,
+        usdcBalance: walletData?.usdcBalance || 0,
         isLoading: false,
       }));
     } catch (error: any) {

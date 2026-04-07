@@ -16,6 +16,7 @@ export function Wallet() {
     isLoading,
     error,
     totalBalanceUSD,
+    usdcBalance,
     fetchWallet,
     fetchTransactions,
   } = useWallet();
@@ -187,7 +188,7 @@ export function Wallet() {
       <WithdrawalModal
         isOpen={withdrawOpen}
         onClose={() => setWithdrawOpen(false)}
-        availableBalance={totalBalanceUSD}
+        availableBalance={usdcBalance}
         currency="USDC"
       />
     </div>
