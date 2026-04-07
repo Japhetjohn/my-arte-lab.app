@@ -642,9 +642,9 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
   
   // For fiat withdrawals (USDC -> NGN), HostFi charges swap fees ON TOP of swap amount
   // The fee is deducted from the wallet balance, not from the swap amount
-  // Based on testing, HostFi needs ~0.8 USDC for swap fees (not 0.5)
+  // Based on testing, HostFi needs ~1.0 USDC for swap fees (high due to Solana network fees)
   const isFiatWithdrawal = !isCrypto && effectiveTargetCurrency !== currency;
-  const estimatedSwapFee = isFiatWithdrawal ? 0.8 : 0;
+  const estimatedSwapFee = isFiatWithdrawal ? 1.0 : 0;
   const totalNeeded = amount + estimatedSwapFee;
   
   // Check if user has enough balance for amount + fees
