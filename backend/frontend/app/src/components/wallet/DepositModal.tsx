@@ -140,8 +140,17 @@ export function DepositModal({ isOpen, onClose, onDepositComplete }: DepositModa
   };
 
   const handlePaidClick = useCallback(async () => {
-    // Show success immediately - deposit is tracked by webhook
-    toast.success('Deposit submitted!');
+    // Show success toast with image
+    toast.success(
+      <div className="flex items-center gap-3">
+        <img src="/images/payment-success.png" alt="Success" className="w-12 h-12 rounded-full" />
+        <div>
+          <p className="font-semibold">Deposit submitted!</p>
+          <p className="text-xs text-gray-500">Your wallet will be credited shortly</p>
+        </div>
+      </div>,
+      { duration: 4000 }
+    );
     
     // Close modal immediately
     handleClose();
