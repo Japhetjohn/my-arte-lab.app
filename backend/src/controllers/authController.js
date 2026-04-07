@@ -17,6 +17,9 @@ exports.register = catchAsync(async (req, res, next) => {
   const state = req.body.state || req.body.location?.state;
   const country = req.body.country || req.body.location?.country;
 
+  console.log('[Register] Request body:', JSON.stringify(req.body, null, 2));
+  console.log('[Register] Extracted location:', { localArea, state, country });
+
   // Validate required fields
   if (!firstName || !lastName || !email || !password) {
     return next(new ErrorHandler('Please provide all required fields', 400));
