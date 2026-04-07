@@ -882,19 +882,11 @@ class HostFiService {
           throw new Error(`Target currency ${targetCurrency} asset not found in wallet`);
         }
 
-        // HostFi charges network fees on top of swap amount, so we reduce swap amount
-        // to leave room for fees. The fee is charged on top, not deducted from swap amount.
-        // Based on testing, HostFi needs ~0.8 USDC/USDT for swap network fees.
-        const estimatedNetworkFee = (sourceCurrency === 'USDC' || sourceCurrency === 'USDT') ? 0.8 : 0.01;
+        // Simply attempt to swap the payout amount - let HostFi handle fees
+        // HostFi will deduct fees from the source wallet on top of swap amount
+        const swapAmount = Number(payoutAmount);
         
-        // Reduce swap amount to leave room for network fees
-        // Example: If user wants to withdraw 2.8 USDC, we swap 2.3 USDC and keep 0.5 for fees
-        let swapAmount = Math.max(0, Number(payoutAmount) - estimatedNetworkFee);
-        
-        // Round to 6 decimal places to avoid precision issues
-        swapAmount = Math.floor(swapAmount * 1000000) / 1000000;
-        
-        console.log(`[HostFi Service] Swapping ${swapAmount} ${sourceCurrency} (keeping ~${estimatedNetworkFee} for network fees)`);
+        console.log(`[HostFi Service] Swapping ${swapAmount} ${sourceCurrency} to ${targetCurrency}`);
 
         // Perform Swap
         let swapResult;
@@ -906,15 +898,15 @@ class HostFiService {
             category: 'SWAP'
           });
         } catch (swapError) {
-          // If swap failed due to insufficient funds, provide helpful message
+          // If swap failed due to insufficient funds, provide clear message
           if (swapError.hostfiError?.code === 'INSUFFICIENT_FUNDS' || 
               swapError.message?.includes('sufficient funds')) {
             
-            const errorMsg = `Swap failed: ${swapError.message}. ` +
-              `Attempted to swap ${swapAmount} ${sourceCurrency} (reserved ${estimatedNetworkFee} for fees). ` +
-              `Please ensure you have sufficient funds to cover both the swap amount and network fees.`;
-            
-            throw new Error(errorMsg);
+            throw new Error(
+              `Insufficient funds for withdrawal. You attempted to withdraw ${swapAmount} ${sourceCurrency}, ` +
+              `but HostFi requires additional funds to cover network fees. ` +
+              `Please add more ${sourceCurrency} to your wallet or reduce the withdrawal amount.`
+            );
           }
           throw swapError;
         }
