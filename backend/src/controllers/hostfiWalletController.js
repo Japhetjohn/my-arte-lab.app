@@ -603,40 +603,26 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler(`Wallet for currency ${currency} not found`, 404));
   }
 
-  // Get actual wallet assets
+  // Get actual USDC balance (not aggregate)
   const walletAssets = await hostfiWalletService.getUserWalletAssets(req.user._id);
   const usdcAsset = walletAssets.find(a => a.currency === currency);
   const actualUsdcBalance = usdcAsset ? (usdcAsset.balance || 0) : 0;
   
-  // Check for existing target currency balance (e.g., NGN)
-  const targetAsset = walletAssets.find(a => a.currency === targetCurr);
-  const targetBalance = targetAsset ? (targetAsset.balance || 0) : 0;
-  
   console.log(`[Withdrawal] User aggregate balance: ${user.wallet.balance} ${user.wallet.currency}`);
   console.log(`[Withdrawal] Actual ${currency} balance: ${actualUsdcBalance}`);
-  console.log(`[Withdrawal] Actual ${targetCurr} balance: ${targetBalance}`);
 
-  // For fiat withdrawals (USDC -> NGN)
+  // For fiat withdrawals (USDC -> NGN): Always swap, then payout
   if (!isCrypto && sourceCurr !== targetCurr) {
-    // Check if user has sufficient TARGET currency (NGN) to skip swap
-    const estimatedTargetNeeded = amount * 1500;
-    const hasSufficientTarget = targetBalance >= (estimatedTargetNeeded * 0.8);
+    console.log(`[Withdrawal] Will swap ${amount} ${sourceCurr} to ${targetCurr} then payout`);
     
-    if (hasSufficientTarget) {
-      console.log(`[Withdrawal] User has sufficient ${targetCurr} balance (${targetBalance}). Will skip swap.`);
-    } else {
-      console.log(`[Withdrawal] Need to swap ${amount} ${sourceCurr} to ${targetCurr}`);
-      
-      // No reserve needed - HostFi handles fees
-      if (actualUsdcBalance < amount) {
-        return next(new ErrorHandler(
-          `Insufficient USDC. You have ${actualUsdcBalance.toFixed(4)} USDC available, ` +
-          `but tried to withdraw ${amount} USDC. ` +
-          `Maximum you can withdraw: ${actualUsdcBalance.toFixed(4)} USDC. ` +
-          `Please reduce amount or deposit more USDC.`,
-          400
-        ));
-      }
+    // Check if enough USDC for the swap
+    if (actualUsdcBalance < amount) {
+      return next(new ErrorHandler(
+        `Insufficient USDC. You have ${actualUsdcBalance.toFixed(4)} USDC available, ` +
+        `but tried to withdraw ${amount} USDC. ` +
+        `Maximum you can withdraw: ${actualUsdcBalance.toFixed(4)} USDC.`,
+        400
+      ));
     }
   }
 
@@ -742,10 +728,30 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
       }
     });
   } catch (error) {
-    // Refund balance on failure - USE CONVERTED AMOUNT
+    // Handle different error scenarios
+    console.error(`[Withdrawal Failed] Error: ${error.message}`);
+    
+    // Special handling: if swap succeeded but payout failed
+    if (error.swapCompleted) {
+      console.error(`[Withdrawal Failed] Swap completed but payout failed!`);
+      console.error(`[Withdrawal Failed] Funds are safe in ${error.swapDetails?.targetCurrency} wallet`);
+      
+      // Don't refund the original balance - the funds were swapped successfully
+      // Just remove from pending since the swap is done
+      user.wallet.pendingBalance = Math.max(0, user.wallet.pendingBalance - amountInPrimary);
+      await user.save();
+      
+      // Return a specific error message to the user
+      return next(new ErrorHandler(
+        error.message,
+        502 // Bad Gateway - indicates external service issue
+      ));
+    }
+    
+    // Standard failure: refund balance
     console.error(`[Withdrawal Failed] Refunding ${amountInPrimary} ${user.wallet.currency} to user ${user._id}`);
     user.wallet.balance += amountInPrimary;
-    user.wallet.pendingBalance -= amountInPrimary;
+    user.wallet.pendingBalance = Math.max(0, user.wallet.pendingBalance - amountInPrimary);
     await user.save();
 
     throw error;
@@ -923,12 +929,12 @@ exports.getExchangeFees = catchAsync(async (req, res, next) => {
 
   const fees = await hostfiService.getExchangeFees(sourceCurrency, targetCurrency, type);
 
-  // Add platform fee to the response
+  // Platform fee is 0% - HostFi handles all network fees
   successResponse(res, 200, 'Exchange fees retrieved successfully', {
     fees,
     platformFee: {
-      percent: 1,
-      description: 'Platform fee deducted from all on-ramp and off-ramp transactions'
+      percent: 0,
+      description: 'No platform fees - HostFi handles network fees'
     }
   });
 });

@@ -430,9 +430,7 @@ async function processPayout(parsed, payoutType) {
       transaction.metadata.hostfiStatus = status;
       await transaction.save();
     }
-    transaction.status = 'processing';
-    transaction.metadata.hostfiStatus = status;
-    await transaction.save();
+    // Note: No else block - if already failed, we don't change status
   }
 
   // Send Notification for success/failure
