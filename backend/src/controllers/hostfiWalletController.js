@@ -667,7 +667,7 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
         address: recipient.walletAddress || recipient.address
       },
       clientReference,
-      memo: `Withdrawal of ${amountToTransfer} ${currency} to ${recipient.accountName || 'beneficiary'}`
+      memo: `Withdrawal of ${amount} ${currency}`
     });
 
     // Create transaction record
