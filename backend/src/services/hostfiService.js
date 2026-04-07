@@ -967,9 +967,32 @@ class HostFiService {
         console.log(`[HostFi Service] Waiting 2 seconds for swap settlement...`);
         await new Promise(resolve => setTimeout(resolve, 2000));
         
+        // IMPORTANT: Check actual NGN balance after swap (HostFi deducts fees)
+        // The swap result shows gross amount, but fees reduce available balance
+        console.log(`[HostFi Service] Checking actual ${targetCurrency} balance after swap...`);
+        const walletsAfterSwap = await this.getUserWallets();
+        const targetWalletAfterSwap = walletsAfterSwap.find(a => {
+          const code = (a.currencyCode || (a.currency && a.currency.code) || a.currency || '').toUpperCase();
+          return code === targetCurrency;
+        });
+        
+        if (targetWalletAfterSwap) {
+          const actualBalanceAfterSwap = parseFloat(targetWalletAfterSwap.balance || 0);
+          console.log(`[HostFi Service] Actual ${targetCurrency} balance after swap: ${actualBalanceAfterSwap}`);
+          console.log(`[HostFi Service] Swap result amount: ${effectiveAmount}`);
+          
+          // Use the actual available balance (minus small buffer for HostFi fees if needed)
+          // HostFi keeps some amount for fees, so we should use actual balance
+          if (actualBalanceAfterSwap < effectiveAmount) {
+            console.log(`[HostFi Service] Adjusting payout amount from ${effectiveAmount} to ${actualBalanceAfterSwap} (actual balance)`);
+            effectiveAmount = actualBalanceAfterSwap;
+            swapDetails.targetAmount = actualBalanceAfterSwap;
+          }
+        }
+        
         // Validate minimum amount for NGN
         if (targetCurrency === 'NGN' && effectiveAmount < 1000) {
-          throw new Error(`Minimum withdrawal amount is ₦1,000 NGN. You received ₦${effectiveAmount.toFixed(2)} after swap. Please add more USDC to your wallet.`);
+          throw new Error(`Minimum withdrawal amount is ₦1,000 NGN. You have ₦${effectiveAmount.toFixed(2)} available after swap. Please add more USDC to your wallet.`);
         }
       }
 
