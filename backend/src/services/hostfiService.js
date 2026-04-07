@@ -17,6 +17,10 @@ class HostFiService {
     // Platform fee configuration (read from env, default 10%)
     this.platformFeePercent = parseInt(process.env.PLATFORM_COMMISSION) || 10;
     this.platformWalletAddress = process.env.PLATFORM_WALLET_ADDRESS;
+    
+    // HostFi swap fee reserve - amount to keep for HostFi swap fees (USDC)
+    // HostFi charges ~0.5% + network fees for swaps, we reserve $0.50 to be safe
+    this.swapFeeReserve = 0.5;
 
     // Token cache
     this.accessToken = null;
@@ -103,6 +107,15 @@ class HostFiService {
       platformWallet: this.platformWalletAddress,
       feeType: 'off-ramp'
     };
+  }
+
+  /**
+   * Get HostFi swap fee reserve amount
+   * This is the amount we keep to cover HostFi swap fees
+   * @returns {number} Swap fee reserve in USDC
+   */
+  getSwapFeeReserve() {
+    return this.swapFeeReserve;
   }
 
   /**

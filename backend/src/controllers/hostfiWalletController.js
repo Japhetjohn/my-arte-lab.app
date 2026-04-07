@@ -594,16 +594,37 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
     }
   }
 
-  // Check balance with small tolerance for floating point precision
-  // Users can withdraw up to 99.9% of their balance (leaving tiny dust for fees)
-  const maxWithdrawable = user.wallet.balance * 0.999;
+  // Check balance - account for HostFi swap fees on fiat withdrawals
+  // Crypto withdrawals (USDC->USDC) don't need swap fees
+  // Fiat withdrawals (USDC->NGN) need ~$0.50 reserve for HostFi swap fees
+  const sourceCurr = currency.toUpperCase();
+  const targetCurr = effectiveTargetCurrency.toUpperCase();
+  const swapFeeReserve = (!isCrypto && sourceCurr !== targetCurr) 
+    ? hostfiService.getSwapFeeReserve() 
+    : 0;
+  
+  // Convert swap fee reserve to primary currency if needed
+  let swapFeeInPrimary = swapFeeReserve;
+  if (swapFeeReserve > 0 && currency !== user.wallet.currency) {
+    try {
+      const rateData = await hostfiService.getCurrencyRates(currency, user.wallet.currency, true);
+      const rate = rateData.rate || rateData.data?.rate || 0;
+      swapFeeInPrimary = swapFeeReserve * rate;
+    } catch (err) {
+      console.log(`[Withdrawal] Could not convert swap fee, using default`);
+    }
+  }
+  
+  const maxWithdrawable = user.wallet.balance - swapFeeInPrimary;
+  
   if (amountInPrimary > maxWithdrawable) {
-    return next(new ErrorHandler(
-      `Insufficient balance. Available: ${user.wallet.balance.toFixed(4)} ${user.wallet.currency}, ` +
-      `Requested: ${amountInPrimary.toFixed(4)} ${user.wallet.currency}. ` +
-      `Please leave a small amount for network fees.`,
-      400
-    ));
+    const message = swapFeeReserve > 0
+      ? `Insufficient balance. Available: ${user.wallet.balance.toFixed(4)} ${user.wallet.currency}, ` +
+        `Requested: ${amountInPrimary.toFixed(4)} ${user.wallet.currency}. ` +
+        `Please reserve ~${swapFeeReserve} USDC for swap fees.`
+      : `Insufficient balance. Available: ${user.wallet.balance.toFixed(4)} ${user.wallet.currency}, ` +
+        `Requested: ${amountInPrimary.toFixed(4)} ${user.wallet.currency}`;
+    return next(new ErrorHandler(message, 400));
   }
 
   // Get wallet asset ID
