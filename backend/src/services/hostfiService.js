@@ -981,12 +981,19 @@ class HostFiService {
           console.log(`[HostFi Service] Actual ${targetCurrency} balance after swap: ${actualBalanceAfterSwap}`);
           console.log(`[HostFi Service] Swap result amount: ${effectiveAmount}`);
           
-          // Use the actual available balance (minus small buffer for HostFi fees if needed)
-          // HostFi keeps some amount for fees, so we should use actual balance
-          if (actualBalanceAfterSwap < effectiveAmount) {
-            console.log(`[HostFi Service] Adjusting payout amount from ${effectiveAmount} to ${actualBalanceAfterSwap} (actual balance)`);
-            effectiveAmount = actualBalanceAfterSwap;
-            swapDetails.targetAmount = actualBalanceAfterSwap;
+          // ALWAYS use actual wallet balance (what HostFi actually credited)
+          // The swap result shows gross, but actual balance is what we can use
+          // Reserve ~100 NGN buffer for HostFi payout fees (NGN fee is typically 100)
+          const feeBuffer = targetCurrency === 'NGN' ? 100 : 0;
+          const availableForPayout = Math.max(0, actualBalanceAfterSwap - feeBuffer);
+          
+          console.log(`[HostFi Service] Fee buffer: ${feeBuffer} ${targetCurrency}`);
+          console.log(`[HostFi Service] Available for payout: ${availableForPayout} ${targetCurrency}`);
+          
+          if (availableForPayout < effectiveAmount) {
+            console.log(`[HostFi Service] Adjusting payout amount from ${effectiveAmount} to ${availableForPayout} (available after fees)`);
+            effectiveAmount = availableForPayout;
+            swapDetails.targetAmount = availableForPayout;
           }
         }
         
