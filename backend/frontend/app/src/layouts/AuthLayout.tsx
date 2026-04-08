@@ -27,7 +27,7 @@ export function AuthLayout({
             className="w-32 h-32 mx-auto mb-4 object-contain"
           />
           <h2 className="text-xl font-bold mb-1">Connect with Top Creators</h2>
-          <p className="text-white/80 text-sm">Join thousands on MyArtelab</p>
+          <p className="text-white/80 text-sm">Join thousands on MyArteLab</p>
         </div>
       </div>
 
@@ -39,7 +39,7 @@ export function AuthLayout({
             <Link to="/" className="flex items-center gap-2">
               <img
                 src="/images/logo.png"
-                alt="MyArtelab"
+                alt="MyArteLab"
                 className="w-8 h-8"
               />
               <span className="font-bold text-xl">MyArtelab</span>
@@ -91,7 +91,7 @@ export function AuthLayout({
               Connect with Top Creators
             </h2>
             <p className="text-white/80">
-              Join thousands of clients and creators on MyArtelab
+              Join thousands of clients and creators on MyArteLab
             </p>
           </div>
         </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
@@ -60,11 +60,11 @@ export function ResetPassword() {
           <p className="text-gray-600">
             Please request a new password reset link.
           </p>
-          <Link to="/forgot-password">
+          <a href="/forgot-password">
             <Button className="w-full bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white">
               Request New Link
             </Button>
-          </Link>
+          </a>
         </div>
       </AuthLayout>
     );
@@ -146,13 +146,13 @@ export function ResetPassword() {
         </Button>
 
         <p className="text-center text-sm">
-          <Link
-            to="/login"
+          <a
+            href="/login"
             className="inline-flex items-center text-[#8A2BE2] hover:underline"
           >
             <ArrowLeft className="w-4 h-4 mr-1" />
             Back to Login
-          </Link>
+          </a>
         </p>
       </form>
     </AuthLayout>

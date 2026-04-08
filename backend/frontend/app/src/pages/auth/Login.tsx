@@ -38,7 +38,7 @@ export function Login() {
   return (
     <AuthLayout
       title="Welcome Back"
-      subtitle="Sign in to your MyArtelab account"
+      subtitle="Sign in to your MyArteLab account"
       illustration="/images/welcome.png"
       showBackButton={false}
     >

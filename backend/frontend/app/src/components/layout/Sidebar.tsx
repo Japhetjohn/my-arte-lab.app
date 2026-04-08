@@ -97,7 +97,7 @@ export function Sidebar({ currentPath, className }: SidebarProps) {
       <div className="p-4 border-t border-gray-200">
         <div className="bg-gradient-to-br from-[#8A2BE2]/10 to-[#8A2BE2]/5 rounded-lg p-4">
           <p className="text-sm font-medium text-gray-900">Become a Creator</p>
-          <p className="text-xs text-gray-500 mt-1">Start earning on MyArtelab</p>
+          <p className="text-xs text-gray-500 mt-1">Start earning on MyArteLab</p>
           <a 
             href="https://myartelab.com" 
             target="_blank"

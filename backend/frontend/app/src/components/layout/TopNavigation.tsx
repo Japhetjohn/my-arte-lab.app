@@ -72,7 +72,7 @@ export function TopNavigation({
             <SheetContent side="left" className="w-72 p-0">
               <SheetHeader className="p-4 border-b border-gray-200">
                 <SheetTitle className="flex items-center gap-2">
-                  <img src="/images/logo.png?v=2" alt="MyArtelab" className="w-8 h-8 rounded-full" />
+                  <img src="/images/logo.png?v=2" alt="MyArteLab" className="w-8 h-8 rounded-full" />
                   <span className="font-bold text-xl">MyArtelab</span>
                 </SheetTitle>
               </SheetHeader>
@@ -99,7 +99,7 @@ export function TopNavigation({
               <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 bg-white">
                 <div className="bg-gradient-to-br from-[#8A2BE2]/10 to-[#8A2BE2]/5 rounded-lg p-4">
                   <p className="text-sm font-medium text-gray-900">Become a Creator</p>
-                  <p className="text-xs text-gray-500 mt-1">Start earning on MyArtelab</p>
+                  <p className="text-xs text-gray-500 mt-1">Start earning on MyArteLab</p>
                   <button 
                     onClick={() => handleNavClick('/become-creator')}
                     className="inline-flex items-center text-sm font-medium text-[#8A2BE2] mt-2 hover:underline"

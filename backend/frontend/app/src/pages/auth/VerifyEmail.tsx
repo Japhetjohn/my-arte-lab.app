@@ -172,7 +172,7 @@ export function VerifyEmail() {
         isOpen={showSuccess}
         onClose={handleSuccessClose}
         title="Email Verified!"
-        message="Your email has been successfully verified. You can now access all features of MyArtelab."
+        message="Your email has been successfully verified. You can now access all features of MyArteLab."
         actionLabel="Go to Dashboard"
         onAction={handleSuccessClose}
         illustration="/images/email-verified.png"

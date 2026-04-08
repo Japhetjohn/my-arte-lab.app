@@ -571,7 +571,7 @@ export function Register() {
   return (
     <AuthLayout
       title="Create Account"
-      subtitle="Join MyArtelab and start your journey"
+      subtitle="Join MyArteLab and start your journey"
       illustration="/images/welcome.png"
       showBackButton={false}
     >
