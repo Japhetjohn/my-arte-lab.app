@@ -85,21 +85,19 @@ exports.register = catchAsync(async (req, res, next) => {
 
   await user.save({ validateBeforeSave: false });
 
-  // Initialize wallets (HostFi & local Tsara) in background (non-blocking)
-  setImmediate(async () => {
-    try {
-      const hostfiWalletService = require('../services/hostfiWalletService');
-      console.log(`[Background] Initializing wallets for ${user.email}...`);
+  // Initialize wallets (HostFi & local Tsara) - CRITICAL: Do this synchronously
+  try {
+    const hostfiWalletService = require('../services/hostfiWalletService');
+    console.log(`[Register] Initializing wallets for ${user.email}...`);
 
-      // initializeUserWallets now handles both HostFi asset syncing and local Tsara wallet generation
-      await hostfiWalletService.initializeUserWallets(user._id);
+    // initializeUserWallets handles both HostFi asset syncing and local Tsara wallet generation
+    await hostfiWalletService.initializeUserWallets(user._id);
 
-      console.log(`[Background] Wallets initialized successfully for ${user.email}`);
-    } catch (walletError) {
-      console.error(`[Background] Wallet initialization failed for ${user.email}:`, walletError.message);
-      // Fail silently in background; will be retried on first wallet access
-    }
-  });
+    console.log(`[Register] Wallets initialized successfully for ${user.email}`);
+  } catch (walletError) {
+    console.error(`[Register] Wallet initialization failed for ${user.email}:`, walletError.message);
+    // Log but don't fail registration - wallet will be created on first access
+  }
 
   // Send professional branded welcome email with verification code
   emailConfig.sendEmail({
@@ -291,6 +289,11 @@ exports.updateProfile = catchAsync(async (req, res, next) => {
       updates[key] = req.body[key];
     }
   });
+  
+  // Handle empty category - remove it from updates if empty
+  if (updates.category === '' || updates.category === null) {
+    delete updates.category;
+  }
   
   // Handle skills parsing - if skills is a string, split it into array
   if (updates.skills !== undefined) {

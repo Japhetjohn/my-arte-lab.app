@@ -114,7 +114,7 @@ const userSchema = new mongoose.Schema({
 
   category: {
     type: String,
-    enum: Object.values(CREATOR_CATEGORIES),
+    enum: [...Object.values(CREATOR_CATEGORIES), ''],
     required: function () { return this.role === USER_ROLES.CREATOR; }
   },
 
