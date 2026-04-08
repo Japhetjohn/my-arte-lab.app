@@ -304,12 +304,12 @@ export function Bookings() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-flex">
-          <TabsTrigger value="all">All ({bookings.length})</TabsTrigger>
-          <TabsTrigger value="pending">Pending ({filterBookings('pending').length})</TabsTrigger>
-          <TabsTrigger value="in_progress">In Progress ({filterBookings('in_progress').length})</TabsTrigger>
-          <TabsTrigger value="delivered">Delivered ({filterBookings('delivered').length})</TabsTrigger>
-          <TabsTrigger value="completed">Completed ({filterBookings('completed').length})</TabsTrigger>
+        <TabsList className="flex w-full overflow-x-auto scrollbar-hide lg:w-auto lg:inline-flex">
+          <TabsTrigger value="all" className="flex-shrink-0">All ({bookings.length})</TabsTrigger>
+          <TabsTrigger value="pending" className="flex-shrink-0">Pending ({filterBookings('pending').length})</TabsTrigger>
+          <TabsTrigger value="in_progress" className="flex-shrink-0">In Progress ({filterBookings('in_progress').length})</TabsTrigger>
+          <TabsTrigger value="delivered" className="flex-shrink-0">Delivered ({filterBookings('delivered').length})</TabsTrigger>
+          <TabsTrigger value="completed" className="flex-shrink-0">Completed ({filterBookings('completed').length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="all" className="mt-6">
