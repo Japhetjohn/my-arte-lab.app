@@ -69,7 +69,7 @@ export function DepositModal({ isOpen, onClose, onDepositComplete }: DepositModa
     setIsLoading(true);
     try {
       const response = await api.post('/hostfi/collections/crypto/address');
-      console.log('Crypto address response:', response.data);
+      // Crypto address fetched
       
       const addressData = response.data?.data?.address;
       
@@ -84,7 +84,7 @@ export function DepositModal({ isOpen, onClose, onDepositComplete }: DepositModa
         toast.error('Invalid response from server');
       }
     } catch (error: any) {
-      console.error('Crypto address error:', error);
+      // Error handled by UI
       toast.error(error.response?.data?.message || 'Failed to get deposit address');
     } finally {
       setIsLoading(false);
@@ -104,7 +104,7 @@ export function DepositModal({ isOpen, onClose, onDepositComplete }: DepositModa
         amount: parseFloat(fiatAmount),
       });
       
-      console.log('Fiat channel response:', response.data);
+      // Fiat channel fetched
       
       const channel = response.data?.data?.channel;
       
@@ -121,7 +121,7 @@ export function DepositModal({ isOpen, onClose, onDepositComplete }: DepositModa
         toast.error('Invalid response from server');
       }
     } catch (error: any) {
-      console.error('Fiat channel error:', error);
+      // Error handled by UI
       toast.error(error.response?.data?.message || 'Failed to generate account');
     } finally {
       setIsLoading(false);

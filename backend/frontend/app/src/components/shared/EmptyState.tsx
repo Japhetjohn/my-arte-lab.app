@@ -126,7 +126,7 @@ export function preloadOfflineImage(): void {
   setTimeout(() => {
     // Check if already cached
     if (localStorage.getItem(OFFLINE_IMAGE_KEY)) {
-      console.log('[OfflineImage] Already cached');
+      // Image already cached
       return;
     }
 
@@ -142,9 +142,9 @@ export function preloadOfflineImage(): void {
           if (base64data) {
             try {
               localStorage.setItem(OFFLINE_IMAGE_KEY, base64data);
-              console.log('[OfflineImage] Cached successfully');
+              // Cached successfully
             } catch (e) {
-              console.log('[OfflineImage] Storage failed (might be full)');
+              // Storage failed (might be full)
             }
           }
         };

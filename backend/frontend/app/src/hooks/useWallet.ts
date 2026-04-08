@@ -70,7 +70,7 @@ export function useWallet() {
     }
     try {
       const response = await hostfiWalletService.getWallet();
-      console.log('Wallet response:', response.data);
+      // Wallet data fetched
       // Backend returns { success: true, data: { wallet: {...} } }
       const walletData = response.data?.data?.wallet;
       const newBalance = walletData?.balance || 0;
@@ -88,7 +88,7 @@ export function useWallet() {
         isInitialLoad: false,
       }));
     } catch (error: any) {
-      console.error('Fetch wallet error:', error);
+      // Error handled by UI
       setState((prev) => ({
         ...prev,
         isLoading: false,

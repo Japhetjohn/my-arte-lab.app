@@ -111,7 +111,7 @@ function AppContent() {
   };
 
   // Public routes (no auth required)
-  const publicRoutes = ['/login', '/register', '/forgot-password', '/reset-password'];
+  const publicRoutes = ['/login', '/register', '/forgot-password', '/reset-password', '/legal'];
   const isPublicRoute = publicRoutes.some(route => currentPath.startsWith(route));
 
   // If on public route, render auth pages
@@ -125,6 +125,8 @@ function AppContent() {
         return <ForgotPassword />;
       case currentPath.startsWith('/reset-password'):
         return <ResetPassword />;
+      case currentPath === '/legal':
+        return <Legal />;
       default:
         return <Login />;
     }

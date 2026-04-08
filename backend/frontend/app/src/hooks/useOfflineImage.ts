@@ -16,7 +16,7 @@ export function useOfflineImage() {
         if (cachedImage) {
           setOfflineImageUrl(cachedImage);
           setIsImageReady(true);
-          console.log('[OfflineImage] Using cached image from localStorage');
+          // Using cached image from localStorage
         }
 
         // 2. Fetch and cache the image (do this in background)
@@ -35,10 +35,10 @@ export function useOfflineImage() {
               localStorage.setItem(OFFLINE_IMAGE_KEY, base64data);
               setOfflineImageUrl(base64data);
               setIsImageReady(true);
-              console.log('[OfflineImage] Image cached successfully');
+              // Image cached successfully
             } catch (e) {
               // localStorage might be full, that's ok we have the URL fallback
-              console.log('[OfflineImage] Could not cache to localStorage, using URL');
+              // Could not cache to localStorage, using URL
               setIsImageReady(true);
             }
           }
@@ -46,7 +46,7 @@ export function useOfflineImage() {
         reader.readAsDataURL(blob);
         
       } catch (error) {
-        console.log('[OfflineImage] Failed to preload image:', error);
+        // Failed to preload image
         // If we have cached image, use it
         const cachedImage = localStorage.getItem(OFFLINE_IMAGE_KEY);
         if (cachedImage) {
@@ -79,7 +79,7 @@ export function preloadOfflineImage(): void {
           if (base64data) {
             try {
               localStorage.setItem(OFFLINE_IMAGE_KEY, base64data);
-              console.log('[OfflineImage] Preloaded and cached');
+              // Preloaded and cached
             } catch (e) {
               // Ignore storage errors
             }
