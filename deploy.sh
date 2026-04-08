@@ -18,30 +18,53 @@ if [ $? -ne 0 ]; then
 fi
 echo "✅ Frontend build successful"
 
+# Check if rsync is available, otherwise use scp
+if command -v rsync &> /dev/null; then
+    USE_RSYNC=true
+else
+    USE_RSYNC=false
+    echo "⚠️  rsync not found, using scp instead..."
+fi
+
 # Sync backend files
 echo ""
 echo "📦 Syncing backend files..."
-rsync -avz --delete \
-    --exclude 'node_modules' \
-    --exclude '.env' \
-    --exclude 'uploads' \
-    --exclude 'logs' \
-    ${LOCAL_DIR}/backend/src/ \
-    ${VPS_USER}@${VPS_IP}:${REMOTE_DIR}/backend/src/
+if [ "$USE_RSYNC" = true ]; then
+    rsync -avz --delete \
+        --exclude 'node_modules' \
+        --exclude '.env' \
+        --exclude 'uploads' \
+        --exclude 'logs' \
+        ${LOCAL_DIR}/backend/src/ \
+        ${VPS_USER}@${VPS_IP}:${REMOTE_DIR}/backend/src/
+else
+    # Use scp with tar for directories
+    cd ${LOCAL_DIR}/backend/src
+    tar -czf /tmp/backend-src.tar.gz .
+    scp /tmp/backend-src.tar.gz ${VPS_USER}@${VPS_IP}:/tmp/
+    ssh ${VPS_USER}@${VPS_IP} "cd ${REMOTE_DIR}/backend/src && tar -xzf /tmp/backend-src.tar.gz --overwrite && rm /tmp/backend-src.tar.gz"
+    rm /tmp/backend-src.tar.gz
+fi
 
 # Sync frontend build
 echo ""
 echo "📂 Syncing frontend build..."
-rsync -avz --delete \
-    ${LOCAL_DIR}/backend/frontend/app/dist/ \
-    ${VPS_USER}@${VPS_IP}:${REMOTE_DIR}/backend/frontend/dist/
+if [ "$USE_RSYNC" = true ]; then
+    rsync -avz --delete \
+        ${LOCAL_DIR}/backend/frontend/app/dist/ \
+        ${VPS_USER}@${VPS_IP}:${REMOTE_DIR}/backend/frontend/dist/
+else
+    cd ${LOCAL_DIR}/backend/frontend/app/dist
+    tar -czf /tmp/frontend-dist.tar.gz .
+    scp /tmp/frontend-dist.tar.gz ${VPS_USER}@${VPS_IP}:/tmp/
+    ssh ${VPS_USER}@${VPS_IP} "mkdir -p ${REMOTE_DIR}/backend/frontend/dist && cd ${REMOTE_DIR}/backend/frontend/dist && rm -rf * && tar -xzf /tmp/frontend-dist.tar.gz && rm /tmp/frontend-dist.tar.gz"
+    rm /tmp/frontend-dist.tar.gz
+fi
 
 # Sync nginx config
 echo ""
 echo "📋 Syncing nginx config..."
-rsync -avz \
-    ${LOCAL_DIR}/nginx-myartelab.conf \
-    ${VPS_USER}@${VPS_IP}:/etc/nginx/sites-available/myartelab
+scp ${LOCAL_DIR}/nginx-myartelab.conf ${VPS_USER}@${VPS_IP}:/etc/nginx/sites-available/myartelab
 
 # Remote commands
 echo ""
