@@ -5,31 +5,29 @@ import {
   OctagonXIcon,
   TriangleAlertIcon,
 } from "lucide-react"
-import { useTheme } from "next-themes"
 import { Toaster as Sonner, type ToasterProps } from "sonner"
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = "system" } = useTheme()
-
   return (
     <Sonner
-      theme={theme as ToasterProps["theme"]}
+      theme="light"
       className="toaster group"
       icons={{
-        success: <CircleCheckIcon className="size-4" />,
-        info: <InfoIcon className="size-4" />,
-        warning: <TriangleAlertIcon className="size-4" />,
-        error: <OctagonXIcon className="size-4" />,
-        loading: <Loader2Icon className="size-4 animate-spin" />,
+        success: <CircleCheckIcon className="size-4 text-green-600" />,
+        info: <InfoIcon className="size-4 text-blue-600" />,
+        warning: <TriangleAlertIcon className="size-4 text-amber-600" />,
+        error: <OctagonXIcon className="size-4 text-red-600" />,
+        loading: <Loader2Icon className="size-4 animate-spin text-[#8A2BE2]" />,
       }}
-      style={
-        {
-          "--normal-bg": "#ffffff",
-          "--normal-text": "#1f2937",
-          "--normal-border": "#e5e7eb",
-          "--border-radius": "0.75rem",
-        } as React.CSSProperties
-      }
+      toastOptions={{
+        style: {
+          background: '#ffffff',
+          color: '#1f2937',
+          border: '1px solid #e5e7eb',
+          borderRadius: '0.75rem',
+          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+        },
+      }}
       {...props}
     />
   )
