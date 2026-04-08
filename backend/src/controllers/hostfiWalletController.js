@@ -275,6 +275,8 @@ exports.createCryptoAddress = catchAsync(async (req, res, next) => {
 
   // Create new crypto collection address via HostFi
   try {
+    console.log('[HostFi] Creating new crypto address for user:', req.user._id.toString());
+    
     const addressResponse = await hostfiService.createCryptoCollectionAddress({
       assetId,
       currency,
@@ -286,36 +288,68 @@ exports.createCryptoAddress = catchAsync(async (req, res, next) => {
 
     // Handle async response - HostFi may return a job ID or the address directly
     let address = addressResponse;
+    const addressId = address.id;
     
     // If response has no address but has an ID, it's likely async - poll for it
-    if (!address.address && address.id) {
-      console.log('[HostFi] Async address creation, polling for result...');
+    if (!address.address && addressId) {
+      console.log('[HostFi] Async address creation detected, addressId:', addressId);
       
-      // Poll for address (max 10 attempts, 2 seconds apart)
-      for (let i = 0; i < 10; i++) {
-        await new Promise(resolve => setTimeout(resolve, 2000));
+      // Try to get the address directly by ID first
+      try {
+        const directAddress = await hostfiService.getCryptoCollectionAddress(addressId);
+        if (directAddress && directAddress.address) {
+          address = directAddress;
+          console.log('[HostFi] Got address directly by ID:', address.address);
+        }
+      } catch (directErr) {
+        console.log('[HostFi] Could not get address by ID, will poll:', directErr.message);
+      }
+      
+      // If still no address, poll for it
+      if (!address.address) {
+        console.log('[HostFi] Starting polling for address...');
         
-        try {
-          const addresses = await hostfiService.getCryptoCollectionAddresses({
-            currency,
-            network,
-            customId: req.user._id.toString()
-          });
+        // Poll for address (max 15 attempts, 3 seconds apart = 45 seconds total)
+        for (let i = 0; i < 15; i++) {
+          await new Promise(resolve => setTimeout(resolve, 3000));
           
-          if (addresses && addresses.length > 0 && addresses[0].address) {
-            address = addresses[0];
-            console.log('[HostFi] Found address after polling:', address.address);
-            break;
+          try {
+            // Try getting by ID first
+            const byId = await hostfiService.getCryptoCollectionAddress(addressId);
+            if (byId && byId.address) {
+              address = byId;
+              console.log('[HostFi] Found address by ID after polling:', address.address);
+              break;
+            }
+            
+            // Fallback to listing
+            const addresses = await hostfiService.getCryptoCollectionAddresses({
+              currency,
+              network,
+              customId: req.user._id.toString()
+            });
+            
+            const found = addresses.find(a => a.id === addressId || a.address);
+            if (found && found.address) {
+              address = found;
+              console.log('[HostFi] Found address in list after polling:', address.address);
+              break;
+            }
+            
+            console.log(`[HostFi] Poll attempt ${i + 1}/15: no address yet`);
+          } catch (pollErr) {
+            console.log(`[HostFi] Poll attempt ${i + 1} failed:`, pollErr.message);
           }
-        } catch (pollErr) {
-          console.log('[HostFi] Poll attempt', i + 1, 'failed:', pollErr.message);
         }
       }
     }
 
     if (!address || !address.address) {
+      console.error('[HostFi] Failed to get address after all polling attempts');
       throw new Error('Failed to generate address: No address returned from provider');
     }
+
+    console.log('[HostFi] Successfully got address:', address.address);
 
     // Save address to user wallet for quick access
     user.wallet.address = address.address;
