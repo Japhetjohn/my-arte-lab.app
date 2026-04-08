@@ -176,15 +176,18 @@ export function Messages() {
   const markAsRead = async (conversation: Conversation) => {
     try {
       const otherUserId = conversation.otherUser?._id || conversation._id;
-      await api.post(`/messages/${otherUserId}/read`);
+      await api.patch(`/messages/${otherUserId}/read`);
       
-      // Update local state
+      // Update local state immediately
       setConversations(prev => prev.map(conv => {
         if ((conv.otherUser?._id || conv._id) === otherUserId) {
           return { ...conv, unreadCount: 0 };
         }
         return conv;
       }));
+      
+      // Notify parent component (App) to refresh unread count
+      window.dispatchEvent(new CustomEvent('messagesRead', { detail: { userId: otherUserId } }));
     } catch (error) {
       console.error('Error marking messages as read:', error);
     }

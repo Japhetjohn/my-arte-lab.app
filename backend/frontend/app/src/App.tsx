@@ -74,7 +74,17 @@ function AppContent() {
     fetchCounts();
     // Poll every 30 seconds
     const interval = setInterval(fetchCounts, 30000);
-    return () => clearInterval(interval);
+    
+    // Listen for messages being marked as read
+    const handleMessagesRead = () => {
+      fetchCounts();
+    };
+    window.addEventListener('messagesRead', handleMessagesRead);
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('messagesRead', handleMessagesRead);
+    };
   }, [isAuthenticated]);
 
   useEffect(() => {
