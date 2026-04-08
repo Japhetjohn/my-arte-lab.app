@@ -214,6 +214,7 @@ function AppContent() {
         unreadMessages={unreadMessages}
         onSearch={(query) => navigate(`/explore?q=${query}`)}
         onLogout={logout}
+        onNavigate={navigate}
       />
       
       <div className="flex">

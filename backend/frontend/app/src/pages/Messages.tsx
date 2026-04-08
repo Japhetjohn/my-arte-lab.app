@@ -134,7 +134,23 @@ export function Messages() {
     if (selectedConversation) {
       fetchMessages(selectedConversation);
       checkBlockStatus(selectedConversation);
+      
+      // Mark messages as read when viewing conversation
+      if (selectedConversation.unreadCount > 0) {
+        markAsRead(selectedConversation);
+      }
     }
+  }, [selectedConversation]);
+  
+  // Poll for new messages every 10 seconds
+  useEffect(() => {
+    if (!selectedConversation) return;
+    
+    const interval = setInterval(() => {
+      fetchMessages(selectedConversation);
+    }, 10000);
+    
+    return () => clearInterval(interval);
   }, [selectedConversation]);
 
   const fetchMessages = async (conversation: Conversation) => {
@@ -154,6 +170,23 @@ export function Messages() {
       setIsBlocked(response.data.data?.isBlocked || false);
     } catch (error) {
       console.error('Error checking block status:', error);
+    }
+  };
+  
+  const markAsRead = async (conversation: Conversation) => {
+    try {
+      const otherUserId = conversation.otherUser?._id || conversation._id;
+      await api.post(`/messages/${otherUserId}/read`);
+      
+      // Update local state
+      setConversations(prev => prev.map(conv => {
+        if ((conv.otherUser?._id || conv._id) === otherUserId) {
+          return { ...conv, unreadCount: 0 };
+        }
+        return conv;
+      }));
+    } catch (error) {
+      console.error('Error marking messages as read:', error);
     }
   };
 
@@ -195,10 +228,34 @@ export function Messages() {
       const savedMessage = response.data.data?.message;
       if (savedMessage) {
         setMessages(prev => prev.map(m => m._id === tempMessage._id ? savedMessage : m));
+        
+        // Update conversation list locally without full refresh
+        setConversations(prev => {
+          const otherUserId = selectedConversation?.otherUser?._id || selectedConversation?._id;
+          const updated = prev.map(conv => {
+            if ((conv.otherUser?._id || conv._id) === otherUserId) {
+              return {
+                ...conv,
+                lastMessage: {
+                  content: savedMessage.content,
+                  createdAt: savedMessage.createdAt,
+                  senderId: savedMessage.senderId,
+                }
+              };
+            }
+            return conv;
+          });
+          // Move updated conversation to top
+          const convIndex = updated.findIndex(conv => 
+            (conv.otherUser?._id || conv._id) === otherUserId
+          );
+          if (convIndex > 0) {
+            const [conv] = updated.splice(convIndex, 1);
+            updated.unshift(conv);
+          }
+          return updated;
+        });
       }
-      
-      // Refresh conversations
-      fetchConversations();
     } catch (error: any) {
       setMessages(prev => prev.filter(m => m._id !== tempMessage._id));
       setNewMessage(messageContent);

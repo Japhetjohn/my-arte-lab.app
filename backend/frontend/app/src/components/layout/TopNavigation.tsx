@@ -19,6 +19,7 @@ interface TopNavigationProps {
   unreadMessages: number;
   onSearch?: (query: string) => void;
   onLogout?: () => void;
+  onNavigate?: (path: string) => void;
 }
 
 const navItems = [
@@ -33,7 +34,8 @@ export function TopNavigation({
   unreadNotifications, 
   unreadMessages,
   onSearch,
-  onLogout
+  onLogout,
+  onNavigate
 }: TopNavigationProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -44,7 +46,11 @@ export function TopNavigation({
   };
 
   const handleNavClick = (path: string) => {
-    window.location.href = path;
+    if (onNavigate) {
+      onNavigate(path);
+    } else {
+      window.location.href = path;
+    }
     setMobileMenuOpen(false);
   };
 
@@ -131,7 +137,7 @@ export function TopNavigation({
             variant="ghost"
             size="icon"
             className="relative md:hidden h-9 w-9"
-            onClick={() => window.location.href = '/explore'}
+            onClick={() => handleNavClick('/explore')}
           >
             <Search className="w-5 h-5" />
           </Button>
