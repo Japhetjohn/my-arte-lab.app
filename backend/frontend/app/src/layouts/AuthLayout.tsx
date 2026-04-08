@@ -91,7 +91,7 @@ export function AuthLayout({
               Connect with Top Creators
             </h2>
             <p className="text-white/80">
-              Join thousands of clients and creators on MyArteLab
+              Join thousands on MyArteLab
             </p>
           </div>
         </div>
