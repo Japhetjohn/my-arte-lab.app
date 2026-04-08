@@ -168,17 +168,19 @@ export function Explore() {
             variant={viewMode === 'grid' ? 'default' : 'outline'}
             size="icon"
             onClick={() => setViewMode('grid')}
-            className={viewMode === 'grid' ? 'bg-[#8A2BE2]' : ''}
+            className={`h-10 w-10 sm:h-9 sm:w-9 touch-manipulation ${viewMode === 'grid' ? 'bg-[#8A2BE2]' : ''}`}
+            aria-label="Grid view"
           >
-            <Grid3X3 className="w-4 h-4" />
+            <Grid3X3 className="w-5 h-5 sm:w-4 sm:h-4" />
           </Button>
           <Button
             variant={viewMode === 'list' ? 'default' : 'outline'}
             size="icon"
             onClick={() => setViewMode('list')}
-            className={viewMode === 'list' ? 'bg-[#8A2BE2]' : ''}
+            className={`h-10 w-10 sm:h-9 sm:w-9 touch-manipulation ${viewMode === 'list' ? 'bg-[#8A2BE2]' : ''}`}
+            aria-label="List view"
           >
-            <List className="w-4 h-4" />
+            <List className="w-5 h-5 sm:w-4 sm:h-4" />
           </Button>
         </div>
       </div>
@@ -244,11 +246,11 @@ export function Explore() {
 
       {/* Creators Grid/List */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-flex">
-          <TabsTrigger value="all">All</TabsTrigger>
-          <TabsTrigger value="verified">Verified</TabsTrigger>
-          <TabsTrigger value="available">Available</TabsTrigger>
-          <TabsTrigger value="top-rated">Top Rated</TabsTrigger>
+        <TabsList className="flex w-full overflow-x-auto scrollbar-hide lg:w-auto lg:inline-flex">
+          <TabsTrigger value="all" className="flex-shrink-0">All</TabsTrigger>
+          <TabsTrigger value="verified" className="flex-shrink-0">Verified</TabsTrigger>
+          <TabsTrigger value="available" className="flex-shrink-0">Available</TabsTrigger>
+          <TabsTrigger value="top-rated" className="flex-shrink-0">Top Rated</TabsTrigger>
         </TabsList>
 
         <TabsContent value={activeTab} className="mt-6">

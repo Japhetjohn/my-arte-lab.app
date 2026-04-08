@@ -61,7 +61,7 @@ export function CreatorCard({ creator, onViewProfile, onBook }: CreatorCardProps
   return (
     <>
       <Card 
-        className="group hover:shadow-lg transition-all duration-300 border border-gray-200 overflow-hidden cursor-pointer"
+        className="group hover:shadow-lg transition-all duration-300 border border-gray-200 overflow-hidden cursor-pointer w-full max-w-full"
         onClick={handleCardClick}
       >
         <CardContent className="p-4 sm:p-5">
