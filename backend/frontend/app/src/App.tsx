@@ -23,6 +23,7 @@ import { EditProject } from '@/pages/EditProject';
 import { CreatorProfile } from '@/pages/CreatorProfile';
 import { Explore } from '@/pages/Explore';
 import { Creators } from '@/pages/Creators';
+import { Legal } from '@/pages/Legal';
 import { EmptyState, preloadOfflineImage } from '@/components/shared/EmptyState';
 import { Toaster } from '@/components/ui/sonner';
 import './App.css';
@@ -62,7 +63,9 @@ function AppContent() {
           api.get('/messages/unread-count').catch(() => null)
         ]);
         setUnreadNotifications(notifRes?.data?.data?.unreadCount || 0);
-        setUnreadMessages(msgRes?.data?.data?.unreadCount || 0);
+        // Messages API returns { count }, notifications returns { unreadCount }
+        const msgCount = msgRes?.data?.data?.count || msgRes?.data?.data?.unreadCount || 0;
+        setUnreadMessages(msgCount);
       } catch (error) {
         // Silently fail - don't spam console with server errors
       }
@@ -189,6 +192,8 @@ function AppContent() {
         return <Explore />;
       case '/creators':
         return <Creators />;
+      case '/legal':
+        return <Legal />;
       case '/profile':
         return user ? <CreatorProfile creatorId={user.id} isOwnProfile={true} /> : <Settings />;
       case '/verify-email':

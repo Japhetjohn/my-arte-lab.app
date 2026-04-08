@@ -65,6 +65,16 @@ export function AuthLayout({
 
           {/* Form */}
           {children}
+          
+          {/* Footer */}
+          <div className="mt-8 pt-6 border-t border-gray-200 text-center">
+            <p className="text-xs text-gray-500">
+              By continuing, you agree to our{' '}
+              <a href="/legal" className="text-[#8A2BE2] hover:underline">Terms of Service</a>
+              {' '}and{' '}
+              <a href="/legal" className="text-[#8A2BE2] hover:underline">Privacy Policy</a>
+            </p>
+          </div>
         </div>
       </div>
 

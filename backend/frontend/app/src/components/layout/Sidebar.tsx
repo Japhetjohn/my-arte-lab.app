@@ -99,7 +99,9 @@ export function Sidebar({ currentPath, className }: SidebarProps) {
           <p className="text-sm font-medium text-gray-900">Become a Creator</p>
           <p className="text-xs text-gray-500 mt-1">Start earning on MyArtelab</p>
           <a 
-            href="/become-creator" 
+            href="https://myartelab.com" 
+            target="_blank"
+            rel="noopener noreferrer"
             className="inline-flex items-center text-sm font-medium text-[#8A2BE2] mt-2 hover:underline"
           >
             Learn more
