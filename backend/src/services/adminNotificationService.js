@@ -660,7 +660,6 @@ class AdminNotificationService {
       console.error('Failed to send daily summary:', error.message);
     }
   }
-}
 
   async notifyNewDispute(booking, client, reason, details) {
     try {
