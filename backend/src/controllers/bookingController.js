@@ -104,13 +104,14 @@ exports.createBooking = catchAsync(async (req, res, next) => {
       }
     });
   } catch (error) {
+    console.error('[BookingController] Create booking error:', error.message, error.stack);
     if (error.statusCode === 404 && error.message.includes('Creator')) {
       return next(new ErrorHandler('Creator not found', 404));
     }
     if (error.statusCode === 400) {
       return next(error);
     }
-    return next(new ErrorHandler('Failed to create booking. Please try again.', 500));
+    return next(new ErrorHandler(`Failed to create booking: ${error.message}`, 500));
   }
 });
 
