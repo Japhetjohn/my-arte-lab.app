@@ -173,7 +173,9 @@ const bookingSchema = new mongoose.Schema({
 
   cancellationReason: String,
   disputeReason: String,
+  disputeDetails: String,
   disputeResolution: String,
+  disputedAt: Date,
 
   fundsReleased: {
     type: Boolean,
