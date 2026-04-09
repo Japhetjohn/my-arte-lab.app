@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const Transaction = require('../models/Transaction');
+const Booking = require('../models/Booking');
 const { successResponse } = require('../utils/apiResponse');
 const { ErrorHandler, catchAsync } = require('../utils/errorHandler');
 const hostfiService = require('../services/hostfiService');
@@ -30,68 +31,52 @@ exports.getWallet = catchAsync(async (req, res, next) => {
     Object.assign(user, refreshedUser.toObject());
   }
 
-  // Calculate balance from TRANSACTION RECORDS (not HostFi API)
-  // This is the source of truth
-  const transactions = await Transaction.find({ 
-    user: req.user._id,
-    status: { $in: ['completed', 'success'] }
+  // Get actual balance from HostFi API
+  let hostfiBalance = 0;
+  try {
+    const walletAssets = await hostfiService.getUserWallets();
+    // Sum up all USDC/USD balances from HostFi
+    hostfiBalance = walletAssets.reduce((sum, asset) => {
+      const currency = (asset.currency?.code || asset.currency || '').toUpperCase();
+      if (['USD', 'USDC', 'USDT', 'DAI'].includes(currency)) {
+        return sum + (parseFloat(asset.balance) || 0);
+      }
+      return sum;
+    }, 0);
+    console.log(`[Wallet] HostFi balance: ${hostfiBalance}`);
+  } catch (err) {
+    console.error('[Wallet] Failed to fetch HostFi balance:', err.message);
+    // Fallback to stored balance if HostFi fails
+    hostfiBalance = user.wallet.balance || 0;
+  }
+
+  // Calculate pending balance from active bookings
+  const pendingBookings = await Booking.find({
+    client: req.user._id,
+    status: { $in: ['confirmed', 'in_progress', 'delivered'] },
+    paymentStatus: 'paid'
   });
-
-  console.log(`[Wallet] Found ${transactions.length} transactions for user ${req.user._id}`);
-
-  let totalDeposits = 0;
-  let totalWithdrawals = 0;
-  let totalPayments = 0;
-  let totalEarnings = 0;
-
-  transactions.forEach(txn => {
-    const amount = parseFloat(txn.amount) || 0;
-    console.log(`[Wallet] Transaction: ${txn.type} = ${amount}`);
-    switch (txn.type) {
-      case 'deposit':
-      case 'credit':
-        totalDeposits += amount;
-        break;
-      case 'withdrawal':
-      case 'debit':
-        totalWithdrawals += amount;
-        break;
-      case 'payment':
-        totalPayments += amount;
-        break;
-      case 'earning':
-        totalEarnings += amount;
-        break;
-      case 'refund':
-        totalDeposits += amount; // Refunds add back to balance
-        break;
-    }
-  });
-
-  // Calculate actual balances
-  const calculatedTotalEarnings = totalEarnings;
-  const calculatedPendingBalance = parseFloat(user.wallet.pendingBalance) || 0;
   
-  // Calculate available balance: deposits + earnings - withdrawals - payments - pending
-  let calculatedAvailableBalance = (totalDeposits + totalEarnings) - (totalWithdrawals + totalPayments + calculatedPendingBalance);
-  calculatedAvailableBalance = Math.max(0, parseFloat(calculatedAvailableBalance.toFixed(2)));
+  const calculatedPendingBalance = pendingBookings.reduce((sum, booking) => 
+    sum + (parseFloat(booking.amount) || 0), 0
+  );
+
+  // Available balance = HostFi balance - pending bookings
+  const calculatedAvailableBalance = Math.max(0, parseFloat((hostfiBalance - calculatedPendingBalance).toFixed(2)));
   
-  console.log(`[Wallet] Calculation: Deposits=${totalDeposits}, Earnings=${totalEarnings}, Withdrawals=${totalWithdrawals}, Payments=${totalPayments}, Pending=${calculatedPendingBalance}`);
-  console.log(`[Wallet] Result: Available=${calculatedAvailableBalance}`);
+  console.log(`[Wallet] HostFi: ${hostfiBalance}, Pending Bookings: ${calculatedPendingBalance}, Available: ${calculatedAvailableBalance}`);
   
   // Get total HostFi balance for reference (not used for display)
   const totalHostFiBalance = user.wallet.hostfiWalletAssets.reduce((sum, asset) => 
     sum + (asset.balance || 0), 0
   );
 
-  console.log(`[Wallet] User ${req.user._id}: Available=${calculatedAvailableBalance}, Pending=${calculatedPendingBalance}, Earnings=${calculatedTotalEarnings}`);
-
   // Sync stored balance if it differs from calculated
   if (Math.abs(user.wallet.balance - calculatedAvailableBalance) > 0.01) {
     console.log(`[Wallet] Correcting balance for user ${req.user._id}: ${user.wallet.balance} -> ${calculatedAvailableBalance}`);
     user.wallet.balance = calculatedAvailableBalance;
     user.balance = calculatedAvailableBalance;
-    user.wallet.totalEarnings = calculatedTotalEarnings;
+    user.wallet.pendingBalance = calculatedPendingBalance;
     await user.save({ validateBeforeSave: false });
   }
 
@@ -111,11 +96,8 @@ exports.getWallet = catchAsync(async (req, res, next) => {
       balance: calculatedAvailableBalance,
       usdcBalance: usdcBalance,
       pendingBalance: calculatedPendingBalance,
-      totalEarnings: calculatedTotalEarnings,
-      totalDeposits,
-      totalWithdrawals,
-      totalPayments,
-      totalHostFiBalance, // For debugging
+      totalEarnings: user.wallet.totalEarnings || 0,
+      hostFiBalance: hostfiBalance, // Raw HostFi balance
       currency: user.wallet.currency || 'USDC',
       network: user.wallet.network || 'Solana',
       address: user.wallet.address,
