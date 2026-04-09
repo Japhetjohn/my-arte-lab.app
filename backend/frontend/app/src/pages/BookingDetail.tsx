@@ -348,13 +348,87 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                         <p className="font-medium">{del.title}</p>
                         <p className="text-sm text-gray-600">{del.description}</p>
                         {del.fileUrl && (
-                          <a href={del.fileUrl} target="_blank" rel="noopener noreferrer" className="text-[#8A2BE2] text-sm hover:underline">
+                          <a href={del.fileUrl} target="_blank" rel="noopener noreferrer" className="text-[#8A2BE2] text-sm hover:underline block mt-1">
                             Download File
                           </a>
+                        )}
+                        {del.links && del.links.length > 0 && (
+                          <div className="mt-2 space-y-1">
+                            {del.links.map((link, linkIdx) => (
+                              <a key={linkIdx} href={link} target="_blank" rel="noopener noreferrer" className="text-[#8A2BE2] text-sm hover:underline block">
+                                Link {linkIdx + 1}
+                              </a>
+                            ))}
+                          </div>
                         )}
                       </div>
                     ))}
                   </div>
+                  
+                  {/* Client - Confirm Deliverables & Rate (in Deliverables section) */}
+                  {isClient && booking.status === 'delivered' && (
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button className="w-full mt-4 bg-green-600 hover:bg-green-700">
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                          Confirm Deliverables & Release Payment
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Confirm Work & Rate Creator</DialogTitle>
+                          <DialogDescription>
+                            Review the deliverables and rate {creatorName}. 
+                            Payment will be released automatically after you confirm.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div>
+                            <label className="text-sm font-medium">Your Rating</label>
+                            <div className="flex items-center gap-2 mt-2">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <button 
+                                  key={star}
+                                  onClick={() => setReviewForm({...reviewForm, rating: star})}
+                                >
+                                  <Star 
+                                    className={`w-8 h-8 ${star <= reviewForm.rating ? 'fill-amber-400 text-amber-400' : 'text-gray-300'}`}
+                                  />
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium">Review (optional)</label>
+                            <Textarea 
+                              value={reviewForm.comment}
+                              onChange={(e) => setReviewForm({...reviewForm, comment: e.target.value})}
+                              placeholder="Share your experience with this creator..."
+                              className="mt-2"
+                            />
+                          </div>
+                          <div className="bg-amber-50 p-3 rounded-lg">
+                            <p className="text-sm text-amber-800">
+                              <strong>Payment:</strong> {booking.amount} {booking.currency} will be released
+                            </p>
+                            <p className="text-xs text-amber-600 mt-1">
+                              • {creatorName} receives: {(booking.amount * 0.9).toFixed(2)} {booking.currency}<br/>
+                              • Platform fee (10%): {(booking.amount * 0.1).toFixed(2)} {booking.currency}
+                            </p>
+                          </div>
+                          <Button 
+                            onClick={() => {
+                              handleReleaseFunds(reviewForm.rating, reviewForm.comment);
+                              setReviewForm({ rating: 5, comment: '' });
+                            }} 
+                            className="w-full bg-green-600 hover:bg-green-700"
+                          >
+                            Confirm & Release {booking.amount} {booking.currency}
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  )}
                 </div>
               )}
 
@@ -646,63 +720,17 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                 </Button>
               )}
 
-              {/* Client Release Funds with Rating */}
+              {/* Status Info - Delivered */}
               {isClient && booking.status === 'delivered' && (
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button className="w-full bg-green-600 hover:bg-green-700">
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                      Release Payment & Rate
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Release Payment</DialogTitle>
-                      <DialogDescription>
-                        Review the work and release payment to {creatorName}. 
-                        Your rating helps other clients.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div>
-                        <label className="text-sm font-medium">Rating</label>
-                        <div className="flex items-center gap-2 mt-2">
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <button 
-                              key={star}
-                              onClick={() => setReviewForm({...reviewForm, rating: star})}
-                            >
-                              <Star 
-                                className={`w-8 h-8 ${star <= reviewForm.rating ? 'fill-amber-400 text-amber-400' : 'text-gray-300'}`}
-                              />
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium">Comment (optional)</label>
-                        <Textarea 
-                          value={reviewForm.comment}
-                          onChange={(e) => setReviewForm({...reviewForm, comment: e.target.value})}
-                          placeholder="Share your experience with this creator..."
-                          className="mt-2"
-                        />
-                      </div>
-                      <Button 
-                        onClick={() => {
-                          handleReleaseFunds(reviewForm.rating, reviewForm.comment);
-                          setReviewForm({ rating: 5, comment: '' });
-                        }} 
-                        className="w-full bg-green-600 hover:bg-green-700"
-                      >
-                        Release {booking.amount} {booking.currency}
-                      </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                <div className="text-center p-4 bg-amber-50 rounded-lg">
+                  <p className="text-amber-800 font-medium">⏳ Review Deliverables</p>
+                  <p className="text-amber-600 text-sm mt-1">
+                    Please review the submitted work above and confirm to release payment.
+                  </p>
+                </div>
               )}
 
-              {/* Status Info */}
+              {/* Status Info - Completed */}
               {booking.status === 'completed' && (
                 <div className="text-center text-green-600 font-medium">
                   <CheckCircle className="w-8 h-8 mx-auto mb-2" />

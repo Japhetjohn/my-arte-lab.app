@@ -280,7 +280,7 @@ exports.completeBooking = catchAsync(async (req, res, next) => {
   await Notification.createNotification({
     recipient: client._id,
     sender: req.user._id,
-    type: 'booking_delivered',
+    type: 'work_delivered',
     title: 'Work Submitted',
     message: `${req.user.name} has submitted work for your booking "${booking.serviceTitle}". Please review and release payment if satisfied.`,
     link: `/bookings`,
@@ -711,7 +711,7 @@ exports.submitDeliverable = catchAsync(async (req, res, next) => {
   await Notification.createNotification({
     recipient: booking.client._id,
     sender: req.user._id,
-    type: 'booking_delivered',
+    type: 'work_delivered',
     title: 'Work Delivered',
     message: `${req.user.name} has submitted work for your booking "${booking.serviceTitle}". Please review it.`,
     link: `/bookings`,

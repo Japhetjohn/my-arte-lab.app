@@ -399,13 +399,43 @@ class BookingService {
         }
       }
 
-      // Transfer platform fee to platform wallet via HostFi (outside DB transaction)
+      // Transfer funds via HostFi (outside DB transaction)
       try {
         // Get client's USDC wallet asset ID for the transfer
         const clientUsdcAsset = client.wallet.hostfiWalletAssets?.find(
           a => a.currency === booking.currency || a.currency === 'USDC'
         );
         
+        // 1. Transfer creator's 90% to their wallet
+        console.log(`[BookingService] Initiating creator payout: ${booking.creatorAmount} ${booking.currency} to ${creator.wallet.address}`);
+        const creatorPayout = await hostfiService.initiateWithdrawal({
+          userId: creator._id,
+          assetId: clientUsdcAsset?.assetId,
+          amount: booking.creatorAmount,
+          currency: booking.currency,
+          address: creator.wallet.address,
+          network: 'SOL',
+          reference: `CREATOR-PAYOUT-${booking.bookingId}`
+        });
+
+        if (creatorPayout.reference || creatorPayout.id) {
+          // Update earning transaction with payout reference
+          await Transaction.updateOne(
+            { booking: booking._id, type: 'earning' },
+            { 
+              transactionHash: creatorPayout.reference || creatorPayout.id,
+              status: 'completed',
+              metadata: {
+                payoutReference: creatorPayout.reference || creatorPayout.id,
+                toAddress: creator.wallet.address,
+                network: 'SOL'
+              }
+            }
+          );
+          console.log(`[BookingService] Creator payout initiated: ${creatorPayout.reference || creatorPayout.id}`);
+        }
+        
+        // 2. Transfer platform fee 10% to platform wallet
         const platformFeeTransfer = await hostfiService.transferPlatformFee({
           clientAssetId: clientUsdcAsset?.assetId,
           amount: booking.platformFee,
@@ -430,7 +460,7 @@ class BookingService {
           console.log(`[BookingService] Platform fee transferred: ${platformFeeTransfer.reference || platformFeeTransfer.id}`);
         }
       } catch (transferError) {
-        console.error('[BookingService] Failed to transfer platform fee:', transferError.message);
+        console.error('[BookingService] Failed to transfer funds:', transferError.message);
         // Don't throw - the booking is already completed, just log for manual reconciliation
       }
 
