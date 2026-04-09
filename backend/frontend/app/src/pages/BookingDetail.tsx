@@ -89,7 +89,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' });
-  const [deliverableForm, setDeliverableForm] = useState({ title: '', description: '', fileUrl: '' });
+  const [deliverableForm, setDeliverableForm] = useState({ title: '', description: '', fileUrl: '', links: '' });
   const [counterAmount, setCounterAmount] = useState('');
 
   useEffect(() => {
@@ -180,9 +180,9 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
     }
   };
 
-  const handleReleaseFunds = async () => {
+  const handleReleaseFunds = async (rating?: number, comment?: string) => {
     try {
-      await api.post(`/bookings/${id}/release`);
+      await api.post(`/bookings/${id}/release-funds`, { rating, comment });
       toast.success('Payment released to creator!');
       fetchBooking();
     } catch (error: any) {
@@ -207,9 +207,13 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
 
   const handleSubmitDeliverable = async () => {
     try {
-      await api.post(`/bookings/${id}/deliver`, deliverableForm);
-      toast.success('Work delivered!');
-      setDeliverableForm({ title: '', description: '', fileUrl: '' });
+      const payload = {
+        ...deliverableForm,
+        links: deliverableForm.links ? deliverableForm.links.split('\n').filter(l => l.trim()) : []
+      };
+      await api.post(`/bookings/${id}/submit`, payload);
+      toast.success('Work submitted! Client notified to review.');
+      setDeliverableForm({ title: '', description: '', fileUrl: '', links: '' });
       fetchBooking();
     } catch (error: any) {
       toast.error(error.response?.data?.error || 'Failed to submit deliverable');
@@ -354,8 +358,8 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                 </div>
               )}
 
-              {/* Submit Deliverable - Creator Only */}
-              {isCreator && booking.status === 'in_progress' && (
+              {/* Submit Deliverable - Creator Only (shows for confirmed OR in_progress) */}
+              {isCreator && (booking.status === 'confirmed' || booking.status === 'in_progress') && (
                 <Dialog>
                   <DialogTrigger asChild>
                     <Button className="w-full bg-[#8A2BE2]">
@@ -372,7 +376,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                     </DialogHeader>
                     <div className="space-y-4">
                       <div>
-                        <label className="text-sm font-medium">Title</label>
+                        <label className="text-sm font-medium">Title *</label>
                         <Input 
                           value={deliverableForm.title}
                           onChange={(e) => setDeliverableForm({...deliverableForm, title: e.target.value})}
@@ -392,10 +396,22 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                         <Input 
                           value={deliverableForm.fileUrl}
                           onChange={(e) => setDeliverableForm({...deliverableForm, fileUrl: e.target.value})}
-                          placeholder="https://..."
+                          placeholder="https://drive.google.com/..."
                         />
                       </div>
-                      <Button onClick={handleSubmitDeliverable} className="w-full bg-[#8A2BE2]">
+                      <div>
+                        <label className="text-sm font-medium">Links (one per line)</label>
+                        <Textarea 
+                          value={deliverableForm.links}
+                          onChange={(e) => setDeliverableForm({...deliverableForm, links: e.target.value})}
+                          placeholder="https://figma.com/...&#10;https://github.com/..."
+                        />
+                      </div>
+                      <Button 
+                        onClick={handleSubmitDeliverable} 
+                        className="w-full bg-[#8A2BE2]"
+                        disabled={!deliverableForm.title}
+                      >
                         Submit Deliverable
                       </Button>
                     </div>
@@ -630,17 +646,60 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                 </Button>
               )}
 
-              {/* Client Release Funds */}
+              {/* Client Release Funds with Rating */}
               {isClient && booking.status === 'delivered' && (
-                <>
-                  <Button onClick={handleReleaseFunds} className="w-full bg-green-600 hover:bg-green-700">
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    Release Payment
-                  </Button>
-                  <p className="text-xs text-gray-500 text-center">
-                    Review the deliverables and release payment if satisfied
-                  </p>
-                </>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button className="w-full bg-green-600 hover:bg-green-700">
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Release Payment & Rate
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Release Payment</DialogTitle>
+                      <DialogDescription>
+                        Review the work and release payment to {creatorName}. 
+                        Your rating helps other clients.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-sm font-medium">Rating</label>
+                        <div className="flex items-center gap-2 mt-2">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <button 
+                              key={star}
+                              onClick={() => setReviewForm({...reviewForm, rating: star})}
+                            >
+                              <Star 
+                                className={`w-8 h-8 ${star <= reviewForm.rating ? 'fill-amber-400 text-amber-400' : 'text-gray-300'}`}
+                              />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Comment (optional)</label>
+                        <Textarea 
+                          value={reviewForm.comment}
+                          onChange={(e) => setReviewForm({...reviewForm, comment: e.target.value})}
+                          placeholder="Share your experience with this creator..."
+                          className="mt-2"
+                        />
+                      </div>
+                      <Button 
+                        onClick={() => {
+                          handleReleaseFunds(reviewForm.rating, reviewForm.comment);
+                          setReviewForm({ rating: 5, comment: '' });
+                        }} 
+                        className="w-full bg-green-600 hover:bg-green-700"
+                      >
+                        Release {booking.amount} {booking.currency}
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               )}
 
               {/* Status Info */}
