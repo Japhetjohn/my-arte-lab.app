@@ -34,8 +34,10 @@ exports.getWallet = catchAsync(async (req, res, next) => {
   // This is the source of truth
   const transactions = await Transaction.find({ 
     user: req.user._id,
-    status: 'completed'
+    status: { $in: ['completed', 'success'] }
   });
+
+  console.log(`[Wallet] Found ${transactions.length} transactions for user ${req.user._id}`);
 
   let totalDeposits = 0;
   let totalWithdrawals = 0;
@@ -43,33 +45,39 @@ exports.getWallet = catchAsync(async (req, res, next) => {
   let totalEarnings = 0;
 
   transactions.forEach(txn => {
+    const amount = parseFloat(txn.amount) || 0;
+    console.log(`[Wallet] Transaction: ${txn.type} = ${amount}`);
     switch (txn.type) {
       case 'deposit':
       case 'credit':
-        totalDeposits += txn.amount;
+        totalDeposits += amount;
         break;
       case 'withdrawal':
       case 'debit':
-        totalWithdrawals += txn.amount;
+        totalWithdrawals += amount;
         break;
       case 'payment':
-        totalPayments += txn.amount;
+        totalPayments += amount;
         break;
       case 'earning':
-        totalEarnings += txn.amount;
+        totalEarnings += amount;
         break;
       case 'refund':
-        totalDeposits += txn.amount; // Refunds add back to balance
+        totalDeposits += amount; // Refunds add back to balance
         break;
     }
   });
 
   // Calculate actual balances
   const calculatedTotalEarnings = totalEarnings;
-  const calculatedPendingBalance = user.wallet.pendingBalance || 0;
-  const calculatedAvailableBalance = Math.max(0, 
-    (totalDeposits + totalEarnings) - (totalWithdrawals + totalPayments + calculatedPendingBalance)
-  );
+  const calculatedPendingBalance = parseFloat(user.wallet.pendingBalance) || 0;
+  
+  // Calculate available balance: deposits + earnings - withdrawals - payments - pending
+  let calculatedAvailableBalance = (totalDeposits + totalEarnings) - (totalWithdrawals + totalPayments + calculatedPendingBalance);
+  calculatedAvailableBalance = Math.max(0, parseFloat(calculatedAvailableBalance.toFixed(2)));
+  
+  console.log(`[Wallet] Calculation: Deposits=${totalDeposits}, Earnings=${totalEarnings}, Withdrawals=${totalWithdrawals}, Payments=${totalPayments}, Pending=${calculatedPendingBalance}`);
+  console.log(`[Wallet] Result: Available=${calculatedAvailableBalance}`);
   
   // Get total HostFi balance for reference (not used for display)
   const totalHostFiBalance = user.wallet.hostfiWalletAssets.reduce((sum, asset) => 
