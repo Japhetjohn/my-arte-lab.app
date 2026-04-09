@@ -36,6 +36,7 @@ exports.createBooking = catchAsync(async (req, res, next) => {
   const idempotencyKey = req.headers['idempotency-key'];
 
   try {
+    console.log('[BookingController] Step 1: Creating booking with data:', { creatorId, amount, serviceTitle, category });
     const result = await bookingService.createBookingWithValidation(
       {
         creatorId,
@@ -51,6 +52,7 @@ exports.createBooking = catchAsync(async (req, res, next) => {
       req.user._id,
       idempotencyKey
     );
+    console.log('[BookingController] Step 2: Booking created, ID:', result.booking?._id);
 
     if (result.alreadyExists) {
       return successResponse(res, 200, 'Booking already exists', {
@@ -60,8 +62,11 @@ exports.createBooking = catchAsync(async (req, res, next) => {
 
     const { booking } = result;
 
+    console.log('[BookingController] Step 3: Populating creator...');
     await booking.populate('creator', 'firstName lastName name email');
+    console.log('[BookingController] Step 4: Creator populated, email:', booking.creator?.email);
 
+    console.log('[BookingController] Step 5: Sending email...');
     emailConfig.sendEmail({
       to: booking.creator.email,
       subject: 'New Booking Request! ',

@@ -430,9 +430,8 @@ class BookingService {
     const { v4: uuidv4 } = require('uuid');
     const bookingId = `BKG-${uuidv4().substring(0, 8).toUpperCase()}`;
 
-    const booking = await Booking.create({
+    const bookingData = {
       bookingId,
-      idempotencyKey,
       client: clientId,
       creator: creatorId,
       serviceTitle,
@@ -449,7 +448,14 @@ class BookingService {
         address: `escrow-${bookingId}`,
         balance: 0 // Balance is 0 until payment is processed
       }
-    });
+    };
+
+    // Only include idempotencyKey if it has a value to avoid null duplicate key errors
+    if (idempotencyKey) {
+      bookingData.idempotencyKey = idempotencyKey;
+    }
+
+    const booking = await Booking.create(bookingData);
 
     // CRITICAL: Double-charging fix. We no longer deduct balance during creation.
     // The client only pays after the creator accepts and the client explicitly calls /pay.
