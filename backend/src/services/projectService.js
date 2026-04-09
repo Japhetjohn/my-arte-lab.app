@@ -368,7 +368,14 @@ class ProjectService {
 
       // Transfer platform fee to platform wallet via HostFi (outside DB transaction)
       try {
+        // Get client's USDC wallet asset ID for the transfer
+        const client = await User.findById(clientId);
+        const clientUsdcAsset = client.wallet.hostfiWalletAssets?.find(
+          a => a.currency === (application.proposedBudget.currency || 'USDC') || a.currency === 'USDC'
+        );
+        
         const platformFeeTransfer = await hostfiService.transferPlatformFee({
+          clientAssetId: clientUsdcAsset?.assetId,
           amount: platformFee,
           currency: application.proposedBudget.currency || 'USDC',
           reference: `PRJ-${project._id.toString().slice(-8)}`

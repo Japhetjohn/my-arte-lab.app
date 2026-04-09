@@ -18,9 +18,6 @@ class HostFiService {
     this.platformFeePercent = parseInt(process.env.PLATFORM_COMMISSION) || 10;
     this.platformWalletAddress = process.env.PLATFORM_WALLET_ADDRESS;
     
-    // Master wallet for platform fees (holds pooled funds)
-    this.masterWalletAssetId = process.env.HOSTFI_MASTER_WALLET_ASSET_ID;
-    
     // No reserve needed - HostFi handles fees automatically
     this.swapFeeReserve = 0;
 
@@ -216,22 +213,23 @@ class HostFiService {
 
   /**
    * Transfer platform fee (10%) to platform wallet
-   * Called when booking/project funds are released
+   * Called when booking/project funds are released - transfers from client wallet
    * @param {Object} params - Transfer parameters
+   * @param {string} params.clientAssetId - Client's HostFi wallet asset ID (source)
    * @param {number} params.amount - Platform fee amount to transfer
    * @param {string} params.currency - Currency code (USDC, etc.)
    * @param {string} params.reference - Unique reference (bookingId or projectId)
    * @returns {Promise<Object>} Transfer response
    */
-  async transferPlatformFee({ amount, currency, reference }) {
+  async transferPlatformFee({ clientAssetId, amount, currency, reference }) {
     if (!this.platformWalletAddress) {
       console.warn('[HostFi Service] PLATFORM_WALLET_ADDRESS not configured, skipping platform fee transfer');
       return { skipped: true, reason: 'No platform wallet address' };
     }
 
-    if (!this.masterWalletAssetId) {
-      console.warn('[HostFi Service] HOSTFI_MASTER_WALLET_ASSET_ID not configured, skipping platform fee transfer');
-      return { skipped: true, reason: 'No master wallet configured' };
+    if (!clientAssetId) {
+      console.warn('[HostFi Service] No client asset ID provided, skipping platform fee transfer');
+      return { skipped: true, reason: 'No client wallet' };
     }
 
     if (Number(amount) <= 0) {
@@ -240,10 +238,10 @@ class HostFiService {
     }
 
     try {
-      console.log(`[HostFi Service] Transferring platform fee: ${amount} ${currency} to ${this.platformWalletAddress}`);
+      console.log(`[HostFi Service] Transferring platform fee: ${amount} ${currency} from client to ${this.platformWalletAddress}`);
 
       const payload = {
-        assetId: this.masterWalletAssetId,
+        assetId: clientAssetId,
         clientReference: `PLATFORM-FEE-${reference}-${Date.now()}`,
         methodId: 'CRYPTO',
         amount: Number(amount),

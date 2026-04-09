@@ -91,7 +91,7 @@ class HostFiWalletService {
       user.wallet.network = 'HostFi';
       user.wallet.lastUpdated = new Date();
 
-      await user.save();
+      await user.save({ validateBeforeSave: false });
 
       console.log(`HostFi wallets initialized for user ${userId}: ${walletAssets.length} assets`);
       return user;
@@ -248,7 +248,7 @@ class HostFiWalletService {
         user.wallet.network = 'Solana';
       }
 
-      await user.save();
+      await user.save({ validateBeforeSave: false });
       console.log(`Wallet balances synced for user ${userId}. Total Aggregate: ${user.wallet.balance} ${primaryCurrency}`);
       return user;
     } catch (error) {

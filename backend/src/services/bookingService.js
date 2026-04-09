@@ -353,7 +353,13 @@ class BookingService {
 
       // Transfer platform fee to platform wallet via HostFi (outside DB transaction)
       try {
+        // Get client's USDC wallet asset ID for the transfer
+        const clientUsdcAsset = client.wallet.hostfiWalletAssets?.find(
+          a => a.currency === booking.currency || a.currency === 'USDC'
+        );
+        
         const platformFeeTransfer = await hostfiService.transferPlatformFee({
+          clientAssetId: clientUsdcAsset?.assetId,
           amount: booking.platformFee,
           currency: booking.currency,
           reference: booking.bookingId
