@@ -102,6 +102,11 @@ const projectSchema = new mongoose.Schema({
     required: false
   },
 
+  platformFeeTransactionHash: {
+    type: String,
+    required: false
+  },
+
   creatorAmount: {
     type: Number,
     required: false

@@ -4,6 +4,7 @@ const User = require('../models/User');
 const Transaction = require('../models/Transaction');
 const Notification = require('../models/Notification');
 const notificationService = require('./notificationService');
+const hostfiService = require('./hostfiService');
 const { ErrorHandler } = require('../utils/errorHandler');
 const { BOOKING_LIMITS, PLATFORM_CONFIG } = require('../utils/constants');
 const { getPlatformFeeDestination } = require('../utils/platformWallet');
@@ -349,6 +350,35 @@ class BookingService {
       ]);
 
       await session.commitTransaction();
+
+      // Transfer platform fee to platform wallet via HostFi (outside DB transaction)
+      try {
+        const platformFeeTransfer = await hostfiService.transferPlatformFee({
+          amount: booking.platformFee,
+          currency: booking.currency,
+          reference: booking.bookingId
+        });
+
+        if (platformFeeTransfer.reference || platformFeeTransfer.id) {
+          // Update booking with platform fee transaction hash
+          booking.platformFeeTransactionHash = platformFeeTransfer.reference || platformFeeTransfer.id;
+          await booking.save();
+          
+          // Update transaction record with the blockchain reference
+          await Transaction.updateOne(
+            { booking: booking._id, type: 'platform_fee' },
+            { 
+              transactionHash: platformFeeTransfer.reference || platformFeeTransfer.id,
+              status: 'completed'
+            }
+          );
+          
+          console.log(`[BookingService] Platform fee transferred: ${platformFeeTransfer.reference || platformFeeTransfer.id}`);
+        }
+      } catch (transferError) {
+        console.error('[BookingService] Failed to transfer platform fee:', transferError.message);
+        // Don't throw - the booking is already completed, just log for manual reconciliation
+      }
 
       return {
         booking,

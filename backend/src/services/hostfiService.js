@@ -18,6 +18,9 @@ class HostFiService {
     this.platformFeePercent = parseInt(process.env.PLATFORM_COMMISSION) || 10;
     this.platformWalletAddress = process.env.PLATFORM_WALLET_ADDRESS;
     
+    // Master wallet for platform fees (holds pooled funds)
+    this.masterWalletAssetId = process.env.HOSTFI_MASTER_WALLET_ASSET_ID;
+    
     // No reserve needed - HostFi handles fees automatically
     this.swapFeeReserve = 0;
 
@@ -208,6 +211,60 @@ class HostFiService {
     } catch (error) {
       console.error('[HostFi Service] Failed to collect commission:', error.message);
       return { error: error.message };
+    }
+  }
+
+  /**
+   * Transfer platform fee (10%) to platform wallet
+   * Called when booking/project funds are released
+   * @param {Object} params - Transfer parameters
+   * @param {number} params.amount - Platform fee amount to transfer
+   * @param {string} params.currency - Currency code (USDC, etc.)
+   * @param {string} params.reference - Unique reference (bookingId or projectId)
+   * @returns {Promise<Object>} Transfer response
+   */
+  async transferPlatformFee({ amount, currency, reference }) {
+    if (!this.platformWalletAddress) {
+      console.warn('[HostFi Service] PLATFORM_WALLET_ADDRESS not configured, skipping platform fee transfer');
+      return { skipped: true, reason: 'No platform wallet address' };
+    }
+
+    if (!this.masterWalletAssetId) {
+      console.warn('[HostFi Service] HOSTFI_MASTER_WALLET_ASSET_ID not configured, skipping platform fee transfer');
+      return { skipped: true, reason: 'No master wallet configured' };
+    }
+
+    if (Number(amount) <= 0) {
+      console.log('[HostFi Service] Platform fee amount is 0, skipping transfer');
+      return { skipped: true, reason: 'Zero amount' };
+    }
+
+    try {
+      console.log(`[HostFi Service] Transferring platform fee: ${amount} ${currency} to ${this.platformWalletAddress}`);
+
+      const payload = {
+        assetId: this.masterWalletAssetId,
+        clientReference: `PLATFORM-FEE-${reference}-${Date.now()}`,
+        methodId: 'CRYPTO',
+        amount: Number(amount),
+        currency: currency.toUpperCase(),
+        recipient: {
+          type: 'CRYPTO',
+          method: 'CRYPTO',
+          currency: currency.toUpperCase(),
+          address: this.platformWalletAddress,
+          network: 'SOL',
+          country: 'NG'
+        },
+        memo: `Platform Fee 10% for ${reference}`
+      };
+
+      const response = await this.makeRequest('POST', '/v1/payout/transactions', payload);
+      console.log(`[HostFi Service] ✓ Platform fee transfer initiated:`, response.reference || response.id);
+      return response;
+    } catch (error) {
+      console.error('[HostFi Service] Failed to transfer platform fee:', error.message);
+      throw error;
     }
   }
 

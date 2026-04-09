@@ -8,6 +8,7 @@ const { ErrorHandler } = require('../utils/errorHandler');
 const { PLATFORM_CONFIG } = require('../utils/constants');
 const { getPlatformFeeDestination } = require('../utils/platformWallet');
 const notificationService = require('./notificationService');
+const hostfiService = require('./hostfiService');
 
 class ProjectService {
   /**
@@ -364,6 +365,35 @@ class ProjectService {
       ]);
 
       await session.commitTransaction();
+
+      // Transfer platform fee to platform wallet via HostFi (outside DB transaction)
+      try {
+        const platformFeeTransfer = await hostfiService.transferPlatformFee({
+          amount: platformFee,
+          currency: application.proposedBudget.currency || 'USDC',
+          reference: `PRJ-${project._id.toString().slice(-8)}`
+        });
+
+        if (platformFeeTransfer.reference || platformFeeTransfer.id) {
+          // Update project with platform fee transaction hash
+          project.platformFeeTransactionHash = platformFeeTransfer.reference || platformFeeTransfer.id;
+          await project.save();
+          
+          // Update transaction record with the blockchain reference
+          await Transaction.updateOne(
+            { project: project._id, type: 'platform_fee' },
+            { 
+              transactionHash: platformFeeTransfer.reference || platformFeeTransfer.id,
+              status: 'completed'
+            }
+          );
+          
+          console.log(`[ProjectService] Platform fee transferred: ${platformFeeTransfer.reference || platformFeeTransfer.id}`);
+        }
+      } catch (transferError) {
+        console.error('[ProjectService] Failed to transfer platform fee:', transferError.message);
+        // Don't throw - the project is already completed, just log for manual reconciliation
+      }
 
       return {
         project,

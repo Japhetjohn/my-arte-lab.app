@@ -678,23 +678,44 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
   const usdcAsset = walletAssets.find(a => a.currency === currency);
   const actualUsdcBalance = usdcAsset ? (usdcAsset.balance || 0) : 0;
   
+  // Check pending/escrowed balance - prevent double-spending
+  const pendingEscrowBalance = user.wallet.pendingBalance || 0;
+  const availableBalance = Math.max(0, actualUsdcBalance - pendingEscrowBalance);
+  
   console.log(`[Withdrawal] User aggregate balance: ${user.wallet.balance} ${user.wallet.currency}`);
   console.log(`[Withdrawal] Actual ${currency} balance: ${actualUsdcBalance}`);
+  console.log(`[Withdrawal] Pending/escrowed balance: ${pendingEscrowBalance}`);
+  console.log(`[Withdrawal] Available for withdrawal: ${availableBalance}`);
 
   // For fiat withdrawals (USDC -> NGN): Always swap, then payout
   if (!isCrypto && sourceCurr !== targetCurr) {
     console.log(`[Withdrawal] Will swap ${amount} ${sourceCurr} to ${targetCurr} then payout`);
     
     // Round to 6 decimal places (USDC precision) to avoid floating point issues
-    const roundedActualBalance = Math.floor(actualUsdcBalance * 1000000) / 1000000;
+    const roundedAvailableBalance = Math.floor(availableBalance * 1000000) / 1000000;
     const roundedRequestAmount = Math.floor(amount * 1000000) / 1000000;
     
-    // Check if enough USDC for the swap (with small tolerance for precision)
-    if (roundedActualBalance < roundedRequestAmount) {
+    // Check if enough USDC for the swap (considering escrowed funds)
+    if (roundedAvailableBalance < roundedRequestAmount) {
       return next(new ErrorHandler(
-        `Insufficient USDC. You have ${roundedActualBalance.toFixed(6)} USDC available, ` +
-        `but tried to withdraw ${roundedRequestAmount.toFixed(6)} USDC. ` +
-        `Maximum you can withdraw: ${roundedActualBalance.toFixed(6)} USDC.`,
+        `Insufficient available USDC. You have ${actualUsdcBalance.toFixed(6)} USDC total, ` +
+        `but ${pendingEscrowBalance.toFixed(6)} USDC is held in escrow for active bookings. ` +
+        `Available for withdrawal: ${roundedAvailableBalance.toFixed(6)} USDC.`,
+        400
+      ));
+    }
+  }
+
+  // For crypto withdrawals: Also check available balance (not locked in escrow)
+  if (isCrypto) {
+    const roundedAvailableBalance = Math.floor(availableBalance * 1000000) / 1000000;
+    const roundedRequestAmount = Math.floor(amount * 1000000) / 1000000;
+    
+    if (roundedAvailableBalance < roundedRequestAmount) {
+      return next(new ErrorHandler(
+        `Insufficient available USDC. You have ${actualUsdcBalance.toFixed(6)} USDC total, ` +
+        `but ${pendingEscrowBalance.toFixed(6)} USDC is held in escrow for active bookings. ` +
+        `Available for withdrawal: ${roundedAvailableBalance.toFixed(6)} USDC.`,
         400
       ));
     }
