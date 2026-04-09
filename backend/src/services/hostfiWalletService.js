@@ -239,8 +239,20 @@ class HostFiWalletService {
         }
       }
 
-      user.wallet.balance = Math.max(0, totalAggregateInPrimary || 0);
-      user.balance = user.wallet.balance; // Keep root balance in sync
+      // NOTE: Don't overwrite wallet.balance here! 
+      // wallet.balance is the AVAILABLE balance (total - pending)
+      // It's managed by transaction operations, not by HostFi sync.
+      // We only sync the individual asset balances.
+      // The controller will calculate: available = totalAssets - pendingBalance
+      
+      // Only update balance if there's no pending amount (fresh user)
+      if (!user.wallet.pendingBalance || user.wallet.pendingBalance === 0) {
+        user.wallet.balance = Math.max(0, totalAggregateInPrimary || 0);
+        user.balance = user.wallet.balance;
+      } else {
+        // Keep existing balance calculation (total - pending)
+        console.log(`[Sync] Preserving available balance: ${user.wallet.balance}, Pending: ${user.wallet.pendingBalance}, Total Assets: ${totalAggregateInPrimary}`);
+      }
 
       // CRITICAL: Ensure the primary wallet address is the Tsara Solana address if available
       if (user.wallet.tsaraAddress) {

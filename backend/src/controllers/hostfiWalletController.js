@@ -59,11 +59,22 @@ exports.getWallet = catchAsync(async (req, res, next) => {
     };
   }));
 
-  // Calculate total balance from assets
+  // Calculate total balance from assets (this is total custody balance in HostFi)
   const totalBalanceUsd = assetsWithUsd.reduce((sum, asset) => sum + (asset.usdEquivalent || 0), 0);
-
-  // Use USDC balance as display balance if it's the primary currency
-  const displayBalance = user.wallet.balance || totalBalanceUsd || 0;
+  
+  // Calculate AVAILABLE balance (total - pending in escrow)
+  const pendingBalance = user.wallet.pendingBalance || 0;
+  const availableBalance = Math.max(0, totalBalanceUsd - pendingBalance);
+  
+  // Use calculated available balance, fallback to stored balance
+  const displayBalance = availableBalance || user.wallet.balance || 0;
+  
+  // Update stored balance to match calculated available balance
+  if (user.wallet.balance !== availableBalance) {
+    user.wallet.balance = availableBalance;
+    user.balance = availableBalance;
+    await user.save({ validateBeforeSave: false });
+  }
   
   // Get specific USDC balance for withdrawal reference
   const usdcAsset = assetsWithUsd.find(a => a.currency === 'USDC');

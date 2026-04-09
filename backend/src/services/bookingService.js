@@ -220,7 +220,7 @@ class BookingService {
     return booking;
   }
 
-  async releaseFundsWithTransaction(bookingId, clientId) {
+  async releaseFundsWithTransaction(bookingId, clientId, reviewData = null) {
     const session = await mongoose.startSession();
     session.startTransaction();
 
@@ -327,6 +327,18 @@ class BookingService {
       booking.platformFeePaid = true;
       booking.platformFeePaidAt = new Date();
       booking.escrowWallet.balance = 0;
+      booking.status = 'completed'; // Set status to completed when funds are released
+      booking.completedAt = new Date();
+      
+      // Store review data if provided
+      if (reviewData && reviewData.rating) {
+        booking.review = {
+          rating: reviewData.rating,
+          comment: reviewData.comment || '',
+          createdAt: new Date()
+        };
+      }
+      
       await booking.save({ session });
 
       // Notify both parties
@@ -350,6 +362,34 @@ class BookingService {
       ]);
 
       await session.commitTransaction();
+      
+      // Create review record if review data was provided (outside transaction)
+      if (reviewData && reviewData.rating) {
+        try {
+          const Review = require('../models/Review');
+          await Review.create({
+            booking: booking._id,
+            reviewer: clientId,
+            creator: creator._id,
+            rating: reviewData.rating,
+            comment: reviewData.comment || '',
+            isPublished: true
+          });
+          
+          // Update creator's average rating
+          const creatorReviews = await Review.find({ creator: creator._id, isPublished: true });
+          const avgRating = creatorReviews.reduce((sum, r) => sum + r.rating, 0) / creatorReviews.length;
+          await User.findByIdAndUpdate(creator._id, { 
+            rating: Math.round(avgRating * 10) / 10,
+            reviewCount: creatorReviews.length
+          });
+          
+          console.log(`[BookingService] Review created for booking ${bookingId}, creator rating updated to ${avgRating}`);
+        } catch (reviewError) {
+          console.error('[BookingService] Failed to create review:', reviewError.message);
+          // Don't fail the whole operation if review creation fails
+        }
+      }
 
       // Transfer platform fee to platform wallet via HostFi (outside DB transaction)
       try {

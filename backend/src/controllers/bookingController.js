@@ -251,9 +251,17 @@ exports.completeBooking = catchAsync(async (req, res, next) => {
 
 exports.releaseFunds = catchAsync(async (req, res, next) => {
   try {
+    const { rating, comment } = req.body;
+    
+    // Validate rating if provided
+    if (rating && (rating < 1 || rating > 5)) {
+      return next(new ErrorHandler('Rating must be between 1 and 5', 400));
+    }
+    
     const result = await bookingService.releaseFundsWithTransaction(
       req.params.id,
-      req.user._id
+      req.user._id,
+      { rating, comment } // Pass review data
     );
 
     const { booking, creator, client } = result;
@@ -623,16 +631,21 @@ exports.payBooking = catchAsync(async (req, res, next) => {
 });
 
 exports.submitDeliverable = catchAsync(async (req, res, next) => {
-  const { message, url } = req.body;
+  const { title, description, fileUrl, links } = req.body;
 
-  if (!url) {
-    return next(new ErrorHandler('Deliverable URL is required', 400));
+  if (!fileUrl && !links) {
+    return next(new ErrorHandler('Deliverable URL/file or links are required', 400));
   }
 
   const booking = await bookingService.submitBookingDeliverable(
     req.params.id,
     req.user._id,
-    { message, url }
+    { 
+      title: title || 'Deliverable Submitted',
+      description: description || '',
+      fileUrl: fileUrl || '',
+      links: links || []
+    }
   );
 
   await booking.populate('client', 'firstName lastName name email');

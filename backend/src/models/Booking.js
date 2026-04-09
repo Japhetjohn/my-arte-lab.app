@@ -130,6 +130,7 @@ const bookingSchema = new mongoose.Schema({
     title: String,
     description: String,
     fileUrl: String,
+    links: [String], // Array of URLs/links
     uploadedAt: Date
   }],
 
