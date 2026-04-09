@@ -408,7 +408,7 @@ async function processPayout(parsed, payoutType) {
   if (isSuccess) {
     if (transaction.status !== 'completed') {
       user.wallet.pendingBalance -= transaction.amount;
-      await user.save();
+      await user.save({ validateBeforeSave: false });
 
       transaction.status = 'completed';
       transaction.completedAt = new Date();
@@ -422,7 +422,7 @@ async function processPayout(parsed, payoutType) {
       console.log(`[Webhook:Payout] Payout failed. Refunding User ${user._id}`);
       await hostfiWalletService.updateBalance(user._id, transaction.currency, transaction.amount, 'credit');
       user.wallet.pendingBalance -= transaction.amount;
-      await user.save();
+      await user.save({ validateBeforeSave: false });
 
       transaction.status = 'failed';
       transaction.failedAt = new Date();
