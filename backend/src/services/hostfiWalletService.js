@@ -201,58 +201,12 @@ class HostFiWalletService {
         user.wallet.currency = 'USDC'; // Default to USDC for internationalization
       }
 
-      // Rebuild aggregate balance from sub-assets
-      let totalAggregateInPrimary = 0;
-      const primaryCurrency = user.wallet.currency || 'USDC';
-
-      for (const asset of user.wallet.hostfiWalletAssets) {
-        if (!asset.balance || asset.balance <= 0) continue;
-
-        if (asset.currency === primaryCurrency) {
-          totalAggregateInPrimary += asset.balance;
-        } else {
-          try {
-            // Use bridge for calculation if needed
-            const rateData = await hostfiService.getCurrencyRates(asset.currency, primaryCurrency, true);
-            const rate = rateData.rate || rateData.data?.rate || 0;
-            totalAggregateInPrimary += (asset.balance * rate);
-          } catch (err) {
-            console.warn(`[Sync] Conversion failed for aggregate ${asset.currency}->${primaryCurrency}:`, err.message);
-          }
-        }
-      }
-
-      // Add Tsara local balance to aggregate (convert if necessary)
-      if (tsaraLocalUsdcBalance > 0) {
-        if (['USDC', 'USD', 'USDT'].includes(primaryCurrency.toUpperCase())) {
-          totalAggregateInPrimary += tsaraLocalUsdcBalance;
-        } else {
-          try {
-            const rateData = await hostfiService.getCurrencyRates('USDC', primaryCurrency, true);
-            const rate = rateData.rate || rateData.data?.rate || 0;
-            totalAggregateInPrimary += (tsaraLocalUsdcBalance * rate);
-          } catch (err) {
-            console.warn(`[Sync] Tsara conversion failed USDC->${primaryCurrency}:`, err.message);
-            // If primary is NGN and conversion fails, we still have the value in USDC
-            // For now, if we can't value it in primary, we don't add to aggregate to keep it consistent
-          }
-        }
-      }
-
-      // NOTE: Don't overwrite wallet.balance here! 
-      // wallet.balance is the AVAILABLE balance (total - pending)
-      // It's managed by transaction operations, not by HostFi sync.
-      // We only sync the individual asset balances.
-      // The controller will calculate: available = totalAssets - pendingBalance
+      // NOTE: DO NOT calculate balance from HostFi assets!
+      // HostFi returns demo/default balances (3 USDC for everyone).
+      // Balance is calculated from transaction records in the controller.
+      // We only sync asset IDs and addresses here, not balances.
       
-      // Only update balance if there's no pending amount (fresh user)
-      if (!user.wallet.pendingBalance || user.wallet.pendingBalance === 0) {
-        user.wallet.balance = Math.max(0, totalAggregateInPrimary || 0);
-        user.balance = user.wallet.balance;
-      } else {
-        // Keep existing balance calculation (total - pending)
-        console.log(`[Sync] Preserving available balance: ${user.wallet.balance}, Pending: ${user.wallet.pendingBalance}, Total Assets: ${totalAggregateInPrimary}`);
-      }
+      console.log(`[Sync] Skipping balance sync from HostFi - using transaction-based balance calculation instead`);
 
       // CRITICAL: Ensure the primary wallet address is the Tsara Solana address if available
       if (user.wallet.tsaraAddress) {

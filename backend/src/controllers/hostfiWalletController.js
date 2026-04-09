@@ -12,88 +12,108 @@ const { v4: uuidv4 } = require('uuid');
 
 /**
  * Get wallet information (HostFi wallets)
+ * BALANCE CALCULATION: We calculate balance from transaction records, NOT from HostFi API
+ * because HostFi returns demo/default values that are the same for all users.
  */
 exports.getWallet = catchAsync(async (req, res, next) => {
-  // Initialize or sync HostFi wallets
-  const user = await hostfiWalletService.syncWalletBalances(req.user._id);
+  const user = await User.findById(req.user._id);
+  
+  if (!user) {
+    return next(new ErrorHandler('User not found', 404));
+  }
 
-  // Fetch exchange rates for all non-USD assets to get total USD equivalent
-  const assetsWithUsd = await Promise.all(user.wallet.hostfiWalletAssets.map(async (asset) => {
-    let usdEquivalent = 0;
-    const currency = asset.currency.toUpperCase();
+  // Initialize wallets if needed (for new users)
+  if (!user.wallet.hostfiWalletAssets || user.wallet.hostfiWalletAssets.length === 0) {
+    await hostfiWalletService.initializeUserWallets(req.user._id);
+    // Re-fetch user after initialization
+    const refreshedUser = await User.findById(req.user._id);
+    Object.assign(user, refreshedUser.toObject());
+  }
 
-    if (['USD', 'USDC', 'USDT', 'DAI', 'BUSD'].includes(currency)) {
-      usdEquivalent = asset.balance;
-    } else {
-      try {
-        // Try fetching rate dynamically. If USD fails, try USDT/USDC as bridge
-        let rateData;
-        try {
-          rateData = await hostfiService.getCurrencyRates(currency, 'USD', true);
-        } catch (usdError) {
-          // Fallback to USDT which usually exists for all crypto
-          rateData = await hostfiService.getCurrencyRates(currency, 'USDT');
-        }
+  // Calculate balance from TRANSACTION RECORDS (not HostFi API)
+  // This is the source of truth
+  const transactions = await Transaction.find({ 
+    user: req.user._id,
+    status: 'completed'
+  });
 
-        const rate = rateData.rate || rateData.data?.rate || 0;
-        usdEquivalent = asset.balance * rate;
-      } catch (error) {
-        // Use getValidConversionTarget to ensure we use a supported pair
-        try {
-          const validTarget = await hostfiService.getValidConversionTarget(currency, 'USDT');
-          const rateData = await hostfiService.getCurrencyRates(currency, validTarget);
-          const rate = rateData.rate || rateData.data?.rate || 0;
-          usdEquivalent = asset.balance * rate;
-        } catch (fallbackError) {
-          // Only log in development to avoid flooding
-          if (process.env.NODE_ENV === 'development') {
-            console.warn(`[Wallet] Failed to get rate for ${currency}:`, fallbackError.message);
-          }
-        }
-      }
+  let totalDeposits = 0;
+  let totalWithdrawals = 0;
+  let totalPayments = 0;
+  let totalEarnings = 0;
+
+  transactions.forEach(txn => {
+    switch (txn.type) {
+      case 'deposit':
+      case 'credit':
+        totalDeposits += txn.amount;
+        break;
+      case 'withdrawal':
+      case 'debit':
+        totalWithdrawals += txn.amount;
+        break;
+      case 'payment':
+        totalPayments += txn.amount;
+        break;
+      case 'earning':
+        totalEarnings += txn.amount;
+        break;
+      case 'refund':
+        totalDeposits += txn.amount; // Refunds add back to balance
+        break;
     }
+  });
 
-    return {
-      ...(asset.toObject ? asset.toObject() : asset),
-      usdEquivalent: parseFloat(usdEquivalent.toFixed(2))
-    };
-  }));
+  // Calculate actual balances
+  const calculatedTotalEarnings = totalEarnings;
+  const calculatedPendingBalance = user.wallet.pendingBalance || 0;
+  const calculatedAvailableBalance = Math.max(0, 
+    (totalDeposits + totalEarnings) - (totalWithdrawals + totalPayments + calculatedPendingBalance)
+  );
+  
+  // Get total HostFi balance for reference (not used for display)
+  const totalHostFiBalance = user.wallet.hostfiWalletAssets.reduce((sum, asset) => 
+    sum + (asset.balance || 0), 0
+  );
 
-  // Calculate total balance from assets (this is total custody balance in HostFi)
-  const totalBalanceUsd = assetsWithUsd.reduce((sum, asset) => sum + (asset.usdEquivalent || 0), 0);
-  
-  // Calculate AVAILABLE balance (total - pending in escrow)
-  const pendingBalance = user.wallet.pendingBalance || 0;
-  const availableBalance = Math.max(0, totalBalanceUsd - pendingBalance);
-  
-  // Use calculated available balance, fallback to stored balance
-  const displayBalance = availableBalance || user.wallet.balance || 0;
-  
-  // Update stored balance to match calculated available balance
-  if (user.wallet.balance !== availableBalance) {
-    user.wallet.balance = availableBalance;
-    user.balance = availableBalance;
+  console.log(`[Wallet] User ${req.user._id}: Available=${calculatedAvailableBalance}, Pending=${calculatedPendingBalance}, Earnings=${calculatedTotalEarnings}`);
+
+  // Sync stored balance if it differs from calculated
+  if (Math.abs(user.wallet.balance - calculatedAvailableBalance) > 0.01) {
+    console.log(`[Wallet] Correcting balance for user ${req.user._id}: ${user.wallet.balance} -> ${calculatedAvailableBalance}`);
+    user.wallet.balance = calculatedAvailableBalance;
+    user.balance = calculatedAvailableBalance;
+    user.wallet.totalEarnings = calculatedTotalEarnings;
     await user.save({ validateBeforeSave: false });
   }
-  
-  // Get specific USDC balance for withdrawal reference
+
+  // Build assets list (using stored values, not re-syncing from HostFi)
+  const assetsWithUsd = user.wallet.hostfiWalletAssets.map(asset => ({
+    ...(asset.toObject ? asset.toObject() : asset),
+    usdEquivalent: asset.balance || 0
+  }));
+
+  // Get USDC asset for withdrawal reference
   const usdcAsset = assetsWithUsd.find(a => a.currency === 'USDC');
   const usdcBalance = usdcAsset ? usdcAsset.balance : 0;
 
   successResponse(res, 200, 'Wallet retrieved successfully', {
     wallet: {
       assets: assetsWithUsd,
-      balance: displayBalance,
-      usdcBalance: usdcBalance, // Actual USDC available for withdrawal
-      pendingBalance: user.wallet.pendingBalance || 0,
-      totalEarnings: user.wallet.totalEarnings || 0,
-      balanceUsd: totalBalanceUsd,
+      balance: calculatedAvailableBalance,
+      usdcBalance: usdcBalance,
+      pendingBalance: calculatedPendingBalance,
+      totalEarnings: calculatedTotalEarnings,
+      totalDeposits,
+      totalWithdrawals,
+      totalPayments,
+      totalHostFiBalance, // For debugging
       currency: user.wallet.currency || 'USDC',
       network: user.wallet.network || 'Solana',
       address: user.wallet.address,
       tsaraAddress: user.wallet.tsaraAddress,
       tsaraBalance: user.wallet.tsaraBalance,
-      lastUpdated: user.wallet.lastUpdated
+      lastUpdated: new Date()
     }
   });
 });
