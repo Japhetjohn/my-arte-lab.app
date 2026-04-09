@@ -662,4 +662,89 @@ class AdminNotificationService {
   }
 }
 
+  async notifyNewDispute(booking, client, reason, details) {
+    try {
+      const content = `
+        <div class="highlight-box" style="border-left-color: ${COLORS.danger};">
+            <div style="font-size: 24px; margin-bottom: 12px;">🚨 NEW DISPUTE FILED</div>
+            <p style="margin: 0; color: ${COLORS.textMuted};">A client has disputed a booking and requested a refund.</p>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Dispute Details</div>
+            <table cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                    <td class="data-label" style="padding: 10px 0;">Booking ID</td>
+                    <td class="data-value" style="padding: 10px 0; text-align: right; font-weight: 600;">${booking.bookingId}</td>
+                </tr>
+                <tr>
+                    <td class="data-label" style="padding: 10px 0;">Service</td>
+                    <td class="data-value" style="padding: 10px 0; text-align: right;">${booking.serviceTitle}</td>
+                </tr>
+                <tr>
+                    <td class="data-label" style="padding: 10px 0;">Amount</td>
+                    <td class="data-value" style="padding: 10px 0; text-align: right; color: ${COLORS.danger}; font-weight: 600;">$${booking.amount.toFixed(2)} ${booking.currency}</td>
+                </tr>
+                <tr>
+                    <td class="data-label" style="padding: 10px 0;">Issue Type</td>
+                    <td class="data-value" style="padding: 10px 0; text-align: right;">
+                        <span class="badge badge-danger">${reason.replace(/_/g, ' ').toUpperCase()}</span>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Client Information</div>
+            <table cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                    <td class="data-label" style="padding: 10px 0;">Name</td>
+                    <td class="data-value" style="padding: 10px 0; text-align: right;">${client.name || client.firstName + ' ' + client.lastName}</td>
+                </tr>
+                <tr>
+                    <td class="data-label" style="padding: 10px 0;">Email</td>
+                    <td class="data-value" style="padding: 10px 0; text-align: right;">${client.email}</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Dispute Description</div>
+            <div style="background: #f8f9fa; padding: 16px; border-radius: 8px; font-size: 14px; line-height: 1.6;">
+                ${details.replace(/\n/g, '<br>')}
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Action Required</div>
+            <ul style="margin: 0; padding-left: 20px; color: ${COLORS.textDark};">
+                <li>Review the deliverables submitted by creator</li>
+                <li>Contact both parties if needed</li>
+                <li>Make a decision: Approve refund or reject dispute</li>
+                <li>If approved, manually refund client via HostFi dashboard</li>
+            </ul>
+        </div>
+
+        <div style="text-align: center; margin-top: 24px;">
+            <a href="${ADMIN_BASE_URL}/bookings/${booking._id}" class="cta-button" style="background: ${COLORS.danger};">Review Dispute in Admin</a>
+        </div>
+      `;
+
+      const html = adminTemplate('New Dispute Filed - Action Required', content);
+
+      for (const adminEmail of ADMIN_EMAILS) {
+        await emailConfig.sendEmail({
+          to: adminEmail,
+          subject: `🚨 DISPUTE: ${booking.bookingId} - ${reason.replace(/_/g, ' ').toUpperCase()}`,
+          html
+        });
+      }
+
+      console.log(`[AdminNotification] Dispute notification sent for booking ${booking.bookingId}`);
+    } catch (error) {
+      console.error('Failed to send dispute notification:', error.message);
+    }
+  }
+}
+
 module.exports = new AdminNotificationService();

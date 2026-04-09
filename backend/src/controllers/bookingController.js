@@ -723,3 +723,61 @@ exports.submitDeliverable = catchAsync(async (req, res, next) => {
 
   successResponse(res, 200, 'Deliverable submitted successfully', { booking });
 });
+
+
+exports.disputeBooking = catchAsync(async (req, res, next) => {
+  const { reason, details } = req.body;
+
+  if (!reason || !details) {
+    return next(new ErrorHandler('Reason and details are required', 400));
+  }
+
+  const booking = await Booking.findById(req.params.id);
+
+  if (!booking) {
+    return next(new ErrorHandler('Booking not found', 404));
+  }
+
+  // Only client can dispute
+  if (booking.client.toString() !== req.user._id.toString()) {
+    return next(new ErrorHandler('Only the client can dispute this booking', 403));
+  }
+
+  // Can only dispute delivered bookings
+  if (booking.status !== 'delivered') {
+    return next(new ErrorHandler('Can only dispute delivered bookings', 400));
+  }
+
+  // Update booking status to disputed
+  booking.status = 'disputed';
+  booking.disputeReason = reason;
+  booking.disputeDetails = details;
+  booking.disputedAt = new Date();
+  await booking.save();
+
+  // Notify admin/support
+  await Notification.createNotification({
+    recipient: booking.creator._id,
+    sender: req.user._id,
+    type: 'system',
+    title: 'Booking Disputed',
+    message: `A dispute has been filed for "${booking.serviceTitle}". Reason: ${reason}`,
+    link: `/bookings`,
+    booking: booking._id,
+    metadata: {
+      bookingId: booking.bookingId,
+      disputeReason: reason,
+      disputeDetails: details
+    }
+  });
+
+  // Send email to admin
+  const adminNotificationService = require('../services/adminNotificationService');
+  adminNotificationService.notifyNewDispute(booking, req.user, reason, details)
+    .catch(err => console.error('Admin notification failed:', err));
+
+  successResponse(res, 200, 'Dispute submitted successfully. Support will review and contact you.', { 
+    booking,
+    message: 'Your dispute has been submitted. Our support team will review and contact you within 24-48 hours.'
+  });
+});

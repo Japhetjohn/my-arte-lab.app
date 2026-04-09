@@ -27,5 +27,6 @@ router.post('/:id/pay', validateObjectId('id'), handleValidationErrors, bookingC
 router.post('/:id/submit', validateObjectId('id'), handleValidationErrors, bookingController.submitDeliverable);
 router.post('/:id/reject', validateObjectId('id'), handleValidationErrors, bookingController.rejectBooking);
 router.post('/:id/counter-proposal', validateObjectId('id'), handleValidationErrors, bookingController.counterProposal);
+router.post('/:id/dispute', validateObjectId('id'), handleValidationErrors, bookingController.disputeBooking);
 
 module.exports = router;

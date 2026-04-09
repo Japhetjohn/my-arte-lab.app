@@ -67,6 +67,7 @@ interface Booking {
     title: string;
     description: string;
     fileUrl?: string;
+    links?: string[];
     uploadedAt: string;
   }>;
   review?: {
@@ -91,6 +92,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
   const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' });
   const [deliverableForm, setDeliverableForm] = useState({ title: '', description: '', fileUrl: '', links: '' });
   const [counterAmount, setCounterAmount] = useState('');
+  const [disputeForm, setDisputeForm] = useState({ reason: '', details: '' });
 
   useEffect(() => {
     if (id) fetchBooking();
@@ -231,6 +233,20 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
     }
   };
 
+  const handleDispute = async () => {
+    try {
+      await api.post(`/bookings/${id}/dispute`, { 
+        reason: disputeForm.reason,
+        details: disputeForm.details 
+      });
+      toast.success('Dispute submitted! Support will review and contact you.');
+      setDisputeForm({ reason: '', details: '' });
+      fetchBooking();
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || 'Failed to submit dispute');
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -367,67 +383,134 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                   
                   {/* Client - Confirm Deliverables & Rate (in Deliverables section) */}
                   {isClient && booking.status === 'delivered' && (
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button className="w-full mt-4 bg-green-600 hover:bg-green-700">
-                          <CheckCircle className="w-4 h-4 mr-2" />
-                          Confirm Deliverables & Release Payment
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Confirm Work & Rate Creator</DialogTitle>
-                          <DialogDescription>
-                            Review the deliverables and rate {creatorName}. 
-                            Payment will be released automatically after you confirm.
-                          </DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                          <div>
-                            <label className="text-sm font-medium">Your Rating</label>
-                            <div className="flex items-center gap-2 mt-2">
-                              {[1, 2, 3, 4, 5].map((star) => (
-                                <button 
-                                  key={star}
-                                  onClick={() => setReviewForm({...reviewForm, rating: star})}
-                                >
-                                  <Star 
-                                    className={`w-8 h-8 ${star <= reviewForm.rating ? 'fill-amber-400 text-amber-400' : 'text-gray-300'}`}
-                                  />
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                          <div>
-                            <label className="text-sm font-medium">Review (optional)</label>
-                            <Textarea 
-                              value={reviewForm.comment}
-                              onChange={(e) => setReviewForm({...reviewForm, comment: e.target.value})}
-                              placeholder="Share your experience with this creator..."
-                              className="mt-2"
-                            />
-                          </div>
-                          <div className="bg-amber-50 p-3 rounded-lg">
-                            <p className="text-sm text-amber-800">
-                              <strong>Payment:</strong> {booking.amount} {booking.currency} will be released
-                            </p>
-                            <p className="text-xs text-amber-600 mt-1">
-                              • {creatorName} receives: {(booking.amount * 0.9).toFixed(2)} {booking.currency}<br/>
-                              • Platform fee (10%): {(booking.amount * 0.1).toFixed(2)} {booking.currency}
-                            </p>
-                          </div>
-                          <Button 
-                            onClick={() => {
-                              handleReleaseFunds(reviewForm.rating, reviewForm.comment);
-                              setReviewForm({ rating: 5, comment: '' });
-                            }} 
-                            className="w-full bg-green-600 hover:bg-green-700"
-                          >
-                            Confirm & Release {booking.amount} {booking.currency}
+                    <div className="mt-4 space-y-3">
+                      {/* Confirm & Release Payment */}
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button className="w-full bg-green-600 hover:bg-green-700">
+                            <CheckCircle className="w-4 h-4 mr-2" />
+                            Confirm Deliverables & Release Payment
                           </Button>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Confirm Work & Rate Creator</DialogTitle>
+                            <DialogDescription>
+                              Review the deliverables and rate {creatorName}. 
+                              Payment will be released automatically after you confirm.
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            <div>
+                              <label className="text-sm font-medium">Your Rating *</label>
+                              <div className="flex items-center gap-2 mt-2">
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                  <button 
+                                    key={star}
+                                    onClick={() => setReviewForm({...reviewForm, rating: star})}
+                                  >
+                                    <Star 
+                                      className={`w-8 h-8 ${star <= reviewForm.rating ? 'fill-amber-400 text-amber-400' : 'text-gray-300'}`}
+                                    />
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                            <div>
+                              <label className="text-sm font-medium">Review (optional)</label>
+                              <Textarea 
+                                value={reviewForm.comment}
+                                onChange={(e) => setReviewForm({...reviewForm, comment: e.target.value})}
+                                placeholder="Share your experience with this creator..."
+                                className="mt-2"
+                              />
+                            </div>
+                            <div className="bg-amber-50 p-3 rounded-lg">
+                              <p className="text-sm text-amber-800">
+                                <strong>Payment:</strong> {booking.amount} {booking.currency} will be released
+                              </p>
+                              <p className="text-xs text-amber-600 mt-1">
+                                • {creatorName} receives: {(booking.amount * 0.9).toFixed(2)} {booking.currency}<br/>
+                                • Platform fee (10%): {(booking.amount * 0.1).toFixed(2)} {booking.currency}
+                              </p>
+                            </div>
+                            <Button 
+                              onClick={() => {
+                                handleReleaseFunds(reviewForm.rating, reviewForm.comment);
+                                setReviewForm({ rating: 5, comment: '' });
+                              }} 
+                              className="w-full bg-green-600 hover:bg-green-700"
+                              disabled={!reviewForm.rating}
+                            >
+                              Confirm & Release {booking.amount} {booking.currency}
+                            </Button>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+
+                      {/* Report Issue & Request Refund */}
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button variant="outline" className="w-full text-red-600 border-red-300 hover:bg-red-50">
+                            <AlertCircle className="w-4 h-4 mr-2" />
+                            Report Issue & Request Refund
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Report Issue to Support</DialogTitle>
+                            <DialogDescription>
+                              Describe the issue with the deliverables. Support will review and may issue a refund.
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            <div>
+                              <label className="text-sm font-medium">Issue Type *</label>
+                              <select 
+                                className="w-full mt-1 p-2 border rounded-md"
+                                value={disputeForm.reason}
+                                onChange={(e) => setDisputeForm({...disputeForm, reason: e.target.value})}
+                              >
+                                <option value="">Select an issue...</option>
+                                <option value="incomplete_work">Incomplete work</option>
+                                <option value="poor_quality">Poor quality</option>
+                                <option value="not_as_described">Not as described</option>
+                                <option value="missing_deliverables">Missing deliverables</option>
+                                <option value="plagiarism">Plagiarism/unoriginal work</option>
+                                <option value="late_delivery">Late delivery</option>
+                                <option value="no_response">Creator not responding</option>
+                                <option value="other">Other</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="text-sm font-medium">Details *</label>
+                              <Textarea 
+                                value={disputeForm.details}
+                                onChange={(e) => setDisputeForm({...disputeForm, details: e.target.value})}
+                                placeholder="Please provide specific details about the issue..."
+                                className="mt-2"
+                                rows={4}
+                              />
+                            </div>
+                            <div className="bg-red-50 p-3 rounded-lg">
+                              <p className="text-sm text-red-800">
+                                <strong>Refund Amount:</strong> {booking.amount} {booking.currency}
+                              </p>
+                              <p className="text-xs text-red-600 mt-1">
+                                If approved, funds will be returned to your wallet.
+                              </p>
+                            </div>
+                            <Button 
+                              onClick={handleDispute}
+                              className="w-full bg-red-600 hover:bg-red-700"
+                              disabled={!disputeForm.reason || !disputeForm.details}
+                            >
+                              Submit Dispute Request
+                            </Button>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
                   )}
                 </div>
               )}
