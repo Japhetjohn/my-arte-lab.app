@@ -190,12 +190,20 @@ class BookingService {
   async submitBookingDeliverable(bookingId, creatorId, deliverableData) {
     const booking = await Booking.findOne({
       _id: bookingId,
-      creator: creatorId,
-      status: { $in: ['confirmed', 'in_progress'] }
+      creator: creatorId
     });
 
     if (!booking) {
-      throw new ErrorHandler('Booking not found or not in a state to submit work', 404);
+      throw new ErrorHandler('Booking not found', 404);
+    }
+
+    // Check if booking is in the right state
+    if (!['confirmed', 'in_progress'].includes(booking.status)) {
+      throw new ErrorHandler(
+        `Cannot submit deliverables. Booking status is '${booking.status}'. ` +
+        `Must be 'confirmed' or 'in_progress'. Current status: ${booking.status}`,
+        400
+      );
     }
 
     booking.deliverables.push({

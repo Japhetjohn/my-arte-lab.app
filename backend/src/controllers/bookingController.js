@@ -193,7 +193,47 @@ exports.getBooking = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Not authorized to view this booking', 403));
   }
 
-  successResponse(res, 200, 'Booking retrieved successfully', { booking });
+  // Determine available actions based on role and status
+  const isCreator = booking.creator._id.toString() === req.user._id.toString();
+  const isClient = booking.client._id.toString() === req.user._id.toString();
+  const availableActions = [];
+
+  if (isCreator) {
+    // Creator actions
+    if (booking.status === 'pending') {
+      availableActions.push('accept', 'reject', 'counter-proposal');
+    }
+    if (['confirmed', 'in_progress'].includes(booking.status)) {
+      availableActions.push('submit-deliverable');
+    }
+    if (booking.status === 'delivered') {
+      availableActions.push('add-message');
+    }
+  }
+
+  if (isClient) {
+    // Client actions
+    if (booking.status === 'awaiting_payment') {
+      availableActions.push('pay');
+    }
+    if (booking.status === 'delivered') {
+      availableActions.push('release-funds', 'dispute');
+    }
+    if (booking.status === 'completed' && !booking.review?.rating) {
+      availableActions.push('leave-review');
+    }
+    if (['pending', 'awaiting_payment'].includes(booking.status)) {
+      availableActions.push('cancel');
+    }
+  }
+
+  // Both can add messages
+  availableActions.push('add-message');
+
+  successResponse(res, 200, 'Booking retrieved successfully', { 
+    booking,
+    availableActions
+  });
 });
 
 exports.completeBooking = catchAsync(async (req, res, next) => {
