@@ -247,24 +247,42 @@ exports.completeBooking = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Only the creator can mark the booking as completed', 403));
   }
 
-  if (booking.status !== 'in_progress' && booking.status !== 'confirmed') {
-    return next(new ErrorHandler('Only in-progress or confirmed bookings can be marked as completed', 400));
+  // DEPRECATED: Use submitDeliverable instead
+  // This endpoint now just redirects to submitDeliverable for backwards compatibility
+  if (booking.status !== 'confirmed' && booking.status !== 'in_progress') {
+    return next(new ErrorHandler(
+      `Booking status is '${booking.status}'. ` +
+      `Use /submit to submit deliverables first, then client releases funds.`, 
+      400
+    ));
   }
 
-  await booking.markCompleted();
+  // Auto-create a default deliverable and mark as delivered
+  await bookingService.submitBookingDeliverable(
+    req.params.id,
+    req.user._id,
+    {
+      title: 'Work Completed',
+      description: 'Creator marked this booking as completed',
+      fileUrl: '',
+      links: []
+    }
+  );
+
+  // Re-fetch booking with updated status
+  const updatedBooking = await Booking.findById(req.params.id);
+  const client = await User.findById(booking.client);
 
   // Update creator metrics asynchronously (don't wait for it)
   metricsService.updateCreatorMetrics(booking.creator.toString())
     .catch(err => console.error('Failed to update creator metrics:', err));
 
-  const client = await User.findById(booking.client);
-
   await Notification.createNotification({
     recipient: client._id,
     sender: req.user._id,
-    type: 'booking_completed',
-    title: 'Work Completed',
-    message: `${req.user.name} has marked your booking "${booking.serviceTitle}" as completed. Please review the work and release payment if satisfied.`,
+    type: 'booking_delivered',
+    title: 'Work Submitted',
+    message: `${req.user.name} has submitted work for your booking "${booking.serviceTitle}". Please review and release payment if satisfied.`,
     link: `/bookings`,
     booking: booking._id,
     metadata: {
@@ -276,17 +294,17 @@ exports.completeBooking = catchAsync(async (req, res, next) => {
 
   emailConfig.sendEmail({
     to: client.email,
-    subject: 'Booking Completed',
+    subject: 'Work Submitted for Review',
     html: `
-      <h1>Work Completed!</h1>
+      <h1>Work Submitted!</h1>
       <p>Hi ${client.name},</p>
-      <p>${req.user.name} has marked your booking as completed.</p>
+      <p>${req.user.name} has submitted work for your booking.</p>
       <p><strong>Service:</strong> ${booking.serviceTitle}</p>
       <p>Please review the deliverables and release payment if satisfied.</p>
     `
   }).catch(err => console.error('Email failed:', err));
 
-  successResponse(res, 200, 'Booking marked as completed', { booking });
+  successResponse(res, 200, 'Work submitted successfully', { booking: updatedBooking });
 });
 
 exports.releaseFunds = catchAsync(async (req, res, next) => {
