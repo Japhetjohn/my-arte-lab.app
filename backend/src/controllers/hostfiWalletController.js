@@ -33,25 +33,31 @@ exports.getWallet = catchAsync(async (req, res, next) => {
 
   // Calculate balance from user's transaction history (NOT from HostFi API which returns same data for all users)
   // This ensures each user sees their OWN correct balance
+  // Only count USDC transactions since that's our primary currency
   const userTransactions = await Transaction.find({
     user: req.user._id,
-    status: 'completed'
+    status: 'completed',
+    currency: { $in: ['USDC', 'USD'] } // Only USD/USDC transactions
   });
   
-  // Calculate actual balance from transactions
+  // Calculate actual balance from transactions (using netAmount which accounts for fees)
   let calculatedBalance = 0;
   userTransactions.forEach(tx => {
-    const amount = parseFloat(tx.amount) || 0;
+    // Use netAmount if available, otherwise calculate: amount - platformFee - gasFee
+    const netAmount = tx.netAmount || (tx.amount - (tx.platformFee || 0) - (tx.gasFee || 0));
+    const amount = parseFloat(netAmount) || 0;
+    
     if (['deposit', 'earning', 'refund', 'onramp'].includes(tx.type)) {
       calculatedBalance += amount;
     } else if (['payment', 'withdrawal', 'offramp'].includes(tx.type)) {
       calculatedBalance -= amount;
     }
+    // platform_fee transactions are not counted (they're internal)
   });
   
   // Ensure non-negative balance
   calculatedBalance = Math.max(0, parseFloat(calculatedBalance.toFixed(2)));
-  console.log(`[Wallet] User ${req.user._id} calculated balance from transactions: ${calculatedBalance}`);
+  console.log(`[Wallet] User ${req.user._id} calculated USDC balance from ${userTransactions.length} transactions: ${calculatedBalance}`);
 
   // Calculate pending balance from active bookings (for clients - money they've paid that's held)
   const clientPendingBookings = await Booking.find({
