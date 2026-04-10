@@ -120,64 +120,56 @@ class HostFiWalletService {
 
       console.log(`Syncing wallet balances for user ${userId}...`);
 
-      // Fetch latest balances and collection addresses from HostFi
-      const [walletAssets, cryptoAddresses] = await Promise.all([
-        hostfiService.getUserWallets(),
-        hostfiService.getCryptoCollectionAddresses({ customId: userId.toString() }).catch(err => {
-          console.warn(`[Sync] Failed to fetch crypto addresses for ${userId}:`, err.message);
-          return [];
-        })
-      ]);
+      // Fetch crypto collection addresses for this user
+      const cryptoAddresses = await hostfiService.getCryptoCollectionAddresses({ 
+        customId: userId.toString() 
+      }).catch(err => {
+        console.warn(`[Sync] Failed to fetch crypto addresses for ${userId}:`, err.message);
+        return [];
+      });
 
-      // Update stored assets and balances
-      for (const asset of walletAssets) {
-        const currencyCode = asset.currency.code || asset.currency;
-        const networkCode = asset.network || (asset.type === 'CRYPTO' ? 'SOL' : 'HOSTFI'); // Default network if missing
+      // Fetch each wallet asset individually by assetId (per-user balance)
+      for (const storedAsset of user.wallet.hostfiWalletAssets) {
+        if (!storedAsset.assetId) continue;
+        
+        try {
+          console.log(`[Sync] Fetching wallet asset ${storedAsset.assetId} for user ${userId}`);
+          const asset = await hostfiService.getWalletAsset(storedAsset.assetId);
+          
+          if (asset && asset.balance !== undefined) {
+            const currencyCode = asset.currency?.code || asset.currency || storedAsset.currency;
+            const networkCode = asset.network || storedAsset.network || 'SOL';
+            
+            // Update balance from HostFi
+            storedAsset.balance = parseFloat(asset.balance) || 0;
+            storedAsset.reservedBalance = parseFloat(asset.reservedBalance) || 0;
+            storedAsset.lastSynced = new Date();
+            
+            console.log(`[Sync] Updated ${currencyCode} balance for user ${userId}: ${storedAsset.balance}`);
+            
+            // Sync collection address if available
+            if (asset.type === 'CRYPTO' || storedAsset.assetType === 'CRYPTO') {
+              const addrInfo = cryptoAddresses.find(a =>
+                a.assetId === storedAsset.assetId ||
+                (a.currency === currencyCode && a.network === networkCode)
+              );
 
-        // Find existing asset by ID OR by (currency + network) to prevent logical duplicates
-        let storedAsset = user.wallet.hostfiWalletAssets.find(a =>
-          a.assetId === asset.id ||
-          (a.currency === currencyCode && (a.colNetwork === networkCode || a.network === networkCode))
-        );
+              if (addrInfo) {
+                storedAsset.colAddress = addrInfo.address;
+                storedAsset.colNetwork = addrInfo.network;
 
-        if (!storedAsset) {
-          // New asset appeared, add it
-          user.wallet.hostfiWalletAssets.push({
-            assetId: asset.id,
-            currency: currencyCode,
-            assetType: asset.type,
-            balance: asset.balance || 0,
-            reservedBalance: asset.reservedBalance || 0,
-            lastSynced: new Date(),
-            network: networkCode
-          });
-          storedAsset = user.wallet.hostfiWalletAssets[user.wallet.hostfiWalletAssets.length - 1];
-        } else {
-          // Update details for existing asset
-          storedAsset.assetId = asset.id; // Update ID in case it changed
-          storedAsset.balance = asset.balance || 0;
-          storedAsset.reservedBalance = asset.reservedBalance || 0;
-          storedAsset.lastSynced = new Date();
-        }
-
-        // Sync collection address if available
-        if (asset.type === 'CRYPTO') {
-          const addrInfo = cryptoAddresses.find(a =>
-            a.assetId === asset.id ||
-            (a.currency === currencyCode && a.network === networkCode)
-          );
-
-          if (addrInfo) {
-            storedAsset.colAddress = addrInfo.address;
-            storedAsset.colNetwork = addrInfo.network;
-
-            // Also update legacy address if it's for Solana/USDC
-            if ((addrInfo.network === 'SOL' || addrInfo.network === 'Solana') &&
-              (!user.wallet.address || user.wallet.address.startsWith('pending_'))) {
-              user.wallet.address = addrInfo.address;
-              user.wallet.network = 'Solana';
+                // Also update legacy address if it's for Solana/USDC
+                if ((addrInfo.network === 'SOL' || addrInfo.network === 'Solana') &&
+                  (!user.wallet.address || user.wallet.address.startsWith('pending_'))) {
+                  user.wallet.address = addrInfo.address;
+                  user.wallet.network = 'Solana';
+                }
+              }
             }
           }
+        } catch (assetError) {
+          console.warn(`[Sync] Failed to fetch asset ${storedAsset.assetId} for user ${userId}:`, assetError.message);
+          // Keep existing balance if fetch fails
         }
       }
 
