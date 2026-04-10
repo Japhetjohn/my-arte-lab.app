@@ -145,10 +145,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (error.response?.status === 401 && !originalRequest._retry) {
           originalRequest._retry = true;
 
-          // Clear auth state on 401
-          logout();
-          toast.error('Session expired. Please login again.');
-          window.location.href = '/login';
+          // Skip redirect for public auth routes (forgot-password, reset-password, etc.)
+          const publicAuthEndpoints = ['/auth/forgot-password', '/auth/reset-password', '/auth/login', '/auth/register'];
+          const isPublicAuthEndpoint = publicAuthEndpoints.some(endpoint => 
+            originalRequest.url?.includes(endpoint)
+          );
+
+          if (!isPublicAuthEndpoint) {
+            // Clear auth state on 401 (only for protected routes)
+            logout();
+            toast.error('Session expired. Please login again.');
+            window.location.href = '/login';
+          }
         }
 
         // Handle 502/503 errors (server down) - silently reject without logging
