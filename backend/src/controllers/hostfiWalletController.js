@@ -31,19 +31,42 @@ exports.getWallet = catchAsync(async (req, res, next) => {
     Object.assign(user, refreshedUser.toObject());
   }
 
-  // Get user's actual HostFi wallet balance from stored assets (per-user)
-  // Sum up USDC balance from the user's own wallet assets
+  // Sync wallet balances from HostFi to get REAL-TIME balance (not cached)
   let hostfiBalance = 0;
   try {
-    // Use the stored wallet assets which contain the actual HostFi balance for this user
-    const usdcAsset = user.wallet.hostfiWalletAssets?.find(a => a.currency === 'USDC');
+    console.log(`[Wallet] Syncing real-time balance from HostFi for user ${req.user._id}...`);
+    
+    // Fetch current wallet assets from HostFi API (real-time)
+    const walletAssets = await hostfiService.getUserWallets();
+    
+    // Find USDC asset and get real balance
+    const usdcAsset = walletAssets.find(a => 
+      (a.currency?.code === 'USDC' || a.currency === 'USDC')
+    );
+    
     if (usdcAsset) {
       hostfiBalance = parseFloat(usdcAsset.balance) || 0;
+      console.log(`[Wallet] Real-time HostFi USDC balance: ${hostfiBalance}`);
+      
+      // Update stored asset balance for this user
+      const storedAsset = user.wallet.hostfiWalletAssets?.find(a => a.currency === 'USDC');
+      if (storedAsset) {
+        storedAsset.balance = hostfiBalance;
+        storedAsset.lastSynced = new Date();
+        await user.save({ validateBeforeSave: false });
+        console.log(`[Wallet] Updated stored balance to: ${hostfiBalance}`);
+      }
+    } else {
+      console.warn(`[Wallet] No USDC asset found in HostFi wallets`);
+      // Fallback to stored balance
+      const storedAsset = user.wallet.hostfiWalletAssets?.find(a => a.currency === 'USDC');
+      hostfiBalance = storedAsset ? parseFloat(storedAsset.balance) || 0 : 0;
     }
-    console.log(`[Wallet] User ${req.user._id} HostFi USDC balance from assets: ${hostfiBalance}`);
   } catch (err) {
-    console.error('[Wallet] Failed to get user wallet assets:', err.message);
-    hostfiBalance = user.wallet.balance || 0;
+    console.error('[Wallet] Failed to sync HostFi balance:', err.message);
+    // Fallback to stored balance
+    const storedAsset = user.wallet.hostfiWalletAssets?.find(a => a.currency === 'USDC');
+    hostfiBalance = storedAsset ? parseFloat(storedAsset.balance) || 0 : 0;
   }
   
   // Use HostFi balance as the base
