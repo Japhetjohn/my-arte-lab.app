@@ -238,7 +238,7 @@ class BookingService {
         client: clientId
       })
         .populate('creator', 'wallet.address firstName lastName name email')
-        .populate('client', 'firstName lastName name')
+        .populate('client', 'firstName lastName name email wallet.hostfiWalletAssets')
         .session(session);
 
       if (!booking) {
@@ -401,10 +401,15 @@ class BookingService {
 
       // Transfer funds via HostFi (outside DB transaction)
       try {
+        console.log(`[BookingService] Starting HostFi transfers for booking ${bookingId}`);
+        console.log(`[BookingService] Client wallet assets:`, JSON.stringify(client.wallet.hostfiWalletAssets?.map(a => ({ currency: a.currency, assetId: a.assetId }))));
+        
         // Get client's USDC wallet asset ID for the transfer
         const clientUsdcAsset = client.wallet.hostfiWalletAssets?.find(
           a => a.currency === booking.currency || a.currency === 'USDC'
         );
+        
+        console.log(`[BookingService] Found USDC asset:`, JSON.stringify(clientUsdcAsset));
         
         if (!clientUsdcAsset?.assetId) {
           console.error('[BookingService] No client USDC asset found for HostFi transfer');

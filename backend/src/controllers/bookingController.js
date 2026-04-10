@@ -373,13 +373,15 @@ exports.releaseFunds = catchAsync(async (req, res, next) => {
       booking
     });
   } catch (error) {
+    console.error('[ReleaseFunds] Error:', error.message);
+    console.error('[ReleaseFunds] Stack:', error.stack);
     if (error.statusCode === 404) {
       return next(new ErrorHandler('Booking not found', 404));
     }
     if (error.statusCode === 400) {
       return next(error);
     }
-    return next(new ErrorHandler('Failed to release funds. Please contact support', 500));
+    return next(new ErrorHandler(`Failed to release funds: ${error.message}`, 500));
   }
 });
 
