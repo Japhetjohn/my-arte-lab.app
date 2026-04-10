@@ -243,6 +243,7 @@ class HostFiService {
     try {
       console.log(`[HostFi Service] Transferring platform fee: ${amount} ${currency} from client to ${this.platformWalletAddress}`);
 
+      // For crypto transfers, HostFi requires accountNumber to be the wallet address
       const payload = {
         assetId: clientAssetId,
         clientReference: `PLATFORM-FEE-${reference}-${Date.now()}`,
@@ -253,9 +254,12 @@ class HostFiService {
           type: 'CRYPTO',
           method: 'CRYPTO',
           currency: currency.toUpperCase(),
+          accountNumber: this.platformWalletAddress, // Required for crypto
           address: this.platformWalletAddress,
           network: 'SOL',
-          country: 'NG'
+          country: 'NG',
+          accountName: 'Platform Wallet',
+          accountType: 'SAVINGS'
         },
         memo: `Platform Fee 10% for ${reference}`
       };
@@ -1079,6 +1083,10 @@ class HostFiService {
       if (normalizedType === 'BANK_TRANSFER' || normalizedType === 'EFT') normalizedType = 'BANK';
       if (normalizedType === 'MOBILE_MONEY') normalizedType = 'MOMO';
 
+      // For crypto transfers, use address as accountNumber (required by HostFi)
+      const isCrypto = normalizedType === 'CRYPTO' || payoutMethod === 'CRYPTO';
+      const accountNumber = isCrypto && recipient.address ? recipient.address : recipient.accountNumber;
+      
       const payload = {
         assetId: effectiveAssetId,
         clientReference,
@@ -1089,7 +1097,7 @@ class HostFiService {
           type: normalizedType,
           method: payoutMethod,
           currency: effectiveCurrency,
-          accountNumber: recipient.accountNumber,
+          accountNumber: accountNumber,
           accountName: nameSanitize(recipient.accountName || 'Verified Recipient').substring(0, 50),
           bankId: recipient.bankId,
           bankName: nameSanitize(recipient.bankName),
