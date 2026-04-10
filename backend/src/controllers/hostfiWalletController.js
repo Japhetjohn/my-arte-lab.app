@@ -31,36 +31,23 @@ exports.getWallet = catchAsync(async (req, res, next) => {
     Object.assign(user, refreshedUser.toObject());
   }
 
-  // Calculate balance from user's transaction history (NOT from HostFi API which returns same data for all users)
-  // This ensures each user sees their OWN correct balance
-  // Get ALL completed transactions for this user (any currency, filter by type)
-  const userTransactions = await Transaction.find({
-    user: req.user._id,
-    status: 'completed'
-  });
-  
-  console.log(`[Wallet] User ${req.user._id} has ${userTransactions.length} completed transactions`);
-  
-  // Calculate actual balance from transactions
-  let calculatedBalance = 0;
-  userTransactions.forEach(tx => {
-    const amount = parseFloat(tx.amount) || 0;
-    console.log(`[Wallet] TX: ${tx.type} | ${tx.amount} ${tx.currency} | Status: ${tx.status}`);
-    
-    // Credits (money coming in)
-    if (['deposit', 'earning', 'refund', 'onramp', 'bonus'].includes(tx.type)) {
-      calculatedBalance += amount;
+  // Get user's actual HostFi wallet balance from stored assets (per-user)
+  // Sum up USDC balance from the user's own wallet assets
+  let hostfiBalance = 0;
+  try {
+    // Use the stored wallet assets which contain the actual HostFi balance for this user
+    const usdcAsset = user.wallet.hostfiWalletAssets?.find(a => a.currency === 'USDC');
+    if (usdcAsset) {
+      hostfiBalance = parseFloat(usdcAsset.balance) || 0;
     }
-    // Debits (money going out)
-    else if (['payment', 'withdrawal', 'offramp'].includes(tx.type)) {
-      calculatedBalance -= amount;
-    }
-    // platform_fee is internal, don't count in user balance
-  });
+    console.log(`[Wallet] User ${req.user._id} HostFi USDC balance from assets: ${hostfiBalance}`);
+  } catch (err) {
+    console.error('[Wallet] Failed to get user wallet assets:', err.message);
+    hostfiBalance = user.wallet.balance || 0;
+  }
   
-  // Ensure non-negative balance
-  calculatedBalance = Math.max(0, parseFloat(calculatedBalance.toFixed(2)));
-  console.log(`[Wallet] User ${req.user._id} calculated balance: ${calculatedBalance}`);
+  // Use HostFi balance as the base
+  const calculatedBalance = Math.max(0, parseFloat(hostfiBalance.toFixed(2)));
 
   // Calculate pending balance from active bookings (for clients - money they've paid that's held)
   const clientPendingBookings = await Booking.find({
