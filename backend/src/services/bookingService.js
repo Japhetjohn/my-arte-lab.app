@@ -406,86 +406,103 @@ class BookingService {
         }
       }
 
+      // Get creator wallet address from populated booking data
+      const creatorWalletAddress = booking.creator?.wallet?.address;
+      console.log(`[BookingService] Creator wallet address: ${creatorWalletAddress}`);
+      
+      if (!creatorWalletAddress) {
+        console.error('[BookingService] Creator wallet address not found!');
+      }
+      
       // Transfer funds via HostFi (outside DB transaction)
-      try {
-        console.log(`[BookingService] Starting HostFi transfers for booking ${bookingId}`);
-        console.log(`[BookingService] Client wallet assets:`, JSON.stringify(client.wallet.hostfiWalletAssets?.map(a => ({ currency: a.currency, assetId: a.assetId }))));
-        
-        // Get client's USDC wallet asset ID for the transfer
-        const clientUsdcAsset = client.wallet.hostfiWalletAssets?.find(
-          a => a.currency === booking.currency || a.currency === 'USDC'
-        );
-        
-        console.log(`[BookingService] Found USDC asset:`, JSON.stringify(clientUsdcAsset));
-        
-        if (!clientUsdcAsset?.assetId) {
-          console.error('[BookingService] No client USDC asset found for HostFi transfer');
-          throw new Error('Client wallet not properly configured for payout');
-        }
-        
-        // 1. Transfer creator's 90% to their wallet
-        console.log(`[BookingService] Initiating creator payout: ${booking.creatorAmount} ${booking.currency} to ${creator.wallet.address}`);
-        const creatorPayout = await hostfiService.initiateWithdrawal({
-          walletAssetId: clientUsdcAsset.assetId,
-          amount: booking.creatorAmount,
-          currency: booking.currency,
-          methodId: 'CRYPTO',
-          recipient: {
-            type: 'CRYPTO',
-            method: 'CRYPTO',
+      // Get client's USDC wallet asset ID for the transfer
+      const clientUsdcAsset = client.wallet.hostfiWalletAssets?.find(
+        a => a.currency === booking.currency || a.currency === 'USDC'
+      );
+      
+      console.log(`[BookingService] Starting HostFi transfers for booking ${bookingId}`);
+      console.log(`[BookingService] Client USDC asset:`, clientUsdcAsset?.assetId);
+      
+      if (!clientUsdcAsset?.assetId) {
+        console.error('[BookingService] No client USDC asset found for HostFi transfer');
+      } else {
+        // 1. Transfer creator's 90% to their wallet (separate try block)
+        try {
+          console.log(`[BookingService] Initiating creator payout: ${booking.creatorAmount} ${booking.currency} to ${creatorWalletAddress}`);
+          
+          if (!creatorWalletAddress) {
+            throw new Error('Creator wallet address not available');
+          }
+          
+          const creatorPayout = await hostfiService.initiateWithdrawal({
+            walletAssetId: clientUsdcAsset.assetId,
+            amount: booking.creatorAmount,
             currency: booking.currency,
-            address: creator.wallet.address,
-            network: 'SOL',
-            country: 'NG'
-          },
-          clientReference: `CREATOR-PAYOUT-${booking.bookingId}-${Date.now()}`,
-          memo: `Payment for ${booking.serviceTitle}`
-        });
+            methodId: 'CRYPTO',
+            recipient: {
+              type: 'CRYPTO',
+              method: 'CRYPTO',
+              currency: booking.currency,
+              address: creatorWalletAddress,
+              network: 'SOL',
+              country: 'NG'
+            },
+            clientReference: `CREATOR-PAYOUT-${booking.bookingId}-${Date.now()}`,
+            memo: `Payment for ${booking.serviceTitle}`
+          });
 
-        if (creatorPayout.reference || creatorPayout.id) {
-          // Update earning transaction with payout reference
-          await Transaction.updateOne(
-            { booking: booking._id, type: 'earning' },
-            { 
-              transactionHash: creatorPayout.reference || creatorPayout.id,
-              status: 'completed',
-              metadata: {
-                payoutReference: creatorPayout.reference || creatorPayout.id,
-                toAddress: creator.wallet.address,
-                network: 'SOL'
+          if (creatorPayout.reference || creatorPayout.id) {
+            // Update earning transaction with payout reference
+            await Transaction.updateOne(
+              { booking: booking._id, type: 'earning' },
+              { 
+                transactionHash: creatorPayout.reference || creatorPayout.id,
+                status: 'completed',
+                metadata: {
+                  payoutReference: creatorPayout.reference || creatorPayout.id,
+                  toAddress: creatorWalletAddress,
+                  network: 'SOL'
+                }
               }
-            }
-          );
-          console.log(`[BookingService] Creator payout initiated: ${creatorPayout.reference || creatorPayout.id}`);
+            );
+            console.log(`[BookingService] ✓ Creator payout initiated: ${creatorPayout.reference || creatorPayout.id}`);
+          }
+        } catch (creatorError) {
+          console.error('[BookingService] ✗ Creator payout failed:', creatorError.message);
+          // Don't throw - log for manual reconciliation
         }
         
-        // 2. Transfer platform fee 10% to platform wallet
-        const platformFeeTransfer = await hostfiService.transferPlatformFee({
-          clientAssetId: clientUsdcAsset.assetId,
-          amount: booking.platformFee,
-          currency: booking.currency,
-          reference: booking.bookingId
-        });
+        // 2. Transfer platform fee 10% to platform wallet (separate try block)
+        try {
+          console.log(`[BookingService] Initiating platform fee transfer: ${booking.platformFee} ${booking.currency}`);
+          
+          const platformFeeTransfer = await hostfiService.transferPlatformFee({
+            clientAssetId: clientUsdcAsset.assetId,
+            amount: booking.platformFee,
+            currency: booking.currency,
+            reference: booking.bookingId
+          });
 
-        if (platformFeeTransfer.reference || platformFeeTransfer.id) {
-          // Update booking with platform fee transaction hash
-          booking.platformFeeTransactionHash = platformFeeTransfer.reference || platformFeeTransfer.id;
-          await booking.save();
-          
-          // Update transaction record with the blockchain reference
-          await Transaction.updateOne(
-            { booking: booking._id, type: 'platform_fee' },
-            { 
-              transactionHash: platformFeeTransfer.reference || platformFeeTransfer.id,
-              status: 'completed'
-            }
-          );
-          
-          console.log(`[BookingService] Platform fee transferred: ${platformFeeTransfer.reference || platformFeeTransfer.id}`);
+          if (platformFeeTransfer.reference || platformFeeTransfer.id) {
+            // Update booking with platform fee transaction hash
+            booking.platformFeeTransactionHash = platformFeeTransfer.reference || platformFeeTransfer.id;
+            await booking.save();
+            
+            // Update transaction record with the blockchain reference
+            await Transaction.updateOne(
+              { booking: booking._id, type: 'platform_fee' },
+              { 
+                transactionHash: platformFeeTransfer.reference || platformFeeTransfer.id,
+                status: 'completed'
+              }
+            );
+            
+            console.log(`[BookingService] ✓ Platform fee transferred: ${platformFeeTransfer.reference || platformFeeTransfer.id}`);
+          }
+        } catch (platformError) {
+          console.error('[BookingService] ✗ Platform fee transfer failed:', platformError.message);
+          // Don't throw - log for manual reconciliation
         }
-      } catch (transferError) {
-        console.error('[BookingService] Failed to transfer funds:', transferError.message);
-        // Don't throw - the booking is already completed, just log for manual reconciliation
       }
 
       return {
