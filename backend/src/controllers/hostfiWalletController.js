@@ -100,7 +100,7 @@ exports.getWallet = catchAsync(async (req, res, next) => {
     wallet: {
       assets: assetsWithUsd,
       balance: calculatedAvailableBalance,
-      usdcBalance: usdcBalance,
+      usdcBalance: calculatedAvailableBalance, // Use calculated available balance
       pendingBalance: calculatedPendingBalance, // For clients: money held in escrow
       escrowBalance: calculatedPendingBalance, // Amount held in escrow (client view)
       incomingEarnings: incomingEarnings, // For creators: money they'll receive
