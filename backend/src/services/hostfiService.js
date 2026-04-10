@@ -16,7 +16,10 @@ class HostFiService {
 
     // Platform fee configuration (read from env, default 10%)
     this.platformFeePercent = parseInt(process.env.PLATFORM_COMMISSION) || 10;
-    this.platformWalletAddress = process.env.PLATFORM_WALLET_ADDRESS;
+    // Use env var first, fallback to constants default
+    const { PLATFORM_CONFIG } = require('../utils/constants');
+    this.platformWalletAddress = process.env.PLATFORM_WALLET_ADDRESS || PLATFORM_CONFIG.PLATFORM_WALLET_ADDRESS;
+    console.log(`[HostFi Service] Platform wallet configured: ${this.platformWalletAddress?.substring(0, 10)}...`);
     
     // No reserve needed - HostFi handles fees automatically
     this.swapFeeReserve = 0;
@@ -256,6 +259,8 @@ class HostFiService {
         },
         memo: `Platform Fee 10% for ${reference}`
       };
+      
+      console.log(`[HostFi Service] Platform fee payload:`, JSON.stringify(payload, null, 2));
 
       const response = await this.makeRequest('POST', '/v1/payout/transactions', payload);
       console.log(`[HostFi Service] ✓ Platform fee transfer initiated:`, response.reference || response.id);
