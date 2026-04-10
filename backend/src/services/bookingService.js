@@ -326,7 +326,7 @@ class BookingService {
             completedAt: new Date()
           }
         ],
-        { session }
+        { session, ordered: true }
       );
 
       booking.fundsReleased = true;
