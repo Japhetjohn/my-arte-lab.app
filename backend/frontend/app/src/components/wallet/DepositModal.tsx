@@ -51,9 +51,37 @@ export function DepositModal({ isOpen, onClose, onDepositComplete }: DepositModa
   // Fetch existing crypto address when modal opens
   useEffect(() => {
     if (isOpen && activeTab === 'crypto') {
-      fetchCryptoAddress();
+      // First check if user already has a stored address
+      fetchExistingWalletAddress();
     }
   }, [isOpen, activeTab]);
+
+  const fetchExistingWalletAddress = async () => {
+    setIsLoading(true);
+    try {
+      // Get wallet info which includes the stored address
+      const response = await api.get('/hostfi/wallet');
+      const walletData = response.data?.data?.wallet;
+      
+      if (walletData?.address) {
+        // Use existing stored address
+        setCryptoAddress({
+          address: walletData.address,
+          network: walletData.network || 'Solana',
+          currency: 'USDC',
+          instructions: 'Send only USDC on Solana network to this address. Your wallet will be credited automatically.',
+        });
+      } else {
+        // No stored address, create new one
+        await fetchCryptoAddress();
+      }
+    } catch (error) {
+      // Fallback to creating new address
+      await fetchCryptoAddress();
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Reset state when modal closes
   useEffect(() => {
