@@ -296,9 +296,15 @@ class BookingService {
       // Get platform fee destination (temp wallet)
       const platformWalletInfo = getPlatformFeeDestination(booking._id.toString());
 
+      // Generate transaction IDs
+      const timestamp = Date.now().toString(36).toUpperCase();
+      const random1 = Math.random().toString(36).substring(2, 10).toUpperCase();
+      const random2 = Math.random().toString(36).substring(2, 10).toUpperCase();
+      
       await Transaction.create(
         [
           {
+            transactionId: `TXN-EARN-${timestamp}-${random1}`,
             user: creator._id,
             type: 'earning',
             amount: booking.creatorAmount,
@@ -310,6 +316,7 @@ class BookingService {
             completedAt: new Date()
           },
           {
+            transactionId: `TXN-FEE-${timestamp}-${random2}`,
             user: creator._id,
             type: 'platform_fee',
             amount: booking.platformFee,
