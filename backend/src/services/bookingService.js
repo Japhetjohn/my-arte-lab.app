@@ -474,7 +474,12 @@ class BookingService {
         
         // 2. Transfer platform fee 10% to platform wallet (separate try block)
         try {
-          console.log(`[BookingService] Initiating platform fee transfer: ${booking.platformFee} ${booking.currency}`);
+          console.log(`[BookingService] ============================================`);
+          console.log(`[BookingService] PLATFORM FEE TRANSFER START`);
+          console.log(`[BookingService] Amount: ${booking.platformFee} ${booking.currency}`);
+          console.log(`[BookingService] Client Asset ID: ${clientUsdcAsset.assetId}`);
+          console.log(`[BookingService] Booking ID: ${booking.bookingId}`);
+          console.log(`[BookingService] ============================================`);
           
           const platformFeeTransfer = await hostfiService.transferPlatformFee({
             clientAssetId: clientUsdcAsset.assetId,
@@ -482,6 +487,8 @@ class BookingService {
             currency: booking.currency,
             reference: booking.bookingId
           });
+          
+          console.log(`[BookingService] Platform fee transfer response:`, JSON.stringify(platformFeeTransfer, null, 2));
 
           if (platformFeeTransfer.reference || platformFeeTransfer.id) {
             // Update booking with platform fee transaction hash
@@ -498,9 +505,12 @@ class BookingService {
             );
             
             console.log(`[BookingService] ✓ Platform fee transferred: ${platformFeeTransfer.reference || platformFeeTransfer.id}`);
+          } else {
+            console.warn(`[BookingService] ⚠ Platform fee transfer returned no reference/id:`, platformFeeTransfer);
           }
         } catch (platformError) {
           console.error('[BookingService] ✗ Platform fee transfer failed:', platformError.message);
+          console.error('[BookingService] ✗ Platform fee error details:', platformError.hostfiError || platformError.response?.data || 'No additional details');
           // Don't throw - log for manual reconciliation
         }
       }
