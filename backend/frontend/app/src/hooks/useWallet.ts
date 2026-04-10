@@ -12,6 +12,8 @@ interface WalletState {
   error: string | null;
   balance: number;
   usdcBalance: number;
+  escrowBalance: number; // Amount held in escrow for active bookings
+  hostFiBalance: number; // Raw HostFi balance (available + escrow)
   isInitialLoad: boolean;
 }
 
@@ -19,29 +21,31 @@ const CACHE_KEY = 'wallet_balance_cache';
 
 // Load cached balance from localStorage
 const loadCachedBalance = () => {
-  if (typeof window === 'undefined') return { balance: 0, usdcBalance: 0 };
+  if (typeof window === 'undefined') return { balance: 0, usdcBalance: 0, escrowBalance: 0, hostFiBalance: 0 };
   try {
     const cached = localStorage.getItem(CACHE_KEY);
     if (cached) {
-      const { balance, usdcBalance, timestamp } = JSON.parse(cached);
+      const { balance, usdcBalance, escrowBalance, hostFiBalance, timestamp } = JSON.parse(cached);
       // Cache is valid for 24 hours
       if (Date.now() - timestamp < 24 * 60 * 60 * 1000) {
-        return { balance, usdcBalance };
+        return { balance, usdcBalance, escrowBalance, hostFiBalance };
       }
     }
   } catch {
     // Ignore errors
   }
-  return { balance: 0, usdcBalance: 0 };
+  return { balance: 0, usdcBalance: 0, escrowBalance: 0, hostFiBalance: 0 };
 };
 
 // Save balance to localStorage
-const saveCachedBalance = (balance: number, usdcBalance: number) => {
+const saveCachedBalance = (balance: number, usdcBalance: number, escrowBalance: number, hostFiBalance: number) => {
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(CACHE_KEY, JSON.stringify({
       balance,
       usdcBalance,
+      escrowBalance,
+      hostFiBalance,
       timestamp: Date.now()
     }));
   } catch {
@@ -61,6 +65,8 @@ export function useWallet() {
     error: null,
     balance: cached.balance,
     usdcBalance: cached.usdcBalance,
+    escrowBalance: cached.escrowBalance,
+    hostFiBalance: cached.hostFiBalance,
     isInitialLoad: true,
   });
 
@@ -75,15 +81,19 @@ export function useWallet() {
       const walletData = response.data?.data?.wallet;
       const newBalance = walletData?.balance || 0;
       const newUsdcBalance = walletData?.usdcBalance || 0;
+      const newEscrowBalance = walletData?.escrowBalance || 0;
+      const newHostFiBalance = walletData?.hostFiBalance || 0;
       
       // Save to cache
-      saveCachedBalance(newBalance, newUsdcBalance);
+      saveCachedBalance(newBalance, newUsdcBalance, newEscrowBalance, newHostFiBalance);
       
       setState((prev) => ({
         ...prev,
         assets: walletData?.assets || [],
         balance: newBalance,
         usdcBalance: newUsdcBalance,
+        escrowBalance: newEscrowBalance,
+        hostFiBalance: newHostFiBalance,
         isLoading: false,
         isInitialLoad: false,
       }));

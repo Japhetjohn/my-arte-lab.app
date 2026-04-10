@@ -765,7 +765,7 @@ exports.disputeBooking = catchAsync(async (req, res, next) => {
     link: `/bookings`,
     booking: booking._id,
     metadata: {
-      bookingId: booking.bookingId,
+      bookingId: booking.bookId,
       disputeReason: reason,
       disputeDetails: details
     }
@@ -779,5 +779,57 @@ exports.disputeBooking = catchAsync(async (req, res, next) => {
   successResponse(res, 200, 'Dispute submitted successfully. Support will review and contact you.', { 
     booking,
     message: 'Your dispute has been submitted. Our support team will review and contact you within 24-48 hours.'
+  });
+});
+
+exports.refundBooking = catchAsync(async (req, res, next) => {
+  const { reason } = req.body;
+  
+  const booking = await Booking.findById(req.params.id);
+  
+  if (!booking) {
+    return next(new ErrorHandler('Booking not found', 404));
+  }
+  
+  // Only client can request refund
+  if (booking.client.toString() !== req.user._id.toString()) {
+    return next(new ErrorHandler('Only the client can request a refund', 403));
+  }
+  
+  // Check if booking can be refunded
+  if (booking.paymentStatus !== 'paid') {
+    return next(new ErrorHandler('No funds to refund - booking not paid', 400));
+  }
+  
+  if (booking.status === 'completed' || booking.fundsReleased) {
+    return next(new ErrorHandler('Cannot refund - funds already released to creator', 400));
+  }
+  
+  // Process refund through service
+  const result = await bookingService.refundBookingWithTransaction(
+    req.params.id,
+    req.user._id,
+    reason || 'Creator did not deliver'
+  );
+  
+  const { booking: updatedBooking, client } = result;
+  
+  // Send confirmation email
+  emailConfig.sendEmail({
+    to: client.email,
+    subject: 'Booking Refunded',
+    html: `
+      <h1>Refund Processed</h1>
+      <p>Hi ${escapeHtml(client.name)},</p>
+      <p>You have been refunded for "${escapeHtml(updatedBooking.serviceTitle)}".</p>
+      <p><strong>Refund Amount:</strong> ${escapeHtml(String(updatedBooking.amount))} ${escapeHtml(updatedBooking.currency)}</p>
+      <p><strong>Reason:</strong> ${escapeHtml(reason || 'Creator did not deliver')}</p>
+      <p>The funds have been returned to your wallet.</p>
+    `
+  }).catch(err => console.error('Email failed:', err));
+  
+  successResponse(res, 200, 'Booking refunded successfully', {
+    booking: updatedBooking,
+    message: `Refund of ${updatedBooking.amount} ${updatedBooking.currency} has been processed and added to your wallet.`
   });
 });

@@ -17,6 +17,8 @@ export function Wallet() {
     error,
     totalBalanceUSD,
     usdcBalance,
+    escrowBalance,
+    hostFiBalance,
     fetchWallet,
     fetchTransactions,
   } = useWallet();
@@ -99,6 +101,8 @@ export function Wallet() {
       <WalletCard
         balance={totalBalanceUSD}
         currency="USDC"
+        escrowBalance={escrowBalance}
+        hostFiBalance={hostFiBalance}
         onAddFunds={() => setAddFundsOpen(true)}
         onWithdraw={() => setWithdrawOpen(true)}
       />

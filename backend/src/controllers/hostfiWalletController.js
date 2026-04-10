@@ -96,8 +96,9 @@ exports.getWallet = catchAsync(async (req, res, next) => {
       balance: calculatedAvailableBalance,
       usdcBalance: usdcBalance,
       pendingBalance: calculatedPendingBalance,
+      escrowBalance: calculatedPendingBalance, // Amount held in escrow for active bookings
+      hostFiBalance: hostfiBalance, // Raw HostFi balance (available + escrow)
       totalEarnings: user.wallet.totalEarnings || 0,
-      hostFiBalance: hostfiBalance, // Raw HostFi balance
       currency: user.wallet.currency || 'USDC',
       network: user.wallet.network || 'Solana',
       address: user.wallet.address,

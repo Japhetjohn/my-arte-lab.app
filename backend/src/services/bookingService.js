@@ -477,6 +477,118 @@ class BookingService {
     }
   }
 
+  async refundBookingWithTransaction(bookingId, clientId, reason = 'Creator did not deliver') {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      const booking = await Booking.findOne({
+        _id: bookingId,
+        client: clientId
+      })
+        .populate('creator', 'wallet.address firstName lastName name email')
+        .populate('client', 'firstName lastName name email wallet')
+        .session(session);
+
+      if (!booking) {
+        throw new ErrorHandler('Booking not found', 404);
+      }
+
+      // Can only refund paid bookings that haven't been completed
+      if (booking.paymentStatus !== 'paid') {
+        throw new ErrorHandler('No funds to refund - booking not paid', 400);
+      }
+
+      if (booking.status === 'completed' || booking.fundsReleased) {
+        throw new ErrorHandler('Cannot refund - funds already released', 400);
+      }
+
+      // Only allow refund for bookings in these statuses
+      const refundableStatuses = ['confirmed', 'in_progress', 'delivered', 'cancelled'];
+      if (!refundableStatuses.includes(booking.status)) {
+        throw new ErrorHandler(`Cannot refund booking with status '${booking.status}'`, 400);
+      }
+
+      const client = await User.findById(clientId).session(session);
+
+      // Return full amount to client's wallet
+      await User.findOneAndUpdate(
+        { _id: client._id, __v: client.__v },
+        {
+          $inc: {
+            'wallet.balance': booking.amount,
+            'wallet.pendingBalance': -booking.amount,
+            __v: 1
+          },
+          $set: {
+            'wallet.lastUpdated': new Date()
+          }
+        },
+        { session, new: true }
+      );
+
+      // Create refund transaction record
+      const timestamp = Date.now().toString(36).toUpperCase();
+      const random = Math.random().toString(36).substring(2, 10).toUpperCase();
+      const transactionId = `TXN-REFUND-${timestamp}-${random}`;
+
+      await Transaction.create(
+        [{
+          transactionId,
+          user: client._id,
+          type: 'refund',
+          amount: booking.amount,
+          currency: booking.currency,
+          status: 'completed',
+          booking: booking._id,
+          description: `Refund for ${booking.serviceTitle} - ${reason}`,
+          completedAt: new Date()
+        }],
+        { session }
+      );
+
+      // Update booking status
+      booking.paymentStatus = 'refunded';
+      booking.status = 'cancelled';
+      booking.cancellationReason = reason;
+      booking.cancelledAt = new Date();
+      booking.escrowWallet.balance = 0;
+      await booking.save({ session });
+
+      // Notify both parties
+      await Promise.all([
+        notificationService.createNotification({
+          recipient: client._id,
+          type: 'booking_refunded',
+          title: 'Booking Refunded',
+          message: `You have been refunded ${booking.amount} ${booking.currency} for "${booking.serviceTitle}". Reason: ${reason}`,
+          booking: booking._id,
+          link: `/#/wallet`
+        }),
+        notificationService.createNotification({
+          recipient: booking.creator._id,
+          type: 'booking_refunded',
+          title: 'Booking Refunded to Client',
+          message: `The booking "${booking.serviceTitle}" has been refunded to the client. Reason: ${reason}`,
+          booking: booking._id,
+          link: `/#/bookings`
+        })
+      ]);
+
+      await session.commitTransaction();
+
+      return {
+        booking,
+        client: await User.findById(clientId)
+      };
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      session.endSession();
+    }
+  }
+
   async createBookingWithValidation(bookingData, clientId, idempotencyKey = null) {
     const { creatorId, amount, serviceTitle, serviceDescription, category, currency, startDate, endDate } = bookingData;
 
