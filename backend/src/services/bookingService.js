@@ -406,16 +406,28 @@ class BookingService {
           a => a.currency === booking.currency || a.currency === 'USDC'
         );
         
+        if (!clientUsdcAsset?.assetId) {
+          console.error('[BookingService] No client USDC asset found for HostFi transfer');
+          throw new Error('Client wallet not properly configured for payout');
+        }
+        
         // 1. Transfer creator's 90% to their wallet
         console.log(`[BookingService] Initiating creator payout: ${booking.creatorAmount} ${booking.currency} to ${creator.wallet.address}`);
         const creatorPayout = await hostfiService.initiateWithdrawal({
-          userId: creator._id,
-          assetId: clientUsdcAsset?.assetId,
+          walletAssetId: clientUsdcAsset.assetId,
           amount: booking.creatorAmount,
           currency: booking.currency,
-          address: creator.wallet.address,
-          network: 'SOL',
-          reference: `CREATOR-PAYOUT-${booking.bookingId}`
+          methodId: 'CRYPTO',
+          recipient: {
+            type: 'CRYPTO',
+            method: 'CRYPTO',
+            currency: booking.currency,
+            address: creator.wallet.address,
+            network: 'SOL',
+            country: 'NG'
+          },
+          clientReference: `CREATOR-PAYOUT-${booking.bookingId}-${Date.now()}`,
+          memo: `Payment for ${booking.serviceTitle}`
         });
 
         if (creatorPayout.reference || creatorPayout.id) {
@@ -437,7 +449,7 @@ class BookingService {
         
         // 2. Transfer platform fee 10% to platform wallet
         const platformFeeTransfer = await hostfiService.transferPlatformFee({
-          clientAssetId: clientUsdcAsset?.assetId,
+          clientAssetId: clientUsdcAsset.assetId,
           amount: booking.platformFee,
           currency: booking.currency,
           reference: booking.bookingId

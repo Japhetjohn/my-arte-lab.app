@@ -783,17 +783,19 @@ exports.disputeBooking = catchAsync(async (req, res, next) => {
 });
 
 exports.refundBooking = catchAsync(async (req, res, next) => {
-  const { reason } = req.body;
+  const { reason, adminEmail } = req.body;
+  
+  // Only allow admin to process refunds
+  const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || 'admin@myartelab.com').split(',').map(e => e.trim());
+  
+  if (!ADMIN_EMAILS.includes(adminEmail)) {
+    return next(new ErrorHandler('Unauthorized - Admin access required', 403));
+  }
   
   const booking = await Booking.findById(req.params.id);
   
   if (!booking) {
     return next(new ErrorHandler('Booking not found', 404));
-  }
-  
-  // Only client can request refund
-  if (booking.client.toString() !== req.user._id.toString()) {
-    return next(new ErrorHandler('Only the client can request a refund', 403));
   }
   
   // Check if booking can be refunded
@@ -805,16 +807,16 @@ exports.refundBooking = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Cannot refund - funds already released to creator', 400));
   }
   
-  // Process refund through service
+  // Process refund through service (using the client ID from booking, not the admin)
   const result = await bookingService.refundBookingWithTransaction(
     req.params.id,
-    req.user._id,
-    reason || 'Creator did not deliver'
+    booking.client,
+    reason || 'Admin initiated refund'
   );
   
   const { booking: updatedBooking, client } = result;
   
-  // Send confirmation email
+  // Send confirmation email to client
   emailConfig.sendEmail({
     to: client.email,
     subject: 'Booking Refunded',
@@ -823,13 +825,13 @@ exports.refundBooking = catchAsync(async (req, res, next) => {
       <p>Hi ${escapeHtml(client.name)},</p>
       <p>You have been refunded for "${escapeHtml(updatedBooking.serviceTitle)}".</p>
       <p><strong>Refund Amount:</strong> ${escapeHtml(String(updatedBooking.amount))} ${escapeHtml(updatedBooking.currency)}</p>
-      <p><strong>Reason:</strong> ${escapeHtml(reason || 'Creator did not deliver')}</p>
+      <p><strong>Reason:</strong> ${escapeHtml(reason || 'Admin initiated refund')}</p>
       <p>The funds have been returned to your wallet.</p>
     `
   }).catch(err => console.error('Email failed:', err));
   
   successResponse(res, 200, 'Booking refunded successfully', {
     booking: updatedBooking,
-    message: `Refund of ${updatedBooking.amount} ${updatedBooking.currency} has been processed and added to your wallet.`
+    message: `Refund of ${updatedBooking.amount} ${updatedBooking.currency} has been processed and added to client's wallet.`
   });
 });

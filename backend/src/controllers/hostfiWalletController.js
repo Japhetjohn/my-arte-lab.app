@@ -50,18 +50,30 @@ exports.getWallet = catchAsync(async (req, res, next) => {
     hostfiBalance = user.wallet.balance || 0;
   }
 
-  // Calculate pending balance from active bookings
-  const pendingBookings = await Booking.find({
+  // Calculate pending balance from active bookings (for clients - money they've paid that's held)
+  const clientPendingBookings = await Booking.find({
     client: req.user._id,
     status: { $in: ['confirmed', 'in_progress', 'delivered'] },
     paymentStatus: 'paid'
   });
   
-  const calculatedPendingBalance = pendingBookings.reduce((sum, booking) => 
+  const calculatedPendingBalance = clientPendingBookings.reduce((sum, booking) => 
     sum + (parseFloat(booking.amount) || 0), 0
   );
+  
+  // Calculate incoming earnings for creators (money they'll receive when work is completed)
+  const creatorPendingBookings = await Booking.find({
+    creator: req.user._id,
+    status: { $in: ['confirmed', 'in_progress', 'delivered'] },
+    paymentStatus: 'paid',
+    fundsReleased: false
+  });
+  
+  const incomingEarnings = creatorPendingBookings.reduce((sum, booking) => 
+    sum + (parseFloat(booking.creatorAmount) || 0), 0
+  );
 
-  // Available balance = HostFi balance - pending bookings
+  // Available balance = HostFi balance - pending bookings (for clients)
   const calculatedAvailableBalance = Math.max(0, parseFloat((hostfiBalance - calculatedPendingBalance).toFixed(2)));
   
   console.log(`[Wallet] HostFi: ${hostfiBalance}, Pending Bookings: ${calculatedPendingBalance}, Available: ${calculatedAvailableBalance}`);
@@ -95,9 +107,10 @@ exports.getWallet = catchAsync(async (req, res, next) => {
       assets: assetsWithUsd,
       balance: calculatedAvailableBalance,
       usdcBalance: usdcBalance,
-      pendingBalance: calculatedPendingBalance,
-      escrowBalance: calculatedPendingBalance, // Amount held in escrow for active bookings
-      hostFiBalance: hostfiBalance, // Raw HostFi balance (available + escrow)
+      pendingBalance: calculatedPendingBalance, // For clients: money held in escrow
+      escrowBalance: calculatedPendingBalance, // Amount held in escrow (client view)
+      incomingEarnings: incomingEarnings, // For creators: money they'll receive
+      hostFiBalance: hostfiBalance, // Raw HostFi balance
       totalEarnings: user.wallet.totalEarnings || 0,
       currency: user.wallet.currency || 'USDC',
       network: user.wallet.network || 'Solana',

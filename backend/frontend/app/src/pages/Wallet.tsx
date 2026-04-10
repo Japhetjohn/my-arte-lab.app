@@ -6,6 +6,7 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { DepositModal } from '@/components/wallet/DepositModal';
 import { WithdrawalModal } from '@/components/wallet/WithdrawalModal';
 import { useWallet } from '@/hooks/useWallet';
+import { useAuth } from '@/contexts/AuthContext';
 import { ArrowDownLeft, ArrowUpRight, Loader2 } from 'lucide-react';
 import type { Transaction } from '@/types';
 import { toast } from 'sonner';
@@ -18,10 +19,14 @@ export function Wallet() {
     totalBalanceUSD,
     usdcBalance,
     escrowBalance,
-    hostFiBalance,
+    incomingEarnings,
     fetchWallet,
     fetchTransactions,
   } = useWallet();
+  
+  // Get user role from auth context
+  const { user } = useAuth();
+  const userRole = user?.role || 'client';
 
   const [addFundsOpen, setAddFundsOpen] = useState(false);
   const [withdrawOpen, setWithdrawOpen] = useState(false);
@@ -102,7 +107,8 @@ export function Wallet() {
         balance={totalBalanceUSD}
         currency="USDC"
         escrowBalance={escrowBalance}
-        hostFiBalance={hostFiBalance}
+        incomingEarnings={incomingEarnings}
+        userRole={userRole as 'client' | 'creator'}
         onAddFunds={() => setAddFundsOpen(true)}
         onWithdraw={() => setWithdrawOpen(true)}
       />
