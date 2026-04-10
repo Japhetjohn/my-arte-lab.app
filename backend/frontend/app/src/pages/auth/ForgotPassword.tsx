@@ -40,7 +40,7 @@ export function ForgotPassword() {
       <AuthLayout
         title="Check Your Email"
         subtitle="We've sent you a password reset link"
-        illustration="/images/password-reset.png"
+        illustration="/images/welcome.png"
       >
         <div className="text-center space-y-6">
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
