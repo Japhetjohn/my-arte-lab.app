@@ -31,24 +31,27 @@ exports.getWallet = catchAsync(async (req, res, next) => {
     Object.assign(user, refreshedUser.toObject());
   }
 
-  // Get actual balance from HostFi API
-  let hostfiBalance = 0;
-  try {
-    const walletAssets = await hostfiService.getUserWallets();
-    // Sum up all USDC/USD balances from HostFi
-    hostfiBalance = walletAssets.reduce((sum, asset) => {
-      const currency = (asset.currency?.code || asset.currency || '').toUpperCase();
-      if (['USD', 'USDC', 'USDT', 'DAI'].includes(currency)) {
-        return sum + (parseFloat(asset.balance) || 0);
-      }
-      return sum;
-    }, 0);
-    console.log(`[Wallet] HostFi balance: ${hostfiBalance}`);
-  } catch (err) {
-    console.error('[Wallet] Failed to fetch HostFi balance:', err.message);
-    // Fallback to stored balance if HostFi fails
-    hostfiBalance = user.wallet.balance || 0;
-  }
+  // Calculate balance from user's transaction history (NOT from HostFi API which returns same data for all users)
+  // This ensures each user sees their OWN correct balance
+  const userTransactions = await Transaction.find({
+    user: req.user._id,
+    status: 'completed'
+  });
+  
+  // Calculate actual balance from transactions
+  let calculatedBalance = 0;
+  userTransactions.forEach(tx => {
+    const amount = parseFloat(tx.amount) || 0;
+    if (['deposit', 'earning', 'refund', 'onramp'].includes(tx.type)) {
+      calculatedBalance += amount;
+    } else if (['payment', 'withdrawal', 'offramp'].includes(tx.type)) {
+      calculatedBalance -= amount;
+    }
+  });
+  
+  // Ensure non-negative balance
+  calculatedBalance = Math.max(0, parseFloat(calculatedBalance.toFixed(2)));
+  console.log(`[Wallet] User ${req.user._id} calculated balance from transactions: ${calculatedBalance}`);
 
   // Calculate pending balance from active bookings (for clients - money they've paid that's held)
   const clientPendingBookings = await Booking.find({
@@ -73,16 +76,11 @@ exports.getWallet = catchAsync(async (req, res, next) => {
     sum + (parseFloat(booking.creatorAmount) || 0), 0
   );
 
-  // Available balance = HostFi balance - pending bookings (for clients)
-  const calculatedAvailableBalance = Math.max(0, parseFloat((hostfiBalance - calculatedPendingBalance).toFixed(2)));
+  // Available balance = calculated balance - pending bookings (for clients)
+  const calculatedAvailableBalance = Math.max(0, parseFloat((calculatedBalance - calculatedPendingBalance).toFixed(2)));
   
-  console.log(`[Wallet] HostFi: ${hostfiBalance}, Pending Bookings: ${calculatedPendingBalance}, Available: ${calculatedAvailableBalance}`);
+  console.log(`[Wallet] User ${req.user._id} - Balance: ${calculatedBalance}, Pending: ${calculatedPendingBalance}, Available: ${calculatedAvailableBalance}`);
   
-  // Get total HostFi balance for reference (not used for display)
-  const totalHostFiBalance = user.wallet.hostfiWalletAssets.reduce((sum, asset) => 
-    sum + (asset.balance || 0), 0
-  );
-
   // Sync stored balance if it differs from calculated
   if (Math.abs(user.wallet.balance - calculatedAvailableBalance) > 0.01) {
     console.log(`[Wallet] Correcting balance for user ${req.user._id}: ${user.wallet.balance} -> ${calculatedAvailableBalance}`);
@@ -92,15 +90,11 @@ exports.getWallet = catchAsync(async (req, res, next) => {
     await user.save({ validateBeforeSave: false });
   }
 
-  // Build assets list (using stored values, not re-syncing from HostFi)
-  const assetsWithUsd = user.wallet.hostfiWalletAssets.map(asset => ({
+  // Build assets list with user's actual balance (NOT from HostFi which returns same data for all users)
+  const assetsWithUsd = user.wallet.hostfiWalletAssets?.map(asset => ({
     ...(asset.toObject ? asset.toObject() : asset),
-    usdEquivalent: asset.balance || 0
-  }));
-
-  // Get USDC asset for withdrawal reference
-  const usdcAsset = assetsWithUsd.find(a => a.currency === 'USDC');
-  const usdcBalance = usdcAsset ? usdcAsset.balance : 0;
+    usdEquivalent: calculatedAvailableBalance // Use calculated balance instead of HostFi
+  })) || [];
 
   successResponse(res, 200, 'Wallet retrieved successfully', {
     wallet: {
@@ -110,7 +104,7 @@ exports.getWallet = catchAsync(async (req, res, next) => {
       pendingBalance: calculatedPendingBalance, // For clients: money held in escrow
       escrowBalance: calculatedPendingBalance, // Amount held in escrow (client view)
       incomingEarnings: incomingEarnings, // For creators: money they'll receive
-      hostFiBalance: hostfiBalance, // Raw HostFi balance
+      hostFiBalance: calculatedBalance, // Use calculated instead of raw HostFi
       totalEarnings: user.wallet.totalEarnings || 0,
       currency: user.wallet.currency || 'USDC',
       network: user.wallet.network || 'Solana',
