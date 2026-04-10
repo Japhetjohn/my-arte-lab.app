@@ -33,31 +33,34 @@ exports.getWallet = catchAsync(async (req, res, next) => {
 
   // Calculate balance from user's transaction history (NOT from HostFi API which returns same data for all users)
   // This ensures each user sees their OWN correct balance
-  // Only count USDC transactions since that's our primary currency
+  // Get ALL completed transactions for this user (any currency, filter by type)
   const userTransactions = await Transaction.find({
     user: req.user._id,
-    status: 'completed',
-    currency: { $in: ['USDC', 'USD'] } // Only USD/USDC transactions
+    status: 'completed'
   });
   
-  // Calculate actual balance from transactions (using netAmount which accounts for fees)
+  console.log(`[Wallet] User ${req.user._id} has ${userTransactions.length} completed transactions`);
+  
+  // Calculate actual balance from transactions
   let calculatedBalance = 0;
   userTransactions.forEach(tx => {
-    // Use netAmount if available, otherwise calculate: amount - platformFee - gasFee
-    const netAmount = tx.netAmount || (tx.amount - (tx.platformFee || 0) - (tx.gasFee || 0));
-    const amount = parseFloat(netAmount) || 0;
+    const amount = parseFloat(tx.amount) || 0;
+    console.log(`[Wallet] TX: ${tx.type} | ${tx.amount} ${tx.currency} | Status: ${tx.status}`);
     
-    if (['deposit', 'earning', 'refund', 'onramp'].includes(tx.type)) {
+    // Credits (money coming in)
+    if (['deposit', 'earning', 'refund', 'onramp', 'bonus'].includes(tx.type)) {
       calculatedBalance += amount;
-    } else if (['payment', 'withdrawal', 'offramp'].includes(tx.type)) {
+    }
+    // Debits (money going out)
+    else if (['payment', 'withdrawal', 'offramp'].includes(tx.type)) {
       calculatedBalance -= amount;
     }
-    // platform_fee transactions are not counted (they're internal)
+    // platform_fee is internal, don't count in user balance
   });
   
   // Ensure non-negative balance
   calculatedBalance = Math.max(0, parseFloat(calculatedBalance.toFixed(2)));
-  console.log(`[Wallet] User ${req.user._id} calculated USDC balance from ${userTransactions.length} transactions: ${calculatedBalance}`);
+  console.log(`[Wallet] User ${req.user._id} calculated balance: ${calculatedBalance}`);
 
   // Calculate pending balance from active bookings (for clients - money they've paid that's held)
   const clientPendingBookings = await Booking.find({
