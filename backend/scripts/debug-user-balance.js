@@ -8,6 +8,7 @@ const mongoose = require('mongoose');
 const User = require('../src/models/User');
 const Transaction = require('../src/models/Transaction');
 const Booking = require('../src/models/Booking');
+const hostfiService = require('../src/services/hostfiService');
 
 // Get email from command line
 const email = process.argv[2];
@@ -46,8 +47,34 @@ async function debugUser() {
       });
     }
     console.log('');
+    
+    // Fetch REAL balance from HostFi API
+    console.log('HOSTFI API BALANCE:');
+    console.log('----------------------------------------');
+    let hostfiUsdcBalance = null;
+    const usdcAsset = user.wallet.hostfiWalletAssets?.find(a => a.currency === 'USDC');
+    
+    if (usdcAsset?.assetId) {
+      try {
+        const assetDetails = await hostfiService.getWalletAsset(usdcAsset.assetId);
+        if (assetDetails && assetDetails.balance !== undefined) {
+          hostfiUsdcBalance = parseFloat(assetDetails.balance) || 0;
+          console.log(`  HostFi USDC Balance: ${hostfiUsdcBalance}`);
+          console.log(`  Asset ID: ${usdcAsset.assetId}`);
+          console.log(`  Reserved: ${assetDetails.reservedBalance || 0}`);
+          console.log(`  Available: ${assetDetails.availableBalance || hostfiUsdcBalance}`);
+        } else {
+          console.log('  ⚠️ HostFi returned no balance data');
+        }
+      } catch (err) {
+        console.log(`  ⚠️ Error fetching from HostFi: ${err.message}`);
+      }
+    } else {
+      console.log('  ⚠️ No USDC assetId found for user');
+    }
+    console.log('');
 
-    // Get all USDC transactions for this user (for USDC balance calculation)
+    // Get all USDC transactions for this user (for reference only)
     const transactions = await Transaction.find({
       user: user._id,
       currency: 'USDC',  // Only USDC transactions count toward USDC balance
