@@ -54,8 +54,14 @@ async function reverseAndRetry() {
     console.log('✅ Booking reset\n');
 
     // Step 3: Get wallet info
-    const client = await User.findById(booking.client._id);
+    // IMPORTANT: Use oonawa66@gmail.com who has the actual USDC balance in HostFi
+    const client = await User.findOne({ email: 'oonawa66@gmail.com' });
     const creator = await User.findById(booking.creator._id);
+    
+    if (!client) {
+      console.error('❌ Client oonawa66@gmail.com not found');
+      process.exit(1);
+    }
     
     const clientUsdcAsset = client.wallet?.hostfiWalletAssets?.find(a => a.currency === 'USDC');
     let creatorWalletAddress = creator.wallet?.address;
@@ -90,6 +96,7 @@ async function reverseAndRetry() {
     }
 
     console.log('WALLET INFO:');
+    console.log(`Client: ${client.email} (${client._id})`);
     console.log(`Client Asset: ${clientUsdcAsset?.assetId}`);
     console.log(`Creator Wallet: ${creatorWalletAddress}\n`);
 
@@ -158,7 +165,7 @@ async function reverseAndRetry() {
 
     try {
       const feeResult = await platformFeeAccumulator.addFee(
-        booking.client._id.toString(),
+        client._id.toString(),  // Use oonawa66@gmail.com's user ID
         booking._id.toString(),
         booking.platformFee,
         'USDC',
