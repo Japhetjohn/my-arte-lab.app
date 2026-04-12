@@ -54,17 +54,26 @@ async function reverseAndRetry() {
     console.log('✅ Booking reset\n');
 
     // Step 3: Get wallet info
-    // IMPORTANT: Use oonawa66@gmail.com who has the actual USDC balance in HostFi
-    const client = await User.findOne({ email: 'oonawa66@gmail.com' });
+    // IMPORTANT: Use japhetjohnk@gmail.com who has the actual USDC balance in HostFi (3.53 USDC)
+    const client = await User.findOne({ email: 'japhetjohnk@gmail.com' });
     const creator = await User.findById(booking.creator._id);
     
     if (!client) {
-      console.error('❌ Client oonawa66@gmail.com not found');
+      console.error('❌ Client japhetjohnk@gmail.com not found');
       process.exit(1);
     }
     
     const clientUsdcAsset = client.wallet?.hostfiWalletAssets?.find(a => a.currency === 'USDC');
-    let creatorWalletAddress = creator.wallet?.address;
+    
+    // Check ALL possible wallet fields for creator
+    let creatorWalletAddress = creator.wallet?.address || 
+                               creator.wallet?.tsaraAddress || 
+                               creator.tsaraAddress;
+    
+    console.log(`Checking creator wallet fields:`);
+    console.log(`  wallet.address: ${creator.wallet?.address || 'N/A'}`);
+    console.log(`  wallet.tsaraAddress: ${creator.wallet?.tsaraAddress || 'N/A'}`);
+    console.log(`  tsaraAddress: ${creator.tsaraAddress || 'N/A'}`);
 
     // Create wallet for creator if they don't have one
     if (!creatorWalletAddress) {
@@ -93,6 +102,8 @@ async function reverseAndRetry() {
         console.error('❌ Failed to create wallet:', walletError.message);
         process.exit(1);
       }
+    } else {
+      console.log(`✅ Using existing creator wallet: ${creatorWalletAddress}\n`);
     }
 
     console.log('WALLET INFO:');
@@ -185,7 +196,7 @@ async function reverseAndRetry() {
 
     try {
       const feeResult = await platformFeeAccumulator.addFee(
-        client._id.toString(),  // Use oonawa66@gmail.com's user ID
+        client._id.toString(),  // Use japhetjohnk@gmail.com's user ID
         booking._id.toString(),
         booking.platformFee,
         'USDC',
