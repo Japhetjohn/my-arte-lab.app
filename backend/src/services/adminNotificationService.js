@@ -661,6 +661,142 @@ class AdminNotificationService {
     }
   }
 
+  async notifyAccumulatedFees(user, amount, totalAccumulated) {
+    try {
+      const canWithdraw = totalAccumulated >= 1;
+      
+      const content = `
+        <div class="section">
+            <div class="section-title">💰 Platform Fee Accumulated</div>
+            <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td class="data-label" style="padding: 10px 0;">Client</td>
+                    <td class="data-value" style="padding: 10px 0; text-align: right;">${user.name}<br><span style="font-size: 12px; color: ${COLORS.textMuted};">${user.email}</span></td>
+                </tr>
+                <tr>
+                    <td class="data-label" style="padding: 10px 0;">Fee Amount</td>
+                    <td class="data-value" style="padding: 10px 0; text-align: right; color: ${COLORS.success}; font-weight: 600;">${amount.toFixed(2)} USDC</td>
+                </tr>
+                <tr>
+                    <td class="data-label" style="padding: 10px 0;">Total Accumulated</td>
+                    <td class="data-value amount" style="padding: 10px 0; text-align: right;">${totalAccumulated.toFixed(2)} USDC</td>
+                </tr>
+                <tr>
+                    <td class="data-label" style="padding: 10px 0;">Status</td>
+                    <td class="data-value" style="padding: 10px 0; text-align: right;">
+                        <span class="badge ${canWithdraw ? 'badge-success' : 'badge-warning'}">
+                            ${canWithdraw ? '✅ Ready to Withdraw' : `⏳ Need ${(1 - totalAccumulated).toFixed(2)} more USDC`}
+                        </span>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        ${canWithdraw ? `
+        <div class="highlight-box" style="border-left-color: ${COLORS.success}; background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.1) 100%);">
+            <div style="font-weight: 600; color: ${COLORS.success}; margin-bottom: 8px;">✅ Withdrawal Threshold Reached!</div>
+            <p style="margin: 0; font-size: 14px; color: ${COLORS.textLight};">
+                The accumulated platform fees have reached the HostFi minimum withdrawal threshold (1 USDC).
+                You can now withdraw these fees to the platform wallet.
+            </p>
+            <p style="margin: 12px 0 0 0; font-size: 13px; color: ${COLORS.textMuted};">
+                Run the withdrawal script on the server or use the admin API.
+            </p>
+        </div>
+        ` : `
+        <div class="highlight-box" style="border-left-color: ${COLORS.warning}; background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(217, 119, 6, 0.1) 100%);">
+            <div style="font-weight: 600; color: ${COLORS.warning}; margin-bottom: 8px;">⏳ Accumulating Fees</div>
+            <p style="margin: 0; font-size: 14px; color: ${COLORS.textLight};">
+                Platform fees are being accumulated until they reach the HostFi minimum (1 USDC).
+                Current: <strong>${totalAccumulated.toFixed(2)} USDC</strong> / 1 USDC minimum
+            </p>
+        </div>
+        `}
+      `;
+
+      const html = adminTemplate('Platform Fee Accumulated', content);
+
+      for (const adminEmail of ADMIN_EMAILS) {
+        await emailConfig.sendEmail({
+          to: adminEmail,
+          subject: `💰 Fee Accumulated: ${amount.toFixed(2)} USDC (Total: ${totalAccumulated.toFixed(2)} USDC)`,
+          html
+        });
+      }
+
+      console.log(`[AdminNotification] Accumulated fee notification sent: ${amount} USDC`);
+    } catch (error) {
+      console.error('Failed to send accumulated fee notification:', error.message);
+    }
+  }
+
+  async notifyFeeWithdrawn(user, amount, reference) {
+    try {
+      const content = `
+        <div class="highlight-box" style="border-left-color: ${COLORS.success}; background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.1) 100%);">
+            <div style="font-size: 24px; margin-bottom: 12px;">💸 PLATFORM FEES WITHDRAWN</div>
+            <p style="margin: 0; color: ${COLORS.textMuted};">Accumulated platform fees have been withdrawn to the platform wallet.</p>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Withdrawal Details</div>
+            <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td class="data-label" style="padding: 10px 0;">Client</td>
+                    <td class="data-value" style="padding: 10px 0; text-align: right;">${user.name}<br><span style="font-size: 12px; color: ${COLORS.textMuted};">${user.email}</span></td>
+                </tr>
+                <tr>
+                    <td class="data-label" style="padding: 10px 0;">Amount Withdrawn</td>
+                    <td class="data-value amount" style="padding: 10px 0; text-align: right; color: ${COLORS.success};">${amount.toFixed(2)} USDC</td>
+                </tr>
+                <tr>
+                    <td class="data-label" style="padding: 10px 0;">Transaction Reference</td>
+                    <td class="data-value" style="padding: 10px 0; text-align: right;">
+                        <div class="wallet-address">${reference}</div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="data-label" style="padding: 10px 0;">Destination Wallet</td>
+                    <td class="data-value" style="padding: 10px 0; text-align: right;">
+                        <div class="wallet-address">Bqc5Cf9UAr1rM27HgDDYERSHJAcgfzVH2MnBn7sSdkTg</div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="data-label" style="padding: 10px 0;">Withdrawn At</td>
+                    <td class="data-value" style="padding: 10px 0; text-align: right;">${new Date().toLocaleString()}</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="highlight-box">
+            <div style="font-weight: 600; color: ${COLORS.primaryDark}; margin-bottom: 8px;">📊 Platform Wallet</div>
+            <p style="margin: 0; font-size: 14px; color: ${COLORS.textLight};">
+                Fees have been transferred to the platform wallet. Track on Solana explorer:
+            </p>
+            <p style="margin: 8px 0 0 0; font-size: 12px;">
+                <a href="https://solscan.io/account/Bqc5Cf9UAr1rM27HgDDYERSHJAcgfzVH2MnBn7sSdkTg" style="color: ${COLORS.primary}; text-decoration: none;">
+                    View on Solscan →
+                </a>
+            </p>
+        </div>
+      `;
+
+      const html = adminTemplate('Platform Fees Withdrawn', content);
+
+      for (const adminEmail of ADMIN_EMAILS) {
+        await emailConfig.sendEmail({
+          to: adminEmail,
+          subject: `💸 Fees Withdrawn: ${amount.toFixed(2)} USDC to Platform Wallet`,
+          html
+        });
+      }
+
+      console.log(`[AdminNotification] Fee withdrawal notification sent: ${amount} USDC`);
+    } catch (error) {
+      console.error('Failed to send fee withdrawal notification:', error.message);
+    }
+  }
+
   async notifyNewDispute(booking, client, reason, details) {
     try {
       const content = `

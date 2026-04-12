@@ -52,6 +52,17 @@ class PlatformFeeAccumulator {
 
       console.log(`[PlatformFeeAccumulator] Current accumulated: ${currentAccumulated}, New total: ${newTotal}`);
 
+      // Notify admins about accumulated fee
+      try {
+        const adminNotificationService = require('./adminNotificationService');
+        const user = await User.findById(userId);
+        if (user) {
+          await adminNotificationService.notifyAccumulatedFees(user, amount, newTotal);
+        }
+      } catch (notifyError) {
+        console.error(`[PlatformFeeAccumulator] Failed to send admin notification:`, notifyError.message);
+      }
+
       // Check if we have enough to withdraw
       if (newTotal >= HOSTFI_MINIMUM_WITHDRAWAL) {
         console.log(`[PlatformFeeAccumulator] Threshold reached! Withdrawing ${newTotal} ${currency}`);
@@ -170,6 +181,21 @@ class PlatformFeeAccumulator {
       );
 
       console.log(`[PlatformFeeAccumulator] Updated ${updateResult.modifiedCount} fee transactions`);
+
+      // Notify admins about withdrawal
+      try {
+        const adminNotificationService = require('./adminNotificationService');
+        const user = await User.findById(userId);
+        if (user) {
+          await adminNotificationService.notifyFeeWithdrawn(
+            user, 
+            amount, 
+            withdrawal.reference || withdrawal.id
+          );
+        }
+      } catch (notifyError) {
+        console.error(`[PlatformFeeAccumulator] Failed to send withdrawal notification:`, notifyError.message);
+      }
 
       return {
         success: true,
