@@ -720,6 +720,32 @@ class HostFiService {
   }
 
   /**
+   * Create a new pay sub-address for a user (unique per user)
+   * @param {Object} params - Creation parameters
+   * @param {string} params.currency - Currency code (USDC, etc.)
+   * @param {string} params.network - Blockchain network (SOL, etc.)
+   * @param {string} params.identifier - Unique identifier for this user (customId)
+   * @returns {Promise<Object>} Created sub-address details including assetId
+   */
+  async createPaySubAddress({ currency = 'USDC', network = 'SOL', identifier }) {
+    try {
+      const payload = {
+        currency,
+        network,
+        identifier: identifier.toString()
+      };
+
+      console.log(`[HostFi Service] Creating pay sub-address for identifier ${identifier}:`, payload);
+      const response = await this.makeRequest('POST', '/v1/pay/addresses', payload);
+      console.log(`[HostFi Service] ✓ Created pay sub-address:`, response.id);
+      return response;
+    } catch (error) {
+      console.error(`[HostFi Service] Failed to create pay sub-address for ${identifier}:`, error.message);
+      throw error;
+    }
+  }
+
+  /**
    * Assign or update an assigned address
    * @param {string} subAddressId - ID of sub-address to assign
    * @returns {Promise<Object>} Assignment details

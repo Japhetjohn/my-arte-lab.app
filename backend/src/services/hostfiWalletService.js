@@ -27,8 +27,28 @@ class HostFiWalletService {
 
       console.log(`Initializing HostFi wallets for user ${userId}...`);
 
-      // Sync multi-currency assets (managed via HostFi)
-      console.log(`[Wallet Service] Syncing HostFi assets for user ${userId}...`);
+      // Create a unique USDC pay sub-address for this user
+      // This gives them their own unique assetId and balance tracking
+      console.log(`[Wallet Service] Creating unique USDC pay sub-address for user ${userId}...`);
+      let usdcSubAddress;
+      try {
+        usdcSubAddress = await hostfiService.createPaySubAddress({
+          currency: 'USDC',
+          network: 'SOL',
+          identifier: userId.toString()
+        });
+        
+        // Assign the sub-address
+        await hostfiService.assignPayAddress(usdcSubAddress.id);
+        
+        console.log(`[Wallet Service] ✓ Created unique USDC sub-address: ${usdcSubAddress.id}`);
+      } catch (subAddrError) {
+        console.error(`[Wallet Service] Failed to create sub-address: ${subAddrError.message}`);
+        // Fall back to shared assets if sub-address creation fails
+        console.log(`[Wallet Service] Falling back to shared assets...`);
+      }
+
+      // Get other currency assets (NGN, etc.) from shared pool
       const walletAssets = await hostfiService.getUserWallets();
 
       if (!walletAssets || walletAssets.length === 0) {
@@ -67,16 +87,31 @@ class HostFiWalletService {
         }
       }
 
-      // Store wallet asset IDs in user document
-      // IMPORTANT: Each user needs unique assetIds for per-user balances
-      // But HostFi B2B returns shared assets, so we track balances internally
+      // Store wallet asset IDs - use UNIQUE USDC sub-address if created, otherwise shared
       user.wallet.hostfiWalletAssets = walletAssets.map(asset => {
         const currencyData = asset.currency || {};
+        const currencyCode = currencyData.code || currencyData;
+        
+        // For USDC, use the unique sub-address we just created
+        if (currencyCode === 'USDC' && usdcSubAddress) {
+          return {
+            assetId: usdcSubAddress.assetId || usdcSubAddress.id,
+            subAddressId: usdcSubAddress.id,
+            currency: 'USDC',
+            assetType: 'CRYPTO',
+            address: usdcSubAddress.address,
+            balance: 0, // Start at 0
+            reservedBalance: 0,
+            lastSynced: new Date()
+          };
+        }
+        
+        // For other currencies, use shared assets
         return {
           assetId: asset.id,
-          currency: currencyData.code || currencyData,
+          currency: currencyCode,
           assetType: asset.type,
-          balance: 0, // Start at 0 - will be calculated from transactions
+          balance: 0,
           reservedBalance: 0,
           lastSynced: new Date()
         };
