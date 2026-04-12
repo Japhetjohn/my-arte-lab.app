@@ -47,19 +47,31 @@ async function debugUser() {
     }
     console.log('');
 
-    // Get all transactions for this user
+    // Get all USDC transactions for this user (for USDC balance calculation)
     const transactions = await Transaction.find({
       user: user._id,
+      currency: 'USDC',  // Only USDC transactions count toward USDC balance
+      status: { $in: ['completed', 'success', 'confirmed'] }
+    }).sort({ createdAt: -1 });
+    
+    // Get non-USDC transactions for reference
+    const otherTransactions = await Transaction.find({
+      user: user._id,
+      currency: { $ne: 'USDC' },
       status: { $in: ['completed', 'success', 'confirmed'] }
     }).sort({ createdAt: -1 });
 
-    console.log(`TRANSACTIONS (${transactions.length} total):`);
+    console.log(`USDC TRANSACTIONS (${transactions.length} total):`);
     console.log('----------------------------------------');
 
     let creditTotal = 0;
     let debitTotal = 0;
-    const creditTypes = ['deposit', 'credit', 'earning', 'refund'];
-    const debitTypes = ['withdrawal', 'debit', 'payment', 'fee', 'platform_fee'];
+    const creditTypes = ['deposit', 'earning', 'refund', 'bonus', 'reversal', 'onramp'];
+    const debitTypes = ['withdrawal', 'payment', 'platform_fee', 'offramp'];
+
+    if (transactions.length === 0) {
+      console.log('No USDC transactions found.\n');
+    }
 
     transactions.forEach((tx, i) => {
       const amount = parseFloat(tx.amount) || 0;
@@ -69,11 +81,7 @@ async function debugUser() {
       if (isCredit) creditTotal += amount;
       if (isDebit) debitTotal += amount;
 
-      // Flag unusual amounts
-      const isUnusual = amount > 10000 || amount < 0;
-      const flag = isUnusual ? ' ⚠️ UNUSUAL' : '';
-
-      console.log(`${i + 1}. [${tx.type.toUpperCase()}] ${amount} ${tx.currency} - ${tx.status}${flag}`);
+      console.log(`${i + 1}. [${tx.type.toUpperCase()}] ${amount} ${tx.currency} - ${tx.status}`);
       console.log(`   ID: ${tx.transactionId}`);
       console.log(`   Date: ${tx.createdAt}`);
       if (tx.description) console.log(`   Desc: ${tx.description}`);
@@ -82,10 +90,23 @@ async function debugUser() {
     });
 
     console.log('----------------------------------------');
-    console.log(`CREDITS (${creditTypes.join(', ')}): ${creditTotal}`);
-    console.log(`DEBITS (${debitTypes.join(', ')}): ${debitTotal}`);
-    console.log(`NET BALANCE: ${creditTotal - debitTotal}`);
+    console.log(`USDC CREDITS: ${creditTotal}`);
+    console.log(`USDC DEBITS: ${debitTotal}`);
+    console.log(`USDC NET BALANCE: ${creditTotal - debitTotal}`);
     console.log('');
+    
+    // Show non-USDC transactions
+    if (otherTransactions.length > 0) {
+      console.log(`\nOTHER CURRENCY TRANSACTIONS (${otherTransactions.length} total - NOT counted in USDC balance):`);
+      console.log('----------------------------------------');
+      otherTransactions.forEach((tx, i) => {
+        console.log(`${i + 1}. [${tx.type.toUpperCase()}] ${tx.amount} ${tx.currency} - ${tx.status}`);
+        console.log(`   ID: ${tx.transactionId}`);
+        console.log(`   Date: ${tx.createdAt}`);
+        console.log('');
+      });
+      console.log('');
+    }
 
     // Check for duplicate transactions
     console.log('CHECKING FOR DUPLICATES...');

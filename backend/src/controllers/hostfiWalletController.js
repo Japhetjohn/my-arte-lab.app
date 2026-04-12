@@ -31,31 +31,33 @@ exports.getWallet = catchAsync(async (req, res, next) => {
     Object.assign(user, refreshedUser.toObject());
   }
 
-  // Calculate user balance from transaction history (NOT from HostFi shared wallet)
+  // Calculate user USDC balance from transaction history (NOT from HostFi shared wallet)
   // HostFi returns shared business wallet data, not per-user balances
   let calculatedUserBalance = 0;
   try {
-    console.log(`[Wallet] Calculating balance from transactions for user ${req.user._id}...`);
+    console.log(`[Wallet] Calculating USDC balance from transactions for user ${req.user._id}...`);
     
-    // Get all confirmed transactions for this user
+    // Get all confirmed USDC transactions for this user
+    // CRITICAL: Only count USDC currency transactions, not NGN or other currencies
     const userTransactions = await Transaction.find({
       user: req.user._id,
+      currency: 'USDC',  // Only USDC transactions
       status: { $in: ['completed', 'success', 'confirmed'] }
     });
     
-    // Calculate net balance from transactions
+    // Calculate net balance from USDC transactions only
     // Valid types from Transaction model: deposit, payment, earning, withdrawal, refund, platform_fee, bonus, reversal, onramp, offramp
     calculatedUserBalance = userTransactions.reduce((sum, tx) => {
       const amount = parseFloat(tx.amount) || 0;
       
       // Credits (money coming in)
       if (['deposit', 'earning', 'refund', 'bonus', 'reversal', 'onramp'].includes(tx.type)) {
-        console.log(`[Wallet] CREDIT: +${amount} from ${tx.type} (ID: ${tx.transactionId})`);
+        console.log(`[Wallet] USDC CREDIT: +${amount} from ${tx.type} (ID: ${tx.transactionId})`);
         return sum + amount;
       } 
       // Debits (money going out)
       else if (['withdrawal', 'payment', 'platform_fee', 'offramp'].includes(tx.type)) {
-        console.log(`[Wallet] DEBIT: -${amount} from ${tx.type} (ID: ${tx.transactionId})`);
+        console.log(`[Wallet] USDC DEBIT: -${amount} from ${tx.type} (ID: ${tx.transactionId})`);
         return sum - amount;
       }
       // Unknown types - log for debugging
@@ -65,7 +67,7 @@ exports.getWallet = catchAsync(async (req, res, next) => {
       }
     }, 0);
     
-    console.log(`[Wallet] Calculated balance from ${userTransactions.length} transactions: ${calculatedUserBalance}`);
+    console.log(`[Wallet] Calculated USDC balance from ${userTransactions.length} transactions: ${calculatedUserBalance}`);
     
     // Update stored balance
     const storedUsdcAsset = user.wallet.hostfiWalletAssets?.find(a => a.currency === 'USDC');
