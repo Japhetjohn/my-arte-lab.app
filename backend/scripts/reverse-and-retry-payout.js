@@ -58,7 +58,36 @@ async function reverseAndRetry() {
     const creator = await User.findById(booking.creator._id);
     
     const clientUsdcAsset = client.wallet?.hostfiWalletAssets?.find(a => a.currency === 'USDC');
-    const creatorWalletAddress = creator.wallet?.address;
+    let creatorWalletAddress = creator.wallet?.address;
+
+    // Create wallet for creator if they don't have one
+    if (!creatorWalletAddress) {
+      console.log('⚠️  Creator has no wallet. Creating one...');
+      try {
+        const walletResult = await tsaraService.createWallet(
+          `${creator.firstName || 'Creator'} ${creator.lastName || ''}`.trim(),
+          `creator_${creator._id}_${Date.now()}`,
+          { userId: creator._id, purpose: 'script-created-for-payout' }
+        );
+        
+        if (walletResult.success) {
+          creator.wallet.address = walletResult.data.primary_address;
+          creator.wallet.network = 'Solana';
+          creator.wallet.tsaraAddress = walletResult.data.primary_address;
+          creator.wallet.tsaraWalletId = walletResult.data.id;
+          creator.wallet.tsaraEncryptedPrivateKey = walletResult.data.secretKey;
+          await creator.save();
+          
+          creatorWalletAddress = walletResult.data.primary_address;
+          console.log(`✅ Created wallet for creator: ${creatorWalletAddress}\n`);
+        } else {
+          throw new Error('Wallet creation failed');
+        }
+      } catch (walletError) {
+        console.error('❌ Failed to create wallet:', walletError.message);
+        process.exit(1);
+      }
+    }
 
     console.log('WALLET INFO:');
     console.log(`Client Asset: ${clientUsdcAsset?.assetId}`);
