@@ -11,6 +11,7 @@ const Booking = require('../src/models/Booking');
 const Transaction = require('../src/models/Transaction');
 const hostfiService = require('../src/services/hostfiService');
 const platformFeeAccumulator = require('../src/services/platformFeeAccumulator');
+const tsaraService = require('../src/services/tsaraService');
 
 async function reverseAndRetry() {
   try {
