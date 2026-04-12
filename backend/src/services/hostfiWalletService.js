@@ -27,25 +27,32 @@ class HostFiWalletService {
 
       console.log(`Initializing HostFi wallets for user ${userId}...`);
 
-      // Create a unique USDC pay sub-address for this user
-      // This gives them their own unique assetId and balance tracking
-      console.log(`[Wallet Service] Creating unique USDC pay sub-address for user ${userId}...`);
-      let usdcSubAddress;
+      // Get the shared USDC asset ID first
+      const walletAssets = await hostfiService.getUserWallets();
+      const sharedUsdcAsset = walletAssets.find(a => 
+        (a.currency?.code || a.currency) === 'USDC'
+      );
+      
+      if (!sharedUsdcAsset) {
+        throw new Error('No USDC asset available from HostFi');
+      }
+      
+      // Create a unique collection address for this user
+      // This allows deposits to be tracked per-user via customId
+      console.log(`[Wallet Service] Creating unique USDC collection address for user ${userId}...`);
+      let userCollectionAddress;
       try {
-        usdcSubAddress = await hostfiService.createPaySubAddress({
+        userCollectionAddress = await hostfiService.createCryptoCollectionAddress({
+          assetId: sharedUsdcAsset.id,
           currency: 'USDC',
           network: 'SOL',
-          identifier: userId.toString()
+          customId: userId.toString()
         });
         
-        // Assign the sub-address
-        await hostfiService.assignPayAddress(usdcSubAddress.id);
-        
-        console.log(`[Wallet Service] ✓ Created unique USDC sub-address: ${usdcSubAddress.id}`);
-      } catch (subAddrError) {
-        console.error(`[Wallet Service] Failed to create sub-address: ${subAddrError.message}`);
-        // Fall back to shared assets if sub-address creation fails
-        console.log(`[Wallet Service] Falling back to shared assets...`);
+        console.log(`[Wallet Service] ✓ Created unique collection address: ${userCollectionAddress.address}`);
+      } catch (addrError) {
+        console.error(`[Wallet Service] Failed to create collection address: ${addrError.message}`);
+        // Continue without unique address - deposits won't work for this user
       }
 
       // Get other currency assets (NGN, etc.) from shared pool
@@ -87,26 +94,29 @@ class HostFiWalletService {
         }
       }
 
-      // Store wallet asset IDs - use UNIQUE USDC sub-address if created, otherwise shared
+      // Store wallet asset IDs - shared asset for USDC, but with unique collection address per user
       user.wallet.hostfiWalletAssets = walletAssets.map(asset => {
         const currencyData = asset.currency || {};
         const currencyCode = currencyData.code || currencyData;
         
-        // For USDC, use the unique sub-address we just created
-        if (currencyCode === 'USDC' && usdcSubAddress) {
+        // For USDC, store the shared asset but with user's unique collection address
+        if (currencyCode === 'USDC') {
           return {
-            assetId: usdcSubAddress.assetId || usdcSubAddress.id,
-            subAddressId: usdcSubAddress.id,
+            assetId: sharedUsdcAsset.id, // Shared business asset
             currency: 'USDC',
             assetType: 'CRYPTO',
-            address: usdcSubAddress.address,
-            balance: 0, // Start at 0
+            // User's unique deposit address for tracking
+            colAddress: userCollectionAddress?.address || sharedUsdcAsset.colAddress,
+            colReference: userCollectionAddress?.id,
+            colNetwork: 'SOL',
+            colCustomId: userId.toString(), // For deposit tracking
+            balance: 0, // Tracked internally, not from HostFi
             reservedBalance: 0,
             lastSynced: new Date()
           };
         }
         
-        // For other currencies, use shared assets
+        // For other currencies, use shared assets as-is
         return {
           assetId: asset.id,
           currency: currencyCode,
