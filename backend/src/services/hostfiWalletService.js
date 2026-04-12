@@ -55,13 +55,6 @@ class HostFiWalletService {
         // Continue without unique address - deposits won't work for this user
       }
 
-      // Get other currency assets (NGN, etc.) from shared pool
-      const walletAssets = await hostfiService.getUserWallets();
-
-      if (!walletAssets || walletAssets.length === 0) {
-        throw new Error('No wallet assets available from HostFi');
-      }
-
       // Create/Sync Tsara Local Solana Wallet
       if (!user.wallet.tsaraAddress) {
         const tsaraService = require('./tsaraService');
