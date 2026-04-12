@@ -68,14 +68,16 @@ class HostFiWalletService {
       }
 
       // Store wallet asset IDs in user document
+      // IMPORTANT: Each user needs unique assetIds for per-user balances
+      // But HostFi B2B returns shared assets, so we track balances internally
       user.wallet.hostfiWalletAssets = walletAssets.map(asset => {
         const currencyData = asset.currency || {};
         return {
           assetId: asset.id,
-          currency: currencyData.code || currencyData, // Extract code if it's an object
+          currency: currencyData.code || currencyData,
           assetType: asset.type,
-          balance: asset.balance || 0, // In initialization we can trust HostFi balance
-          reservedBalance: asset.reservedBalance || 0,
+          balance: 0, // Start at 0 - will be calculated from transactions
+          reservedBalance: 0,
           lastSynced: new Date()
         };
       });
