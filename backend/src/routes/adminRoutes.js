@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { successResponse, errorResponse } = require('../utils/apiResponse');
 const metricsService = require('../services/metricsService');
+const adminPlatformFeeController = require('../controllers/adminPlatformFeeController');
+const { protect } = require('../middleware/auth');
 
 // Admin cleanup endpoint - protected by admin secret
 router.post('/cleanup-unknown-creators', async (req, res) => {
@@ -287,6 +289,106 @@ router.post('/unverify-creator', async (req, res) => {
   } catch (error) {
     console.error('Unverify creator error:', error);
     return errorResponse(res, 500, 'Failed to unverify creator', error.message);
+  }
+});
+
+// Get accumulated platform fees for admin
+router.get('/platform-fees', async (req, res) => {
+  try {
+    const Transaction = require('../models/Transaction');
+    const mongoose = require('mongoose');
+    
+    // Aggregate fees by status
+    const stats = await Transaction.aggregate([
+      { $match: { type: 'platform_fee' } },
+      {
+        $group: {
+          _id: '$status',
+          total: { $sum: '$amount' },
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+    
+    // Get total accumulated (pending_accumulation)
+    const accumulatedResult = await Transaction.aggregate([
+      { $match: { type: 'platform_fee', status: 'pending_accumulation' } },
+      { $group: { _id: null, total: { $sum: '$amount' } } }
+    ]);
+    const totalAccumulated = accumulatedResult.length > 0 ? accumulatedResult[0].total : 0;
+    
+    // Get total withdrawn (completed)
+    const withdrawnResult = await Transaction.aggregate([
+      { $match: { type: 'platform_fee', status: 'completed' } },
+      { $group: { _id: null, total: { $sum: '$amount' } } }
+    ]);
+    const totalWithdrawn = withdrawnResult.length > 0 ? withdrawnResult[0].total : 0;
+    
+    // Get recent fees
+    const recentFees = await Transaction.find({ type: 'platform_fee' })
+      .sort({ createdAt: -1 })
+      .limit(20)
+      .populate('user', 'firstName lastName email')
+      .lean();
+    
+    return successResponse(res, 200, 'Platform fees retrieved', {
+      stats: {
+        totalAccumulated: Math.round(totalAccumulated * 100) / 100,
+        totalWithdrawn: Math.round(totalWithdrawn * 100) / 100,
+        breakdown: stats
+      },
+      recentFees,
+      canWithdraw: totalAccumulated >= 1
+    });
+  } catch (error) {
+    console.error('Get platform fees error:', error);
+    return errorResponse(res, 500, 'Failed to get platform fees', error.message);
+  }
+});
+
+// Withdraw accumulated platform fees
+router.post('/platform-fees/withdraw', async (req, res) => {
+  try {
+    const platformFeeAccumulator = require('../services/platformFeeAccumulator');
+    const User = require('../models/User');
+    const mongoose = require('mongoose');
+    
+    const clientUserId = process.env.HOSTFI_CLIENT_USER_ID || '677fc32a5e199a1dbc0eb9e5';
+    
+    // Get client user and their asset ID
+    const client = await User.findById(clientUserId);
+    if (!client || !client.wallet?.hostfiWalletAssets) {
+      return errorResponse(res, 500, 'Client wallet not configured');
+    }
+    
+    const usdcAsset = client.wallet.hostfiWalletAssets.find(a => a.currency === 'USDC');
+    if (!usdcAsset?.assetId) {
+      return errorResponse(res, 500, 'USDC asset not found in client wallet');
+    }
+    
+    // Withdraw fees - correct method signature: (userId, currency, clientAssetId)
+    const result = await platformFeeAccumulator.withdrawAccumulatedFees(
+      clientUserId,
+      'USDC',
+      usdcAsset.assetId
+    );
+    
+    if (result.success) {
+      return successResponse(res, 200, `Successfully withdrawn ${result.amount} USDC to platform wallet`, {
+        amount: result.amount,
+        reference: result.reference,
+        transactionsUpdated: result.transactionsUpdated
+      });
+    } else if (result.skipped) {
+      return successResponse(res, 200, 'Withdrawal skipped: ' + result.reason, {
+        accumulated: result.accumulated
+      });
+    } else {
+      return errorResponse(res, 400, 'Withdrawal failed', result);
+    }
+  } catch (error) {
+    console.error('Withdraw platform fees error:', error);
+    return errorResponse(res, 500, 'Failed to withdraw platform fees', error.message);
   }
 });
 

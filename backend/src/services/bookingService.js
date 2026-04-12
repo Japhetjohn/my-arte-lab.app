@@ -408,11 +408,37 @@ class BookingService {
       }
 
       // Get creator wallet address from populated booking data
-      const creatorWalletAddress = booking.creator?.wallet?.address;
+      let creatorWalletAddress = booking.creator?.wallet?.address;
       console.log(`[BookingService] Creator wallet address: ${creatorWalletAddress}`);
       
+      // If creator doesn't have a wallet, create one
       if (!creatorWalletAddress) {
-        console.error('[BookingService] Creator wallet address not found!');
+        console.log(`[BookingService] Creator ${creator._id} has no wallet, creating one...`);
+        try {
+          const tsaraService = require('./tsaraService');
+          const walletResult = await tsaraService.createWallet(
+            `${creator.firstName || 'Creator'} ${creator.lastName || ''}`.trim(),
+            `creator_${creator._id}_${Date.now()}`,
+            { userId: creator._id, purpose: 'auto-created-for-payout' }
+          );
+          
+          if (walletResult.success) {
+            // Update creator with new wallet
+            creator.wallet.address = walletResult.data.primary_address;
+            creator.wallet.network = 'Solana';
+            creator.wallet.tsaraAddress = walletResult.data.primary_address;
+            creator.wallet.tsaraWalletId = walletResult.data.id;
+            creator.wallet.tsaraEncryptedPrivateKey = walletResult.data.secretKey;
+            await creator.save();
+            
+            creatorWalletAddress = walletResult.data.primary_address;
+            console.log(`[BookingService] ✓ Created wallet for creator: ${creatorWalletAddress}`);
+          } else {
+            throw new Error('Wallet creation failed');
+          }
+        } catch (walletError) {
+          console.error('[BookingService] ✗ Failed to create wallet for creator:', walletError.message);
+        }
       }
       
       // Transfer funds via HostFi (outside DB transaction)
