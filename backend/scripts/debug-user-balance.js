@@ -4,6 +4,9 @@
  * Run: node scripts/debug-user-balance.js japhetjohnk@gmail.com
  */
 
+// Load environment variables
+require('dotenv').config();
+
 const mongoose = require('mongoose');
 const User = require('../src/models/User');
 const Transaction = require('../src/models/Transaction');
@@ -63,11 +66,22 @@ async function debugUser() {
           console.log(`  Asset ID: ${usdcAsset.assetId}`);
           console.log(`  Reserved: ${assetDetails.reservedBalance || 0}`);
           console.log(`  Available: ${assetDetails.availableBalance || hostfiUsdcBalance}`);
+          
+          // Check if HostFi returned same balance as stored (might be shared data)
+          const storedBalance = parseFloat(usdcAsset.balance) || 0;
+          if (Math.abs(hostfiUsdcBalance - storedBalance) < 0.01) {
+            console.log(`  ℹ️  Stored balance matches HostFi (may be cached/shared data)`);
+          } else {
+            console.log(`  ✅ HostFi balance differs from stored (${storedBalance})`);
+          }
         } else {
           console.log('  ⚠️ HostFi returned no balance data');
         }
       } catch (err) {
         console.log(`  ⚠️ Error fetching from HostFi: ${err.message}`);
+        if (err.response?.data) {
+          console.log(`     Details:`, JSON.stringify(err.response.data, null, 2));
+        }
       }
     } else {
       console.log('  ⚠️ No USDC assetId found for user');
