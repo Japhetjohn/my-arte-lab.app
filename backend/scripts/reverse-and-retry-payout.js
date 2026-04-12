@@ -55,7 +55,7 @@ async function reverseAndRetry() {
 
     // Step 3: Get wallet info
     // IMPORTANT: Use oonawa66@gmail.com who has the actual USDC balance in HostFi
-    const client = await User.findOne({ email: 'oonawa66gmail.com' });
+    const client = await User.findOne({ email: 'oonawa66@gmail.com' });
     const creator = await User.findById(booking.creator._id);
     
     if (!client) {

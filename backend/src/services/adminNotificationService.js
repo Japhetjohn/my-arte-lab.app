@@ -699,8 +699,14 @@ class AdminNotificationService {
                 The accumulated platform fees have reached the HostFi minimum withdrawal threshold (1 USDC).
                 You can now withdraw these fees to the platform wallet.
             </p>
-            <p style="margin: 12px 0 0 0; font-size: 13px; color: ${COLORS.textMuted};">
-                Run the withdrawal script on the server or use the admin API.
+            <div style="margin-top: 20px; text-align: center;">
+                <a href="${process.env.ADMIN_API_URL || 'https://app.myartelab.com/api'}/admin/platform-fees/withdraw" 
+                   style="display: inline-block; background: ${COLORS.success}; color: white; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px;">
+                    💸 Withdraw Fees to Platform Wallet
+                </a>
+            </div>
+            <p style="margin: 16px 0 0 0; font-size: 12px; color: ${COLORS.textMuted}; text-align: center;">
+                Or run: <code>node scripts/withdraw-platform-fees.js</code> on the server
             </p>
         </div>
         ` : `
