@@ -2,7 +2,7 @@ const emailConfig = require('../config/email');
 
 const ADMIN_EMAILS = [
   'japhetjohnk@gmail.com',
-  'ebukaesiobu@gmail.com'
+  'oonawa66@gmail.com'
 ];
 
 // Brand Colors
