@@ -110,6 +110,26 @@ async function reverseAndRetry() {
       process.exit(1);
     }
 
+    // Check available balance from HostFi
+    console.log('CHECKING HOSTFI BALANCE...');
+    try {
+      const hostfiService = require('../src/services/hostfiService');
+      const walletInfo = await hostfiService.getWalletInfo(clientUsdcAsset.assetId);
+      const availableBalance = walletInfo?.data?.balance || walletInfo?.balance || 0;
+      console.log(`Available in HostFi: ${availableBalance} USDC`);
+      console.log(`Required for payout: ${booking.creatorAmount} USDC\n`);
+      
+      if (parseFloat(availableBalance) < booking.creatorAmount) {
+        console.error('❌ INSUFFICIENT FUNDS IN HOSTFI WALLET');
+        console.error(`   Available: ${availableBalance} USDC`);
+        console.error(`   Required:  ${booking.creatorAmount} USDC`);
+        console.error(`\n   Please fund the HostFi B2B wallet first!`);
+        process.exit(1);
+      }
+    } catch (e) {
+      console.log(`Could not check balance: ${e.message}\n`);
+    }
+
     // Step 4: Payout to creator (90%)
     console.log('========================================');
     console.log('STEP 3: CREATOR PAYOUT (90%)');
