@@ -39,63 +39,53 @@ async function checkHostFiBalance() {
     const token = await getHostFiToken();
     console.log('✅ Token obtained\n');
 
-    // Get all users with HostFi assets
-    const users = await User.find({ 'wallet.hostfiWalletAssets': { $exists: true, $ne: [] } });
-    console.log(`Found ${users.length} users with HostFi assets\n`);
+    // Get all assets
+    console.log('Fetching all assets from HostFi...');
+    const assetsResponse = await axios.get(
+      `${HOSTFI_API_URL}/v1/assets`,
+      { headers: { 'Authorization': `Bearer ${token}` } }
+    );
+    
+    console.log('\nAssets Response:');
+    console.log(JSON.stringify(assetsResponse.data, null, 2));
 
-    for (const user of users) {
-      console.log(`User: ${user.email} (${user._id})`);
-      
-      if (!user.wallet?.hostfiWalletAssets?.length) {
-        console.log('  No HostFi assets\n');
-        continue;
-      }
-
-      for (const asset of user.wallet.hostfiWalletAssets) {
-        console.log(`  Asset: ${asset.assetId}`);
-        console.log(`  Currency: ${asset.currency}`);
-        console.log(`  Network: ${asset.network}`);
-        
-        try {
-          // Check balance from HostFi API
-          const response = await axios.get(
-            `${HOSTFI_API_URL}/v1/wallets/assets/${asset.assetId}/balance`,
-            { headers: { 'Authorization': `Bearer ${token}` } }
-          );
-          
-          console.log(`  HostFi Balance: ${JSON.stringify(response.data, null, 2)}`);
-        } catch (e) {
-          console.log(`  ❌ Error checking balance: ${e.response?.data?.message || e.message}`);
-          
-          // Try alternative endpoint
-          try {
-            const altResponse = await axios.get(
-              `${HOSTFI_API_URL}/v1/wallets/balances?assetId=${asset.assetId}`,
-              { headers: { 'Authorization': `Bearer ${token}` } }
-            );
-            console.log(`  Alternative Balance: ${JSON.stringify(altResponse.data, null, 2)}`);
-          } catch (e2) {
-            console.log(`  ❌ Alternative also failed: ${e2.response?.data?.message || e2.message}`);
-          }
-        }
-        console.log('');
-      }
-    }
-
-    // Also try to get all wallet balances
-    console.log('\n========================================');
-    console.log('TRYING ALL WALLET ENDPOINTS');
-    console.log('========================================\n');
-
+    // Try to get specific asset details for USDC
+    const usdcAssetId = 'd2b1a2d7-f88c-4280-a6df-a2332f491992';
+    console.log(`\n\nFetching details for USDC asset ${usdcAssetId}...`);
+    
     try {
-      const walletsResponse = await axios.get(
-        `${HOSTFI_API_URL}/v1/wallets`,
+      const assetResponse = await axios.get(
+        `${HOSTFI_API_URL}/v1/assets/${usdcAssetId}`,
         { headers: { 'Authorization': `Bearer ${token}` } }
       );
-      console.log('Wallets:', JSON.stringify(walletsResponse.data, null, 2));
+      console.log('Asset Details:');
+      console.log(JSON.stringify(assetResponse.data, null, 2));
     } catch (e) {
-      console.log(`Wallets endpoint failed: ${e.response?.data?.message || e.message}`);
+      console.log(`Error: ${e.response?.data?.message || e.message}`);
     }
+
+    // Try to get asset address (this might have balance)
+    console.log(`\n\nFetching address for USDC asset...`);
+    try {
+      const addressResponse = await axios.get(
+        `${HOSTFI_API_URL}/v1/assets/${usdcAssetId}/address`,
+        { headers: { 'Authorization': `Bearer ${token}` } }
+      );
+      console.log('Asset Address:');
+      console.log(JSON.stringify(addressResponse.data, null, 2));
+    } catch (e) {
+      console.log(`Error: ${e.response?.data?.message || e.message}`);
+    }
+
+    // The REAL balance is what HostFi says during payout attempt
+    console.log('\n\n========================================');
+    console.log('ACTUAL BALANCE FROM HOSTFI');
+    console.log('========================================');
+    console.log('According to the payout error message:');
+    console.log('  Available: 0.731769 USDC');
+    console.log('  Requested: 1.8 USDC');
+    console.log('  Status: INSUFFICIENT_FUNDS');
+    console.log('\nThe HostFi B2B wallet only has 0.73 USDC available.');
 
     await mongoose.disconnect();
     
