@@ -93,6 +93,16 @@ async function reverseAndRetry() {
     console.log(`Client Asset: ${clientUsdcAsset?.assetId}`);
     console.log(`Creator Wallet: ${creatorWalletAddress}\n`);
 
+    if (!creatorWalletAddress) {
+      console.error('❌ Creator wallet address is still missing after creation attempt');
+      process.exit(1);
+    }
+
+    if (!clientUsdcAsset?.assetId) {
+      console.error('❌ Client USDC asset not found');
+      process.exit(1);
+    }
+
     // Step 4: Payout to creator (90%)
     console.log('========================================');
     console.log('STEP 3: CREATOR PAYOUT (90%)');
