@@ -5,6 +5,7 @@ const Transaction = require('../models/Transaction');
 const Notification = require('../models/Notification');
 const notificationService = require('./notificationService');
 const hostfiService = require('./hostfiService');
+const platformFeeAccumulator = require('./platformFeeAccumulator');
 const { ErrorHandler } = require('../utils/errorHandler');
 const { BOOKING_LIMITS, PLATFORM_CONFIG } = require('../utils/constants');
 const { getPlatformFeeDestination } = require('../utils/platformWallet');
@@ -472,45 +473,38 @@ class BookingService {
           // Don't throw - log for manual reconciliation
         }
         
-        // 2. Transfer platform fee 10% to platform wallet (separate try block)
+        // 2. Accumulate platform fee 10% (batch until 1 USDC minimum)
         try {
           console.log(`[BookingService] ============================================`);
-          console.log(`[BookingService] PLATFORM FEE TRANSFER START`);
+          console.log(`[BookingService] PLATFORM FEE ACCUMULATION START`);
           console.log(`[BookingService] Amount: ${booking.platformFee} ${booking.currency}`);
           console.log(`[BookingService] Client Asset ID: ${clientUsdcAsset.assetId}`);
           console.log(`[BookingService] Booking ID: ${booking.bookingId}`);
           console.log(`[BookingService] ============================================`);
           
-          const platformFeeTransfer = await hostfiService.transferPlatformFee({
-            clientAssetId: clientUsdcAsset.assetId,
-            amount: booking.platformFee,
-            currency: booking.currency,
-            reference: booking.bookingId
-          });
+          const feeResult = await platformFeeAccumulator.addFee(
+            client._id.toString(),
+            booking._id.toString(),
+            booking.platformFee,
+            booking.currency,
+            clientUsdcAsset.assetId
+          );
           
-          console.log(`[BookingService] Platform fee transfer response:`, JSON.stringify(platformFeeTransfer, null, 2));
+          console.log(`[BookingService] Platform fee accumulation result:`, JSON.stringify(feeResult, null, 2));
 
-          if (platformFeeTransfer.reference || platformFeeTransfer.id) {
-            // Update booking with platform fee transaction hash
-            booking.platformFeeTransactionHash = platformFeeTransfer.reference || platformFeeTransfer.id;
+          if (feeResult.withdrawn) {
+            // Fee was immediately withdrawn (reached 1 USDC threshold)
+            booking.platformFeeTransactionHash = feeResult.withdrawalResult.reference;
             await booking.save();
-            
-            // Update transaction record with the blockchain reference
-            await Transaction.updateOne(
-              { booking: booking._id, type: 'platform_fee' },
-              { 
-                transactionHash: platformFeeTransfer.reference || platformFeeTransfer.id,
-                status: 'completed'
-              }
-            );
-            
-            console.log(`[BookingService] ✓ Platform fee transferred: ${platformFeeTransfer.reference || platformFeeTransfer.id}`);
+            console.log(`[BookingService] ✓ Platform fee withdrawn immediately: ${feeResult.withdrawalResult.reference}`);
           } else {
-            console.warn(`[BookingService] ⚠ Platform fee transfer returned no reference/id:`, platformFeeTransfer);
+            // Fee is accumulating
+            console.log(`[BookingService] ✓ Platform fee accumulated: ${feeResult.accumulated} USDC`);
+            console.log(`[BookingService]   Remaining to threshold: ${feeResult.remainingToThreshold} USDC`);
           }
         } catch (platformError) {
-          console.error('[BookingService] ✗ Platform fee transfer failed:', platformError.message);
-          console.error('[BookingService] ✗ Platform fee error details:', platformError.hostfiError || platformError.response?.data || 'No additional details');
+          console.error('[BookingService] ✗ Platform fee accumulation failed:', platformError.message);
+          console.error('[BookingService] ✗ Error details:', platformError.stack);
           // Don't throw - log for manual reconciliation
         }
       }
