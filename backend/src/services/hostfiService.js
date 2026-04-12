@@ -1113,6 +1113,11 @@ class HostFiService {
       const isCrypto = normalizedType === 'CRYPTO' || payoutMethod === 'CRYPTO';
       const accountNumber = isCrypto && recipient.address ? recipient.address : recipient.accountNumber;
       
+      // Validate that we have an accountNumber
+      if (!accountNumber) {
+        throw new Error(`Missing required field: accountNumber. For crypto transfers, recipient.address is required.`);
+      }
+      
       const payload = {
         assetId: effectiveAssetId,
         clientReference,
