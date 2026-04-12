@@ -44,14 +44,25 @@ exports.getWallet = catchAsync(async (req, res, next) => {
     });
     
     // Calculate net balance from transactions
+    // Valid types from Transaction model: deposit, payment, earning, withdrawal, refund, platform_fee, bonus, reversal, onramp, offramp
     calculatedUserBalance = userTransactions.reduce((sum, tx) => {
       const amount = parseFloat(tx.amount) || 0;
-      if (['deposit', 'credit', 'earning', 'refund'].includes(tx.type)) {
+      
+      // Credits (money coming in)
+      if (['deposit', 'earning', 'refund', 'bonus', 'reversal', 'onramp'].includes(tx.type)) {
+        console.log(`[Wallet] CREDIT: +${amount} from ${tx.type} (ID: ${tx.transactionId})`);
         return sum + amount;
-      } else if (['withdrawal', 'debit', 'payment', 'fee', 'platform_fee'].includes(tx.type)) {
+      } 
+      // Debits (money going out)
+      else if (['withdrawal', 'payment', 'platform_fee', 'offramp'].includes(tx.type)) {
+        console.log(`[Wallet] DEBIT: -${amount} from ${tx.type} (ID: ${tx.transactionId})`);
         return sum - amount;
       }
-      return sum;
+      // Unknown types - log for debugging
+      else {
+        console.warn(`[Wallet] UNKNOWN tx type '${tx.type}' for ${amount} (ID: ${tx.transactionId})`);
+        return sum;
+      }
     }, 0);
     
     console.log(`[Wallet] Calculated balance from ${userTransactions.length} transactions: ${calculatedUserBalance}`);
