@@ -35,13 +35,21 @@ async function payoutAvailable() {
 
     const totalBalance = clientUsdcAsset.balance || 0;
     const reserved = clientUsdcAsset.reservedBalance || 0;
-    const available = totalBalance - reserved;
+    const dbAvailable = totalBalance - reserved;
+    
+    // HostFi reported this amount as available during payout error
+    const hostFiAvailable = 0.731769;
+    
+    // Use HostFi's available amount (not database) since DB is out of sync
+    const available = hostFiAvailable;
 
     console.log(`Source: japhetjohnk@gmail.com`);
     console.log(`Asset ID: ${clientUsdcAsset.assetId}`);
-    console.log(`Total Balance: ${totalBalance} USDC`);
-    console.log(`Reserved: ${reserved} USDC`);
-    console.log(`Available: ${available} USDC\n`);
+    console.log(`DB Total Balance: ${totalBalance} USDC`);
+    console.log(`DB Reserved: ${reserved} USDC`);
+    console.log(`DB Available: ${dbAvailable} USDC`);
+    console.log(`HostFi Available: ${hostFiAvailable} USDC`);
+    console.log(`Using HostFi available: ${available} USDC\n`);
 
     // Get the booking's creator as recipient
     const bookingId = process.argv[2] || 'BKG-D2B3BB11';
@@ -78,13 +86,16 @@ async function payoutAvailable() {
 
     console.log(`Creator Wallet: ${creatorWalletAddress}\n`);
 
-    // Calculate payout amount (use available balance, max 0.7 for safety)
+    // Calculate payout amount (use available balance from HostFi, max 0.7 for safety)
     const payoutAmount = Math.min(available, 0.7); // Use 0.7 USDC max for test
     
     if (payoutAmount <= 0) {
       console.error('❌ No available balance to payout');
       process.exit(1);
     }
+    
+    console.log(`\n⚠️  IMPORTANT: The database shows reserved=balance, but HostFi says ${hostFiAvailable} USDC is available.`);
+    console.log(`This means the database is out of sync. Using HostFi's available amount.\n`);
 
     console.log(`Payout Amount: ${payoutAmount} USDC`);
     console.log(`From: japhetjohnk@gmail.com`);
