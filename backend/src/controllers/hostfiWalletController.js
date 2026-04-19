@@ -1075,8 +1075,15 @@ exports.generateQRCode = catchAsync(async (req, res, next) => {
   let targetAddress = address;
   if (!targetAddress) {
     const user = await User.findById(req.user._id);
+    
+    // Check hostfiWalletAssets first (new structure)
     const usdcAsset = user.wallet?.hostfiWalletAssets?.find(a => a.currency === 'USDC');
     targetAddress = usdcAsset?.colAddress || usdcAsset?.address;
+    
+    // Fallback to wallet.address (for addresses created via createCryptoAddress)
+    if (!targetAddress && user.wallet?.address) {
+      targetAddress = user.wallet.address;
+    }
     
     if (!targetAddress) {
       return next(new ErrorHandler('No deposit address found', 404));
