@@ -566,7 +566,7 @@ class HostFiService {
    * @param {string} params.customId - Your internal user/resource ID
    * @returns {Promise<Object>} Crypto collection address
    */
-  async createCryptoCollectionAddress({ assetId, currency, network, customId }) {
+  async createCryptoCollectionAddress({ assetId, currency, network, customId, async: asyncParam }) {
     try {
       // Default to USDC on SOL if not specified
       currency = currency || 'USDC';
@@ -576,7 +576,7 @@ class HostFiService {
         assetId,
         customId: customId.toString(),
         network: network || 'SOL',
-        async: true
+        async: asyncParam !== false // Default to true if not specified
       };
 
       console.log('Creating crypto collection address with payload:', JSON.stringify(payload, null, 2));

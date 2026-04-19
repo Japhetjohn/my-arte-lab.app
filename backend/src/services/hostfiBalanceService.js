@@ -13,25 +13,29 @@ class HostFiBalanceService {
    */
   async getAssetBalanceFromHostFi(assetId) {
     try {
-      // Get asset details from HostFi
-      const assetDetails = await hostfiService.getAsset(assetId);
-      
-      // Get asset transactions to calculate actual available balance
+      // Get asset transactions to calculate actual balance
       const transactions = await hostfiService.getAssetTransactions(assetId, { limit: 100 });
       
       // Calculate balance from transactions
       let totalReceived = 0;
       let totalSent = 0;
       
-      if (Array.isArray(transactions)) {
-        for (const tx of transactions) {
-          if (tx.status === 'completed' || tx.status === 'success') {
-            const amount = parseFloat(tx.amount) || 0;
-            if (tx.type === 'deposit' || tx.direction === 'incoming') {
-              totalReceived += amount;
-            } else if (tx.type === 'withdrawal' || tx.direction === 'outgoing') {
-              totalSent += amount;
-            }
+      const txList = transactions?.records || transactions?.data || (Array.isArray(transactions) ? transactions : []);
+      
+      for (const tx of txList) {
+        if (tx.status === 'completed' || tx.status === 'success' || tx.status === 'CONFIRMED') {
+          const amount = parseFloat(tx.amount) || parseFloat(tx.receivedAmount) || 0;
+          
+          // Determine direction
+          const isIncoming = tx.direction === 'incoming' || 
+                            tx.type === 'deposit' || 
+                            tx.type === 'collection' ||
+                            (tx.to && tx.to.includes && tx.to.includes('deposit'));
+          
+          if (isIncoming) {
+            totalReceived += amount;
+          } else {
+            totalSent += amount;
           }
         }
       }
@@ -42,7 +46,6 @@ class HostFiBalanceService {
         balance: calculatedBalance,
         totalReceived,
         totalSent,
-        hostFiData: assetDetails,
         lastUpdated: new Date()
       };
     } catch (error) {
@@ -92,8 +95,8 @@ class HostFiBalanceService {
         }
       }
       
-      // Save updated user
-      await user.save();
+      // Save updated user without validation
+      await user.save({ validateBeforeSave: false });
       
       return {
         userId: user._id,

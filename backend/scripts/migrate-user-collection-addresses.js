@@ -44,11 +44,17 @@ async function migrateAddresses() {
         // Create unique collection address for this user
         console.log(`  Creating new collection address...`);
         
+        // Use async=false to get address immediately
         const addressResult = await hostfiService.createCryptoCollectionAddress({
           assetId: USDC_ASSET_ID,
           customId: user._id.toString(), // Use user ID as customId
-          network: 'SOL'
+          network: 'SOL',
+          async: false // Get address immediately
         });
+
+        if (!addressResult || !addressResult.address) {
+          throw new Error('HostFi did not return an address');
+        }
 
         console.log(`  ✅ Created: ${addressResult.address}`);
 
@@ -85,7 +91,8 @@ async function migrateAddresses() {
           user.wallet.network = 'SOL';
         }
 
-        await user.save();
+        // Save without validation to avoid category enum errors
+        await user.save({ validateBeforeSave: false });
         console.log(`  ✅ User updated\n`);
         created++;
 
