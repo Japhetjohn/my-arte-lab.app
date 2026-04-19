@@ -42,6 +42,7 @@ export function DepositModal({ isOpen, onClose, onDepositComplete }: DepositModa
 
   // Crypto deposit state
   const [cryptoAddress, setCryptoAddress] = useState<CryptoAddress | null>(null);
+  const [qrCode, setQrCode] = useState<string | null>(null);
 
   // Fiat deposit state
   const [fiatChannel, setFiatChannel] = useState<FiatChannel | null>(null);
@@ -71,6 +72,8 @@ export function DepositModal({ isOpen, onClose, onDepositComplete }: DepositModa
           currency: 'USDC',
           instructions: 'Send only USDC on Solana network to this address. Your wallet will be credited automatically.',
         });
+        // Fetch QR code for the address
+        await fetchQRCode();
       } else {
         // No stored address, create new one
         await fetchCryptoAddress();
@@ -83,10 +86,24 @@ export function DepositModal({ isOpen, onClose, onDepositComplete }: DepositModa
     }
   };
 
+  const fetchQRCode = async () => {
+    try {
+      const response = await api.get('/hostfi/wallet/qr-code');
+      const qrCodeData = response.data?.data?.qrCode;
+      if (qrCodeData) {
+        setQrCode(qrCodeData);
+      }
+    } catch (error) {
+      // QR code is optional, don't block if it fails
+      console.error('Failed to fetch QR code:', error);
+    }
+  };
+
   // Reset state when modal closes
   useEffect(() => {
     if (!isOpen) {
       setCryptoAddress(null);
+      setQrCode(null);
       setFiatChannel(null);
       setFiatAmount('');
       setIsProcessing(false);
@@ -108,6 +125,8 @@ export function DepositModal({ isOpen, onClose, onDepositComplete }: DepositModa
           currency: addressData.currency || 'USDC',
           instructions: addressData.instructions || 'Send only USDC on Solana network to this address.',
         });
+        // Fetch QR code after getting address
+        await fetchQRCode();
       } else {
         toast.error('Invalid response from server');
       }
@@ -253,12 +272,20 @@ export function DepositModal({ isOpen, onClose, onDepositComplete }: DepositModa
 
                   <div className="flex justify-center">
                     <div className="p-4 bg-white border rounded-lg">
-                      <div className="w-40 h-40 bg-gray-100 flex items-center justify-center">
-                        <div className="text-center">
-                          <Bitcoin className="w-16 h-16 text-[#8A2BE2] mx-auto" />
-                          <p className="text-xs text-gray-500 mt-2">USDC on Solana</p>
+                      {qrCode ? (
+                        <img 
+                          src={qrCode} 
+                          alt="Deposit QR Code" 
+                          className="w-40 h-40 object-contain"
+                        />
+                      ) : (
+                        <div className="w-40 h-40 bg-gray-100 flex items-center justify-center">
+                          <div className="text-center">
+                            <Bitcoin className="w-16 h-16 text-[#8A2BE2] mx-auto" />
+                            <p className="text-xs text-gray-500 mt-2">USDC on Solana</p>
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                   </div>
 
