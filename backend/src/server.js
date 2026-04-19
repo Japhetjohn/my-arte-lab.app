@@ -370,6 +370,19 @@ emailConfig.verifyConnection().catch(err => {
 
 const PORT = process.env.PORT || 5000;
 
+// Add request timeout middleware
+app.use((req, res, next) => {
+  // Set timeout for all requests (30 seconds)
+  req.setTimeout(30000, () => {
+    console.error(`Request timeout: ${req.method} ${req.originalUrl}`);
+    res.status(503).json({
+      success: false,
+      error: 'Request timeout - please try again'
+    });
+  });
+  next();
+});
+
 const server = app.listen(PORT, () => {
   console.log('\n╔════════════════════════════════════════════════════════╗');
   console.log(`║  MyArteLab Backend Server`);
@@ -386,12 +399,33 @@ const server = app.listen(PORT, () => {
 
 process.on('unhandledRejection', (err) => {
   console.error('Unhandled Promise Rejection:', err);
-  server.close(() => process.exit(1));
+  // Log error but don't crash - let the process continue
+  // In production, use a logging service like Sentry
+  if (process.env.NODE_ENV === 'production') {
+    // Notify admin/monitoring service
+    console.error(`[CRITICAL] Unhandled rejection at ${new Date().toISOString()}`);
+  }
+  // Graceful shutdown only in extreme cases
+  // server.close(() => process.exit(1));
 });
 
 process.on('uncaughtException', (err) => {
   console.error('Uncaught Exception:', err);
-  process.exit(1);
+  // For uncaught exceptions, we should exit but gracefully
+  // Give existing requests 5 seconds to complete
+  console.error(`[CRITICAL] Uncaught exception at ${new Date().toISOString()}`);
+  
+  // Attempt graceful shutdown
+  server.close(() => {
+    console.log('Server closed gracefully after uncaught exception');
+    process.exit(1);
+  });
+  
+  // Force exit after 5 seconds if graceful shutdown fails
+  setTimeout(() => {
+    console.error('Forced exit after timeout');
+    process.exit(1);
+  }, 5000);
 });
 
 process.on('SIGTERM', () => {

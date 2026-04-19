@@ -17,21 +17,25 @@ const PLATFORM_CONFIG = {
 
 const RATE_LIMITS = {
   AUTH: {
+    // Increased for high-traffic scenarios (500 concurrent registrations)
+    // 20 attempts per 15 minutes allows for legitimate spikes while preventing brute force
     WINDOW_MS: 15 * 60 * 1000,
-    MAX_REQUESTS: 5,
+    MAX_REQUESTS: 20,
     SKIP_SUCCESSFUL: true
   },
   API: {
+    // 2000 requests per 15 minutes for high traffic
     WINDOW_MS: 15 * 60 * 1000,
-    MAX_REQUESTS: 1000 // Increased for development (was 100)
+    MAX_REQUESTS: 2000
   },
   WEBHOOK: {
+    // Webhooks can handle more traffic
     WINDOW_MS: 1 * 60 * 1000,
-    MAX_REQUESTS: 100
+    MAX_REQUESTS: 500
   },
   PASSWORD_RESET: {
     WINDOW_MS: 60 * 60 * 1000,
-    MAX_REQUESTS: 3
+    MAX_REQUESTS: 5 // Slightly increased but still restrictive
   }
 };
 
