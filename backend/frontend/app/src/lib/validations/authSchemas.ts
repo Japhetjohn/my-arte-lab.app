@@ -1,7 +1,8 @@
 import { z } from 'zod';
 
 // Password regex: at least 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 special char
-export const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+// Must match backend regex: [@$!%*?&_\-#]
+export const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&_\-#])[A-Za-z\d@$!%*?&_\-#]{8,}$/;
 
 // Login schema
 export const loginSchema = z.object({
