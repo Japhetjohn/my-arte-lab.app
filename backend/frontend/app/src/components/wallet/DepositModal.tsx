@@ -4,6 +4,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -93,9 +94,15 @@ export function DepositModal({ isOpen, onClose, onDepositComplete }: DepositModa
       if (qrCodeData) {
         setQrCode(qrCodeData);
       }
-    } catch (error) {
-      // QR code is optional, don't block if it fails
-      console.error('Failed to fetch QR code:', error);
+    } catch (error: any) {
+      // 404 means no deposit address yet - this is normal, don't log error
+      if (error.response?.status === 404) {
+        // No deposit address yet - QR code will be fetched after address creation
+        setQrCode(null);
+      } else {
+        // Other errors - log but don't block UI
+        console.warn('QR code fetch failed:', error.response?.data?.message || 'Unknown error');
+      }
     }
   };
 
@@ -125,8 +132,17 @@ export function DepositModal({ isOpen, onClose, onDepositComplete }: DepositModa
           currency: addressData.currency || 'USDC',
           instructions: addressData.instructions || 'Send only USDC on Solana network to this address.',
         });
-        // Fetch QR code after getting address
-        await fetchQRCode();
+        // Fetch QR code after successfully creating address
+        try {
+          const qrResponse = await api.get('/hostfi/wallet/qr-code');
+          const qrCodeData = qrResponse.data?.data?.qrCode;
+          if (qrCodeData) {
+            setQrCode(qrCodeData);
+          }
+        } catch (qrError) {
+          // QR code fetch failed but address was created - not critical
+          console.warn('Could not fetch QR code after address creation');
+        }
       } else {
         toast.error('Invalid response from server');
       }
@@ -221,6 +237,9 @@ export function DepositModal({ isOpen, onClose, onDepositComplete }: DepositModa
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Add Funds</DialogTitle>
+          <DialogDescription>
+            Deposit funds to your wallet using crypto or bank transfer.
+          </DialogDescription>
         </DialogHeader>
 
         {isProcessing ? (
