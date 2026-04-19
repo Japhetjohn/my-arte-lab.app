@@ -7,56 +7,37 @@ const hostfiService = require('./hostfiService');
 
 class HostFiBalanceService {
   /**
-   * Get real balance for a user's asset from HostFi API
-   * @param {string} assetId - HostFi asset ID
-   * @returns {Promise<Object>} Balance info from HostFi
+   * Get balance for a specific collection address from HostFi
+   * @param {string} address - Collection address
+   * @returns {Promise<number>} Balance
    */
-  async getAssetBalanceFromHostFi(assetId) {
+  async getAddressBalance(address) {
     try {
-      // Get asset transactions to calculate actual balance
-      const transactions = await hostfiService.getWalletTransactions(assetId, { limit: 100 });
+      // Get collection transactions for this address
+      const filters = { 
+        address: address,
+        limit: 100 
+      };
       
-      // Calculate balance from transactions
-      let totalReceived = 0;
-      let totalSent = 0;
+      const response = await hostfiService.getCryptoCollectionAddresses(filters);
+      const addresses = response?.records || response?.data || (Array.isArray(response) ? response : []);
       
-      const txList = transactions?.records || transactions?.data || (Array.isArray(transactions) ? transactions : []);
-      
-      for (const tx of txList) {
-        if (tx.status === 'completed' || tx.status === 'success' || tx.status === 'CONFIRMED') {
-          const amount = parseFloat(tx.amount) || parseFloat(tx.receivedAmount) || 0;
-          
-          // Determine direction
-          const isIncoming = tx.direction === 'incoming' || 
-                            tx.type === 'deposit' || 
-                            tx.type === 'collection' ||
-                            (tx.to && tx.to.includes && tx.to.includes('deposit'));
-          
-          if (isIncoming) {
-            totalReceived += amount;
-          } else {
-            totalSent += amount;
-          }
-        }
+      // Find the specific address and get its balance
+      const addressData = addresses.find(a => a.address === address);
+      if (addressData && addressData.balance !== undefined) {
+        return parseFloat(addressData.balance) || 0;
       }
       
-      const calculatedBalance = totalReceived - totalSent;
-      
-      return {
-        balance: calculatedBalance,
-        totalReceived,
-        totalSent,
-        lastUpdated: new Date()
-      };
+      return 0;
     } catch (error) {
-      console.error(`[HostFiBalanceService] Error fetching balance for ${assetId}:`, error.message);
-      throw error;
+      console.error(`[HostFiBalanceService] Error fetching balance for ${address}:`, error.message);
+      return 0; // Return 0 on error, don't throw
     }
   }
 
   /**
    * Get all balances for a user from HostFi
-   * @param {Object} user - User document with hostfiWalletAssets
+   * @param {Object} user - User document
    * @returns {Promise<Object>} Updated balances
    */
   async getUserBalancesFromHostFi(user) {
@@ -64,38 +45,48 @@ class HostFiBalanceService {
       const assets = user.wallet?.hostfiWalletAssets || [];
       const updatedAssets = [];
       
+      console.log(`[HostFiBalanceService] Syncing ${user.email}...`);
+      
       for (const asset of assets) {
-        if (!asset.assetId) continue;
+        // Only sync USDC for now (main currency)
+        if (asset.currency !== 'USDC') continue;
         
         try {
-          const hostFiBalance = await this.getAssetBalanceFromHostFi(asset.assetId);
+          console.log(`[HostFiBalanceService]   Fetching ${asset.currency} balance...`);
           
-          // Update asset with HostFi data
-          asset.balance = hostFiBalance.balance;
+          // Get balance from collection address
+          let balance = 0;
+          if (asset.colAddress) {
+            balance = await this.getAddressBalance(asset.colAddress);
+          }
+          
+          // Update asset
+          asset.balance = balance;
+          asset.reservedBalance = 0; // Reset reserved - we'll calculate this separately
           asset.lastSynced = new Date();
           
           updatedAssets.push({
             currency: asset.currency,
             assetId: asset.assetId,
-            balance: hostFiBalance.balance,
+            balance: balance,
             colAddress: asset.colAddress,
             lastSynced: asset.lastSynced
           });
+          
+          console.log(`[HostFiBalanceService]   ✓ ${asset.currency}: ${balance}`);
         } catch (e) {
-          console.error(`[HostFiBalanceService] Failed to get balance for ${asset.currency}:`, e.message);
-          // Keep existing balance if fetch fails
+          console.error(`[HostFiBalanceService]   ✗ Failed ${asset.currency}:`, e.message);
           updatedAssets.push({
             currency: asset.currency,
             assetId: asset.assetId,
             balance: asset.balance,
             colAddress: asset.colAddress,
-            lastSynced: asset.lastSynced,
             error: true
           });
         }
       }
       
-      // Save updated user without validation
+      // Save updated user
       await user.save({ validateBeforeSave: false });
       
       return {
@@ -105,27 +96,35 @@ class HostFiBalanceService {
         updatedAt: new Date()
       };
     } catch (error) {
-      console.error('[HostFiBalanceService] Error getting user balances:', error.message);
+      console.error('[HostFiBalanceService] Error:', error.message);
       throw error;
     }
   }
 
   /**
    * Sync all user balances from HostFi
-   * @returns {Promise<Array>} Sync results for all users
+   * @returns {Promise<Array>} Sync results
    */
   async syncAllUserBalances() {
     const User = require('../models/User');
     const users = await User.find({ 'wallet.hostfiWalletAssets': { $exists: true, $ne: [] } });
     
+    console.log(`[HostFiBalanceService] Syncing ${users.length} users...`);
+    
     const results = [];
-    for (const user of users) {
+    for (let i = 0; i < users.length; i++) {
+      const user = users[i];
+      console.log(`[HostFiBalanceService] [${i + 1}/${users.length}] ${user.email}`);
+      
       try {
         const result = await this.getUserBalancesFromHostFi(user);
         results.push({ success: true, ...result });
       } catch (e) {
         results.push({ success: false, userId: user._id, email: user.email, error: e.message });
       }
+      
+      // Small delay to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, 200));
     }
     
     return results;
