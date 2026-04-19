@@ -46,7 +46,8 @@ class HostFiWalletService {
           assetId: sharedUsdcAsset.id,
           currency: 'USDC',
           network: 'SOL',
-          customId: userId.toString()
+          customId: userId.toString(),
+          async: false // Get address immediately
         });
         
         console.log(`[Wallet Service] ✓ Created unique collection address: ${userCollectionAddress.address}`);

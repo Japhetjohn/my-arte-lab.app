@@ -14,7 +14,7 @@ class HostFiBalanceService {
   async getAssetBalanceFromHostFi(assetId) {
     try {
       // Get asset transactions to calculate actual balance
-      const transactions = await hostfiService.getAssetTransactions(assetId, { limit: 100 });
+      const transactions = await hostfiService.getWalletTransactions(assetId, { limit: 100 });
       
       // Calculate balance from transactions
       let totalReceived = 0;
