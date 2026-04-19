@@ -1097,3 +1097,65 @@ exports.getCurrencySwapPairs = catchAsync(async (req, res, next) => {
     pairs
   });
 });
+
+// ============================================
+// QR CODE GENERATION
+// ============================================
+
+const QRCode = require('qrcode');
+
+/**
+ * Generate QR code for deposit address
+ * @route GET /api/hostfi/wallet/qr-code
+ */
+exports.generateQRCode = catchAsync(async (req, res, next) => {
+  const { address, amount, currency = 'USDC', network = 'SOL' } = req.query;
+  
+  // If no address provided, get user's collection address
+  let targetAddress = address;
+  if (!targetAddress) {
+    const user = await User.findById(req.user._id);
+    const usdcAsset = user.wallet?.hostfiWalletAssets?.find(a => a.currency === 'USDC');
+    targetAddress = usdcAsset?.colAddress || usdcAsset?.address;
+    
+    if (!targetAddress) {
+      return next(new ErrorHandler('No deposit address found', 404));
+    }
+  }
+  
+  // Create Solana Pay URL format or simple address
+  // solana:<address>?amount=<amount>&spl-token=<token>
+  const usdcMint = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'; // USDC on Solana
+  let qrData;
+  
+  if (amount && parseFloat(amount) > 0) {
+    // Solana Pay URL with amount
+    qrData = `solana:${targetAddress}?amount=${amount}&spl-token=${usdcMint}&label=MyArteLab&message=Deposit ${amount} USDC`;
+  } else {
+    // Simple address QR
+    qrData = targetAddress;
+  }
+  
+  try {
+    // Generate QR code as data URL
+    const qrCodeDataUrl = await QRCode.toDataURL(qrData, {
+      width: 300,
+      margin: 2,
+      color: {
+        dark: '#000000',
+        light: '#FFFFFF'
+      }
+    });
+    
+    successResponse(res, 200, 'QR code generated successfully', {
+      qrCode: qrCodeDataUrl,
+      address: targetAddress,
+      currency,
+      network,
+      amount: amount || null
+    });
+  } catch (qrError) {
+    console.error('[QR Code] Generation failed:', qrError.message);
+    return next(new ErrorHandler('Failed to generate QR code', 500));
+  }
+});

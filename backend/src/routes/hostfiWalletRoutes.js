@@ -174,6 +174,13 @@ router.get('/fees/exchange', protect, hostfiWalletController.getExchangeFees);
  */
 router.get('/currency/swap-pairs', protect, hostfiWalletController.getCurrencySwapPairs);
 
+/**
+ * @route   GET /api/hostfi/wallet/qr-code
+ * @desc    Generate QR code for deposit address
+ * @access  Private
+ */
+router.get('/wallet/qr-code', protect, hostfiWalletController.generateQRCode);
+
 // ============================================
 // WEBHOOK ROUTES (Public - validated by signature)
 // ============================================
