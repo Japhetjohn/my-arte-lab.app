@@ -124,7 +124,7 @@ export const updateProfileSchema = z.object({
 
 export type UpdateProfileFormData = z.infer<typeof updateProfileSchema>;
 
-// Creator categories
+// Creator categories - MUST match backend CREATOR_CATEGORIES in utils/constants.js
 export const CREATOR_CATEGORIES = [
   { id: 'photography', name: 'Photography', icon: 'Camera' },
   { id: 'design', name: 'Design', icon: 'Palette' },
@@ -134,4 +134,5 @@ export const CREATOR_CATEGORIES = [
   { id: 'marketing', name: 'Marketing', icon: 'TrendingUp' },
   { id: 'programming', name: 'Programming & Tech', icon: 'Code' },
   { id: 'business', name: 'Business', icon: 'Briefcase' },
+  { id: 'other', name: 'Other', icon: 'Briefcase' },
 ] as const;

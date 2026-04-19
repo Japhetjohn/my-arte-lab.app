@@ -58,9 +58,22 @@ exports.validateRegister = [
     .isIn(['client', 'creator']).withMessage('Role must be either client or creator'),
 
   body('category')
-    .if(body('role').equals('creator'))
-    .notEmpty().withMessage('Category is required for creators')
-    .isIn(['photography', 'design', 'music', 'video', 'writing', 'marketing', 'programming', 'business', 'other']).withMessage('Invalid category')
+    .optional({ nullable: true })
+    .isIn(['photography', 'design', 'music', 'video', 'writing', 'marketing', 'programming', 'business', 'other']).withMessage('Invalid category selected'),
+
+  body('category')
+    .custom((value, { req }) => {
+      if (req.body.role === 'creator') {
+        if (!value || value.trim() === '') {
+          throw new Error('Category is required for creators');
+        }
+        const validCategories = ['photography', 'design', 'music', 'video', 'writing', 'marketing', 'programming', 'business', 'other'];
+        if (!validCategories.includes(value)) {
+          throw new Error(`Invalid category: ${value}. Please select a valid category.`);
+        }
+      }
+      return true;
+    })
 ];
 
 exports.validateLogin = [
