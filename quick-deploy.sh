@@ -7,15 +7,17 @@ REMOTE_DIR="/var/www/myartelab"
 echo "=== Deploying Booking Service Fix ==="
 echo ""
 
-# Sync only the fixed file
-echo "Syncing bookingService.js..."
+# Sync the fixed files
+echo "Syncing fixed services..."
 rsync -avz backend/src/services/bookingService.js "$SERVER:$REMOTE_DIR/backend/src/services/"
+rsync -avz backend/src/services/projectService.js "$SERVER:$REMOTE_DIR/backend/src/services/"
+rsync -avz backend/scripts/fetch-signup-logs.js "$SERVER:$REMOTE_DIR/backend/scripts/"
 
 if [ $? -ne 0 ]; then
     echo "❌ Sync failed!"
     exit 1
 fi
-echo "✅ File synced"
+echo "✅ Files synced"
 echo ""
 
 # Restart the server
