@@ -19,11 +19,8 @@ async function fetchLogs() {
     });
     console.log('✓ Connected to MongoDB\n');
 
-    console.log('--- Recent Sign-ups (Last 48 Hours) ---');
-    const twoDaysAgo = new Date(Date.now() - 48 * 60 * 60 * 1000);
-    const recentUsers = await User.find({
-      createdAt: { $gt: twoDaysAgo }
-    }).sort({ createdAt: -1 });
+    console.log('--- Most Recent Sign-ups (Last 10 Users) ---');
+    const recentUsers = await User.find({}).sort({ createdAt: -1 }).limit(10);
 
     if (recentUsers.length === 0) {
       console.log('No recent sign-ups found.');
