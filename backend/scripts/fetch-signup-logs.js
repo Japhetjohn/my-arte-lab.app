@@ -44,6 +44,8 @@ async function fetchLogs() {
       path.join(__dirname, '../logs/combined.log'),
       path.join(__dirname, '../logs/out.log'),
       path.join(__dirname, '../logs/error.log'),
+      '/root/.pm2/logs/myartelab-out.log',
+      '/root/.pm2/logs/myartelab-error.log',
       '/home/japhet/.pm2/logs/myartelab-out.log',
       '/home/japhet/.pm2/logs/myartelab-error.log'
     ];
@@ -53,9 +55,17 @@ async function fetchLogs() {
       if (fs.existsSync(logPath)) {
         console.log(`✓ Found log file: ${logPath}`);
         foundLogs = true;
-        console.log(`Last 50 lines of [${path.basename(logPath)}]:`);
-        const content = fs.readFileSync(logPath, 'utf8').split('\n').slice(-50).join('\n');
-        console.log(content);
+        
+        console.log(`Searching for "[Register]" in [${path.basename(logPath)}]...`);
+        const content = fs.readFileSync(logPath, 'utf8').split('\n');
+        const registerLogs = content.filter(line => line.includes('[Register]') || line.includes('[SECURITY]'));
+        
+        if (registerLogs.length === 0) {
+          console.log('  No sign-up related logs found in this file.');
+        } else {
+          console.log(`  Found ${registerLogs.length} matching lines. Last 20:`);
+          console.log(registerLogs.slice(-20).join('\n'));
+        }
         console.log('-'.repeat(40));
       }
     }
