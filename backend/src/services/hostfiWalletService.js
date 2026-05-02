@@ -353,6 +353,44 @@ class HostFiWalletService {
       throw error;
     }
   }
+
+  /**
+   * Retrieves the LIVE balance strictly from the Transaction ledger history, bypassing any static DB cache
+   */
+  async getLiveBalance(userId) {
+    const Transaction = require('../models/Transaction');
+    const Booking = require('../models/Booking');
+    
+    // Sum all successful deposits, earnings and refunds
+    const incomingData = await Transaction.aggregate([
+      { $match: { user: userId, status: 'completed', type: { $in: ['deposit', 'earning', 'refund'] } } },
+      { $group: { _id: null, total: { $sum: "$amount" } } }
+    ]);
+    const incoming = incomingData.length ? incomingData[0].total : 0;
+
+    // Sum all successful payments, withdrawals and fees
+    const outgoingData = await Transaction.aggregate([
+      { $match: { user: userId, status: 'completed', type: { $in: ['withdrawal', 'payment', 'platform_fee', 'gas_fee'] } } },
+      { $group: { _id: null, total: { $sum: "$amount" } } }
+    ]);
+    const outgoing = outgoingData.length ? outgoingData[0].total : 0;
+
+    // Determine pending locked funds for active bookings
+    const clientPendingBookings = await Booking.find({
+      client: userId,
+      status: { $in: ['confirmed', 'in_progress', 'delivered'] },
+      paymentStatus: 'paid'
+    });
+    
+    const calculatedPendingBalance = clientPendingBookings.reduce((sum, booking) => 
+      sum + (parseFloat(booking.amount) || 0), 0
+    );
+
+    const calculatedBalance = incoming - outgoing;
+    const availableBalance = Math.max(0, parseFloat((calculatedBalance - calculatedPendingBalance).toFixed(2)));
+    
+    return availableBalance;
+  }
 }
 
 module.exports = new HostFiWalletService();

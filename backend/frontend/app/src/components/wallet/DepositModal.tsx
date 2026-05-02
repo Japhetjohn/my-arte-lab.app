@@ -73,8 +73,8 @@ export function DepositModal({ isOpen, onClose, onDepositComplete }: DepositModa
           currency: 'USDC',
           instructions: 'Send only USDC on Solana network to this address. Your wallet will be credited automatically.',
         });
-        // Fetch QR code for the address
-        await fetchQRCode();
+        // Fetch QR code for the address directly with parameter to avoid 404 cache
+        await fetchQRCode(walletData.address);
       } else {
         // No stored address, create new one
         await fetchCryptoAddress();
@@ -87,9 +87,10 @@ export function DepositModal({ isOpen, onClose, onDepositComplete }: DepositModa
     }
   };
 
-  const fetchQRCode = async () => {
+  const fetchQRCode = async (addressStr?: string) => {
     try {
-      const response = await api.get('/hostfi/wallet/qr-code');
+      const url = addressStr ? `/hostfi/wallet/qr-code?address=${addressStr}` : '/hostfi/wallet/qr-code';
+      const response = await api.get(url);
       const qrCodeData = response.data?.data?.qrCode;
       if (qrCodeData) {
         setQrCode(qrCodeData);
@@ -134,7 +135,7 @@ export function DepositModal({ isOpen, onClose, onDepositComplete }: DepositModa
         });
         // Fetch QR code after successfully creating address
         try {
-          const qrResponse = await api.get('/hostfi/wallet/qr-code');
+          const qrResponse = await api.get(`/hostfi/wallet/qr-code?address=${addressData.address}`);
           const qrCodeData = qrResponse.data?.data?.qrCode;
           if (qrCodeData) {
             setQrCode(qrCodeData);
