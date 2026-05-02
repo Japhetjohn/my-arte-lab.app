@@ -17,25 +17,25 @@ export function AuthLayout({
   showBackButton = true,
 }: AuthLayoutProps) {
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row">
+    <div className="min-h-[100dvh] flex flex-col lg:flex-row">
       {/* Mobile Hero - Image on top */}
-      <div className="lg:hidden relative bg-gradient-to-br from-[#8A2BE2] to-[#6B21A8] py-8 px-4">
+      <div className="lg:hidden relative flex flex-col justify-center bg-gradient-to-br from-[#8A2BE2] to-[#6B21A8] py-6 px-4 shrink-0">
         <div className="text-center text-white">
           <img
             src={illustration}
             alt="Auth Illustration"
-            className="w-32 h-32 mx-auto mb-4 object-contain"
+            className="w-20 h-20 mx-auto mb-2 object-contain"
           />
-          <h2 className="text-xl font-bold mb-1">Connect with Top African Creatives</h2>
-          <p className="text-white/80 text-sm">Join clients and creators on MyArteLab</p>
+          <h2 className="text-lg font-bold mb-1">Connect with Top African Creatives</h2>
+          <p className="text-white/80 text-xs">Join clients and creators on MyArteLab</p>
         </div>
       </div>
 
       {/* Left Side - Form */}
-      <div className="flex-1 flex flex-col justify-center px-4 sm:px-6 lg:px-8 xl:px-12 py-8 sm:py-12 bg-white w-full min-w-0">
+      <div className="flex-1 flex flex-col justify-center px-4 sm:px-6 lg:px-8 xl:px-12 py-6 sm:py-12 bg-white w-full min-w-0">
         <div className="max-w-md w-full mx-auto">
           {/* Logo */}
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center justify-between mb-6 sm:mb-8">
             <Link to="/" className="flex items-center gap-2">
               <img
                 src="/images/logo.png"
@@ -56,7 +56,7 @@ export function AuthLayout({
           </div>
 
           {/* Header */}
-          <div className="mb-8">
+          <div className="mb-6 sm:mb-8">
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
               {title}
             </h1>

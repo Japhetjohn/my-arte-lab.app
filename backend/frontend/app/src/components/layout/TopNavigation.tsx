@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { Search, Bell, MessageSquare, Menu, User, Settings, LogOut, Wallet, Home, Compass, Calendar, FolderOpen } from 'lucide-react';
+import { Search, Bell, MessageSquare, Menu, User, Settings, LogOut, Wallet, Home, Compass, Calendar, FolderOpen, Users } from 'lucide-react';
 import type { User as UserType } from '@/types';
 
 interface TopNavigationProps {
@@ -22,11 +22,20 @@ interface TopNavigationProps {
   onNavigate?: (path: string) => void;
 }
 
-const navItems = [
+const mainNavItems = [
   { path: '/home', label: 'Home', icon: Home },
   { path: '/explore', label: 'Explore', icon: Compass },
   { path: '/bookings', label: 'Bookings', icon: Calendar },
   { path: '/projects', label: 'Projects', icon: FolderOpen },
+];
+
+const secondaryNavItems = [
+  { path: '/messages', label: 'Messages', icon: MessageSquare },
+  { path: '/notifications', label: 'Notifications', icon: Bell },
+  { path: '/wallet', label: 'Wallet', icon: Wallet },
+  { path: '/creators', label: 'Creators', icon: Users },
+  { path: '/profile', label: 'Profile', icon: User },
+  { path: '/settings', label: 'Settings', icon: Settings },
 ];
 
 export function TopNavigation({ 
@@ -69,34 +78,61 @@ export function TopNavigation({
                 <Menu className="w-5 h-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-72 p-0">
-              <SheetHeader className="p-4 border-b border-gray-200">
+            <SheetContent side="left" className="w-72 p-0 flex flex-col h-full">
+              <SheetHeader className="p-4 border-b border-gray-200 shrink-0">
                 <SheetTitle className="flex items-center gap-2">
                   <img src="/images/logo.png?v=2" alt="MyArteLab" className="w-8 h-8 rounded-full" />
                   <span className="font-bold text-xl">MyArteLab</span>
                 </SheetTitle>
               </SheetHeader>
-              <nav className="p-3 space-y-1">
-                {navItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = window.location.pathname === item.path;
-                  return (
-                    <button
-                      key={item.path}
-                      onClick={() => handleNavClick(item.path)}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-left ${
-                        isActive 
-                          ? 'bg-[#8A2BE2]/10 text-[#8A2BE2]' 
-                          : 'text-gray-700 hover:bg-gray-100'
-                      }`}
-                    >
-                      <Icon className={`w-5 h-5 ${isActive ? 'fill-current' : ''}`} />
-                      {item.label}
-                    </button>
-                  );
-                })}
-              </nav>
-              <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 bg-white">
+              <div className="flex-1 overflow-y-auto w-full">
+                <nav className="p-3 space-y-1">
+                  {mainNavItems.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = window.location.pathname === item.path || window.location.pathname.startsWith(item.path + '/');
+                    return (
+                      <button
+                        key={item.path}
+                        onClick={() => handleNavClick(item.path)}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-left ${
+                          isActive 
+                            ? 'bg-[#8A2BE2]/10 text-[#8A2BE2]' 
+                            : 'text-gray-700 hover:bg-gray-100'
+                        }`}
+                      >
+                        <Icon className={`w-5 h-5 ${isActive ? 'fill-current' : ''}`} />
+                        {item.label}
+                      </button>
+                    );
+                  })}
+                </nav>
+                <div className="mt-2 px-3 pb-6">
+                  <p className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                    Account
+                  </p>
+                  <nav className="space-y-1">
+                    {secondaryNavItems.map((item) => {
+                      const Icon = item.icon;
+                      const isActive = window.location.pathname === item.path || window.location.pathname.startsWith(item.path + '/');
+                      return (
+                        <button
+                          key={item.path}
+                          onClick={() => handleNavClick(item.path)}
+                          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-left ${
+                            isActive 
+                              ? 'bg-[#8A2BE2]/10 text-[#8A2BE2]' 
+                              : 'text-gray-700 hover:bg-gray-100'
+                          }`}
+                        >
+                          <Icon className={`w-5 h-5 ${isActive ? 'fill-current' : ''}`} />
+                          {item.label}
+                        </button>
+                      );
+                    })}
+                  </nav>
+                </div>
+              </div>
+              <div className="p-4 border-t border-gray-200 bg-white shrink-0">
                 <div className="bg-gradient-to-br from-[#8A2BE2]/10 to-[#8A2BE2]/5 rounded-lg p-4">
                   <p className="text-sm font-medium text-gray-900">Become a Creator</p>
                   <p className="text-xs text-gray-500 mt-1">Start earning on MyArteLab</p>
