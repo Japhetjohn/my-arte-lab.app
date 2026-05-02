@@ -8,6 +8,10 @@ const {
   validateProfileUpdate,
   handleValidationErrors
 } = require('../middleware/validation');
+const { authLimiter } = require('../config/rateLimiting');
+
+// Apply auth rate limiter to all routes in this file
+router.use(authLimiter);
 
 router.post('/register', validateRegister, handleValidationErrors, authController.register);
 router.post('/login', validateLogin, handleValidationErrors, authController.login);

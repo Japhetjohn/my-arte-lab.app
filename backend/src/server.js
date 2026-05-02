@@ -145,6 +145,9 @@ app.use(cors({
   credentials: true
 }));
 
+// Apply global API rate limit
+app.use('/api', apiLimiter);
+
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 
