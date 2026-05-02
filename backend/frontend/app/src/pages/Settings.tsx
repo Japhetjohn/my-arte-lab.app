@@ -239,9 +239,9 @@ export function Settings() {
                     <button
                       onClick={() => fileInputRef.current?.click()}
                       disabled={isLoading}
-                      className="absolute bottom-0 right-0 bg-[#8A2BE2] text-white p-1.5 rounded-full hover:bg-[#7B1FD1] disabled:opacity-50"
+                      className="absolute bottom-0 right-0 bg-[#8A2BE2] text-white w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#7B1FD1] disabled:opacity-50 border-2 border-white shadow-sm transition-all"
                     >
-                      {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Camera className="w-3 h-3" />}
+                      {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
                     </button>
                     <input
                       ref={fileInputRef}
