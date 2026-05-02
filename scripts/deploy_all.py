@@ -32,7 +32,7 @@ def run_with_password(command):
 
 def main():
     # Use bash explicitly
-    run_with_password(["bash", "./deploy.sh"])
+    run_with_password(["bash", "./quick-deploy.sh"])
 
 if __name__ == "__main__":
     main()

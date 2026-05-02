@@ -5,6 +5,7 @@ const { successResponse } = require('../utils/apiResponse');
 const { ErrorHandler, catchAsync } = require('../utils/errorHandler');
 const hostfiService = require('../services/hostfiService');
 const hostfiWalletService = require('../services/hostfiWalletService');
+const switchService = require('../services/switchService');
 const { v4: uuidv4 } = require('uuid');
 
 // ============================================
@@ -401,7 +402,7 @@ exports.getCryptoAddresses = catchAsync(async (req, res, next) => {
  * Strategy: Try to create new channel first, fallback to existing channels if creation fails
  */
 exports.createFiatChannel = catchAsync(async (req, res, next) => {
-  const { currency = 'NGN' } = req.body;
+  const { currency = 'NGN', amount } = req.body;
   const FiatChannel = require('../models/FiatChannel');
 
   console.log(`[Controller:createFiatChannel] Getting channel for user=${req.user._id}, currency=${currency}`);
@@ -462,48 +463,118 @@ exports.createFiatChannel = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler(`Wallet for currency ${currency} not found`, 404));
   }
 
-  // Step 3: CREATE NEW CHANNEL IN HOSTFI
+  // Step 3: CREATE NEW CHANNEL IN HOSTFI OR SWITCH
   // Per HostFi support: Dynamic accounts require a UNIQUE reference (customId) per request
   // and cannot reuse IDs to prevent duplicate deposits.
   const fiatCustomId = `${req.user._id.toString()}-FIAT-${Date.now()}`;
+  let savedChannelData = null;
+  let useHostfi = true;
 
   try {
-    console.log('[Controller:createFiatChannel] Creating new channel in HostFi...');
-
     const config = hostfiService.getCurrencyConfig(currency);
     const countryCode = config.country;
     const methodId = config.method;
 
-    const channel = await hostfiService.createFiatCollectionChannel({
-      assetId,
-      currency,
-      customId: fiatCustomId,
-      type: 'DYNAMIC',
-      method: methodId,
-      countryCode
-    });
+    console.log('[Controller:createFiatChannel] Preparing to create channel...');
 
-    console.log('[Controller:createFiatChannel] Channel created successfully in HostFi');
+    const isSwitchSupported = ['NGN', 'KES', 'GHS'].includes(currency);
+    
+    if (isSwitchSupported && amount) {
+      try {
+        console.log(`[Controller:createFiatChannel] Initiating Switch onramp for ${amount} ${currency}`);
+        const userWithWallet = await User.findById(req.user._id);
 
-    console.log('[Controller:createFiatChannel] HostFi response:', JSON.stringify(channel, null, 2));
+        if (userWithWallet.wallet?.address) {
+          const switchResponse = await switchService.initiateOnramp({
+            amount: Number(amount),
+            country: countryCode,
+            currency: currency,
+            asset: 'solana:usdc',
+            beneficiary: {
+              holder_type: "INDIVIDUAL",
+              holder_name: userWithWallet.name || "Customer",
+              wallet_address: userWithWallet.wallet.address
+            },
+            channel: 'BLOCKCHAIN'
+          });
+
+          console.log('[Controller:createFiatChannel] Switch onramp response:', JSON.stringify(switchResponse, null, 2));
+
+          const deposit = switchResponse.data?.deposit;
+          if (deposit && deposit.account_number) {
+            savedChannelData = {
+              id: switchResponse.data.reference,
+              reference: switchResponse.data.reference,
+              customId: fiatCustomId,
+              type: 'DYNAMIC',
+              method: 'BANK_TRANSFER',
+              accountNumber: deposit.account_number,
+              accountName: deposit.account_name,
+              bankName: deposit.bank_name,
+              bankId: deposit.bank_code,
+              countryCode: countryCode,
+              assetId: assetId,
+              active: true,
+              hostfiResponse: switchResponse.data
+            };
+            useHostfi = false;
+          }
+        }
+      } catch (switchError) {
+        console.error('[Controller:createFiatChannel] Switch API failed, falling back to Hostfi:', switchError.message);
+        useHostfi = true;
+      }
+    }
+
+    if (useHostfi) {
+      console.log('[Controller:createFiatChannel] Creating new channel in HostFi...');
+
+      const channel = await hostfiService.createFiatCollectionChannel({
+        assetId,
+        currency,
+        customId: fiatCustomId,
+        type: 'DYNAMIC',
+        method: methodId,
+        countryCode
+      });
+
+      console.log('[Controller:createFiatChannel] Channel created successfully in HostFi');
+      console.log('[Controller:createFiatChannel] HostFi response:', JSON.stringify(channel, null, 2));
+
+      savedChannelData = {
+        id: channel.id,
+        reference: channel.reference,
+        customId: fiatCustomId,
+        type: (channel.type === 'BANK_TRANSFER' ? 'STATIC' : channel.type) || 'STATIC',
+        method: channel.method || 'BANK_TRANSFER',
+        accountNumber: channel.accountNumber,
+        accountName: channel.accountName,
+        bankName: channel.bankName,
+        bankId: channel.bankId,
+        countryCode: channel.country || countryCode,
+        assetId: assetId,
+        active: channel.active !== false,
+        hostfiResponse: channel
+      };
+    }
 
     // Step 4: SAVE TO DATABASE
     savedChannel = await FiatChannel.create({
       userId: req.user._id,
       currency: currency,
-      channelId: channel.id,
-      reference: channel.reference,
-      customId: fiatCustomId,
-      type: (channel.type === 'BANK_TRANSFER' ? 'STATIC' : channel.type) || 'STATIC',
-      method: channel.method || 'BANK_TRANSFER',
-      accountNumber: channel.accountNumber,
-      accountName: channel.accountName,
-      bankName: channel.bankName,
-      bankId: channel.bankId,
-      countryCode: channel.country || countryCode,
-      assetId: assetId,
-      active: channel.active !== false,
-      hostfiResponse: channel
+      channelId: savedChannelData.id,
+      reference: savedChannelData.reference,
+      customId: savedChannelData.customId,
+      type: savedChannelData.type,
+      method: savedChannelData.method,
+      accountNumber: savedChannelData.accountNumber,
+      accountName: savedChannelData.accountName,
+      bankName: savedChannelData.bankName,
+      bankId: savedChannelData.bankId,
+      countryCode: savedChannelData.countryCode,
+      assetId: savedChannelData.assetId,
+      active: savedChannelData.active,
+      hostfiResponse: savedChannelData.hostfiResponse
     });
 
     console.log(`[Controller:createFiatChannel] Channel saved to database: ${savedChannel._id}`);
@@ -740,32 +811,91 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
   await user.save();
 
   try {
-    // Use HostFi for ALL withdrawals (crypto and fiat)
-    // The service will handle swapping USDC to NGN first, then payout
-    // Just pass the methodId directly - BANK_TRANSFER or CRYPTO
-    console.log(`[Withdrawal] Initiating HostFi withdrawal for user ${req.user._id}, method: ${effectiveMethodId}`);
+    const isSwitchSupported = ['NGN', 'KES', 'GHS'].includes(effectiveTargetCurrency);
+    const country = recipient.country || config.country || 'NG';
+    let switchHandled = false;
+    let withdrawalRef = '';
+    let usedAmount = amount;
 
-    const withdrawal = await hostfiService.initiateWithdrawal({
-      walletAssetId: assetId,
-      amount: amount,
-      currency: currency, // Source currency (e.g. USDC)
-      methodId: effectiveMethodId,
-      recipient: {
-        type: recipient.type || (effectiveMethodId === 'BANK_TRANSFER' ? 'BANK' : (effectiveMethodId === 'MOBILE_MONEY' ? 'MOMO' : (effectiveMethodId === 'EFT' ? 'BANK' : 'CRYPTO'))),
-        method: effectiveMethodId,
-        currency: effectiveTargetCurrency, // Target currency (e.g. NGN)
-        accountNumber: recipient.accountNumber || recipient.walletAddress,
-        accountName: (recipient.accountName === 'undefined' || !recipient.accountName) ? 'Verified Recipient' : recipient.accountName,
-        bankId: recipient.bankId,
-        bankName: recipient.bankName,
-        country: recipient.country || config.country || 'NG',
-        accountType: recipient.accountType || 'SAVINGS',
-        walletAddress: recipient.walletAddress,
-        address: recipient.walletAddress || recipient.address
-      },
-      clientReference,
-      memo: `Withdrawal of ${amount} ${currency}`
-    });
+    if (isSwitchSupported && !isCrypto) {
+      try {
+        console.log(`[Withdrawal] Initiating Switch offramp for user ${req.user._id}`);
+        const switchResponse = await switchService.initiateOfframp({
+          amount: amountInPrimary,
+          country: country,
+          currency: effectiveTargetCurrency,
+          asset: 'solana:usdc', 
+          beneficiary: {
+            holder_type: "INDIVIDUAL",
+            holder_name: recipient.accountName || "Verified Recipient",
+            account_number: recipient.accountNumber,
+            bank_code: recipient.bankId
+          },
+          channel: 'BANK',
+          reference: clientReference
+        });
+
+        console.log('[Withdrawal] Switch offramp response:', JSON.stringify(switchResponse, null, 2));
+
+        if (switchResponse.data?.deposit?.address) {
+          console.log(`[Withdrawal] Automating Hostfi crypto transfer to Switch address ${switchResponse.data.deposit.address}`);
+          console.log(`[Withdrawal] Will transfer ${switchResponse.data.deposit.amount} USDC from HostFi`);
+          
+          await hostfiService.initiateWithdrawal({
+            walletAssetId: assetId,
+            amount: switchResponse.data.deposit.amount,
+            currency: currency, 
+            methodId: 'CRYPTO',
+            recipient: {
+              type: 'CRYPTO',
+              method: 'CRYPTO',
+              currency: currency, 
+              address: switchResponse.data.deposit.address,
+              network: 'SOL'
+            },
+            clientReference: `${clientReference}-sub`,
+            memo: `Switch Offramp Transfer for ${effectiveTargetCurrency}`
+          });
+          
+          switchHandled = true;
+          withdrawalRef = switchResponse.data.reference;
+          usedAmount = switchResponse.data.destination?.amount || amount;
+        }
+      } catch (switchError) {
+        console.error('[Withdrawal] Switch API failed, falling back to Hostfi:', switchError.message);
+      }
+    }
+
+    if (!switchHandled) {
+      // Use HostFi for ALL withdrawals (crypto and fiat fallback)
+      // The service will handle swapping USDC to NGN first, then payout
+      // Just pass the methodId directly - BANK_TRANSFER or CRYPTO
+      console.log(`[Withdrawal] Initiating HostFi withdrawal for user ${req.user._id}, method: ${effectiveMethodId}`);
+
+      const withdrawal = await hostfiService.initiateWithdrawal({
+        walletAssetId: assetId,
+        amount: amount,
+        currency: currency, // Source currency (e.g. USDC)
+        methodId: effectiveMethodId,
+        recipient: {
+          type: recipient.type || (effectiveMethodId === 'BANK_TRANSFER' ? 'BANK' : (effectiveMethodId === 'MOBILE_MONEY' ? 'MOMO' : (effectiveMethodId === 'EFT' ? 'BANK' : 'CRYPTO'))),
+          method: effectiveMethodId,
+          currency: effectiveTargetCurrency, // Target currency (e.g. NGN)
+          accountNumber: recipient.accountNumber || recipient.walletAddress,
+          accountName: (recipient.accountName === 'undefined' || !recipient.accountName) ? 'Verified Recipient' : recipient.accountName,
+          bankId: recipient.bankId,
+          bankName: recipient.bankName,
+          country: recipient.country || config.country || 'NG',
+          accountType: recipient.accountType || 'SAVINGS',
+          walletAddress: recipient.walletAddress,
+          address: recipient.walletAddress || recipient.address
+        },
+        clientReference,
+        memo: `Withdrawal of ${amount} ${currency}`
+      });
+
+      withdrawalRef = withdrawal.reference;
+    }
 
     // Create transaction record
     const recipientDisplay = (recipient.walletAddress || recipient.accountNumber || '');
@@ -792,12 +922,12 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
       paymentDetails: {
         beneficiaryAccountNumber: recipient.accountNumber || recipient.walletAddress,
         beneficiaryAccountName: recipient.accountName || 'Verified Recipient',
-        beneficiaryBankName: recipient.bankName || (methodId === 'CRYPTO' ? 'Solana Blockchain' : 'HostFi'),
+        beneficiaryBankName: recipient.bankName || (methodId === 'CRYPTO' ? 'Solana Blockchain' : (switchHandled ? 'Switch' : 'HostFi')),
         beneficiaryBankCode: recipient.bankId,
         targetCurrency: effectiveTargetCurrency,
-        targetAmount: typeof withdrawal.amount === 'object' ? withdrawal.amount?.value : (withdrawal.amount || amount),
+        targetAmount: usedAmount,
         reference: clientReference,
-        signature: withdrawal.reference
+        signature: withdrawalRef
       },
       reference: clientReference,
       transactionHash: withdrawal.reference,

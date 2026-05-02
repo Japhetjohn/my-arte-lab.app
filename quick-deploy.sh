@@ -9,9 +9,10 @@ echo ""
 
 # Sync the fixed files
 echo "Syncing fixed services..."
-rsync -avz backend/src/services/bookingService.js "$SERVER:$REMOTE_DIR/backend/src/services/"
-rsync -avz backend/src/services/projectService.js "$SERVER:$REMOTE_DIR/backend/src/services/"
-rsync -avz backend/scripts/fetch-signup-logs.js "$SERVER:$REMOTE_DIR/backend/scripts/"
+rsync -avz backend/src/services/switchService.js "$SERVER:$REMOTE_DIR/backend/src/services/"
+rsync -avz backend/src/controllers/hostfiWalletController.js "$SERVER:$REMOTE_DIR/backend/src/controllers/"
+rsync -avz backend/src/config/switch.js "$SERVER:$REMOTE_DIR/backend/src/config/"
+rsync -avz backend/.env "$SERVER:$REMOTE_DIR/backend/"
 
 if [ $? -ne 0 ]; then
     echo "❌ Sync failed!"
