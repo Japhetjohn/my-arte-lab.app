@@ -36,14 +36,10 @@ exports.getWallet = catchAsync(async (req, res, next) => {
   try {
     console.log(`[Wallet] Fetching real balance from HostFi for user ${req.user._id}...`);
     
-    const hostfiBalanceService = require('../services/hostfiBalanceService');
-    const syncResult = await hostfiBalanceService.getUserBalancesFromHostFi(user);
-    
-    const usdcAsset = syncResult.assets.find(a => a.currency === 'USDC');
-    if (usdcAsset) {
-      hostFiBalance = usdcAsset.balance;
-      console.log(`[Wallet] ✓ HostFi balance: ${hostFiBalance} USDC`);
-    }
+    // Get real balance from HostFi using the new direct service method
+    const liveBalance = await hostfiWalletService.getLiveBalanceAsset(user._id, 'USDC');
+    hostFiBalance = parseFloat(liveBalance) || 0;
+    console.log(`[Wallet] ✓ HostFi balance: ${hostFiBalance} USDC`);
   } catch (err) {
     console.error('[Wallet] Failed to fetch HostFi balance:', err.message);
     // Fallback to stored balance
