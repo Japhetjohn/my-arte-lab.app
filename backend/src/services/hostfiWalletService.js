@@ -234,12 +234,7 @@ class HostFiWalletService {
         user.wallet.currency = 'USDC'; // Default to USDC for internationalization
       }
 
-      // NOTE: DO NOT calculate balance from HostFi assets!
-      // HostFi returns demo/default balances (3 USDC for everyone).
-      // Balance is calculated from transaction records in the controller.
-      // We only sync asset IDs and addresses here, not balances.
-      
-      console.log(`[Sync] Skipping balance sync from HostFi - using transaction-based balance calculation instead`);
+      console.log(`[Sync] Note: We are relying on the endpoints for hostfi true balances and unblocked local caches`);
 
       // CRITICAL: Ensure the primary wallet address is the Tsara Solana address if available
       if (user.wallet.tsaraAddress) {
@@ -355,41 +350,29 @@ class HostFiWalletService {
   }
 
   /**
-   * Retrieves the LIVE balance strictly from the Transaction ledger history, bypassing any static DB cache
+   * Get actual balance per currency straight from API endpoints
    */
-  async getLiveBalance(userId) {
-    const Transaction = require('../models/Transaction');
-    const Booking = require('../models/Booking');
+  async getLiveBalanceAsset(userId, currencyCode = 'USDC') {
+    const user = await User.findById(userId);
+    if (!user) throw new Error('User not found');
     
-    // Sum all successful deposits, earnings and refunds
-    const incomingData = await Transaction.aggregate([
-      { $match: { user: userId, status: 'completed', type: { $in: ['deposit', 'earning', 'refund'] } } },
-      { $group: { _id: null, total: { $sum: "$amount" } } }
-    ]);
-    const incoming = incomingData.length ? incomingData[0].total : 0;
-
-    // Sum all successful payments, withdrawals and fees
-    const outgoingData = await Transaction.aggregate([
-      { $match: { user: userId, status: 'completed', type: { $in: ['withdrawal', 'payment', 'platform_fee', 'gas_fee'] } } },
-      { $group: { _id: null, total: { $sum: "$amount" } } }
-    ]);
-    const outgoing = outgoingData.length ? outgoingData[0].total : 0;
-
-    // Determine pending locked funds for active bookings
+    // Sync using real endpoint fetching!
+    await this.syncWalletBalances(userId);
+    
+    const refreshedUser = await User.findById(userId);
+    const asset = refreshedUser.wallet.hostfiWalletAssets?.find(a => a.currency === currencyCode);
+    
+    // Get pending reservations
+    const Booking = require('../models/Booking');
     const clientPendingBookings = await Booking.find({
       client: userId,
       status: { $in: ['confirmed', 'in_progress', 'delivered'] },
       paymentStatus: 'paid'
     });
+    const pendingBalance = clientPendingBookings.reduce((sum, booking) => sum + (parseFloat(booking.amount) || 0), 0);
     
-    const calculatedPendingBalance = clientPendingBookings.reduce((sum, booking) => 
-      sum + (parseFloat(booking.amount) || 0), 0
-    );
-
-    const calculatedBalance = incoming - outgoing;
-    const availableBalance = Math.max(0, parseFloat((calculatedBalance - calculatedPendingBalance).toFixed(2)));
-    
-    return availableBalance;
+    const trueBalance = parseFloat(asset?.balance || 0);
+    return Math.max(0, parseFloat((trueBalance - pendingBalance).toFixed(2)));
   }
 }
 

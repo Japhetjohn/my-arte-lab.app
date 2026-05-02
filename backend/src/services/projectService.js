@@ -103,7 +103,7 @@ class ProjectService {
       const projectAmount = application.proposedBudget.amount;
 
       const hostfiWalletService = require('./hostfiWalletService');
-      const liveBalance = await hostfiWalletService.getLiveBalance(client._id);
+      const liveBalance = await hostfiWalletService.getLiveBalanceAsset(client._id);
 
       if (liveBalance < projectAmount) {
         throw new ErrorHandler(
@@ -370,58 +370,33 @@ class ProjectService {
 
       await session.commitTransaction();
 
-      // 2. Exact transfer of Platform Fee 10% directly
+      // 2. Accumulate platform fee (batch until 1 USDC minimum)
       try {
         const client = await User.findById(clientId);
         const clientUsdcAsset = client.wallet.hostfiWalletAssets?.find(
           a => a.currency === (application.proposedBudget.currency || 'USDC') || a.currency === 'USDC'
         );
 
-        console.log(`[ProjectService] ============================================`);
-        console.log(`[ProjectService] PLATFORM FEE TRANSFER START`);
-        console.log(`[ProjectService] Amount: ${platformFee} ${application.proposedBudget.currency || 'USDC'}`);
-        console.log(`[ProjectService] Client Asset ID: ${clientUsdcAsset?.assetId}`);
-        console.log(`[ProjectService] Platform Target: ${PLATFORM_CONFIG.PLATFORM_WALLET_ADDRESS}`);
-        console.log(`[ProjectService] ============================================`);
+        console.log(`[ProjectService] Accumulating platform fee: ${platformFee} ${application.proposedBudget.currency || 'USDC'}`);
         
-        if (!PLATFORM_CONFIG.PLATFORM_WALLET_ADDRESS && !process.env.PLATFORM_WALLET_ADDRESS) {
-          throw new Error('Platform wallet address is not defined in configs');
-        }
+        const feeResult = await platformFeeAccumulator.addFee(
+          clientId.toString(),
+          project._id.toString(),
+          platformFee,
+          application.proposedBudget.currency || 'USDC',
+          clientUsdcAsset?.assetId
+        );
 
-        const platformWallet = process.env.PLATFORM_WALLET_ADDRESS || PLATFORM_CONFIG.PLATFORM_WALLET_ADDRESS;
-
-        const platformPayout = await hostfiService.initiateWithdrawal({
-          walletAssetId: clientUsdcAsset?.assetId,
-          amount: platformFee,
-          currency: application.proposedBudget.currency || 'USDC',
-          methodId: 'CRYPTO',
-          recipient: {
-            type: 'CRYPTO',
-            method: 'CRYPTO',
-            currency: application.proposedBudget.currency || 'USDC',
-            address: platformWallet,
-            network: 'SOL',
-            country: 'NG'
-          },
-          clientReference: `PLATFORM-FEE-PROJ-${project._id}-${Date.now()}`,
-          memo: `Platform Fee for project ${project.title}`
-        });
-
-        if (platformPayout.reference || platformPayout.id) {
-          project.platformFeeTransactionHash = platformPayout.reference || platformPayout.id;
+        if (feeResult.withdrawn) {
+          project.platformFeeTransactionHash = feeResult.withdrawalResult.reference;
           await project.save();
-          console.log(`[ProjectService] ✓ Platform fee transferred immediately: ${platformPayout.reference || platformPayout.id}`);
-          
-          await Transaction.updateOne(
-            { project: project._id, type: 'platform_fee' },
-            { 
-              transactionHash: platformPayout.reference || platformPayout.id,
-              status: 'completed'
-            }
-          );
+          console.log(`[ProjectService] Platform fee withdrawn: ${feeResult.withdrawalResult.reference}`);
+        } else {
+          console.log(`[ProjectService] Platform fee accumulated: ${feeResult.accumulated} USDC`);
         }
       } catch (platformError) {
-        console.error('[ProjectService] ✗ Platform fee transfer failed:', platformError.message);
+        console.error('[ProjectService] Failed to accumulate platform fee:', platformError.message);
+        // Don't throw - the project is already completed
       }
 
       return {

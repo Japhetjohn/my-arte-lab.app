@@ -104,7 +104,7 @@ class BookingService {
       }
 
       const hostfiWalletService = require('./hostfiWalletService');
-      const liveBalance = await hostfiWalletService.getLiveBalance(client._id);
+      const liveBalance = await hostfiWalletService.getLiveBalanceAsset(client._id);
 
       if (liveBalance < booking.amount) {
         throw new ErrorHandler(
@@ -501,54 +501,37 @@ class BookingService {
           // Don't throw - log for manual reconciliation
         }
         
-        // 2. Exact transfer of Platform Fee 10% directly
+        // 2. Accumulate platform fee 10% (batch until 1 USDC minimum)
         try {
           console.log(`[BookingService] ============================================`);
-          console.log(`[BookingService] PLATFORM FEE TRANSFER START`);
+          console.log(`[BookingService] PLATFORM FEE ACCUMULATION START`);
           console.log(`[BookingService] Amount: ${booking.platformFee} ${booking.currency}`);
           console.log(`[BookingService] Client Asset ID: ${clientUsdcAsset.assetId}`);
-          console.log(`[BookingService] Platform Target: ${PLATFORM_CONFIG.PLATFORM_WALLET_ADDRESS}`);
+          console.log(`[BookingService] Booking ID: ${booking.bookingId}`);
           console.log(`[BookingService] ============================================`);
           
-          if (!PLATFORM_CONFIG.PLATFORM_WALLET_ADDRESS && !process.env.PLATFORM_WALLET_ADDRESS) {
-            throw new Error('Platform wallet address is not defined in configs');
-          }
-
-          const platformWallet = process.env.PLATFORM_WALLET_ADDRESS || PLATFORM_CONFIG.PLATFORM_WALLET_ADDRESS;
-
-          const platformPayout = await hostfiService.initiateWithdrawal({
-            walletAssetId: clientUsdcAsset.assetId,
-            amount: booking.platformFee,
-            currency: booking.currency,
-            methodId: 'CRYPTO',
-            recipient: {
-              type: 'CRYPTO',
-              method: 'CRYPTO',
-              currency: booking.currency,
-              address: platformWallet,
-              network: 'SOL',
-              country: 'NG'
-            },
-            clientReference: `PLATFORM-FEE-${booking.bookingId}-${Date.now()}`,
-            memo: `Platform Fee for ${booking.serviceTitle}`
-          });
+          const feeResult = await platformFeeAccumulator.addFee(
+            client._id.toString(),
+            booking._id.toString(),
+            booking.platformFee,
+            booking.currency,
+            clientUsdcAsset.assetId
+          );
           
-          if (platformPayout.reference || platformPayout.id) {
-            booking.platformFeeTransactionHash = platformPayout.reference || platformPayout.id;
+          console.log(`[BookingService] Platform fee accumulation result:`, JSON.stringify(feeResult, null, 2));
+
+          if (feeResult.withdrawn) {
+            // Fee was immediately withdrawn (reached 1 USDC threshold)
+            booking.platformFeeTransactionHash = feeResult.withdrawalResult.reference;
             await booking.save();
-            console.log(`[BookingService] ✓ Platform fee transferred immediately: ${platformPayout.reference || platformPayout.id}`);
-            
-            // Update transaction record for the fee
-            await Transaction.updateOne(
-              { booking: booking._id, type: 'platform_fee' },
-              { 
-                transactionHash: platformPayout.reference || platformPayout.id,
-                status: 'completed'
-              }
-            );
+            console.log(`[BookingService] ✓ Platform fee withdrawn immediately: ${feeResult.withdrawalResult.reference}`);
+          } else {
+            // Fee is accumulating
+            console.log(`[BookingService] ✓ Platform fee accumulated: ${feeResult.accumulated} USDC`);
+            console.log(`[BookingService]   Remaining to threshold: ${feeResult.remainingToThreshold} USDC`);
           }
         } catch (platformError) {
-          console.error('[BookingService] ✗ Platform fee transfer failed:', platformError.message);
+          console.error('[BookingService] ✗ Platform fee accumulation failed:', platformError.message);
           console.error('[BookingService] ✗ Error details:', platformError.stack);
           // Don't throw - log for manual reconciliation
         }

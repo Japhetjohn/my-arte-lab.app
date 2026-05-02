@@ -15,6 +15,18 @@ exports.handleWebhook = catchAsync(async (req, res, next) => {
 
     console.log('[Tsara Webhook] Received event:', JSON.stringify(payload, null, 2));
 
+    const tsaraSecret = process.env.TSARA_WEBHOOK_SECRET;
+    if (tsaraSecret && signature) {
+        const crypto = require('crypto');
+        const expectedSignature = crypto.createHmac('sha256', tsaraSecret).update(JSON.stringify(payload)).digest('hex');
+        if (signature !== expectedSignature) {
+            console.warn('[Tsara Webhook] Security Alert: Webhook signature mismatch.');
+            return res.status(401).json({ success: false, error: 'Invalid signature authentication' });
+        }
+    } else if (tsaraSecret && !signature) {
+        return res.status(401).json({ success: false, error: 'Missing signature header' });
+    }
+
     const { event, data, reference, id } = payload;
     const eventId = id || `tsara-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
