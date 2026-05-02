@@ -73,7 +73,7 @@ export function TopNavigation({
               <SheetHeader className="p-4 border-b border-gray-200">
                 <SheetTitle className="flex items-center gap-2">
                   <img src="/images/logo.png?v=2" alt="MyArteLab" className="w-8 h-8 rounded-full" />
-                  <span className="font-bold text-xl">MyArtelab</span>
+                  <span className="font-bold text-xl">MyArteLab</span>
                 </SheetTitle>
               </SheetHeader>
               <nav className="p-3 space-y-1">
@@ -112,8 +112,8 @@ export function TopNavigation({
           </Sheet>
           
           <a href="/" className="flex items-center gap-2">
-            <img src="/images/logo.png?v=2" alt="MyArtelab" className="w-7 h-7 sm:w-8 sm:h-8 rounded-full" />
-            <span className="font-bold text-lg sm:text-xl hidden sm:block">MyArtelab</span>
+            <img src="/images/logo.png?v=2" alt="MyArteLab" className="w-7 h-7 sm:w-8 sm:h-8 rounded-full" />
+            <span className="font-bold text-lg sm:text-xl hidden sm:block">MyArteLab</span>
           </a>
         </div>
 

@@ -26,8 +26,8 @@ export function AuthLayout({
             alt="Auth Illustration"
             className="w-32 h-32 mx-auto mb-4 object-contain"
           />
-          <h2 className="text-xl font-bold mb-1">Connect with Top Creators</h2>
-          <p className="text-white/80 text-sm">Join thousands on MyArteLab</p>
+          <h2 className="text-xl font-bold mb-1">Connect with Top African Creatives</h2>
+          <p className="text-white/80 text-sm">Join clients and creators on MyArteLab</p>
         </div>
       </div>
 
@@ -42,7 +42,7 @@ export function AuthLayout({
                 alt="MyArteLab"
                 className="w-8 h-8"
               />
-              <span className="font-bold text-xl">MyArtelab</span>
+              <span className="font-bold text-xl">MyArteLab</span>
             </Link>
             {showBackButton && (
               <Link
@@ -88,10 +88,10 @@ export function AuthLayout({
               className="w-full max-w-md mx-auto mb-8"
             />
             <h2 className="text-2xl font-bold mb-2">
-              Connect with Top Creators
+              Connect with Top African Creatives
             </h2>
             <p className="text-white/80">
-              Join thousands on MyArteLab
+              Join clients and creators on MyArteLab
             </p>
           </div>
         </div>
