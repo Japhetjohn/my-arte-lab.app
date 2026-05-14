@@ -30,7 +30,7 @@ function getPasswordStrength(password) {
     uppercase: /[A-Z]/.test(password),
     lowercase: /[a-z]/.test(password),
     number: /\d/.test(password),
-    special: /[@$!%*?&_\-#]/.test(password),
+    special: /[^a-zA-Z0-9\s]/.test(password),
     longLength: password.length >= 12
   };
 

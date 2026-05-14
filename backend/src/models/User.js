@@ -40,7 +40,7 @@ const userSchema = new mongoose.Schema({
         }
         return SECURITY.PASSWORD_REGEX.test(value);
       },
-      message: 'Password must be at least 8 characters and contain uppercase, lowercase, number, and special character (@$!%*?&_-#)'
+      message: 'Password must be at least 8 characters and contain uppercase, lowercase, number, and special character'
     },
     select: false
   },
