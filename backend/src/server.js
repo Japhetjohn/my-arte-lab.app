@@ -391,7 +391,7 @@ const server = app.listen(PORT, () => {
   console.log(`║  MyArteLab Backend Server`);
   console.log(`║  Port: ${PORT}`);
   console.log(`║  Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`║  API: http://localhost:${PORT}/api`);
+  console.log(`║  API: https://app.myartelab.com/api`);
   console.log(`║  Payment Gateway: HostFi`);
   console.log('╚════════════════════════════════════════════════════════╝\n');
 
