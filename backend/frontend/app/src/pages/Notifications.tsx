@@ -38,11 +38,11 @@ interface Notification {
 
 const notificationIcons: Record<string, React.ReactNode> = {
   booking_request: <Briefcase className="w-5 h-5 text-blue-500" />,
-  booking_accepted: <CheckCircle className="w-5 h-5 text-green-500" />,
+  booking_accepted: <CheckCircle className="w-5 h-5 text-[#8A2BE2]" />,
   booking_rejected: <AlertCircle className="w-5 h-5 text-red-500" />,
-  booking_completed: <CheckCircle className="w-5 h-5 text-green-500" />,
+  booking_completed: <CheckCircle className="w-5 h-5 text-[#8A2BE2]" />,
   booking_cancelled: <AlertCircle className="w-5 h-5 text-red-500" />,
-  payment_received: <DollarSign className="w-5 h-5 text-green-500" />,
+  payment_received: <DollarSign className="w-5 h-5 text-[#8A2BE2]" />,
   payment_deducted: <DollarSign className="w-5 h-5 text-amber-500" />,
   payment_failed: <AlertCircle className="w-5 h-5 text-red-500" />,
   message: <MessageSquare className="w-5 h-5 text-purple-500" />,

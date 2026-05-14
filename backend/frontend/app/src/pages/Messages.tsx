@@ -460,7 +460,7 @@ export function Messages() {
                       <h3 className="font-medium text-gray-900">
                         {getParticipantName(selectedConversation.otherUser)}
                       </h3>
-                      <p className="text-xs text-green-600">
+                      <p className="text-xs text-[#8A2BE2]">
                         {isBlocked ? 'Blocked' : ''}
                       </p>
                     </div>
@@ -481,8 +481,8 @@ export function Messages() {
                       <DropdownMenuContent align="end">
                         {isBlocked ? (
                           <DropdownMenuItem onClick={handleUnblockUser}>
-                            <Ban className="w-4 h-4 mr-2 text-green-600" />
-                            <span className="text-green-600">Unblock</span>
+                            <Ban className="w-4 h-4 mr-2 text-[#8A2BE2]" />
+                            <span className="text-[#8A2BE2]">Unblock</span>
                           </DropdownMenuItem>
                         ) : (
                           <DropdownMenuItem onClick={handleBlockUser}>

@@ -387,7 +387,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                       {/* Confirm & Release Payment */}
                       <Dialog>
                         <DialogTrigger asChild>
-                          <Button className="w-full bg-green-600 hover:bg-green-700">
+                          <Button className="w-full bg-[#8A2BE2] hover:bg-[#7B1FD1]">
                             <CheckCircle className="w-4 h-4 mr-2" />
                             Confirm Deliverables & Release Payment
                           </Button>
@@ -439,7 +439,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                                 handleReleaseFunds(reviewForm.rating, reviewForm.comment);
                                 setReviewForm({ rating: 5, comment: '' });
                               }} 
-                              className="w-full bg-green-600 hover:bg-green-700"
+                              className="w-full bg-[#8A2BE2] hover:bg-[#7B1FD1]"
                               disabled={!reviewForm.rating}
                             >
                               Confirm & Release {booking.amount} {booking.currency}
@@ -653,7 +653,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-500">Creator Receives</span>
-                <span className="text-green-600 font-medium">{(booking.amount * 0.9).toFixed(2)} {booking.currency}</span>
+                <span className="text-[#8A2BE2] font-medium">{(booking.amount * 0.9).toFixed(2)} {booking.currency}</span>
               </div>
               <div className="pt-4 border-t">
                 {booking.status === 'pending' ? (
@@ -665,7 +665,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                     💳 Payment Required
                   </Badge>
                 ) : booking.paymentStatus === 'paid' ? (
-                  <Badge variant="default" className="w-full justify-center py-2 bg-green-600">
+                  <Badge variant="default" className="w-full justify-center py-2 bg-[#8A2BE2]">
                     ✓ Paid (In Escrow)
                   </Badge>
                 ) : (
@@ -733,7 +733,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
               {/* Creator Actions */}
               {isCreator && booking.status === 'pending' && (
                 <>
-                  <Button onClick={handleAcceptBooking} className="w-full bg-green-600 hover:bg-green-700">
+                  <Button onClick={handleAcceptBooking} className="w-full bg-[#8A2BE2] hover:bg-[#7B1FD1]">
                     <CheckCircle className="w-4 h-4 mr-2" />
                     Accept Booking
                   </Button>
@@ -789,7 +789,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
 
               {/* Client Payment - Only after creator accepts */}
               {isClient && booking.status === 'awaiting_payment' && (
-                <Button onClick={handlePayBooking} className="w-full bg-green-600 hover:bg-green-700">
+                <Button onClick={handlePayBooking} className="w-full bg-[#8A2BE2] hover:bg-[#7B1FD1]">
                   <DollarSign className="w-4 h-4 mr-2" />
                   Pay {booking.amount} {booking.currency}
                 </Button>
@@ -815,7 +815,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
 
               {/* Status Info - Completed */}
               {booking.status === 'completed' && (
-                <div className="text-center text-green-600 font-medium">
+                <div className="text-center text-[#8A2BE2] font-medium">
                   <CheckCircle className="w-8 h-8 mx-auto mb-2" />
                   Booking Completed
                 </div>

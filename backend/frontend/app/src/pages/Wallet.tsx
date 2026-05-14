@@ -56,7 +56,7 @@ export function Wallet() {
         <div
           className={`w-10 h-10 rounded-full flex items-center justify-center ${
             transaction.type === 'deposit' || transaction.type === 'earning'
-              ? 'bg-green-100 text-green-600'
+              ? 'bg-[#F3E8FF] text-[#8A2BE2]'
               : 'bg-red-100 text-red-600'
           }`}
         >
@@ -77,7 +77,7 @@ export function Wallet() {
         <p
           className={`font-semibold ${
             transaction.type === 'deposit' || transaction.type === 'earning'
-              ? 'text-green-600'
+              ? 'text-[#8A2BE2]'
               : 'text-red-600'
           }`}
         >

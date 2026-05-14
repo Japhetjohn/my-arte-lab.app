@@ -210,19 +210,19 @@ export function Bookings() {
                   <div className="flex flex-col items-center">
                     <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium transition-all ${
                       isActive 
-                        ? 'bg-green-500 text-white' 
+                        ? 'bg-[#8A2BE2] text-white' 
                         : 'bg-gray-200 text-gray-400'
-                    } ${isCurrent ? 'ring-2 ring-green-500 ring-offset-2' : ''}`}>
+                    } ${isCurrent ? 'ring-2 ring-[#8A2BE2] ring-offset-2' : ''}`}>
                       {isActive ? '✓' : step.icon}
                     </div>
-                    <span className={`text-[10px] mt-1 text-center ${isActive ? 'text-green-600 font-medium' : 'text-gray-400'}`}>
+                    <span className={`text-[10px] mt-1 text-center ${isActive ? 'text-[#8A2BE2] font-medium' : 'text-gray-400'}`}>
                       {step.label}
                     </span>
                   </div>
                   {index < 5 && (
                     <div className={`flex-1 h-1 mx-1 rounded-full ${
                       isActive && stepStatuses[index + 1].includes(booking.status)
-                        ? 'bg-green-500' 
+                        ? 'bg-[#8A2BE2]' 
                         : 'bg-gray-200'
                     }`} />
                   )}

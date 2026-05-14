@@ -439,7 +439,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                         }}
                         className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
                           (creator.availability || 'available') === 'available'
-                            ? 'bg-green-500 text-white shadow-md'
+                            ? 'bg-[#8A2BE2] text-white shadow-md'
                             : 'text-gray-500 hover:text-gray-700'
                         }`}
                       >

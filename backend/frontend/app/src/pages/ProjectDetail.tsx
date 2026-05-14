@@ -217,7 +217,7 @@ export function ProjectDetail() {
                 `${project.clientId?.firstName} ${project.clientId?.lastName}`}</p>
             </div>
             <Badge className={`
-              ${project.status === 'open' ? 'bg-green-100 text-green-800' : ''}
+              ${project.status === 'open' ? 'bg-[#F3E8FF] text-[#6B21A8]' : ''}
               ${project.status === 'in_progress' ? 'bg-blue-100 text-blue-800' : ''}
               ${project.status === 'completed' ? 'bg-gray-100 text-gray-800' : ''}
             `}>
@@ -283,7 +283,7 @@ export function ProjectDetail() {
             )}
             {isOwner && project.status === 'in_progress' && (
               <Button 
-                className="bg-green-600 hover:bg-green-700 text-white"
+                className="bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white"
                 onClick={() => window.location.href = '/bookings'}
               >
                 <Wallet className="w-4 h-4 mr-2" />
@@ -331,7 +331,7 @@ export function ProjectDetail() {
                   )}
                   {myApp.status === 'accepted' && (
                     <div className="space-y-3">
-                      <Badge className="bg-green-100 text-green-800">
+                      <Badge className="bg-[#F3E8FF] text-[#6B21A8]">
                         Accepted! 🎉
                       </Badge>
                       <p className="text-sm text-gray-600">
@@ -402,7 +402,7 @@ export function ProjectDetail() {
                         <div className="flex gap-2 mt-4">
                           <Button
                             size="sm"
-                            className="bg-green-600 hover:bg-green-700 text-white"
+                            className="bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white"
                             onClick={() => handleAcceptApplication(app._id)}
                           >
                             <CheckCircle className="w-4 h-4 mr-1" />
@@ -431,7 +431,7 @@ export function ProjectDetail() {
                       {app.status !== 'pending' && (
                         <Badge className={`
                           mt-4
-                          ${app.status === 'accepted' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}
+                          ${app.status === 'accepted' ? 'bg-[#F3E8FF] text-[#6B21A8]' : 'bg-red-100 text-red-800'}
                         `}>
                           {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
                         </Badge>
