@@ -81,8 +81,7 @@ const userSchema = new mongoose.Schema({
     },
     coordinates: {
       type: [Number],
-      default: null,
-      index: '2dsphere'
+      default: null
     },
     localArea: {
       type: String,
