@@ -126,20 +126,21 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
+    // Allow same-origin / server-to-server requests (no origin header)
+    if (!origin) {
+      return callback(null, true);
+    }
+
     // In production, only allow the official domain
     if (process.env.NODE_ENV === 'production') {
       if (origin === 'https://app.myartelab.com') {
         return callback(null, true);
       }
-      // Block requests with no origin (curl, scripts, mobile apps)
-      if (!origin) {
-        return callback(new Error('Not allowed by CORS'));
-      }
       return callback(new Error('Not allowed by CORS'));
     }
 
     // In development, allow localhost origins
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
 
