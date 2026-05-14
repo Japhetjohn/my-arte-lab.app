@@ -8,100 +8,86 @@ interface AnimatedErrorProps {
 }
 
 export const AnimatedError: React.FC<AnimatedErrorProps> = ({
-  size = 24,
+  size = 28,
   className = '',
   strokeWidth = 2.5,
   color = '#EF4444',
 }) => {
-  const [animate, setAnimate] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => setAnimate(true), 50);
-    return () => clearTimeout(timer);
+    const t = setTimeout(() => setMounted(true), 10);
+    return () => clearTimeout(t);
   }, []);
 
-  const center = size / 2;
-  const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
+  const s = size;
+  const cx = s / 2;
+  const cy = s / 2;
+  const r = (s - strokeWidth * 2) / 2;
+  const circ = 2 * Math.PI * r;
 
   return (
     <div
-      className={`relative inline-flex items-center justify-center ${className}`}
-      style={{ width: size, height: size }}
+      className={`relative inline-flex items-center justify-center flex-shrink-0 ${className}`}
+      style={{ width: s, height: s }}
     >
-      {/* Background circle */}
-      <svg
-        width={size}
-        height={size}
-        viewBox={`0 0 ${size} ${size}`}
-        className="absolute inset-0"
-      >
+      <svg width={s} height={s} viewBox={`0 0 ${s} ${s}`} className="absolute inset-0">
+        {/* Background ring */}
         <circle
-          cx={center}
-          cy={center}
-          r={radius}
+          cx={cx} cy={cy} r={r}
           fill="none"
           stroke={color}
           strokeWidth={strokeWidth}
-          opacity={0.15}
+          opacity={0.12}
         />
-        {/* Animated circle draw */}
+        {/* Animated ring */}
         <circle
-          cx={center}
-          cy={center}
-          r={radius}
+          cx={cx} cy={cy} r={r}
           fill="none"
           stroke={color}
           strokeWidth={strokeWidth}
           strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={animate ? 0 : circumference}
+          strokeDasharray={circ}
+          strokeDashoffset={mounted ? 0 : circ}
           style={{
-            transition: 'stroke-dashoffset 0.5s ease-out',
+            transition: 'stroke-dashoffset 0.45s cubic-bezier(0.4, 0, 0.2, 1)',
             transform: 'rotate(-90deg)',
             transformOrigin: 'center',
           }}
         />
       </svg>
 
-      {/* Animated X */}
+      {/* X mark */}
       <svg
-        width={size * 0.5}
-        height={size * 0.5}
+        width={s * 0.5}
+        height={s * 0.5}
         viewBox="0 0 24 24"
         className="relative z-10"
         style={{
-          transform: animate ? 'scale(1)' : 'scale(0)',
-          transition: 'transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) 0.4s',
+          transform: mounted ? 'scale(1)' : 'scale(0.3)',
+          opacity: mounted ? 1 : 0,
+          transition: 'transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) 0.35s, opacity 0.2s ease 0.35s',
         }}
       >
-        {/* First line of X */}
         <path
-          d="M6 6l12 12"
+          d="M8 8l8 8"
           fill="none"
           stroke={color}
           strokeWidth={3}
           strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeDasharray={20}
-          strokeDashoffset={animate ? 0 : 20}
-          style={{
-            transition: 'stroke-dashoffset 0.3s ease-out 0.5s',
-          }}
+          strokeDasharray={12}
+          strokeDashoffset={mounted ? 0 : 12}
+          style={{ transition: 'stroke-dashoffset 0.25s ease-out 0.5s' }}
         />
-        {/* Second line of X */}
         <path
-          d="M18 6l-12 12"
+          d="M16 8l-8 8"
           fill="none"
           stroke={color}
           strokeWidth={3}
           strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeDasharray={20}
-          strokeDashoffset={animate ? 0 : 20}
-          style={{
-            transition: 'stroke-dashoffset 0.3s ease-out 0.7s',
-          }}
+          strokeDasharray={12}
+          strokeDashoffset={mounted ? 0 : 12}
+          style={{ transition: 'stroke-dashoffset 0.25s ease-out 0.65s' }}
         />
       </svg>
     </div>

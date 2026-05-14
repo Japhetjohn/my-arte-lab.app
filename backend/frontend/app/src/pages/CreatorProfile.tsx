@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Dialog as ImageDialog, DialogContent as ImageDialogContent } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -59,6 +60,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
   const [creator, setCreator] = useState<Creator | null>(null);
   const [services, setServices] = useState<Service[]>([]);
   const [portfolio, setPortfolio] = useState<PortfolioItem[]>([]);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [notFound, setNotFound] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -605,11 +607,22 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {portfolio.map((item, index) => (
                 <Card key={index} className="overflow-hidden hover:shadow-lg transition-shadow">
-                  <img
-                    src={item.image || '/images/placeholder.png'}
-                    alt={item.title}
-                    className="w-full h-40 sm:h-48 object-cover"
-                  />
+                  <div 
+                    className="relative w-full h-40 sm:h-48 bg-gray-100 cursor-pointer group"
+                    onClick={() => item.image && setSelectedImage(item.image)}
+                  >
+                    <img
+                      src={item.image?.startsWith('http') ? item.image : `${window.location.origin}${item.image}`}
+                      alt={item.title}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/images/placeholder.png';
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                      <ExternalLink className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                  </div>
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between">
                       <div>
@@ -861,6 +874,21 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Full Image Viewer */}
+      <ImageDialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
+        <ImageDialogContent className="max-w-4xl p-0 overflow-hidden bg-black/90 border-none">
+          <div className="relative flex items-center justify-center min-h-[300px] max-h-[80vh]">
+            {selectedImage && (
+              <img
+                src={selectedImage?.startsWith('http') ? selectedImage : `${window.location.origin}${selectedImage}`}
+                alt="Portfolio"
+                className="max-w-full max-h-[80vh] object-contain"
+              />
+            )}
+          </div>
+        </ImageDialogContent>
+      </ImageDialog>
     </div>
   );
 }
