@@ -4,6 +4,10 @@ const { successResponse, errorResponse } = require('../utils/apiResponse');
 const metricsService = require('../services/metricsService');
 const adminPlatformFeeController = require('../controllers/adminPlatformFeeController');
 const { protect } = require('../middleware/auth');
+const { verifyAdminAuth } = require('../middleware/adminAuth');
+
+// All admin routes require API key authentication
+router.use(verifyAdminAuth);
 
 // Admin cleanup endpoint - protected by admin secret
 router.post('/cleanup-unknown-creators', async (req, res) => {
@@ -99,7 +103,6 @@ router.post('/cleanup-all-except', async (req, res) => {
 });
 
 // Delete specific user by email
-// Protected by verifyAdminAuth middleware
 router.post('/delete-user', async (req, res) => {
   try {
     const { email } = req.body;
@@ -134,7 +137,6 @@ router.post('/delete-user', async (req, res) => {
 });
 
 // Delete specific user by ID
-// Protected by verifyAdminAuth middleware
 router.post('/delete-user-by-id', async (req, res) => {
   try {
     const { userId } = req.body;
