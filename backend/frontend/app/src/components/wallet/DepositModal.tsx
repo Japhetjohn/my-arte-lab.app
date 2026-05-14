@@ -66,22 +66,24 @@ export function DepositModal({ isOpen, onClose, onDepositComplete }: DepositModa
       const walletData = response.data?.data?.wallet;
       
       if (walletData?.address) {
-        // Use existing stored address
+        // Use existing stored address - NEVER regenerate
         setCryptoAddress({
           address: walletData.address,
           network: walletData.network || 'Solana',
           currency: 'USDC',
           instructions: 'Send only USDC on Solana network to this address. Your wallet will be credited automatically.',
         });
-        // Fetch QR code for the address directly with parameter to avoid 404 cache
+        // Fetch QR code for the existing address
         await fetchQRCode(walletData.address);
       } else {
-        // No stored address, create new one
-        await fetchCryptoAddress();
+        // No stored address yet - show the "Get Address" button instead of auto-creating
+        setCryptoAddress(null);
+        setQrCode(null);
       }
     } catch (error) {
-      // Fallback to creating new address
-      await fetchCryptoAddress();
+      // On error, just show empty state - don't auto-create
+      setCryptoAddress(null);
+      setQrCode(null);
     } finally {
       setIsLoading(false);
     }
@@ -276,7 +278,7 @@ export function DepositModal({ isOpen, onClose, onDepositComplete }: DepositModa
               {isLoading ? (
                 <div className="text-center py-8">
                   <Loader2 className="w-8 h-8 animate-spin text-[#8A2BE2] mx-auto mb-4" />
-                  <p className="text-sm text-gray-500">Generating your Solana USDC address...</p>
+                  <p className="text-sm text-gray-500">Loading your Solana USDC address...</p>
                 </div>
               ) : cryptoAddress ? (
                 <div className="space-y-4">
@@ -338,7 +340,7 @@ export function DepositModal({ isOpen, onClose, onDepositComplete }: DepositModa
 
                   <Button
                     onClick={handlePaidClick}
-                    className="w-full bg-green-600 hover:bg-green-700 text-white"
+                    className="w-full bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white"
                   >
                     <Check className="w-4 h-4 mr-2" />
                     I&apos;ve Made the Transfer
@@ -482,7 +484,7 @@ export function DepositModal({ isOpen, onClose, onDepositComplete }: DepositModa
 
                   <Button
                     onClick={handlePaidClick}
-                    className="w-full bg-green-600 hover:bg-green-700 text-white"
+                    className="w-full bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white"
                   >
                     <Check className="w-4 h-4 mr-2" />
                     I&apos;ve Made the Transfer
