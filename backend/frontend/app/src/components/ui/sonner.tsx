@@ -1,11 +1,11 @@
 import {
   InfoIcon,
   Loader2Icon,
-  OctagonXIcon,
   TriangleAlertIcon,
 } from "lucide-react"
 import { Toaster as Sonner, type ToasterProps } from "sonner"
 import { AnimatedCheckmark } from "./AnimatedCheckmark"
+import { AnimatedError } from "./AnimatedError"
 
 const Toaster = ({ ...props }: ToasterProps) => {
   return (
@@ -16,7 +16,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
         success: <AnimatedCheckmark size={22} color="#8A2BE2" />,
         info: <InfoIcon className="size-4 text-[#8A2BE2]" />,
         warning: <TriangleAlertIcon className="size-4 text-amber-500" />,
-        error: <OctagonXIcon className="size-4 text-red-500" />,
+        error: <AnimatedError size={22} color="#EF4444" />,
         loading: <Loader2Icon className="size-4 animate-spin text-[#8A2BE2]" />,
       }}
       toastOptions={{
