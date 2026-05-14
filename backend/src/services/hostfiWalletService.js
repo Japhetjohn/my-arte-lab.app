@@ -243,7 +243,7 @@ class HostFiWalletService {
       }
 
       await user.save({ validateBeforeSave: false });
-      console.log(`Wallet balances synced for user ${userId}. Total Aggregate: ${user.wallet.balance} ${primaryCurrency}`);
+      console.log(`Wallet balances synced for user ${userId}. Total Aggregate: ${user.wallet.balance} ${user.wallet.currency || 'USDC'}`);
       return user;
     } catch (error) {
       console.error(`Failed to sync wallet balances for user ${userId}:`, error.message);
