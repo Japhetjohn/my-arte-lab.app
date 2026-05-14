@@ -133,43 +133,43 @@ export function Home() {
   }
 
   return (
-    <div className="space-y-8 pb-20 lg:pb-8">
+    <div className="space-y-6 sm:space-y-8 pb-20 lg:pb-8 px-4 sm:px-0">
       {/* Hero Section */}
-      <section className="relative rounded-2xl overflow-hidden">
+      <section className="relative rounded-2xl overflow-hidden -mx-4 sm:mx-0">
         <img 
           src="/images/hero-bg.jpg" 
           alt="Hero" 
-          className="w-full h-48 sm:h-64 md:h-80 object-cover"
+          className="w-full h-40 sm:h-56 md:h-72 object-cover"
         />
       </section>
 
       {/* Categories */}
       <section>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg sm:text-xl font-bold text-gray-900">Browse Categories</h2>
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
+          <h2 className="text-base sm:text-xl font-bold text-gray-900">Browse Categories</h2>
           <a href="/explore" className="text-sm text-[#8A2BE2] hover:underline flex items-center gap-1">
             View all
             <ArrowRight className="w-4 h-4" />
           </a>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
           {categories.map((category) => (
             <CategoryCard key={category.id} category={category} onClick={handleCategoryClick} />
           ))}
         </div>
       </section>
 
-      {/* Creators Near You - Sorted by location HEAVILY prioritized */}
+      {/* Creators Near You */}
       {creators.length > 0 && (
         <section>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg sm:text-xl font-bold text-gray-900">Creators Near You</h2>
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <h2 className="text-base sm:text-xl font-bold text-gray-900">Creators Near You</h2>
             <a href="/creators" className="text-sm text-[#8A2BE2] hover:underline flex items-center gap-1">
-              See all creators
+              See all
               <ArrowRight className="w-4 h-4" />
             </a>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {creators.map((creator) => (
               <CreatorCard 
                 key={creator.id} 
@@ -182,13 +182,13 @@ export function Home() {
         </section>
       )}
 
-      {/* Verified Creators - Always show section even if empty */}
+      {/* Verified Creators */}
       <section>
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
           <div className="flex items-center gap-2">
-            <h2 className="text-lg sm:text-xl font-bold text-gray-900">Verified Creators</h2>
-            <div className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
-              <Star className="w-3 h-3 fill-white" />
+            <h2 className="text-base sm:text-xl font-bold text-gray-900">Verified Creators</h2>
+            <div className="bg-[#8A2BE2] text-white text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+              <Star className="w-2.5 h-2.5 sm:w-3 sm:h-3 fill-white" />
               VERIFIED
             </div>
           </div>
@@ -199,7 +199,7 @@ export function Home() {
         </div>
         
         {verifiedCreators.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {verifiedCreators.map((creator) => (
               <CreatorCard 
                 key={creator.id} 
@@ -210,31 +210,31 @@ export function Home() {
             ))}
           </div>
         ) : (
-          <div className="bg-gray-50 rounded-xl p-8 text-center">
-            <Star className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500">No verified creators yet</p>
-            <p className="text-gray-400 text-sm mt-1">Verified creators will appear here</p>
+          <div className="bg-gray-50 rounded-xl p-6 sm:p-8 text-center">
+            <Star className="w-10 h-10 sm:w-12 sm:h-12 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-500 text-sm sm:text-base">No verified creators yet</p>
+            <p className="text-gray-400 text-xs sm:text-sm mt-1">Verified creators will appear here</p>
           </div>
         )}
       </section>
 
-      {/* Trending - Empty until live data */}
+      {/* Trending */}
       <section>
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
           <div className="flex items-center gap-2">
             <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-[#8A2BE2]" />
-            <h2 className="text-lg sm:text-xl font-bold text-gray-900">Trending Now</h2>
+            <h2 className="text-base sm:text-xl font-bold text-gray-900">Trending Now</h2>
           </div>
         </div>
         
         {trendingCreators.length === 0 ? (
-          <div className="bg-gray-50 rounded-xl p-8 text-center">
-            <TrendingUp className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500">Trending creators will appear here soon</p>
-            <p className="text-gray-400 text-sm mt-1">Based on weekly activity</p>
+          <div className="bg-gray-50 rounded-xl p-6 sm:p-8 text-center">
+            <TrendingUp className="w-10 h-10 sm:w-12 sm:h-12 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-500 text-sm sm:text-base">Trending creators will appear here soon</p>
+            <p className="text-gray-400 text-xs sm:text-sm mt-1">Based on weekly activity</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {trendingCreators.map((creator) => (
               <CreatorCard 
                 key={creator.id} 
@@ -248,10 +248,10 @@ export function Home() {
       </section>
 
       {/* CTA */}
-      <section className="bg-gradient-to-r from-[#8A2BE2] to-[#6B21A8] rounded-2xl p-6 sm:p-8 text-white text-center">
-        <h2 className="text-xl sm:text-2xl font-bold mb-2">Ready to start your project?</h2>
+      <section className="bg-gradient-to-r from-[#8A2BE2] to-[#6B21A8] rounded-2xl p-5 sm:p-8 text-white text-center -mx-4 sm:mx-0">
+        <h2 className="text-lg sm:text-2xl font-bold mb-2">Ready to start your project?</h2>
         <p className="text-white/80 mb-4 text-sm sm:text-base">Find the perfect creator for your needs</p>
-        <Button variant="secondary" className="bg-white text-[#8A2BE2] hover:bg-white/90" onClick={() => window.location.href = '/explore'}>
+        <Button variant="secondary" className="bg-white text-[#8A2BE2] hover:bg-white/90 w-full sm:w-auto" onClick={() => window.location.href = '/explore'}>
           Browse All Creators
         </Button>
       </section>
