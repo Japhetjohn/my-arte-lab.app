@@ -65,7 +65,7 @@ async function reverseAndRetry() {
     
     const clientUsdcAsset = client.wallet?.hostfiWalletAssets?.find(a => a.currency === 'USDC');
     
-    // Check ALL possible wallet fields for creator
+    
     let creatorWalletAddress = creator.wallet?.address || 
                                creator.wallet?.tsaraAddress || 
                                creator.tsaraAddress;
