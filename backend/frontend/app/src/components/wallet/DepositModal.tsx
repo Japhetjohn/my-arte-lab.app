@@ -245,6 +245,21 @@ export function DepositModal({ isOpen, onClose, onDepositComplete }: DepositModa
           </DialogDescription>
         </DialogHeader>
 
+        {/* CRITICAL WARNING — Always visible */}
+        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <div className="text-sm text-red-800">
+              <p className="font-bold">⚠️ IMPORTANT: Generate Your Unique Address First!</p>
+              <p className="mt-1">
+                You MUST click <strong>"Get Deposit Address"</strong> (Crypto) or <strong>"Generate Bank Account"</strong> (Bank Transfer) 
+                BEFORE sending any funds. Each user gets a unique address. Sending funds without generating your address first 
+                will result in <strong>permanent loss of funds</strong>.
+              </p>
+            </div>
+          </div>
+        </div>
+
         {isProcessing ? (
           <div className="py-8 text-center space-y-4">
             <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
@@ -347,11 +362,25 @@ export function DepositModal({ isOpen, onClose, onDepositComplete }: DepositModa
                   </Button>
                 </div>
               ) : (
-                <div className="text-center py-6">
-                  <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <div className="text-center py-6 space-y-4">
+                  {/* Warning before generating */}
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-left">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                      <div className="text-sm text-amber-800">
+                        <p className="font-semibold">Step 1: Generate Your Unique Address</p>
+                        <p className="mt-1">
+                          Click the button below to create your personal USDC deposit address. 
+                          <strong> Never send funds to an address you did not generate yourself.</strong>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto">
                     <Bitcoin className="w-12 h-12 text-[#8A2BE2]" />
                   </div>
-                  <p className="text-sm text-gray-500 mb-4">
+                  <p className="text-sm text-gray-500">
                     Get your unique Solana USDC address for deposits
                   </p>
                   <Button
@@ -420,6 +449,20 @@ export function DepositModal({ isOpen, onClose, onDepositComplete }: DepositModa
                     )}
                     Generate Bank Account
                   </Button>
+
+                  {/* Warning before generating bank account */}
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                      <div className="text-sm text-amber-800">
+                        <p className="font-semibold">Step 1: Generate Your Unique Bank Account</p>
+                        <p className="mt-1">
+                          Enter an amount and click <strong>"Generate Bank Account"</strong> to create 
+                          your personal deposit account. <strong>Never send money to an account you did not generate.</strong>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
 
                   <p className="text-xs text-gray-500 text-center">
                     A unique bank account will be generated for your deposit.
