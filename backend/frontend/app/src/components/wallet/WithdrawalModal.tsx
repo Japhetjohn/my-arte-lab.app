@@ -746,15 +746,11 @@ export function WithdrawalModal({
           </div>
         </div>
 
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-            <div className="text-sm text-red-800 space-y-1">
-              <p className="font-bold">⚠️ Verify Before Confirming!</p>
-              <p>Please double-check the wallet address or bank account. Withdrawals cannot be reversed once processed.</p>
-              <p className="font-semibold">Sending to the wrong address will result in permanent loss of funds.</p>
-            </div>
-          </div>
+        <div className="p-3 bg-amber-50 border border-amber-300 rounded-lg flex gap-2">
+          <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+          <p className="text-sm text-amber-800">
+            <strong>Double-check the address/account.</strong> Withdrawals cannot be reversed.
+          </p>
         </div>
 
         <Button

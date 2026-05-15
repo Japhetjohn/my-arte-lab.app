@@ -103,7 +103,7 @@ export interface Wallet {
 export interface Transaction {
   id: string;
   _id?: string;
-  type: 'deposit' | 'withdrawal' | 'payment' | 'earning' | 'refund';
+  type: 'deposit' | 'withdrawal' | 'payment' | 'earning' | 'refund' | 'platform_fee' | 'escrow';
   amount: number;
   currency: string;
   status: 'pending' | 'completed' | 'failed' | 'cancelled';

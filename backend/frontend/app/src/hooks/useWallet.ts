@@ -118,9 +118,21 @@ export function useWallet() {
     try {
       const response = await hostfiWalletService.getTransactions(params);
       // Backend returns { success: true, data: { transactions: [...] } }
+      // Map _id to id for frontend compatibility
+      const rawTransactions = response.data?.data?.transactions || [];
+      const transactions = rawTransactions.map((tx: any) => ({
+        ...tx,
+        id: tx.id || tx._id,
+        amount: parseFloat(tx.amount) || 0,
+        currency: tx.currency || 'USDC',
+        type: tx.type || 'deposit',
+        status: tx.status || 'completed',
+        description: tx.description || tx.type || 'Transaction',
+        createdAt: tx.createdAt || new Date().toISOString(),
+      }));
       setState((prev) => ({
         ...prev,
-        transactions: response.data?.data?.transactions || [],
+        transactions,
         isLoading: false,
       }));
     } catch (error: any) {

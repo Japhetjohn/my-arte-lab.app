@@ -47,49 +47,55 @@ export function Wallet() {
     (t) => t.currency === 'USDC' || t.currency === 'USD'
   );
 
-  const renderTransaction = (transaction: Transaction) => (
-    <div
-      key={transaction.id}
-      className="flex items-center justify-between p-4 border-b border-gray-100 last:border-0"
-    >
-      <div className="flex items-center gap-3">
-        <div
-          className={`w-10 h-10 rounded-full flex items-center justify-center ${
-            transaction.type === 'deposit' || transaction.type === 'earning'
-              ? 'bg-[#F3E8FF] text-[#8A2BE2]'
-              : 'bg-red-100 text-red-600'
-          }`}
-        >
-          {transaction.type === 'deposit' || transaction.type === 'earning' ? (
-            <ArrowDownLeft className="w-5 h-5" />
-          ) : (
-            <ArrowUpRight className="w-5 h-5" />
-          )}
+  const renderTransaction = (transaction: Transaction) => {
+    const txId = transaction.id || transaction._id || 'tx';
+    const isCredit = transaction.type === 'deposit' || transaction.type === 'earning' || transaction.type === 'refund';
+    const isDebit = transaction.type === 'withdrawal' || transaction.type === 'payment' || transaction.type === 'platform_fee';
+    const displayAmount = Math.abs(parseFloat(String(transaction.amount)) || 0);
+    const currency = transaction.currency || 'USDC';
+    
+    return (
+      <div
+        key={txId}
+        className="flex items-center justify-between p-4 border-b border-gray-100 last:border-0"
+      >
+        <div className="flex items-center gap-3">
+          <div
+            className={`w-10 h-10 rounded-full flex items-center justify-center ${
+              isCredit
+                ? 'bg-[#F3E8FF] text-[#8A2BE2]'
+                : isDebit
+                ? 'bg-red-100 text-red-600'
+                : 'bg-gray-100 text-gray-600'
+            }`}
+          >
+            {isCredit ? (
+              <ArrowDownLeft className="w-5 h-5" />
+            ) : (
+              <ArrowUpRight className="w-5 h-5" />
+            )}
+          </div>
+          <div>
+            <p className="font-medium text-gray-900">{transaction.description || transaction.type}</p>
+            <p className="text-sm text-gray-500">
+              {transaction.createdAt ? new Date(transaction.createdAt).toLocaleDateString() : '—'}
+            </p>
+          </div>
         </div>
-        <div>
-          <p className="font-medium text-gray-900">{transaction.description}</p>
-          <p className="text-sm text-gray-500">
-            {new Date(transaction.createdAt).toLocaleDateString()}
+        <div className="text-right">
+          <p
+            className={`font-semibold ${
+              isCredit ? 'text-[#8A2BE2]' : isDebit ? 'text-red-600' : 'text-gray-600'
+            }`}
+          >
+            {isCredit ? '+' : isDebit ? '−' : ''}
+            {displayAmount.toLocaleString()} {currency}
           </p>
+          <p className="text-xs text-gray-400 capitalize">{transaction.status || 'completed'}</p>
         </div>
       </div>
-      <div className="text-right">
-        <p
-          className={`font-semibold ${
-            transaction.type === 'deposit' || transaction.type === 'earning'
-              ? 'text-[#8A2BE2]'
-              : 'text-red-600'
-          }`}
-        >
-          {transaction.type === 'deposit' || transaction.type === 'earning'
-            ? '+'
-            : ''}
-          {Math.abs(transaction.amount).toLocaleString()} USDC
-        </p>
-        <p className="text-xs text-gray-400 capitalize">{transaction.status}</p>
-      </div>
-    </div>
-  );
+    );
+  };
 
   if (isLoading) {
     return (
@@ -119,11 +125,12 @@ export function Wallet() {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="all">
-            <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-flex">
+            <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-flex">
               <TabsTrigger value="all">All</TabsTrigger>
               <TabsTrigger value="deposits">Deposits</TabsTrigger>
               <TabsTrigger value="payments">Payments</TabsTrigger>
               <TabsTrigger value="withdrawals">Withdrawals</TabsTrigger>
+              <TabsTrigger value="earnings">Earnings</TabsTrigger>
             </TabsList>
 
             <TabsContent value="all" className="mt-4">
@@ -177,6 +184,20 @@ export function Wallet() {
                   image="/images/empty-wallet.png"
                   title="No withdrawals yet"
                   description="Your USDC withdrawals will appear here"
+                />
+              )}
+            </TabsContent>
+
+            <TabsContent value="earnings" className="mt-4">
+              {usdcTransactions.filter((t) => t.type === 'earning').length > 0 ? (
+                usdcTransactions
+                  .filter((t) => t.type === 'earning')
+                  .map(renderTransaction)
+              ) : (
+                <EmptyState
+                  image="/images/empty-wallet.png"
+                  title="No earnings yet"
+                  description="Your earnings will appear here when projects are completed"
                 />
               )}
             </TabsContent>
