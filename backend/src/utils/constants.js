@@ -41,7 +41,7 @@ const RATE_LIMITS = {
 
 const SECURITY = {
   MAX_LOGIN_ATTEMPTS: parseInt(process.env.MAX_LOGIN_ATTEMPTS) || 5,
-  LOCKOUT_DURATION_MINUTES: parseInt(process.env.LOCKOUT_DURATION) || 15,
+  LOCKOUT_DURATION_MINUTES: parseInt(process.env.LOCKOUT_DURATION) || 10,
   BCRYPT_ROUNDS: parseInt(process.env.BCRYPT_ROUNDS) || 12,
   JWT_EXPIRE: process.env.JWT_EXPIRE || '7d',
   JWT_REFRESH_EXPIRE: process.env.JWT_REFRESH_EXPIRE || '30d',

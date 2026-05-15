@@ -348,6 +348,50 @@ router.get('/platform-fees', async (req, res) => {
   }
 });
 
+// Unlock a locked user account (clear loginAttempts and lockUntil)
+router.post('/unlock-user', async (req, res) => {
+  try {
+    const { email, userId } = req.body;
+
+    if (!email && !userId) {
+      return errorResponse(res, 400, 'Either email or userId is required');
+    }
+
+    const User = require('../models/User');
+
+    // Find user by ID or email
+    const query = userId ? { _id: userId } : { email };
+    const user = await User.findOne(query);
+
+    if (!user) {
+      return errorResponse(res, 404, `User not found`);
+    }
+
+    // Check if user is actually locked
+    const wasLocked = user.isLocked();
+    const previousAttempts = user.loginAttempts;
+
+    // Reset login attempts and clear lock
+    await user.resetLoginAttempts();
+
+    console.log(`[ADMIN] Unlocked user: ${user.name || user.email} (wasLocked: ${wasLocked}, attempts: ${previousAttempts})`);
+
+    return successResponse(res, 200, `User ${user.email} unlocked successfully`, {
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        wasLocked,
+        previousLoginAttempts: previousAttempts
+      }
+    });
+
+  } catch (error) {
+    console.error('Unlock user error:', error);
+    return errorResponse(res, 500, 'Failed to unlock user', error.message);
+  }
+});
+
 // Withdraw accumulated platform fees
 router.post('/platform-fees/withdraw', async (req, res) => {
   try {
