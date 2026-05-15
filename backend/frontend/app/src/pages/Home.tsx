@@ -169,7 +169,7 @@ export function Home() {
               <ArrowRight className="w-4 h-4" />
             </a>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {creators.map((creator) => (
               <CreatorCard 
                 key={creator.id} 
@@ -199,7 +199,7 @@ export function Home() {
         </div>
         
         {verifiedCreators.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {verifiedCreators.map((creator) => (
               <CreatorCard 
                 key={creator.id} 
@@ -234,7 +234,7 @@ export function Home() {
             <p className="text-gray-400 text-xs sm:text-sm mt-1">Based on weekly activity</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {trendingCreators.map((creator) => (
               <CreatorCard 
                 key={creator.id} 
