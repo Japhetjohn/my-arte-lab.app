@@ -36,6 +36,9 @@ interface Booking {
   currency: string;
   status: string;
   paymentStatus: string;
+  platformFee?: number;
+  creatorAmount?: number;
+  platformCommission?: number;
   createdAt: string;
   startDate: string;
   endDate: string;
@@ -348,7 +351,15 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                   {isClient && (
                     <div className="flex gap-2 mt-3">
                       <Button size="sm" onClick={handlePayBooking}>Accept & Pay</Button>
-                      <Button size="sm" variant="outline" onClick={() => toast.info('Counter proposal rejected')}>Reject</Button>
+                      <Button size="sm" variant="outline" onClick={async () => {
+                        try {
+                          await api.post(`/bookings/${id}/reject`, { reason: 'Counter proposal rejected by client' });
+                          toast.success('Counter proposal rejected');
+                          fetchBooking();
+                        } catch (error: any) {
+                          toast.error(error.response?.data?.error || 'Failed to reject counter proposal');
+                        }
+                      }}>Reject</Button>
                     </div>
                   )}
                 </div>
@@ -430,8 +441,8 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                                 <strong>Payment:</strong> {booking.amount} {booking.currency} will be released
                               </p>
                               <p className="text-xs text-amber-600 mt-1">
-                                • {creatorName} receives: {(booking.amount * 0.9).toFixed(2)} {booking.currency}<br/>
-                                • Platform fee (10%): {(booking.amount * 0.1).toFixed(2)} {booking.currency}
+                                • {creatorName} receives: {(booking.creatorAmount || booking.amount * 0.9).toFixed(2)} {booking.currency}<br/>
+                                • Platform fee (10%): {(booking.platformFee || booking.amount * 0.1).toFixed(2)} {booking.currency}
                               </p>
                             </div>
                             <Button 
@@ -649,11 +660,11 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-500">Platform Fee (10%)</span>
-                <span className="text-gray-500">{(booking.amount * 0.1).toFixed(2)} {booking.currency}</span>
+                <span className="text-gray-500">{(booking.platformFee || booking.amount * 0.1).toFixed(2)} {booking.currency}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-500">Creator Receives</span>
-                <span className="text-[#8A2BE2] font-medium">{(booking.amount * 0.9).toFixed(2)} {booking.currency}</span>
+                <span className="text-[#8A2BE2] font-medium">{(booking.creatorAmount || booking.amount * 0.9).toFixed(2)} {booking.currency}</span>
               </div>
               <div className="pt-4 border-t">
                 {booking.status === 'pending' ? (

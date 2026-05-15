@@ -6,9 +6,13 @@ const Notification = require('../models/Notification');
 const notificationService = require('./notificationService');
 const hostfiService = require('./hostfiService');
 const platformFeeAccumulator = require('./platformFeeAccumulator');
+const solanaTransferService = require('./solanaTransferService');
 const { ErrorHandler } = require('../utils/errorHandler');
 const { BOOKING_LIMITS, PLATFORM_CONFIG } = require('../utils/constants');
 const { getPlatformFeeDestination } = require('../utils/platformWallet');
+
+// Initialize Solana transfer service
+solanaTransferService.init();
 
 class BookingService {
   async acceptBookingWithTransaction(bookingId, creatorId, idempotencyKey = null) {
@@ -452,49 +456,78 @@ class BookingService {
       console.log(`[BookingService] Starting HostFi transfers for booking ${bookingId}`);
       console.log(`[BookingService] Client USDC asset:`, clientUsdcAsset?.assetId);
       
-      if (!clientUsdcAsset?.assetId) {
-        console.error('[BookingService] No client USDC asset found for HostFi transfer');
+      // ═══════════════════════════════════════════════════════════════
+      // PAYOUT PHASE: Send 90% to creator, 10% to platform
+      // PRIMARY: Direct Solana SPL Token transfer (no minimum!)
+      // FALLBACK: HostFi withdrawal (1 USDC minimum)
+      // ═══════════════════════════════════════════════════════════════
+      
+      if (!creatorWalletAddress) {
+        console.error('[BookingService] Creator wallet address not available — skipping payout');
       } else {
-        // 1. Transfer creator's 90% to their wallet (separate try block)
+        // ─── 1. CREATOR PAYOUT (90%) ───
         try {
-          console.log(`[BookingService] Initiating creator payout: ${booking.creatorAmount} ${booking.currency} to ${creatorWalletAddress}`);
+          console.log(`[BookingService] Creator payout: ${booking.creatorAmount} ${booking.currency} to ${creatorWalletAddress}`);
           
-          if (!creatorWalletAddress) {
-            throw new Error('Creator wallet address not available');
-          }
-          
-          const creatorPayout = await hostfiService.initiateWithdrawal({
-            walletAssetId: clientUsdcAsset.assetId,
-            amount: booking.creatorAmount,
-            currency: booking.currency,
-            methodId: 'CRYPTO',
-            recipient: {
-              type: 'CRYPTO',
-              method: 'CRYPTO',
-              currency: booking.currency,
-              address: creatorWalletAddress,
-              network: 'SOL',
-              country: 'NG'
-            },
-            clientReference: `CREATOR-PAYOUT-${booking.bookingId}-${Date.now()}`,
-            memo: `Payment for ${booking.serviceTitle}`
-          });
+          let payoutResult = null;
+          let payoutMethod = null;
 
-          if (creatorPayout.reference || creatorPayout.id) {
-            // Update earning transaction with payout reference
+          // PRIMARY: Direct Solana transfer (works for ANY amount, no minimum)
+          if (solanaTransferService.isReady()) {
+            try {
+              console.log(`[BookingService] Using DIRECT Solana transfer for creator payout`);
+              payoutResult = await solanaTransferService.transferUSDC(
+                creatorWalletAddress,
+                booking.creatorAmount,
+                `Creator payout: ${booking.bookingId}`
+              );
+              payoutMethod = 'solana_direct';
+              console.log(`[BookingService] ✓ Direct Solana transfer: ${payoutResult.signature}`);
+            } catch (solanaError) {
+              console.error(`[BookingService] Solana transfer failed, will try HostFi:`, solanaError.message);
+            }
+          }
+
+          // FALLBACK: HostFi withdrawal
+          if (!payoutResult && clientUsdcAsset?.assetId) {
+            console.log(`[BookingService] Using HostFi withdrawal fallback`);
+            payoutResult = await hostfiService.initiateWithdrawal({
+              walletAssetId: clientUsdcAsset.assetId,
+              amount: booking.creatorAmount,
+              currency: booking.currency,
+              methodId: 'CRYPTO',
+              recipient: {
+                type: 'CRYPTO',
+                method: 'CRYPTO',
+                currency: booking.currency,
+                address: creatorWalletAddress,
+                network: 'SOL',
+                country: 'NG'
+              },
+              clientReference: `CREATOR-PAYOUT-${booking.bookingId}-${Date.now()}`,
+              memo: `Payment for ${booking.serviceTitle}`
+            });
+            payoutMethod = 'hostfi';
+            console.log(`[BookingService] ✓ HostFi payout: ${payoutResult.reference || payoutResult.id}`);
+          }
+
+          // Update earning transaction with payout reference
+          if (payoutResult) {
+            const txHash = payoutResult.signature || payoutResult.reference || payoutResult.id;
             await Transaction.updateOne(
               { booking: booking._id, type: 'earning' },
               { 
-                transactionHash: creatorPayout.reference || creatorPayout.id,
+                transactionHash: txHash,
                 status: 'completed',
                 metadata: {
-                  payoutReference: creatorPayout.reference || creatorPayout.id,
+                  payoutReference: txHash,
                   toAddress: creatorWalletAddress,
-                  network: 'SOL'
+                  network: 'SOL',
+                  payoutMethod: payoutMethod,
+                  explorerUrl: payoutResult.explorerUrl
                 }
               }
             );
-            console.log(`[BookingService] ✓ Creator payout initiated: ${creatorPayout.reference || creatorPayout.id}`);
           }
         } catch (creatorError) {
           console.error('[BookingService] ✗ Creator payout failed:', creatorError.message);
