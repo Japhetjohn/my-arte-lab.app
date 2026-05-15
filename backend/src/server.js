@@ -402,6 +402,10 @@ const server = app.listen(PORT, () => {
   // Start escrow monitoring for auto-refunds
   const escrowMonitoringService = require('./services/escrowMonitoringService');
   escrowMonitoringService.start();
+
+  // Start payout cron job for batch processing
+  const { startPayoutCron } = require('./jobs/payoutCron');
+  startPayoutCron();
 });
 
 process.on('unhandledRejection', (err) => {

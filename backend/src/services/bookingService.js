@@ -6,6 +6,7 @@ const Notification = require('../models/Notification');
 const notificationService = require('./notificationService');
 const hostfiService = require('./hostfiService');
 const platformFeeAccumulator = require('./platformFeeAccumulator');
+const payoutQueueService = require('./payoutQueueService');
 const solanaTransferService = require('./solanaTransferService');
 const { ErrorHandler } = require('../utils/errorHandler');
 const { BOOKING_LIMITS, PLATFORM_CONFIG } = require('../utils/constants');
@@ -457,116 +458,103 @@ class BookingService {
       console.log(`[BookingService] Client USDC asset:`, clientUsdcAsset?.assetId);
       
       // ═══════════════════════════════════════════════════════════════
-      // PAYOUT PHASE: Send 90% to creator, 10% to platform
-      // PRIMARY: Direct Solana SPL Token transfer (no minimum!)
-      // FALLBACK: HostFi withdrawal (1 USDC minimum)
+      // PAYOUT PHASE: Queue creator payout (90%) + platform fee (10%)
+      // 
+      // ARCHITECTURE:
+      // - All payouts are QUEUED internally (no immediate transfer)
+      // - A daily cron job batches all pending payouts
+      // - Single HostFi withdrawal from shared pool → platform wallet
+      // - Then distribute to all recipients via Solana (no minimum!)
+      // 
+      // BENEFITS:
+      // - No per-client accumulation needed
+      // - One-time users work fine
+      // - No minimum amount issues
+      // - All payouts are tracked and auditable
       // ═══════════════════════════════════════════════════════════════
       
       if (!creatorWalletAddress) {
         console.error('[BookingService] Creator wallet address not available — skipping payout');
       } else {
-        // ─── 1. CREATOR PAYOUT (90%) ───
+        // ─── 1. QUEUE CREATOR PAYOUT (90%) ───
         try {
-          console.log(`[BookingService] Creator payout: ${booking.creatorAmount} ${booking.currency} to ${creatorWalletAddress}`);
+          console.log(`[BookingService] Queuing creator payout: ${booking.creatorAmount} ${booking.currency}`);
           
-          let payoutResult = null;
-          let payoutMethod = null;
-
-          // PRIMARY: Direct Solana transfer (works for ANY amount, no minimum)
-          if (solanaTransferService.isReady()) {
-            try {
-              console.log(`[BookingService] Using DIRECT Solana transfer for creator payout`);
-              payoutResult = await solanaTransferService.transferUSDC(
-                creatorWalletAddress,
-                booking.creatorAmount,
-                `Creator payout: ${booking.bookingId}`
-              );
-              payoutMethod = 'solana_direct';
-              console.log(`[BookingService] ✓ Direct Solana transfer: ${payoutResult.signature}`);
-            } catch (solanaError) {
-              console.error(`[BookingService] Solana transfer failed, will try HostFi:`, solanaError.message);
-            }
-          }
-
-          // FALLBACK: HostFi withdrawal
-          if (!payoutResult && clientUsdcAsset?.assetId) {
-            console.log(`[BookingService] Using HostFi withdrawal fallback`);
-            payoutResult = await hostfiService.initiateWithdrawal({
-              walletAssetId: clientUsdcAsset.assetId,
-              amount: booking.creatorAmount,
-              currency: booking.currency,
-              methodId: 'CRYPTO',
-              recipient: {
-                type: 'CRYPTO',
-                method: 'CRYPTO',
-                currency: booking.currency,
-                address: creatorWalletAddress,
-                network: 'SOL',
-                country: 'NG'
-              },
-              clientReference: `CREATOR-PAYOUT-${booking.bookingId}-${Date.now()}`,
-              memo: `Payment for ${booking.serviceTitle}`
-            });
-            payoutMethod = 'hostfi';
-            console.log(`[BookingService] ✓ HostFi payout: ${payoutResult.reference || payoutResult.id}`);
-          }
-
-          // Update earning transaction with payout reference
-          if (payoutResult) {
-            const txHash = payoutResult.signature || payoutResult.reference || payoutResult.id;
-            await Transaction.updateOne(
-              { booking: booking._id, type: 'earning' },
-              { 
-                transactionHash: txHash,
-                status: 'completed',
-                metadata: {
-                  payoutReference: txHash,
-                  toAddress: creatorWalletAddress,
-                  network: 'SOL',
-                  payoutMethod: payoutMethod,
-                  explorerUrl: payoutResult.explorerUrl
-                }
-              }
-            );
-          }
-        } catch (creatorError) {
-          console.error('[BookingService] ✗ Creator payout failed:', creatorError.message);
-          // Don't throw - log for manual reconciliation
-        }
-        
-        // 2. Accumulate platform fee 10% (batch until 1 USDC minimum)
-        try {
-          console.log(`[BookingService] ============================================`);
-          console.log(`[BookingService] PLATFORM FEE ACCUMULATION START`);
-          console.log(`[BookingService] Amount: ${booking.platformFee} ${booking.currency}`);
-          console.log(`[BookingService] Client Asset ID: ${clientUsdcAsset.assetId}`);
-          console.log(`[BookingService] Booking ID: ${booking.bookingId}`);
-          console.log(`[BookingService] ============================================`);
-          
-          const feeResult = await platformFeeAccumulator.addFee(
-            client._id.toString(),
+          const creatorQueueResult = await payoutQueueService.queueCreatorPayout(
             booking._id.toString(),
-            booking.platformFee,
-            booking.currency,
-            clientUsdcAsset.assetId
+            creator._id.toString(),
+            creatorWalletAddress,
+            booking.creatorAmount,
+            booking.currency
           );
           
-          console.log(`[BookingService] Platform fee accumulation result:`, JSON.stringify(feeResult, null, 2));
-
-          if (feeResult.withdrawn) {
-            // Fee was immediately withdrawn (reached 1 USDC threshold)
-            booking.platformFeeTransactionHash = feeResult.withdrawalResult.reference;
-            await booking.save();
-            console.log(`[BookingService] ✓ Platform fee withdrawn immediately: ${feeResult.withdrawalResult.reference}`);
-          } else {
-            // Fee is accumulating
-            console.log(`[BookingService] ✓ Platform fee accumulated: ${feeResult.accumulated} USDC`);
-            console.log(`[BookingService]   Remaining to threshold: ${feeResult.remainingToThreshold} USDC`);
-          }
+          console.log(`[BookingService] ✓ Creator payout queued: ${creatorQueueResult.transactionId}`);
+          
+          // Update the earning transaction to reflect queued status
+          await Transaction.updateOne(
+            { booking: booking._id, type: 'earning' },
+            {
+              $set: {
+                status: 'pending_payout',
+                'metadata.queuedAt': new Date().toISOString(),
+                'metadata.recipientAddress': creatorWalletAddress,
+                'metadata.payoutType': 'creator'
+              }
+            }
+          );
+        } catch (creatorError) {
+          console.error('[BookingService] ✗ Failed to queue creator payout:', creatorError.message);
+        }
+        
+        // ─── 2. QUEUE PLATFORM FEE (10%) ───
+        try {
+          console.log(`[BookingService] Queuing platform fee: ${booking.platformFee} ${booking.currency}`);
+          
+          const feeQueueResult = await payoutQueueService.queuePlatformFee(
+            booking._id.toString(),
+            client._id.toString(),
+            booking.platformFee,
+            booking.currency
+          );
+          
+          console.log(`[BookingService] ✓ Platform fee queued: ${feeQueueResult.transactionId}`);
+          
+          // Also create/update the platform fee transaction
+          await Transaction.updateOne(
+            { booking: booking._id, type: 'platform_fee' },
+            {
+              $set: {
+                status: 'pending_payout',
+                'metadata.queuedAt': new Date().toISOString(),
+                'metadata.recipientAddress': PLATFORM_CONFIG.PLATFORM_WALLET_ADDRESS,
+                'metadata.payoutType': 'platform'
+              }
+            },
+            { upsert: true }
+          );
         } catch (platformError) {
-          console.error('[BookingService] ✗ Platform fee accumulation failed:', platformError.message);
-          console.error('[BookingService] ✗ Error details:', platformError.stack);
-          // Don't throw - log for manual reconciliation
+          console.error('[BookingService] ✗ Failed to queue platform fee:', platformError.message);
+        }
+        
+        // ─── 3. CHECK IF WE SHOULD TRIGGER IMMEDIATE BATCH ───
+        // If total pending >= 1 USDC, try to process immediately
+        try {
+          const pending = await payoutQueueService.getPendingTotals();
+          console.log(`[BookingService] Total pending payouts: ${pending.total} USDC`);
+          
+          if (pending.total >= 1 && solanaTransferService.isReady()) {
+            console.log(`[BookingService] Threshold reached! Triggering immediate batch...`);
+            // Run in background — don't block the response
+            payoutQueueService.processBatchPayouts().then(result => {
+              if (result.success) {
+                console.log(`[BookingService] ✓ Immediate batch processed: ${result.processed} payouts`);
+              }
+            }).catch(err => {
+              console.error(`[BookingService] Immediate batch failed:`, err.message);
+            });
+          }
+        } catch (checkError) {
+          console.error(`[BookingService] Failed to check pending totals:`, checkError.message);
         }
       }
 

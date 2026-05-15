@@ -438,4 +438,67 @@ router.post('/platform-fees/withdraw', async (req, res) => {
   }
 });
 
+// ─── PAYOUT QUEUE ADMIN ENDPOINTS ───
+
+// Get pending payouts summary
+router.get('/payouts/pending', async (req, res) => {
+  try {
+    const payoutQueueService = require('../services/payoutQueueService');
+    const pending = await payoutQueueService.getPendingTotals();
+    const transactions = await payoutQueueService.getPendingPayouts();
+    
+    return successResponse(res, 200, 'Pending payouts retrieved', {
+      summary: pending,
+      transactions: transactions.map(tx => ({
+        id: tx._id,
+        type: tx.type,
+        amount: tx.amount,
+        currency: tx.currency,
+        recipient: tx.metadata?.recipientAddress,
+        booking: tx.booking,
+        queuedAt: tx.metadata?.queuedAt,
+        createdAt: tx.createdAt
+      }))
+    });
+  } catch (error) {
+    console.error('Get pending payouts error:', error);
+    return errorResponse(res, 500, 'Failed to get pending payouts', error.message);
+  }
+});
+
+// Trigger immediate batch payout
+router.post('/payouts/process', async (req, res) => {
+  try {
+    const payoutQueueService = require('../services/payoutQueueService');
+    
+    // Run in background so we don't timeout
+    payoutQueueService.processBatchPayouts().then(result => {
+      console.log('[Admin] Batch payout completed:', result);
+    }).catch(err => {
+      console.error('[Admin] Batch payout failed:', err);
+    });
+    
+    return successResponse(res, 202, 'Batch payout job started', {
+      message: 'Payouts are being processed in the background. Check logs for results.',
+      nextScheduledRun: 'Daily at 2:00 AM UTC'
+    });
+  } catch (error) {
+    console.error('Process payouts error:', error);
+    return errorResponse(res, 500, 'Failed to start payout processing', error.message);
+  }
+});
+
+// Process a single payout immediately
+router.post('/payouts/process/:transactionId', async (req, res) => {
+  try {
+    const payoutQueueService = require('../services/payoutQueueService');
+    const result = await payoutQueueService.processSinglePayout(req.params.transactionId);
+    
+    return successResponse(res, 200, 'Payout processed', result);
+  } catch (error) {
+    console.error('Process single payout error:', error);
+    return errorResponse(res, 500, 'Failed to process payout', error.message);
+  }
+});
+
 module.exports = router;
