@@ -61,69 +61,59 @@ export function CreatorCard({ creator, onViewProfile, onBook }: CreatorCardProps
   return (
     <>
       <Card 
-        className="group hover:shadow-lg transition-all duration-300 border border-gray-200 overflow-hidden cursor-pointer w-full max-w-full"
+        className="group hover:shadow-lg transition-all duration-300 border border-gray-200 hover:border-[#8A2BE2]/30 overflow-hidden cursor-pointer h-full min-h-[220px]"
         onClick={handleCardClick}
       >
-        <CardContent className="p-2.5 sm:p-5">
-          <div className="flex items-start gap-2 sm:gap-3">
-            <div className="relative flex-shrink-0">
-              <img
-                src={creator.avatar || '/images/avatar-1.png'}
-                alt={creator.name || 'Creator'}
-                className="w-10 h-10 sm:w-16 sm:h-16 rounded-full object-cover border-[1.5px] border-gray-100"
+        <CardContent className="p-3 sm:p-4 flex flex-col items-center text-center h-full gap-3">
+          {/* Top Section: Avatar & Status */}
+          <div className="relative flex-shrink-0 mt-1">
+            <img
+              src={creator.avatar || '/images/avatar-1.png'}
+              alt={creator.name || 'Creator'}
+              className="w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-gray-100"
+            />
+            <div className="absolute -bottom-0.5 -right-0.5">
+              <StatusBadge 
+                status={creator.availability || 'available'} 
+                className="px-1.5 py-0 text-[10px] scale-90 origin-bottom-right"
               />
-              <div className="absolute -bottom-0.5 -right-0.5">
-                <StatusBadge 
-                  status={creator.availability || 'available'} 
-                  className="px-1.5 py-0 text-[10px] sm:text-xs sm:px-2.5 sm:py-0.5"
-                />
-              </div>
             </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1">
-                <h3 className="font-semibold text-gray-900 truncate text-sm">{creator.name}</h3>
-                {creator.isVerified && <VerifiedBadge className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />}
-              </div>
-              <p className="text-xs text-gray-500 capitalize truncate">{creator.category || 'Creator'}</p>
-              <div className="flex items-center gap-1 mt-0.5">
-                <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-amber-400 text-amber-400" />
-                <span className="text-xs font-medium">{ratingDisplay.value}</span>
-                <span className="text-xs text-gray-400">({ratingDisplay.count})</span>
-              </div>
+          </div>
+
+          {/* Middle Section: Info */}
+          <div className="flex-1 w-full min-w-0 space-y-1">
+            <div className="flex items-center justify-center gap-1">
+              <h3 className="font-bold text-gray-900 truncate text-sm sm:text-base leading-tight">
+                {creator.name}
+              </h3>
+              {creator.isVerified && <VerifiedBadge className="w-3.5 h-3.5 shrink-0" />}
+            </div>
+            
+            <p className="text-[11px] sm:text-xs text-gray-500 font-medium capitalize truncate">
+              {creator.category || 'Creator'}
+            </p>
+
+            <div className="flex items-center justify-center gap-1 mt-1">
+              <Star className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-amber-400 text-amber-400" />
+              <span className="text-[11px] sm:text-xs font-bold">{ratingDisplay.value}</span>
+              <span className="text-[10px] sm:text-[11px] text-gray-400">({ratingDisplay.count})</span>
             </div>
           </div>
           
-          <p className="mt-2 sm:mt-3 text-xs sm:text-sm text-gray-600 line-clamp-2">{creator.bio || 'No bio available'}</p>
-          
-          <div className="flex flex-wrap gap-1 mt-2 sm:mt-3">
-            {(creator.skills || []).slice(0, 3).map((skill) => (
-              <span
-                key={skill}
-                className="px-2 py-0.5 bg-gray-100 text-gray-600 text-[10px] sm:text-xs rounded-full truncate max-w-[80px] sm:max-w-none"
-              >
-                {skill}
-              </span>
-            ))}
-            {(creator.skills || []).length > 3 && (
-              <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-[10px] sm:text-xs rounded-full">
-                +{(creator.skills || []).length - 3}
-              </span>
-            )}
-          </div>
-          
-          <div className="flex items-center gap-1.5 mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-100">
+          {/* Bottom Section: Buttons */}
+          <div className="flex items-center gap-1 w-full mt-auto pt-2 border-t border-gray-100">
             <Button
               variant="outline"
               size="sm"
               onClick={handleView}
-              className="flex-1 border-gray-200 text-[11px] sm:text-sm h-8 sm:h-9"
+              className="flex-1 border-gray-200 text-[10px] sm:text-xs h-7 sm:h-8"
             >
               View
             </Button>
             <Button
               size="sm"
               onClick={handleBook}
-              className="flex-1 bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white text-[11px] sm:text-sm h-8 sm:h-9"
+              className="flex-1 bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white text-[10px] sm:text-xs h-7 sm:h-8"
             >
               Book
             </Button>
