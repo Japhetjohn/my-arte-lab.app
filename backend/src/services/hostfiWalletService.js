@@ -161,68 +161,126 @@ class HostFiWalletService {
 
       console.log(`Syncing wallet balances for user ${userId}...`);
 
-      // Fetch crypto collection addresses for this user
+      // ═══════════════════════════════════════════════════════════════
+      // CRITICAL FIX: Calculate balance from TRANSACTION HISTORY
+      // instead of fetching from HostFi shared asset (which returns
+      // the SAME platform-wide balance for ALL users)
+      // ═══════════════════════════════════════════════════════════════
+      
+      const Transaction = require('../models/Transaction');
+      const Booking = require('../models/Booking');
+      
+      // Calculate user's actual balance from their transaction history
+      // Formula: Deposits + Earnings + Refunds - Withdrawals - Payments - Escrow - PlatformFees
+      const userTransactions = await Transaction.find({
+        user: userId,
+        status: { $in: ['completed', 'pending'] }
+      });
+      
+      let calculatedUsdcBalance = 0;
+      let calculatedNgnBalance = 0;
+      
+      for (const tx of userTransactions) {
+        const amount = parseFloat(tx.amount) || 0;
+        const currency = (tx.currency || 'USDC').toUpperCase();
+        
+        // Only count completed transactions for available balance
+        if (tx.status !== 'completed') continue;
+        
+        switch (tx.type) {
+          // CREDIT transactions (money coming in)
+          case 'deposit':
+          case 'earning':
+          case 'refund':
+            if (currency === 'USDC') calculatedUsdcBalance += amount;
+            if (currency === 'NGN') calculatedNgnBalance += amount;
+            break;
+            
+          // DEBIT transactions (money going out)
+          case 'withdrawal':
+          case 'payment':
+          case 'escrow':
+          case 'platform_fee':
+            if (currency === 'USDC') calculatedUsdcBalance -= amount;
+            if (currency === 'NGN') calculatedNgnBalance -= amount;
+            break;
+        }
+      }
+      
+      // Also account for active escrow (bookings that are paid but not completed)
+      // This is money the client has paid but is held in escrow
+      const activeEscrowBookings = await Booking.find({
+        client: userId,
+        status: { $in: ['confirmed', 'in_progress', 'delivered'] },
+        paymentStatus: 'paid'
+      });
+      
+      const escrowTotal = activeEscrowBookings.reduce((sum, b) => sum + (parseFloat(b.amount) || 0), 0);
+      calculatedUsdcBalance -= escrowTotal;
+      
+      // Ensure non-negative balance
+      calculatedUsdcBalance = Math.max(0, parseFloat(calculatedUsdcBalance.toFixed(6)));
+      calculatedNgnBalance = Math.max(0, parseFloat(calculatedNgnBalance.toFixed(2)));
+      
+      console.log(`[Sync] Calculated balance for user ${userId}: ${calculatedUsdcBalance} USDC, ${calculatedNgnBalance} NGN (escrow: ${escrowTotal})`);
+
+      // Update each asset with the CALCULATED balance (NOT from HostFi shared asset)
+      for (const storedAsset of user.wallet.hostfiWalletAssets) {
+        const currencyCode = (storedAsset.currency || 'USDC').toUpperCase();
+        
+        if (currencyCode === 'USDC') {
+          storedAsset.balance = calculatedUsdcBalance;
+        } else if (currencyCode === 'NGN') {
+          storedAsset.balance = calculatedNgnBalance;
+        } else {
+          // For other currencies, we don't track yet — set to 0
+          storedAsset.balance = 0;
+        }
+        
+        storedAsset.lastSynced = new Date();
+      }
+
+      // Update user's primary balance fields
+      user.wallet.balance = calculatedUsdcBalance;
+      user.balance = calculatedUsdcBalance;
+      user.wallet.pendingBalance = escrowTotal;
+      
+      // Fetch crypto collection addresses for this user (for deposit addresses)
       const cryptoAddresses = await hostfiService.getCryptoCollectionAddresses({ 
         customId: userId.toString() 
       }).catch(err => {
         console.warn(`[Sync] Failed to fetch crypto addresses for ${userId}:`, err.message);
         return [];
       });
-
-      // Fetch each wallet asset individually by assetId (per-user balance)
+      
+      // Update collection addresses (these are unique per user)
       for (const storedAsset of user.wallet.hostfiWalletAssets) {
-        if (!storedAsset.assetId) continue;
-        
-        try {
-          console.log(`[Sync] Fetching wallet asset ${storedAsset.assetId} for user ${userId}`);
-          const asset = await hostfiService.getWalletAsset(storedAsset.assetId);
+        if (storedAsset.assetType === 'CRYPTO' || storedAsset.currency === 'USDC') {
+          const addrInfo = cryptoAddresses.find(a =>
+            a.assetId === storedAsset.assetId ||
+            (a.currency === storedAsset.currency && a.network === 'SOL')
+          );
           
-          if (asset && asset.balance !== undefined) {
-            const currencyCode = asset.currency?.code || asset.currency || storedAsset.currency;
-            const networkCode = asset.network || storedAsset.network || 'SOL';
+          if (addrInfo) {
+            storedAsset.colAddress = addrInfo.address;
+            storedAsset.colNetwork = addrInfo.network;
             
-            // Update balance from HostFi
-            storedAsset.balance = parseFloat(asset.balance) || 0;
-            storedAsset.reservedBalance = parseFloat(asset.reservedBalance) || 0;
-            storedAsset.lastSynced = new Date();
-            
-            console.log(`[Sync] Updated ${currencyCode} balance for user ${userId}: ${storedAsset.balance}`);
-            
-            // Sync collection address if available
-            if (asset.type === 'CRYPTO' || storedAsset.assetType === 'CRYPTO') {
-              const addrInfo = cryptoAddresses.find(a =>
-                a.assetId === storedAsset.assetId ||
-                (a.currency === currencyCode && a.network === networkCode)
-              );
-
-              if (addrInfo) {
-                storedAsset.colAddress = addrInfo.address;
-                storedAsset.colNetwork = addrInfo.network;
-
-                // Also update legacy address if it's for Solana/USDC
-                if ((addrInfo.network === 'SOL' || addrInfo.network === 'Solana') &&
-                  (!user.wallet.address || user.wallet.address.startsWith('pending_'))) {
-                  user.wallet.address = addrInfo.address;
-                  user.wallet.network = 'Solana';
-                }
-              }
+            if ((addrInfo.network === 'SOL' || addrInfo.network === 'Solana') &&
+              (!user.wallet.address || user.wallet.address.startsWith('pending_'))) {
+              user.wallet.address = addrInfo.address;
+              user.wallet.network = 'Solana';
             }
           }
-        } catch (assetError) {
-          console.warn(`[Sync] Failed to fetch asset ${storedAsset.assetId} for user ${userId}:`, assetError.message);
-          // Keep existing balance if fetch fails
         }
       }
 
-      // Sync Tsara local balance if it exists
-      let tsaraLocalUsdcBalance = 0;
+      // Sync Tsara local balance if it exists (on-chain Solana wallet)
       if (user.wallet.tsaraAddress) {
         const tsaraService = require('./tsaraService');
         try {
           const balanceData = await tsaraService.getBalance(user.wallet.tsaraAddress);
           if (balanceData.success) {
-            tsaraLocalUsdcBalance = balanceData.data.balance; // This is the USDC balance
-            user.wallet.tsaraBalance = tsaraLocalUsdcBalance; // Update specific field if it exists or for local use
+            user.wallet.tsaraBalance = balanceData.data.balance;
           }
         } catch (tsaraErr) {
           console.warn(`[Sync] Failed to fetch Tsara balance for ${userId}:`, tsaraErr.message);
@@ -231,10 +289,8 @@ class HostFiWalletService {
 
       // Update primary balance currency if not set
       if (!user.wallet.currency) {
-        user.wallet.currency = 'USDC'; // Default to USDC for internationalization
+        user.wallet.currency = 'USDC';
       }
-
-      console.log(`[Sync] Note: We are relying on the endpoints for hostfi true balances and unblocked local caches`);
 
       // CRITICAL: Ensure the primary wallet address is the Tsara Solana address if available
       if (user.wallet.tsaraAddress) {
@@ -243,12 +299,10 @@ class HostFiWalletService {
       }
 
       await user.save({ validateBeforeSave: false });
-      console.log(`Wallet balances synced for user ${userId}. Total Aggregate: ${user.wallet.balance} ${user.wallet.currency || 'USDC'}`);
+      console.log(`Wallet balances synced for user ${userId}. Balance: ${user.wallet.balance} USDC, Escrow: ${escrowTotal}`);
       return user;
     } catch (error) {
       console.error(`Failed to sync wallet balances for user ${userId}:`, error.message);
-      // Even if sync fails, returning the user with stale data is better than crashing, 
-      // but we should mark it for retry
       const user = await User.findById(userId);
       return user || { wallet: { balance: 0, hostfiWalletAssets: [] } };
     }
@@ -350,29 +404,23 @@ class HostFiWalletService {
   }
 
   /**
-   * Get actual balance per currency straight from API endpoints
+   * Get actual balance per currency from transaction history
+   * FIXED: No longer fetches from HostFi shared asset (which returns same balance for all users)
    */
   async getLiveBalanceAsset(userId, currencyCode = 'USDC') {
     const user = await User.findById(userId);
     if (!user) throw new Error('User not found');
     
-    // Sync using real endpoint fetching!
+    // Sync calculates balance from user's transaction history
     await this.syncWalletBalances(userId);
     
     const refreshedUser = await User.findById(userId);
     const asset = refreshedUser.wallet.hostfiWalletAssets?.find(a => a.currency === currencyCode);
     
-    // Get pending reservations
-    const Booking = require('../models/Booking');
-    const clientPendingBookings = await Booking.find({
-      client: userId,
-      status: { $in: ['confirmed', 'in_progress', 'delivered'] },
-      paymentStatus: 'paid'
-    });
-    const pendingBalance = clientPendingBookings.reduce((sum, booking) => sum + (parseFloat(booking.amount) || 0), 0);
-    
+    // Balance is already calculated with escrow deducted in syncWalletBalances
+    // So we just return the stored balance directly
     const trueBalance = parseFloat(asset?.balance || 0);
-    return Math.max(0, parseFloat((trueBalance - pendingBalance).toFixed(2)));
+    return Math.max(0, parseFloat(trueBalance.toFixed(2)));
   }
 }
 

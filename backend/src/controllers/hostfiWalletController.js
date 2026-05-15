@@ -31,35 +31,25 @@ exports.getWallet = catchAsync(async (req, res, next) => {
     Object.assign(user, refreshedUser.toObject());
   }
 
-  // Get real balance from HostFi
-  let hostFiBalance = 0;
+  // Get user's balance from transaction history (NOT from HostFi shared asset)
+  let calculatedAvailableBalance = 0;
+  let calculatedPendingBalance = 0;
   try {
-    console.log(`[Wallet] Fetching real balance from HostFi for user ${req.user._id}...`);
+    console.log(`[Wallet] Calculating balance from transaction history for user ${req.user._id}...`);
     
-    // Get real balance from HostFi using the new direct service method
-    const liveBalance = await hostfiWalletService.getLiveBalanceAsset(user._id, 'USDC');
-    hostFiBalance = parseFloat(liveBalance) || 0;
-    console.log(`[Wallet] ✓ HostFi balance: ${hostFiBalance} USDC`);
+    // Sync wallet balances (calculates from user's transactions, not HostFi shared pool)
+    const syncedUser = await hostfiWalletService.syncWalletBalances(user._id);
+    calculatedAvailableBalance = parseFloat(syncedUser.wallet.balance) || 0;
+    calculatedPendingBalance = parseFloat(syncedUser.wallet.pendingBalance) || 0;
+    
+    console.log(`[Wallet] ✓ Calculated balance: ${calculatedAvailableBalance} USDC (pending: ${calculatedPendingBalance})`);
   } catch (err) {
-    console.error('[Wallet] Failed to fetch HostFi balance:', err.message);
+    console.error('[Wallet] Failed to calculate balance:', err.message);
     // Fallback to stored balance
-    const storedAsset = user.wallet.hostfiWalletAssets?.find(a => a.currency === 'USDC');
-    hostFiBalance = storedAsset ? parseFloat(storedAsset.balance) || 0 : 0;
+    calculatedAvailableBalance = parseFloat(user.wallet.balance) || 0;
+    calculatedPendingBalance = parseFloat(user.wallet.pendingBalance) || 0;
   }
-  
-  const calculatedBalance = parseFloat(hostFiBalance.toFixed(2));
 
-  // Calculate pending balance from active bookings (for clients - money they've paid that's held)
-  const clientPendingBookings = await Booking.find({
-    client: req.user._id,
-    status: { $in: ['confirmed', 'in_progress', 'delivered'] },
-    paymentStatus: 'paid'
-  });
-  
-  const calculatedPendingBalance = clientPendingBookings.reduce((sum, booking) => 
-    sum + (parseFloat(booking.amount) || 0), 0
-  );
-  
   // Calculate incoming earnings for creators (money they'll receive when work is completed)
   const creatorPendingBookings = await Booking.find({
     creator: req.user._id,
@@ -72,10 +62,7 @@ exports.getWallet = catchAsync(async (req, res, next) => {
     sum + (parseFloat(booking.creatorAmount) || 0), 0
   );
 
-  // Available balance = calculated balance - pending bookings (for clients)
-  const calculatedAvailableBalance = Math.max(0, parseFloat((calculatedBalance - calculatedPendingBalance).toFixed(2)));
-  
-  console.log(`[Wallet] User ${req.user._id} - Balance: ${calculatedBalance}, Pending: ${calculatedPendingBalance}, Available: ${calculatedAvailableBalance}`);
+  console.log(`[Wallet] User ${req.user._id} - Available: ${calculatedAvailableBalance}, Pending: ${calculatedPendingBalance}, Incoming: ${incomingEarnings}`);
   
   // Sync stored balance if it differs from calculated
   if (Math.abs(user.wallet.balance - calculatedAvailableBalance) > 0.01) {
