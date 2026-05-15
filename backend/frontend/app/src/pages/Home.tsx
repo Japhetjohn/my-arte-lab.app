@@ -133,7 +133,7 @@ export function Home() {
   }
 
   return (
-    <div className="space-y-6 sm:space-y-8 pb-20 lg:pb-8 px-4 sm:px-0">
+    <div className="space-y-6 sm:space-y-8 pb-20 lg:pb-8 px-2.5 sm:px-0">
       {/* Hero Section */}
       <section className="relative rounded-2xl overflow-hidden -mx-4 sm:mx-0">
         <img 

@@ -64,16 +64,19 @@ export function CreatorCard({ creator, onViewProfile, onBook }: CreatorCardProps
         className="group hover:shadow-lg transition-all duration-300 border border-gray-200 overflow-hidden cursor-pointer w-full max-w-full"
         onClick={handleCardClick}
       >
-        <CardContent className="p-3 sm:p-5">
-          <div className="flex items-start gap-3">
+        <CardContent className="p-2.5 sm:p-5">
+          <div className="flex items-start gap-2 sm:gap-3">
             <div className="relative flex-shrink-0">
               <img
                 src={creator.avatar || '/images/avatar-1.png'}
                 alt={creator.name || 'Creator'}
-                className="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover border-[1.5px] border-gray-100"
+                className="w-10 h-10 sm:w-16 sm:h-16 rounded-full object-cover border-[1.5px] border-gray-100"
               />
-              <div className="absolute -bottom-1 -right-1">
-                <StatusBadge status={creator.availability || 'available'} />
+              <div className="absolute -bottom-0.5 -right-0.5">
+                <StatusBadge 
+                  status={creator.availability || 'available'} 
+                  className="px-1.5 py-0 text-[10px] sm:text-xs sm:px-2.5 sm:py-0.5"
+                />
               </div>
             </div>
             <div className="flex-1 min-w-0">
@@ -92,7 +95,7 @@ export function CreatorCard({ creator, onViewProfile, onBook }: CreatorCardProps
           
           <p className="mt-2 sm:mt-3 text-xs sm:text-sm text-gray-600 line-clamp-2">{creator.bio || 'No bio available'}</p>
           
-          <div className="flex flex-wrap gap-1.5 mt-2 sm:mt-3">
+          <div className="flex flex-wrap gap-1 mt-2 sm:mt-3">
             {(creator.skills || []).slice(0, 3).map((skill) => (
               <span
                 key={skill}
@@ -108,19 +111,19 @@ export function CreatorCard({ creator, onViewProfile, onBook }: CreatorCardProps
             )}
           </div>
           
-          <div className="flex items-center gap-2 mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-100">
+          <div className="flex items-center gap-1.5 mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-100">
             <Button
               variant="outline"
               size="sm"
               onClick={handleView}
-              className="flex-1 border-gray-200 text-xs sm:text-sm h-9"
+              className="flex-1 border-gray-200 text-[11px] sm:text-sm h-8 sm:h-9"
             >
               View
             </Button>
             <Button
               size="sm"
               onClick={handleBook}
-              className="flex-1 bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white text-xs sm:text-sm h-9"
+              className="flex-1 bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white text-[11px] sm:text-sm h-8 sm:h-9"
             >
               Book
             </Button>
