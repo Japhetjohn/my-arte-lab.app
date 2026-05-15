@@ -512,7 +512,7 @@ class BookingService {
           // Don't throw — log for manual reconciliation
         }
         
-        // ─── 2. PLATFORM FEE (10%) — Accumulate & batch when >= $1 ───
+        // ─── 2. PLATFORM FEE (10%) — Record for daily batch withdrawal ───
         try {
           console.log(`[BookingService] Platform fee: ${booking.platformFee} ${booking.currency}`);
           
@@ -520,24 +520,14 @@ class BookingService {
             client._id.toString(),
             booking._id.toString(),
             booking.platformFee,
-            booking.currency,
-            clientUsdcAsset.assetId
+            booking.currency
           );
           
-          console.log(`[BookingService] Platform fee result:`, JSON.stringify(feeResult, null, 2));
-
-          if (feeResult.withdrawn) {
-            // Fee reached $1 threshold and was auto-withdrawn
-            booking.platformFeeTransactionHash = feeResult.withdrawalResult?.reference;
-            await booking.save();
-            console.log(`[BookingService] ✓ Platform fee auto-withdrawn: ${feeResult.withdrawalResult?.reference}`);
-          } else {
-            // Fee is accumulating (will be withdrawn when total reaches $1)
-            console.log(`[BookingService] ✓ Platform fee accumulated: ${feeResult.accumulated} USDC`);
-            console.log(`[BookingService]   Remaining to $1 threshold: ${feeResult.remainingToThreshold} USDC`);
-          }
+          console.log(`[BookingService] ✓ Platform fee recorded: ${feeResult.amount} USDC`);
+          console.log(`[BookingService]   Global pending: ${feeResult.globalPending} USDC`);
+          console.log(`[BookingService]   Will be withdrawn at midnight if total >= $1`);
         } catch (platformError) {
-          console.error('[BookingService] ✗ Platform fee accumulation failed:', platformError.message);
+          console.error('[BookingService] ✗ Platform fee recording failed:', platformError.message);
           // Don't throw — log for manual reconciliation
         }
       }

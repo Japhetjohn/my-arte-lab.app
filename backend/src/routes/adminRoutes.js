@@ -392,112 +392,88 @@ router.post('/unlock-user', async (req, res) => {
   }
 });
 
-// Withdraw accumulated platform fees
+// Trigger immediate platform fee batch withdrawal (admin override)
 router.post('/platform-fees/withdraw', async (req, res) => {
   try {
     const platformFeeAccumulator = require('../services/platformFeeAccumulator');
-    const User = require('../models/User');
-    const mongoose = require('mongoose');
+    const { runPayoutJobNow } = require('../jobs/payoutCron');
     
-    const clientUserId = process.env.HOSTFI_CLIENT_USER_ID || '677fc32a5e199a1dbc0eb9e5';
+    const result = await runPayoutJobNow();
     
-    // Get client user and their asset ID
-    const client = await User.findById(clientUserId);
-    if (!client || !client.wallet?.hostfiWalletAssets) {
-      return errorResponse(res, 500, 'Client wallet not configured');
-    }
-    
-    const usdcAsset = client.wallet.hostfiWalletAssets.find(a => a.currency === 'USDC');
-    if (!usdcAsset?.assetId) {
-      return errorResponse(res, 500, 'USDC asset not found in client wallet');
-    }
-    
-    // Withdraw fees - correct method signature: (userId, currency, clientAssetId)
-    const result = await platformFeeAccumulator.withdrawAccumulatedFees(
-      clientUserId,
-      'USDC',
-      usdcAsset.assetId
-    );
-    
-    if (result.success) {
-      return successResponse(res, 200, `Successfully withdrawn ${result.amount} USDC to platform wallet`, {
-        amount: result.amount,
-        reference: result.reference,
-        transactionsUpdated: result.transactionsUpdated
+    if (result.skipped) {
+      return successResponse(res, 200, 'Withdrawal skipped', {
+        reason: result.reason,
+        totalPending: result.totalPending
       });
-    } else if (result.skipped) {
-      return successResponse(res, 200, 'Withdrawal skipped: ' + result.reason, {
-        accumulated: result.accumulated
-      });
-    } else {
-      return errorResponse(res, 400, 'Withdrawal failed', result);
     }
+    
+    return successResponse(res, 200, `Successfully withdrawn ${result.amount} USDC to platform wallet`, {
+      amount: result.amount,
+      reference: result.reference,
+      feesCount: result.feesCount
+    });
   } catch (error) {
     console.error('Withdraw platform fees error:', error);
     return errorResponse(res, 500, 'Failed to withdraw platform fees', error.message);
   }
 });
 
-// ─── PAYOUT QUEUE ADMIN ENDPOINTS ───
+// ─── PLATFORM FEE ADMIN ENDPOINTS ───
 
-// Get pending payouts summary
+// Get pending platform fees summary
 router.get('/payouts/pending', async (req, res) => {
   try {
-    const payoutQueueService = require('../services/payoutQueueService');
-    const pending = await payoutQueueService.getPendingTotals();
-    const transactions = await payoutQueueService.getPendingPayouts();
+    const platformFeeAccumulator = require('../services/platformFeeAccumulator');
+    const Transaction = require('../models/Transaction');
     
-    return successResponse(res, 200, 'Pending payouts retrieved', {
-      summary: pending,
-      transactions: transactions.map(tx => ({
+    const globalPending = await platformFeeAccumulator.getGlobalPendingAmount('USDC');
+    const pendingFees = await platformFeeAccumulator.getPendingFees('USDC');
+    
+    return successResponse(res, 200, 'Pending platform fees retrieved', {
+      summary: {
+        totalPending: globalPending,
+        feesCount: pendingFees.length,
+        canWithdraw: globalPending >= 1,
+        nextScheduledRun: 'Daily at 00:00 UTC (midnight)'
+      },
+      fees: pendingFees.map(tx => ({
         id: tx._id,
-        type: tx.type,
         amount: tx.amount,
         currency: tx.currency,
-        recipient: tx.metadata?.recipientAddress,
         booking: tx.booking,
-        queuedAt: tx.metadata?.queuedAt,
+        user: tx.user,
         createdAt: tx.createdAt
       }))
     });
   } catch (error) {
-    console.error('Get pending payouts error:', error);
-    return errorResponse(res, 500, 'Failed to get pending payouts', error.message);
+    console.error('Get pending fees error:', error);
+    return errorResponse(res, 500, 'Failed to get pending fees', error.message);
   }
 });
 
-// Trigger immediate batch payout
+// Trigger immediate batch withdrawal
 router.post('/payouts/process', async (req, res) => {
   try {
-    const payoutQueueService = require('../services/payoutQueueService');
+    const { runPayoutJobNow } = require('../jobs/payoutCron');
     
-    // Run in background so we don't timeout
-    payoutQueueService.processBatchPayouts().then(result => {
-      console.log('[Admin] Batch payout completed:', result);
-    }).catch(err => {
-      console.error('[Admin] Batch payout failed:', err);
-    });
+    // Run synchronously since it's now a single HostFi call
+    const result = await runPayoutJobNow();
     
-    return successResponse(res, 202, 'Batch payout job started', {
-      message: 'Payouts are being processed in the background. Check logs for results.',
-      nextScheduledRun: 'Daily at 2:00 AM UTC'
+    if (result.skipped) {
+      return successResponse(res, 200, 'Batch skipped', {
+        reason: result.reason,
+        totalPending: result.totalPending
+      });
+    }
+    
+    return successResponse(res, 200, 'Batch withdrawal completed', {
+      amount: result.amount,
+      reference: result.reference,
+      feesCount: result.feesCount
     });
   } catch (error) {
-    console.error('Process payouts error:', error);
-    return errorResponse(res, 500, 'Failed to start payout processing', error.message);
-  }
-});
-
-// Process a single payout immediately
-router.post('/payouts/process/:transactionId', async (req, res) => {
-  try {
-    const payoutQueueService = require('../services/payoutQueueService');
-    const result = await payoutQueueService.processSinglePayout(req.params.transactionId);
-    
-    return successResponse(res, 200, 'Payout processed', result);
-  } catch (error) {
-    console.error('Process single payout error:', error);
-    return errorResponse(res, 500, 'Failed to process payout', error.message);
+    console.error('Process batch error:', error);
+    return errorResponse(res, 500, 'Failed to process batch', error.message);
   }
 });
 

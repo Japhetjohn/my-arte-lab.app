@@ -1,20 +1,19 @@
 /**
  * Platform Fee Accumulator Service
  * 
- * ARCHITECTURE:
- * 1. Primary: Direct Solana SPL Token transfers (no minimum, instant)
- * 2. Fallback: HostFi withdrawals (1 USDC minimum, batched)
+ * FLOW:
+ * 1. Throughout the day: Each booking's 10% platform fee is recorded in DB
+ *    (status: 'pending_accumulation')
+ * 2. End of day (midnight): Cron job runs and batches ALL pending fees
+ * 3. Single HostFi withdrawal from shared pool → platform wallet
+ * 4. All fee records updated to 'completed'
  * 
- * When a booking completes:
- * - Creator gets 90% via HostFi withdrawal (their preferred method)
- * - Platform fee (10%) is sent DIRECTLY to platform wallet via Solana SPL Token transfer
- *   (bypasses HostFi's 1 USDC minimum entirely)
+ * No Solana. No immediate transfers. Just record + batch daily.
  */
 
 const Transaction = require('../models/Transaction');
 const User = require('../models/User');
 const hostfiService = require('./hostfiService');
-const solanaTransferService = require('./solanaTransferService');
 
 const PLATFORM_WALLET_ADDRESS = process.env.PLATFORM_WALLET_ADDRESS || '5JV7n8AyDDdgrxhk5Q1wrEdfounkxYchEMSKStLfo48h';
 const HOSTFI_MINIMUM_WITHDRAWAL = 1; // HostFi requires minimum 1 USDC
@@ -22,152 +21,65 @@ const HOSTFI_MINIMUM_WITHDRAWAL = 1; // HostFi requires minimum 1 USDC
 class PlatformFeeAccumulator {
   constructor() {
     this.accumulatedFees = new Map();
-    // Initialize Solana transfer service on startup
-    solanaTransferService.init();
   }
 
   /**
-   * Add platform fee — uses DIRECT Solana transfer (no minimum!)
-   * Falls back to HostFi accumulation if Solana transfer fails
+   * Add platform fee — just RECORD it in the database
+   * The actual withdrawal happens at end-of-day via cron job
    * 
    * @param {string} userId - Client user ID (who paid the fee)
-   * @param {string} bookingId - Booking/Project ID
-   * @param {number} amount - Fee amount (can be ANY amount, e.g., $0.10)
+   * @param {string} bookingId - Booking ID
+   * @param {number} amount - Fee amount (e.g., $1 from a $10 booking)
    * @param {string} currency - Currency (USDC)
-   * @param {string} clientAssetId - HostFi asset ID (for fallback only)
-   * @returns {Promise<Object>} Result of fee collection
+   * @returns {Promise<Object>} Result
    */
-  async addFee(userId, bookingId, amount, currency = 'USDC', clientAssetId) {
+  async addFee(userId, bookingId, amount, currency = 'USDC') {
     try {
-      console.log(`[PlatformFeeAccumulator] Adding fee: ${amount} ${currency} for booking ${bookingId}`);
+      console.log(`[PlatformFeeAccumulator] Recording fee: ${amount} ${currency} for booking ${bookingId}`);
 
-      // ─── PRIMARY: Direct Solana SPL Token Transfer ───
-      // This bypasses HostFi's 1 USDC minimum entirely!
-      if (solanaTransferService.isReady()) {
-        try {
-          console.log(`[PlatformFeeAccumulator] Using DIRECT Solana transfer for ${amount} USDC`);
-          
-          const transferResult = await solanaTransferService.transferUSDC(
-            PLATFORM_WALLET_ADDRESS,
-            amount,
-            `Platform fee: ${bookingId}`
-          );
-
-          // Create completed transaction record
-          const feeTx = await Transaction.create({
-            transactionId: `PLATFORM-FEE-SOLANA-${Date.now()}`,
-            user: userId,
-            booking: bookingId,
-            type: 'platform_fee',
-            amount: amount,
-            currency: currency,
-            status: 'completed',
-            description: `Platform fee via Solana direct transfer`,
-            transactionHash: transferResult.signature,
-            metadata: {
-              transferMethod: 'solana_direct',
-              solanaSignature: transferResult.signature,
-              explorerUrl: transferResult.explorerUrl,
-              platformWallet: PLATFORM_WALLET_ADDRESS
-            }
-          });
-
-          console.log(`[PlatformFeeAccumulator] ✓ Direct Solana transfer complete: ${transferResult.signature}`);
-
-          // Notify admins
-          this._notifyAdminFeeCollected(userId, amount, 'solana_direct', transferResult.signature);
-
-          return {
-            success: true,
-            method: 'solana_direct',
-            amount: amount,
-            signature: transferResult.signature,
-            explorerUrl: transferResult.explorerUrl,
-            transaction: feeTx,
-            accumulated: 0, // Fee was sent immediately, not accumulated
-            withdrawn: true
-          };
-
-        } catch (solanaError) {
-          console.error(`[PlatformFeeAccumulator] Solana transfer failed, falling back to HostFi:`, solanaError.message);
-          // Fall through to HostFi accumulation
+      // Create transaction record — just a ledger entry, no actual transfer yet
+      const feeTx = await Transaction.create({
+        transactionId: `PLATFORM-FEE-${Date.now()}`,
+        user: userId,
+        booking: bookingId,
+        type: 'platform_fee',
+        amount: amount,
+        currency: currency,
+        status: 'pending_accumulation',
+        description: `Platform fee (10%) — queued for end-of-day batch withdrawal`,
+        metadata: {
+          accumulated: true,
+          batchReady: false,
+          recordedAt: new Date().toISOString()
         }
-      }
+      });
 
-      // ─── FALLBACK: HostFi Accumulation ───
-      console.log(`[PlatformFeeAccumulator] Using HostFi accumulation fallback for ${amount} USDC`);
-      return await this._accumulateViaHostFi(userId, bookingId, amount, currency, clientAssetId);
+      // Get total pending across ALL users
+      const globalPending = await this.getGlobalPendingAmount(currency);
+
+      console.log(`[PlatformFeeAccumulator] ✓ Fee recorded. Global pending: ${globalPending} ${currency}`);
+
+      return {
+        success: true,
+        amount: amount,
+        globalPending: globalPending,
+        transaction: feeTx,
+        message: `Fee recorded. Will be withdrawn at end of day if total >= $1`
+      };
 
     } catch (error) {
-      console.error(`[PlatformFeeAccumulator] Error adding fee:`, error.message);
+      console.error(`[PlatformFeeAccumulator] Error recording fee:`, error.message);
       throw error;
     }
   }
 
   /**
-   * HostFi accumulation fallback (original behavior)
+   * Get total pending platform fees across ALL users
    */
-  async _accumulateViaHostFi(userId, bookingId, amount, currency, clientAssetId) {
-    // Create transaction record for the fee
-    const feeTx = await Transaction.create({
-      transactionId: `PLATFORM-FEE-${Date.now()}`,
-      user: userId,
-      booking: bookingId,
-      type: 'platform_fee',
-      amount: amount,
-      currency: currency,
-      status: 'pending_accumulation',
-      description: `Platform fee (accumulating until ${HOSTFI_MINIMUM_WITHDRAWAL} ${currency})`,
-      metadata: {
-        accumulated: true,
-        clientAssetId: clientAssetId,
-        batchReady: false,
-        transferMethod: 'hostfi_accumulation'
-      }
-    });
-
-    // Check current accumulated amount for this user
-    const currentAccumulated = await this.getAccumulatedAmount(userId, currency);
-    const newTotal = currentAccumulated + amount;
-
-    console.log(`[PlatformFeeAccumulator] Current accumulated: ${currentAccumulated}, New total: ${newTotal}`);
-
-    // Notify admins about accumulated fee
-    this._notifyAdminFeeAccumulated(userId, amount, newTotal);
-
-    // Check if we have enough to withdraw via HostFi
-    if (newTotal >= HOSTFI_MINIMUM_WITHDRAWAL) {
-      console.log(`[PlatformFeeAccumulator] HostFi threshold reached! Withdrawing ${newTotal} ${currency}`);
-      
-      const withdrawalResult = await this.withdrawAccumulatedFees(userId, currency, clientAssetId);
-      
-      return {
-        accumulated: newTotal,
-        withdrawn: true,
-        withdrawalResult: withdrawalResult,
-        transaction: feeTx,
-        method: 'hostfi_batch'
-      };
-    }
-
-    // Not enough yet, just accumulate
-    return {
-      accumulated: newTotal,
-      withdrawn: false,
-      remainingToThreshold: HOSTFI_MINIMUM_WITHDRAWAL - newTotal,
-      transaction: feeTx,
-      method: 'hostfi_accumulation'
-    };
-  }
-
-  /**
-   * Get total accumulated fees for a user (HostFi only)
-   */
-  async getAccumulatedAmount(userId, currency = 'USDC') {
+  async getGlobalPendingAmount(currency = 'USDC') {
     const result = await Transaction.aggregate([
       {
         $match: {
-          user: require('mongoose').Types.ObjectId(userId),
           type: 'platform_fee',
           currency: currency,
           status: 'pending_accumulation'
@@ -185,173 +97,149 @@ class PlatformFeeAccumulator {
   }
 
   /**
-   * Withdraw accumulated fees to platform wallet via HostFi
+   * Get all pending fee transactions
    */
-  async withdrawAccumulatedFees(userId, currency = 'USDC', clientAssetId) {
+  async getPendingFees(currency = 'USDC') {
+    return await Transaction.find({
+      type: 'platform_fee',
+      currency: currency,
+      status: 'pending_accumulation'
+    }).sort({ createdAt: 1 }).lean();
+  }
+
+  /**
+   * DAILY BATCH WITHDRAWAL — Called by cron job at midnight
+   * 
+   * 1. Sums ALL pending platform fees across ALL users
+   * 2. If total >= $1: does single HostFi withdrawal to platform wallet
+   * 3. Marks all fee records as 'completed'
+   * 4. If total < $1: leaves them pending for tomorrow
+   */
+  async processDailyBatchWithdrawal() {
+    console.log(`[PlatformFeeAccumulator] ═══════════════════════════════════════════════`);
+    console.log(`[PlatformFeeAccumulator] DAILY BATCH WITHDRAWAL — ${new Date().toISOString()}`);
+    console.log(`[PlatformFeeAccumulator] ═══════════════════════════════════════════════`);
+
     try {
-      const amount = await this.getAccumulatedAmount(userId, currency);
-      
-      if (amount < HOSTFI_MINIMUM_WITHDRAWAL) {
+      // Step 1: Get total pending fees
+      const totalPending = await this.getGlobalPendingAmount('USDC');
+      console.log(`[PlatformFeeAccumulator] Total pending fees: ${totalPending} USDC`);
+
+      if (totalPending < HOSTFI_MINIMUM_WITHDRAWAL) {
+        console.log(`[PlatformFeeAccumulator] Total ${totalPending} below minimum ${HOSTFI_MINIMUM_WITHDRAWAL}. Skipping.`);
+        console.log(`[PlatformFeeAccumulator] Fees will accumulate and be withdrawn tomorrow.`);
         return {
           skipped: true,
-          reason: `Amount ${amount} below minimum ${HOSTFI_MINIMUM_WITHDRAWAL}`,
-          accumulated: amount
+          reason: `Total ${totalPending} USDC below minimum ${HOSTFI_MINIMUM_WITHDRAWAL} USDC`,
+          totalPending,
+          message: 'Fees will roll over to tomorrow'
         };
       }
 
-      console.log(`[PlatformFeeAccumulator] Withdrawing ${amount} ${currency} to platform wallet via HostFi`);
+      // Step 2: Find a user's USDC asset ID to use for the withdrawal
+      // (All users share the same HostFi pool, so any user's asset works)
+      const anyUser = await User.findOne({
+        'wallet.hostfiWalletAssets': {
+          $elemMatch: { currency: 'USDC', assetId: { $exists: true } }
+        }
+      });
 
-      // Execute withdrawal via HostFi
+      if (!anyUser) {
+        throw new Error('No user found with USDC HostFi asset. Cannot withdraw.');
+      }
+
+      const usdcAsset = anyUser.wallet.hostfiWalletAssets.find(a => a.currency === 'USDC');
+      if (!usdcAsset?.assetId) {
+        throw new Error('No USDC asset ID found. Cannot withdraw.');
+      }
+
+      console.log(`[PlatformFeeAccumulator] Using asset: ${usdcAsset.assetId.slice(0, 12)}...`);
+      console.log(`[PlatformFeeAccumulator] Withdrawing ${totalPending} USDC to platform wallet...`);
+
+      // Step 3: Execute single HostFi withdrawal
       const withdrawal = await hostfiService.initiateWithdrawal({
-        walletAssetId: clientAssetId,
-        amount: amount,
-        currency: currency,
+        walletAssetId: usdcAsset.assetId,
+        amount: totalPending,
+        currency: 'USDC',
         methodId: 'CRYPTO',
         recipient: {
           type: 'CRYPTO',
           method: 'CRYPTO',
-          currency: currency,
+          currency: 'USDC',
           address: PLATFORM_WALLET_ADDRESS,
           network: 'SOL',
           country: 'NG'
         },
-        clientReference: `PLATFORM-FEE-BATCH-${userId.slice(-8)}-${Date.now()}`,
-        memo: `Accumulated platform fees batch`
+        clientReference: `PLATFORM-DAILY-BATCH-${Date.now()}`,
+        memo: `Daily platform fees batch`
       });
 
-      console.log(`[PlatformFeeAccumulator] HostFi withdrawal successful: ${withdrawal.reference || withdrawal.id}`);
+      const reference = withdrawal.reference || withdrawal.id;
+      console.log(`[PlatformFeeAccumulator] ✓ HostFi withdrawal: ${reference}`);
 
-      // Update all pending fee transactions for this user
+      // Step 4: Update ALL pending fee transactions to completed
+      const pendingFees = await this.getPendingFees('USDC');
+      const feeIds = pendingFees.map(tx => tx._id.toString());
+
       const updateResult = await Transaction.updateMany(
         {
-          user: userId,
-          type: 'platform_fee',
-          currency: currency,
-          status: 'pending_accumulation'
+          _id: { $in: feeIds }
         },
         {
           $set: {
             status: 'completed',
-            transactionHash: withdrawal.reference || withdrawal.id,
+            transactionHash: reference,
             'metadata.batchWithdrawn': true,
-            'metadata.batchReference': withdrawal.reference || withdrawal.id,
-            'metadata.batchAmount': amount,
+            'metadata.batchReference': reference,
+            'metadata.batchAmount': totalPending,
+            'metadata.withdrawnAt': new Date().toISOString(),
             updatedAt: new Date()
           }
         }
       );
 
-      console.log(`[PlatformFeeAccumulator] Updated ${updateResult.modifiedCount} fee transactions`);
+      console.log(`[PlatformFeeAccumulator] ✓ Updated ${updateResult.modifiedCount} fee records to completed`);
 
       // Notify admins
-      this._notifyAdminFeeWithdrawn(userId, amount, withdrawal.reference || withdrawal.id);
+      this._notifyAdminDailyWithdrawn(totalPending, reference, updateResult.modifiedCount);
+
+      console.log(`[PlatformFeeAccumulator] ═══════════════════════════════════════════════`);
+      console.log(`[PlatformFeeAccumulator] DAILY BATCH COMPLETE`);
+      console.log(`[PlatformFeeAccumulator] ═══════════════════════════════════════════════`);
 
       return {
         success: true,
-        reference: withdrawal.reference || withdrawal.id,
-        amount: amount,
-        transactionsUpdated: updateResult.modifiedCount
+        reference: reference,
+        amount: totalPending,
+        feesCount: updateResult.modifiedCount,
+        message: `Successfully withdrawn ${totalPending} USDC platform fees`
       };
 
     } catch (error) {
-      console.error(`[PlatformFeeAccumulator] Withdrawal failed:`, error.message);
+      console.error(`[PlatformFeeAccumulator] Daily batch failed:`, error.message);
       throw error;
     }
   }
 
   /**
-   * Force withdrawal of all accumulated fees (for admin use)
+   * Force immediate withdrawal (for admin use)
    */
-  async forceWithdrawAll(userId = null) {
-    try {
-      const matchStage = userId 
-        ? { user: require('mongoose').Types.ObjectId(userId) }
-        : {};
-
-      // Get all users with accumulated fees
-      const usersWithFees = await Transaction.aggregate([
-        {
-          $match: {
-            ...matchStage,
-            type: 'platform_fee',
-            status: 'pending_accumulation'
-          }
-        },
-        {
-          $group: {
-            _id: '$user',
-            totalAmount: { $sum: '$amount' },
-            currency: { $first: '$currency' }
-          }
-        }
-      ]);
-
-      const results = [];
-
-      for (const userFee of usersWithFees) {
-        if (userFee.totalAmount >= HOSTFI_MINIMUM_WITHDRAWAL) {
-          const user = await User.findById(userFee._id);
-          const usdcAsset = user?.wallet?.hostfiWalletAssets?.find(a => a.currency === 'USDC');
-          
-          if (usdcAsset?.assetId) {
-            try {
-              const result = await this.withdrawAccumulatedFees(
-                userFee._id.toString(),
-                userFee.currency,
-                usdcAsset.assetId
-              );
-              results.push({ userId: userFee._id, ...result });
-            } catch (err) {
-              results.push({ 
-                userId: userFee._id, 
-                error: err.message,
-                amount: userFee.totalAmount 
-              });
-            }
-          }
-        }
-      }
-
-      return results;
-
-    } catch (error) {
-      console.error(`[PlatformFeeAccumulator] Force withdraw failed:`, error.message);
-      throw error;
-    }
+  async forceWithdrawNow() {
+    console.log(`[PlatformFeeAccumulator] Admin triggered immediate withdrawal`);
+    return await this.processDailyBatchWithdrawal();
   }
 
   // ─── Admin Notifications ───
 
-  async _notifyAdminFeeCollected(userId, amount, method, signature) {
+  async _notifyAdminDailyWithdrawn(amount, reference, count) {
     try {
       const adminNotificationService = require('./adminNotificationService');
-      const user = await User.findById(userId);
-      if (user) {
-        await adminNotificationService.notifyPlatformFeeCollected(user, amount, method, signature);
-      }
-    } catch (e) {
-      console.error('[PlatformFeeAccumulator] Admin notification failed:', e.message);
-    }
-  }
-
-  async _notifyAdminFeeAccumulated(userId, amount, newTotal) {
-    try {
-      const adminNotificationService = require('./adminNotificationService');
-      const user = await User.findById(userId);
-      if (user) {
-        await adminNotificationService.notifyAccumulatedFees(user, amount, newTotal);
-      }
-    } catch (e) {
-      console.error('[PlatformFeeAccumulator] Admin notification failed:', e.message);
-    }
-  }
-
-  async _notifyAdminFeeWithdrawn(userId, amount, reference) {
-    try {
-      const adminNotificationService = require('./adminNotificationService');
-      const user = await User.findById(userId);
-      if (user) {
-        await adminNotificationService.notifyFeeWithdrawn(user, amount, reference);
+      // Find an admin user to use as sender context, or create a placeholder
+      const adminUser = await User.findOne({ role: 'admin' }) || 
+                        await User.findOne().sort({ createdAt: 1 });
+      
+      if (adminUser) {
+        await adminNotificationService.notifyFeeWithdrawn(adminUser, amount, reference);
       }
     } catch (e) {
       console.error('[PlatformFeeAccumulator] Admin notification failed:', e.message);

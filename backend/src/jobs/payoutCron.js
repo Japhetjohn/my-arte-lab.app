@@ -1,18 +1,17 @@
 /**
- * Payout Cron Job
- * Runs daily to batch-process all pending payouts
+ * Daily Platform Fee Batch Withdrawal Cron
  * 
- * Schedule: Every day at 2:00 AM UTC (low traffic time)
- * Can also be triggered manually via admin endpoint
+ * Runs every day at midnight (00:00 UTC)
+ * Withdraws ALL accumulated platform fees to the platform wallet
  */
 
 const cron = require('node-cron');
-const payoutQueueService = require('../services/payoutQueueService');
+const platformFeeAccumulator = require('../services/platformFeeAccumulator');
 
 let isScheduled = false;
 
 /**
- * Start the payout cron job
+ * Start the daily platform fee cron job
  */
 function startPayoutCron() {
   if (isScheduled) {
@@ -20,21 +19,20 @@ function startPayoutCron() {
     return;
   }
 
-  // Run daily at 2:00 AM UTC
-  // Format: second minute hour day month day-of-week
-  const task = cron.schedule('0 2 * * *', async () => {
-    console.log('[PayoutCron] ⏰ Daily batch payout job starting...');
+  // Run daily at 00:00 UTC (midnight)
+  const task = cron.schedule('0 0 * * *', async () => {
+    console.log('[PayoutCron] ⏰ Daily platform fee batch starting...');
     
     try {
-      const result = await payoutQueueService.processBatchPayouts();
+      const result = await platformFeeAccumulator.processDailyBatchWithdrawal();
       
       if (result.skipped) {
         console.log(`[PayoutCron] Skipped: ${result.reason}`);
       } else {
-        console.log(`[PayoutCron] ✓ Batch complete: ${result.processed} processed, ${result.failed} failed`);
+        console.log(`[PayoutCron] ✓ Batch complete: ${result.amount} USDC withdrawn (${result.feesCount} fees)`);
       }
     } catch (error) {
-      console.error('[PayoutCron] ✗ Batch job failed:', error.message);
+      console.error('[PayoutCron] ✗ Daily batch failed:', error.message);
     }
   }, {
     scheduled: true,
@@ -42,17 +40,17 @@ function startPayoutCron() {
   });
 
   isScheduled = true;
-  console.log('[PayoutCron] ✅ Scheduled: Daily at 2:00 AM UTC');
+  console.log('[PayoutCron] ✅ Scheduled: Daily at 00:00 UTC (midnight)');
   
   return task;
 }
 
 /**
- * Run payout job immediately (for manual trigger)
+ * Run daily batch immediately (for manual trigger)
  */
 async function runPayoutJobNow() {
-  console.log('[PayoutCron] Manual trigger: Starting batch payout...');
-  return await payoutQueueService.processBatchPayouts();
+  console.log('[PayoutCron] Manual trigger: Starting daily batch...');
+  return await platformFeeAccumulator.processDailyBatchWithdrawal();
 }
 
 /**
@@ -61,7 +59,7 @@ async function runPayoutJobNow() {
 function getNextRunTime() {
   const now = new Date();
   const next = new Date(now);
-  next.setUTCHours(2, 0, 0, 0);
+  next.setUTCHours(0, 0, 0, 0);
   
   if (next <= now) {
     next.setUTCDate(next.getUTCDate() + 1);
