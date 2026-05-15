@@ -7,7 +7,7 @@ import { DepositModal } from '@/components/wallet/DepositModal';
 import { WithdrawalModal } from '@/components/wallet/WithdrawalModal';
 import { useWallet } from '@/hooks/useWallet';
 import { useAuth } from '@/contexts/AuthContext';
-import { ArrowDownLeft, ArrowUpRight, Loader2, AlertTriangle } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, Loader2 } from 'lucide-react';
 import type { Transaction } from '@/types';
 import { toast } from 'sonner';
 
@@ -102,24 +102,6 @@ export function Wallet() {
   return (
     <div className="space-y-6 pb-20 lg:pb-8">
       <h1 className="text-2xl font-bold text-gray-900">My Wallet</h1>
-
-      {/* Deposit Warning Banner */}
-      <div className="p-4 bg-amber-50 border-2 border-amber-300 rounded-xl">
-        <div className="flex items-start gap-3">
-          <AlertTriangle className="w-6 h-6 text-amber-600 flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="font-bold text-amber-900 text-sm">
-              ⚠️ Before Depositing: Generate Your Unique Address!
-            </p>
-            <p className="text-sm text-amber-800 mt-1">
-              Every user gets a <strong>personal deposit address</strong>. When you click 
-              <strong> "Add Funds"</strong>, you MUST first click <strong>"Get Deposit Address"</strong> (Crypto) 
-              or <strong>"Generate Bank Account"</strong> (Bank Transfer). 
-              <span className="font-bold text-red-700"> Sending funds without generating your address first will result in permanent loss.</span>
-            </p>
-          </div>
-        </div>
-      </div>
 
       <WalletCard
         balance={totalBalanceUSD}
