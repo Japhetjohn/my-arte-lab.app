@@ -275,6 +275,11 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
   user.password = newPassword;
   user.resetPasswordToken = undefined;
   user.resetPasswordExpire = undefined;
+  
+  // Clear login lockout so user can immediately log in with new password
+  user.loginAttempts = 0;
+  user.lockUntil = undefined;
+  
   await user.save();
 
   const jwtToken = generateToken(user._id);
