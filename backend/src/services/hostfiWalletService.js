@@ -211,8 +211,13 @@ class HostFiWalletService {
         }
       }
       
-      // Also account for active escrow (bookings that are paid but not completed)
-      // This is money the client has paid but is held in escrow
+      // Note: Escrow is already accounted for via 'payment' transactions.
+      // When a client pays for a booking, a 'payment' transaction is created
+      // that deducts from their balance. We do NOT subtract escrow again here
+      // because that would double-count the deduction.
+      // 
+      // The escrowTotal below is only used for tracking/display purposes,
+      // not for calculating available balance.
       const activeEscrowBookings = await Booking.find({
         client: userId,
         status: { $in: ['confirmed', 'in_progress', 'delivered'] },
@@ -220,7 +225,7 @@ class HostFiWalletService {
       });
       
       const escrowTotal = activeEscrowBookings.reduce((sum, b) => sum + (parseFloat(b.amount) || 0), 0);
-      calculatedUsdcBalance -= escrowTotal;
+      // DO NOT: calculatedUsdcBalance -= escrowTotal; (would double-count)
       
       // Ensure non-negative balance
       calculatedUsdcBalance = Math.max(0, parseFloat(calculatedUsdcBalance.toFixed(6)));
