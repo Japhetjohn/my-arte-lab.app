@@ -113,11 +113,17 @@ class BookingService {
         );
       }
 
+      // Refresh client to get latest __v after syncWalletBalances may have updated it
+      const freshClient = await User.findById(client._id).session(session);
+      if (!freshClient) {
+        throw new ErrorHandler('Client not found after balance sync', 404);
+      }
+
       const clientUpdate = await User.findOneAndUpdate(
         {
-          _id: client._id,
+          _id: freshClient._id,
           'wallet.balance': { $gte: booking.amount },
-          __v: client.__v
+          __v: freshClient.__v
         },
         {
           $inc: {
