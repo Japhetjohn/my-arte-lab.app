@@ -294,53 +294,60 @@ router.post('/unverify-creator', async (req, res) => {
   }
 });
 
-// Get accumulated platform fees for admin
+// Get accumulated platform fees for admin (view-only, from completed bookings)
 router.get('/platform-fees', async (req, res) => {
   try {
-    const Transaction = require('../models/Transaction');
-    const mongoose = require('mongoose');
+    const Booking = require('../models/Booking');
     
-    // Aggregate fees by status
-    const stats = await Transaction.aggregate([
-      { $match: { type: 'platform_fee' } },
+    // Calculate from completed bookings (source of truth)
+    const bookingStats = await Booking.aggregate([
+      { $match: { status: 'completed' } },
       {
         $group: {
-          _id: '$status',
-          total: { $sum: '$amount' },
+          _id: null,
+          totalPlatformFees: { $sum: '$platformFee' },
+          totalCreatorPayouts: { $sum: '$creatorAmount' },
+          totalBookingVolume: { $sum: '$amount' },
           count: { $sum: 1 }
         }
       }
     ]);
+
+    const stats = bookingStats[0] || {
+      totalPlatformFees: 0,
+      totalCreatorPayouts: 0,
+      totalBookingVolume: 0,
+      count: 0
+    };
     
-    // Get total accumulated (pending_accumulation)
-    const accumulatedResult = await Transaction.aggregate([
-      { $match: { type: 'platform_fee', status: 'pending_accumulation' } },
-      { $group: { _id: null, total: { $sum: '$amount' } } }
-    ]);
-    const totalAccumulated = accumulatedResult.length > 0 ? accumulatedResult[0].total : 0;
-    
-    // Get total withdrawn (completed)
-    const withdrawnResult = await Transaction.aggregate([
-      { $match: { type: 'platform_fee', status: 'completed' } },
-      { $group: { _id: null, total: { $sum: '$amount' } } }
-    ]);
-    const totalWithdrawn = withdrawnResult.length > 0 ? withdrawnResult[0].total : 0;
-    
-    // Get recent fees
-    const recentFees = await Transaction.find({ type: 'platform_fee' })
-      .sort({ createdAt: -1 })
+    // Get recent completed bookings
+    const recentBookings = await Booking.find({ status: 'completed' })
+      .sort({ completedAt: -1 })
       .limit(20)
-      .populate('user', 'firstName lastName email')
+      .populate('client', 'firstName lastName email')
+      .populate('creator', 'firstName lastName email')
       .lean();
     
-    return successResponse(res, 200, 'Platform fees retrieved', {
+    return successResponse(res, 200, 'Platform profits retrieved', {
       stats: {
-        totalAccumulated: Math.round(totalAccumulated * 100) / 100,
-        totalWithdrawn: Math.round(totalWithdrawn * 100) / 100,
-        breakdown: stats
+        totalPlatformFees: Math.round(stats.totalPlatformFees * 100) / 100,
+        totalCreatorPayouts: Math.round(stats.totalCreatorPayouts * 100) / 100,
+        totalBookingVolume: Math.round(stats.totalBookingVolume * 100) / 100,
+        totalBookings: stats.count,
+        commissionRate: 10
       },
-      recentFees,
-      canWithdraw: totalAccumulated >= 1
+      recentBookings: recentBookings.map(b => ({
+        id: b._id,
+        bookingId: b.bookingId,
+        serviceTitle: b.serviceTitle,
+        amount: b.amount,
+        platformFee: b.platformFee,
+        creatorAmount: b.creatorAmount,
+        currency: b.currency,
+        client: b.client ? `${b.client.firstName} ${b.client.lastName}` : 'Unknown',
+        creator: b.creator ? `${b.creator.firstName} ${b.creator.lastName}` : 'Unknown',
+        completedAt: b.completedAt
+      }))
     });
   } catch (error) {
     console.error('Get platform fees error:', error);
@@ -392,88 +399,50 @@ router.post('/unlock-user', async (req, res) => {
   }
 });
 
-// Trigger immediate platform fee batch withdrawal (admin override)
-router.post('/platform-fees/withdraw', async (req, res) => {
+// Get platform fee analytics (view-only)
+router.get('/platform-fees/analytics', async (req, res) => {
   try {
-    const platformFeeAccumulator = require('../services/platformFeeAccumulator');
-    const { runPayoutJobNow } = require('../jobs/payoutCron');
-    
-    const result = await runPayoutJobNow();
-    
-    if (result.skipped) {
-      return successResponse(res, 200, 'Withdrawal skipped', {
-        reason: result.reason,
-        totalPending: result.totalPending
-      });
-    }
-    
-    return successResponse(res, 200, `Successfully withdrawn ${result.amount} USDC to platform wallet`, {
-      amount: result.amount,
-      reference: result.reference,
-      feesCount: result.feesCount
-    });
-  } catch (error) {
-    console.error('Withdraw platform fees error:', error);
-    return errorResponse(res, 500, 'Failed to withdraw platform fees', error.message);
-  }
-});
+    const Booking = require('../models/Booking');
+    const { days = 30 } = req.query;
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - parseInt(days));
 
-// ─── PLATFORM FEE ADMIN ENDPOINTS ───
-
-// Get pending platform fees summary
-router.get('/payouts/pending', async (req, res) => {
-  try {
-    const platformFeeAccumulator = require('../services/platformFeeAccumulator');
-    const Transaction = require('../models/Transaction');
-    
-    const globalPending = await platformFeeAccumulator.getGlobalPendingAmount('USDC');
-    const pendingFees = await platformFeeAccumulator.getPendingFees('USDC');
-    
-    return successResponse(res, 200, 'Pending platform fees retrieved', {
-      summary: {
-        totalPending: globalPending,
-        feesCount: pendingFees.length,
-        canWithdraw: globalPending >= 1,
-        nextScheduledRun: 'Daily at 00:00 UTC (midnight)'
+    const dailyStats = await Booking.aggregate([
+      {
+        $match: {
+          status: 'completed',
+          completedAt: { $gte: startDate }
+        }
       },
-      fees: pendingFees.map(tx => ({
-        id: tx._id,
-        amount: tx.amount,
-        currency: tx.currency,
-        booking: tx.booking,
-        user: tx.user,
-        createdAt: tx.createdAt
-      }))
-    });
-  } catch (error) {
-    console.error('Get pending fees error:', error);
-    return errorResponse(res, 500, 'Failed to get pending fees', error.message);
-  }
-});
+      {
+        $group: {
+          _id: {
+            year: { $year: '$completedAt' },
+            month: { $month: '$completedAt' },
+            day: { $dayOfMonth: '$completedAt' }
+          },
+          totalAmount: { $sum: '$amount' },
+          platformFees: { $sum: '$platformFee' },
+          creatorPayouts: { $sum: '$creatorAmount' },
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $sort: { '_id.year': -1, '_id.month': -1, '_id.day': -1 }
+      }
+    ]);
 
-// Trigger immediate batch withdrawal
-router.post('/payouts/process', async (req, res) => {
-  try {
-    const { runPayoutJobNow } = require('../jobs/payoutCron');
-    
-    // Run synchronously since it's now a single HostFi call
-    const result = await runPayoutJobNow();
-    
-    if (result.skipped) {
-      return successResponse(res, 200, 'Batch skipped', {
-        reason: result.reason,
-        totalPending: result.totalPending
-      });
-    }
-    
-    return successResponse(res, 200, 'Batch withdrawal completed', {
-      amount: result.amount,
-      reference: result.reference,
-      feesCount: result.feesCount
+    return successResponse(res, 200, 'Platform fee analytics retrieved', {
+      dailyStats,
+      period: {
+        days: parseInt(days),
+        startDate,
+        endDate: new Date()
+      }
     });
   } catch (error) {
-    console.error('Process batch error:', error);
-    return errorResponse(res, 500, 'Failed to process batch', error.message);
+    console.error('Get fee analytics error:', error);
+    return errorResponse(res, 500, 'Failed to get fee analytics', error.message);
   }
 });
 

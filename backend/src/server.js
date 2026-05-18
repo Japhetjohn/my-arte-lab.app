@@ -403,9 +403,8 @@ const server = app.listen(PORT, () => {
   const escrowMonitoringService = require('./services/escrowMonitoringService');
   escrowMonitoringService.start();
 
-  // Start daily platform fee batch withdrawal cron (midnight UTC)
-  const { startPayoutCron } = require('./jobs/payoutCron');
-  startPayoutCron();
+  // Platform fees are handled automatically by HostFi B2B
+  // No cron job needed for fee withdrawal
 });
 
 process.on('unhandledRejection', (err) => {

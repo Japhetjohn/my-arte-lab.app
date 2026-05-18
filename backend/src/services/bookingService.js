@@ -5,10 +5,8 @@ const Transaction = require('../models/Transaction');
 const Notification = require('../models/Notification');
 const notificationService = require('./notificationService');
 const hostfiService = require('./hostfiService');
-const platformFeeAccumulator = require('./platformFeeAccumulator');
 const { ErrorHandler } = require('../utils/errorHandler');
 const { BOOKING_LIMITS, PLATFORM_CONFIG } = require('../utils/constants');
-const { getPlatformFeeDestination } = require('../utils/platformWallet');
 
 class BookingService {
   async acceptBookingWithTransaction(bookingId, creatorId, idempotencyKey = null) {
@@ -325,13 +323,9 @@ class BookingService {
         { session }
       );
 
-      // Get platform fee destination (temp wallet)
-      const platformWalletInfo = getPlatformFeeDestination(booking._id.toString());
-
-      // Generate transaction IDs
+      // Generate transaction ID
       const timestamp = Date.now().toString(36).toUpperCase();
       const random1 = Math.random().toString(36).substring(2, 10).toUpperCase();
-      const random2 = Math.random().toString(36).substring(2, 10).toUpperCase();
       
       await Transaction.create(
         [
@@ -346,33 +340,14 @@ class BookingService {
             toAddress: creator.wallet.address,
             description: `Payment received for ${booking.serviceTitle}`,
             completedAt: new Date()
-          },
-          {
-            transactionId: `TXN-FEE-${timestamp}-${random2}`,
-            user: client._id,
-            type: 'platform_fee',
-            amount: booking.platformFee,
-            currency: booking.currency,
-            status: 'pending_accumulation',
-            booking: booking._id,
-            description: `Platform fee (10%) for ${booking.serviceTitle}`,
-            metadata: {
-              accumulated: true,
-              batchReady: false,
-              creatorId: creator._id.toString(),
-              recordedAt: new Date().toISOString()
-            },
-            completedAt: new Date()
           }
         ],
-        { session, ordered: true }
+        { session }
       );
 
       booking.fundsReleased = true;
       booking.fundsReleasedAt = new Date();
       booking.paymentStatus = 'released';
-      booking.platformFeePaid = true;
-      booking.platformFeePaidAt = new Date();
       booking.escrowWallet.balance = 0;
       booking.status = 'completed'; // Set status to completed when funds are released
       booking.completedAt = new Date();
@@ -482,17 +457,12 @@ class BookingService {
       console.log(`[BookingService] Client USDC asset:`, clientUsdcAsset?.assetId);
       
       // ═══════════════════════════════════════════════════════════════
-      // PAYOUT PHASE: Creator 90% + Platform 10%
+      // PAYOUT PHASE: Creator payout via HostFi B2B
       // 
-      // SIMPLE ARCHITECTURE:
-      // 1. Creator payout (90%): Immediate HostFi withdrawal
-      //    - HostFi handles gasless USDC transfer
-      //    - Works for any amount >= 1 USDC
-      // 
-      // 2. Platform fee (10%): Accumulate until >= 1 USDC, then batch
-      //    - Small fees (< $1) accumulate in database
-      //    - When total reaches $1, auto-withdraw to platform wallet
-      //    - No manual intervention needed
+      // HostFi B2B automatically handles the split:
+      // - Creator receives their share directly
+      // - Platform fee goes to platform wallet automatically
+      // No need for accumulator, cron, or batch withdrawals
       // ═══════════════════════════════════════════════════════════════
       
       if (!creatorWalletAddress) {
@@ -500,7 +470,6 @@ class BookingService {
       } else if (!clientUsdcAsset?.assetId) {
         console.error('[BookingService] No client USDC asset found for HostFi transfer');
       } else {
-        // ─── 1. CREATOR PAYOUT (90%) — Immediate HostFi withdrawal ───
         try {
           console.log(`[BookingService] Creator payout: ${booking.creatorAmount} ${booking.currency} to ${creatorWalletAddress}`);
           
@@ -538,25 +507,6 @@ class BookingService {
           }
         } catch (creatorError) {
           console.error('[BookingService] ✗ Creator payout failed:', creatorError.message);
-          // Don't throw — log for manual reconciliation
-        }
-        
-        // ─── 2. PLATFORM FEE (10%) — Record for daily batch withdrawal ───
-        try {
-          console.log(`[BookingService] Platform fee: ${booking.platformFee} ${booking.currency}`);
-          
-          const feeResult = await platformFeeAccumulator.addFee(
-            client._id.toString(),
-            booking._id.toString(),
-            booking.platformFee,
-            booking.currency
-          );
-          
-          console.log(`[BookingService] ✓ Platform fee recorded: ${feeResult.amount} USDC`);
-          console.log(`[BookingService]   Global pending: ${feeResult.globalPending} USDC`);
-          console.log(`[BookingService]   Will be withdrawn at midnight if total >= $1`);
-        } catch (platformError) {
-          console.error('[BookingService] ✗ Platform fee recording failed:', platformError.message);
           // Don't throw — log for manual reconciliation
         }
       }

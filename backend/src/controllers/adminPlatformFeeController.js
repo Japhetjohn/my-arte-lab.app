@@ -1,170 +1,80 @@
 /**
  * Admin Platform Fee Controller
- * Manage accumulated platform fees and withdrawals
+ * View-only: Shows accumulated platform profits from completed bookings
+ * HostFi B2B handles fee splitting automatically — no manual withdrawal needed
  */
 
-const User = require('../models/User');
 const Transaction = require('../models/Transaction');
-const platformFeeAccumulator = require('../services/platformFeeAccumulator');
+const Booking = require('../models/Booking');
 const { successResponse } = require('../utils/apiResponse');
 const { ErrorHandler, catchAsync } = require('../utils/errorHandler');
 
 /**
- * Get all accumulated platform fees across all users
+ * Get total platform profits from completed bookings
  * For admin analytics dashboard
  */
 exports.getAccumulatedFees = catchAsync(async (req, res, next) => {
-  // Check if user is admin
   if (req.user.role !== 'admin') {
     return next(new ErrorHandler('Admin access required', 403));
   }
 
-  // Aggregate all pending platform fees
-  const accumulatedFees = await Transaction.aggregate([
-    {
-      $match: {
-        type: 'platform_fee',
-        status: 'pending_accumulation'
-      }
-    },
+  // Calculate from completed bookings (source of truth for platform earnings)
+  const bookingStats = await Booking.aggregate([
+    { $match: { status: 'completed' } },
     {
       $group: {
-        _id: '$user',
-        totalAmount: { $sum: '$amount' },
-        transactionCount: { $sum: 1 },
-        currency: { $first: '$currency' }
+        _id: null,
+        totalPlatformFees: { $sum: '$platformFee' },
+        totalCreatorPayouts: { $sum: '$creatorAmount' },
+        totalBookingVolume: { $sum: '$amount' },
+        count: { $sum: 1 }
       }
-    },
-    {
-      $lookup: {
-        from: 'users',
-        localField: '_id',
-        foreignField: '_id',
-        as: 'userInfo'
-      }
-    },
-    {
-      $unwind: '$userInfo'
-    },
-    {
-      $project: {
-        userId: '$_id',
-        userEmail: '$userInfo.email',
-        userName: { $concat: ['$userInfo.firstName', ' ', '$userInfo.lastName'] },
-        totalAmount: 1,
-        transactionCount: 1,
-        currency: 1,
-        canWithdraw: { $gte: ['$totalAmount', 1] } // HostFi minimum
-      }
-    },
-    {
-      $sort: { totalAmount: -1 }
     }
   ]);
 
-  // Calculate totals
-  const totalAccumulated = accumulatedFees.reduce((sum, item) => sum + item.totalAmount, 0);
-  const totalReadyToWithdraw = accumulatedFees
-    .filter(item => item.canWithdraw)
-    .reduce((sum, item) => sum + item.totalAmount, 0);
+  const stats = bookingStats[0] || {
+    totalPlatformFees: 0,
+    totalCreatorPayouts: 0,
+    totalBookingVolume: 0,
+    count: 0
+  };
 
-  successResponse(res, 200, 'Accumulated platform fees retrieved', {
-    fees: accumulatedFees,
+  // Get recent completed bookings for the feed
+  const recentBookings = await Booking.find({ status: 'completed' })
+    .sort({ completedAt: -1 })
+    .limit(20)
+    .populate('client', 'firstName lastName email')
+    .populate('creator', 'firstName lastName email')
+    .lean();
+
+  successResponse(res, 200, 'Platform profits retrieved', {
     summary: {
-      totalAccumulated,
-      totalReadyToWithdraw,
-      totalUsers: accumulatedFees.length,
-      usersReadyToWithdraw: accumulatedFees.filter(item => item.canWithdraw).length
-    }
-  });
-});
-
-/**
- * Withdraw accumulated fees for a specific user
- * Admin can trigger this from the dashboard
- */
-exports.withdrawUserFees = catchAsync(async (req, res, next) => {
-  // Check if user is admin
-  if (req.user.role !== 'admin') {
-    return next(new ErrorHandler('Admin access required', 403));
-  }
-
-  const { userId } = req.params;
-
-  // Get user
-  const user = await User.findById(userId);
-  if (!user) {
-    return next(new ErrorHandler('User not found', 404));
-  }
-
-  // Check accumulated amount
-  const accumulatedAmount = await platformFeeAccumulator.getAccumulatedAmount(userId, 'USDC');
-  
-  if (accumulatedAmount < 1) {
-    return next(new ErrorHandler(
-      `Insufficient accumulated fees. Current: ${accumulatedAmount} USDC, Minimum: 1 USDC`,
-      400
-    ));
-  }
-
-  // Get user's asset ID
-  const usdcAsset = user.wallet?.hostfiWalletAssets?.find(a => a.currency === 'USDC');
-  if (!usdcAsset?.assetId) {
-    return next(new ErrorHandler('User has no USDC wallet asset', 400));
-  }
-
-  // Execute withdrawal
-  const result = await platformFeeAccumulator.withdrawAccumulatedFees(
-    userId,
-    'USDC',
-    usdcAsset.assetId
-  );
-
-  successResponse(res, 200, 'Platform fees withdrawn successfully', {
-    user: {
-      id: userId,
-      email: user.email,
-      name: `${user.firstName} ${user.lastName}`
+      totalPlatformFees: Math.round(stats.totalPlatformFees * 100) / 100,
+      totalCreatorPayouts: Math.round(stats.totalCreatorPayouts * 100) / 100,
+      totalBookingVolume: Math.round(stats.totalBookingVolume * 100) / 100,
+      totalBookings: stats.count,
+      commissionRate: 10
     },
-    withdrawn: result
+    recentBookings: recentBookings.map(b => ({
+      id: b._id,
+      bookingId: b.bookingId,
+      serviceTitle: b.serviceTitle,
+      amount: b.amount,
+      platformFee: b.platformFee,
+      creatorAmount: b.creatorAmount,
+      currency: b.currency,
+      client: b.client ? `${b.client.firstName} ${b.client.lastName}` : 'Unknown',
+      creator: b.creator ? `${b.creator.firstName} ${b.creator.lastName}` : 'Unknown',
+      completedAt: b.completedAt
+    }))
   });
 });
 
 /**
- * Withdraw all accumulated fees (bulk operation)
- * Only withdraws fees that have reached the 1 USDC minimum
- */
-exports.withdrawAllFees = catchAsync(async (req, res, next) => {
-  // Check if user is admin
-  if (req.user.role !== 'admin') {
-    return next(new ErrorHandler('Admin access required', 403));
-  }
-
-  const results = await platformFeeAccumulator.forceWithdrawAll();
-
-  const successful = results.filter(r => r.success);
-  const failed = results.filter(r => r.error);
-
-  successResponse(res, 200, 'Bulk withdrawal completed', {
-    summary: {
-      totalProcessed: results.length,
-      successful: successful.length,
-      failed: failed.length,
-      totalWithdrawn: successful.reduce((sum, r) => sum + (r.amount || 0), 0)
-    },
-    details: {
-      successful,
-      failed
-    }
-  });
-});
-
-/**
- * Get platform fee analytics
- * For admin dashboard charts and stats
+ * Get platform fee analytics over time
+ * For admin dashboard charts
  */
 exports.getFeeAnalytics = catchAsync(async (req, res, next) => {
-  // Check if user is admin
   if (req.user.role !== 'admin') {
     return next(new ErrorHandler('Admin access required', 403));
   }
@@ -173,22 +83,24 @@ exports.getFeeAnalytics = catchAsync(async (req, res, next) => {
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - parseInt(days));
 
-  // Get daily fee collection stats
-  const dailyStats = await Transaction.aggregate([
+  // Daily stats from completed bookings
+  const dailyStats = await Booking.aggregate([
     {
       $match: {
-        type: 'platform_fee',
-        createdAt: { $gte: startDate }
+        status: 'completed',
+        completedAt: { $gte: startDate }
       }
     },
     {
       $group: {
         _id: {
-          year: { $year: '$createdAt' },
-          month: { $month: '$createdAt' },
-          day: { $dayOfMonth: '$createdAt' }
+          year: { $year: '$completedAt' },
+          month: { $month: '$completedAt' },
+          day: { $dayOfMonth: '$completedAt' }
         },
         totalAmount: { $sum: '$amount' },
+        platformFees: { $sum: '$platformFee' },
+        creatorPayouts: { $sum: '$creatorAmount' },
         count: { $sum: 1 }
       }
     },
@@ -197,25 +109,30 @@ exports.getFeeAnalytics = catchAsync(async (req, res, next) => {
     }
   ]);
 
-  // Get status breakdown
-  const statusBreakdown = await Transaction.aggregate([
+  // Monthly totals
+  const monthlyStats = await Booking.aggregate([
     {
-      $match: {
-        type: 'platform_fee'
-      }
+      $match: { status: 'completed' }
     },
     {
       $group: {
-        _id: '$status',
+        _id: {
+          year: { $year: '$completedAt' },
+          month: { $month: '$completedAt' }
+        },
         totalAmount: { $sum: '$amount' },
+        platformFees: { $sum: '$platformFee' },
         count: { $sum: 1 }
       }
+    },
+    {
+      $sort: { '_id.year': -1, '_id.month': -1 }
     }
   ]);
 
   successResponse(res, 200, 'Platform fee analytics retrieved', {
     dailyStats,
-    statusBreakdown,
+    monthlyStats,
     period: {
       days: parseInt(days),
       startDate,

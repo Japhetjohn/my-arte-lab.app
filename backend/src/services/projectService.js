@@ -6,10 +6,8 @@ const Transaction = require('../models/Transaction');
 const Notification = require('../models/Notification');
 const { ErrorHandler } = require('../utils/errorHandler');
 const { PLATFORM_CONFIG } = require('../utils/constants');
-const { getPlatformFeeDestination } = require('../utils/platformWallet');
 const notificationService = require('./notificationService');
 const hostfiService = require('./hostfiService');
-const platformFeeAccumulator = require('./platformFeeAccumulator');
 
 class ProjectService {
   /**
@@ -306,13 +304,10 @@ class ProjectService {
         { session }
       );
 
-      // Get platform fee destination (temp wallet)
-      const platformWalletInfo = getPlatformFeeDestination(project._id.toString());
-
       const timestamp = Date.now().toString(36).toUpperCase();
       const random = Math.random().toString(36).substring(2, 10).toUpperCase();
 
-      // Create transactions
+      // Create earning transaction for creator
       await Transaction.create(
         [
           {
@@ -326,26 +321,9 @@ class ProjectService {
             toAddress: creator.wallet.address,
             description: `Payment received for project "${project.title}"`,
             completedAt: new Date()
-          },
-          {
-            transactionId: `TXN-${timestamp}-${random}-FEE`,
-            user: creator._id,
-            type: 'platform_fee',
-            amount: platformFee,
-            currency: application.proposedBudget.currency || 'USDC',
-            status: 'completed',
-            project: project._id,
-            toAddress: platformWalletInfo.address,
-            description: `Platform fee for project "${project.title}"`,
-            metadata: {
-              isTempWallet: platformWalletInfo.isTemp,
-              mainPlatformWallet: platformWalletInfo.mainWallet,
-              tempWallet: platformWalletInfo.isTemp ? platformWalletInfo.address : null
-            },
-            completedAt: new Date()
           }
         ],
-        { session, ordered: true }
+        { session }
       );
 
       // Notify both parties
@@ -370,34 +348,8 @@ class ProjectService {
 
       await session.commitTransaction();
 
-      // 2. Accumulate platform fee (batch until 1 USDC minimum)
-      try {
-        const client = await User.findById(clientId);
-        const clientUsdcAsset = client.wallet.hostfiWalletAssets?.find(
-          a => a.currency === (application.proposedBudget.currency || 'USDC') || a.currency === 'USDC'
-        );
-
-        console.log(`[ProjectService] Accumulating platform fee: ${platformFee} ${application.proposedBudget.currency || 'USDC'}`);
-        
-        const feeResult = await platformFeeAccumulator.addFee(
-          clientId.toString(),
-          project._id.toString(),
-          platformFee,
-          application.proposedBudget.currency || 'USDC',
-          clientUsdcAsset?.assetId
-        );
-
-        if (feeResult.withdrawn) {
-          project.platformFeeTransactionHash = feeResult.withdrawalResult.reference;
-          await project.save();
-          console.log(`[ProjectService] Platform fee withdrawn: ${feeResult.withdrawalResult.reference}`);
-        } else {
-          console.log(`[ProjectService] Platform fee accumulated: ${feeResult.accumulated} USDC`);
-        }
-      } catch (platformError) {
-        console.error('[ProjectService] Failed to accumulate platform fee:', platformError.message);
-        // Don't throw - the project is already completed
-      }
+      // HostFi B2B handles platform fee splitting automatically
+      // No need for accumulator or batch withdrawals
 
       return {
         project,
