@@ -185,7 +185,7 @@ export function Bookings() {
           </div>
 
           {/* Progress Steps with Circles */}
-          <div className="flex items-center gap-1 mb-4">
+          <div className="flex items-center gap-1 mb-4 overflow-x-auto pb-2">
             {[
               { key: 'pending', label: 'Request', icon: '1' },
               { key: 'awaiting_payment', label: 'Payment', icon: '2' },
@@ -215,7 +215,7 @@ export function Bookings() {
                     } ${isCurrent ? 'ring-2 ring-[#8A2BE2] ring-offset-2' : ''}`}>
                       {isActive ? '✓' : step.icon}
                     </div>
-                    <span className={`text-[10px] mt-1 text-center ${isActive ? 'text-[#8A2BE2] font-medium' : 'text-gray-400'}`}>
+                    <span className={`text-[10px] mt-1 text-center hidden sm:block ${isActive ? 'text-[#8A2BE2] font-medium' : 'text-gray-400'}`}>
                       {step.label}
                     </span>
                   </div>
@@ -231,8 +231,8 @@ export function Bookings() {
             })}
           </div>
 
-          <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
-            <div className="flex items-center gap-4 text-sm text-gray-500">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between mt-4 pt-4 border-t border-gray-100 gap-3">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500">
               <div className="flex items-center gap-1">
                 <DollarSign className="w-4 h-4" />
                 {booking.amount} {booking.currency}

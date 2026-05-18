@@ -172,8 +172,8 @@ export function Projects() {
             </Badge>
           </div>
 
-          <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-            <div className="flex items-center gap-4 text-sm text-gray-500">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-4 border-t border-gray-100 gap-3">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500">
               <div className="flex items-center gap-1">
                 <DollarSign className="w-4 h-4" />
                 ${project.budget.min.toLocaleString()} - ${project.budget.max.toLocaleString()}
@@ -252,11 +252,11 @@ export function Projects() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-flex">
-          <TabsTrigger value="all">All ({getStatusCount('all')})</TabsTrigger>
-          <TabsTrigger value="open">Open ({getStatusCount('open')})</TabsTrigger>
-          <TabsTrigger value="in_progress">In Progress ({getStatusCount('in_progress')})</TabsTrigger>
-          <TabsTrigger value="completed">Completed ({getStatusCount('completed')})</TabsTrigger>
+        <TabsList className="flex w-full overflow-x-auto scrollbar-hide lg:w-auto lg:inline-flex">
+          <TabsTrigger value="all" className="flex-shrink-0">All ({getStatusCount('all')})</TabsTrigger>
+          <TabsTrigger value="open" className="flex-shrink-0">Open ({getStatusCount('open')})</TabsTrigger>
+          <TabsTrigger value="in_progress" className="flex-shrink-0">In Progress ({getStatusCount('in_progress')})</TabsTrigger>
+          <TabsTrigger value="completed" className="flex-shrink-0">Completed ({getStatusCount('completed')})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="all" className="mt-6">
