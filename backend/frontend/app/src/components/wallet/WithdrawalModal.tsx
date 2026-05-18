@@ -51,40 +51,20 @@ interface BankSelectProps {
 }
 
 function BankSelect({ banks, selectedBank, onSelect, searchValue, onSearchChange, isOpen, onToggle }: BankSelectProps) {
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0, width: 0 });
-
-  // Calculate dropdown position when opened
-  useEffect(() => {
-    if (isOpen && triggerRef.current) {
-      const rect = triggerRef.current.getBoundingClientRect();
-      setDropdownPos({
-        top: rect.bottom + window.scrollY + 4,
-        left: rect.left + window.scrollX,
-        width: rect.width,
-      });
-      setTimeout(() => searchInputRef.current?.focus(), 100);
-    }
-  }, [isOpen]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Node;
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(target) &&
-        triggerRef.current &&
-        !triggerRef.current.contains(target)
-      ) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         onToggle();
       }
     };
 
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
+      setTimeout(() => searchInputRef.current?.focus(), 100);
     }
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen, onToggle]);
@@ -94,12 +74,11 @@ function BankSelect({ banks, selectedBank, onSelect, searchValue, onSearchChange
   const otherBanks = banks.slice(15);
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 relative" ref={containerRef}>
       <Label>Select Bank *</Label>
       
       {/* Dropdown Trigger */}
       <button
-        ref={triggerRef}
         type="button"
         onClick={onToggle}
         className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[#8A2BE2] focus:border-[#8A2BE2] flex items-center justify-between text-left hover:border-gray-400 transition-colors"
@@ -110,18 +89,9 @@ function BankSelect({ banks, selectedBank, onSelect, searchValue, onSearchChange
         <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
-      {/* Dropdown Content - Portal to body */}
+      {/* Dropdown Content - absolute positioned relative to container */}
       {isOpen && (
-        <div
-          ref={dropdownRef}
-          className="fixed bg-white border border-gray-200 rounded-lg shadow-xl max-h-80 overflow-hidden"
-          style={{
-            top: dropdownPos.top,
-            left: dropdownPos.left,
-            width: dropdownPos.width,
-            zIndex: 99999,
-          }}
-        >
+        <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-80 overflow-hidden z-50">
           {/* Search Input */}
           <div className="sticky top-0 bg-white border-b border-gray-100 p-3 z-10">
             <div className="relative">
