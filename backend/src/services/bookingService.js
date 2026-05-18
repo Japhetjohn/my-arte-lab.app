@@ -103,18 +103,47 @@ class BookingService {
         // The booking will be saved later in this function
       }
 
-      const hostfiWalletService = require('./hostfiWalletService');
-      const liveBalance = await hostfiWalletService.getLiveBalanceAsset(client._id);
+      // Calculate balance directly from transactions (don't call syncWalletBalances 
+      // as it writes outside the transaction and causes conflicts)
+      const Transaction = require('../models/Transaction');
+      const userTransactions = await Transaction.find({
+        user: clientId,
+        status: 'completed'
+      }).session(session);
+      
+      let calculatedBalance = 0;
+      for (const tx of userTransactions) {
+        const amt = parseFloat(tx.amount) || 0;
+        const curr = (tx.currency || 'USDC').toUpperCase();
+        if (curr !== 'USDC') continue;
+        switch (tx.type) {
+          case 'deposit': case 'earning': case 'refund':
+            calculatedBalance += amt; break;
+          case 'withdrawal': case 'payment': case 'escrow':
+            calculatedBalance -= amt; break;
+        }
+      }
+      
+      // Subtract active escrow
+      const activeEscrow = await Booking.find({
+        client: clientId,
+        status: { $in: ['confirmed', 'in_progress', 'delivered'] },
+        paymentStatus: 'paid'
+      }).session(session);
+      const escrowTotal = activeEscrow.reduce((sum, b) => sum + (parseFloat(b.amount) || 0), 0);
+      calculatedBalance -= escrowTotal;
+      calculatedBalance = Math.max(0, parseFloat(calculatedBalance.toFixed(6)));
+      
+      console.log(`[BookingPayment] Calculated balance for ${clientId}: ${calculatedBalance} USDC (escrow: ${escrowTotal})`);
 
-      if (liveBalance < booking.amount) {
+      if (calculatedBalance < booking.amount) {
         throw new ErrorHandler(
-          `Insufficient live balance. Required: ${booking.amount} ${booking.currency}, Available: ${liveBalance} ${booking.currency}`,
+          `Insufficient balance. Required: ${booking.amount} ${booking.currency}, Available: ${calculatedBalance} ${booking.currency}`,
           400
         );
       }
 
-      // Atomic balance update - only check balance >= amount
-      // (skip __v check since syncWalletBalances may have updated it outside this tx)
+      // Atomic balance update - use the calculated balance for the check
       const clientUpdate = await User.findOneAndUpdate(
         {
           _id: client._id,
