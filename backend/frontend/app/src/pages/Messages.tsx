@@ -6,6 +6,7 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { api, useAuth } from '@/contexts/AuthContext';
 import { Search, Send, Phone, Video, MoreVertical, ChevronLeft, Ban, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getImageUrl } from '@/lib/imageUrl';
 import { toast } from 'sonner';
 import {
   DropdownMenu,
@@ -331,7 +332,7 @@ export function Messages() {
   };
 
   const getParticipantAvatar = (participant?: Participant) => {
-    return participant?.avatar || '/images/avatar-1.png';
+    return getImageUrl(participant?.avatar) || '/images/avatar-1.png';
   };
 
   const isMyMessage = (message: Message) => {

@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { api } from '@/contexts/AuthContext';
+import { getImageUrl } from '@/lib/imageUrl';
 import { 
   Bell, 
   CheckCircle, 
@@ -224,7 +225,7 @@ export function Notifications() {
                       <div className="flex-shrink-0 mt-1">
                         {notification.sender?.avatar ? (
                           <img 
-                            src={notification.sender.avatar}
+                            src={getImageUrl(notification.sender.avatar)}
                             alt=""
                             className="w-10 h-10 rounded-full object-cover"
                           />

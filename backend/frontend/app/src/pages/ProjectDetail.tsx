@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { api, useAuth } from '@/contexts/AuthContext';
+import { getImageUrl } from '@/lib/imageUrl';
 import { 
   Loader2, 
   ArrowLeft, 
@@ -376,7 +377,7 @@ export function ProjectDetail() {
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-3">
                           <img
-                            src={app.creatorId?.avatar || '/images/avatar-1.png'}
+                            src={getImageUrl(app.creatorId?.avatar) || '/images/avatar-1.png'}
                             alt="Creator"
                             className="w-12 h-12 rounded-full object-cover"
                           />

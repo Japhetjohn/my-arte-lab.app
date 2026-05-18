@@ -8,6 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/contexts/AuthContext';
+import { getImageUrl } from '@/lib/imageUrl';
 import { toast } from 'sonner';
 import { User, Bell, Shield, Moon, Globe, Smartphone, Camera, Loader2, Lock } from 'lucide-react';
 import {
@@ -232,7 +233,7 @@ export function Settings() {
                 <div className="flex items-center gap-4">
                   <div className="relative">
                     <img
-                      src={profileForm.avatar || '/images/avatar-1.png'}
+                      src={getImageUrl(profileForm.avatar) || '/images/avatar-1.png'}
                       alt="Profile"
                       className="w-20 h-20 rounded-full object-cover border-2 border-gray-200"
                     />

@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { api } from '@/contexts/AuthContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { getImageUrl } from '@/lib/imageUrl';
 import { 
   Loader2, 
   ArrowLeft, 
@@ -698,7 +699,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                 {isClient ? (
                   booking.creator?.avatar ? (
                     <img 
-                      src={booking.creator.avatar}
+                      src={getImageUrl(booking.creator.avatar)}
                       alt={creatorName}
                       className="w-12 h-12 rounded-full object-cover"
                     />
@@ -710,7 +711,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                 ) : (
                   booking.client?.avatar ? (
                     <img 
-                      src={booking.client.avatar}
+                      src={getImageUrl(booking.client.avatar)}
                       alt={clientName}
                       className="w-12 h-12 rounded-full object-cover"
                     />

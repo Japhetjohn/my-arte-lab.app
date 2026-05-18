@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { api, useAuth } from '@/contexts/AuthContext';
+import { getImageUrl } from '@/lib/imageUrl';
 import { 
   Plus, 
   Calendar, 
@@ -192,7 +193,7 @@ export function Projects() {
               {!isOwner && project.clientId && (
                 <div className="flex items-center gap-2 mr-4">
                   <img
-                    src={project.clientId?.avatar || '/images/avatar-1.png'}
+                    src={getImageUrl(project.clientId?.avatar) || '/images/avatar-1.png'}
                     alt="Client"
                     className="w-6 h-6 rounded-full object-cover"
                   />
@@ -206,7 +207,7 @@ export function Projects() {
               {isOwner && hasCreator && (
                 <div className="flex items-center gap-2 mr-4">
                   <img
-                    src={project.selectedCreatorId?.avatar || '/images/avatar-1.png'}
+                    src={getImageUrl(project.selectedCreatorId?.avatar) || '/images/avatar-1.png'}
                     alt="Creator"
                     className="w-6 h-6 rounded-full object-cover"
                   />

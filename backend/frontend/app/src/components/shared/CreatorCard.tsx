@@ -6,6 +6,7 @@ import type { Creator } from '@/types';
 import { StatusBadge } from './StatusBadge';
 import { VerifiedBadge } from './VerifiedBadge';
 import { NewBookingModal } from '@/components/booking/NewBookingModal';
+import { getImageUrl } from '@/lib/imageUrl';
 
 interface CreatorCardProps {
   creator: Creator & { rating?: number | { average?: number; count?: number }; _id?: string; priceRange?: { min: number; max: number } };
@@ -68,7 +69,7 @@ export function CreatorCard({ creator, onViewProfile, onBook }: CreatorCardProps
           {/* Top Section: Avatar & Status */}
           <div className="relative flex-shrink-0 mt-1">
             <img
-              src={creator.avatar || '/images/avatar-1.png'}
+              src={getImageUrl(creator.avatar) || '/images/avatar-1.png'}
               alt={creator.name || 'Creator'}
               className="w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-gray-100"
             />

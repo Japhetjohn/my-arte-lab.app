@@ -21,6 +21,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
+import { getImageUrl } from '@/lib/imageUrl';
 
 interface CreatorProfileProps {
   creatorId?: string;
@@ -365,7 +366,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
           <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
             <div className="relative mx-auto sm:mx-0">
               <img
-                src={creator.avatar || '/images/avatar-1.png'}
+                src={getImageUrl(creator.avatar) || '/images/avatar-1.png'}
                 alt={creator.name}
                 className="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 rounded-full object-cover border-4 border-white shadow-lg"
               />
@@ -612,7 +613,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                     onClick={() => item.image && setSelectedImage(item.image)}
                   >
                     <img
-                      src={item.image?.startsWith('http') ? item.image : `${window.location.origin}${item.image}`}
+                      src={getImageUrl(item.image)}
                       alt={item.title}
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       onError={(e) => {
@@ -738,7 +739,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                             {service.images.map((img, idx) => (
                               <img
                                 key={idx}
-                                src={img}
+                                src={getImageUrl(img)}
                                 alt={`${service.title} ${idx + 1}`}
                                 className="w-20 h-20 object-cover rounded-lg flex-shrink-0"
                               />
@@ -789,7 +790,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                     <div key={review._id} className="border-t pt-4">
                       <div className="flex items-start gap-3">
                         <img
-                          src={review.reviewer.avatar || '/images/avatar-1.png'}
+                          src={getImageUrl(review.reviewer.avatar) || '/images/avatar-1.png'}
                           alt={review.reviewer.name}
                           className="w-10 h-10 rounded-full object-cover"
                         />
@@ -881,7 +882,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
           <div className="relative flex items-center justify-center min-h-[300px] max-h-[80vh]">
             {selectedImage && (
               <img
-                src={selectedImage?.startsWith('http') ? selectedImage : `${window.location.origin}${selectedImage}`}
+                src={getImageUrl(selectedImage)}
                 alt="Portfolio"
                 className="max-w-full max-h-[80vh] object-contain"
               />

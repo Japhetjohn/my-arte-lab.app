@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { api } from '@/contexts/AuthContext';
+import { getImageUrl } from '@/lib/imageUrl';
 import { toast } from 'sonner';
 import { Loader2, Calendar, DollarSign } from 'lucide-react';
 
@@ -94,7 +95,7 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
           {/* Creator Info */}
           <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-lg">
             <img 
-              src={creator.avatar || '/images/avatar-1.png'} 
+              src={getImageUrl(creator.avatar) || '/images/avatar-1.png'} 
               alt={creator.name}
               className="w-12 h-12 rounded-full object-cover"
             />

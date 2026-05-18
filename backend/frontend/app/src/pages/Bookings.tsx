@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { api } from '@/contexts/AuthContext';
+import { getImageUrl } from '@/lib/imageUrl';
 import { useAuth } from '@/contexts/AuthContext';
 import { NewBookingModal } from '@/components/booking/NewBookingModal';
 import { 
@@ -142,7 +143,7 @@ export function Bookings() {
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-3">
               <img
-                src={otherParty.avatar || '/images/avatar-1.png'}
+                src={getImageUrl(otherParty.avatar) || '/images/avatar-1.png'}
                 alt={otherParty.name}
                 className="w-12 h-12 rounded-full object-cover"
               />
