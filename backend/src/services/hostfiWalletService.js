@@ -412,19 +412,34 @@ class HostFiWalletService {
    * FIXED: No longer fetches from HostFi shared asset (which returns same balance for all users)
    */
   async getLiveBalanceAsset(userId, currencyCode = 'USDC') {
-    const user = await User.findById(userId);
-    if (!user) throw new Error('User not found');
-    
-    // Sync calculates balance from user's transaction history
-    await this.syncWalletBalances(userId);
-    
-    const refreshedUser = await User.findById(userId);
-    const asset = refreshedUser.wallet.hostfiWalletAssets?.find(a => a.currency === currencyCode);
-    
-    // Balance is already calculated with escrow deducted in syncWalletBalances
-    // So we just return the stored balance directly
-    const trueBalance = parseFloat(asset?.balance || 0);
-    return Math.max(0, parseFloat(trueBalance.toFixed(2)));
+    try {
+      const user = await User.findById(userId);
+      if (!user) throw new Error('User not found');
+      
+      // Sync calculates balance from user's transaction history
+      await this.syncWalletBalances(userId);
+      
+      const refreshedUser = await User.findById(userId);
+      
+      // Ensure hostfiWalletAssets exists
+      if (!refreshedUser.wallet.hostfiWalletAssets || refreshedUser.wallet.hostfiWalletAssets.length === 0) {
+        console.warn(`[getLiveBalanceAsset] No hostfiWalletAssets for user ${userId}, returning 0`);
+        return 0;
+      }
+      
+      const asset = refreshedUser.wallet.hostfiWalletAssets.find(a => a.currency === currencyCode);
+      
+      // Balance is already calculated with escrow deducted in syncWalletBalances
+      // So we just return the stored balance directly
+      const trueBalance = parseFloat(asset?.balance || 0);
+      const result = Math.max(0, parseFloat(trueBalance.toFixed(2)));
+      console.log(`[getLiveBalanceAsset] User ${userId} ${currencyCode} balance: ${result}`);
+      return result;
+    } catch (error) {
+      console.error(`[getLiveBalanceAsset] Error for user ${userId}:`, error.message);
+      // Return 0 on error so the caller can handle insufficient balance
+      return 0;
+    }
   }
 }
 
