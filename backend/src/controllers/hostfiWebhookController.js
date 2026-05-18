@@ -118,72 +118,125 @@ async function processFiatDeposit(parsed) {
   console.log(`[Webhook:FiatDeposit] Processing deposit for User ${user._id}: ${amount} ${currency}`);
 
   // ─── HYBRID DEPOSIT FLOW ───
-  // 1. Verify deposit with HostFi API
-  // 2. Create Transaction record in DB
-  // 3. Update user's wallet balance
+  // HostFi auto-swaps fiat (NGN) to USDC. We need the USDC amount, not the original NGN.
+  // 1. Query HostFi for the actual swapped USDC amount
+  // 2. Create Transaction record in DB (as USDC)
+  // 3. Update user's wallet balance (USDC)
   // 4. Send notification
 
-  const depositAmount = parseFloat(amount) || 0;
-  const depositCurrency = (currency || 'NGN').toUpperCase();
+  const rawAmount = parseFloat(amount) || 0;
+  const rawCurrency = (currency || 'NGN').toUpperCase();
 
-  // 1. Verify with HostFi (optional but recommended)
-  let verified = true;
+  // ─── STEP 1: Get actual USDC amount from HostFi ───
+  let usdcAmount = rawAmount;
+  let usdcCurrency = 'USDC';
+  let originalAmount = rawAmount;
+  let originalCurrency = rawCurrency;
+  let swapDetails = null;
+
   try {
-    const hostfiTx = await reconciliationService.verifyDeposit(id, userId);
-    if (!hostfiTx) {
-      console.warn(`[Webhook:FiatDeposit] Could not verify deposit ${id} with HostFi API. Proceeding with webhook data.`);
-      verified = false;
+    // Query HostFi transaction to get the swap result
+    const hostfiTx = await hostfiService.getTransactionByReference(id);
+    console.log(`[Webhook:FiatDeposit] HostFi transaction data:`, JSON.stringify(hostfiTx, null, 2));
+
+    if (hostfiTx) {
+      // Check if this is a swap transaction or has swap-related data
+      const txData = hostfiTx.data || hostfiTx;
+      
+      // Look for the USDC credit leg in swap transactions
+      if (txData.transactions && Array.isArray(txData.transactions)) {
+        // It's a swap result with debit + credit legs
+        const creditLeg = txData.transactions.find(t => 
+          t.type === 'CREDIT' && 
+          (t.amount?.currency === 'USDC' || t.asset?.currency?.code === 'USDC')
+        );
+        if (creditLeg) {
+          usdcAmount = parseFloat(creditLeg.amount?.value || creditLeg.amount || 0);
+          swapDetails = { creditLeg, debitLeg: txData.transactions.find(t => t.type === 'DEBIT') };
+          console.log(`[Webhook:FiatDeposit] Swap detected. USDC credited: ${usdcAmount}`);
+        }
+      } else if (txData.amount?.currency === 'USDC' || txData.currency === 'USDC') {
+        // Direct USDC amount
+        usdcAmount = parseFloat(txData.amount?.value || txData.amount || 0);
+        console.log(`[Webhook:FiatDeposit] Direct USDC amount: ${usdcAmount}`);
+      } else if (txData.swappedAmount || txData.convertedAmount) {
+        usdcAmount = parseFloat(txData.swappedAmount || txData.convertedAmount || 0);
+        console.log(`[Webhook:FiatDeposit] Swapped amount: ${usdcAmount}`);
+      }
+
+      // If we still have NGN amount, try to get swap rate from metadata
+      if (usdcAmount === rawAmount && rawCurrency === 'NGN') {
+        // Fallback: use a reasonable conversion rate (HostFi rate ~1550-1600 NGN per USDC)
+        // This is a fallback - the API query above should normally give us the real amount
+        const estimatedRate = 1570; // Approximate HostFi rate
+        usdcAmount = parseFloat((rawAmount / estimatedRate).toFixed(2));
+        console.log(`[Webhook:FiatDeposit] Fallback conversion: ${rawAmount} NGN → ~${usdcAmount} USDC @ ${estimatedRate}`);
+      }
     }
-  } catch (verifyError) {
-    console.warn(`[Webhook:FiatDeposit] Verification check failed: ${verifyError.message}. Proceeding with webhook data.`);
-    verified = false;
+  } catch (apiError) {
+    console.warn(`[Webhook:FiatDeposit] Could not fetch swap details from HostFi: ${apiError.message}`);
+    // Fallback: estimate USDC from NGN
+    if (rawCurrency === 'NGN') {
+      const estimatedRate = 1570;
+      usdcAmount = parseFloat((rawAmount / estimatedRate).toFixed(2));
+      console.log(`[Webhook:FiatDeposit] Fallback conversion: ${rawAmount} NGN → ~${usdcAmount} USDC @ ${estimatedRate}`);
+    }
   }
 
-  // 2. Create deposit transaction record
+  // Ensure positive amount
+  usdcAmount = Math.max(0, usdcAmount);
+
+  console.log(`[Webhook:FiatDeposit] Final amounts: ${originalAmount} ${originalCurrency} → ${usdcAmount} USDC`);
+
+  // ─── STEP 2: Create deposit transaction record (as USDC) ───
   const transactionId = `DEPOSIT-${id.substring(0, 12)}-${Date.now()}`;
   const txRecord = await Transaction.create({
     transactionId,
     user: user._id,
     type: 'deposit',
-    amount: depositAmount,
-    currency: depositCurrency,
+    amount: usdcAmount,
+    currency: 'USDC',
     status: 'completed',
-    description: `Deposit of ${depositAmount} ${depositCurrency}`,
+    description: `Deposit of ${originalAmount} ${originalCurrency} (≈ ${usdcAmount} USDC)`,
     completedAt: new Date(),
     metadata: {
       hostfiReference: id,
       hostfiStatus: status,
       channelId: data?.channelId,
       depositType: 'fiat',
-      hostfiVerified: verified,
+      originalAmount: originalAmount,
+      originalCurrency: originalCurrency,
+      swapDetails: swapDetails,
       processedAt: new Date().toISOString()
     }
   });
 
-  console.log(`[Webhook:FiatDeposit] Transaction created: ${txRecord.transactionId}`);
+  console.log(`[Webhook:FiatDeposit] Transaction created: ${txRecord.transactionId} (${usdcAmount} USDC)`);
 
-  // 3. Update user's wallet balance directly
+  // ─── STEP 3: Update user's wallet balance (USDC) ───
   const currentBalance = parseFloat(user.wallet.balance) || 0;
-  const newBalance = currentBalance + depositAmount;
+  const newBalance = currentBalance + usdcAmount;
   user.wallet.balance = parseFloat(newBalance.toFixed(2));
   user.balance = user.wallet.balance;
   user.wallet.lastUpdated = new Date();
   await user.save({ validateBeforeSave: false });
 
-  console.log(`[Webhook:FiatDeposit] Balance updated: ${currentBalance} → ${user.wallet.balance} ${depositCurrency}`);
+  console.log(`[Webhook:FiatDeposit] Balance updated: ${currentBalance} → ${user.wallet.balance} USDC`);
 
-  // 4. Send Notification
+  // ─── STEP 4: Send Notification ───
   try {
     const Notification = require('../models/Notification');
     await Notification.createNotification({
       recipient: user._id,
       type: 'deposit_credited',
       title: 'Deposit Credited',
-      message: `Your deposit of ${depositAmount} ${depositCurrency} has been credited to your wallet.`,
+      message: `Your deposit of ${originalAmount} ${originalCurrency} has been credited as ${usdcAmount} USDC to your wallet.`,
       link: '/wallet',
       metadata: {
-        amount: depositAmount,
-        currency: depositCurrency,
+        amount: usdcAmount,
+        currency: 'USDC',
+        originalAmount: originalAmount,
+        originalCurrency: originalCurrency,
         transactionId: txRecord.transactionId
       }
     });
