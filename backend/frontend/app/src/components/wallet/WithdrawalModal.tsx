@@ -95,8 +95,13 @@ function BankSelect({ banks, selectedBank, onSelect, searchValue, onSearchChange
 
       {/* Dropdown Content */}
       {isOpen && (
-        <div className="relative z-50">
-          <div className="absolute w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-80 overflow-hidden">
+        <div className="fixed inset-0 z-[100]" onClick={(e) => { if (e.target === e.currentTarget) onToggle(); }}>
+          <div className="absolute bg-white border border-gray-200 rounded-lg shadow-lg max-h-80 overflow-hidden" style={{ 
+            top: (dropdownRef.current?.getBoundingClientRect().bottom ?? 0) + 4,
+            left: dropdownRef.current?.getBoundingClientRect().left ?? 0,
+            width: dropdownRef.current?.getBoundingClientRect().width ?? 300,
+            zIndex: 100
+          }}>
             {/* Search Input */}
             <div className="sticky top-0 bg-white border-b border-gray-100 p-3">
               <div className="relative">
@@ -665,10 +670,6 @@ export function WithdrawalModal({
             <span className="text-gray-500">Amount</span>
             <span>{parseFloat(amount).toLocaleString()} {currency}</span>
           </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-500">Fee</span>
-            <span className="text-green-600 font-medium">FREE</span>
-          </div>
           <div className="border-t pt-2 flex justify-between font-semibold">
             <span>You Receive</span>
             <span className="text-[#8A2BE2]">{parseFloat(amount).toLocaleString()} {currency}</span>
@@ -676,14 +677,15 @@ export function WithdrawalModal({
         </div>
       )}
 
-      <Button
+      <button
+        type="button"
         onClick={handleAmountNext}
         disabled={!amount || parseFloat(amount) <= 0 || parseFloat(amount) > availableBalance || parseFloat(amount) < 1}
-        className="w-full bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white py-2.5 mt-4"
+        className="w-full bg-[#8A2BE2] hover:bg-[#7B1FD1] disabled:bg-gray-300 disabled:cursor-not-allowed text-white py-3 mt-4 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors"
       >
         Review
-        <ArrowRight className="w-4 h-4 ml-2" />
-      </Button>
+        <ArrowRight className="w-4 h-4" />
+      </button>
     </div>
   );
 
@@ -735,10 +737,6 @@ export function WithdrawalModal({
               <span className="text-gray-500">Amount</span>
               <span className="font-medium">{numAmount.toLocaleString()} {currency}</span>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Fee</span>
-              <span className="text-green-600 font-medium">FREE</span>
-            </div>
             <div className="flex justify-between text-lg font-bold">
               <span>Total to Receive</span>
               <span className="text-[#8A2BE2]">{numAmount.toLocaleString()} {currency}</span>
@@ -776,7 +774,7 @@ export function WithdrawalModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto overflow-x-visible">
         <DialogHeader>
           <DialogTitle>
             {step === 'method' && 'Withdraw Funds'}
