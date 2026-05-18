@@ -446,7 +446,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                       {!isVerifiedLive ? (
                         <Button 
                           size="sm" 
-                          className="bg-blue-500 hover:bg-blue-600 text-white"
+                          className="bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white"
                           onClick={() => setShowVerifyDialog(true)}
                         >
                           <BadgeCheck className="w-4 h-4 mr-1" />
@@ -931,15 +931,15 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <BadgeCheck className="w-6 h-6 text-blue-500" />
+              <BadgeCheck className="w-6 h-6 text-[#8A2BE2]" />
               Get Verified
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-2">
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <h3 className="font-semibold text-blue-900">Verification Badge</h3>
-              <p className="text-sm text-blue-700 mt-1">
-                Stand out as a trusted creator with a blue verified badge on your profile.
+            <div className="bg-[#8A2BE2]/10 p-4 rounded-lg">
+              <h3 className="font-semibold text-[#8A2BE2]">Verification Badge</h3>
+              <p className="text-sm text-[#8A2BE2]/80 mt-1">
+                Stand out as a trusted creator with a verified badge on your profile.
               </p>
             </div>
             <div className="space-y-2">
@@ -971,7 +971,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                 Cancel
               </Button>
               <Button 
-                className="flex-1 bg-blue-500 hover:bg-blue-600 text-white"
+                className="flex-1 bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white"
                 disabled={isVerifying}
                 onClick={async () => {
                   try {
