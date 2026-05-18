@@ -100,27 +100,55 @@ class ProjectService {
       const client = await User.findById(clientId).session(session);
       const projectAmount = application.proposedBudget.amount;
 
-      const hostfiWalletService = require('./hostfiWalletService');
-      const liveBalance = await hostfiWalletService.getLiveBalanceAsset(client._id);
+      // Calculate balance inline (avoid syncWalletBalances write conflict)
+      const userTransactions = await Transaction.find({
+        user: clientId,
+        status: 'completed'
+      }).session(session);
+      
+      let calculatedBalance = 0;
+      for (const tx of userTransactions) {
+        const amt = parseFloat(tx.amount) || 0;
+        const curr = (tx.currency || 'USDC').toUpperCase();
+        if (curr !== 'USDC') continue;
+        switch (tx.type) {
+          case 'deposit': case 'earning': case 'refund':
+            calculatedBalance += amt; break;
+          case 'withdrawal': case 'payment': case 'escrow':
+            calculatedBalance -= amt; break;
+        }
+      }
+      
+      // Subtract active escrow (projects in progress with paid status)
+      const Project = require('../models/Project');
+      const activeEscrow = await Project.find({
+        clientId: clientId,
+        status: { $in: ['in_progress', 'delivered'] },
+        paymentStatus: 'paid'
+      }).session(session);
+      const escrowTotal = activeEscrow.reduce((sum, p) => sum + (parseFloat(p.acceptedAmount) || 0), 0);
+      calculatedBalance -= escrowTotal;
+      calculatedBalance = Math.max(0, parseFloat(calculatedBalance.toFixed(6)));
+      
+      console.log(`[ProjectPayment] Calculated balance for ${clientId}: ${calculatedBalance} USDC (escrow: ${escrowTotal})`);
 
-      if (liveBalance < projectAmount) {
+      if (calculatedBalance < projectAmount) {
         throw new ErrorHandler(
-          `Insufficient live balance. Required: ${projectAmount} USDC, Available: ${liveBalance} USDC`,
+          `Insufficient balance. Required: ${projectAmount} USDC, Available: ${calculatedBalance} USDC`,
           400
         );
       }
 
+      // Atomic update - no __v check (syncWalletBalances modifies outside tx)
       const clientUpdate = await User.findOneAndUpdate(
         {
           _id: client._id,
-          'wallet.balance': { $gte: projectAmount },
-          __v: client.__v
+          'wallet.balance': { $gte: projectAmount }
         },
         {
           $inc: {
             'wallet.balance': -projectAmount,
-            'wallet.pendingBalance': projectAmount,
-            __v: 1
+            'wallet.pendingBalance': projectAmount
           },
           $set: {
             'wallet.lastUpdated': new Date()
@@ -133,7 +161,7 @@ class ProjectService {
       );
 
       if (!clientUpdate) {
-        throw new ErrorHandler('Concurrent modification detected or insufficient balance', 409);
+        throw new ErrorHandler('Insufficient balance for this project', 400);
       }
 
       const timestamp = Date.now().toString(36).toUpperCase();
@@ -348,8 +376,91 @@ class ProjectService {
 
       await session.commitTransaction();
 
-      // HostFi B2B handles platform fee splitting automatically
-      // No need for accumulator or batch withdrawals
+      // ═══════════════════════════════════════════════════════════════
+      // PAYOUT PHASE: Creator payout via HostFi B2B
+      // 
+      // HostFi B2B automatically handles the split:
+      // - Creator receives their share directly
+      // - Platform fee goes to platform wallet automatically
+      // ═══════════════════════════════════════════════════════════════
+      
+      const client = await User.findById(clientId);
+      const clientUsdcAsset = client.wallet.hostfiWalletAssets?.find(
+        a => a.currency === (application.proposedBudget.currency || 'USDC') || a.currency === 'USDC'
+      );
+      
+      let creatorWalletAddress = project.selectedCreatorId?.wallet?.address;
+      
+      // If creator doesn't have a wallet, create one
+      if (!creatorWalletAddress) {
+        console.log(`[ProjectService] Creator ${project.selectedCreatorId._id} has no wallet, creating one...`);
+        try {
+          const tsaraService = require('./tsaraService');
+          const walletResult = await tsaraService.createWallet(
+            `${project.selectedCreatorId.firstName || 'Creator'} ${project.selectedCreatorId.lastName || ''}`.trim(),
+            `creator_${project.selectedCreatorId._id}_${Date.now()}`,
+            { userId: project.selectedCreatorId._id, purpose: 'auto-created-for-payout' }
+          );
+          
+          if (walletResult.success) {
+            const creator = await User.findById(project.selectedCreatorId._id);
+            creator.wallet.address = walletResult.data.primary_address;
+            creator.wallet.network = 'Solana';
+            creator.wallet.tsaraAddress = walletResult.data.primary_address;
+            creator.wallet.tsaraWalletId = walletResult.data.id;
+            creator.wallet.tsaraEncryptedPrivateKey = walletResult.data.secretKey;
+            await creator.save();
+            
+            creatorWalletAddress = walletResult.data.primary_address;
+            console.log(`[ProjectService] ✓ Created wallet for creator: ${creatorWalletAddress}`);
+          }
+        } catch (walletError) {
+          console.error('[ProjectService] ✗ Failed to create wallet for creator:', walletError.message);
+        }
+      }
+      
+      if (creatorWalletAddress && clientUsdcAsset?.assetId) {
+        try {
+          console.log(`[ProjectService] Creator payout: ${creatorAmount} ${application.proposedBudget.currency || 'USDC'} to ${creatorWalletAddress}`);
+          
+          const creatorPayout = await hostfiService.initiateWithdrawal({
+            walletAssetId: clientUsdcAsset.assetId,
+            amount: creatorAmount,
+            currency: application.proposedBudget.currency || 'USDC',
+            methodId: 'CRYPTO',
+            recipient: {
+              type: 'CRYPTO',
+              method: 'CRYPTO',
+              currency: application.proposedBudget.currency || 'USDC',
+              address: creatorWalletAddress,
+              network: 'SOL',
+              country: 'NG'
+            },
+            clientReference: `CREATOR-PAYOUT-PRJ-${project._id}-${Date.now()}`,
+            memo: `Payment for project "${project.title}"`
+          });
+
+          if (creatorPayout.reference || creatorPayout.id) {
+            await Transaction.updateOne(
+              { project: project._id, type: 'earning' },
+              { 
+                transactionHash: creatorPayout.reference || creatorPayout.id,
+                metadata: {
+                  payoutReference: creatorPayout.reference || creatorPayout.id,
+                  toAddress: creatorWalletAddress,
+                  network: 'SOL'
+                }
+              }
+            );
+            console.log(`[ProjectService] ✓ Creator payout initiated: ${creatorPayout.reference || creatorPayout.id}`);
+          }
+        } catch (payoutError) {
+          console.error('[ProjectService] ✗ Creator payout failed:', payoutError.message);
+          // Don't throw — log for manual reconciliation
+        }
+      } else {
+        console.error('[ProjectService] Missing creator wallet or client asset for payout');
+      }
 
       return {
         project,
