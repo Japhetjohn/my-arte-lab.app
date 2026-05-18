@@ -119,7 +119,7 @@ function BankSelect({ banks, selectedBank, onSelect, searchValue, onSearchChange
             top: dropdownPos.top,
             left: dropdownPos.left,
             width: dropdownPos.width,
-            zIndex: 9999,
+            zIndex: 99999,
           }}
         >
           {/* Search Input */}
