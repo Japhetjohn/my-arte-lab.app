@@ -22,7 +22,7 @@ router.post('/image', upload.single('image'), catchAsync(async (req, res, next) 
   }
 
   // Use portfolio upload function (generic image upload)
-  const result = await uploadPortfolio(req.file.buffer, req.file.originalname);
+  const result = await uploadPortfolio(req.file.buffer, req.file.originalname, req);
 
   successResponse(res, 200, 'Image uploaded successfully', {
     url: result.secure_url,

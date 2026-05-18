@@ -49,9 +49,17 @@ const generateFileName = (originalName) => {
 };
 
 // Get base URL for images
-const getBaseUrl = () => {
-  const apiUrl = process.env.API_URL || 'http://localhost:5000';
-  return apiUrl;
+// In production, derive from request headers if API_URL is not set
+const getBaseUrl = (req = null) => {
+  if (process.env.API_URL) {
+    return process.env.API_URL;
+  }
+  if (req) {
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'https';
+    const host = req.headers['x-forwarded-host'] || req.headers.host || 'localhost:5000';
+    return `${protocol}://${host}`;
+  }
+  return 'http://localhost:5000';
 };
 
 // Sharp fit modes mapping
@@ -110,7 +118,7 @@ const uploadImage = async (fileBuffer, options = {}) => {
     .toFile(filePath);
 
   // Return result in Cloudinary-compatible format
-  const baseUrl = getBaseUrl();
+  const baseUrl = getBaseUrl(options.req);
   const publicPath = `/uploads/${folder}/${fileName}`;
   const secure_url = `${baseUrl}${publicPath}`;
 
@@ -123,47 +131,51 @@ const uploadImage = async (fileBuffer, options = {}) => {
   };
 };
 
-const uploadAvatar = async (fileBuffer, originalName = 'avatar.jpg') => {
+const uploadAvatar = async (fileBuffer, originalName = 'avatar.jpg', req = null) => {
   return uploadImage(fileBuffer, {
     folder: 'avatars',
     width: 400,
     height: 400,
     fit: 'cover',
     quality: 90,
-    originalName
+    originalName,
+    req
   });
 };
 
-const uploadCover = async (fileBuffer, originalName = 'cover.jpg') => {
+const uploadCover = async (fileBuffer, originalName = 'cover.jpg', req = null) => {
   return uploadImage(fileBuffer, {
     folder: 'covers',
     width: 1200,
     height: 400,
     fit: 'cover',
     quality: 85,
-    originalName
+    originalName,
+    req
   });
 };
 
-const uploadPortfolio = async (fileBuffer, originalName = 'portfolio.jpg') => {
+const uploadPortfolio = async (fileBuffer, originalName = 'portfolio.jpg', req = null) => {
   return uploadImage(fileBuffer, {
     folder: 'portfolio',
     width: 1200,
     height: 1200,
     fit: 'inside',
     quality: 85,
-    originalName
+    originalName,
+    req
   });
 };
 
-const uploadServiceImage = async (fileBuffer, originalName = 'service.jpg') => {
+const uploadServiceImage = async (fileBuffer, originalName = 'service.jpg', req = null) => {
   return uploadImage(fileBuffer, {
     folder: 'services',
     width: 800,
     height: 600,
     fit: 'inside',
     quality: 85,
-    originalName
+    originalName,
+    req
   });
 };
 
