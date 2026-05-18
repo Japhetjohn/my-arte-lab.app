@@ -95,6 +95,14 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
   const [isVerifying, setIsVerifying] = useState(false);
   const [showVerifyDialog, setShowVerifyDialog] = useState(false);
 
+  // Compute isVerified on-the-fly (client-side grace period check)
+  const isVerifiedLive = (() => {
+    if (!creator?.verificationSubscription?.expiresAt) return false;
+    const GRACE_PERIOD_MS = 48 * 60 * 60 * 1000;
+    const graceEnd = new Date(creator.verificationSubscription.expiresAt).getTime() + GRACE_PERIOD_MS;
+    return graceEnd > Date.now();
+  })();
+
   // Fetch creator data
   const fetchCreatorData = useCallback(async (id: string) => {
     try {
@@ -402,7 +410,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                 <div>
                   <div className="flex items-center justify-center sm:justify-start gap-2">
                     <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{creator.name}</h1>
-                    {creator.isVerified && (
+                    {isVerifiedLive && (
                       <VerifiedBadge 
                         expiresAt={creator.verificationSubscription?.expiresAt} 
                       />
@@ -435,7 +443,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                       <Button variant="outline" size="sm" onClick={() => setIsEditProfileOpen(true)}>
                         Edit Profile
                       </Button>
-                      {!creator.isVerified ? (
+                      {!isVerifiedLive ? (
                         <Button 
                           size="sm" 
                           className="bg-blue-500 hover:bg-blue-600 text-white"

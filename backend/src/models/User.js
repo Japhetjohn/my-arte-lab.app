@@ -587,6 +587,14 @@ userSchema.methods.getPublicProfile = function () {
   obj.id = obj._id.toString();
   obj.name = this.name;
 
+  // Compute isVerified on-the-fly based on subscription expiry + grace period
+  const GRACE_PERIOD_HOURS = 48;
+  const sub = obj.verificationSubscription;
+  if (sub && sub.expiresAt) {
+    const gracePeriodEnd = new Date(sub.expiresAt.getTime() + GRACE_PERIOD_HOURS * 60 * 60 * 1000);
+    obj.isVerified = gracePeriodEnd > new Date();
+  }
+
   // Remove sensitive fields
   delete obj.password;
   delete obj.emailVerificationToken;

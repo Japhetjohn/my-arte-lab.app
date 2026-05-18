@@ -14,6 +14,15 @@ function generateTransactionId() {
   return `TXN-VER-${timestamp}-${random}`;
 }
 
+/**
+ * Check if a subscription is currently valid (within duration + grace period)
+ */
+function isSubscriptionValid(subscription) {
+  if (!subscription || !subscription.expiresAt) return false;
+  const gracePeriodEnd = new Date(subscription.expiresAt.getTime() + GRACE_PERIOD_HOURS * 60 * 60 * 1000);
+  return gracePeriodEnd > new Date();
+}
+
 class VerificationService {
   /**
    * Subscribe user to verification badge
@@ -29,8 +38,8 @@ class VerificationService {
         throw new ErrorHandler('User not found', 404);
       }
 
-      // Check if already actively subscribed
-      if (user.verificationSubscription?.active && user.verificationSubscription?.expiresAt > new Date()) {
+      // Check if already actively subscribed (within grace period)
+      if (isSubscriptionValid(user.verificationSubscription)) {
         throw new ErrorHandler('You already have an active verification subscription', 400);
       }
 
@@ -144,7 +153,7 @@ class VerificationService {
   }
 
   /**
-   * Get verification status
+   * Get verification status - computed on-the-fly, no cron needed
    */
   async getStatus(userId) {
     const user = await User.findById(userId).select('isVerified verificationSubscription wallet.balance');
@@ -152,21 +161,22 @@ class VerificationService {
       throw new ErrorHandler('User not found', 404);
     }
 
+    const subscription = user.verificationSubscription;
+    const isValid = isSubscriptionValid(subscription);
     const now = new Date();
-    const expiresAt = user.verificationSubscription?.expiresAt;
-    const isExpired = expiresAt && expiresAt < now;
+    const expiresAt = subscription?.expiresAt;
     const gracePeriodEnd = expiresAt ? new Date(expiresAt.getTime() + GRACE_PERIOD_HOURS * 60 * 60 * 1000) : null;
-    const inGracePeriod = isExpired && gracePeriodEnd && gracePeriodEnd > now;
+    const inGracePeriod = expiresAt && expiresAt < now && gracePeriodEnd && gracePeriodEnd > now;
 
     return {
-      isVerified: user.isVerified && !isExpired,
+      isVerified: isValid,
       subscription: {
-        active: user.verificationSubscription?.active && !isExpired,
-        subscribedAt: user.verificationSubscription?.subscribedAt,
+        active: subscription?.active && isValid,
+        subscribedAt: subscription?.subscribedAt,
         expiresAt: expiresAt,
         gracePeriodEndsAt: gracePeriodEnd,
         inGracePeriod: inGracePeriod,
-        autoRenew: user.verificationSubscription?.autoRenew || false
+        autoRenew: subscription?.autoRenew || false
       },
       price: VERIFICATION_PRICE,
       currency: VERIFICATION_CURRENCY
@@ -174,36 +184,8 @@ class VerificationService {
   }
 
   /**
-   * Check and expire verification subscriptions
-   * Called by cron job
-   */
-  async checkExpiredSubscriptions() {
-    const now = new Date();
-    const gracePeriodEnd = new Date(now.getTime() - GRACE_PERIOD_HOURS * 60 * 60 * 1000);
-
-    // Find users whose subscription expired beyond grace period
-    const expiredUsers = await User.find({
-      'verificationSubscription.active': true,
-      'verificationSubscription.expiresAt': { $lt: gracePeriodEnd }
-    });
-
-    let expiredCount = 0;
-    for (const user of expiredUsers) {
-      user.verificationSubscription.active = false;
-      user.isVerified = false;
-      await user.save({ validateBeforeSave: false });
-      expiredCount++;
-    }
-
-    if (expiredCount > 0) {
-      console.log(`[VerificationExpiry] Expired ${expiredCount} verification subscription(s)`);
-    }
-
-    return expiredCount;
-  }
-
-  /**
-   * Auto-renew subscriptions (optional - for future)
+   * Auto-renew subscriptions that are about to expire
+   * Called by a lightweight cron or on-demand
    */
   async processAutoRenewals() {
     const now = new Date();

@@ -1,5 +1,10 @@
 const verificationService = require('./verificationService');
 
+/**
+ * Lightweight cron that only handles auto-renewals.
+ * Subscription expiry is computed on-the-fly — no need to update DB.
+ * The badge disappears automatically when expiresAt + grace period passes.
+ */
 class VerificationExpiryService {
     constructor() {
         this.isRunning = false;
@@ -9,7 +14,7 @@ class VerificationExpiryService {
 
     start() {
         if (this.isRunning) return;
-        console.log('🚀 [Verification Expiry] Starting subscription monitoring...');
+        console.log('🚀 [Verification Renewal] Starting auto-renewal monitoring...');
         this.isRunning = true;
         
         // Check every hour
@@ -27,22 +32,15 @@ class VerificationExpiryService {
             this.interval = null;
         }
         this.isRunning = false;
-        console.log('⏹️  [Verification Expiry] Stopped');
+        console.log('⏹️  [Verification Renewal] Stopped');
     }
 
     async runChecks() {
         try {
-            // Process auto-renewals first
+            // Only process auto-renewals — expiry is computed on-the-fly
             await verificationService.processAutoRenewals();
-            
-            // Then expire any that weren't renewed
-            const expiredCount = await verificationService.checkExpiredSubscriptions();
-            
-            if (expiredCount > 0) {
-                console.log(`[Verification Expiry] Processed ${expiredCount} expired subscription(s)`);
-            }
         } catch (error) {
-            console.error('[Verification Expiry] Error during check:', error.message);
+            console.error('[Verification Renewal] Error during check:', error.message);
         }
     }
 }
