@@ -622,11 +622,16 @@ export function WithdrawalModal({
         </div>
       )}
 
+      {availableBalance < 1 && (
+        <p className="text-sm text-amber-600 text-center">
+          Minimum withdrawal is 1 USDC. Add more funds to withdraw.
+        </p>
+      )}
       <button
         type="button"
         onClick={handleAmountNext}
         disabled={!amount || parseFloat(amount) <= 0 || parseFloat(amount) > availableBalance || parseFloat(amount) < 1}
-        className="w-full bg-[#8A2BE2] hover:bg-[#7B1FD1] disabled:bg-gray-300 disabled:cursor-not-allowed text-white py-3 mt-4 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors"
+        className="w-full bg-[#8A2BE2] hover:bg-[#7B1FD1] disabled:bg-gray-300 disabled:cursor-not-allowed text-white py-3 mt-2 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors"
       >
         Review
         <ArrowRight className="w-4 h-4" />

@@ -42,15 +42,15 @@ export function Wallet() {
     }
   }, [error]);
 
-  // Filter to only show USDC transactions
+  // Filter to only show USDC transactions, exclude internal platform_fee transactions
   const usdcTransactions = transactions.filter(
-    (t) => t.currency === 'USDC' || t.currency === 'USD'
+    (t) => (t.currency === 'USDC' || t.currency === 'USD') && (t.type as string) !== 'platform_fee'
   );
 
   const renderTransaction = (transaction: Transaction) => {
     const txId = transaction.id || transaction._id || 'tx';
     const isCredit = transaction.type === 'deposit' || transaction.type === 'earning' || transaction.type === 'refund';
-    const isDebit = transaction.type === 'withdrawal' || transaction.type === 'payment' || transaction.type === 'platform_fee';
+    const isDebit = transaction.type === 'withdrawal' || transaction.type === 'payment';
     const displayAmount = Math.abs(parseFloat(String(transaction.amount)) || 0);
     const currency = transaction.currency || 'USDC';
     
