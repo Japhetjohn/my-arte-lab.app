@@ -3,6 +3,7 @@ const Transaction = require('../models/Transaction');
 const WebhookEvent = require('../models/WebhookEvent');
 const hostfiService = require('../services/hostfiService');
 const hostfiWalletService = require('../services/hostfiWalletService');
+const reconciliationService = require('../services/hostfiReconciliationService');
 const { catchAsync } = require('../utils/errorHandler');
 
 /**
@@ -116,16 +117,29 @@ async function processFiatDeposit(parsed) {
 
   console.log(`[Webhook:FiatDeposit] Processing deposit for User ${user._id}: ${amount} ${currency}`);
 
-  // ─── SIMPLE DEPOSIT FLOW ───
-  // 1. Create Transaction record (ledger entry)
-  // 2. Update user's wallet balance
-  // 3. Send notification
-  // NO auto-withdrawal. NO swap. Money stays in user's wallet.
+  // ─── HYBRID DEPOSIT FLOW ───
+  // 1. Verify deposit with HostFi API
+  // 2. Create Transaction record in DB
+  // 3. Update user's wallet balance
+  // 4. Send notification
 
   const depositAmount = parseFloat(amount) || 0;
   const depositCurrency = (currency || 'NGN').toUpperCase();
 
-  // 1. Create deposit transaction record
+  // 1. Verify with HostFi (optional but recommended)
+  let verified = true;
+  try {
+    const hostfiTx = await reconciliationService.verifyDeposit(id, userId);
+    if (!hostfiTx) {
+      console.warn(`[Webhook:FiatDeposit] Could not verify deposit ${id} with HostFi API. Proceeding with webhook data.`);
+      verified = false;
+    }
+  } catch (verifyError) {
+    console.warn(`[Webhook:FiatDeposit] Verification check failed: ${verifyError.message}. Proceeding with webhook data.`);
+    verified = false;
+  }
+
+  // 2. Create deposit transaction record
   const transactionId = `DEPOSIT-${id.substring(0, 12)}-${Date.now()}`;
   const txRecord = await Transaction.create({
     transactionId,
@@ -141,16 +155,14 @@ async function processFiatDeposit(parsed) {
       hostfiStatus: status,
       channelId: data?.channelId,
       depositType: 'fiat',
+      hostfiVerified: verified,
       processedAt: new Date().toISOString()
     }
   });
 
   console.log(`[Webhook:FiatDeposit] Transaction created: ${txRecord.transactionId}`);
 
-  // 2. Update user's wallet balance directly
-  // Since we calculate balance from transaction history, we just need to ensure
-  // the transaction is recorded. The next balance sync will pick it up.
-  // But for immediate feedback, let's also update the stored balance.
+  // 3. Update user's wallet balance directly
   const currentBalance = parseFloat(user.wallet.balance) || 0;
   const newBalance = currentBalance + depositAmount;
   user.wallet.balance = parseFloat(newBalance.toFixed(2));
@@ -160,7 +172,7 @@ async function processFiatDeposit(parsed) {
 
   console.log(`[Webhook:FiatDeposit] Balance updated: ${currentBalance} → ${user.wallet.balance} ${depositCurrency}`);
 
-  // 3. Send Notification
+  // 4. Send Notification
   try {
     const Notification = require('../models/Notification');
     await Notification.createNotification({
