@@ -113,23 +113,17 @@ class BookingService {
         );
       }
 
-      // Refresh client to get latest __v after syncWalletBalances may have updated it
-      const freshClient = await User.findById(client._id).session(session);
-      if (!freshClient) {
-        throw new ErrorHandler('Client not found after balance sync', 404);
-      }
-
+      // Atomic balance update - only check balance >= amount
+      // (skip __v check since syncWalletBalances may have updated it outside this tx)
       const clientUpdate = await User.findOneAndUpdate(
         {
-          _id: freshClient._id,
-          'wallet.balance': { $gte: booking.amount },
-          __v: freshClient.__v
+          _id: client._id,
+          'wallet.balance': { $gte: booking.amount }
         },
         {
           $inc: {
             'wallet.balance': -booking.amount,
-            'wallet.pendingBalance': booking.amount,
-            __v: 1
+            'wallet.pendingBalance': booking.amount
           },
           $set: {
             'wallet.lastUpdated': new Date()
@@ -142,7 +136,7 @@ class BookingService {
       );
 
       if (!clientUpdate) {
-        throw new ErrorHandler('Concurrent modification detected or insufficient balance', 409);
+        throw new ErrorHandler('Insufficient balance for this booking', 400);
       }
 
       const timestamp = Date.now().toString(36).toUpperCase();
