@@ -528,10 +528,10 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
 
       {/* Tabs */}
       <Tabs defaultValue="portfolio" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-flex">
-          <TabsTrigger value="portfolio">Portfolio</TabsTrigger>
-          <TabsTrigger value="services">Services</TabsTrigger>
-          <TabsTrigger value="reviews">Reviews</TabsTrigger>
+        <TabsList className="flex w-full overflow-x-auto scrollbar-hide lg:w-auto lg:inline-flex">
+          <TabsTrigger value="portfolio" className="flex-shrink-0">Portfolio</TabsTrigger>
+          <TabsTrigger value="services" className="flex-shrink-0">Services</TabsTrigger>
+          <TabsTrigger value="reviews" className="flex-shrink-0">Reviews</TabsTrigger>
         </TabsList>
 
         <TabsContent value="portfolio" className="mt-6">

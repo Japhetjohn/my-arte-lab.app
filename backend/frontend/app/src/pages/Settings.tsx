@@ -209,11 +209,11 @@ export function Settings() {
       <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
 
       <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 lg:w-auto">
-          <TabsTrigger value="profile">Profile</TabsTrigger>
-          <TabsTrigger value="notifications">Notifications</TabsTrigger>
-          <TabsTrigger value="privacy">Privacy</TabsTrigger>
-          <TabsTrigger value="appearance">Appearance</TabsTrigger>
+        <TabsList className="flex w-full overflow-x-auto scrollbar-hide lg:w-auto lg:inline-flex">
+          <TabsTrigger value="profile" className="flex-shrink-0">Profile</TabsTrigger>
+          <TabsTrigger value="notifications" className="flex-shrink-0">Notifications</TabsTrigger>
+          <TabsTrigger value="privacy" className="flex-shrink-0">Privacy</TabsTrigger>
+          <TabsTrigger value="appearance" className="flex-shrink-0">Appearance</TabsTrigger>
         </TabsList>
 
         {/* Profile Settings */}

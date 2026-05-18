@@ -192,17 +192,17 @@ export function Notifications() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-flex">
-          <TabsTrigger value="all">
+        <TabsList className="flex w-full overflow-x-auto scrollbar-hide lg:w-auto lg:inline-flex">
+          <TabsTrigger value="all" className="flex-shrink-0">
             All ({notifications.length})
           </TabsTrigger>
-          <TabsTrigger value="unread">
+          <TabsTrigger value="unread" className="flex-shrink-0">
             Unread ({unreadCount})
           </TabsTrigger>
-          <TabsTrigger value="bookings">
+          <TabsTrigger value="bookings" className="flex-shrink-0">
             Bookings
           </TabsTrigger>
-          <TabsTrigger value="messages">
+          <TabsTrigger value="messages" className="flex-shrink-0">
             Messages
           </TabsTrigger>
         </TabsList>

@@ -125,12 +125,12 @@ export function Wallet() {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="all">
-            <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-flex">
-              <TabsTrigger value="all">All</TabsTrigger>
-              <TabsTrigger value="deposits">Deposits</TabsTrigger>
-              <TabsTrigger value="payments">Payments</TabsTrigger>
-              <TabsTrigger value="withdrawals">Withdrawals</TabsTrigger>
-              <TabsTrigger value="earnings">Earnings</TabsTrigger>
+            <TabsList className="flex w-full overflow-x-auto scrollbar-hide lg:w-auto lg:inline-flex">
+              <TabsTrigger value="all" className="flex-shrink-0">All</TabsTrigger>
+              <TabsTrigger value="deposits" className="flex-shrink-0">Deposits</TabsTrigger>
+              <TabsTrigger value="payments" className="flex-shrink-0">Payments</TabsTrigger>
+              <TabsTrigger value="withdrawals" className="flex-shrink-0">Withdrawals</TabsTrigger>
+              <TabsTrigger value="earnings" className="flex-shrink-0">Earnings</TabsTrigger>
             </TabsList>
 
             <TabsContent value="all" className="mt-4">
