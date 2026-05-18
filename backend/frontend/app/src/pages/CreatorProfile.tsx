@@ -437,94 +437,75 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                     </div>
                   </div>
                 </div>
-                <div className="flex justify-center sm:justify-end items-center gap-2">
+                {/* Action Buttons - stacked on mobile, row on desktop */}
+                <div className="flex flex-col sm:flex-row justify-center sm:justify-end items-stretch sm:items-center gap-2">
                   {isOwner && (
                     <>
-                      <Button variant="outline" size="sm" onClick={() => setIsEditProfileOpen(true)}>
-                        Edit Profile
-                      </Button>
-                      {!isVerifiedLive ? (
-                        <Button 
-                          size="sm" 
-                          className="bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white"
-                          onClick={() => setShowVerifyDialog(true)}
-                        >
-                          <BadgeCheck className="w-4 h-4 mr-1" />
-                          Verify
+                      <div className="flex gap-2 justify-center">
+                        <Button variant="outline" size="sm" onClick={() => setIsEditProfileOpen(true)}>
+                          Edit Profile
                         </Button>
-                      ) : (
-                        <Button 
-                          variant="outline"
-                          size="sm" 
-                          className="text-red-500 border-red-200 hover:bg-red-50"
+                        {!isVerifiedLive ? (
+                          <Button 
+                            size="sm" 
+                            className="bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white"
+                            onClick={() => setShowVerifyDialog(true)}
+                          >
+                            <BadgeCheck className="w-4 h-4 mr-1" />
+                            Verify
+                          </Button>
+                        ) : (
+                          <Button 
+                            variant="outline"
+                            size="sm" 
+                            className="text-red-500 border-red-200 hover:bg-red-50"
+                            onClick={async () => {
+                              if (!confirm('Cancel verification? Your blue tick will be removed immediately.')) return;
+                              try {
+                                setIsVerifying(true);
+                                await verificationService.cancel();
+                                setCreator(prev => prev ? { ...prev, isVerified: false } : null);
+                                toast.success('Verification cancelled');
+                              } catch (error: any) {
+                                toast.error(error.response?.data?.error || 'Failed to cancel');
+                              } finally {
+                                setIsVerifying(false);
+                              }
+                            }}
+                          >
+                            {isVerifying ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Cancel Verify'}
+                          </Button>
+                        )}
+                      </div>
+                      {/* Availability Dropdown */}
+                      <div className="relative">
+                        <button
                           onClick={async () => {
-                            if (!confirm('Cancel verification? Your blue tick will be removed immediately.')) return;
+                            const next = (creator.availability || 'available') === 'available' ? 'busy' : 'available';
                             try {
-                              setIsVerifying(true);
-                              await verificationService.cancel();
-                              setCreator(prev => prev ? { ...prev, isVerified: false } : null);
-                              toast.success('Verification cancelled');
+                              await api.post('/creators/availability', { availability: next });
+                              setCreator(prev => prev ? { ...prev, availability: next } : null);
+                              toast.success(next === 'available' ? 'You are now available' : 'You are now busy');
                             } catch (error: any) {
-                              toast.error(error.response?.data?.error || 'Failed to cancel');
-                            } finally {
-                              setIsVerifying(false);
+                              toast.error(error.response?.data?.error || 'Failed to update status');
                             }
                           }}
+                          className={`w-full sm:w-auto px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
+                            (creator.availability || 'available') === 'available'
+                              ? 'bg-[#8A2BE2] text-white shadow-md'
+                              : 'bg-amber-500 text-white shadow-md'
+                          }`}
                         >
-                          {isVerifying ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Cancel Verify'}
-                        </Button>
-                      )}
+                          <span className={`w-2 h-2 rounded-full ${(creator.availability || 'available') === 'available' ? 'bg-white animate-pulse' : 'bg-white'}`}></span>
+                          {(creator.availability || 'available') === 'available' ? 'Available' : 'Busy'}
+                          <svg className="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
+                      </div>
                     </>
                   )}
-                  {isOwner ? (
-                    // Toggle Switch for Availability
-                    <div className="flex items-center gap-3 bg-gray-100 rounded-full p-1">
-                      <button
-                        onClick={async () => {
-                          if ((creator.availability || 'available') === 'available') return;
-                          try {
-                            await api.post('/creators/availability', { availability: 'available' });
-                            setCreator(prev => prev ? { ...prev, availability: 'available' } : null);
-                            toast.success('You are now available');
-                          } catch (error: any) {
-                            toast.error(error.response?.data?.error || 'Failed to update status');
-                          }
-                        }}
-                        className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
-                          (creator.availability || 'available') === 'available'
-                            ? 'bg-[#8A2BE2] text-white shadow-md'
-                            : 'text-gray-500 hover:text-gray-700'
-                        }`}
-                      >
-                        <span className="flex items-center gap-2">
-                          <span className={`w-2 h-2 rounded-full ${(creator.availability || 'available') === 'available' ? 'bg-white animate-pulse' : 'bg-gray-400'}`}></span>
-                          Available
-                        </span>
-                      </button>
-                      <button
-                        onClick={async () => {
-                          if ((creator.availability || 'available') === 'busy') return;
-                          try {
-                            await api.post('/creators/availability', { availability: 'busy' });
-                            setCreator(prev => prev ? { ...prev, availability: 'busy' } : null);
-                            toast.success('You are now busy');
-                          } catch (error: any) {
-                            toast.error(error.response?.data?.error || 'Failed to update status');
-                          }
-                        }}
-                        className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
-                          (creator.availability || 'available') === 'busy'
-                            ? 'bg-amber-500 text-white shadow-md'
-                            : 'text-gray-500 hover:text-gray-700'
-                        }`}
-                      >
-                        <span className="flex items-center gap-2">
-                          <span className={`w-2 h-2 rounded-full ${(creator.availability || 'available') === 'busy' ? 'bg-white' : 'bg-gray-400'}`}></span>
-                          Busy
-                        </span>
-                      </button>
-                    </div>
-                  ) : (
+                  {!isOwner && (
                     <StatusBadge status={creator.availability || 'available'} />
                   )}
                 </div>
