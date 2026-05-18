@@ -102,9 +102,6 @@ async function processFiatDeposit(parsed) {
     return;
   }
 
-  const isTestEvent = id.startsWith('TEST-EVT-');
-  const feeBreakdown = hostfiService.calculateOnRampFee(amount);
-
   let userId = customId;
   // If customId is a string and has a suffix like "-FIAT-1772842743721", extract the first 24 chars
   if (userId && typeof userId === 'string' && userId.length > 24) {
@@ -117,211 +114,70 @@ async function processFiatDeposit(parsed) {
     throw new Error(`User not found: ${userId}`);
   }
 
-  console.log(`[Webhook:FiatDeposit] Processing deposit for User ${user._id}: ${amount} ${currency} (Test: ${isTestEvent})`);
+  console.log(`[Webhook:FiatDeposit] Processing deposit for User ${user._id}: ${amount} ${currency}`);
 
-  let finalCreditAmount = feeBreakdown.amountAfterFee;
-  let finalCreditCurrency = currency;
-  let swapDetails = null;
+  // ─── SIMPLE DEPOSIT FLOW ───
+  // 1. Create Transaction record (ledger entry)
+  // 2. Update user's wallet balance
+  // 3. Send notification
+  // NO auto-withdrawal. NO swap. Money stays in user's wallet.
 
-  // 1. Handle Fee and Auto-Conversion for ALL deposits (Simulate for test, Execute for live)
+  const depositAmount = parseFloat(amount) || 0;
+  const depositCurrency = (currency || 'NGN').toUpperCase();
+
+  // 1. Create deposit transaction record
+  const transactionId = `DEPOSIT-${id.substring(0, 12)}-${Date.now()}`;
+  const txRecord = await Transaction.create({
+    transactionId,
+    user: user._id,
+    type: 'deposit',
+    amount: depositAmount,
+    currency: depositCurrency,
+    status: 'completed',
+    description: `Deposit of ${depositAmount} ${depositCurrency}`,
+    completedAt: new Date(),
+    metadata: {
+      hostfiReference: id,
+      hostfiStatus: status,
+      channelId: data?.channelId,
+      depositType: 'fiat',
+      processedAt: new Date().toISOString()
+    }
+  });
+
+  console.log(`[Webhook:FiatDeposit] Transaction created: ${txRecord.transactionId}`);
+
+  // 2. Update user's wallet balance directly
+  // Since we calculate balance from transaction history, we just need to ensure
+  // the transaction is recorded. The next balance sync will pick it up.
+  // But for immediate feedback, let's also update the stored balance.
+  const currentBalance = parseFloat(user.wallet.balance) || 0;
+  const newBalance = currentBalance + depositAmount;
+  user.wallet.balance = parseFloat(newBalance.toFixed(2));
+  user.balance = user.wallet.balance;
+  user.wallet.lastUpdated = new Date();
+  await user.save({ validateBeforeSave: false });
+
+  console.log(`[Webhook:FiatDeposit] Balance updated: ${currentBalance} → ${user.wallet.balance} ${depositCurrency}`);
+
+  // 3. Send Notification
   try {
-    const sourceAssetId = await hostfiWalletService.getWalletAssetId(user._id, currency);
-
-    // RE-FETCH user to avoid stale object issue if getWalletAssetId triggered a sync
-    const refreshedUser = await User.findById(user._id);
-
-    // Specifically target USDC on SOL network
-    let usdcAssetId = null;
-    if (refreshedUser.wallet.hostfiWalletAssets) {
-      const solUsdc = refreshedUser.wallet.hostfiWalletAssets.find(a =>
-        a.currency === 'USDC' && (a.colNetwork === 'SOL' || a.colNetwork === 'Solana')
-      );
-      usdcAssetId = solUsdc?.assetId;
-    }
-
-    // Fallback if Solana USDC not explicitly found via network tag
-    if (!usdcAssetId) {
-      usdcAssetId = await hostfiWalletService.getWalletAssetId(user._id, 'USDC');
-    }
-
-    if (!isTestEvent) {
-      console.log(`[Webhook:FiatDeposit] Initiating 1% fee transfer of ${feeBreakdown.platformFee} ${currency} to platform wallet...`);
-
-      console.log(`[Webhook:FiatDeposit] Swapping ${amount} ${currency} to USDC...`);
-      const swapResult = await hostfiService.swapAssets({
-        fromCurrency: currency,
-        fromAssetId: sourceAssetId,
-        toCurrency: 'USDC',
-        toAssetId: usdcAssetId,
-        amount: amount
-      });
-
-      const receivedUsdc = swapResult.destinationAmount || swapResult.data?.destinationAmount;
-      if (receivedUsdc) {
-        // Use the actual amount received from HostFi swap (already 0% platform fee assumed)
-        finalCreditAmount = receivedUsdc;
-        finalCreditCurrency = 'USDC';
-
-        // Commission collection is skipped if fee is 0
-        const onRampFeeUsdc = 0;
-
-        // Actually collect the fee on HostFi
-        console.log(`[Webhook:FiatDeposit] Collecting ${onRampFeeUsdc} USDC on-ramp commission...`);
-        await hostfiService.collectCommission({
-          assetId: usdcAssetId,
-          amount: onRampFeeUsdc,
-          currency: 'USDC',
-          clientReference: `COMM-ON-${id.substring(0, 8)}`
-        });
-
-        swapDetails = {
-          fromAmount: amount,
-          fromCurrency: currency,
-          toAmount: receivedUsdc,
-          toCurrency: 'USDC',
-          fee: onRampFeeUsdc,
-          reference: swapResult.id || swapResult.reference
-        };
+    const Notification = require('../models/Notification');
+    await Notification.createNotification({
+      recipient: user._id,
+      type: 'deposit_credited',
+      title: 'Deposit Credited',
+      message: `Your deposit of ${depositAmount} ${depositCurrency} has been credited to your wallet.`,
+      link: '/wallet',
+      metadata: {
+        amount: depositAmount,
+        currency: depositCurrency,
+        transactionId: txRecord.transactionId
       }
-    } else {
-      // SIMULATE for test events
-      console.log('[Webhook:FiatDeposit] SIMULATING conversion to USDC for test event');
-      // Estimate rate (e.g. 1500 NGN = 1 USDC)
-      const rate = 1 / 1600;
-      const simulatedUsdc = amount * rate;
-      const simulatedFee = 0; // 0% fee
-      finalCreditAmount = simulatedUsdc;
-      finalCreditCurrency = 'USDC';
-
-      console.log(`[Webhook:FiatDeposit] SIMULATING commission collection of ${simulatedFee} USDC`);
-
-      swapDetails = {
-        fromAmount: amount,
-        fromCurrency: currency,
-        toAmount: simulatedUsdc,
-        toCurrency: 'USDC',
-        fee: simulatedFee,
-        isSimulation: true
-      };
-    }
-  } catch (error) {
-    console.error('[Webhook:FiatDeposit] Auto-conversion/Fee processing failed:', error.message);
-    // User requested NO fallbacks. If swap fails, we throw to prevent incorrect credit.
-    throw new Error(`Auto-conversion to USDC failed: ${error.message}. Manual resolution required.`);
-  }
-
-  // 2. Update Internal Balance
-  console.log(`[Webhook:FiatDeposit] Final Credit: ${finalCreditAmount} ${finalCreditCurrency}`);
-  const updatedUser = await hostfiWalletService.updateBalance(user._id, finalCreditCurrency, finalCreditAmount, 'credit');
-
-  // Use the updated user for subsequent logic to ensure we have latest address/network
-  const currentUser = updatedUser || await User.findById(user._id);
-
-  console.log(`[Webhook:FiatDeposit] Current User Wallet Address: ${currentUser.wallet?.address}, Network: ${currentUser.wallet?.network}`);
-
-  // 3. Update/Create Transaction Record
-  const updateResult = await Transaction.findOneAndUpdate(
-    {
-      user: user._id,
-      $or: [
-        { reference: data.channelId },
-        { reference: id },
-        { 'metadata.collectionChannelId': data.channelId }
-      ]
-    },
-    {
-      $set: {
-        type: 'deposit',
-        amount: amount,
-        currency: currency,
-        status: 'completed',
-        platformFee: swapDetails ? swapDetails.fee : feeBreakdown.platformFee,
-        netAmount: finalCreditAmount,
-        completedAt: new Date(),
-        'paymentDetails.actualAmount': amount,
-        'metadata.hostfiReference': id,
-        'metadata.hostfiStatus': status,
-        'metadata.autoConverted': !!swapDetails,
-        'metadata.swapDetails': swapDetails
-      }
-    },
-    { upsert: true, new: true }
-  );
-
-  // 4. AUTO-WITHDRAWAL TO EXTERNAL SOLANA WALLET
-  // We check currentUser (refreshed) for the destination address
-  const destinationAddress = currentUser.wallet?.address || currentUser.wallet?.tsaraAddress;
-
-  if (finalCreditCurrency === 'USDC' && destinationAddress && !destinationAddress.startsWith('pending_')) {
-    try {
-      console.log(`[Webhook:FiatDeposit] Initiating auto-withdrawal of ${finalCreditAmount} USDC to external Solana wallet: ${destinationAddress}`);
-
-      // Need to ensure usdcAssetId is available. Let's re-fetch if needed or use from swapDetails
-      const usdcAssetId = swapDetails?.toAssetId || await hostfiWalletService.getWalletAssetId(currentUser._id, 'USDC');
-
-      let payoutResult;
-      if (!isTestEvent) {
-        payoutResult = await hostfiService.initiateWithdrawal({
-          walletAssetId: usdcAssetId,
-          amount: finalCreditAmount,
-          currency: 'USDC',
-          methodId: 'CRYPTO', // Explicitly set for crypto payout
-          clientReference: `AUTO-OUT-${id.substring(0, 8)}`,
-          recipient: {
-            type: 'CRYPTO',
-            network: 'SOL',
-            accountNumber: destinationAddress, // HostFi requires the address in accountNumber
-            address: destinationAddress,
-            currency: 'USDC'
-          },
-          memo: `Auto-withdrawal of deposit ${id}`
-        });
-      } else {
-        console.log(`[Webhook:FiatDeposit] SIMULATING auto-withdrawal of ${finalCreditAmount} USDC to ${destinationAddress} for test event`);
-        payoutResult = { id: `PAYOUT-SIM-${Date.now()}` };
-      }
-
-      console.log(`[Webhook:FiatDeposit] Auto-withdrawal initiated: ${payoutResult.id || payoutResult.reference}`);
-
-      // Update transaction metadata
-      await Transaction.findByIdAndUpdate(updateResult._id, {
-        $set: {
-          'metadata.autoWithdrawn': true,
-          'metadata.payoutReference': payoutResult.id || payoutResult.reference,
-          'metadata.destinationAddress': user.wallet.address
-        }
-      });
-
-      // Debit internal balance since it was sent out
-      console.log(`[Webhook:FiatDeposit] Debiting internal balance after auto-withdrawal...`);
-      await hostfiWalletService.updateBalance(user._id, 'USDC', finalCreditAmount, 'debit');
-
-    } catch (payoutError) {
-      console.error('[Webhook:FiatDeposit] Auto-withdrawal failed:', payoutError.message);
-    }
-  }
-
-  if (updateResult) {
-    console.log(`[Webhook:FiatDeposit] Transaction record updated: ${updateResult._id}`);
-
-    // 5. Send Notification
-    try {
-      const Notification = require('../models/Notification');
-      await Notification.createNotification({
-        recipient: user._id,
-        type: 'deposit_credited',
-        title: 'Deposit Credited',
-        message: `Your deposit of ${amount} ${currency} has been credited to your wallet as ${finalCreditAmount.toFixed(2)} ${finalCreditCurrency}.`,
-        link: '/wallet',
-        metadata: {
-          amount: finalCreditAmount,
-          currency: finalCreditCurrency,
-          transactionId: updateResult.transactionId
-        }
-      });
-    } catch (err) {
-      console.warn('[Webhook:FiatDeposit] Notification failed:', err.message);
-    }
+    });
+    console.log(`[Webhook:FiatDeposit] Notification sent to user ${user._id}`);
+  } catch (err) {
+    console.warn('[Webhook:FiatDeposit] Notification failed:', err.message);
   }
 }
 
@@ -332,56 +188,63 @@ async function processCryptoDeposit(parsed) {
     return;
   }
 
-  const feeBreakdown = hostfiService.calculateOnRampFee(amount);
   const user = await User.findById(customId);
   if (!user) throw new Error(`User not found: ${customId}`);
 
-  console.log(`[Webhook:CryptoDeposit] Crediting User ${user._id} for ${amount} ${currency}`);
-  await hostfiWalletService.updateBalance(user._id, currency, feeBreakdown.amountAfterFee, 'credit');
+  const depositAmount = parseFloat(amount) || 0;
+  const depositCurrency = (currency || 'USDC').toUpperCase();
 
-  await Transaction.findOneAndUpdate(
-    {
-      user: user._id,
-      $or: [
-        { reference: data.addressId },
-        { reference: id },
-        { 'paymentDetails.walletAddress': data.address }
-      ]
-    },
-    {
-      $set: {
-        user: user._id,
-        type: 'deposit',
-        amount: amount,
-        currency: currency,
-        status: 'completed',
-        platformFee: feeBreakdown.platformFee,
-        netAmount: feeBreakdown.amountAfterFee,
-        transactionHash: txHash,
-        blockchainNetwork: network,
-        completedAt: new Date(),
-        'paymentDetails.txHash': txHash,
-        'paymentDetails.network': network,
-        'metadata.hostfiReference': id,
-        'metadata.hostfiStatus': status
-      }
-    },
-    { upsert: true, new: true }
-  );
+  console.log(`[Webhook:CryptoDeposit] Processing deposit for User ${user._id}: ${depositAmount} ${depositCurrency}`);
 
-  // 4. Send Notification
+  // 1. Create deposit transaction record
+  const transactionId = `DEPOSIT-${id.substring(0, 12)}-${Date.now()}`;
+  const txRecord = await Transaction.create({
+    transactionId,
+    user: user._id,
+    type: 'deposit',
+    amount: depositAmount,
+    currency: depositCurrency,
+    status: 'completed',
+    description: `Crypto deposit of ${depositAmount} ${depositCurrency}`,
+    transactionHash: txHash,
+    completedAt: new Date(),
+    metadata: {
+      hostfiReference: id,
+      hostfiStatus: status,
+      txHash,
+      network,
+      address: data?.address,
+      depositType: 'crypto',
+      processedAt: new Date().toISOString()
+    }
+  });
+
+  console.log(`[Webhook:CryptoDeposit] Transaction created: ${txRecord.transactionId}`);
+
+  // 2. Update user's wallet balance directly
+  const currentBalance = parseFloat(user.wallet.balance) || 0;
+  const newBalance = currentBalance + depositAmount;
+  user.wallet.balance = parseFloat(newBalance.toFixed(2));
+  user.balance = user.wallet.balance;
+  user.wallet.lastUpdated = new Date();
+  await user.save({ validateBeforeSave: false });
+
+  console.log(`[Webhook:CryptoDeposit] Balance updated: ${currentBalance} → ${user.wallet.balance} ${depositCurrency}`);
+
+  // 3. Send Notification
   try {
     const Notification = require('../models/Notification');
     await Notification.createNotification({
       recipient: user._id,
       type: 'deposit_credited',
       title: 'Crypto Deposit Credited',
-      message: `Your deposit of ${amount} ${currency} has been credited to your wallet.`,
+      message: `Your deposit of ${depositAmount} ${depositCurrency} has been credited to your wallet.`,
       link: '/wallet',
       metadata: {
-        amount,
-        currency,
-        txHash
+        amount: depositAmount,
+        currency: depositCurrency,
+        txHash,
+        transactionId: txRecord.transactionId
       }
     });
   } catch (err) {
@@ -406,23 +269,31 @@ async function processPayout(parsed, payoutType) {
   const isFailed = ['FAILED', 'REJECTED', 'WITHDRAWAL_FAILED', 'DEBIT_FAILED', 'FAILED_PAYOUT', 'CANCELED', 'EXPIRED'].includes(status);
 
   if (isSuccess) {
-    if (transaction.status !== 'completed') {
-      user.wallet.pendingBalance -= transaction.amount;
-      await user.save({ validateBeforeSave: false });
-
-      transaction.status = 'completed';
-      transaction.completedAt = new Date();
-      transaction.transactionHash = txHash || transaction.transactionHash;
-      transaction.metadata.hostfiStatus = status;
-      await transaction.save();
-      console.log(`[Webhook:Payout] Payout marked complete for User ${user._id}`);
-    }
+    // Just update the transaction hash/reference — balance already deducted
+    transaction.transactionHash = txHash || transaction.transactionHash;
+    transaction.metadata.hostfiStatus = status;
+    transaction.metadata.hostfiReference = clientReference;
+    await transaction.save();
+    console.log(`[Webhook:Payout] Payout confirmed on HostFi for User ${user._id}, ref: ${clientReference}`);
   } else if (isFailed) {
     if (transaction.status !== 'failed') {
       console.log(`[Webhook:Payout] Payout failed. Refunding User ${user._id}`);
-      await hostfiWalletService.updateBalance(user._id, transaction.currency, transaction.amount, 'credit');
-      user.wallet.pendingBalance -= transaction.amount;
-      await user.save({ validateBeforeSave: false });
+      
+      // Refund: create a credit transaction
+      await Transaction.create({
+        transactionId: `REFUND-${Date.now()}`,
+        user: user._id,
+        type: 'refund',
+        amount: transaction.amount,
+        currency: transaction.currency,
+        status: 'completed',
+        description: `Refund for failed withdrawal`,
+        metadata: {
+          originalTransaction: transaction.transactionId,
+          hostfiReference: clientReference,
+          reason: data.reason || 'Payout failed'
+        }
+      });
 
       transaction.status = 'failed';
       transaction.failedAt = new Date();
@@ -430,7 +301,6 @@ async function processPayout(parsed, payoutType) {
       transaction.metadata.hostfiStatus = status;
       await transaction.save();
     }
-    // Note: No else block - if already failed, we don't change status
   }
 
   // Send Notification for success/failure
@@ -457,6 +327,7 @@ async function processPayout(parsed, payoutType) {
     console.warn('[Webhook:Payout] Notification failed:', err.message);
   }
 
+  // Sync balance to recalculate from transaction history
   await hostfiWalletService.syncWalletBalances(user._id);
 }
 

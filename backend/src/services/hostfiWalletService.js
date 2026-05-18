@@ -200,9 +200,13 @@ class HostFiWalletService {
           case 'withdrawal':
           case 'payment':
           case 'escrow':
-          case 'platform_fee':
             if (currency === 'USDC') calculatedUsdcBalance -= amount;
             if (currency === 'NGN') calculatedNgnBalance -= amount;
+            break;
+            
+          // platform_fee: Just a ledger entry for the platform, 
+          // NOT actual money leaving user's wallet. Skip.
+          case 'platform_fee':
             break;
         }
       }

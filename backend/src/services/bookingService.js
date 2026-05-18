@@ -320,18 +320,18 @@ class BookingService {
           },
           {
             transactionId: `TXN-FEE-${timestamp}-${random2}`,
-            user: creator._id,
+            user: client._id,
             type: 'platform_fee',
             amount: booking.platformFee,
             currency: booking.currency,
-            status: 'completed',
+            status: 'pending_accumulation',
             booking: booking._id,
-            toAddress: platformWalletInfo.address,
-            description: `Platform fee for ${booking.bookingId}`,
+            description: `Platform fee (10%) for ${booking.serviceTitle}`,
             metadata: {
-              isTempWallet: platformWalletInfo.isTemp,
-              mainPlatformWallet: platformWalletInfo.mainWallet,
-              tempWallet: platformWalletInfo.isTemp ? platformWalletInfo.address : null
+              accumulated: true,
+              batchReady: false,
+              creatorId: creator._id.toString(),
+              recordedAt: new Date().toISOString()
             },
             completedAt: new Date()
           }

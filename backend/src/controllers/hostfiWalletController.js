@@ -787,9 +787,9 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
   const clientReference = `WD-${uuidv4()}`;
   console.log(`[Withdrawal] Processing ${amount} ${currency} for user ${req.user._id}`);
 
-  // Deduct amount from balance
+  // Deduct amount from balance immediately
+  // Balance is calculated from transaction history, but we update stored balance for immediate UI feedback
   user.wallet.balance -= amountInPrimary;
-  user.wallet.pendingBalance = (user.wallet.pendingBalance || 0) + amountInPrimary;
   user.wallet.lastUpdated = new Date();
   await user.save();
 
@@ -893,7 +893,7 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
       type: 'withdrawal',
       amount,
       currency,
-      status: 'pending',
+      status: 'completed',
       description: txDescription,
       paymentMethod: methodId?.toLowerCase() || effectiveMethodId.toLowerCase(),
       platformFee: 0,
@@ -948,27 +948,9 @@ exports.initiateWithdrawal = catchAsync(async (req, res, next) => {
     // Handle different error scenarios
     console.error(`[Withdrawal Failed] Error: ${error.message}`);
     
-    // Special handling: if swap succeeded but payout failed
-    if (error.swapCompleted) {
-      console.error(`[Withdrawal Failed] Swap completed but payout failed!`);
-      console.error(`[Withdrawal Failed] Funds are safe in ${error.swapDetails?.targetCurrency} wallet`);
-      
-      // Don't refund the original balance - the funds were swapped successfully
-      // Just remove from pending since the swap is done
-      user.wallet.pendingBalance = Math.max(0, user.wallet.pendingBalance - amountInPrimary);
-      await user.save();
-      
-      // Return a specific error message to the user
-      return next(new ErrorHandler(
-        error.message,
-        502 // Bad Gateway - indicates external service issue
-      ));
-    }
-    
     // Standard failure: refund balance
     console.error(`[Withdrawal Failed] Refunding ${amountInPrimary} ${user.wallet.currency} to user ${user._id}`);
     user.wallet.balance += amountInPrimary;
-    user.wallet.pendingBalance = Math.max(0, user.wallet.pendingBalance - amountInPrimary);
     await user.save();
 
     throw error;
