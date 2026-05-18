@@ -85,11 +85,22 @@ async function fixUserBalance() {
         }
       }
 
-      // Fallback: estimate from NGN amount using approximate rate
+      // Fallback: fetch real rate from HostFi
       if (usdcAmount === 0 && tx.currency === 'NGN') {
-        const estimatedRate = 1570; // Approximate HostFi NGN→USDC rate
-        usdcAmount = parseFloat((tx.amount / estimatedRate).toFixed(2));
-        console.log(`  ⚠ Fallback conversion: ${tx.amount} NGN → ~${usdcAmount} USDC @ ${estimatedRate}`);
+        try {
+          const rateData = await hostfiService.getCurrencyRates('NGN', 'USDC', true);
+          console.log(`  HostFi rate data:`, JSON.stringify(rateData, null, 2).substring(0, 300));
+          
+          if (rateData && rateData.rates && rateData.rates.length > 0) {
+            const rate = parseFloat(rateData.rates[0].rate || rateData.rates[0].buyRate || 0);
+            if (rate > 0) {
+              usdcAmount = parseFloat((tx.amount / rate).toFixed(6));
+              console.log(`  ✓ HostFi rate conversion: ${tx.amount} NGN → ${usdcAmount} USDC @ ${rate}`);
+            }
+          }
+        } catch (rateError) {
+          console.warn(`  ⚠ Could not fetch HostFi rate: ${rateError.message}`);
+        }
       }
 
       // Update the transaction

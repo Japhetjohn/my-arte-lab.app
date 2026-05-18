@@ -164,22 +164,41 @@ async function processFiatDeposit(parsed) {
         console.log(`[Webhook:FiatDeposit] Swapped amount: ${usdcAmount}`);
       }
 
-      // If we still have NGN amount, try to get swap rate from metadata
+      // If we still have NGN amount, fetch real rate from HostFi
       if (usdcAmount === rawAmount && rawCurrency === 'NGN') {
-        // Fallback: use a reasonable conversion rate (HostFi rate ~1550-1600 NGN per USDC)
-        // This is a fallback - the API query above should normally give us the real amount
-        const estimatedRate = 1570; // Approximate HostFi rate
-        usdcAmount = parseFloat((rawAmount / estimatedRate).toFixed(2));
-        console.log(`[Webhook:FiatDeposit] Fallback conversion: ${rawAmount} NGN → ~${usdcAmount} USDC @ ${estimatedRate}`);
+        try {
+          const rateData = await hostfiService.getCurrencyRates('NGN', 'USDC', true);
+          console.log(`[Webhook:FiatDeposit] HostFi rate data:`, JSON.stringify(rateData, null, 2));
+          
+          if (rateData && rateData.rates && rateData.rates.length > 0) {
+            const rate = parseFloat(rateData.rates[0].rate || rateData.rates[0].buyRate || 0);
+            if (rate > 0) {
+              usdcAmount = parseFloat((rawAmount / rate).toFixed(6));
+              console.log(`[Webhook:FiatDeposit] HostFi rate conversion: ${rawAmount} NGN → ${usdcAmount} USDC @ ${rate}`);
+            }
+          }
+        } catch (rateError) {
+          console.warn(`[Webhook:FiatDeposit] Could not fetch HostFi rate: ${rateError.message}`);
+        }
       }
     }
   } catch (apiError) {
     console.warn(`[Webhook:FiatDeposit] Could not fetch swap details from HostFi: ${apiError.message}`);
-    // Fallback: estimate USDC from NGN
-    if (rawCurrency === 'NGN') {
-      const estimatedRate = 1570;
-      usdcAmount = parseFloat((rawAmount / estimatedRate).toFixed(2));
-      console.log(`[Webhook:FiatDeposit] Fallback conversion: ${rawAmount} NGN → ~${usdcAmount} USDC @ ${estimatedRate}`);
+  }
+  
+  // Final fallback: if still no USDC amount, try rate API
+  if (usdcAmount === rawAmount && rawCurrency === 'NGN') {
+    try {
+      const rateData = await hostfiService.getCurrencyRates('NGN', 'USDC', true);
+      if (rateData && rateData.rates && rateData.rates.length > 0) {
+        const rate = parseFloat(rateData.rates[0].rate || rateData.rates[0].buyRate || 0);
+        if (rate > 0) {
+          usdcAmount = parseFloat((rawAmount / rate).toFixed(6));
+          console.log(`[Webhook:FiatDeposit] Final fallback rate conversion: ${rawAmount} NGN → ${usdcAmount} USDC @ ${rate}`);
+        }
+      }
+    } catch (rateError) {
+      console.warn(`[Webhook:FiatDeposit] Final fallback rate failed: ${rateError.message}`);
     }
   }
 
