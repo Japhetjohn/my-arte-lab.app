@@ -338,6 +338,14 @@ const userSchema = new mongoose.Schema({
     default: false
   },
 
+  verificationSubscription: {
+    active: { type: Boolean, default: false },
+    subscribedAt: { type: Date },
+    expiresAt: { type: Date },
+    lastRenewalAt: { type: Date },
+    autoRenew: { type: Boolean, default: true }
+  },
+
   // Creator availability status
   availability: {
     type: String,

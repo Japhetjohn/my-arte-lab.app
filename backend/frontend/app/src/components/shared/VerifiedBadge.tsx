@@ -2,9 +2,35 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 
 interface VerifiedBadgeProps {
   className?: string;
+  expiresAt?: string;
+  showTooltip?: boolean;
 }
 
-export function VerifiedBadge({ className }: VerifiedBadgeProps) {
+export function VerifiedBadge({ className, expiresAt, showTooltip = true }: VerifiedBadgeProps) {
+  const formatExpiry = (dateStr?: string) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
+
+  const tooltipText = expiresAt
+    ? `Verified until ${formatExpiry(expiresAt)}`
+    : 'Verified Creator';
+
+  if (!showTooltip) {
+    return (
+      <img 
+        src="/images/verified-badge.png" 
+        alt="Verified" 
+        className={`w-5 h-5 inline-block ${className}`}
+      />
+    );
+  }
+
   return (
     <TooltipProvider>
       <Tooltip>
@@ -16,7 +42,7 @@ export function VerifiedBadge({ className }: VerifiedBadgeProps) {
           />
         </TooltipTrigger>
         <TooltipContent>
-          <p>Verified Creator</p>
+          <p>{tooltipText}</p>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>

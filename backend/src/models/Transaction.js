@@ -25,7 +25,8 @@ const transactionSchema = new mongoose.Schema({
       'bonus',
       'reversal',
       'onramp',
-      'offramp'
+      'offramp',
+      'verification'
     ],
     required: true
   },

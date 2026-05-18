@@ -25,6 +25,13 @@ export interface User {
   role: 'client' | 'creator' | 'admin';
   isEmailVerified: boolean;
   isVerified?: boolean;
+  verificationSubscription?: {
+    active: boolean;
+    subscribedAt?: string;
+    expiresAt?: string;
+    lastRenewalAt?: string;
+    autoRenew?: boolean;
+  };
   location?: {
     localArea?: string;
     state?: string;

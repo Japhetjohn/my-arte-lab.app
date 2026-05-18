@@ -44,6 +44,7 @@ const projectRoutes = require('./routes/projects');
 const messagesRoutes = require('./routes/messagesRoutes');
 const blockRoutes = require('./routes/blockRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const verificationRoutes = require('./routes/verificationRoutes');
 const { trackActivity } = require('./middleware/activityTracker');
 
 const app = express();
@@ -305,6 +306,7 @@ app.use('/api/projects', trackActivity, projectRoutes);
 app.use('/api/messages', trackActivity, messagesRoutes);
 app.use('/api/blocks', trackActivity, blockRoutes);
 app.use('/api/admin', adminLimiter, verifyAdminAuth, adminRoutes);
+app.use('/api/verification', verificationRoutes);
 
 app.get('/api', (req, res) => {
   res.json({
@@ -403,6 +405,10 @@ const server = app.listen(PORT, () => {
   const escrowMonitoringService = require('./services/escrowMonitoringService');
   escrowMonitoringService.start();
 
+  // Start verification subscription expiry monitoring
+  const verificationExpiryService = require('./services/verificationExpiryService');
+  verificationExpiryService.start();
+
   // Platform fees are handled automatically by HostFi B2B
   // No cron job needed for fee withdrawal
 });
@@ -442,6 +448,9 @@ process.on('SIGTERM', () => {
   // Stop background services
   const escrowMonitoringService = require('./services/escrowMonitoringService');
   escrowMonitoringService.stop();
+
+  const verificationExpiryService = require('./services/verificationExpiryService');
+  verificationExpiryService.stop();
 
   server.close(async () => {
     try {

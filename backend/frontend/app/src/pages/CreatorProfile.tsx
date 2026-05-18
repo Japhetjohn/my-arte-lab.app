@@ -7,7 +7,7 @@ import { StatusBadge } from '@/components/shared/StatusBadge';
 import { VerifiedBadge } from '@/components/shared/VerifiedBadge';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { api } from '@/contexts/AuthContext';
-import { Star, MapPin, MessageSquare, Bookmark, Share2, ArrowLeft, Plus, Trash2, ExternalLink } from 'lucide-react';
+import { Star, MapPin, MessageSquare, Bookmark, Share2, ArrowLeft, Plus, Trash2, ExternalLink, BadgeCheck, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Creator } from '@/types';
 import {
@@ -22,6 +22,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
 import { getImageUrl } from '@/lib/imageUrl';
+import { verificationService } from '@/lib/verificationApi';
 
 interface CreatorProfileProps {
   creatorId?: string;
@@ -89,6 +90,10 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
     description: '',
     image: '',
   });
+
+  // Verification state
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [showVerifyDialog, setShowVerifyDialog] = useState(false);
 
   // Fetch creator data
   const fetchCreatorData = useCallback(async (id: string) => {
@@ -397,7 +402,11 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                 <div>
                   <div className="flex items-center justify-center sm:justify-start gap-2">
                     <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{creator.name}</h1>
-                    {creator.isVerified && <VerifiedBadge />}
+                    {creator.isVerified && (
+                      <VerifiedBadge 
+                        expiresAt={creator.verificationSubscription?.expiresAt} 
+                      />
+                    )}
                   </div>
                   <p className="text-gray-500 capitalize">{creator.category} Specialist</p>
                   <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 sm:gap-4 mt-2 text-sm text-gray-500">
@@ -422,9 +431,42 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                 </div>
                 <div className="flex justify-center sm:justify-end items-center gap-2">
                   {isOwner && (
-                    <Button variant="outline" size="sm" onClick={() => setIsEditProfileOpen(true)}>
-                      Edit Profile
-                    </Button>
+                    <>
+                      <Button variant="outline" size="sm" onClick={() => setIsEditProfileOpen(true)}>
+                        Edit Profile
+                      </Button>
+                      {!creator.isVerified ? (
+                        <Button 
+                          size="sm" 
+                          className="bg-blue-500 hover:bg-blue-600 text-white"
+                          onClick={() => setShowVerifyDialog(true)}
+                        >
+                          <BadgeCheck className="w-4 h-4 mr-1" />
+                          Verify
+                        </Button>
+                      ) : (
+                        <Button 
+                          variant="outline"
+                          size="sm" 
+                          className="text-red-500 border-red-200 hover:bg-red-50"
+                          onClick={async () => {
+                            if (!confirm('Cancel verification? Your blue tick will be removed immediately.')) return;
+                            try {
+                              setIsVerifying(true);
+                              await verificationService.cancel();
+                              setCreator(prev => prev ? { ...prev, isVerified: false } : null);
+                              toast.success('Verification cancelled');
+                            } catch (error: any) {
+                              toast.error(error.response?.data?.error || 'Failed to cancel');
+                            } finally {
+                              setIsVerifying(false);
+                            }
+                          }}
+                        >
+                          {isVerifying ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Cancel Verify'}
+                        </Button>
+                      )}
+                    </>
                   )}
                   {isOwner ? (
                     // Toggle Switch for Availability
@@ -872,6 +914,91 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
             <Button onClick={handleUpdateProfile} className="w-full bg-[#8A2BE2] hover:bg-[#7B1FD1]">
               Save Changes
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Verification Dialog */}
+      <Dialog open={showVerifyDialog} onOpenChange={setShowVerifyDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BadgeCheck className="w-6 h-6 text-blue-500" />
+              Get Verified
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <h3 className="font-semibold text-blue-900">Verification Badge</h3>
+              <p className="text-sm text-blue-700 mt-1">
+                Stand out as a trusted creator with a blue verified badge on your profile.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Price</span>
+                <span className="font-semibold">$1.00 USDC / month</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Duration</span>
+                <span className="font-semibold">30 days</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Auto-renew</span>
+                <span className="font-semibold">Enabled</span>
+              </div>
+            </div>
+            <div className="border-t pt-4">
+              <p className="text-xs text-gray-500">
+                The amount will be deducted from your wallet balance. 
+                If you don't have enough balance, please deposit first.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                className="flex-1"
+                onClick={() => setShowVerifyDialog(false)}
+              >
+                Cancel
+              </Button>
+              <Button 
+                className="flex-1 bg-blue-500 hover:bg-blue-600 text-white"
+                disabled={isVerifying}
+                onClick={async () => {
+                  try {
+                    setIsVerifying(true);
+                    const result = await verificationService.subscribe();
+                    setCreator(prev => prev ? { 
+                      ...prev, 
+                      isVerified: true,
+                      verificationSubscription: {
+                        active: true,
+                        subscribedAt: new Date().toISOString(),
+                        expiresAt: result.expiresAt,
+                        lastRenewalAt: new Date().toISOString(),
+                        autoRenew: true
+                      }
+                    } : null);
+                    toast.success('You are now verified!');
+                    setShowVerifyDialog(false);
+                  } catch (error: any) {
+                    toast.error(error.response?.data?.error || 'Failed to subscribe');
+                  } finally {
+                    setIsVerifying(false);
+                  }
+                }}
+              >
+                {isVerifying ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    <BadgeCheck className="w-4 h-4 mr-1" />
+                    Pay $1.00 & Verify
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
