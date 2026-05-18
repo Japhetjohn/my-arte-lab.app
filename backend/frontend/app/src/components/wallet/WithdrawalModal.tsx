@@ -69,9 +69,16 @@ function BankSelect({ banks, selectedBank, onSelect, searchValue, onSearchChange
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen, onToggle]);
 
-  // Split banks into popular and others
-  const popularBanks = banks.slice(0, 15);
-  const otherBanks = banks.slice(15);
+  // Filter banks locally based on search value
+  const filteredBanks = useMemo(() => {
+    if (!searchValue.trim()) return banks;
+    const search = searchValue.toLowerCase().trim();
+    return banks.filter(b => b.name.toLowerCase().includes(search));
+  }, [banks, searchValue]);
+
+  // Split banks into popular and others (from filtered list)
+  const popularBanks = filteredBanks.slice(0, 15);
+  const otherBanks = filteredBanks.slice(15);
 
   return (
     <div className="space-y-2 relative" ref={containerRef}>
@@ -162,7 +169,7 @@ function BankSelect({ banks, selectedBank, onSelect, searchValue, onSearchChange
                 )}
 
                 {/* Search Results */}
-                {searchValue && banks.map((bank) => (
+                {searchValue && filteredBanks.map((bank) => (
                   <button
                     key={bank.id}
                     type="button"
