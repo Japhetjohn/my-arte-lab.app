@@ -69,16 +69,11 @@ function BankSelect({ banks, selectedBank, onSelect, searchValue, onSearchChange
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen, onToggle]);
 
-  // Filter banks locally based on search value
-  const filteredBanks = useMemo(() => {
-    if (!searchValue.trim()) return banks;
-    const search = searchValue.toLowerCase().trim();
-    return banks.filter(b => b.name.toLowerCase().includes(search));
-  }, [banks, searchValue]);
-
-  // Split banks into popular and others (from filtered list)
-  const popularBanks = filteredBanks.slice(0, 15);
-  const otherBanks = filteredBanks.slice(15);
+  // Simple filter: if searching, show only banks starting with search term
+  const search = searchValue.trim().toLowerCase();
+  const displayBanks = search
+    ? banks.filter(b => b.name.toLowerCase().startsWith(search))
+    : banks;
 
   return (
     <div className="space-y-2 relative" ref={containerRef}>
@@ -96,7 +91,7 @@ function BankSelect({ banks, selectedBank, onSelect, searchValue, onSearchChange
         <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
-      {/* Dropdown Content - absolute positioned relative to container */}
+      {/* Dropdown Content */}
       {isOpen && (
         <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-80 overflow-hidden z-50">
           {/* Search Input */}
@@ -122,64 +117,23 @@ function BankSelect({ banks, selectedBank, onSelect, searchValue, onSearchChange
             </div>
           </div>
 
-          {/* Banks List */}
+          {/* Banks List - simple, no sections */}
           <div className="overflow-y-auto max-h-64">
-            {banks.length === 0 ? (
+            {displayBanks.length === 0 ? (
               <div className="p-4 text-center text-gray-500">
                 No banks found
               </div>
             ) : (
-              <>
-                {/* Popular Banks Section */}
-                {!searchValue && popularBanks.length > 0 && (
-                  <>
-                    <div className="px-3 py-2 bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Popular Banks
-                    </div>
-                    {popularBanks.map((bank: Bank) => (
-                      <button
-                        key={bank.id}
-                        type="button"
-                        onClick={() => onSelect(bank)}
-                        className="w-full px-4 py-3 text-left hover:bg-[#8A2BE2]/5 hover:text-[#8A2BE2] transition-colors border-b border-gray-50 last:border-0"
-                      >
-                        <span className="font-medium">{bank.name}</span>
-                      </button>
-                    ))}
-                  </>
-                )}
-
-                {/* Other Banks Section */}
-                {!searchValue && otherBanks.length > 0 && (
-                  <>
-                    <div className="px-3 py-2 bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wider border-t">
-                      Other Banks
-                    </div>
-                    {otherBanks.map((bank: Bank) => (
-                      <button
-                        key={bank.id}
-                        type="button"
-                        onClick={() => onSelect(bank)}
-                        className="w-full px-4 py-3 text-left hover:bg-[#8A2BE2]/5 hover:text-[#8A2BE2] transition-colors border-b border-gray-50 last:border-0"
-                      >
-                        <span className="font-medium">{bank.name}</span>
-                      </button>
-                    ))}
-                  </>
-                )}
-
-                {/* Search Results */}
-                {searchValue && filteredBanks.map((bank) => (
-                  <button
-                    key={bank.id}
-                    type="button"
-                    onClick={() => onSelect(bank)}
-                    className="w-full px-4 py-3 text-left hover:bg-[#8A2BE2]/5 hover:text-[#8A2BE2] transition-colors border-b border-gray-50 last:border-0"
-                  >
-                    <span className="font-medium">{bank.name}</span>
-                  </button>
-                ))}
-              </>
+              displayBanks.map((bank) => (
+                <button
+                  key={bank.id}
+                  type="button"
+                  onClick={() => onSelect(bank)}
+                  className="w-full px-4 py-3 text-left hover:bg-[#8A2BE2]/5 hover:text-[#8A2BE2] transition-colors border-b border-gray-50 last:border-0"
+                >
+                  <span className="font-medium">{bank.name}</span>
+                </button>
+              ))
             )}
           </div>
         </div>
