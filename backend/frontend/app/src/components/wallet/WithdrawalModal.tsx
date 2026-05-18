@@ -52,25 +52,41 @@ interface BankSelectProps {
 
 function BankSelect({ banks, selectedBank, onSelect, searchValue, onSearchChange, isOpen, onToggle }: BankSelectProps) {
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0, width: 0 });
+
+  // Calculate dropdown position when opened
+  useEffect(() => {
+    if (isOpen && triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      setDropdownPos({
+        top: rect.bottom + window.scrollY + 4,
+        left: rect.left + window.scrollX,
+        width: rect.width,
+      });
+      setTimeout(() => searchInputRef.current?.focus(), 100);
+    }
+  }, [isOpen]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(target) &&
+        triggerRef.current &&
+        !triggerRef.current.contains(target)
+      ) {
         onToggle();
       }
     };
 
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
-      // Focus search input when opened
-      setTimeout(() => searchInputRef.current?.focus(), 100);
     }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen, onToggle]);
 
   // Split banks into popular and others
@@ -78,11 +94,12 @@ function BankSelect({ banks, selectedBank, onSelect, searchValue, onSearchChange
   const otherBanks = banks.slice(15);
 
   return (
-    <div className="space-y-2" ref={dropdownRef}>
+    <div className="space-y-2">
       <Label>Select Bank *</Label>
       
       {/* Dropdown Trigger */}
       <button
+        ref={triggerRef}
         type="button"
         onClick={onToggle}
         className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[#8A2BE2] focus:border-[#8A2BE2] flex items-center justify-between text-left hover:border-gray-400 transition-colors"
@@ -93,98 +110,100 @@ function BankSelect({ banks, selectedBank, onSelect, searchValue, onSearchChange
         <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
-      {/* Dropdown Content */}
+      {/* Dropdown Content - Portal to body */}
       {isOpen && (
-        <div className="fixed inset-0 z-[100]" onClick={(e) => { if (e.target === e.currentTarget) onToggle(); }}>
-          <div className="absolute bg-white border border-gray-200 rounded-lg shadow-lg max-h-80 overflow-hidden" style={{ 
-            top: (dropdownRef.current?.getBoundingClientRect().bottom ?? 0) + 4,
-            left: dropdownRef.current?.getBoundingClientRect().left ?? 0,
-            width: dropdownRef.current?.getBoundingClientRect().width ?? 300,
-            zIndex: 100
-          }}>
-            {/* Search Input */}
-            <div className="sticky top-0 bg-white border-b border-gray-100 p-3">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <Input
-                  ref={searchInputRef}
-                  placeholder="Search banks..."
-                  value={searchValue}
-                  onChange={(e) => onSearchChange(e.target.value)}
-                  className="pl-9 pr-8"
-                />
-                {searchValue && (
-                  <button
-                    type="button"
-                    onClick={() => onSearchChange('')}
-                    className="absolute right-3 top-1/2 -translate-y-1/2"
-                  >
-                    <X className="w-4 h-4 text-gray-400 hover:text-gray-600" />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Banks List */}
-            <div className="overflow-y-auto max-h-64">
-              {banks.length === 0 ? (
-                <div className="p-4 text-center text-gray-500">
-                  No banks found
-                </div>
-              ) : (
-                <>
-                  {/* Popular Banks Section */}
-                  {!searchValue && popularBanks.length > 0 && (
-                    <>
-                      <div className="px-3 py-2 bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        Popular Banks
-                      </div>
-                      {popularBanks.map((bank: Bank) => (
-                        <button
-                          key={bank.id}
-                          type="button"
-                          onClick={() => onSelect(bank)}
-                          className="w-full px-4 py-3 text-left hover:bg-[#8A2BE2]/5 hover:text-[#8A2BE2] transition-colors border-b border-gray-50 last:border-0"
-                        >
-                          <span className="font-medium">{bank.name}</span>
-                        </button>
-                      ))}
-                    </>
-                  )}
-
-                  {/* Other Banks Section */}
-                  {!searchValue && otherBanks.length > 0 && (
-                    <>
-                      <div className="px-3 py-2 bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wider border-t">
-                        Other Banks
-                      </div>
-                      {otherBanks.map((bank: Bank) => (
-                        <button
-                          key={bank.id}
-                          type="button"
-                          onClick={() => onSelect(bank)}
-                          className="w-full px-4 py-3 text-left hover:bg-[#8A2BE2]/5 hover:text-[#8A2BE2] transition-colors border-b border-gray-50 last:border-0"
-                        >
-                          <span className="font-medium">{bank.name}</span>
-                        </button>
-                      ))}
-                    </>
-                  )}
-
-                  {/* Search Results */}
-                  {searchValue && banks.map((bank) => (
-                    <button
-                      key={bank.id}
-                      type="button"
-                      onClick={() => onSelect(bank)}
-                      className="w-full px-4 py-3 text-left hover:bg-[#8A2BE2]/5 hover:text-[#8A2BE2] transition-colors border-b border-gray-50 last:border-0"
-                    >
-                      <span className="font-medium">{bank.name}</span>
-                    </button>
-                  ))}
-                </>
+        <div
+          ref={dropdownRef}
+          className="fixed bg-white border border-gray-200 rounded-lg shadow-xl max-h-80 overflow-hidden"
+          style={{
+            top: dropdownPos.top,
+            left: dropdownPos.left,
+            width: dropdownPos.width,
+            zIndex: 9999,
+          }}
+        >
+          {/* Search Input */}
+          <div className="sticky top-0 bg-white border-b border-gray-100 p-3 z-10">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Input
+                ref={searchInputRef}
+                placeholder="Search banks..."
+                value={searchValue}
+                onChange={(e) => onSearchChange(e.target.value)}
+                className="pl-9 pr-8"
+              />
+              {searchValue && (
+                <button
+                  type="button"
+                  onClick={() => onSearchChange('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2"
+                >
+                  <X className="w-4 h-4 text-gray-400 hover:text-gray-600" />
+                </button>
               )}
             </div>
+          </div>
+
+          {/* Banks List */}
+          <div className="overflow-y-auto max-h-64">
+            {banks.length === 0 ? (
+              <div className="p-4 text-center text-gray-500">
+                No banks found
+              </div>
+            ) : (
+              <>
+                {/* Popular Banks Section */}
+                {!searchValue && popularBanks.length > 0 && (
+                  <>
+                    <div className="px-3 py-2 bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Popular Banks
+                    </div>
+                    {popularBanks.map((bank: Bank) => (
+                      <button
+                        key={bank.id}
+                        type="button"
+                        onClick={() => onSelect(bank)}
+                        className="w-full px-4 py-3 text-left hover:bg-[#8A2BE2]/5 hover:text-[#8A2BE2] transition-colors border-b border-gray-50 last:border-0"
+                      >
+                        <span className="font-medium">{bank.name}</span>
+                      </button>
+                    ))}
+                  </>
+                )}
+
+                {/* Other Banks Section */}
+                {!searchValue && otherBanks.length > 0 && (
+                  <>
+                    <div className="px-3 py-2 bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wider border-t">
+                      Other Banks
+                    </div>
+                    {otherBanks.map((bank: Bank) => (
+                      <button
+                        key={bank.id}
+                        type="button"
+                        onClick={() => onSelect(bank)}
+                        className="w-full px-4 py-3 text-left hover:bg-[#8A2BE2]/5 hover:text-[#8A2BE2] transition-colors border-b border-gray-50 last:border-0"
+                      >
+                        <span className="font-medium">{bank.name}</span>
+                      </button>
+                    ))}
+                  </>
+                )}
+
+                {/* Search Results */}
+                {searchValue && banks.map((bank) => (
+                  <button
+                    key={bank.id}
+                    type="button"
+                    onClick={() => onSelect(bank)}
+                    className="w-full px-4 py-3 text-left hover:bg-[#8A2BE2]/5 hover:text-[#8A2BE2] transition-colors border-b border-gray-50 last:border-0"
+                  >
+                    <span className="font-medium">{bank.name}</span>
+                  </button>
+                ))}
+              </>
+            )}
           </div>
         </div>
       )}
@@ -774,7 +793,7 @@ export function WithdrawalModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto overflow-x-visible">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-visible">
         <DialogHeader>
           <DialogTitle>
             {step === 'method' && 'Withdraw Funds'}
