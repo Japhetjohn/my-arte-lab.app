@@ -275,12 +275,7 @@ export function WithdrawalModal({
     return [...foundTopBanks, ...otherBanks];
   }, [banks, topBanks]);
 
-  // Filter banks based on search
-  const filteredBanks = useMemo(() => {
-    if (!bankSearch.trim()) return sortedBanks;
-    const search = bankSearch.toLowerCase();
-    return sortedBanks.filter(b => b.name.toLowerCase().includes(search));
-  }, [sortedBanks, bankSearch]);
+  // No parent-level filtering - BankSelect handles its own filtering
 
   // Fetch banks when entering bank step
   useEffect(() => {
@@ -513,7 +508,7 @@ export function WithdrawalModal({
         <>
           {/* Bank Select Dropdown */}
           <BankSelect
-            banks={filteredBanks}
+            banks={sortedBanks}
             selectedBank={banks.find(b => b.id === bankId) || null}
             onSelect={(bank) => {
               setBankId(bank.id);
