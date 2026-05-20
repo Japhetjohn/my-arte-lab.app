@@ -274,7 +274,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       toast.success('Account created! Please check your email for verification code.');
     } catch (error: any) {
       const message = error.response?.data?.error || error.response?.data?.message || 'Registration failed';
-      toast.error(message);
+      
+      // Provide helpful guidance for common errors
+      if (message.toLowerCase().includes('email already registered')) {
+        toast.error(
+          <div className="space-y-2">
+            <p className="font-medium">This email is already registered.</p>
+            <p className="text-sm">Please <a href="/login" className="underline text-[#8A2BE2]">log in</a> instead, or use a different email.</p>
+          </div>,
+          { duration: 6000 }
+        );
+      } else {
+        toast.error(message);
+      }
       throw error;
     }
   }, []);

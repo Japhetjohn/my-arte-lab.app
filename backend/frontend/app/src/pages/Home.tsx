@@ -45,20 +45,30 @@ export function Home() {
           );
         }
 
-        // Calculate category counts from actual creators data
-        const categoryCounts: Record<string, number> = {};
-        allCreators.forEach((creator: Creator) => {
-          const cat = creator.category;
-          if (cat) {
-            categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
-          }
-        });
-        
-        // Update categories with real counts
-        setCategories(prev => prev.map(cat => ({
-          ...cat,
-          creatorCount: categoryCounts[cat.id] || 0
-        })));
+        // Fetch accurate category counts from stats endpoint
+        try {
+          const statsResponse = await api.get('/stats');
+          const categoryCounts = statsResponse.data.data?.categories || {};
+          
+          // Update categories with real counts from DB aggregation
+          setCategories(prev => prev.map(cat => ({
+            ...cat,
+            creatorCount: categoryCounts[cat.id] || 0
+          })));
+        } catch (statsError) {
+          // Fallback: calculate from creators list if stats endpoint fails
+          const categoryCounts: Record<string, number> = {};
+          allCreators.forEach((creator: Creator) => {
+            const cat = creator.category;
+            if (cat) {
+              categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+            }
+          });
+          setCategories(prev => prev.map(cat => ({
+            ...cat,
+            creatorCount: categoryCounts[cat.id] || 0
+          })));
+        }
         
         // If user is logged in, get personalized recommendations from backend
         if (currentUser && token) {
