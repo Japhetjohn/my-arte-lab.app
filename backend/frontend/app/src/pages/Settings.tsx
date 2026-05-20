@@ -22,7 +22,7 @@ export function Settings() {
   const { user: currentUser, updateUser } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Profile form state
