@@ -994,13 +994,22 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
 
       {/* Full Image Viewer */}
       <ImageDialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
-        <ImageDialogContent className="max-w-4xl p-0 overflow-hidden bg-black/90 border-none">
-          <div className="relative flex items-center justify-center min-h-[300px] max-h-[80vh]">
+        <ImageDialogContent className="max-w-none w-screen h-screen p-0 overflow-hidden bg-black/95 border-none rounded-none">
+          {/* Close button */}
+          <button
+            onClick={() => setSelectedImage(null)}
+            className="absolute top-4 right-4 z-50 w-10 h-10 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 text-white transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          <div className="flex items-center justify-center w-full h-full p-4">
             {selectedImage && (
               <img
                 src={getImageUrl(selectedImage)}
                 alt="Portfolio"
-                className="max-w-full max-h-[80vh] object-contain"
+                className="max-w-full max-h-full object-contain"
               />
             )}
           </div>
