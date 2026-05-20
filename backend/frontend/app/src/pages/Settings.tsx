@@ -530,17 +530,7 @@ export function Settings() {
               <CardDescription>Customize your app experience</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Dark Mode</p>
-                  <p className="text-sm text-gray-500">Switch between light and dark themes</p>
-                </div>
-                <Switch
-                  checked={darkMode}
-                  onCheckedChange={setDarkMode}
-                />
-              </div>
-              <Separator />
+              {/* Dark mode disabled - app uses light theme only */}
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-medium">Reduced Motion</p>
