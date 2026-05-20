@@ -50,22 +50,25 @@ export function Home() {
           const statsResponse = await api.get('/stats');
           const categoryCounts = statsResponse.data?.data?.categories || statsResponse.data?.categories || {};
           
-          // Update categories with real counts from DB aggregation
-          const updatedCategories = defaultCategories.map(cat => ({
-            ...cat,
-            creatorCount: categoryCounts[cat.id] || 0
-          }));
+          // The 5 displayed cards: Photography, Design, Video, Music, Writing
+          // "Other" aggregates Programming, Marketing, Business, and actual Other
+          const displayedIds = ['photography', 'design', 'video', 'music', 'writing'];
+          const otherIds = ['programming', 'marketing', 'business', 'other'];
           
-          // Sort by count descending, take top 4, then add "Other" with remaining count
-          const sorted = updatedCategories.sort((a, b) => b.creatorCount - a.creatorCount);
-          const top4 = sorted.slice(0, 4);
-          const remainingCount = sorted.slice(4).reduce((sum, cat) => sum + cat.creatorCount, 0);
+          const finalCategories = displayedIds.map(id => {
+            const cat = defaultCategories.find(c => c.id === id);
+            return {
+              ...cat!,
+              creatorCount: categoryCounts[id] || 0
+            };
+          });
           
-          const otherCategory = defaultCategories.find(c => c.id === 'other');
-          const finalCategories = [
-            ...top4,
-            { ...(otherCategory || defaultCategories[8]), creatorCount: remainingCount }
-          ];
+          // Sum remaining categories into "Other" (replace Writing with aggregated Other)
+          const otherCount = otherIds.reduce((sum, id) => sum + (categoryCounts[id] || 0), 0);
+          finalCategories[4] = {
+            ...defaultCategories.find(c => c.id === 'other')!,
+            creatorCount: otherCount
+          };
           
           setCategories(finalCategories);
         } catch (statsError) {
@@ -77,18 +80,24 @@ export function Home() {
               categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
             }
           });
-          const updatedCategories = defaultCategories.map(cat => ({
-            ...cat,
-            creatorCount: categoryCounts[cat.id] || 0
-          }));
-          const sorted = updatedCategories.sort((a, b) => b.creatorCount - a.creatorCount);
-          const top4 = sorted.slice(0, 4);
-          const remainingCount = sorted.slice(4).reduce((sum, cat) => sum + cat.creatorCount, 0);
-          const otherCategory = defaultCategories.find(c => c.id === 'other');
-          const finalCategories = [
-            ...top4,
-            { ...(otherCategory || defaultCategories[8]), creatorCount: remainingCount }
-          ];
+          
+          const displayedIds = ['photography', 'design', 'video', 'music', 'writing'];
+          const otherIds = ['programming', 'marketing', 'business', 'other'];
+          
+          const finalCategories = displayedIds.map(id => {
+            const cat = defaultCategories.find(c => c.id === id);
+            return {
+              ...cat!,
+              creatorCount: categoryCounts[id] || 0
+            };
+          });
+          
+          const otherCount = otherIds.reduce((sum, id) => sum + (categoryCounts[id] || 0), 0);
+          finalCategories[4] = {
+            ...defaultCategories.find(c => c.id === 'other')!,
+            creatorCount: otherCount
+          };
+          
           setCategories(finalCategories);
         }
         
