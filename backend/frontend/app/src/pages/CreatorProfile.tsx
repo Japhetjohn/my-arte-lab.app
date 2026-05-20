@@ -862,11 +862,22 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
             </div>
             <div>
               <Label>Category</Label>
-              <Input
+              <select
                 value={profileForm.category}
                 onChange={(e) => setProfileForm(prev => ({ ...prev, category: e.target.value }))}
-                placeholder="Your category (e.g., Design, Writing)"
-              />
+                className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+              >
+                <option value="">Select a category</option>
+                <option value="photography">Photography</option>
+                <option value="design">Design</option>
+                <option value="video">Video & Animation</option>
+                <option value="music">Music & Audio</option>
+                <option value="writing">Writing & Translation</option>
+                <option value="marketing">Marketing</option>
+                <option value="programming">Programming & Tech</option>
+                <option value="business">Business</option>
+                <option value="other">Other</option>
+              </select>
             </div>
             <div>
               <Label>Skills (comma or space separated)</Label>
