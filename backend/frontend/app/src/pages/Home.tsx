@@ -63,9 +63,11 @@ export function Home() {
             };
           });
           
-          // Add remaining categories to Writing count
+          // Add remaining categories to Writing count, rename to Other
           const extraCount = extraIds.reduce((sum, id) => sum + (categoryCounts[id] || 0), 0);
           finalCategories[4].creatorCount += extraCount;
+          finalCategories[4].name = 'Other';
+          finalCategories[4].description = 'Other services';
           
           setCategories(finalCategories);
         } catch (statsError) {
@@ -91,6 +93,8 @@ export function Home() {
           
           const extraCount = extraIds.reduce((sum, id) => sum + (categoryCounts[id] || 0), 0);
           finalCategories[4].creatorCount += extraCount;
+          finalCategories[4].name = 'Other';
+          finalCategories[4].description = 'Other services';
           
           setCategories(finalCategories);
         }
