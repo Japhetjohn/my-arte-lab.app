@@ -51,9 +51,9 @@ export function Home() {
           const categoryCounts = statsResponse.data?.data?.categories || statsResponse.data?.categories || {};
           
           // The 5 displayed cards: Photography, Design, Video, Music, Writing
-          // "Other" aggregates Programming, Marketing, Business, and actual Other
+          // Writing also includes Programming, Marketing, Business, and Other counts
           const displayedIds = ['photography', 'design', 'video', 'music', 'writing'];
-          const otherIds = ['programming', 'marketing', 'business', 'other'];
+          const extraIds = ['programming', 'marketing', 'business', 'other'];
           
           const finalCategories = displayedIds.map(id => {
             const cat = defaultCategories.find(c => c.id === id);
@@ -63,12 +63,9 @@ export function Home() {
             };
           });
           
-          // Sum remaining categories into "Other" (replace Writing with aggregated Other)
-          const otherCount = otherIds.reduce((sum, id) => sum + (categoryCounts[id] || 0), 0);
-          finalCategories[4] = {
-            ...defaultCategories.find(c => c.id === 'other')!,
-            creatorCount: otherCount
-          };
+          // Add remaining categories to Writing count
+          const extraCount = extraIds.reduce((sum, id) => sum + (categoryCounts[id] || 0), 0);
+          finalCategories[4].creatorCount += extraCount;
           
           setCategories(finalCategories);
         } catch (statsError) {
@@ -82,7 +79,7 @@ export function Home() {
           });
           
           const displayedIds = ['photography', 'design', 'video', 'music', 'writing'];
-          const otherIds = ['programming', 'marketing', 'business', 'other'];
+          const extraIds = ['programming', 'marketing', 'business', 'other'];
           
           const finalCategories = displayedIds.map(id => {
             const cat = defaultCategories.find(c => c.id === id);
@@ -92,11 +89,8 @@ export function Home() {
             };
           });
           
-          const otherCount = otherIds.reduce((sum, id) => sum + (categoryCounts[id] || 0), 0);
-          finalCategories[4] = {
-            ...defaultCategories.find(c => c.id === 'other')!,
-            creatorCount: otherCount
-          };
+          const extraCount = extraIds.reduce((sum, id) => sum + (categoryCounts[id] || 0), 0);
+          finalCategories[4].creatorCount += extraCount;
           
           setCategories(finalCategories);
         }
