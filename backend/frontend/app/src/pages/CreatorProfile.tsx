@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Dialog as ImageDialog, DialogContent as ImageDialogContent } from '@/components/ui/dialog';
+import { Dialog as ImageDialog, DialogContent as ImageDialogContent, DialogTitle as ImageDialogTitle, DialogDescription as ImageDialogDescription } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -994,7 +994,10 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
 
       {/* Full Image Viewer */}
       <ImageDialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
-        <ImageDialogContent className="max-w-none w-screen h-screen p-0 overflow-hidden bg-black/95 border-none rounded-none">
+        <ImageDialogContent className="max-w-none w-screen h-screen p-0 overflow-hidden bg-black/95 border-none rounded-none" showCloseButton={false}>
+          {/* Hidden title for accessibility */}
+          <ImageDialogTitle className="sr-only">Portfolio Image</ImageDialogTitle>
+          <ImageDialogDescription className="sr-only">Full size portfolio image viewer</ImageDialogDescription>
           {/* Close button */}
           <button
             onClick={() => setSelectedImage(null)}
