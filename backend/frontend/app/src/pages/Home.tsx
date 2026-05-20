@@ -48,17 +48,21 @@ export function Home() {
         // Fetch accurate category counts from stats endpoint
         try {
           const statsResponse = await api.get('/stats');
-          console.log('[Home] Stats response:', statsResponse.data);
           const categoryCounts = statsResponse.data?.data?.categories || statsResponse.data?.categories || {};
-          console.log('[Home] Category counts:', categoryCounts);
           
           // Update categories with real counts from DB aggregation
-          setCategories(prev => prev.map(cat => ({
+          const updatedCategories = defaultCategories.map(cat => ({
             ...cat,
             creatorCount: categoryCounts[cat.id] || 0
-          })));
+          }));
+          
+          // Sort by count descending and take top 5
+          const topCategories = updatedCategories
+            .sort((a, b) => b.creatorCount - a.creatorCount)
+            .slice(0, 5);
+          
+          setCategories(topCategories);
         } catch (statsError) {
-          console.log('[Home] Stats endpoint failed, using fallback', statsError);
           // Fallback: calculate from creators list if stats endpoint fails
           const categoryCounts: Record<string, number> = {};
           allCreators.forEach((creator: Creator) => {
@@ -67,11 +71,14 @@ export function Home() {
               categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
             }
           });
-          console.log('[Home] Fallback category counts:', categoryCounts);
-          setCategories(prev => prev.map(cat => ({
+          const updatedCategories = defaultCategories.map(cat => ({
             ...cat,
             creatorCount: categoryCounts[cat.id] || 0
-          })));
+          }));
+          const topCategories = updatedCategories
+            .sort((a, b) => b.creatorCount - a.creatorCount)
+            .slice(0, 5);
+          setCategories(topCategories);
         }
         
         // If user is logged in, get personalized recommendations from backend
