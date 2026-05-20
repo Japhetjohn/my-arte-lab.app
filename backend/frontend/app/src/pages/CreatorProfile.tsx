@@ -438,7 +438,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                   </div>
                 </div>
                 {/* Action Buttons - stacked on mobile, row on desktop */}
-                <div className="flex flex-col sm:flex-row justify-center sm:justify-end items-stretch sm:items-center gap-2">
+                <div className="flex flex-col sm:flex-row justify-center sm:justify-end items-center gap-2">
                   {isOwner && (
                     <>
                       <div className="flex gap-2 justify-center">

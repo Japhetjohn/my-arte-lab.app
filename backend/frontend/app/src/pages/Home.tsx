@@ -48,7 +48,9 @@ export function Home() {
         // Fetch accurate category counts from stats endpoint
         try {
           const statsResponse = await api.get('/stats');
-          const categoryCounts = statsResponse.data.data?.categories || {};
+          console.log('[Home] Stats response:', statsResponse.data);
+          const categoryCounts = statsResponse.data?.data?.categories || statsResponse.data?.categories || {};
+          console.log('[Home] Category counts:', categoryCounts);
           
           // Update categories with real counts from DB aggregation
           setCategories(prev => prev.map(cat => ({
@@ -56,6 +58,7 @@ export function Home() {
             creatorCount: categoryCounts[cat.id] || 0
           })));
         } catch (statsError) {
+          console.log('[Home] Stats endpoint failed, using fallback', statsError);
           // Fallback: calculate from creators list if stats endpoint fails
           const categoryCounts: Record<string, number> = {};
           allCreators.forEach((creator: Creator) => {
@@ -64,6 +67,7 @@ export function Home() {
               categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
             }
           });
+          console.log('[Home] Fallback category counts:', categoryCounts);
           setCategories(prev => prev.map(cat => ({
             ...cat,
             creatorCount: categoryCounts[cat.id] || 0
