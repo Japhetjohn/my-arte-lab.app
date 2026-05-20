@@ -68,6 +68,7 @@ export function Home() {
           finalCategories[4].creatorCount += extraCount;
           finalCategories[4].name = 'Other';
           finalCategories[4].description = 'Other services';
+          finalCategories[4].id = 'all'; // Clicking shows all creators, not just writers
           
           setCategories(finalCategories);
         } catch (statsError) {
@@ -95,6 +96,7 @@ export function Home() {
           finalCategories[4].creatorCount += extraCount;
           finalCategories[4].name = 'Other';
           finalCategories[4].description = 'Other services';
+          finalCategories[4].id = 'all'; // Clicking shows all creators
           
           setCategories(finalCategories);
         }
