@@ -68,7 +68,7 @@ export function Home() {
           finalCategories[4].creatorCount += extraCount;
           finalCategories[4].name = 'Other';
           finalCategories[4].description = 'Other services';
-          finalCategories[4].id = 'all'; // Clicking shows all creators, not just writers
+          finalCategories[4].id = 'other'; // Explore handles this specially, not just writers
           
           setCategories(finalCategories);
         } catch (statsError) {

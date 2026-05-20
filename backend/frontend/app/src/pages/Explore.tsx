@@ -92,7 +92,11 @@ export function Explore() {
       creator.skills?.some(s => s.toLowerCase().includes(searchQuery.toLowerCase())) ||
       creator.category?.toLowerCase().includes(searchQuery.toLowerCase());
     
-    const matchesCategory = !selectedCategory || creator.category === selectedCategory;
+    const OTHER_CATEGORIES = ['writing', 'programming', 'marketing', 'business', 'other'];
+    const matchesCategory = !selectedCategory || 
+      (selectedCategory === 'other' 
+        ? OTHER_CATEGORIES.includes(creator.category || '') 
+        : creator.category === selectedCategory);
     
     // Tab filtering
     let matchesTab = true;
