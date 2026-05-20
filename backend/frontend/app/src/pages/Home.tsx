@@ -56,12 +56,18 @@ export function Home() {
             creatorCount: categoryCounts[cat.id] || 0
           }));
           
-          // Sort by count descending and take top 5
-          const topCategories = updatedCategories
-            .sort((a, b) => b.creatorCount - a.creatorCount)
-            .slice(0, 5);
+          // Sort by count descending, take top 4, then add "Other" with remaining count
+          const sorted = updatedCategories.sort((a, b) => b.creatorCount - a.creatorCount);
+          const top4 = sorted.slice(0, 4);
+          const remainingCount = sorted.slice(4).reduce((sum, cat) => sum + cat.creatorCount, 0);
           
-          setCategories(topCategories);
+          const otherCategory = defaultCategories.find(c => c.id === 'other');
+          const finalCategories = [
+            ...top4,
+            { ...(otherCategory || defaultCategories[8]), creatorCount: remainingCount }
+          ];
+          
+          setCategories(finalCategories);
         } catch (statsError) {
           // Fallback: calculate from creators list if stats endpoint fails
           const categoryCounts: Record<string, number> = {};
@@ -75,10 +81,15 @@ export function Home() {
             ...cat,
             creatorCount: categoryCounts[cat.id] || 0
           }));
-          const topCategories = updatedCategories
-            .sort((a, b) => b.creatorCount - a.creatorCount)
-            .slice(0, 5);
-          setCategories(topCategories);
+          const sorted = updatedCategories.sort((a, b) => b.creatorCount - a.creatorCount);
+          const top4 = sorted.slice(0, 4);
+          const remainingCount = sorted.slice(4).reduce((sum, cat) => sum + cat.creatorCount, 0);
+          const otherCategory = defaultCategories.find(c => c.id === 'other');
+          const finalCategories = [
+            ...top4,
+            { ...(otherCategory || defaultCategories[8]), creatorCount: remainingCount }
+          ];
+          setCategories(finalCategories);
         }
         
         // If user is logged in, get personalized recommendations from backend
