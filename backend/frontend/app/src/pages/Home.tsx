@@ -7,13 +7,17 @@ import { api } from '@/contexts/AuthContext';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Creator, Category } from '@/types';
 
-// Categories with icons - must match backend CREATOR_CATEGORIES
+// Categories with icons - IDs must match backend CREATOR_CATEGORIES values
 const defaultCategories: Category[] = [
-  { id: 'photographer', name: 'Photography', icon: '/images/category-photography.png', description: 'Professional photos', creatorCount: 0 },
-  { id: 'designer', name: 'Design', icon: '/images/category-design.png', description: 'Graphic design', creatorCount: 0 },
-  { id: 'videographer', name: 'Video', icon: '/images/category-video.png', description: 'Video editing', creatorCount: 0 },
-  { id: 'illustrator', name: 'Illustration', icon: '/images/category-music.png', description: 'Digital art', creatorCount: 0 },
-  { id: 'other', name: 'Other', icon: '/images/category-writing.png', description: 'Other services', creatorCount: 0 },
+  { id: 'photography', name: 'Photography', icon: '/images/category-photography.png', description: 'Professional photos', creatorCount: 0 },
+  { id: 'design', name: 'Design', icon: '/images/category-design.png', description: 'Graphic design', creatorCount: 0 },
+  { id: 'video', name: 'Video', icon: '/images/category-video.png', description: 'Video editing', creatorCount: 0 },
+  { id: 'music', name: 'Music', icon: '/images/category-music.png', description: 'Music production', creatorCount: 0 },
+  { id: 'writing', name: 'Writing', icon: '/images/category-writing.png', description: 'Content writing', creatorCount: 0 },
+  { id: 'marketing', name: 'Marketing', icon: '/images/category-marketing.png', description: 'Digital marketing', creatorCount: 0 },
+  { id: 'programming', name: 'Programming', icon: '/images/category-programming.png', description: 'Software dev', creatorCount: 0 },
+  { id: 'business', name: 'Business', icon: '/images/category-business.png', description: 'Business services', creatorCount: 0 },
+  { id: 'other', name: 'Other', icon: '/images/category-other.png', description: 'Other services', creatorCount: 0 },
 ];
 
 export function Home() {
@@ -153,7 +157,7 @@ export function Home() {
           </a>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
-          {categories.map((category) => (
+          {categories.slice(0, 5).map((category) => (
             <CategoryCard key={category.id} category={category} onClick={handleCategoryClick} />
           ))}
         </div>
