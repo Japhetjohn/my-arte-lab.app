@@ -477,8 +477,8 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                           </Button>
                         )}
                       </div>
-                      {/* Availability Dropdown */}
-                      <div className="relative">
+                      {/* Availability Toggle */}
+                      <div className="flex justify-center">
                         <button
                           onClick={async () => {
                             const next = (creator.availability || 'available') === 'available' ? 'busy' : 'available';
@@ -490,17 +490,14 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                               toast.error(error.response?.data?.error || 'Failed to update status');
                             }
                           }}
-                          className={`w-full sm:w-auto px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
+                          className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all duration-200 flex items-center gap-1.5 ${
                             (creator.availability || 'available') === 'available'
-                              ? 'bg-[#8A2BE2] text-white shadow-md'
-                              : 'bg-amber-500 text-white shadow-md'
+                              ? 'bg-[#8A2BE2] text-white shadow-sm'
+                              : 'bg-amber-500 text-white shadow-sm'
                           }`}
                         >
-                          <span className={`w-2 h-2 rounded-full ${(creator.availability || 'available') === 'available' ? 'bg-white animate-pulse' : 'bg-white'}`}></span>
+                          <span className={`w-1.5 h-1.5 rounded-full ${(creator.availability || 'available') === 'available' ? 'bg-white animate-pulse' : 'bg-white'}`}></span>
                           {(creator.availability || 'available') === 'available' ? 'Available' : 'Busy'}
-                          <svg className="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                          </svg>
                         </button>
                       </div>
                     </>

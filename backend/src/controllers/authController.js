@@ -82,9 +82,6 @@ exports.register = catchAsync(async (req, res, next) => {
 
   user.emailVerificationToken = hashedCode;
   user.emailVerificationExpire = Date.now() + 30 * 60 * 1000; // 30 minutes
-  
-  // Auto-verify email since email delivery is unreliable
-  user.isEmailVerified = true;
 
   await user.save({ validateBeforeSave: false });
 
