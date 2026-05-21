@@ -45,6 +45,13 @@ export function getImageUrl(url: string | undefined | null): string {
 }
 
 /**
+ * Check if an image URL appears valid (not empty, not just whitespace)
+ */
+export function hasValidImage(url: string | undefined | null): boolean {
+  return !!url && url.trim().length > 0 && !url.includes('undefined') && !url.includes('null');
+}
+
+/**
  * Get avatar URL with fallback to default avatar
  */
 export function getAvatarUrl(url: string | undefined | null, fallback: string = '/images/avatar-1.png'): string {

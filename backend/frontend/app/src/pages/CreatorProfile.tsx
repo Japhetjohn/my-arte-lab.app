@@ -21,7 +21,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
-import { getImageUrl } from '@/lib/imageUrl';
+import { getImageUrl, hasValidImage } from '@/lib/imageUrl';
 import { verificationService } from '@/lib/verificationApi';
 
 interface CreatorProfileProps {
@@ -638,10 +638,10 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                 <Card key={index} className="overflow-hidden hover:shadow-lg transition-shadow">
                   <div 
                     className="relative w-full h-40 sm:h-48 bg-gray-100 cursor-pointer group"
-                    onClick={() => item.image && setSelectedImage(item.image)}
+                    onClick={() => hasValidImage(item.image) && setSelectedImage(item.image)}
                   >
                     <img
-                      src={getImageUrl(item.image)}
+                      src={hasValidImage(item.image) ? getImageUrl(item.image) : '/images/empty-projects.png'}
                       alt={item.title}
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       onError={(e) => {
@@ -1019,7 +1019,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
             </svg>
           </button>
           <div className="flex items-center justify-center w-full h-full p-4">
-            {selectedImage && (
+            {selectedImage && hasValidImage(selectedImage) && (
               <img
                 src={getImageUrl(selectedImage)}
                 alt="Portfolio"
