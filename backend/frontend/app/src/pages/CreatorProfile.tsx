@@ -645,7 +645,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                       alt={item.title}
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src = '/images/placeholder.png';
+                        (e.target as HTMLImageElement).src = '/images/empty-projects.png';
                       }}
                     />
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
@@ -770,6 +770,9 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                                 src={getImageUrl(img)}
                                 alt={`${service.title} ${idx + 1}`}
                                 className="w-20 h-20 object-cover rounded-lg flex-shrink-0"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = '/images/empty-projects.png';
+                                }}
                               />
                             ))}
                           </div>
@@ -1021,6 +1024,9 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                 src={getImageUrl(selectedImage)}
                 alt="Portfolio"
                 className="max-w-full max-h-full object-contain"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = '/images/empty-projects.png';
+                }}
               />
             )}
           </div>

@@ -90,7 +90,10 @@ export function Explore() {
     const matchesSearch = !searchQuery || 
       (creator.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       creator.skills?.some(s => s.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      creator.category?.toLowerCase().includes(searchQuery.toLowerCase());
+      creator.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (creator.location?.localArea || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (creator.location?.state || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (creator.location?.country || '').toLowerCase().includes(searchQuery.toLowerCase());
     
     const OTHER_CATEGORIES = ['writing', 'programming', 'marketing', 'business', 'other'];
     const matchesCategory = !selectedCategory || 
