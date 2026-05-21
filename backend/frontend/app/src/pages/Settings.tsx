@@ -10,7 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/contexts/AuthContext';
 import { getImageUrl } from '@/lib/imageUrl';
 import { toast } from 'sonner';
-import { User, Bell, Shield, Globe, Smartphone, Camera, Loader2, Lock } from 'lucide-react';
+import { User, Bell, Shield, Moon, Globe, Smartphone, Camera, Loader2, Lock } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -22,7 +22,7 @@ export function Settings() {
   const { user: currentUser, updateUser } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-
+  const [darkMode, setDarkMode] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Profile form state
@@ -214,7 +214,7 @@ export function Settings() {
           <TabsTrigger value="profile" className="flex-shrink-0">Profile</TabsTrigger>
           <TabsTrigger value="notifications" className="flex-shrink-0">Notifications</TabsTrigger>
           <TabsTrigger value="privacy" className="flex-shrink-0">Privacy</TabsTrigger>
-
+          <TabsTrigger value="appearance" className="flex-shrink-0">Appearance</TabsTrigger>
         </TabsList>
 
         {/* Profile Settings */}
@@ -519,7 +519,38 @@ export function Settings() {
           </Card>
         </TabsContent>
 
-
+        {/* Appearance Settings */}
+        <TabsContent value="appearance" className="space-y-4 mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Moon className="w-5 h-5" />
+                Appearance
+              </CardTitle>
+              <CardDescription>Customize your app experience</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">Dark Mode</p>
+                  <p className="text-sm text-gray-500">Switch between light and dark themes</p>
+                </div>
+                <Switch
+                  checked={darkMode}
+                  onCheckedChange={setDarkMode}
+                />
+              </div>
+              <Separator />
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">Reduced Motion</p>
+                  <p className="text-sm text-gray-500">Minimize animations throughout the app</p>
+                </div>
+                <Switch />
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
 
       {/* Change Password Dialog */}

@@ -44,12 +44,7 @@ exports.getAllCreators = catchAsync(async (req, res, next) => {
 
   if (location) {
     const escapedLocation = escapeRegex(location);
-    query.$or = query.$or || [];
-    query.$or.push(
-      { 'location.localArea': { $regex: escapedLocation, $options: 'i' } },
-      { 'location.state': { $regex: escapedLocation, $options: 'i' } },
-      { 'location.country': { $regex: escapedLocation, $options: 'i' } }
-    );
+    query['location.country'] = { $regex: escapedLocation, $options: 'i' };
   }
 
   const skip = actualLimit === 1000 ? 0 : (parseInt(page) - 1) * actualLimit;

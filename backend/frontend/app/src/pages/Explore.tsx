@@ -10,7 +10,7 @@ import { api } from '@/contexts/AuthContext';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Creator, Category } from '@/types';
 
-// Categories must match backend CREATOR_CATEGORIES
+// Categories must match backend CREATOR_CATEGORIES - only include ones with images
 const defaultCategories: Category[] = [
   { id: 'photography', name: 'Photography', icon: '/images/category-photography.png', description: 'Professional photos', creatorCount: 0 },
   { id: 'design', name: 'Design', icon: '/images/category-design.png', description: 'Graphic design', creatorCount: 0 },
@@ -18,9 +18,6 @@ const defaultCategories: Category[] = [
   { id: 'music', name: 'Music', icon: '/images/category-music.png', description: 'Music production', creatorCount: 0 },
   { id: 'writing', name: 'Writing', icon: '/images/category-writing.png', description: 'Content writing', creatorCount: 0 },
   { id: 'marketing', name: 'Marketing', icon: '/images/category-marketing.png', description: 'Digital marketing', creatorCount: 0 },
-  { id: 'programming', name: 'Programming', icon: '/images/category-programming.png', description: 'Software dev', creatorCount: 0 },
-  { id: 'business', name: 'Business', icon: '/images/category-business.png', description: 'Business services', creatorCount: 0 },
-  { id: 'other', name: 'Other', icon: '/images/category-other.png', description: 'Other services', creatorCount: 0 },
 ];
 
 export function Explore() {
@@ -95,11 +92,7 @@ export function Explore() {
       (creator.location?.state || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       (creator.location?.country || '').toLowerCase().includes(searchQuery.toLowerCase());
     
-    const OTHER_CATEGORIES = ['writing', 'programming', 'marketing', 'business', 'other'];
-    const matchesCategory = !selectedCategory || 
-      (selectedCategory === 'other' 
-        ? OTHER_CATEGORIES.includes(creator.category || '') 
-        : creator.category === selectedCategory);
+    const matchesCategory = !selectedCategory || creator.category === selectedCategory;
     
     // Tab filtering
     let matchesTab = true;
@@ -201,11 +194,12 @@ export function Explore() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <Input
-            type="search"
-            placeholder="Search by name, skill, or category..."
+            type="text"
+            placeholder="Search by name, skill, or location..."
             className="pl-10"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
           />
         </div>
         {(searchQuery || selectedCategory || activeTab !== 'all') && (

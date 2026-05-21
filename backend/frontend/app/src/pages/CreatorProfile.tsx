@@ -21,7 +21,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
-import { getImageUrl, hasValidImage } from '@/lib/imageUrl';
+import { getImageUrl } from '@/lib/imageUrl';
 import { verificationService } from '@/lib/verificationApi';
 
 interface CreatorProfileProps {
@@ -438,7 +438,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                   </div>
                 </div>
                 {/* Action Buttons - stacked on mobile, row on desktop */}
-                <div className="flex flex-col sm:flex-row justify-center sm:justify-end items-center gap-2">
+                <div className="flex flex-col sm:flex-row justify-center sm:justify-end items-stretch sm:items-center gap-2">
                   {isOwner && (
                     <>
                       <div className="flex gap-2 justify-center">
@@ -477,8 +477,8 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                           </Button>
                         )}
                       </div>
-                      {/* Availability Toggle */}
-                      <div className="flex justify-center">
+                      {/* Availability Dropdown */}
+                      <div className="relative">
                         <button
                           onClick={async () => {
                             const next = (creator.availability || 'available') === 'available' ? 'busy' : 'available';
@@ -490,14 +490,17 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                               toast.error(error.response?.data?.error || 'Failed to update status');
                             }
                           }}
-                          className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all duration-200 flex items-center gap-1.5 ${
+                          className={`w-full sm:w-auto px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
                             (creator.availability || 'available') === 'available'
-                              ? 'bg-[#8A2BE2] text-white shadow-sm'
-                              : 'bg-amber-500 text-white shadow-sm'
+                              ? 'bg-[#8A2BE2] text-white shadow-md'
+                              : 'bg-amber-500 text-white shadow-md'
                           }`}
                         >
-                          <span className={`w-1.5 h-1.5 rounded-full ${(creator.availability || 'available') === 'available' ? 'bg-white animate-pulse' : 'bg-white'}`}></span>
+                          <span className={`w-2 h-2 rounded-full ${(creator.availability || 'available') === 'available' ? 'bg-white animate-pulse' : 'bg-white'}`}></span>
                           {(creator.availability || 'available') === 'available' ? 'Available' : 'Busy'}
+                          <svg className="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
                         </button>
                       </div>
                     </>
@@ -638,14 +641,14 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                 <Card key={index} className="overflow-hidden hover:shadow-lg transition-shadow">
                   <div 
                     className="relative w-full h-40 sm:h-48 bg-gray-100 cursor-pointer group"
-                    onClick={() => hasValidImage(item.image) && setSelectedImage(item.image)}
+                    onClick={() => item.image && setSelectedImage(item.image)}
                   >
                     <img
-                      src={hasValidImage(item.image) ? getImageUrl(item.image) : '/images/empty-projects.png'}
+                      src={getImageUrl(item.image)}
                       alt={item.title}
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src = '/images/empty-projects.png';
+                        (e.target as HTMLImageElement).src = '/images/placeholder.png';
                       }}
                     />
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
@@ -770,9 +773,6 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                                 src={getImageUrl(img)}
                                 alt={`${service.title} ${idx + 1}`}
                                 className="w-20 h-20 object-cover rounded-lg flex-shrink-0"
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).src = '/images/empty-projects.png';
-                                }}
                               />
                             ))}
                           </div>
@@ -865,22 +865,11 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
             </div>
             <div>
               <Label>Category</Label>
-              <select
+              <Input
                 value={profileForm.category}
                 onChange={(e) => setProfileForm(prev => ({ ...prev, category: e.target.value }))}
-                className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
-              >
-                <option value="">Select a category</option>
-                <option value="photography">Photography</option>
-                <option value="design">Design</option>
-                <option value="video">Video & Animation</option>
-                <option value="music">Music & Audio</option>
-                <option value="writing">Writing & Translation</option>
-                <option value="marketing">Marketing</option>
-                <option value="programming">Programming & Tech</option>
-                <option value="business">Business</option>
-                <option value="other">Other</option>
-              </select>
+                placeholder="Your category (e.g., Design, Writing)"
+              />
             </div>
             <div>
               <Label>Skills (comma or space separated)</Label>
@@ -1019,14 +1008,11 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
             </svg>
           </button>
           <div className="flex items-center justify-center w-full h-full p-4">
-            {selectedImage && hasValidImage(selectedImage) && (
+            {selectedImage && (
               <img
                 src={getImageUrl(selectedImage)}
                 alt="Portfolio"
                 className="max-w-full max-h-full object-contain"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = '/images/empty-projects.png';
-                }}
               />
             )}
           </div>
