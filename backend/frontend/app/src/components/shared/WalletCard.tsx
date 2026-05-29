@@ -18,7 +18,7 @@ export function WalletCard({ balance, currency, escrowBalance = 0, incomingEarni
   
   return (
     <Card className="bg-gradient-to-br from-[#8A2BE2] to-[#6B21A8] text-white overflow-hidden border-0">
-      <CardContent className="p-6">
+      <CardContent className="p-4 sm:p-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
             <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
@@ -31,7 +31,7 @@ export function WalletCard({ balance, currency, escrowBalance = 0, incomingEarni
         
         <div className="mb-4">
           <p className="text-white/70 text-sm mb-1">Available Balance</p>
-          <h2 className="text-4xl font-bold text-white">${balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}</h2>
+          <h2 className="text-3xl sm:text-4xl font-bold text-white truncate">${balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}</h2>
         </div>
         
         {/* Show escrow info for clients (money they've paid that's held) */}
@@ -58,20 +58,20 @@ export function WalletCard({ balance, currency, escrowBalance = 0, incomingEarni
           </div>
         )}
         
-        <div className="flex gap-3">
+        <div className="flex gap-2 sm:gap-3">
           <Button
             onClick={onAddFunds}
-            className="flex-1 bg-white text-[#8A2BE2] hover:bg-gray-100 font-semibold"
+            className="flex-1 bg-white text-[#8A2BE2] hover:bg-gray-100 font-semibold text-xs sm:text-sm px-2 sm:px-4"
           >
-            <ArrowDownLeft className="w-4 h-4 mr-2" />
+            <ArrowDownLeft className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2 flex-shrink-0" />
             Add Funds
           </Button>
           <Button
             onClick={onWithdraw}
             variant="outline"
-            className="flex-1 bg-transparent border-2 border-white text-white hover:bg-white hover:text-[#8A2BE2] font-semibold"
+            className="flex-1 bg-transparent border-2 border-white text-white hover:bg-white hover:text-[#8A2BE2] font-semibold text-xs sm:text-sm px-2 sm:px-4"
           >
-            <ArrowUpRight className="w-4 h-4 mr-2" />
+            <ArrowUpRight className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2 flex-shrink-0" />
             Withdraw
           </Button>
         </div>

@@ -650,7 +650,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                     onClick={() => item.image && setSelectedImage(item.image)}
                   >
                     <img
-                      src={getImageUrl(item.image)}
+                      src={getImageUrl(item.image) || '/images/placeholder.png'}
                       alt={item.title}
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       onError={(e) => {

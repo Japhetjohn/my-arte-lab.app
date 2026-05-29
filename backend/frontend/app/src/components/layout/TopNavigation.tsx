@@ -11,7 +11,7 @@ import {
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Bell, MessageSquare, Menu, User, Settings, LogOut, Wallet, Home, Compass, Calendar, FolderOpen, Users } from 'lucide-react';
 import type { User as UserType } from '@/types';
-import { getImageUrl } from '@/lib/imageUrl';
+import { getAvatarUrl } from '@/lib/imageUrl';
 
 interface TopNavigationProps {
   user: UserType | null;
@@ -180,7 +180,7 @@ export function TopNavigation({
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="flex items-center gap-2 px-1.5 sm:px-2 h-9">
                 <img
-                  src={getImageUrl(user?.avatar) || '/images/default-avatar.png'}
+                  src={getAvatarUrl(user?.avatar)}
                   alt={user?.name || 'User'}
                   className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover"
                 />
