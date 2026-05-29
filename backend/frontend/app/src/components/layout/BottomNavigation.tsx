@@ -15,6 +15,7 @@ const navItems = [
 
 export function BottomNavigation({ currentPath }: BottomNavigationProps) {
   const isActive = (path: string) => {
+    if (path === '/home' && (currentPath === '/' || currentPath === '/home')) return true;
     return currentPath === path || currentPath.startsWith(path + '/');
   };
 
