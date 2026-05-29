@@ -102,11 +102,19 @@ exports.register = catchAsync(async (req, res, next) => {
   }
 
   // Send professional branded welcome email with verification code
-  emailConfig.sendEmail({
-    to: user.email,
-    subject: 'Welcome to MyArteLab! Verify Your Email',
-    html: emailTemplates.welcome(user.firstName, verificationCode)
-  }).catch(err => console.error('Welcome email failed:', err));
+  let emailSent = false;
+  try {
+    await emailConfig.sendEmail({
+      to: user.email,
+      subject: 'Welcome to MyArteLab! Verify Your Email',
+      html: emailTemplates.welcome(user.firstName, verificationCode)
+    });
+    emailSent = true;
+  } catch (err) {
+    console.error('Welcome email failed:', err.message);
+    // Log verification code for support purposes when email fails
+    console.log(`[SUPPORT] Email failed for ${user.email}. Verification code: ${verificationCode}`);
+  }
 
   adminNotificationService.notifyNewUserRegistration(user)
     .catch(err => console.error('Admin notification failed:', err));
@@ -123,7 +131,11 @@ exports.register = catchAsync(async (req, res, next) => {
   successResponse(res, 201, 'Registration successful', {
     user: user.getPublicProfile(),
     token,
-    refreshToken
+    refreshToken,
+    emailSent,
+    message: emailSent 
+      ? 'Registration successful! Please check your email for the verification code.'
+      : 'Registration successful! However, we could not send the verification email. Please click "Resend Code" or contact support.'
   });
 });
 
@@ -452,11 +464,11 @@ exports.resendVerification = catchAsync(async (req, res, next) => {
 
     successResponse(res, 200, 'Verification email sent successfully');
   } catch (error) {
-    user.emailVerificationToken = undefined;
-    user.emailVerificationExpire = undefined;
-    await user.save({ validateBeforeSave: false });
+    // Log code for support but DON'T clear the token - user might retry or contact support
+    console.error(`[Resend] Email failed for ${user.email}:`, error.message);
+    console.log(`[SUPPORT] Email resend failed for ${user.email}. Verification code: ${verificationCode}`);
 
-    return next(new ErrorHandler('Failed to send verification email', 500));
+    return next(new ErrorHandler('Failed to send verification email. Please try again or contact support.', 500));
   }
 });
 
