@@ -66,24 +66,28 @@ exports.getAllCreators = catchAsync(async (req, res, next) => {
     const keywords = term.split(/\s+/)
       .filter(k => k.length > 1 && !stopWords.has(k));
     
-    // Build OR conditions with fuzzy regex
-    const allConditions = [];
-    keywords.forEach(keyword => {
+    // Build AND conditions: EACH keyword must match at least one field
+    // "photographers in lagos" -> photographer AND lagos must both match
+    const keywordConditions = keywords.map(keyword => {
       const fuzzyRegex = buildFuzzyRegex(keyword);
-      allConditions.push(
-        { firstName: { $regex: fuzzyRegex } },
-        { lastName: { $regex: fuzzyRegex } },
-        { bio: { $regex: fuzzyRegex } },
-        { skills: { $in: [fuzzyRegex] } },
-        { category: { $in: [fuzzyRegex] } },
-        { 'location.localArea': { $regex: fuzzyRegex } },
-        { 'location.state': { $regex: fuzzyRegex } },
-        { 'location.country': { $regex: fuzzyRegex } }
-      );
+      return {
+        $or: [
+          { firstName: { $regex: fuzzyRegex } },
+          { lastName: { $regex: fuzzyRegex } },
+          { bio: { $regex: fuzzyRegex } },
+          { skills: { $in: [fuzzyRegex] } },
+          { category: { $in: [fuzzyRegex] } },
+          { 'location.localArea': { $regex: fuzzyRegex } },
+          { 'location.state': { $regex: fuzzyRegex } },
+          { 'location.country': { $regex: fuzzyRegex } }
+        ]
+      };
     });
     
-    if (allConditions.length > 0) {
-      query.$or = allConditions;
+    if (keywordConditions.length === 1) {
+      query.$or = keywordConditions[0].$or;
+    } else if (keywordConditions.length > 1) {
+      query.$and = keywordConditions;
     }
   }
 
