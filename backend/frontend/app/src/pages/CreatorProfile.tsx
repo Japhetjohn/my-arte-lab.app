@@ -94,6 +94,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
   // Verification state
   const [isVerifying, setIsVerifying] = useState(false);
   const [showVerifyDialog, setShowVerifyDialog] = useState(false);
+  const [showCancelVerifyDialog, setShowCancelVerifyDialog] = useState(false);
 
   // Compute isVerified on-the-fly (client-side grace period check)
   const isVerifiedLive = (() => {
@@ -413,6 +414,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                     {isVerifiedLive && (
                       <VerifiedBadge 
                         expiresAt={creator.verificationSubscription?.expiresAt} 
+                        onClick={() => isOwner && setShowCancelVerifyDialog(true)}
                       />
                     )}
                   </div>
@@ -449,7 +451,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                         <Button variant="outline" size="sm" onClick={() => setIsEditProfileOpen(true)}>
                           Edit Profile
                         </Button>
-                        {!isVerifiedLive ? (
+                        {!isVerifiedLive && (
                           <Button 
                             size="sm" 
                             className="bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white"
@@ -457,27 +459,6 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                           >
                             <BadgeCheck className="w-4 h-4 mr-1" />
                             Verify
-                          </Button>
-                        ) : (
-                          <Button 
-                            variant="outline"
-                            size="sm" 
-                            className="text-red-500 border-red-200 hover:bg-red-50"
-                            onClick={async () => {
-                              if (!confirm('Cancel verification? Your blue tick will be removed immediately.')) return;
-                              try {
-                                setIsVerifying(true);
-                                await verificationService.cancel();
-                                setCreator(prev => prev ? { ...prev, isVerified: false } : null);
-                                toast.success('Verification cancelled');
-                              } catch (error: any) {
-                                toast.error(error.response?.data?.error || 'Failed to cancel');
-                              } finally {
-                                setIsVerifying(false);
-                              }
-                            }}
-                          >
-                            {isVerifying ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Cancel Verify'}
                           </Button>
                         )}
                       </div>
@@ -991,6 +972,58 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                     <BadgeCheck className="w-4 h-4 mr-1" />
                     Pay $1.00 & Verify
                   </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Verification Dialog */}
+      <Dialog open={showCancelVerifyDialog} onOpenChange={setShowCancelVerifyDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BadgeCheck className="w-6 h-6 text-red-500" />
+              Cancel Verification
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+              <h3 className="font-semibold text-red-700">Remove Verified Badge?</h3>
+              <p className="text-sm text-red-600/80 mt-1">
+                Your blue tick will be removed immediately. You can re-verify anytime.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                className="flex-1"
+                onClick={() => setShowCancelVerifyDialog(false)}
+              >
+                Keep Badge
+              </Button>
+              <Button 
+                className="flex-1 bg-red-500 hover:bg-red-600 text-white"
+                disabled={isVerifying}
+                onClick={async () => {
+                  try {
+                    setIsVerifying(true);
+                    await verificationService.cancel();
+                    setCreator(prev => prev ? { ...prev, isVerified: false, verificationSubscription: undefined } : null);
+                    toast.success('Verification cancelled');
+                    setShowCancelVerifyDialog(false);
+                  } catch (error: any) {
+                    toast.error(error.response?.data?.error || 'Failed to cancel');
+                  } finally {
+                    setIsVerifying(false);
+                  }
+                }}
+              >
+                {isVerifying ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  'Cancel Subscription'
                 )}
               </Button>
             </div>

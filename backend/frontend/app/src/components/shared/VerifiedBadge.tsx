@@ -4,9 +4,10 @@ interface VerifiedBadgeProps {
   className?: string;
   expiresAt?: string;
   showTooltip?: boolean;
+  onClick?: () => void;
 }
 
-export function VerifiedBadge({ className, expiresAt, showTooltip = true }: VerifiedBadgeProps) {
+export function VerifiedBadge({ className, expiresAt, showTooltip = true, onClick }: VerifiedBadgeProps) {
   const formatExpiry = (dateStr?: string) => {
     if (!dateStr) return '';
     const date = new Date(dateStr);
@@ -21,25 +22,24 @@ export function VerifiedBadge({ className, expiresAt, showTooltip = true }: Veri
     ? `Verified until ${formatExpiry(expiresAt)}`
     : 'Verified Creator';
 
+  const img = (
+    <img 
+      src="/images/verified-badge.png" 
+      alt="Verified" 
+      className={`w-7 h-7 inline-block cursor-pointer ${className}`}
+      onClick={onClick}
+    />
+  );
+
   if (!showTooltip) {
-    return (
-      <img 
-        src="/images/verified-badge.png" 
-        alt="Verified" 
-        className={`w-5 h-5 inline-block ${className}`}
-      />
-    );
+    return img;
   }
 
   return (
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <img 
-            src="/images/verified-badge.png" 
-            alt="Verified" 
-            className={`w-5 h-5 inline-block ${className}`}
-          />
+          {img}
         </TooltipTrigger>
         <TooltipContent>
           <p>{tooltipText}</p>
