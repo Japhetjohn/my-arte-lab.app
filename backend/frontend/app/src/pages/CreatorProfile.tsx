@@ -506,7 +506,9 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                     </>
                   )}
                   {!isOwner && (
-                    <StatusBadge status={creator.availability || 'available'} />
+                    <div className="flex justify-center sm:justify-end">
+                      <StatusBadge status={creator.availability || 'available'} />
+                    </div>
                   )}
                 </div>
               </div>
