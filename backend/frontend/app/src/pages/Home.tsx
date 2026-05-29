@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { TrendingUp, Star, ArrowRight, Loader2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { TrendingUp, Star, ArrowRight, Loader2, Search } from 'lucide-react';
 import { CreatorCard } from '@/components/shared/CreatorCard';
 import { CategoryCard } from '@/components/shared/CategoryCard';
 import { api } from '@/contexts/AuthContext';
@@ -27,6 +28,14 @@ export function Home() {
   const [trendingCreators, setTrendingCreators] = useState<Creator[]>([]);
   const [categories, setCategories] = useState<Category[]>(defaultCategories);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      window.location.href = `/explore?q=${encodeURIComponent(searchQuery.trim())}`;
+    }
+  };
 
   // Fetch creators - backend handles recommendation algorithm behind the scenes
   useEffect(() => {
@@ -185,13 +194,30 @@ export function Home() {
 
   return (
     <div className="space-y-6 sm:space-y-8 pb-20 lg:pb-8 px-2.5 sm:px-0">
-      {/* Hero Section */}
+      {/* Hero Section with Search */}
       <section className="relative rounded-2xl overflow-hidden -mx-4 sm:mx-0">
         <img 
           src="/images/hero-bg.jpg" 
           alt="Hero" 
-          className="w-full h-40 sm:h-56 md:h-72 object-cover"
+          className="w-full h-48 sm:h-64 md:h-80 object-cover"
         />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent flex flex-col items-center justify-end pb-6 sm:pb-8 px-4">
+          <h1 className="text-white text-xl sm:text-2xl md:text-3xl font-bold text-center mb-3">
+            Find Creators Near You
+          </h1>
+          <form onSubmit={handleSearch} className="w-full max-w-lg">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Input
+                type="text"
+                placeholder="Search creators, skills, city..."
+                className="pl-10 pr-4 h-11 sm:h-12 bg-white/95 border-0 text-gray-900 placeholder:text-gray-400 rounded-full shadow-lg"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+          </form>
+        </div>
       </section>
 
       {/* Categories */}

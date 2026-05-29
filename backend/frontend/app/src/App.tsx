@@ -95,10 +95,33 @@ function AppContent() {
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
+  
+  // Keep currentPath in sync with actual pathname (not full URL with query params)
+  useEffect(() => {
+    const syncPath = () => setCurrentPath(window.location.pathname);
+    // Sync on any navigation event
+    window.addEventListener('hashchange', syncPath);
+    const originalPushState = window.history.pushState;
+    const originalReplaceState = window.history.replaceState;
+    window.history.pushState = function(...args) {
+      originalPushState.apply(this, args);
+      syncPath();
+    };
+    window.history.replaceState = function(...args) {
+      originalReplaceState.apply(this, args);
+      syncPath();
+    };
+    return () => {
+      window.removeEventListener('hashchange', syncPath);
+      window.history.pushState = originalPushState;
+      window.history.replaceState = originalReplaceState;
+    };
+  }, []);
 
   const navigate = (path: string) => {
     window.history.pushState({}, '', path);
-    setCurrentPath(path);
+    // Only update pathname for routing, ignore query params
+    setCurrentPath(window.location.pathname);
   };
 
   // Get creator ID from URL for dynamic routing
@@ -229,7 +252,6 @@ function AppContent() {
         user={user}
         unreadNotifications={unreadNotifications}
         unreadMessages={unreadMessages}
-        onSearch={(query) => navigate(`/explore?q=${query}`)}
         onLogout={logout}
         onNavigate={navigate}
       />

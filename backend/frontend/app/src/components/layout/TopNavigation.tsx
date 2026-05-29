@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -10,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { Search, Bell, MessageSquare, Menu, User, Settings, LogOut, Wallet, Home, Compass, Calendar, FolderOpen, Users } from 'lucide-react';
+import { Bell, MessageSquare, Menu, User, Settings, LogOut, Wallet, Home, Compass, Calendar, FolderOpen, Users } from 'lucide-react';
 import type { User as UserType } from '@/types';
 import { getImageUrl } from '@/lib/imageUrl';
 
@@ -18,7 +17,6 @@ interface TopNavigationProps {
   user: UserType | null;
   unreadNotifications: number;
   unreadMessages: number;
-  onSearch?: (query: string) => void;
   onLogout?: () => void;
   onNavigate?: (path: string) => void;
 }
@@ -43,17 +41,10 @@ export function TopNavigation({
   user, 
   unreadNotifications, 
   unreadMessages,
-  onSearch,
   onLogout,
   onNavigate
 }: TopNavigationProps) {
-  const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSearch?.(searchQuery);
-  };
 
   const handleNavClick = (path: string) => {
     if (onNavigate) {
@@ -154,30 +145,8 @@ export function TopNavigation({
           </a>
         </div>
 
-        {/* Center - Search */}
-        <form onSubmit={handleSearch} className="flex-1 max-w-md mx-2 sm:mx-4 hidden md:block">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <Input
-              type="search"
-              placeholder="Search creators, services..."
-              className="pl-10 pr-4 h-9 sm:h-10 bg-gray-100 border-0 focus:bg-white focus:ring-2 focus:ring-[#8A2BE2]/20"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-        </form>
-
         {/* Right - Actions */}
-        <div className="flex items-center gap-1 sm:gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="relative md:hidden h-9 w-9"
-            onClick={() => handleNavClick('/explore')}
-          >
-            <Search className="w-5 h-5" />
-          </Button>
+        <div className="flex items-center gap-1 sm:gap-2 ml-auto">
           
           <Button
             variant="ghost"
