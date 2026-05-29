@@ -79,26 +79,25 @@ exports.getAllCreators = catchAsync(async (req, res, next) => {
   if (searchTerm) {
     const term = searchTerm.trim();
     
-    // Split search into individual keywords (space-separated)
-    // e.g., "design jos" -> ["design", "jos"]
-    // e.g., "photo editor lagos" -> ["photo", "editor", "lagos"]
-    const keywords = term.split(/\s+/).filter(k => k.length > 1);
+    // Common stop words to ignore in search
+    const stopWords = new Set(['in', 'at', 'near', 'around', 'the', 'a', 'an', 'and', 'or', 'of', 'for', 'to', 'from', 'with', 'by']);
     
-    // If only one keyword, use simple search
-    if (keywords.length === 1) {
-      const escaped = escapeRegex(keywords[0]);
-      query.$or = buildSearchConditions(escaped);
-    } else {
-      // Multi-keyword search: EACH keyword must match at least ONE field
-      // This means "design jos" matches creators where:
-      // - "design" matches name/category/skills AND "jos" matches location
-      // - OR "design" matches location AND "jos" matches name (unlikely but possible)
-      // - OR both match the same field
-      const keywordConditions = keywords.map(keyword => {
-        const escaped = escapeRegex(keyword);
-        return { $or: buildSearchConditions(escaped) };
-      });
-      query.$and = keywordConditions;
+    // Split into keywords and remove stop words
+    // e.g., "designers in jos" -> ["designers", "jos"]
+    // e.g., "photo editor lagos" -> ["photo", "editor", "lagos"]
+    const keywords = term.split(/\s+/)
+      .filter(k => k.length > 1 && !stopWords.has(k.toLowerCase()));
+    
+    // Collect ALL conditions from ALL keywords into one big OR
+    // Any keyword matching any field = creator is included
+    const allConditions = [];
+    keywords.forEach(keyword => {
+      const escaped = escapeRegex(keyword);
+      allConditions.push(...buildSearchConditions(escaped));
+    });
+    
+    if (allConditions.length > 0) {
+      query.$or = allConditions;
     }
   }
 
