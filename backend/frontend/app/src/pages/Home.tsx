@@ -16,9 +16,6 @@ const defaultCategories: Category[] = [
   { id: 'music', name: 'Music', icon: '/images/category-music.png', description: 'Music production', creatorCount: 0 },
   { id: 'writing', name: 'Writing', icon: '/images/category-writing.png', description: 'Content writing', creatorCount: 0 },
   { id: 'marketing', name: 'Marketing', icon: '/images/category-marketing.png', description: 'Digital marketing', creatorCount: 0 },
-  { id: 'programming', name: 'Programming', icon: '/images/category-programming.png', description: 'Software dev', creatorCount: 0 },
-  { id: 'business', name: 'Business', icon: '/images/category-business.png', description: 'Business services', creatorCount: 0 },
-  { id: 'other', name: 'Other', icon: '/images/category-other.png', description: 'Other services', creatorCount: 0 },
 ];
 
 export function Home() {
@@ -54,66 +51,33 @@ export function Home() {
           );
         }
 
-        // Fetch accurate category counts from stats endpoint
+        // Fetch category counts
         try {
           const statsResponse = await api.get('/stats');
           const categoryCounts = statsResponse.data?.data?.categories || statsResponse.data?.categories || {};
           
-          // The 5 displayed cards: Photography, Design, Video, Music, Writing
-          // Writing also includes Programming, Marketing, Business, and Other counts
-          const displayedIds = ['photography', 'design', 'video', 'music', 'writing'];
-          const extraIds = ['programming', 'marketing', 'business', 'other'];
-          
-          const finalCategories = displayedIds.map(id => {
-            const cat = defaultCategories.find(c => c.id === id);
-            return {
-              ...cat!,
-              creatorCount: categoryCounts[id] || 0
-            };
-          });
-          
-          // Add remaining categories to Writing count, rename to Other
-          const extraCount = extraIds.reduce((sum, id) => sum + (categoryCounts[id] || 0), 0);
-          finalCategories[4].creatorCount += extraCount;
-          finalCategories[4].name = 'Other';
-          finalCategories[4].description = 'Other services';
-          finalCategories[4].id = 'other'; // Explore handles this specially, not just writers
-          
-          setCategories(finalCategories);
-        } catch (statsError) {
-          // Fallback: calculate from creators list if stats endpoint fails
+          setCategories(defaultCategories.map(cat => ({
+            ...cat,
+            creatorCount: categoryCounts[cat.id] || 0
+          })));
+        } catch {
+          // Fallback: calculate from creators list
           const categoryCounts: Record<string, number> = {};
           allCreators.forEach((creator: Creator) => {
             const cats = creator.category;
             if (cats) {
               if (Array.isArray(cats)) {
-                cats.forEach(cat => {
-                  categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
-                });
+                cats.forEach(cat => { categoryCounts[cat] = (categoryCounts[cat] || 0) + 1; });
               } else {
                 categoryCounts[cats] = (categoryCounts[cats] || 0) + 1;
               }
             }
           });
           
-          const displayedIds = ['photography', 'design', 'video', 'music', 'writing'];
-          const extraIds = ['programming', 'marketing', 'business', 'other'];
-          
-          const finalCategories = displayedIds.map(id => {
-            const cat = defaultCategories.find(c => c.id === id);
-            return {
-              ...cat!,
-              creatorCount: categoryCounts[id] || 0
-            };
-          });
-          
-          const extraCount = extraIds.reduce((sum, id) => sum + (categoryCounts[id] || 0), 0);
-          finalCategories[4].creatorCount += extraCount;
-          finalCategories[4].name = 'Other';
-          finalCategories[4].description = 'Other services';
-          finalCategories[4].id = 'all'; // Clicking shows all creators
-          
-          setCategories(finalCategories);
+          setCategories(defaultCategories.map(cat => ({
+            ...cat,
+            creatorCount: categoryCounts[cat.id] || 0
+          })));
         }
         
         // If user is logged in, get personalized recommendations from backend
@@ -229,8 +193,8 @@ export function Home() {
             <ArrowRight className="w-4 h-4" />
           </a>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
-          {categories.slice(0, 5).map((category) => (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+          {categories.map((category) => (
             <CategoryCard key={category.id} category={category} onClick={handleCategoryClick} />
           ))}
         </div>

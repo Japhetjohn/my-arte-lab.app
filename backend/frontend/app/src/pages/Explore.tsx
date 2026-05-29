@@ -18,9 +18,6 @@ const defaultCategories: Category[] = [
   { id: 'music', name: 'Music & Audio', icon: '/images/category-music.png', description: 'Music production', creatorCount: 0 },
   { id: 'writing', name: 'Writing & Translation', icon: '/images/category-writing.png', description: 'Content writing', creatorCount: 0 },
   { id: 'marketing', name: 'Marketing', icon: '/images/category-marketing.png', description: 'Digital marketing', creatorCount: 0 },
-  { id: 'programming', name: 'Programming & Tech', icon: '/images/category-programming.png', description: 'Development & tech', creatorCount: 0 },
-  { id: 'business', name: 'Business', icon: '/images/category-business.png', description: 'Business services', creatorCount: 0 },
-  { id: 'other', name: 'Other', icon: '/images/category-other.png', description: 'Other services', creatorCount: 0 },
 ];
 
 const SEARCH_HISTORY_KEY = 'myartelab_search_history';
