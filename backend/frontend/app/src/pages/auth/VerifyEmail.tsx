@@ -16,7 +16,16 @@ export function VerifyEmail() {
   const [isResending, setIsResending] = useState(false);
   const [countdown, setCountdown] = useState(30);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState('');
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  // Get pending email from session storage (set by Login page when email not verified)
+  useEffect(() => {
+    const storedEmail = sessionStorage.getItem('pendingVerificationEmail');
+    if (storedEmail) {
+      setPendingEmail(storedEmail);
+    }
+  }, []);
 
   useEffect(() => {
     if (countdown > 0) {
@@ -85,7 +94,9 @@ export function VerifyEmail() {
   const handleResend = async () => {
     setIsResending(true);
     try {
-      await resendVerification(user?.email);
+      // Use pending email if available (from login flow), otherwise use logged-in user's email
+      const emailToUse = pendingEmail || user?.email;
+      await resendVerification(emailToUse);
       setCountdown(30);
     } finally {
       setIsResending(false);
@@ -94,6 +105,8 @@ export function VerifyEmail() {
 
   const handleSuccessClose = () => {
     setShowSuccess(false);
+    // Clear pending verification email from storage
+    sessionStorage.removeItem('pendingVerificationEmail');
     navigate('/home');
   };
 
@@ -101,7 +114,7 @@ export function VerifyEmail() {
     <>
       <AuthLayout
         title="Verify Your Email"
-        subtitle={`Enter the 6-digit code sent to ${user?.email || 'your email'}`}
+        subtitle={`Enter the 6-digit code sent to ${user?.email || pendingEmail || 'your email'}`}
         illustration="/images/email-verified.png"
         showBackButton={false}
       >

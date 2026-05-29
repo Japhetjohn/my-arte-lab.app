@@ -161,7 +161,38 @@ exports.login = catchAsync(async (req, res, next) => {
 
   // Block login if email is not verified
   if (!user.isEmailVerified) {
-    return next(new ErrorHandler('Please verify your email before logging in. Check your inbox for the verification code.', 403));
+    // Generate a fresh verification code for the user
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const hashedCode = crypto.createHash('sha256').update(verificationCode).digest('hex');
+    
+    user.emailVerificationToken = hashedCode;
+    user.emailVerificationExpire = Date.now() + 30 * 60 * 1000; // 30 minutes
+    await user.save({ validateBeforeSave: false });
+    
+    // Try to send the code via email
+    let emailSent = false;
+    try {
+      await emailConfig.sendEmail({
+        to: user.email,
+        subject: 'Verify Your Email - MyArteLab',
+        html: emailTemplates.verificationCode(user.firstName, verificationCode)
+      });
+      emailSent = true;
+    } catch (err) {
+      console.error(`[Login] Email failed for ${user.email}:`, err.message);
+      console.log(`[SUPPORT] Login verification email failed for ${user.email}. Code: ${verificationCode}`);
+    }
+    
+    return res.status(403).json({
+      success: false,
+      error: 'Please verify your email before logging in.',
+      code: 'EMAIL_NOT_VERIFIED',
+      email: user.email,
+      emailSent,
+      message: emailSent 
+        ? 'A new verification code has been sent to your email. Please verify to continue.'
+        : 'We could not send the verification email. Please click resend or contact support.'
+    });
   }
 
   if (user.loginAttempts > 0) {
