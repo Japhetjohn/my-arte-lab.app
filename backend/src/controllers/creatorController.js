@@ -56,13 +56,49 @@ exports.getAllCreators = catchAsync(async (req, res, next) => {
     }
     
     const escapedSearch = escapeRegex(searchQuery);
+    
+    // Build category conditions - match if category contains search OR search contains category
+    // This handles plurals like "designers" matching category "design"
+    const categoryConditions = [
+      { category: { $in: [new RegExp(escapedSearch, 'i')] } },  // category matches search term
+    ];
+    
+    // Smart category matching with aliases for common terms
+    // e.g., "designers" -> "design", "photographer" -> "photography", "coder" -> "programming"
+    const categoryAliases = {
+      'photography': ['photo', 'photographer', 'photographers', 'pic', 'pics', 'picture'],
+      'design': ['designer', 'designers', 'graphic', 'graphics'],
+      'video': ['videographer', 'video editor', 'animation', 'animator', 'film', 'filmmaker'],
+      'music': ['musician', 'musicians', 'audio', 'sound', 'producer', 'beat'],
+      'writing': ['writer', 'writers', 'content', 'copywriter', 'translator', 'translation'],
+      'marketing': ['marketer', 'marketers', 'digital marketing', 'seo', 'social media'],
+      'programming': ['programmer', 'programmers', 'developer', 'developers', 'coder', 'coders', 'dev', 'software', 'web dev'],
+      'business': ['business', 'consultant', 'consulting', 'entrepreneur'],
+      'other': ['other', 'misc', 'miscellaneous']
+    };
+    
+    const qLower = searchQuery.toLowerCase();
+    const matchedCategories = Object.entries(categoryAliases)
+      .filter(([cat, aliases]) => {
+        const catLower = cat.toLowerCase();
+        // Direct prefix match
+        if (qLower.startsWith(catLower) || catLower.startsWith(qLower)) return true;
+        // Alias match
+        return aliases.some(alias => qLower.includes(alias) || alias.includes(qLower));
+      })
+      .map(([cat]) => cat);
+    
+    if (matchedCategories.length > 0) {
+      categoryConditions.push({ category: { $in: matchedCategories } });
+    }
+    
     const searchConditions = [
       { firstName: { $regex: escapedSearch, $options: 'i' } },
       { lastName: { $regex: escapedSearch, $options: 'i' } },
       { name: { $regex: escapedSearch, $options: 'i' } },
       { bio: { $regex: escapedSearch, $options: 'i' } },
       { skills: { $in: [new RegExp(escapedSearch, 'i')] } },
-      { category: { $in: [new RegExp(escapedSearch, 'i')] } }
+      { $or: categoryConditions }  // Use $or for category conditions
     ];
     
     // If we parsed a location from the query, add location search
