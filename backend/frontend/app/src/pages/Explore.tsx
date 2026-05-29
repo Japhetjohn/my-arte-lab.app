@@ -34,6 +34,7 @@ export function Explore() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
   const [isSearching, setIsSearching] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Read URL params on mount
   useEffect(() => {
@@ -54,13 +55,20 @@ export function Explore() {
     q,
     category,
     tab,
+    silent = false,
   }: {
     q?: string;
     category?: string | null;
     tab?: string;
+    silent?: boolean;
   } = {}) => {
     try {
-      setIsLoading(true);
+      // Only show full loading on initial load, not on search/filter changes
+      if (!silent && creators.length === 0) {
+        setIsLoading(true);
+      } else {
+        setIsRefreshing(true);
+      }
       
       // Build query params for backend
       const params = new URLSearchParams();
@@ -130,8 +138,9 @@ export function Explore() {
     } finally {
       setIsLoading(false);
       setIsSearching(false);
+      setIsRefreshing(false);
     }
-  }, [currentUser]);
+  }, [currentUser, creators.length]);
 
   // Initial load
   useEffect(() => {
@@ -144,7 +153,8 @@ export function Explore() {
       fetchCreators({ 
         q: searchQuery, 
         category: selectedCategory,
-        tab: activeTab 
+        tab: activeTab,
+        silent: true, // Don't clear existing results while searching
       });
     }, 500); // 500ms debounce
     
@@ -154,7 +164,7 @@ export function Explore() {
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSearching(true);
-    fetchCreators({ q: searchQuery, category: selectedCategory, tab: activeTab });
+    fetchCreators({ q: searchQuery, category: selectedCategory, tab: activeTab, silent: true });
     
     // Update URL
     const url = new URL(window.location.href);
@@ -187,7 +197,7 @@ export function Explore() {
     window.history.pushState({}, '', url);
     
     // Fetch with category
-    fetchCreators({ category: category.id, tab: activeTab });
+    fetchCreators({ category: category.id, tab: activeTab, silent: true });
   };
 
   const clearFilters = () => {
@@ -202,7 +212,7 @@ export function Explore() {
     window.history.pushState({}, '', url);
     
     // Refetch
-    fetchCreators();
+    fetchCreators({ silent: true });
   };
 
   const getSelectedCategoryName = () => {
@@ -309,14 +319,31 @@ export function Explore() {
       {/* Results Count */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-gray-500">
-          {isSearching ? 'Searching...' : `${creators.length} creator${creators.length !== 1 ? 's' : ''} found`}
+          {isRefreshing ? (
+            <span className="flex items-center gap-2">
+              <Loader2 className="w-3 h-3 animate-spin" />
+              Updating results...
+            </span>
+          ) : (
+            `${creators.length} creator${creators.length !== 1 ? 's' : ''} found`
+          )}
         </p>
       </div>
+
+      {/* Refreshing overlay - subtle indicator without clearing results */}
+      {isRefreshing && (
+        <div className="flex items-center justify-center py-2">
+          <div className="flex items-center gap-2 text-sm text-[#8A2BE2]">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span>Loading new results...</span>
+          </div>
+        </div>
+      )}
 
       {/* Creators Grid/List */}
       <Tabs value={activeTab} onValueChange={(tab) => {
         setActiveTab(tab);
-        fetchCreators({ q: searchQuery, category: selectedCategory, tab });
+        fetchCreators({ q: searchQuery, category: selectedCategory, tab, silent: true });
       }} className="w-full">
         <TabsList className="flex w-full overflow-x-auto scrollbar-hide lg:w-auto lg:inline-flex">
           <TabsTrigger value="all" className="flex-shrink-0">All</TabsTrigger>
