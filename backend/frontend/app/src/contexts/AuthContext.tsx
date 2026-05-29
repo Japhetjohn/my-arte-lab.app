@@ -234,7 +234,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         token,
       });
 
-      toast.success('Login successful!');
+      toast.success('Welcome back!');
     } catch (error: any) {
       const message = error.response?.data?.error || error.response?.data?.message || 'Login failed';
       toast.error(message);
@@ -271,7 +271,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await api.post('/auth/register', transformedData);
       
       // DON'T auto-login - let user verify email first
-      toast.success('Account created! Please check your email for verification code.');
+      toast.success('Account created! Check your email for the verification code.');
     } catch (error: any) {
       const message = error.response?.data?.error || error.response?.data?.message || 'Registration failed';
       
@@ -321,7 +321,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         storage.setItem('user', JSON.stringify(updatedUser));
       }
 
-      toast.success('Email verified successfully!');
+      toast.success('Email verified!');
     } catch (error: any) {
       const message = error.response?.data?.error || error.response?.data?.message || 'Verification failed';
       toast.error(message);
@@ -332,7 +332,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const resendVerification = useCallback(async (email?: string) => {
     try {
       await api.post('/auth/resend-verification', email ? { email } : undefined);
-      toast.success('Verification code sent!');
+      toast.success('Code sent!');
     } catch (error: any) {
       const message = error.response?.data?.error || error.response?.data?.message || 'Failed to resend code';
       toast.error(message);
@@ -343,7 +343,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const forgotPassword = useCallback(async (email: string) => {
     try {
       await api.post('/auth/forgot-password', { email });
-      toast.success('Password reset link sent to your email!');
+      toast.success('Reset link sent! Check your email.');
     } catch (error: any) {
       const message = error.response?.data?.error || error.response?.data?.message || 'Failed to send reset link';
       toast.error(message);
@@ -354,7 +354,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const resetPassword = useCallback(async (token: string, newPassword: string) => {
     try {
       await api.post('/auth/reset-password', { token, newPassword });
-      toast.success('Password reset successful! Please login.');
+      toast.success('Password reset! Please log in.');
     } catch (error: any) {
       const message = error.response?.data?.error || error.response?.data?.message || 'Password reset failed';
       toast.error(message);
@@ -372,7 +372,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const storage = localStorage.getItem('token') ? localStorage : sessionStorage;
       storage.setItem('user', JSON.stringify(updatedUser));
 
-      toast.success('Profile updated successfully!');
+      toast.success('Profile updated');
     } catch (error: any) {
       const message = error.response?.data?.error || error.response?.data?.message || 'Update failed';
       toast.error(message);
