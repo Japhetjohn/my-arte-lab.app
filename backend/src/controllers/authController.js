@@ -302,9 +302,14 @@ exports.updateProfile = catchAsync(async (req, res, next) => {
     }
   });
   
-  // Handle empty category - remove it from updates if empty
-  if (updates.category === '' || updates.category === null) {
-    delete updates.category;
+  // Handle category - normalize to array and remove if empty
+  if (updates.category !== undefined) {
+    if (updates.category === '' || updates.category === null || 
+        (Array.isArray(updates.category) && updates.category.length === 0)) {
+      delete updates.category;
+    } else if (!Array.isArray(updates.category)) {
+      updates.category = [updates.category];
+    }
   }
   
   // Handle skills parsing - if skills is a string, split it into array

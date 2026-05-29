@@ -22,7 +22,8 @@ exports.getAllCreators = catchAsync(async (req, res, next) => {
   const query = { role: 'creator', isActive: true };
 
   if (category && category !== 'all') {
-    query.category = category;
+    // Use $in to match creators who have this category in their array
+    query.category = { $in: [category] };
   }
 
   if (search) {
@@ -296,6 +297,7 @@ exports.getCreatorStats = catchAsync(async (req, res, next) => {
 
   const categoryStats = await User.aggregate([
     { $match: { role: 'creator', isActive: true } },
+    { $unwind: '$category' },
     {
       $group: {
         _id: '$category',

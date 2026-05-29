@@ -113,15 +113,24 @@ const userSchema = new mongoose.Schema({
 
   category: {
     type: [String],
-    enum: [...Object.values(CREATOR_CATEGORIES), ''],
     validate: {
       validator: function (categories) {
         if (this.role !== USER_ROLES.CREATOR) return true;
-        return Array.isArray(categories) && categories.length > 0 && categories.length <= 3;
+        // Handle both array and legacy string values
+        const cats = Array.isArray(categories) ? categories : categories ? [categories] : [];
+        if (cats.length === 0) return false;
+        if (cats.length > 3) return false;
+        const validCategories = [...Object.values(CREATOR_CATEGORIES), ''];
+        return cats.every(cat => validCategories.includes(cat));
       },
-      message: 'Creators must select 1 to 3 categories'
+      message: 'Creators must select 1 to 3 valid categories'
     },
-    required: function () { return this.role === USER_ROLES.CREATOR; }
+    required: function () { return this.role === USER_ROLES.CREATOR; },
+    set: function (val) {
+      // Normalize to array: convert legacy string values to array
+      if (!val) return val;
+      return Array.isArray(val) ? val : [val];
+    }
   },
 
   skills: [{

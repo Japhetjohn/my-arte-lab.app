@@ -72,7 +72,11 @@ exports.getFeaturedCreators = async (req, res, next) => {
         id: creator._id.toString(),
         name: creator.name || 'Unknown Creator',
         avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name || 'User')}&background=9747FF&color=fff&bold=true`,
-        role: creator.category ? creator.category.charAt(0).toUpperCase() + creator.category.slice(1) : 'Creator',
+        role: creator.category 
+          ? (Array.isArray(creator.category) 
+              ? creator.category.map(c => c.charAt(0).toUpperCase() + c.slice(1)).join(', ')
+              : creator.category.charAt(0).toUpperCase() + creator.category.slice(1))
+          : 'Creator',
         location: locationStr,
         rating: creator.rating?.average?.toFixed(1) || '0.0',
         reviewCount: creator.rating?.count || 0,
