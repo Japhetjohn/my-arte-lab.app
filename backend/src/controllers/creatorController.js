@@ -5,6 +5,51 @@ const { ErrorHandler, catchAsync } = require('../utils/errorHandler');
 const { escapeRegex } = require('../utils/sanitize');
 const recommendationEngine = require('../services/recommendationEngine');
 
+// Helper function to build search conditions for a single keyword
+function buildSearchConditions(escapedKeyword) {
+  // Category aliases mapping
+  const categoryAliases = {
+    'photography': ['photo', 'photographer', 'photographers', 'pic', 'pics', 'picture', 'camera', 'shoot'],
+    'design': ['designer', 'designers', 'graphic', 'graphics', 'ui', 'ux', 'logo', 'brand'],
+    'video': ['videographer', 'video editor', 'animation', 'animator', 'film', 'filmmaker', 'motion'],
+    'music': ['musician', 'musicians', 'audio', 'sound', 'producer', 'beat', 'song', 'mix'],
+    'writing': ['writer', 'writers', 'content', 'copywriter', 'translator', 'translation', 'blog', 'article'],
+    'marketing': ['marketer', 'marketers', 'digital marketing', 'seo', 'social media', 'ads', 'promotion'],
+    'programming': ['programmer', 'programmers', 'developer', 'developers', 'coder', 'coders', 'dev', 'software', 'web dev', 'app', 'website'],
+    'business': ['business', 'consultant', 'consulting', 'entrepreneur', 'coach', 'strategy'],
+    'other': ['other', 'misc', 'miscellaneous']
+  };
+  
+  const qLower = escapedKeyword.toLowerCase();
+  const matchedCategories = Object.entries(categoryAliases)
+    .filter(([cat, aliases]) => {
+      const catLower = cat.toLowerCase();
+      if (qLower === catLower) return true;
+      if (qLower.startsWith(catLower) || catLower.startsWith(qLower)) return true;
+      return aliases.some(alias => qLower.includes(alias) || alias.includes(qLower));
+    })
+    .map(([cat]) => cat);
+  
+  const conditions = [
+    { firstName: { $regex: escapedKeyword, $options: 'i' } },
+    { lastName: { $regex: escapedKeyword, $options: 'i' } },
+    { name: { $regex: escapedKeyword, $options: 'i' } },
+    { bio: { $regex: escapedKeyword, $options: 'i' } },
+    { skills: { $in: [new RegExp(escapedKeyword, 'i')] } },
+    { category: { $in: [new RegExp(escapedKeyword, 'i')] } },
+    { 'location.localArea': { $regex: escapedKeyword, $options: 'i' } },
+    { 'location.state': { $regex: escapedKeyword, $options: 'i' } },
+    { 'location.country': { $regex: escapedKeyword, $options: 'i' } }
+  ];
+  
+  // Add matched category aliases
+  if (matchedCategories.length > 0) {
+    conditions.push({ category: { $in: matchedCategories } });
+  }
+  
+  return conditions;
+}
+
 exports.getAllCreators = catchAsync(async (req, res, next) => {
   const {
     category,
@@ -34,94 +79,26 @@ exports.getAllCreators = catchAsync(async (req, res, next) => {
   if (searchTerm) {
     const term = searchTerm.trim();
     
-    // Try to parse "X in Y" or "X at Y" patterns for location-based search
-    // e.g., "photographer in lagos", "designer at abuja", "video editor ikeja"
-    const locationPatterns = [
-      /(.+?)\s+in\s+(.+)/i,      // "photographer in lagos"
-      /(.+?)\s+at\s+(.+)/i,      // "designer at abuja"
-      /(.+?)\s+near\s+(.+)/i,    // "photographer near ikeja"
-      /(.+?)\s+around\s+(.+)/i,  // "designer around yaba"
-    ];
+    // Split search into individual keywords (space-separated)
+    // e.g., "design jos" -> ["design", "jos"]
+    // e.g., "photo editor lagos" -> ["photo", "editor", "lagos"]
+    const keywords = term.split(/\s+/).filter(k => k.length > 1);
     
-    let searchQuery = term;
-    let locationQuery = null;
-    
-    for (const pattern of locationPatterns) {
-      const match = term.match(pattern);
-      if (match) {
-        searchQuery = match[1].trim();
-        locationQuery = match[2].trim();
-        break;
-      }
-    }
-    
-    const escapedSearch = escapeRegex(searchQuery);
-    
-    // Build category conditions - match if category contains search OR search contains category
-    // This handles plurals like "designers" matching category "design"
-    const categoryConditions = [
-      { category: { $in: [new RegExp(escapedSearch, 'i')] } },  // category matches search term
-    ];
-    
-    // Smart category matching with aliases for common terms
-    // e.g., "designers" -> "design", "photographer" -> "photography", "coder" -> "programming"
-    const categoryAliases = {
-      'photography': ['photo', 'photographer', 'photographers', 'pic', 'pics', 'picture'],
-      'design': ['designer', 'designers', 'graphic', 'graphics'],
-      'video': ['videographer', 'video editor', 'animation', 'animator', 'film', 'filmmaker'],
-      'music': ['musician', 'musicians', 'audio', 'sound', 'producer', 'beat'],
-      'writing': ['writer', 'writers', 'content', 'copywriter', 'translator', 'translation'],
-      'marketing': ['marketer', 'marketers', 'digital marketing', 'seo', 'social media'],
-      'programming': ['programmer', 'programmers', 'developer', 'developers', 'coder', 'coders', 'dev', 'software', 'web dev'],
-      'business': ['business', 'consultant', 'consulting', 'entrepreneur'],
-      'other': ['other', 'misc', 'miscellaneous']
-    };
-    
-    const qLower = searchQuery.toLowerCase();
-    const matchedCategories = Object.entries(categoryAliases)
-      .filter(([cat, aliases]) => {
-        const catLower = cat.toLowerCase();
-        // Direct prefix match
-        if (qLower.startsWith(catLower) || catLower.startsWith(qLower)) return true;
-        // Alias match
-        return aliases.some(alias => qLower.includes(alias) || alias.includes(qLower));
-      })
-      .map(([cat]) => cat);
-    
-    if (matchedCategories.length > 0) {
-      categoryConditions.push({ category: { $in: matchedCategories } });
-    }
-    
-    const searchConditions = [
-      { firstName: { $regex: escapedSearch, $options: 'i' } },
-      { lastName: { $regex: escapedSearch, $options: 'i' } },
-      { name: { $regex: escapedSearch, $options: 'i' } },
-      { bio: { $regex: escapedSearch, $options: 'i' } },
-      { skills: { $in: [new RegExp(escapedSearch, 'i')] } },
-      { $or: categoryConditions }  // Use $or for category conditions
-    ];
-    
-    // If we parsed a location from the query, add location search
-    if (locationQuery) {
-      const escapedLoc = escapeRegex(locationQuery);
-      query.$and = [
-        { $or: searchConditions },
-        {
-          $or: [
-            { 'location.localArea': { $regex: escapedLoc, $options: 'i' } },
-            { 'location.state': { $regex: escapedLoc, $options: 'i' } },
-            { 'location.country': { $regex: escapedLoc, $options: 'i' } }
-          ]
-        }
-      ];
+    // If only one keyword, use simple search
+    if (keywords.length === 1) {
+      const escaped = escapeRegex(keywords[0]);
+      query.$or = buildSearchConditions(escaped);
     } else {
-      // Also search location fields in the general search
-      searchConditions.push(
-        { 'location.localArea': { $regex: escapedSearch, $options: 'i' } },
-        { 'location.state': { $regex: escapedSearch, $options: 'i' } },
-        { 'location.country': { $regex: escapedSearch, $options: 'i' } }
-      );
-      query.$or = searchConditions;
+      // Multi-keyword search: EACH keyword must match at least ONE field
+      // This means "design jos" matches creators where:
+      // - "design" matches name/category/skills AND "jos" matches location
+      // - OR "design" matches location AND "jos" matches name (unlikely but possible)
+      // - OR both match the same field
+      const keywordConditions = keywords.map(keyword => {
+        const escaped = escapeRegex(keyword);
+        return { $or: buildSearchConditions(escaped) };
+      });
+      query.$and = keywordConditions;
     }
   }
 
