@@ -5,6 +5,35 @@ const { ErrorHandler, catchAsync } = require('../utils/errorHandler');
 const { escapeRegex } = require('../utils/sanitize');
 const recommendationEngine = require('../services/recommendationEngine');
 
+// Simple stemmer: removes common suffixes to match word roots
+// e.g., "photographer" -> "photograph", "designers" -> "design"
+function stemWord(word) {
+  const w = word.toLowerCase();
+  const suffixes = [
+    'ing', 'ers', 'er', 'ors', 'or', 'ies', 'ied', 'ied', 'ies',
+    's', 'ed', 'ly', 'ment', 'tion', 'sion', 'ness', 'ful', 'less',
+    'est', 'ist', 'ism', 'ize', 'ise', 'ify', 'en', 'able', 'ible'
+  ];
+  for (const suffix of suffixes) {
+    if (w.length > suffix.length + 2 && w.endsWith(suffix)) {
+      return w.slice(0, -suffix.length);
+    }
+  }
+  return w;
+}
+
+// Build a regex that matches the word OR its stem
+// e.g., "photographer" matches /photographer|photograph/i
+function buildFuzzyRegex(word) {
+  const stem = stemWord(word);
+  if (stem !== word.toLowerCase() && stem.length > 2) {
+    // Match the full word OR the stem as a prefix of other words
+    // photographer|photograph -> matches "photographer", "photography", "photographs"
+    return new RegExp(`(?:${escapeRegex(word)}|${escapeRegex(stem)})`, 'i');
+  }
+  return new RegExp(escapeRegex(word), 'i');
+}
+
 exports.getAllCreators = catchAsync(async (req, res, next) => {
   const {
     category,
@@ -24,7 +53,7 @@ exports.getAllCreators = catchAsync(async (req, res, next) => {
     query.category = { $in: [category] };
   }
 
-  // Unified search: searches actual profile fields — no hardcoded aliases
+  // Unified search: fuzzy matching with stemming
   const searchTerm = q || search;
   
   if (searchTerm) {
@@ -37,19 +66,19 @@ exports.getAllCreators = catchAsync(async (req, res, next) => {
     const keywords = term.split(/\s+/)
       .filter(k => k.length > 1 && !stopWords.has(k));
     
-    // Build OR conditions: ANY keyword matching ANY field = match
+    // Build OR conditions with fuzzy regex
     const allConditions = [];
     keywords.forEach(keyword => {
-      const escaped = escapeRegex(keyword);
+      const fuzzyRegex = buildFuzzyRegex(keyword);
       allConditions.push(
-        { firstName: { $regex: escaped, $options: 'i' } },
-        { lastName: { $regex: escaped, $options: 'i' } },
-        { bio: { $regex: escaped, $options: 'i' } },
-        { skills: { $in: [new RegExp(escaped, 'i')] } },
-        { category: { $in: [new RegExp(escaped, 'i')] } },
-        { 'location.localArea': { $regex: escaped, $options: 'i' } },
-        { 'location.state': { $regex: escaped, $options: 'i' } },
-        { 'location.country': { $regex: escaped, $options: 'i' } }
+        { firstName: { $regex: fuzzyRegex } },
+        { lastName: { $regex: fuzzyRegex } },
+        { bio: { $regex: fuzzyRegex } },
+        { skills: { $in: [fuzzyRegex] } },
+        { category: { $in: [fuzzyRegex] } },
+        { 'location.localArea': { $regex: fuzzyRegex } },
+        { 'location.state': { $regex: fuzzyRegex } },
+        { 'location.country': { $regex: fuzzyRegex } }
       );
     });
     
