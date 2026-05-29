@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
 import { Search, Loader2, TrendingUp, Star, Clock, Award } from 'lucide-react';
 import { CreatorCard } from '@/components/shared/CreatorCard';
@@ -8,60 +8,55 @@ import { toast } from 'sonner';
 import type { Creator } from '@/types';
 
 export function Creators() {
-  const [allCreators, setAllCreators] = useState<Creator[]>([]);
-  const [filteredCreators, setFilteredCreators] = useState<Creator[]>([]);
+  const [creators, setCreators] = useState<Creator[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'trending' | 'rating' | 'newest' | 'popular'>('trending');
 
-  // Fetch all creators on mount
-  useEffect(() => {
-    fetchCreators();
-  }, [sortBy]);
-
-  // Filter creators when search changes
-  useEffect(() => {
-    if (!searchQuery.trim()) {
-      setFilteredCreators(allCreators);
-      return;
-    }
-
-    const query = searchQuery.toLowerCase();
-    const filtered = allCreators.filter(creator => {
-      const name = (creator.name || `${creator.firstName || ''} ${creator.lastName || ''}`).toLowerCase();
-      const category = Array.isArray(creator.category) 
-        ? creator.category.join(' ').toLowerCase() 
-        : (creator.category || '').toLowerCase();
-      const skills = (creator.skills || []).join(' ').toLowerCase();
-      const bio = (creator.bio || '').toLowerCase();
-      
-      return name.includes(query) || 
-             category.includes(query) || 
-             skills.includes(query) ||
-             bio.includes(query);
-    });
-    
-    setFilteredCreators(filtered);
-  }, [searchQuery, allCreators]);
-
-  const fetchCreators = async () => {
+  // Fetch creators from backend
+  const fetchCreators = useCallback(async ({
+    q,
+    sort = sortBy,
+  }: {
+    q?: string;
+    sort?: string;
+  } = {}) => {
     try {
       setIsLoading(true);
       
-      // Fetch ALL creators using the algorithm for sorting
-      // No limit - gets all creators from database
-      const response = await api.get(`/creators?sortBy=${sortBy}&limit=1000`);
-      const creators = response.data.data?.creators || response.data.data?.results || response.data.data || [];
+      const params = new URLSearchParams();
+      params.set('sortBy', sort);
+      params.set('limit', '1000');
       
-      setAllCreators(creators);
-      setFilteredCreators(creators);
+      if (q && q.trim()) {
+        params.set('q', q.trim());
+      }
+      
+      const response = await api.get(`/creators?${params.toString()}`);
+      const results = response.data.data?.creators || response.data.data?.results || response.data.data || [];
+      
+      setCreators(results);
     } catch (error: any) {
       console.error('Error fetching creators:', error);
       toast.error('Failed to load creators');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [sortBy]);
+
+  // Initial load
+  useEffect(() => {
+    fetchCreators();
+  }, [fetchCreators]);
+
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchCreators({ q: searchQuery });
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, [searchQuery, fetchCreators]);
 
   const handleViewProfile = (creator: any) => {
     const id = creator.id || creator._id;
@@ -87,14 +82,14 @@ export function Creators() {
       <div>
         <h1 className="text-2xl font-bold text-gray-900">All Creators</h1>
         <p className="text-gray-500">
-          {filteredCreators.length} creators • Sorted by {sortBy === 'trending' ? 'activity' : sortBy}
+          {creators.length} creators • Sorted by {sortBy === 'trending' ? 'activity' : sortBy}
         </p>
       </div>
 
       {/* Sort Options */}
       <div className="flex flex-wrap gap-2">
         <button
-          onClick={() => setSortBy('trending')}
+          onClick={() => { setSortBy('trending'); fetchCreators({ q: searchQuery, sort: 'trending' }); }}
           className={`flex items-center gap-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
             sortBy === 'trending' 
               ? 'bg-[#8A2BE2] text-white' 
@@ -105,7 +100,7 @@ export function Creators() {
           Most Active
         </button>
         <button
-          onClick={() => setSortBy('rating')}
+          onClick={() => { setSortBy('rating'); fetchCreators({ q: searchQuery, sort: 'rating' }); }}
           className={`flex items-center gap-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
             sortBy === 'rating' 
               ? 'bg-[#8A2BE2] text-white' 
@@ -116,7 +111,7 @@ export function Creators() {
           Top Rated
         </button>
         <button
-          onClick={() => setSortBy('popular')}
+          onClick={() => { setSortBy('popular'); fetchCreators({ q: searchQuery, sort: 'popular' }); }}
           className={`flex items-center gap-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
             sortBy === 'popular' 
               ? 'bg-[#8A2BE2] text-white' 
@@ -127,7 +122,7 @@ export function Creators() {
           Most Booked
         </button>
         <button
-          onClick={() => setSortBy('newest')}
+          onClick={() => { setSortBy('newest'); fetchCreators({ q: searchQuery, sort: 'newest' }); }}
           className={`flex items-center gap-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
             sortBy === 'newest' 
               ? 'bg-[#8A2BE2] text-white' 
@@ -152,9 +147,9 @@ export function Creators() {
       </div>
 
       {/* Creators Grid */}
-      {filteredCreators.length > 0 ? (
+      {creators.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filteredCreators.map((creator) => (
+          {creators.map((creator) => (
             <CreatorCard 
               key={creator.id || (creator as any)._id} 
               creator={creator as any}
@@ -165,10 +160,10 @@ export function Creators() {
         </div>
       ) : (
         <EmptyState
-          icon="search"
+          image="/images/empty-search.png"
           title="No creators found"
           description={searchQuery 
-            ? `No creators match "${searchQuery}". Try a different search.`
+            ? `No creators match "${searchQuery}". Try a different search or location.`
             : "There are no creators registered yet."
           }
           actionLabel={searchQuery ? "Clear Search" : undefined}

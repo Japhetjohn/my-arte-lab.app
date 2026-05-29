@@ -9,6 +9,7 @@ exports.getAllCreators = catchAsync(async (req, res, next) => {
   const {
     category,
     search,
+    q,
     minRating,
     location,
     sortBy = 'trending', // Default to trending (activity-based)
@@ -26,14 +27,66 @@ exports.getAllCreators = catchAsync(async (req, res, next) => {
     query.category = { $in: [category] };
   }
 
-  if (search) {
-    const escapedSearch = escapeRegex(search);
-    query.$or = [
+  // Unified search: handles "photographer in lagos" style queries
+  // 'q' is the main search param (from top nav), 'search' is legacy support
+  const searchTerm = q || search;
+  
+  if (searchTerm) {
+    const term = searchTerm.trim();
+    
+    // Try to parse "X in Y" or "X at Y" patterns for location-based search
+    // e.g., "photographer in lagos", "designer at abuja", "video editor ikeja"
+    const locationPatterns = [
+      /(.+?)\s+in\s+(.+)/i,      // "photographer in lagos"
+      /(.+?)\s+at\s+(.+)/i,      // "designer at abuja"
+      /(.+?)\s+near\s+(.+)/i,    // "photographer near ikeja"
+      /(.+?)\s+around\s+(.+)/i,  // "designer around yaba"
+    ];
+    
+    let searchQuery = term;
+    let locationQuery = null;
+    
+    for (const pattern of locationPatterns) {
+      const match = term.match(pattern);
+      if (match) {
+        searchQuery = match[1].trim();
+        locationQuery = match[2].trim();
+        break;
+      }
+    }
+    
+    const escapedSearch = escapeRegex(searchQuery);
+    const searchConditions = [
       { firstName: { $regex: escapedSearch, $options: 'i' } },
       { lastName: { $regex: escapedSearch, $options: 'i' } },
+      { name: { $regex: escapedSearch, $options: 'i' } },
       { bio: { $regex: escapedSearch, $options: 'i' } },
-      { skills: { $in: [new RegExp(escapedSearch, 'i')] } }
+      { skills: { $in: [new RegExp(escapedSearch, 'i')] } },
+      { category: { $in: [new RegExp(escapedSearch, 'i')] } }
     ];
+    
+    // If we parsed a location from the query, add location search
+    if (locationQuery) {
+      const escapedLoc = escapeRegex(locationQuery);
+      query.$and = [
+        { $or: searchConditions },
+        {
+          $or: [
+            { 'location.localArea': { $regex: escapedLoc, $options: 'i' } },
+            { 'location.state': { $regex: escapedLoc, $options: 'i' } },
+            { 'location.country': { $regex: escapedLoc, $options: 'i' } }
+          ]
+        }
+      ];
+    } else {
+      // Also search location fields in the general search
+      searchConditions.push(
+        { 'location.localArea': { $regex: escapedSearch, $options: 'i' } },
+        { 'location.state': { $regex: escapedSearch, $options: 'i' } },
+        { 'location.country': { $regex: escapedSearch, $options: 'i' } }
+      );
+      query.$or = searchConditions;
+    }
   }
 
   if (minRating) {
@@ -43,9 +96,15 @@ exports.getAllCreators = catchAsync(async (req, res, next) => {
     }
   }
 
-  if (location) {
+  // Legacy location param support
+  if (location && !searchTerm) {
     const escapedLocation = escapeRegex(location);
-    query['location.country'] = { $regex: escapedLocation, $options: 'i' };
+    query.$or = query.$or || [];
+    query.$or.push(
+      { 'location.localArea': { $regex: escapedLocation, $options: 'i' } },
+      { 'location.state': { $regex: escapedLocation, $options: 'i' } },
+      { 'location.country': { $regex: escapedLocation, $options: 'i' } }
+    );
   }
 
   const skip = actualLimit === 1000 ? 0 : (parseInt(page) - 1) * actualLimit;
