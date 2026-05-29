@@ -416,7 +416,11 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                       />
                     )}
                   </div>
-                  <p className="text-gray-500 capitalize">{creator.category} Specialist</p>
+                  <p className="text-gray-500 capitalize">
+                    {Array.isArray(creator.category) 
+                      ? creator.category.join(', ') 
+                      : creator.category} Specialist
+                  </p>
                   <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 sm:gap-4 mt-2 text-sm text-gray-500">
                     <div className="flex items-center gap-1">
                       <Star className="w-4 h-4 fill-amber-400 text-amber-400" />

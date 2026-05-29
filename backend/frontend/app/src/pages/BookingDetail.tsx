@@ -724,7 +724,11 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                 <div>
                   <p className="font-medium">{isClient ? creatorName : clientName}</p>
                   {isClient && booking.creator?.category && (
-                    <p className="text-sm text-gray-500">{booking.creator.category}</p>
+                    <p className="text-sm text-gray-500">
+                      {Array.isArray(booking.creator.category) 
+                        ? booking.creator.category.join(', ')
+                        : booking.creator.category}
+                    </p>
                   )}
                 </div>
               </div>

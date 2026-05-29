@@ -19,7 +19,7 @@ interface Creator {
   id: string;
   name: string;
   avatar?: string;
-  category?: string;
+  category?: string | string[];
 }
 
 interface NewBookingModalProps {
@@ -62,7 +62,7 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
         creatorId: creator.id,
         serviceTitle: form.serviceTitle,
         serviceDescription: form.serviceDescription,
-        category: creator.category || 'other',
+        category: Array.isArray(creator.category) ? creator.category[0] : creator.category || 'other',
         amount: amount,
         currency: 'USDC',
         startDate: form.startDate || new Date().toISOString(),
@@ -101,7 +101,11 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
             />
             <div>
               <p className="font-medium">{creator.name}</p>
-              <p className="text-sm text-gray-500">{creator.category || 'Creator'}</p>
+              <p className="text-sm text-gray-500">
+                {Array.isArray(creator.category) 
+                  ? creator.category.join(', ') 
+                  : creator.category || 'Creator'}
+              </p>
             </div>
           </div>
 

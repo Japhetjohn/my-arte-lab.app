@@ -91,7 +91,9 @@ export function CreatorCard({ creator, onViewProfile, onBook }: CreatorCardProps
             </div>
             
             <p className="text-[11px] sm:text-xs text-gray-500 font-medium capitalize truncate">
-              {creator.category || 'Creator'}
+              {Array.isArray(creator.category) 
+                ? creator.category.join(', ') 
+                : creator.category || 'Creator'}
             </p>
 
             <div className="flex items-center justify-center gap-1 mt-1">

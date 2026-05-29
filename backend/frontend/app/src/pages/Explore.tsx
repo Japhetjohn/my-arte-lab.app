@@ -14,10 +14,13 @@ import type { Creator, Category } from '@/types';
 const defaultCategories: Category[] = [
   { id: 'photography', name: 'Photography', icon: '/images/category-photography.png', description: 'Professional photos', creatorCount: 0 },
   { id: 'design', name: 'Design', icon: '/images/category-design.png', description: 'Graphic design', creatorCount: 0 },
-  { id: 'video', name: 'Video', icon: '/images/category-video.png', description: 'Video editing', creatorCount: 0 },
-  { id: 'music', name: 'Music', icon: '/images/category-music.png', description: 'Music production', creatorCount: 0 },
-  { id: 'writing', name: 'Writing', icon: '/images/category-writing.png', description: 'Content writing', creatorCount: 0 },
+  { id: 'video', name: 'Video & Animation', icon: '/images/category-video.png', description: 'Video editing & animation', creatorCount: 0 },
+  { id: 'music', name: 'Music & Audio', icon: '/images/category-music.png', description: 'Music production', creatorCount: 0 },
+  { id: 'writing', name: 'Writing & Translation', icon: '/images/category-writing.png', description: 'Content writing', creatorCount: 0 },
   { id: 'marketing', name: 'Marketing', icon: '/images/category-marketing.png', description: 'Digital marketing', creatorCount: 0 },
+  { id: 'programming', name: 'Programming & Tech', icon: '/images/category-programming.png', description: 'Development & tech', creatorCount: 0 },
+  { id: 'business', name: 'Business', icon: '/images/category-business.png', description: 'Business services', creatorCount: 0 },
+  { id: 'other', name: 'Other', icon: '/images/category-other.png', description: 'Other services', creatorCount: 0 },
 ];
 
 export function Explore() {
@@ -52,9 +55,15 @@ export function Explore() {
         // Calculate category counts from actual creators
         const categoryCounts: Record<string, number> = {};
         allCreators.forEach((creator: Creator) => {
-          const cat = creator.category;
-          if (cat) {
-            categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+          const cats = creator.category;
+          if (cats) {
+            if (Array.isArray(cats)) {
+              cats.forEach(cat => {
+                categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+              });
+            } else {
+              categoryCounts[cats] = (categoryCounts[cats] || 0) + 1;
+            }
           }
         });
         
@@ -87,12 +96,17 @@ export function Explore() {
     const matchesSearch = !searchQuery || 
       (creator.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       creator.skills?.some(s => s.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      creator.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (Array.isArray(creator.category) 
+        ? creator.category.some(c => c.toLowerCase().includes(searchQuery.toLowerCase()))
+        : creator.category?.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (creator.location?.localArea || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       (creator.location?.state || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       (creator.location?.country || '').toLowerCase().includes(searchQuery.toLowerCase());
     
-    const matchesCategory = !selectedCategory || creator.category === selectedCategory;
+    const matchesCategory = !selectedCategory || 
+      (Array.isArray(creator.category) 
+        ? creator.category.includes(selectedCategory)
+        : creator.category === selectedCategory);
     
     // Tab filtering
     let matchesTab = true;

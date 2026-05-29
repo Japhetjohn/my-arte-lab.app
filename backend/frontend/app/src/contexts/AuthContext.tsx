@@ -37,7 +37,7 @@ export interface User {
     state?: string;
     country?: string;
   };
-  category?: string;
+  category?: string | string[];
   bio?: string;
   skills?: string[];
   phoneNumber?: string;
@@ -82,7 +82,7 @@ interface AuthContextType extends AuthState {
   register: (userData: RegisterData) => Promise<void>;
   logout: () => void;
   verifyEmail: (code: string) => Promise<void>;
-  resendVerification: () => Promise<void>;
+  resendVerification: (email?: string) => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
   resetPassword: (token: string, newPassword: string) => Promise<void>;
   updateProfile: (data: Partial<User>) => Promise<void>;
@@ -329,9 +329,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [state.user]);
 
-  const resendVerification = useCallback(async () => {
+  const resendVerification = useCallback(async (email?: string) => {
     try {
-      await api.post('/auth/resend-verification');
+      await api.post('/auth/resend-verification', email ? { email } : undefined);
       toast.success('Verification code sent!');
     } catch (error: any) {
       const message = error.response?.data?.error || error.response?.data?.message || 'Failed to resend code';

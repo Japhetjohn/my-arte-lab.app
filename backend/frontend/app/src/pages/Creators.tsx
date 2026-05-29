@@ -29,7 +29,9 @@ export function Creators() {
     const query = searchQuery.toLowerCase();
     const filtered = allCreators.filter(creator => {
       const name = (creator.name || `${creator.firstName || ''} ${creator.lastName || ''}`).toLowerCase();
-      const category = (creator.category || '').toLowerCase();
+      const category = Array.isArray(creator.category) 
+        ? creator.category.join(' ').toLowerCase() 
+        : (creator.category || '').toLowerCase();
       const skills = (creator.skills || []).join(' ').toLowerCase();
       const bio = (creator.bio || '').toLowerCase();
       

@@ -25,6 +25,7 @@ import {
   type RegisterStep2Data,
   type RegisterStep3Data,
 } from '@/lib/validations/authSchemas';
+import { X } from 'lucide-react';
 import { Loader2, User, Mail, Briefcase, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -73,6 +74,7 @@ export function Register() {
         state: '',
         country: 'Nigeria',
       },
+      categories: [],
       agreeToTerms: true, // Auto-agree to terms
     },
   });
@@ -101,13 +103,16 @@ export function Register() {
 
     setIsLoading(true);
     try {
-      await registerUser({
+      // Map categories to category array for backend compatibility
+      const payload = {
         ...step1Data,
         ...step2Data,
         ...data,
+        category: data.categories as string[] | undefined,
         avatar: getAvatarUrl(step2Data.gender),
         coverImage: '/images/hero-bg.jpg', // Default cover image
-      });
+      };
+      await registerUser(payload as any);
       // Store credentials for auto-login after verification
       setRegisteredEmail(step1Data.email);
       setRegisteredPassword(step1Data.password);
@@ -477,27 +482,53 @@ export function Register() {
 
         {role === 'creator' && (
           <div className="space-y-2">
-            <Label>Select your category</Label>
-            <div className="grid grid-cols-2 gap-2">
-              {CREATOR_CATEGORIES.map((cat) => (
-                <button
-                  key={cat.id}
-                  type="button"
-                  onClick={() => step3Form.setValue('category', cat.id)}
-                  className={cn(
-                    'p-3 border rounded-lg text-left text-sm transition-all',
-                    step3Form.watch('category') === cat.id
-                      ? 'border-[#8A2BE2] bg-[#8A2BE2]/5 text-[#8A2BE2]'
-                      : 'border-gray-200 hover:border-gray-300'
-                  )}
-                >
-                  {cat.name}
-                </button>
-              ))}
+            <div className="flex items-center justify-between">
+              <Label>Select your categories <span className="text-gray-400 font-normal">(max 3)</span></Label>
+              <span className="text-xs text-gray-500">
+                {(step3Form.watch('categories') || []).length}/3 selected
+              </span>
             </div>
-            {step3Form.formState.errors.category && (
+            <div className="grid grid-cols-2 gap-2">
+              {CREATOR_CATEGORIES.map((cat) => {
+                const selectedCats = step3Form.watch('categories') || [];
+                const isSelected = selectedCats.includes(cat.id);
+                const isMaxReached = selectedCats.length >= 3 && !isSelected;
+                
+                return (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    disabled={isMaxReached}
+                    onClick={() => {
+                      const current = step3Form.watch('categories') || [];
+                      if (isSelected) {
+                        step3Form.setValue('categories', current.filter((c: string) => c !== cat.id));
+                      } else {
+                        step3Form.setValue('categories', [...current, cat.id]);
+                      }
+                    }}
+                    className={cn(
+                      'p-3 border rounded-lg text-left text-sm transition-all relative',
+                      isSelected
+                        ? 'border-[#8A2BE2] bg-[#8A2BE2]/5 text-[#8A2BE2]'
+                        : isMaxReached
+                          ? 'border-gray-100 text-gray-300 cursor-not-allowed'
+                          : 'border-gray-200 hover:border-gray-300'
+                    )}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span>{cat.name}</span>
+                      {isSelected && (
+                        <X className="w-3 h-3" />
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+            {step3Form.formState.errors.categories && (
               <p className="text-sm text-red-500">
-                {step3Form.formState.errors.category.message}
+                {step3Form.formState.errors.categories.message}
               </p>
             )}
           </div>

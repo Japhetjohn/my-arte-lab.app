@@ -112,8 +112,15 @@ const userSchema = new mongoose.Schema({
   },
 
   category: {
-    type: String,
+    type: [String],
     enum: [...Object.values(CREATOR_CATEGORIES), ''],
+    validate: {
+      validator: function (categories) {
+        if (this.role !== USER_ROLES.CREATOR) return true;
+        return Array.isArray(categories) && categories.length > 0 && categories.length <= 3;
+      },
+      message: 'Creators must select 1 to 3 categories'
+    },
     required: function () { return this.role === USER_ROLES.CREATOR; }
   },
 

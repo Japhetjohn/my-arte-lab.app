@@ -51,18 +51,19 @@ export const registerStep3Schema = z.object({
     state: z.string().min(1, 'State is required'),
     country: z.string().min(1, 'Country is required'),
   }),
-  category: z.string().optional(),
+  categories: z.array(z.string()).optional(),
   agreeToTerms: z.boolean().optional(),
 }).refine(
   (data) => {
     if (data.role === 'creator') {
-      return !!data.category && data.category.length > 0;
+      const cats = data.categories;
+      return Array.isArray(cats) && cats.length > 0 && cats.length <= 3;
     }
     return true;
   },
   {
-    message: 'Please select a category for your creator profile',
-    path: ['category'],
+    message: 'Please select 1 to 3 categories for your creator profile',
+    path: ['categories'],
   }
 );
 

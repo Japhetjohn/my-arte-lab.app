@@ -59,17 +59,33 @@ exports.validateRegister = [
 
   body('category')
     .optional({ nullable: true })
-    .isIn(['photography', 'design', 'music', 'video', 'writing', 'marketing', 'programming', 'business', 'other']).withMessage('Invalid category selected'),
+    .custom((value) => {
+      if (!value) return true;
+      const categories = Array.isArray(value) ? value : [value];
+      const validCategories = ['photography', 'design', 'music', 'video', 'writing', 'marketing', 'programming', 'business', 'other'];
+      for (const cat of categories) {
+        if (!validCategories.includes(cat)) {
+          throw new Error(`Invalid category: ${cat}. Please select valid categories.`);
+        }
+      }
+      return true;
+    }).withMessage('Invalid category selected'),
 
   body('category')
     .custom((value, { req }) => {
       if (req.body.role === 'creator') {
-        if (!value || value.trim() === '') {
-          throw new Error('Category is required for creators');
+        const categories = Array.isArray(value) ? value : value ? [value] : [];
+        if (categories.length === 0) {
+          throw new Error('Please select at least one category for your creator profile');
+        }
+        if (categories.length > 3) {
+          throw new Error('You can select a maximum of 3 categories');
         }
         const validCategories = ['photography', 'design', 'music', 'video', 'writing', 'marketing', 'programming', 'business', 'other'];
-        if (!validCategories.includes(value)) {
-          throw new Error(`Invalid category: ${value}. Please select a valid category.`);
+        for (const cat of categories) {
+          if (!validCategories.includes(cat)) {
+            throw new Error(`Invalid category: ${cat}. Please select valid categories.`);
+          }
         }
       }
       return true;

@@ -85,7 +85,7 @@ export function VerifyEmail() {
   const handleResend = async () => {
     setIsResending(true);
     try {
-      await resendVerification();
+      await resendVerification(user?.email);
       setCountdown(30);
     } finally {
       setIsResending(false);

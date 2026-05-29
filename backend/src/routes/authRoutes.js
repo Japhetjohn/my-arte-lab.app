@@ -18,6 +18,7 @@ router.post('/login', validateLogin, handleValidationErrors, authController.logi
 router.post('/forgot-password', authController.forgotPassword);
 router.post('/reset-password', authController.resetPassword);
 router.post('/verify-email', authController.verifyEmail);
+router.post('/resend-verification', authController.resendVerification);
 
 router.use(protect);
 
@@ -27,7 +28,6 @@ router.post('/logout', authController.logout);
 router.put('/update-password', authController.updatePassword);
 router.put('/update-profile', validateProfileUpdate, handleValidationErrors, authController.updateProfile);
 router.delete('/delete-account', authController.deleteAccount);
-router.post('/resend-verification', authController.resendVerification);
 
 // Two-Factor Authentication routes
 router.post('/2fa/setup', authController.setup2FA);

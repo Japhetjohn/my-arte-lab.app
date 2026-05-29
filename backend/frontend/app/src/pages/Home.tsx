@@ -75,9 +75,15 @@ export function Home() {
           // Fallback: calculate from creators list if stats endpoint fails
           const categoryCounts: Record<string, number> = {};
           allCreators.forEach((creator: Creator) => {
-            const cat = creator.category;
-            if (cat) {
-              categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+            const cats = creator.category;
+            if (cats) {
+              if (Array.isArray(cats)) {
+                cats.forEach(cat => {
+                  categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+                });
+              } else {
+                categoryCounts[cats] = (categoryCounts[cats] || 0) + 1;
+              }
             }
           });
           

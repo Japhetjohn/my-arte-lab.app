@@ -50,7 +50,7 @@ exports.register = catchAsync(async (req, res, next) => {
       avatar,
       coverImage,
       role: role || 'client',
-      category: role === 'creator' ? category : undefined,
+      category: role === 'creator' ? (Array.isArray(category) ? category : category ? [category] : []) : undefined,
       location: {
         localArea,
         state,
@@ -145,6 +145,11 @@ exports.login = catchAsync(async (req, res, next) => {
   if (!isPasswordCorrect) {
     await user.incLoginAttempts();
     return next(new ErrorHandler('Invalid email or password', 401));
+  }
+
+  // Block login if email is not verified
+  if (!user.isEmailVerified) {
+    return next(new ErrorHandler('Please verify your email before logging in. Check your inbox for the verification code.', 403));
   }
 
   if (user.loginAttempts > 0) {
@@ -406,7 +411,17 @@ exports.verifyEmail = catchAsync(async (req, res, next) => {
 });
 
 exports.resendVerification = catchAsync(async (req, res, next) => {
-  const user = await User.findById(req.user._id);
+  // Support both authenticated (req.user) and unauthenticated (req.body.email) requests
+  const email = req.body?.email;
+  let user;
+
+  if (req.user) {
+    // Authenticated user — use their ID
+    user = await User.findById(req.user._id);
+  } else if (email) {
+    // Unauthenticated user — find by email (for registration flow)
+    user = await User.findOne({ email: email.toLowerCase().trim() });
+  }
 
   if (!user) {
     return next(new ErrorHandler('User not found', 404));

@@ -21,7 +21,7 @@ export interface User {
     state?: string;
     country?: string;
   };
-  category?: string;
+  category?: string | string[];
   bio?: string;
   skills?: string[];
   rating?: number;
@@ -37,7 +37,7 @@ export interface User {
 
 export interface Creator extends User {
   role: 'creator';
-  category: string;
+  category: string | string[];
   skills: string[];
   portfolio: PortfolioItem[];
   startingPrice: number;
@@ -146,7 +146,7 @@ export interface Project {
     lastName: string;
     name?: string;
     avatar?: string;
-    category?: string;
+    category?: string | string[];
   };
   proposals?: Proposal[];
 }
@@ -173,7 +173,7 @@ export interface Application {
     lastName: string;
     name?: string;
     avatar?: string;
-    category?: string;
+    category?: string | string[];
     bio?: string;
     email?: string;
   };
