@@ -121,8 +121,9 @@ export function EditProject() {
   };
 
   const categories = [
-    'Photography', 'Videography', 'Graphic Design', 'Web Development',
-    'Writing', 'Marketing', 'Music', 'Art', 'Other'
+    'Photography', 'Videography & Video Editing', 'Graphic Design', 'UI/UX Design',
+    'Content Creation', 'UGC Creators', 'Creative Direction', 'Motion Graphics & Animation',
+    'Crafts & Handmade Arts', 'Others'
   ];
 
   const timelines = [

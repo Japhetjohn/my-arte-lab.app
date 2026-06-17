@@ -17,7 +17,11 @@ const projectSchema = new mongoose.Schema({
   category: {
     type: String,
     required: true,
-    enum: ['photography', 'videography', 'design', 'illustration', 'content', 'other'],
+    enum: [
+      'photography', 'videography', 'graphic_design', 'ui_ux_design',
+      'content_creation', 'ugc_creators', 'creative_direction',
+      'motion_graphics', 'crafts_handmade', 'other'
+    ],
     lowercase: true
   },
 

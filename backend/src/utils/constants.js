@@ -63,13 +63,14 @@ const USER_ROLES = {
 
 const CREATOR_CATEGORIES = {
   PHOTOGRAPHY: 'photography',
-  DESIGN: 'design',
-  MUSIC: 'music',
-  VIDEO: 'video',
-  WRITING: 'writing',
-  MARKETING: 'marketing',
-  PROGRAMMING: 'programming',
-  BUSINESS: 'business',
+  VIDEOGRAPHY: 'videography',
+  GRAPHIC_DESIGN: 'graphic_design',
+  UI_UX_DESIGN: 'ui_ux_design',
+  CONTENT_CREATION: 'content_creation',
+  UGC_CREATORS: 'ugc_creators',
+  CREATIVE_DIRECTION: 'creative_direction',
+  MOTION_GRAPHICS: 'motion_graphics',
+  CRAFTS_HANDMADE: 'crafts_handmade',
   OTHER: 'other'
 };
 

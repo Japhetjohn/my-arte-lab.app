@@ -13,11 +13,14 @@ import { toast } from 'sonner';
 
 const defaultCategories: Category[] = [
   { id: 'photography', name: 'Photography', icon: '/images/category-photography.png', description: 'Professional photos', creatorCount: 0 },
-  { id: 'design', name: 'Design', icon: '/images/category-design.png', description: 'Graphic design', creatorCount: 0 },
-  { id: 'video', name: 'Video & Animation', icon: '/images/category-video.png', description: 'Video editing & animation', creatorCount: 0 },
-  { id: 'music', name: 'Music & Audio', icon: '/images/category-music.png', description: 'Music production', creatorCount: 0 },
-  { id: 'writing', name: 'Writing & Translation', icon: '/images/category-writing.png', description: 'Content writing', creatorCount: 0 },
-  { id: 'marketing', name: 'Marketing', icon: '/images/category-marketing.png', description: 'Digital marketing', creatorCount: 0 },
+  { id: 'videography', name: 'Videography & Video Editing', icon: '/images/category-video.png', description: 'Video editing & animation', creatorCount: 0 },
+  { id: 'graphic_design', name: 'Graphic Design', icon: '/images/category-design.png', description: 'Graphic design', creatorCount: 0 },
+  { id: 'ui_ux_design', name: 'UI/UX Design', icon: '/images/category-design.png', description: 'UI/UX design', creatorCount: 0 },
+  { id: 'content_creation', name: 'Content Creation', icon: '/images/category-writing.png', description: 'Content creation', creatorCount: 0 },
+  { id: 'ugc_creators', name: 'UGC Creators', icon: '/images/category-marketing.png', description: 'UGC creators', creatorCount: 0 },
+  { id: 'creative_direction', name: 'Creative Direction', icon: '/images/category-writing.png', description: 'Creative direction', creatorCount: 0 },
+  { id: 'motion_graphics', name: 'Motion Graphics & Animation', icon: '/images/category-video.png', description: 'Motion graphics', creatorCount: 0 },
+  { id: 'crafts_handmade', name: 'Crafts & Handmade Arts', icon: '/images/category-photography.png', description: 'Handmade arts', creatorCount: 0 },
 ];
 
 const SEARCH_HISTORY_KEY = 'myartelab_search_history';

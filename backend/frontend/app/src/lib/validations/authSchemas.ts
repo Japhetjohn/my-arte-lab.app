@@ -128,12 +128,13 @@ export type UpdateProfileFormData = z.infer<typeof updateProfileSchema>;
 // Creator categories - MUST match backend CREATOR_CATEGORIES in utils/constants.js
 export const CREATOR_CATEGORIES = [
   { id: 'photography', name: 'Photography', icon: 'Camera' },
-  { id: 'design', name: 'Design', icon: 'Palette' },
-  { id: 'music', name: 'Music & Audio', icon: 'Music' },
-  { id: 'video', name: 'Video & Animation', icon: 'Video' },
-  { id: 'writing', name: 'Writing & Translation', icon: 'PenTool' },
-  { id: 'marketing', name: 'Marketing', icon: 'TrendingUp' },
-  { id: 'programming', name: 'Programming & Tech', icon: 'Code' },
-  { id: 'business', name: 'Business', icon: 'Briefcase' },
-  { id: 'other', name: 'Other', icon: 'Briefcase' },
+  { id: 'videography', name: 'Videography & Video Editing', icon: 'Video' },
+  { id: 'graphic_design', name: 'Graphic Design', icon: 'Palette' },
+  { id: 'ui_ux_design', name: 'UI/UX Design', icon: 'Layout' },
+  { id: 'content_creation', name: 'Content Creation', icon: 'Zap' },
+  { id: 'ugc_creators', name: 'UGC Creators', icon: 'Users' },
+  { id: 'creative_direction', name: 'Creative Direction', icon: 'Compass' },
+  { id: 'motion_graphics', name: 'Motion Graphics & Animation', icon: 'Activity' },
+  { id: 'crafts_handmade', name: 'Crafts & Handmade Arts', icon: 'Scissors' },
+  { id: 'other', name: 'Others', icon: 'Briefcase' },
 ] as const;

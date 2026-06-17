@@ -3,27 +3,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { TrendingUp, Star, ArrowRight, Loader2, Search } from 'lucide-react';
 import { CreatorCard } from '@/components/shared/CreatorCard';
-import { CategoryCard } from '@/components/shared/CategoryCard';
 import { api } from '@/contexts/AuthContext';
 import { useAuth } from '@/contexts/AuthContext';
-import type { Creator, Category } from '@/types';
-
-// Categories with icons - IDs must match backend CREATOR_CATEGORIES values
-const defaultCategories: Category[] = [
-  { id: 'photography', name: 'Photography', icon: '/images/category-photography.png', description: 'Professional photos', creatorCount: 0 },
-  { id: 'design', name: 'Design', icon: '/images/category-design.png', description: 'Graphic design', creatorCount: 0 },
-  { id: 'video', name: 'Video', icon: '/images/category-video.png', description: 'Video editing', creatorCount: 0 },
-  { id: 'music', name: 'Music', icon: '/images/category-music.png', description: 'Music production', creatorCount: 0 },
-  { id: 'writing', name: 'Writing', icon: '/images/category-writing.png', description: 'Content writing', creatorCount: 0 },
-  { id: 'marketing', name: 'Marketing', icon: '/images/category-marketing.png', description: 'Digital marketing', creatorCount: 0 },
-];
+import type { Creator } from '@/types';
 
 export function Home() {
   const { user: currentUser, token } = useAuth();
   const [creators, setCreators] = useState<Creator[]>([]);
   const [verifiedCreators, setVerifiedCreators] = useState<Creator[]>([]);
   const [trendingCreators, setTrendingCreators] = useState<Creator[]>([]);
-  const [categories, setCategories] = useState<Category[]>(defaultCategories);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -51,35 +39,6 @@ export function Home() {
           );
         }
 
-        // Fetch category counts
-        try {
-          const statsResponse = await api.get('/stats');
-          const categoryCounts = statsResponse.data?.data?.categories || statsResponse.data?.categories || {};
-          
-          setCategories(defaultCategories.map(cat => ({
-            ...cat,
-            creatorCount: categoryCounts[cat.id] || 0
-          })));
-        } catch {
-          // Fallback: calculate from creators list
-          const categoryCounts: Record<string, number> = {};
-          allCreators.forEach((creator: Creator) => {
-            const cats = creator.category;
-            if (cats) {
-              if (Array.isArray(cats)) {
-                cats.forEach(cat => { categoryCounts[cat] = (categoryCounts[cat] || 0) + 1; });
-              } else {
-                categoryCounts[cats] = (categoryCounts[cats] || 0) + 1;
-              }
-            }
-          });
-          
-          setCategories(defaultCategories.map(cat => ({
-            ...cat,
-            creatorCount: categoryCounts[cat.id] || 0
-          })));
-        }
-        
         // If user is logged in, get personalized recommendations from backend
         if (currentUser && token) {
           try {
@@ -144,10 +103,6 @@ export function Home() {
     window.location.href = `/bookings?creator=${id}`;
   };
 
-  const handleCategoryClick = (category: Category) => {
-    window.location.href = `/explore?category=${category.id}`;
-  };
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -181,22 +136,6 @@ export function Home() {
             />
           </div>
         </form>
-      </section>
-
-      {/* Categories */}
-      <section>
-        <div className="flex items-center justify-between mb-3 sm:mb-4">
-          <h2 className="text-base sm:text-xl font-bold text-gray-900">Browse Categories</h2>
-          <a href="/explore" className="text-sm text-[#8A2BE2] hover:underline flex items-center gap-1">
-            View all
-            <ArrowRight className="w-4 h-4" />
-          </a>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-          {categories.map((category) => (
-            <CategoryCard key={category.id} category={category} onClick={handleCategoryClick} />
-          ))}
-        </div>
       </section>
 
       {/* Creators Near You */}
