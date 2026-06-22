@@ -1,5 +1,8 @@
 const { body, param, query, validationResult } = require('express-validator');
 const { errorResponse } = require('../utils/apiResponse');
+const { CREATOR_CATEGORIES } = require('../utils/constants');
+
+const validCategories = Object.values(CREATOR_CATEGORIES);
 
 exports.handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);
@@ -62,7 +65,6 @@ exports.validateRegister = [
     .custom((value) => {
       if (!value) return true;
       const categories = Array.isArray(value) ? value : [value];
-      const validCategories = ['photography', 'design', 'music', 'video', 'writing', 'marketing', 'programming', 'business', 'other'];
       for (const cat of categories) {
         if (!validCategories.includes(cat)) {
           throw new Error(`Invalid category: ${cat}. Please select valid categories.`);
@@ -81,7 +83,6 @@ exports.validateRegister = [
         if (categories.length > 3) {
           throw new Error('You can select a maximum of 3 categories');
         }
-        const validCategories = ['photography', 'design', 'music', 'video', 'writing', 'marketing', 'programming', 'business', 'other'];
         for (const cat of categories) {
           if (!validCategories.includes(cat)) {
             throw new Error(`Invalid category: ${cat}. Please select valid categories.`);
