@@ -25,14 +25,9 @@ exports.register = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Please provide all required fields', 400));
   }
   
-  // Avatar and banner are required for all users
-  if (!avatar) {
-    return next(new ErrorHandler('Profile photo is required. Please upload a profile picture.', 400));
-  }
-  
-  if (!coverImage) {
-    return next(new ErrorHandler('Profile banner is required. Please upload a banner image.', 400));
-  }
+  // Assign default avatar and cover image if not provided
+  const userAvatar = avatar || '/images/avatar-3.png';
+  const userCoverImage = coverImage || '/images/hero-bg.jpg';
 
   const existingUser = await User.findOne({ email });
   if (existingUser) {
@@ -47,8 +42,8 @@ exports.register = catchAsync(async (req, res, next) => {
       lastName,
       email,
       password,
-      avatar,
-      coverImage,
+      avatar: userAvatar,
+      coverImage: userCoverImage,
       role: role || 'client',
       category: role === 'creator' ? (Array.isArray(category) ? category : category ? [category] : []) : undefined,
       location: {
