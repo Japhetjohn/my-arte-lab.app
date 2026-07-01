@@ -12,8 +12,11 @@ exports.handleValidationErrors = (req, res, next) => {
     errors.array().forEach(err => {
       extractedErrors[err.param] = err.msg;
     });
+    
+    const firstErrorMsg = errors.array().length > 0 ? errors.array()[0].msg : '';
+    const mainMessage = firstErrorMsg ? `Validation failed: ${firstErrorMsg}` : 'Validation failed';
 
-    return errorResponse(res, 400, 'Validation failed', extractedErrors);
+    return errorResponse(res, 400, mainMessage, extractedErrors);
   }
 
   next();
