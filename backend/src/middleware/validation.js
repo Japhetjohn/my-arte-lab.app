@@ -14,7 +14,7 @@ exports.handleValidationErrors = (req, res, next) => {
     });
     
     const firstErrorMsg = errors.array().length > 0 ? errors.array()[0].msg : '';
-    const mainMessage = firstErrorMsg ? `Validation failed: ${firstErrorMsg}` : 'Validation failed';
+    const mainMessage = firstErrorMsg || 'Validation failed';
 
     return errorResponse(res, 400, mainMessage, extractedErrors);
   }
