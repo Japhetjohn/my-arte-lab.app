@@ -82,7 +82,7 @@ export function Creators() {
       <div>
         <h1 className="text-2xl font-bold text-gray-900">All Creators</h1>
         <p className="text-gray-500">
-          {creators.length} creators • Sorted by {sortBy === 'trending' ? 'activity' : sortBy}
+          Sorted by {sortBy === 'trending' ? 'activity' : sortBy}
         </p>
       </div>
 

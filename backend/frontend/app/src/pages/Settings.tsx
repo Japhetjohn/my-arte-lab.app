@@ -22,7 +22,6 @@ export function Settings() {
   const { user: currentUser, updateUser } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Profile form state
@@ -530,17 +529,6 @@ export function Settings() {
               <CardDescription>Customize your app experience</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Dark Mode</p>
-                  <p className="text-sm text-gray-500">Switch between light and dark themes</p>
-                </div>
-                <Switch
-                  checked={darkMode}
-                  onCheckedChange={setDarkMode}
-                />
-              </div>
-              <Separator />
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-medium">Reduced Motion</p>

@@ -536,7 +536,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                 >
                   <Bookmark className={`w-4 h-4 ${isFavorited ? 'fill-current' : ''}`} />
                 </Button>
-                <Button variant="outline" size="icon" className="hidden sm:inline-flex" onClick={handleShare}>
+                <Button variant="outline" size="icon" onClick={handleShare}>
                   <Share2 className="w-4 h-4" />
                 </Button>
               </div>

@@ -23,7 +23,6 @@ export function CategoryCard({ category, onClick }: CategoryCardProps) {
             {category.name}
           </h3>
           <p className="text-sm text-gray-500 mt-1">{category.description}</p>
-          <p className="text-xs text-gray-400 mt-2">{category.creatorCount.toLocaleString()} creators</p>
         </div>
       </CardContent>
     </Card>

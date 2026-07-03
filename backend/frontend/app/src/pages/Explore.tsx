@@ -58,7 +58,7 @@ export function Explore() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [creators, setCreators] = useState<Creator[]>([]);
-  const [categories, setCategories] = useState<Category[]>(defaultCategories);
+  const [categories] = useState<Category[]>(defaultCategories);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
@@ -109,18 +109,6 @@ export function Explore() {
       if (opts.tab === 'available') all = all.filter((c: Creator) => c.availability === 'available' || !c.availability);
 
       setCreators(all);
-
-      if (!opts.q) {
-        const counts: Record<string, number> = {};
-        all.forEach((c: Creator) => {
-          const cats = c.category;
-          if (cats) {
-            if (Array.isArray(cats)) cats.forEach(cat => { counts[cat] = (counts[cat] || 0) + 1; });
-            else counts[cats] = (counts[cats] || 0) + 1;
-          }
-        });
-        setCategories(prev => prev.map(c => ({ ...c, creatorCount: counts[c.id] || 0 })));
-      }
     } catch {
       toast.error('Failed to load creators');
     } finally {
@@ -280,23 +268,9 @@ export function Explore() {
           <span className="px-3 py-1 bg-[#8A2BE2] text-white text-sm rounded-full font-medium capitalize">
             {getSelectedCategoryName()}
           </span>
-          <span className="text-sm text-gray-500">({creators.length} creators)</span>
           <Button variant="ghost" size="sm" className="ml-auto" onClick={clearFilters}>Remove Filter</Button>
         </div>
       )}
-
-      {/* Results Count */}
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-500">
-          {isLoading ? (
-            <span className="flex items-center gap-2">
-              <Loader2 className="w-3 h-3 animate-spin" /> Loading...
-            </span>
-          ) : (
-            `${creators.length} creator${creators.length !== 1 ? 's' : ''} found`
-          )}
-        </p>
-      </div>
 
       {/* Creators */}
       <Tabs value={activeTab} onValueChange={(tab) => { setActiveTab(tab); fetchCreators({ q: searchQuery, category: selectedCategory, tab }); }} className="w-full">
