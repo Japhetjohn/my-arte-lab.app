@@ -22,6 +22,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
 import { getImageUrl } from '@/lib/imageUrl';
+import { getCreatorProfileUrl } from '@/lib/utils';
 import { verificationService } from '@/lib/verificationApi';
 
 interface CreatorProfileProps {
@@ -138,8 +139,10 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
           }
         }
       } else {
-        // Normal creator profile fetch
-        const response = await api.get(`/creators/${id}`);
+        // Normal creator profile fetch (supports both MongoDB id and seo slug)
+        const isMongoId = /^[0-9a-fA-F]{24}$/.test(id);
+        const endpoint = isMongoId ? `/creators/${id}` : `/creators/slug/${id}`;
+        const response = await api.get(endpoint);
         const { creator: creatorData, reviews: reviewsData } = response.data.data;
         
         setCreator(creatorData);
@@ -230,7 +233,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
   const handleShare = async () => {
     if (!creator) return;
 
-    const shareUrl = `${window.location.origin}/creator/${creator.id}`;
+    const shareUrl = `${window.location.origin}${getCreatorProfileUrl(creator)}`;
     
     if (navigator.share) {
       try {

@@ -318,6 +318,32 @@ exports.getCreatorProfile = catchAsync(async (req, res, next) => {
   });
 });
 
+exports.getCreatorProfileBySlug = catchAsync(async (req, res, next) => {
+  const creator = await User.findOne({
+    seoSlug: req.params.slug,
+    role: 'creator',
+    isActive: true
+  }).select('-password');
+
+  if (!creator) {
+    return next(new ErrorHandler('Creator not found', 404));
+  }
+
+  const reviews = await Review.find({
+    creator: creator._id,
+    isPublished: true
+  })
+    .populate('reviewer', 'name avatar')
+    .sort({ createdAt: -1 })
+    .limit(10)
+    .lean();
+
+  successResponse(res, 200, 'Creator profile retrieved successfully', {
+    creator: creator.getPublicProfile(),
+    reviews
+  });
+});
+
 exports.getFeaturedCreators = catchAsync(async (req, res, next) => {
   const { limit = 6 } = req.query;
 

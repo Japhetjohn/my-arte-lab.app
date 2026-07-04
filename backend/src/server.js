@@ -6,6 +6,7 @@ const morgan = require('morgan');
 const session = require('express-session');
 const MongoStore = require('connect-mongo');
 const crypto = require('crypto');
+const fs = require('fs');
 const path = require('path');
 const mongoose = require('mongoose');
 
@@ -46,6 +47,7 @@ const blockRoutes = require('./routes/blockRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const verificationRoutes = require('./routes/verificationRoutes');
 const { trackActivity } = require('./middleware/activityTracker');
+const User = require('./models/User');
 
 const app = express();
 
@@ -360,8 +362,94 @@ app.use('/assets', express.static(path.join(__dirname, '../frontend/dist/assets'
 
 app.use(express.static(path.join(__dirname, '../frontend')));
 
+// Cache the SPA index.html template in memory
+const indexHtmlPath = path.join(__dirname, '../frontend/index.html');
+let indexHtmlTemplate = fs.readFileSync(indexHtmlPath, 'utf8');
+
+function escapeHtmlMeta(text) {
+  return String(text || '')
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function toAbsoluteUrl(req, urlPath) {
+  if (!urlPath) return null;
+  if (urlPath.startsWith('http://') || urlPath.startsWith('https://')) {
+    return urlPath;
+  }
+  const host = req.get('host');
+  const normalized = urlPath.startsWith('/') ? urlPath : `/${urlPath}`;
+  return `https://${host}${normalized}`;
+}
+
+function replaceMetaTag(html, tagPattern, newTag) {
+  return html.replace(tagPattern, newTag);
+}
+
+function injectCreatorMeta(req, creator) {
+  const host = req.get('host');
+  const origin = `https://${host}`;
+  const profilePath = `/creator/${creator.seoSlug || creator._id.toString()}`;
+  const profileUrl = `${origin}${profilePath}`;
+  const name = creator.name || `${creator.firstName || ''} ${creator.lastName || ''}`.trim();
+  const description = creator.bio || `Check out ${name}'s profile on MyArteLab`;
+  const image = toAbsoluteUrl(req, creator.avatar) || `${origin}/images/logo.png`;
+
+  let html = indexHtmlTemplate;
+  html = replaceMetaTag(html, /<title>.*?<\/title>/, `<title>${escapeHtmlMeta(`${name} - MyArteLab Profile`)}</title>`);
+  html = replaceMetaTag(html, /<meta name="description" content="[^"]*">/, `<meta name="description" content="${escapeHtmlMeta(description)}">`);
+  html = replaceMetaTag(html, /<meta property="og:type" content="[^"]*">/, `<meta property="og:type" content="profile">`);
+  html = replaceMetaTag(html, /<meta property="og:url" content="[^"]*">/, `<meta property="og:url" content="${escapeHtmlMeta(profileUrl)}">`);
+  html = replaceMetaTag(html, /<meta property="og:title" content="[^"]*">/, `<meta property="og:title" content="${escapeHtmlMeta(`${name} - MyArteLab Profile`)}">`);
+  html = replaceMetaTag(html, /<meta property="og:description" content="[^"]*">/, `<meta property="og:description" content="${escapeHtmlMeta(description)}">`);
+  html = replaceMetaTag(html, /<meta property="og:image" content="[^"]*">/, `<meta property="og:image" content="${escapeHtmlMeta(image)}">`);
+  html = replaceMetaTag(html, /<meta name="twitter:card" content="[^"]*">/, `<meta name="twitter:card" content="summary_large_image">`);
+  html = replaceMetaTag(html, /<meta name="twitter:title" content="[^"]*">/, `<meta name="twitter:title" content="${escapeHtmlMeta(`${name} - MyArteLab Profile`)}">`);
+  html = replaceMetaTag(html, /<meta name="twitter:description" content="[^"]*">/, `<meta name="twitter:description" content="${escapeHtmlMeta(description)}">`);
+  html = replaceMetaTag(html, /<meta name="twitter:image" content="[^"]*">/, `<meta name="twitter:image" content="${escapeHtmlMeta(image)}">`);
+
+  return html;
+}
+
+const OBJECT_ID_REGEX = /^[0-9a-fA-F]{24}$/;
+
+// Creator profile pages get dynamic OG meta tags for social sharing
+app.get('/creator/:identifier', async (req, res, next) => {
+  try {
+    const { identifier } = req.params;
+    let creator;
+
+    if (OBJECT_ID_REGEX.test(identifier)) {
+      creator = await User.findOne({
+        _id: identifier,
+        role: 'creator',
+        isActive: true
+      }).select('-password');
+    } else {
+      creator = await User.findOne({
+        seoSlug: identifier,
+        role: 'creator',
+        isActive: true
+      }).select('-password');
+    }
+
+    if (!creator) {
+      return res.sendFile(indexHtmlPath);
+    }
+
+    const html = injectCreatorMeta(req, creator);
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    return res.send(html);
+  } catch (error) {
+    return next(error);
+  }
+});
+
+// Default SPA catch-all
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/index.html'));
+  res.sendFile(indexHtmlPath);
 });
 
 app.use('/api/*', (req, res) => {
@@ -408,6 +496,34 @@ const server = app.listen(PORT, () => {
   // Start verification subscription expiry monitoring
   const verificationExpiryService = require('./services/verificationExpiryService');
   verificationExpiryService.start();
+
+  // Backfill SEO slugs for existing creators that don't have one
+  const generateMissingSlugs = async () => {
+    try {
+      if (mongoose.connection.readyState !== 1) return;
+      const creators = await User.find({
+        role: 'creator',
+        isActive: true,
+        $or: [{ seoSlug: { $exists: false } }, { seoSlug: null }, { seoSlug: '' }]
+      });
+      let count = 0;
+      for (const creator of creators) {
+        await creator.save();
+        count += 1;
+      }
+      if (count > 0) {
+        console.log(`✅ Generated SEO slugs for ${count} existing creators`);
+      }
+    } catch (error) {
+      console.error('❌ Error generating missing creator slugs:', error.message);
+    }
+  };
+
+  if (mongoose.connection.readyState === 1) {
+    generateMissingSlugs();
+  } else {
+    mongoose.connection.once('connected', generateMissingSlugs);
+  }
 
   // Platform fees are handled automatically by HostFi B2B
   // No cron job needed for fee withdrawal

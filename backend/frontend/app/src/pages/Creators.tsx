@@ -3,6 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Search, Loader2, TrendingUp, Star, Clock, Award } from 'lucide-react';
 import { CreatorCard } from '@/components/shared/CreatorCard';
 import { EmptyState } from '@/components/shared/EmptyState';
+import { getCreatorProfileUrl } from '@/lib/utils';
 import { api } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import type { Creator } from '@/types';
@@ -59,8 +60,7 @@ export function Creators() {
   }, [searchQuery, fetchCreators]);
 
   const handleViewProfile = (creator: any) => {
-    const id = creator.id || creator._id;
-    window.location.href = `/creator/${id}`;
+    window.location.href = getCreatorProfileUrl(creator);
   };
 
   const handleBook = (creator: any) => {

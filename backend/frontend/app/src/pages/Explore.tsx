@@ -6,6 +6,7 @@ import { Search, Grid3X3, List, Loader2, X, Clock } from 'lucide-react';
 import { CreatorCard } from '@/components/shared/CreatorCard';
 import { CategoryCard } from '@/components/shared/CategoryCard';
 import { EmptyState } from '@/components/shared/EmptyState';
+import { getCreatorProfileUrl } from '@/lib/utils';
 import { api } from '@/contexts/AuthContext';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Creator, Category } from '@/types';
@@ -285,7 +286,7 @@ export function Explore() {
           {creators.length > 0 ? (
             <div className={`grid ${viewMode === 'grid' ? 'grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4' : 'grid-cols-1 gap-4'}`}>
               {creators.map((creator) => (
-                <CreatorCard key={creator.id} creator={creator} onViewProfile={(c) => window.location.href = `/creator/${c.id || (c as any)._id}`} onBook={(c) => window.location.href = `/bookings?creator=${c.id || (c as any)._id}`} />
+                <CreatorCard key={creator.id} creator={creator} onViewProfile={(c) => window.location.href = getCreatorProfileUrl(c)} onBook={(c) => window.location.href = `/bookings?creator=${c.id || (c as any)._id}`} />
               ))}
             </div>
           ) : (

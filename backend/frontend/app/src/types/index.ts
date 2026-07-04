@@ -4,6 +4,7 @@ export interface User {
   firstName: string;
   lastName: string;
   name?: string; // computed getter
+  seoSlug?: string;
   avatar?: string;
   coverImage?: string;
   role: 'client' | 'creator' | 'admin';

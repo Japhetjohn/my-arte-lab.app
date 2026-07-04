@@ -7,6 +7,7 @@ import { StatusBadge } from './StatusBadge';
 import { VerifiedBadge } from './VerifiedBadge';
 import { NewBookingModal } from '@/components/booking/NewBookingModal';
 import { getImageUrl } from '@/lib/imageUrl';
+import { getCreatorProfileUrl } from '@/lib/utils';
 
 interface CreatorCardProps {
   creator: Creator & { rating?: number | { average?: number; count?: number }; _id?: string; priceRange?: { min: number; max: number } };
@@ -17,14 +18,14 @@ interface CreatorCardProps {
 export function CreatorCard({ creator, onViewProfile, onBook }: CreatorCardProps) {
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const getCreatorId = () => creator.id || (creator as any)._id;
+  const profileUrl = getCreatorProfileUrl(creator as any);
 
   const handleView = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const id = getCreatorId();
     if (onViewProfile) {
       onViewProfile(creator);
     } else {
-      window.location.href = `/creator/${id}`;
+      window.location.href = profileUrl;
     }
   };
 
@@ -38,8 +39,7 @@ export function CreatorCard({ creator, onViewProfile, onBook }: CreatorCardProps
   };
 
   const handleCardClick = () => {
-    const id = getCreatorId();
-    window.location.href = `/creator/${id}`;
+    window.location.href = profileUrl;
   };
 
   // Handle both rating formats: number or {average, count}

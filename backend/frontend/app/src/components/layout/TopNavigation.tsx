@@ -147,68 +147,89 @@ export function TopNavigation({
 
         {/* Right - Actions */}
         <div className="flex items-center gap-1 sm:gap-2 ml-auto">
-          
-          <Button
-            variant="ghost"
-            size="icon"
-            className="relative h-9 w-9"
-            onClick={() => window.location.href = '/messages'}
-          >
-            <MessageSquare className="w-5 h-5" />
-            {unreadMessages > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 sm:w-5 sm:h-5 bg-[#8A2BE2] text-white text-[10px] sm:text-xs rounded-full flex items-center justify-center">
-                {unreadMessages}
-              </span>
-            )}
-          </Button>
-          
-          <Button
-            variant="ghost"
-            size="icon"
-            className="relative h-9 w-9"
-            onClick={() => window.location.href = '/notifications'}
-          >
-            <Bell className="w-5 h-5" />
-            {unreadNotifications > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 sm:w-5 sm:h-5 bg-red-500 text-white text-[10px] sm:text-xs rounded-full flex items-center justify-center">
-                {unreadNotifications}
-              </span>
-            )}
-          </Button>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="flex items-center gap-2 px-1.5 sm:px-2 h-9">
-                <img
-                  src={getAvatarUrl(user?.avatar)}
-                  alt={user?.name || 'User'}
-                  className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover"
-                />
-                <span className="hidden sm:block font-medium text-sm">{user?.name || 'User'}</span>
+          {user ? (
+            <>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative h-9 w-9"
+                onClick={() => window.location.href = '/messages'}
+              >
+                <MessageSquare className="w-5 h-5" />
+                {unreadMessages > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 sm:w-5 sm:h-5 bg-[#8A2BE2] text-white text-[10px] sm:text-xs rounded-full flex items-center justify-center">
+                    {unreadMessages}
+                  </span>
+                )}
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-52">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => window.location.href = '/profile'}>
-                <User className="w-4 h-4 mr-2" />
-                Profile
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => window.location.href = '/wallet'}>
-                <Wallet className="w-4 h-4 mr-2" />
-                Wallet
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => window.location.href = '/settings'}>
-                <Settings className="w-4 h-4 mr-2" />
-                Settings
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={onLogout} className="text-red-600">
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative h-9 w-9"
+                onClick={() => window.location.href = '/notifications'}
+              >
+                <Bell className="w-5 h-5" />
+                {unreadNotifications > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 sm:w-5 sm:h-5 bg-red-500 text-white text-[10px] sm:text-xs rounded-full flex items-center justify-center">
+                    {unreadNotifications}
+                  </span>
+                )}
+              </Button>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="flex items-center gap-2 px-1.5 sm:px-2 h-9">
+                    <img
+                      src={getAvatarUrl(user?.avatar)}
+                      alt={user?.name || 'User'}
+                      className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover"
+                    />
+                    <span className="hidden sm:block font-medium text-sm">{user?.name || 'User'}</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-52">
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => window.location.href = '/profile'}>
+                    <User className="w-4 h-4 mr-2" />
+                    Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => window.location.href = '/wallet'}>
+                    <Wallet className="w-4 h-4 mr-2" />
+                    Wallet
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => window.location.href = '/settings'}>
+                    <Settings className="w-4 h-4 mr-2" />
+                    Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={onLogout} className="text-red-600">
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
+          ) : (
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => window.location.href = '/login'}
+                className="h-9"
+              >
+                Log in
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => window.location.href = '/register'}
+                className="h-9 bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white"
+              >
+                Sign up
+              </Button>
+            </>
+          )}
         </div>
       </div>
     </header>

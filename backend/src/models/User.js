@@ -505,6 +505,7 @@ userSchema.index({ category: 1 });
 userSchema.index({ 'rating.average': -1 });
 userSchema.index({ email: 1, googleId: 1 });
 userSchema.index({ role: 1, category: 1, 'rating.average': -1 });
+userSchema.index({ seoSlug: 1 }, { unique: true, sparse: true });
 
 // Geospatial index for location-based queries
 userSchema.index({ 'location.coordinates': '2dsphere' });
@@ -517,18 +518,63 @@ userSchema.virtual('formattedLocation').get(function () {
   return formatLocation(this.location);
 });
 
-userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) {
-    return next();
-  }
+// Helper: convert a display name into a URL-safe slug
+function slugify(text) {
+  return text
+    .toString()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .replace(/-+/g, '-');
+}
 
+// Helper: ensure a slug is unique among users
+async function generateUniqueSlug(name, UserModel, excludeId) {
+  let baseSlug = slugify(name);
+  if (!baseSlug) baseSlug = 'creator';
+
+  let slug = baseSlug;
+  let counter = 2;
+
+  while (true) {
+    const query = { seoSlug: slug };
+    if (excludeId) query._id = { $ne: excludeId };
+    // eslint-disable-next-line no-await-in-loop
+    const existing = await UserModel.findOne(query).select('_id').lean();
+    if (!existing) return slug;
+    slug = `${baseSlug}-${counter}`;
+    counter += 1;
+  }
+}
+
+userSchema.methods.generateSlug = async function () {
+  const name = `${this.firstName || ''} ${this.lastName || ''}`.trim();
+  if (!name) return;
+  this.seoSlug = await generateUniqueSlug(name, this.constructor, this._id);
+};
+
+userSchema.pre('save', async function (next) {
   try {
-    let rounds = SECURITY.BCRYPT_ROUNDS;
-    if (isNaN(rounds) || rounds < 10) {
-      rounds = 12;
+    if (this.isModified('password')) {
+      let rounds = SECURITY.BCRYPT_ROUNDS;
+      if (isNaN(rounds) || rounds < 10) {
+        rounds = 12;
+      }
+      const salt = await bcrypt.genSalt(rounds);
+      this.password = await bcrypt.hash(this.password, salt);
     }
-    const salt = await bcrypt.genSalt(rounds);
-    this.password = await bcrypt.hash(this.password, salt);
+
+    // Auto-generate a slug for creators when missing or when the name changes
+    if (
+      this.role === 'creator' &&
+      (!this.seoSlug || this.isModified('firstName') || this.isModified('lastName'))
+    ) {
+      await this.generateSlug();
+    }
+
     next();
   } catch (error) {
     next(error);

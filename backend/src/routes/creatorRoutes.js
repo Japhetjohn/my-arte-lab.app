@@ -26,6 +26,8 @@ router.get('/stats', optionalAuth, creatorController.getCreatorStats);
 router.post('/availability', protect, creatorController.updateAvailability);
 router.get('/:id/availability', optionalAuth, validateObjectId('id'), handleValidationErrors, creatorController.getAvailability);
 
+router.get('/slug/:slug', optionalAuth, creatorController.getCreatorProfileBySlug);
+
 router.get('/:id', optionalAuth, validateObjectId('id'), handleValidationErrors, creatorController.getCreatorProfile);
 
 module.exports = router;

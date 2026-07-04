@@ -133,12 +133,11 @@ function AppContent() {
     return null;
   };
 
-  // Public routes (no auth required)
-  const publicRoutes = ['/login', '/register', '/forgot-password', '/reset-password', '/legal'];
-  const isPublicRoute = publicRoutes.some(route => currentPath.startsWith(route));
+  // Auth-only pages (rendered without the main app layout)
+  const authRoutes = ['/login', '/register', '/forgot-password', '/reset-password'];
+  const isAuthRoute = authRoutes.some(route => currentPath.startsWith(route));
 
-  // If on public route, render auth pages
-  if (isPublicRoute) {
+  if (isAuthRoute) {
     switch (true) {
       case currentPath === '/login':
         return isAuthenticated ? <NavigateToHome /> : <Login />;
@@ -148,15 +147,19 @@ function AppContent() {
         return <ForgotPassword />;
       case currentPath.startsWith('/reset-password'):
         return <ResetPassword />;
-      case currentPath === '/legal':
-        return <Legal />;
       default:
         return <Login />;
     }
   }
 
-  // If not authenticated, redirect to login
-  if (!isAuthenticated && !isLoading) {
+  // Public browsing pages: visible to guests and logged-in users
+  const publicBrowsingRoutes = ['/', '/home', '/creators', '/explore', '/legal'];
+  const isPublicBrowsingRoute =
+    publicBrowsingRoutes.includes(currentPath) ||
+    currentPath.startsWith('/creator/');
+
+  // Protected routes require authentication
+  if (!isPublicBrowsingRoute && !isAuthenticated && !isLoading) {
     window.location.href = '/login';
     return null;
   }
