@@ -11,6 +11,7 @@ interface WalletState {
   usdcBalance: number;
   escrowBalance: number;
   incomingEarnings: number;
+  solanaAddress: string | null;
   isInitialLoad: boolean;
 }
 
@@ -59,6 +60,7 @@ export function useWallet() {
     usdcBalance: cached.usdcBalance,
     escrowBalance: cached.escrowBalance,
     incomingEarnings: cached.incomingEarnings,
+    solanaAddress: null,
     isInitialLoad: true,
   });
 
@@ -73,6 +75,7 @@ export function useWallet() {
       const newUsdcBalance = walletData?.usdcBalance || newBalance;
       const newEscrowBalance = walletData?.escrowBalance || 0;
       const newIncomingEarnings = walletData?.incomingEarnings || 0;
+      const solanaAddress = walletData?.solanaAddress || null;
       
       saveCachedBalance(newBalance, newUsdcBalance, newEscrowBalance, newIncomingEarnings);
       
@@ -83,6 +86,7 @@ export function useWallet() {
         usdcBalance: newUsdcBalance,
         escrowBalance: newEscrowBalance,
         incomingEarnings: newIncomingEarnings,
+        solanaAddress,
         isLoading: false,
         isInitialLoad: false,
       }));

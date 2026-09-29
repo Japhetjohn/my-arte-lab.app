@@ -1,6 +1,7 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Wallet, ArrowUpRight, ArrowDownLeft, Lock, TrendingUp } from 'lucide-react';
+import { Wallet, ArrowUpRight, ArrowDownLeft, Lock, TrendingUp, Copy } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface WalletCardProps {
   balance: number;
@@ -8,11 +9,12 @@ interface WalletCardProps {
   escrowBalance?: number; // For clients: money they've paid that's held
   incomingEarnings?: number; // For creators: money they'll receive
   userRole?: 'client' | 'creator';
+  solanaAddress?: string | null;
   onAddFunds?: () => void;
   onWithdraw?: () => void;
 }
 
-export function WalletCard({ balance, currency, escrowBalance = 0, incomingEarnings = 0, userRole = 'client', onAddFunds, onWithdraw }: WalletCardProps) {
+export function WalletCard({ balance, currency, escrowBalance = 0, incomingEarnings = 0, userRole = 'client', solanaAddress, onAddFunds, onWithdraw }: WalletCardProps) {
   const showEscrow = userRole === 'client' && escrowBalance > 0;
   const showIncoming = userRole === 'creator' && incomingEarnings > 0;
   
@@ -33,6 +35,34 @@ export function WalletCard({ balance, currency, escrowBalance = 0, incomingEarni
           <p className="text-white/70 text-sm mb-1">Available Balance</p>
           <h2 className="text-3xl sm:text-4xl font-bold text-white truncate">${balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}</h2>
         </div>
+
+        {/* Show Switch Solana wallet deposit address if present */}
+        {solanaAddress && (
+          <div className="mb-4 p-3 bg-white/10 rounded-lg flex items-center justify-between gap-3 border border-white/15">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 text-xs text-emerald-300 font-medium mb-0.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block animate-pulse"></span>
+                <span>USDC on Solana</span>
+              </div>
+              <p className="text-xs font-mono text-white/90 truncate">
+                {solanaAddress}
+              </p>
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                navigator.clipboard.writeText(solanaAddress);
+                toast.success('Solana address copied to clipboard');
+              }}
+              className="h-7 px-2 text-xs bg-white/15 hover:bg-white/25 text-white rounded flex items-center gap-1 shrink-0"
+            >
+              <Copy className="w-3.5 h-3.5" />
+              <span>Copy</span>
+            </Button>
+          </div>
+        )}
         
         {/* Show escrow info for clients (money they've paid that's held) */}
         {showEscrow && (

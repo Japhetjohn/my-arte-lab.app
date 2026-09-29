@@ -10,7 +10,9 @@ export type CryptoDepositFormData = z.infer<typeof cryptoDepositSchema>;
 
 export const fiatDepositSchema = z.object({
   amount: z.number().positive('Amount must be greater than 0'),
-  currency: z.string().default('NGN'),
+  country: z.string().length(2, 'Valid 2-letter country code required'),
+  currency: z.string().min(2, 'Valid currency code required'),
+  channel: z.string().optional(),
 });
 
 export type FiatDepositFormData = z.infer<typeof fiatDepositSchema>;

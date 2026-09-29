@@ -1,7 +1,8 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { WalletCard } from '@/components/shared/WalletCard';
+import { AddFundsModal } from '@/components/wallet/AddFundsModal';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { useWallet } from '@/hooks/useWallet';
 import { useAuth } from '@/contexts/AuthContext';
@@ -17,6 +18,7 @@ export function Wallet() {
     totalBalanceUSD,
     escrowBalance,
     incomingEarnings,
+    solanaAddress,
     fetchWallet,
     fetchTransactions,
   } = useWallet();
@@ -24,6 +26,7 @@ export function Wallet() {
   // Get user role from auth context
   const { user } = useAuth();
   const userRole = user?.role || 'client';
+  const [isAddFundsOpen, setIsAddFundsOpen] = useState(false);
 
   useEffect(() => {
     fetchWallet();
@@ -108,9 +111,16 @@ export function Wallet() {
         currency="USDC"
         escrowBalance={escrowBalance}
         incomingEarnings={incomingEarnings}
+        solanaAddress={solanaAddress}
         userRole={userRole as 'client' | 'creator'}
-        onAddFunds={() => toast.info('Payment processing is currently undergoing upgrade.')}
+        onAddFunds={() => setIsAddFundsOpen(true)}
         onWithdraw={() => toast.info('Payment processing is currently undergoing upgrade.')}
+      />
+
+      <AddFundsModal
+        isOpen={isAddFundsOpen}
+        onClose={() => setIsAddFundsOpen(false)}
+        solanaAddress={solanaAddress}
       />
 
       <Card>

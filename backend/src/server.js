@@ -207,7 +207,12 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('combined'));
 }
 
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({
+  limit: '10mb',
+  verify: (req, res, buf) => {
+    req.rawBody = buf;
+  }
+}));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 app.use(preventNoSQLInjection);
@@ -277,6 +282,7 @@ app.get('/health', async (req, res) => {
 });
 
 app.use('/api/webhooks', webhookLimiter, webhookRoutes);
+app.use('/webhooks', webhookLimiter, webhookRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/wallet', walletRoutes);

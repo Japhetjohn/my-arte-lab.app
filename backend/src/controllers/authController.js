@@ -6,6 +6,7 @@ const { ErrorHandler, catchAsync } = require('../utils/errorHandler');
 const emailConfig = require('../config/email');
 const emailTemplates = require('../utils/emailTemplates');
 const adminNotificationService = require('../services/adminNotificationService');
+const switchService = require('../services/switchService');
 const crypto = require('crypto');
 const { escapeHtml } = require('../utils/sanitize');
 
@@ -94,6 +95,14 @@ exports.register = catchAsync(async (req, res, next) => {
 
   adminNotificationService.notifyNewUserRegistration(user)
     .catch(err => console.error('Admin notification failed:', err));
+
+  // Initialize Switch non-custodial wallet for the new user (USDC on Solana)
+  try {
+    const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'MyArteLabUser';
+    await switchService.getOrCreateUserWallet(user._id, fullName);
+  } catch (walletErr) {
+    console.warn('[Register] Warning: Could not initialize Switch wallet during signup:', walletErr.message);
+  }
 
   // Create welcome notification for new user
   Notification.createNotification({

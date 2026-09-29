@@ -38,6 +38,18 @@ export const walletService = {
   getWallet: () =>
     api.get('/wallet'),
 
+  getFundingOptions: () =>
+    api.get('/wallet/funding-options'),
+
+  getQuote: (data: { amount: number; country: string; currency: string; channel?: string }) =>
+    api.post('/wallet/quote', data),
+
+  initiateFunding: (data: { amount: number; country: string; currency: string; channel?: string; idempotencyKey?: string }) =>
+    api.post('/wallet/fund/initiate', data),
+
+  getFundingStatus: (reference: string) =>
+    api.get(`/wallet/fund/${reference}`),
+
   getTransactions: (params?: { page?: number; limit?: number; type?: string }) =>
     api.get('/wallet/transactions', { params }),
 };
