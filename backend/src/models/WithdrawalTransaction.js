@@ -223,6 +223,5 @@ const withdrawalTransactionSchema = new mongoose.Schema({
 
 withdrawalTransactionSchema.index({ user: 1, createdAt: -1 });
 withdrawalTransactionSchema.index({ status: 1, createdAt: -1 });
-withdrawalTransactionSchema.index({ reference: 1 });
 
 module.exports = mongoose.model('WithdrawalTransaction', withdrawalTransactionSchema);

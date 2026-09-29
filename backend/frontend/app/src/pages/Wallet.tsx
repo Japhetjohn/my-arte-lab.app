@@ -102,7 +102,7 @@ export function Wallet() {
             }`}
           >
             {isCredit ? '+' : isDebit ? '−' : ''}
-            ${displayAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {currency}
+            {displayAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {currency}
           </p>
           <p className={`text-xs capitalize ${statusBadgeClass}`}>{status}</p>
         </div>
