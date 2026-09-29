@@ -1,9 +1,7 @@
 const emailConfig = require('../config/email');
+const { ADMIN_CONFIG } = require('../utils/constants');
 
-const ADMIN_EMAILS = [
-  'japhetjohnk@gmail.com',
-  'oonawa66@gmail.com'
-];
+const ADMIN_EMAILS = ADMIN_CONFIG.NOTIFICATION_EMAILS;
 
 // Brand Colors
 const COLORS = {

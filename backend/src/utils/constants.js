@@ -117,6 +117,14 @@ const DEFAULT_LOCATION = {
   FORMAT_SEPARATOR: ', '
 };
 
+const ADMIN_CONFIG = {
+  NOTIFICATION_EMAIL: process.env.ADMIN_EMAIL || 'japhetjohnk@gmail.com',
+  NOTIFICATION_EMAILS: (process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL || 'japhetjohnk@gmail.com')
+    .split(',')
+    .map(e => e.trim())
+    .filter(Boolean)
+};
+
 module.exports = {
   BOOKING_LIMITS,
   PLATFORM_CONFIG,
@@ -130,5 +138,6 @@ module.exports = {
   TRANSACTION_TYPES,
   WALLET_ENCRYPTION,
   WEBHOOK_REPLAY_PROTECTION,
-  DEFAULT_LOCATION
+  DEFAULT_LOCATION,
+  ADMIN_CONFIG
 };

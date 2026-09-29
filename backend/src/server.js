@@ -123,6 +123,19 @@ const allowedOrigins = [
   process.env.FRONTEND_URL
 ].filter(Boolean);
 
+// Handle webhook endpoints before strict browser CORS to allow server-to-server notifications
+app.use((req, res, next) => {
+  if (req.path.startsWith('/webhooks') || req.path.startsWith('/api/webhooks')) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS, HEAD');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-switch-signature, x-switch-timestamp, x-switch-event-id, Authorization');
+    if (req.method === 'OPTIONS') {
+      return res.status(204).end();
+    }
+  }
+  next();
+});
+
 app.use(cors({
   origin: (origin, callback) => {
     // Allow same-origin / server-to-server requests (no origin header)
@@ -135,7 +148,7 @@ app.use(cors({
       if (origin === 'https://app.myartelab.com') {
         return callback(null, true);
       }
-      return callback(new Error('Not allowed by CORS'));
+      return callback(null, false);
     }
 
     // In development, allow localhost origins
@@ -143,7 +156,7 @@ app.use(cors({
       return callback(null, true);
     }
 
-    callback(new Error('Not allowed by CORS'));
+    callback(null, false);
   },
   credentials: true
 }));

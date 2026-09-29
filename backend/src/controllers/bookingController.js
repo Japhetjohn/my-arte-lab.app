@@ -11,7 +11,7 @@ const { v4: uuidv4 } = require('uuid');
 const bookingService = require('../services/bookingService');
 const metricsService = require('../services/metricsService');
 const { isValidBookingAmount } = require('../utils/validators');
-const { PLATFORM_CONFIG } = require('../utils/constants');
+const { PLATFORM_CONFIG, ADMIN_CONFIG } = require('../utils/constants');
 
 const PLATFORM_COMMISSION = parseFloat(process.env.PLATFORM_COMMISSION) || PLATFORM_CONFIG.COMMISSION_RATE;
 
@@ -788,7 +788,7 @@ exports.refundBooking = catchAsync(async (req, res, next) => {
   const { reason, adminEmail } = req.body;
   
   // Only allow admin to process refunds
-  const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || 'admin@myartelab.com').split(',').map(e => e.trim());
+  const ADMIN_EMAILS = ADMIN_CONFIG.NOTIFICATION_EMAILS;
   
   if (!ADMIN_EMAILS.includes(adminEmail)) {
     return next(new ErrorHandler('Unauthorized - Admin access required', 403));

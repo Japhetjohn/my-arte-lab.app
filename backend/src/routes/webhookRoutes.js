@@ -98,7 +98,25 @@ const handleSwitchWebhook = async (req, res) => {
   });
 };
 
-// Route handlers for Switch webhook payloads
+// Health check and probe handlers for external webhook verifiers
+const handleWebhookHealth = (req, res) => {
+  return res.status(200).json({
+    success: true,
+    status: 'active',
+    service: 'Switch Webhook Receiver',
+    endpoint: '/webhooks',
+    timestamp: new Date().toISOString()
+  });
+};
+
+router.get('/switch', handleWebhookHealth);
+router.get('/', handleWebhookHealth);
+router.head('/switch', (req, res) => res.status(200).end());
+router.head('/', (req, res) => res.status(200).end());
+router.options('/switch', (req, res) => res.status(204).end());
+router.options('/', (req, res) => res.status(204).end());
+
+// Route handlers for Switch webhook payloads (HMAC-SHA256 verified)
 router.post('/switch', handleSwitchWebhook);
 router.post('/', handleSwitchWebhook);
 
