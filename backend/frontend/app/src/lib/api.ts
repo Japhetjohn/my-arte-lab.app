@@ -33,40 +33,13 @@ export const authService = {
     api.post('/auth/refresh-token'),
 };
 
-// HostFi Wallet Service
-export const hostfiWalletService = {
+// Wallet Service
+export const walletService = {
   getWallet: () =>
-    api.get('/hostfi/wallet'),
+    api.get('/wallet'),
 
   getTransactions: (params?: { page?: number; limit?: number; type?: string }) =>
-    api.get('/hostfi/wallet/transactions', { params }),
-
-  createCryptoAddress: () =>
-    api.post('/hostfi/collections/crypto/address'),
-
-  createFiatChannel: (currency: string = 'NGN') =>
-    api.post('/hostfi/collections/fiat/channel', { currency }),
-
-  getBanks: (countryCode: string = 'NG') =>
-    api.get(`/hostfi/banks/${countryCode}`),
-
-  verifyAccount: (data: { bankId: string; accountNumber: string }) =>
-    api.post('/hostfi/withdrawal/verify-account', data),
-
-  initiateWithdrawal: (data: any) =>
-    api.post('/hostfi/withdrawal/initiate', data),
-
-  getWithdrawalStatus: (reference: string) =>
-    api.get(`/hostfi/withdrawal/status/${reference}`),
-
-  getBeneficiaries: () =>
-    api.get('/hostfi/beneficiaries'),
-
-  addBeneficiary: (data: any) =>
-    api.post('/hostfi/beneficiaries', data),
-
-  deleteBeneficiary: (id: string) =>
-    api.delete(`/hostfi/beneficiaries/${id}`),
+    api.get('/wallet/transactions', { params }),
 };
 
 // Upload Service

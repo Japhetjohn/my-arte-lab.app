@@ -4,7 +4,6 @@ const User = require('../models/User');
 const Transaction = require('../models/Transaction');
 const Notification = require('../models/Notification');
 const notificationService = require('./notificationService');
-const hostfiService = require('./hostfiService');
 const { ErrorHandler } = require('../utils/errorHandler');
 const { BOOKING_LIMITS, PLATFORM_CONFIG } = require('../utils/constants');
 
@@ -268,7 +267,7 @@ class BookingService {
         client: clientId
       })
         .populate('creator', 'wallet.address firstName lastName name email')
-        .populate('client', 'firstName lastName name email wallet.hostfiWalletAssets')
+        .populate('client', 'firstName lastName name email')
         .session(session);
 
       if (!booking) {
@@ -410,104 +409,6 @@ class BookingService {
         } catch (reviewError) {
           console.error('[BookingService] Failed to create review:', reviewError.message);
           // Don't fail the whole operation if review creation fails
-        }
-      }
-
-      // Get creator wallet address from populated booking data
-      let creatorWalletAddress = booking.creator?.wallet?.address;
-      console.log(`[BookingService] Creator wallet address: ${creatorWalletAddress}`);
-      
-      // If creator doesn't have a wallet, create one
-      if (!creatorWalletAddress) {
-        console.log(`[BookingService] Creator ${creator._id} has no wallet, creating one...`);
-        try {
-          const tsaraService = require('./tsaraService');
-          const walletResult = await tsaraService.createWallet(
-            `${creator.firstName || 'Creator'} ${creator.lastName || ''}`.trim(),
-            `creator_${creator._id}_${Date.now()}`,
-            { userId: creator._id, purpose: 'auto-created-for-payout' }
-          );
-          
-          if (walletResult.success) {
-            // Update creator with new wallet
-            creator.wallet.address = walletResult.data.primary_address;
-            creator.wallet.network = 'Solana';
-            creator.wallet.tsaraAddress = walletResult.data.primary_address;
-            creator.wallet.tsaraWalletId = walletResult.data.id;
-            creator.wallet.tsaraEncryptedPrivateKey = walletResult.data.secretKey;
-            await creator.save();
-            
-            creatorWalletAddress = walletResult.data.primary_address;
-            console.log(`[BookingService] ✓ Created wallet for creator: ${creatorWalletAddress}`);
-          } else {
-            throw new Error('Wallet creation failed');
-          }
-        } catch (walletError) {
-          console.error('[BookingService] ✗ Failed to create wallet for creator:', walletError.message);
-        }
-      }
-      
-      // Transfer funds via HostFi (outside DB transaction)
-      // Get client's USDC wallet asset ID for the transfer
-      const clientUsdcAsset = client.wallet.hostfiWalletAssets?.find(
-        a => a.currency === booking.currency || a.currency === 'USDC'
-      );
-      
-      console.log(`[BookingService] Starting HostFi transfers for booking ${bookingId}`);
-      console.log(`[BookingService] Client USDC asset:`, clientUsdcAsset?.assetId);
-      
-      // ═══════════════════════════════════════════════════════════════
-      // PAYOUT PHASE: Creator payout via HostFi B2B
-      // 
-      // HostFi B2B automatically handles the split:
-      // - Creator receives their share directly
-      // - Platform fee goes to platform wallet automatically
-      // No need for accumulator, cron, or batch withdrawals
-      // ═══════════════════════════════════════════════════════════════
-      
-      if (!creatorWalletAddress) {
-        console.error('[BookingService] Creator wallet address not available — skipping payout');
-      } else if (!clientUsdcAsset?.assetId) {
-        console.error('[BookingService] No client USDC asset found for HostFi transfer');
-      } else {
-        try {
-          console.log(`[BookingService] Creator payout: ${booking.creatorAmount} ${booking.currency} to ${creatorWalletAddress}`);
-          
-          const creatorPayout = await hostfiService.initiateWithdrawal({
-            walletAssetId: clientUsdcAsset.assetId,
-            amount: booking.creatorAmount,
-            currency: booking.currency,
-            methodId: 'CRYPTO',
-            recipient: {
-              type: 'CRYPTO',
-              method: 'CRYPTO',
-              currency: booking.currency,
-              address: creatorWalletAddress,
-              network: 'SOL',
-              country: 'NG'
-            },
-            clientReference: `CREATOR-PAYOUT-${booking.bookingId}-${Date.now()}`,
-            memo: `Payment for ${booking.serviceTitle}`
-          });
-
-          if (creatorPayout.reference || creatorPayout.id) {
-            await Transaction.updateOne(
-              { booking: booking._id, type: 'earning' },
-              { 
-                transactionHash: creatorPayout.reference || creatorPayout.id,
-                status: 'completed',
-                metadata: {
-                  payoutReference: creatorPayout.reference || creatorPayout.id,
-                  toAddress: creatorWalletAddress,
-                  network: 'SOL'
-                }
-              }
-            );
-            console.log(`[BookingService] ✓ Creator payout initiated: ${creatorPayout.reference || creatorPayout.id}`);
-          }
-        } catch (creatorError) {
-          console.error('[BookingService] ✗ Creator payout failed:', creatorError.message);
-          // Don't throw — log for manual reconciliation
         }
       }
 

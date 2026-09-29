@@ -82,7 +82,6 @@ const transactionSchema = new mongoose.Schema({
 
   netAmount: Number,
 
-  // HostFi-specific fields
   reference: String,                 // Unique reference for the transaction
   paymentMethod: {
     type: String,
@@ -117,14 +116,12 @@ const transactionSchema = new mongoose.Schema({
     ipAddress: String,
     userAgent: String,
     notes: String,
-    hostfiReference: String,
     provider: {
       type: String,
-      default: 'hostfi'
+      default: 'system'
     },
     country: String,
-    recordType: String,
-    collectionChannelId: String
+    recordType: String
   },
 
   processedAt: Date,
@@ -145,8 +142,6 @@ transactionSchema.index({ booking: 1 });
 transactionSchema.index({ transactionHash: 1 });
 transactionSchema.index({ reference: 1 });
 transactionSchema.index({ user: 1, reference: 1 });
-transactionSchema.index({ 'metadata.hostfiReference': 1 });
-transactionSchema.index({ 'metadata.provider': 1 });
 
 transactionSchema.pre('save', async function (next) {
   if (!this.transactionId) {

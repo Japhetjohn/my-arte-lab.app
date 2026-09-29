@@ -34,7 +34,6 @@ exports.register = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Email already registered', 400));
   }
 
-  // HostFi wallets are initialized automatically when user first accesses wallet
   let user;
   try {
     user = await User.create({
@@ -52,12 +51,10 @@ exports.register = catchAsync(async (req, res, next) => {
         country
       },
       wallet: {
-        hostfiWalletAssets: [],
-        currency: 'NGN',
+        currency: 'USDC',
         balance: 0,
         pendingBalance: 0,
-        totalEarnings: 0,
-        network: 'HostFi'
+        totalEarnings: 0
       }
     });
   } catch (error) {
@@ -79,22 +76,6 @@ exports.register = catchAsync(async (req, res, next) => {
   user.emailVerificationExpire = Date.now() + 30 * 60 * 1000; // 30 minutes
 
   await user.save({ validateBeforeSave: false });
-
-  // Initialize wallets (HostFi & local Tsara) in the background
-  try {
-    const hostfiWalletService = require('../services/hostfiWalletService');
-    console.log(`[Register] Queuing background wallet initialization for ${user.email}...`);
-
-    // Detach from the event loop and allow to run completely asynchronously
-    hostfiWalletService.initializeUserWallets(user._id).then(() => {
-        console.log(`[Register] Background wallet initialization succeeded for ${user.email}`);
-    }).catch(walletError => {
-        console.error(`[Register] Background wallet initialization failed for ${user.email}:`, walletError.message);
-    });
-
-  } catch (initError) {
-    console.error(`[Register] Failed to queue wallet initialization logic for ${user.email}:`, initError.message);
-  }
 
   // Send professional branded welcome email with verification code
   let emailSent = false;

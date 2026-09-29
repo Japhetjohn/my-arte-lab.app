@@ -113,7 +113,7 @@ exports.getAllCreators = catchAsync(async (req, res, next) => {
 
   // Fetch all matching creators first (for activity-based sorting)
   let creators = await User.find(query)
-    .select('-password -encryptedPrivateKey -twoFactorSecret -twoFactorBackupCodes -emailVerificationToken -passwordResetToken -loginAttempts -lockUntil -wallet.tsaraMnemonic -wallet.tsaraEncryptedPrivateKey')
+    .select('-password -twoFactorSecret -twoFactorBackupCodes -emailVerificationToken -passwordResetToken -loginAttempts -lockUntil')
     .lean();
 
   // Apply sorting based on sortBy parameter
@@ -200,7 +200,7 @@ exports.getRecommendedCreators = catchAsync(async (req, res, next) => {
   if (!userId) {
     // Return top rated if not logged in
     const creators = await User.find({ role: 'creator', isActive: true })
-      .select('-password -wallet.tsaraMnemonic -wallet.tsaraEncryptedPrivateKey')
+      .select('-password')
       .sort({ 'rating.average': -1 })
       .limit(parseInt(limit))
       .lean();
@@ -226,7 +226,7 @@ exports.getRecommendedCreators = catchAsync(async (req, res, next) => {
     isActive: true,
     _id: { $ne: userId }
   })
-    .select('-password -wallet.tsaraMnemonic -wallet.tsaraEncryptedPrivateKey')
+    .select('-password')
     .lean();
 
   // Apply TensorFlow recommendation algorithm
@@ -261,7 +261,7 @@ exports.getTrendingCreators = catchAsync(async (req, res, next) => {
     role: 'creator',
     isActive: true
   })
-    .select('-password -wallet.tsaraMnemonic -wallet.tsaraEncryptedPrivateKey')
+    .select('-password')
     .lean();
 
   // Get trending with new algorithm
@@ -354,7 +354,7 @@ exports.getFeaturedCreators = catchAsync(async (req, res, next) => {
     'rating.average': { $gte: 4.5 },
     completedBookings: { $gte: 5 }
   })
-    .select('-password -encryptedPrivateKey -twoFactorSecret -twoFactorBackupCodes -emailVerificationToken -passwordResetToken -loginAttempts -lockUntil -wallet.tsaraMnemonic -wallet.tsaraEncryptedPrivateKey')
+    .select('-password -twoFactorSecret -twoFactorBackupCodes -emailVerificationToken -passwordResetToken -loginAttempts -lockUntil')
     .sort({ 'rating.average': -1, completedBookings: -1 })
     .limit(parseInt(limit))
     .lean();

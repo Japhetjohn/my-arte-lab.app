@@ -12,7 +12,6 @@ const mongoose = require('mongoose');
 
 const connectDatabase = require('./config/database');
 const emailConfig = require('./config/email');
-const hostfiConfig = require('./config/hostfi');
 const { errorMiddleware } = require('./utils/errorHandler');
 const {
   preventNoSQLInjection,
@@ -32,7 +31,6 @@ const { verifyAdminAuth } = require('./middleware/adminAuth');
 const authRoutes = require('./routes/authRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
 const walletRoutes = require('./routes/walletRoutes');
-const hostfiWalletRoutes = require('./routes/hostfiWalletRoutes');
 const creatorRoutes = require('./routes/creatorRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
 const webhookRoutes = require('./routes/webhookRoutes');
@@ -57,9 +55,7 @@ const requiredEnvVars = [
   'MONGODB_URI',
   'JWT_SECRET',
   'PLATFORM_WALLET_ADDRESS',
-  'WALLET_ENCRYPTION_KEY',
-  'HOSTFI_CLIENT_ID',
-  'HOSTFI_SECRET_KEY'
+  'WALLET_ENCRYPTION_KEY'
 ];
 
 const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
@@ -266,18 +262,6 @@ app.get('/health', async (req, res) => {
   }
 
   try {
-    if (!hostfiConfig.clientId || !hostfiConfig.secretKey) {
-      health.checks.paymentGateway = 'not_configured';
-      health.status = 'DEGRADED';
-    } else {
-      health.checks.paymentGateway = 'configured';
-    }
-  } catch (error) {
-    health.checks.paymentGateway = `error: ${error.message}`;
-    health.status = 'DEGRADED';
-  }
-
-  try {
     if (!process.env.WALLET_ENCRYPTION_KEY || !process.env.JWT_SECRET) {
       health.checks.security = 'missing_keys';
       health.status = 'DEGRADED';
@@ -296,7 +280,6 @@ app.use('/api/webhooks', webhookLimiter, webhookRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/wallet', walletRoutes);
-app.use('/api/hostfi', hostfiWalletRoutes);
 app.use('/api/creators', trackActivity, creatorRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/upload', uploadRoutes);
@@ -486,7 +469,6 @@ const server = app.listen(PORT, () => {
   console.log(`║  Port: ${PORT}`);
   console.log(`║  Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`║  API: https://app.myartelab.com/api`);
-  console.log(`║  Payment Gateway: HostFi`);
   console.log('╚════════════════════════════════════════════════════════╝\n');
 
   // Start escrow monitoring for auto-refunds
@@ -524,9 +506,6 @@ const server = app.listen(PORT, () => {
   } else {
     mongoose.connection.once('connected', generateMissingSlugs);
   }
-
-  // Platform fees are handled automatically by HostFi B2B
-  // No cron job needed for fee withdrawal
 });
 
 process.on('unhandledRejection', (err) => {

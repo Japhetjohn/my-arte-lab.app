@@ -1,10 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { WalletCard } from '@/components/shared/WalletCard';
 import { EmptyState } from '@/components/shared/EmptyState';
-import { DepositModal } from '@/components/wallet/DepositModal';
-import { WithdrawalModal } from '@/components/wallet/WithdrawalModal';
 import { useWallet } from '@/hooks/useWallet';
 import { useAuth } from '@/contexts/AuthContext';
 import { ArrowDownLeft, ArrowUpRight, Loader2 } from 'lucide-react';
@@ -17,7 +15,6 @@ export function Wallet() {
     isLoading,
     error,
     totalBalanceUSD,
-    usdcBalance,
     escrowBalance,
     incomingEarnings,
     fetchWallet,
@@ -27,9 +24,6 @@ export function Wallet() {
   // Get user role from auth context
   const { user } = useAuth();
   const userRole = user?.role || 'client';
-
-  const [addFundsOpen, setAddFundsOpen] = useState(false);
-  const [withdrawOpen, setWithdrawOpen] = useState(false);
 
   useEffect(() => {
     fetchWallet();
@@ -115,8 +109,8 @@ export function Wallet() {
         escrowBalance={escrowBalance}
         incomingEarnings={incomingEarnings}
         userRole={userRole as 'client' | 'creator'}
-        onAddFunds={() => setAddFundsOpen(true)}
-        onWithdraw={() => setWithdrawOpen(true)}
+        onAddFunds={() => toast.info('Payment processing is currently undergoing upgrade.')}
+        onWithdraw={() => toast.info('Payment processing is currently undergoing upgrade.')}
       />
 
       <Card>
@@ -204,24 +198,6 @@ export function Wallet() {
           </Tabs>
         </CardContent>
       </Card>
-
-      {/* Deposit Modal */}
-      <DepositModal 
-        isOpen={addFundsOpen} 
-        onClose={() => setAddFundsOpen(false)} 
-        onDepositComplete={async () => {
-          await fetchWallet();
-          await fetchTransactions();
-        }}
-      />
-
-      {/* Withdrawal Modal */}
-      <WithdrawalModal
-        isOpen={withdrawOpen}
-        onClose={() => setWithdrawOpen(false)}
-        availableBalance={usdcBalance}
-        currency="USDC"
-      />
     </div>
   );
 }

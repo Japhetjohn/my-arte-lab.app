@@ -662,14 +662,11 @@ class AdminNotificationService {
   }
 
   async notifyAccumulatedFees(user, amount, totalAccumulated) {
-    // DEPRECATED: HostFi B2B handles fee splitting automatically
-    // This method is kept for backward compatibility but does nothing
-    // Platform profits are viewable in the admin dashboard
+    // Kept for backward compatibility
   }
 
   async notifyFeeWithdrawn(user, amount, reference) {
-    // DEPRECATED: HostFi B2B handles fee splitting automatically
-    // This method is kept for backward compatibility but does nothing
+    // Kept for backward compatibility
   }
 
   async notifyNewDispute(booking, client, reason, details) {
@@ -731,7 +728,7 @@ class AdminNotificationService {
                 <li>Review the deliverables submitted by creator</li>
                 <li>Contact both parties if needed</li>
                 <li>Make a decision: Approve refund or reject dispute</li>
-                <li>If approved, manually refund client via HostFi dashboard</li>
+                <li>If approved, refund client via admin dashboard</li>
             </ul>
         </div>
 

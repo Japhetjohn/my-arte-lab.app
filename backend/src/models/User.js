@@ -221,55 +221,21 @@ const userSchema = new mongoose.Schema({
   },
 
   wallet: {
-    // Tsara Integration (Local Wallet Management)
-    tsaraWalletId: String,    // Internal ID or reference
-    tsaraAddress: String,     // Solana public address
-    tsaraReference: String,   // Unique reference
-    tsaraMnemonic: {          // Mnemonic phrase (stored encrypted)
-      type: String,
-      select: false
-    },
-    tsaraEncryptedPrivateKey: { // Secret key (stored encrypted)
-      type: String,
-      select: false
-    },
-
-    // HostFi Integration (Legacy)
-    assetId: String,        // HostFi wallet asset ID
-    currency: String,       // Currency code (NGN, USD, USDC, etc.)
-    assetType: {
-      type: String,
-      enum: ['FIAT', 'CRYPTO']
-    },
     balance: {
       type: Number,
       default: 0
     },
-    colNetwork: String,     // Network for the collection address
-    lastSynced: Date,
-    hostfiWalletAssets: [{
-      assetId: String,
-      currency: String,
-      assetType: String,
-      balance: { type: Number, default: 0 },
-      reservedBalance: { type: Number, default: 0 },
-      lastSynced: { type: Date, default: Date.now }
-    }]
+    pendingBalance: {
+      type: Number,
+      default: 0
+    },
+    lastUpdated: {
+      type: Date,
+      default: Date.now
+    }
   },
 
-  // Legacy Solana wallet (deprecated - will be removed)
-  address: {
-    type: String,
-    required: false, // No longer required
-    sparse: true  // Removed unique: true to allow multiple null values
-  },
-  encryptedPrivateKey: {
-    type: String,
-    required: false, // No longer required
-    select: false
-  },
-
-  // Balance tracking (synced from HostFi)
+  // Balance tracking
   balance: {
     type: Number,
     default: 0,
@@ -288,11 +254,11 @@ const userSchema = new mongoose.Schema({
   currency: {
     type: String,
     enum: ['USDC', 'DAI', 'NGN', 'USD'],
-    default: 'NGN'
+    default: 'USDC'
   },
   network: {
     type: String,
-    default: 'HostFi'
+    default: null
   },
   lastUpdated: {
     type: Date,

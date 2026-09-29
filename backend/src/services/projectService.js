@@ -5,9 +5,7 @@ const User = require('../models/User');
 const Transaction = require('../models/Transaction');
 const Notification = require('../models/Notification');
 const { ErrorHandler } = require('../utils/errorHandler');
-const { PLATFORM_CONFIG } = require('../utils/constants');
 const notificationService = require('./notificationService');
-const hostfiService = require('./hostfiService');
 
 class ProjectService {
   /**
@@ -375,92 +373,6 @@ class ProjectService {
       ]);
 
       await session.commitTransaction();
-
-      // ═══════════════════════════════════════════════════════════════
-      // PAYOUT PHASE: Creator payout via HostFi B2B
-      // 
-      // HostFi B2B automatically handles the split:
-      // - Creator receives their share directly
-      // - Platform fee goes to platform wallet automatically
-      // ═══════════════════════════════════════════════════════════════
-      
-      const client = await User.findById(clientId);
-      const clientUsdcAsset = client.wallet.hostfiWalletAssets?.find(
-        a => a.currency === (application.proposedBudget.currency || 'USDC') || a.currency === 'USDC'
-      );
-      
-      let creatorWalletAddress = project.selectedCreatorId?.wallet?.address;
-      
-      // If creator doesn't have a wallet, create one
-      if (!creatorWalletAddress) {
-        console.log(`[ProjectService] Creator ${project.selectedCreatorId._id} has no wallet, creating one...`);
-        try {
-          const tsaraService = require('./tsaraService');
-          const walletResult = await tsaraService.createWallet(
-            `${project.selectedCreatorId.firstName || 'Creator'} ${project.selectedCreatorId.lastName || ''}`.trim(),
-            `creator_${project.selectedCreatorId._id}_${Date.now()}`,
-            { userId: project.selectedCreatorId._id, purpose: 'auto-created-for-payout' }
-          );
-          
-          if (walletResult.success) {
-            const creator = await User.findById(project.selectedCreatorId._id);
-            creator.wallet.address = walletResult.data.primary_address;
-            creator.wallet.network = 'Solana';
-            creator.wallet.tsaraAddress = walletResult.data.primary_address;
-            creator.wallet.tsaraWalletId = walletResult.data.id;
-            creator.wallet.tsaraEncryptedPrivateKey = walletResult.data.secretKey;
-            await creator.save();
-            
-            creatorWalletAddress = walletResult.data.primary_address;
-            console.log(`[ProjectService] ✓ Created wallet for creator: ${creatorWalletAddress}`);
-          }
-        } catch (walletError) {
-          console.error('[ProjectService] ✗ Failed to create wallet for creator:', walletError.message);
-        }
-      }
-      
-      if (creatorWalletAddress && clientUsdcAsset?.assetId) {
-        try {
-          console.log(`[ProjectService] Creator payout: ${creatorAmount} ${application.proposedBudget.currency || 'USDC'} to ${creatorWalletAddress}`);
-          
-          const creatorPayout = await hostfiService.initiateWithdrawal({
-            walletAssetId: clientUsdcAsset.assetId,
-            amount: creatorAmount,
-            currency: application.proposedBudget.currency || 'USDC',
-            methodId: 'CRYPTO',
-            recipient: {
-              type: 'CRYPTO',
-              method: 'CRYPTO',
-              currency: application.proposedBudget.currency || 'USDC',
-              address: creatorWalletAddress,
-              network: 'SOL',
-              country: 'NG'
-            },
-            clientReference: `CREATOR-PAYOUT-PRJ-${project._id}-${Date.now()}`,
-            memo: `Payment for project "${project.title}"`
-          });
-
-          if (creatorPayout.reference || creatorPayout.id) {
-            await Transaction.updateOne(
-              { project: project._id, type: 'earning' },
-              { 
-                transactionHash: creatorPayout.reference || creatorPayout.id,
-                metadata: {
-                  payoutReference: creatorPayout.reference || creatorPayout.id,
-                  toAddress: creatorWalletAddress,
-                  network: 'SOL'
-                }
-              }
-            );
-            console.log(`[ProjectService] ✓ Creator payout initiated: ${creatorPayout.reference || creatorPayout.id}`);
-          }
-        } catch (payoutError) {
-          console.error('[ProjectService] ✗ Creator payout failed:', payoutError.message);
-          // Don't throw — log for manual reconciliation
-        }
-      } else {
-        console.error('[ProjectService] Missing creator wallet or client asset for payout');
-      }
 
       return {
         project,

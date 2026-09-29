@@ -1,45 +1,38 @@
 import { useState, useCallback } from 'react';
-import { hostfiWalletService } from '@/lib/api';
-import { toast } from 'sonner';
-import type { WalletAsset, Transaction, Bank, Beneficiary } from '@/lib/validations/walletSchemas';
+import { walletService } from '@/lib/api';
+import type { WalletAsset, Transaction } from '@/lib/validations/walletSchemas';
 
 interface WalletState {
   assets: WalletAsset[];
   transactions: Transaction[];
-  banks: Bank[];
-  beneficiaries: Beneficiary[];
   isLoading: boolean;
   error: string | null;
   balance: number;
   usdcBalance: number;
-  escrowBalance: number; // Amount held in escrow for active bookings (client view)
-  incomingEarnings: number; // Money creator will receive (creator view)
-  hostFiBalance: number; // Raw HostFi balance
+  escrowBalance: number;
+  incomingEarnings: number;
   isInitialLoad: boolean;
 }
 
 const CACHE_KEY = 'wallet_balance_cache';
 
-// Load cached balance from localStorage
 const loadCachedBalance = () => {
-  if (typeof window === 'undefined') return { balance: 0, usdcBalance: 0, escrowBalance: 0, incomingEarnings: 0, hostFiBalance: 0 };
+  if (typeof window === 'undefined') return { balance: 0, usdcBalance: 0, escrowBalance: 0, incomingEarnings: 0 };
   try {
     const cached = localStorage.getItem(CACHE_KEY);
     if (cached) {
-      const { balance, usdcBalance, escrowBalance, incomingEarnings, hostFiBalance, timestamp } = JSON.parse(cached);
-      // Cache is valid for 24 hours
+      const { balance, usdcBalance, escrowBalance, incomingEarnings, timestamp } = JSON.parse(cached);
       if (Date.now() - timestamp < 24 * 60 * 60 * 1000) {
-        return { balance, usdcBalance, escrowBalance, incomingEarnings, hostFiBalance };
+        return { balance, usdcBalance, escrowBalance, incomingEarnings };
       }
     }
   } catch {
     // Ignore errors
   }
-  return { balance: 0, usdcBalance: 0, escrowBalance: 0, incomingEarnings: 0, hostFiBalance: 0 };
+  return { balance: 0, usdcBalance: 0, escrowBalance: 0, incomingEarnings: 0 };
 };
 
-// Save balance to localStorage
-const saveCachedBalance = (balance: number, usdcBalance: number, escrowBalance: number, incomingEarnings: number, hostFiBalance: number) => {
+const saveCachedBalance = (balance: number, usdcBalance: number, escrowBalance: number, incomingEarnings: number) => {
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(CACHE_KEY, JSON.stringify({
@@ -47,7 +40,6 @@ const saveCachedBalance = (balance: number, usdcBalance: number, escrowBalance: 
       usdcBalance,
       escrowBalance,
       incomingEarnings,
-      hostFiBalance,
       timestamp: Date.now()
     }));
   } catch {
@@ -61,15 +53,12 @@ export function useWallet() {
   const [state, setState] = useState<WalletState>({
     assets: [],
     transactions: [],
-    banks: [],
-    beneficiaries: [],
     isLoading: false,
     error: null,
     balance: cached.balance,
     usdcBalance: cached.usdcBalance,
     escrowBalance: cached.escrowBalance,
     incomingEarnings: cached.incomingEarnings,
-    hostFiBalance: cached.hostFiBalance,
     isInitialLoad: true,
   });
 
@@ -78,18 +67,14 @@ export function useWallet() {
       setState((prev) => ({ ...prev, isLoading: true, error: null }));
     }
     try {
-      const response = await hostfiWalletService.getWallet();
-      // Wallet data fetched
-      // Backend returns { success: true, data: { wallet: {...} } }
+      const response = await walletService.getWallet();
       const walletData = response.data?.data?.wallet;
       const newBalance = walletData?.balance || 0;
-      const newUsdcBalance = walletData?.usdcBalance || 0;
+      const newUsdcBalance = walletData?.usdcBalance || newBalance;
       const newEscrowBalance = walletData?.escrowBalance || 0;
       const newIncomingEarnings = walletData?.incomingEarnings || 0;
-      const newHostFiBalance = walletData?.hostFiBalance || 0;
       
-      // Save to cache
-      saveCachedBalance(newBalance, newUsdcBalance, newEscrowBalance, newIncomingEarnings, newHostFiBalance);
+      saveCachedBalance(newBalance, newUsdcBalance, newEscrowBalance, newIncomingEarnings);
       
       setState((prev) => ({
         ...prev,
@@ -98,12 +83,10 @@ export function useWallet() {
         usdcBalance: newUsdcBalance,
         escrowBalance: newEscrowBalance,
         incomingEarnings: newIncomingEarnings,
-        hostFiBalance: newHostFiBalance,
         isLoading: false,
         isInitialLoad: false,
       }));
     } catch (error: any) {
-      // Error handled by UI
       setState((prev) => ({
         ...prev,
         isLoading: false,
@@ -116,9 +99,7 @@ export function useWallet() {
   const fetchTransactions = useCallback(async (params?: { page?: number; limit?: number; type?: string }) => {
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
     try {
-      const response = await hostfiWalletService.getTransactions(params);
-      // Backend returns { success: true, data: { transactions: [...] } }
-      // Map _id to id for frontend compatibility
+      const response = await walletService.getTransactions(params);
       const rawTransactions = response.data?.data?.transactions || [];
       const transactions = rawTransactions.map((tx: any) => ({
         ...tx,
@@ -144,117 +125,12 @@ export function useWallet() {
     }
   }, []);
 
-  const fetchBanks = useCallback(async (countryCode: string = 'NG') => {
-    try {
-      const response = await hostfiWalletService.getBanks(countryCode);
-      setState((prev) => ({
-        ...prev,
-        banks: response.data?.data?.banks || [],
-      }));
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to fetch banks');
-    }
-  }, []);
-
-  const fetchBeneficiaries = useCallback(async () => {
-    try {
-      const response = await hostfiWalletService.getBeneficiaries();
-      setState((prev) => ({
-        ...prev,
-        beneficiaries: response.data?.data?.beneficiaries || [],
-      }));
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to fetch beneficiaries');
-    }
-  }, []);
-
-  const createCryptoAddress = useCallback(async () => {
-    try {
-      const response = await hostfiWalletService.createCryptoAddress();
-      return response.data;
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to create crypto address');
-      throw error;
-    }
-  }, []);
-
-  const createFiatChannel = useCallback(async (currency: string = 'NGN') => {
-    try {
-      const response = await hostfiWalletService.createFiatChannel(currency);
-      return response.data;
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to create fiat channel');
-      throw error;
-    }
-  }, []);
-
-  const verifyAccount = useCallback(async (bankId: string, accountNumber: string) => {
-    try {
-      const response = await hostfiWalletService.verifyAccount({ bankId, accountNumber });
-      return response.data;
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to verify account');
-      throw error;
-    }
-  }, []);
-
-  const initiateWithdrawal = useCallback(async (data: any) => {
-    try {
-      const response = await hostfiWalletService.initiateWithdrawal(data);
-      toast.success('Withdrawal initiated successfully!');
-      // Refresh wallet after withdrawal
-      setTimeout(() => {
-        fetchWallet(false); // Don't show loading spinner
-      }, 1000);
-      return response.data;
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to initiate withdrawal');
-      throw error;
-    }
-  }, [fetchWallet]);
-
-  const addBeneficiary = useCallback(async (data: any) => {
-    try {
-      const response = await hostfiWalletService.addBeneficiary(data);
-      toast.success('Beneficiary added successfully!');
-      await fetchBeneficiaries();
-      return response.data;
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to add beneficiary');
-      throw error;
-    }
-  }, [fetchBeneficiaries]);
-
-  const deleteBeneficiary = useCallback(async (id: string) => {
-    try {
-      await hostfiWalletService.deleteBeneficiary(id);
-      toast.success('Beneficiary deleted successfully!');
-      await fetchBeneficiaries();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to delete beneficiary');
-      throw error;
-    }
-  }, [fetchBeneficiaries]);
-
-  // Calculate total balance in USD
-  const totalBalanceUSD = state.assets.reduce((sum, asset) => sum + (asset.usdEquivalent || 0), 0);
-
-  // Get primary asset (USDC or first asset)
-  const primaryAsset = state.assets.find((a) => a.currency === 'USDC') || state.assets[0];
+  const totalBalanceUSD = state.balance || 0;
 
   return {
     ...state,
-    totalBalanceUSD: state.balance || totalBalanceUSD,
-    primaryAsset,
+    totalBalanceUSD,
     fetchWallet,
     fetchTransactions,
-    fetchBanks,
-    fetchBeneficiaries,
-    createCryptoAddress,
-    createFiatChannel,
-    verifyAccount,
-    initiateWithdrawal,
-    addBeneficiary,
-    deleteBeneficiary,
   };
 }

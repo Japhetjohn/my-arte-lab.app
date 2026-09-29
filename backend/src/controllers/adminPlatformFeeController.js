@@ -1,7 +1,6 @@
 /**
  * Admin Platform Fee Controller
  * View-only: Shows accumulated platform profits from completed bookings
- * HostFi B2B handles fee splitting automatically — no manual withdrawal needed
  */
 
 const Transaction = require('../models/Transaction');
