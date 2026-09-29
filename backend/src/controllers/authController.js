@@ -25,6 +25,14 @@ exports.register = catchAsync(async (req, res, next) => {
   if (!firstName || !lastName || !email || !password) {
     return next(new ErrorHandler('Please provide all required fields', 400));
   }
+
+  // Pre-validate password format with human-friendly messages
+  if (typeof password !== 'string' || password.length < 8) {
+    return next(new ErrorHandler('Password must be at least 8 characters', 400));
+  }
+  if (!/[A-Z]/.test(password) || !/[a-z]/.test(password)) {
+    return next(new ErrorHandler('Password must contain at least one uppercase and one lowercase letter', 400));
+  }
   
   // Assign default avatar and cover image if not provided
   const userAvatar = avatar || '/images/avatar-3.png';
@@ -32,7 +40,7 @@ exports.register = catchAsync(async (req, res, next) => {
 
   const existingUser = await User.findOne({ email });
   if (existingUser) {
-    return next(new ErrorHandler('Email already registered', 400));
+    return next(new ErrorHandler('This email is already registered', 400));
   }
 
   let user;
@@ -63,6 +71,9 @@ exports.register = catchAsync(async (req, res, next) => {
     if (error.name === 'ValidationError') {
       const message = Object.values(error.errors).map(e => e.message).join(', ');
       return next(new ErrorHandler(message, 400));
+    }
+    if (error.code === 11000) {
+      return next(new ErrorHandler('This email is already registered', 400));
     }
     return next(new ErrorHandler('Failed to create user account. Please try again.', 500));
   }
@@ -233,6 +244,13 @@ exports.updatePassword = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Please provide current and new password', 400));
   }
 
+  if (typeof newPassword !== 'string' || newPassword.length < 8) {
+    return next(new ErrorHandler('Password must be at least 8 characters', 400));
+  }
+  if (!/[A-Z]/.test(newPassword) || !/[a-z]/.test(newPassword)) {
+    return next(new ErrorHandler('Password must contain at least one uppercase and one lowercase letter', 400));
+  }
+
   const user = await User.findById(req.user._id).select('+password');
 
   const isCorrect = await user.comparePassword(currentPassword);
@@ -292,6 +310,13 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
 
   if (!token || !newPassword) {
     return next(new ErrorHandler('Please provide token and new password', 400));
+  }
+
+  if (typeof newPassword !== 'string' || newPassword.length < 8) {
+    return next(new ErrorHandler('Password must be at least 8 characters', 400));
+  }
+  if (!/[A-Z]/.test(newPassword) || !/[a-z]/.test(newPassword)) {
+    return next(new ErrorHandler('Password must contain at least one uppercase and one lowercase letter', 400));
   }
 
   const hashedToken = crypto.createHash('sha256').update(token).digest('hex');

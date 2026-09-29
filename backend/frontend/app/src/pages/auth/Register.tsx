@@ -117,8 +117,23 @@ export function Register() {
       setRegisteredEmail(step1Data.email);
       setRegisteredPassword(step1Data.password);
       setShowVerifyModal(true);
-    } catch (error) {
-      // Error handled in register function
+    } catch (error: any) {
+      const errRes = error?.response?.data;
+      const errorMsg = (errRes?.error || errRes?.message || error?.message || '').toLowerCase();
+      
+      if (errorMsg.includes('email') || errorMsg.includes('already registered')) {
+        setCurrentStep(1);
+        step1Form.setError('email', {
+          type: 'manual',
+          message: 'This email is already registered. Please log in or use a different email.',
+        });
+      } else if (errorMsg.includes('password')) {
+        setCurrentStep(1);
+        step1Form.setError('password', {
+          type: 'manual',
+          message: errRes?.error || errRes?.message || 'Password must be at least 8 characters and contain at least one uppercase and one lowercase letter.',
+        });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -287,7 +302,7 @@ export function Register() {
         <PasswordInput
           id="password"
           showStrength
-          placeholder="Create a strong password"
+          placeholder="Create a password"
           error={step1Form.formState.errors.password?.message}
           className="h-12 sm:h-11 text-base"
           {...step1Form.register('password')}

@@ -40,7 +40,7 @@ const userSchema = new mongoose.Schema({
         }
         return SECURITY.PASSWORD_REGEX.test(value);
       },
-      message: 'Password must be at least 8 characters and contain uppercase, lowercase, number, and special character'
+      message: 'Password must be at least 8 characters and contain at least one uppercase and one lowercase letter'
     },
     select: false
   },
@@ -450,9 +450,7 @@ const userSchema = new mongoose.Schema({
   }],
 
   seoSlug: {
-    type: String,
-    unique: true,
-    sparse: true
+    type: String
   },
 
   blockedUsers: [{

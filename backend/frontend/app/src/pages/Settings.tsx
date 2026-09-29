@@ -181,6 +181,11 @@ export function Settings() {
       return;
     }
 
+    if (!/^(?=.*[a-z])(?=.*[A-Z])/.test(passwordForm.newPassword)) {
+      toast.error('Password must contain at least one uppercase and one lowercase letter');
+      return;
+    }
+
     setIsLoading(true);
     try {
       await api.put('/auth/update-password', {
@@ -565,7 +570,7 @@ export function Settings() {
                 onChange={(e) => setPasswordForm(prev => ({ ...prev, newPassword: e.target.value }))}
                 placeholder="Enter new password"
               />
-              <p className="text-xs text-gray-500 mt-1">Minimum 8 characters</p>
+              <p className="text-xs text-gray-500 mt-1">Minimum 8 characters with at least one uppercase and one lowercase letter</p>
             </div>
             <div>
               <Label>Confirm New Password</Label>

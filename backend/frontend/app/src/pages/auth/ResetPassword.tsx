@@ -117,7 +117,7 @@ export function ResetPassword() {
             id="password"
             label="New Password"
             showStrength
-            placeholder="Create a strong password"
+            placeholder="Create a new password"
             error={errors.password?.message}
             {...register('password')}
           />

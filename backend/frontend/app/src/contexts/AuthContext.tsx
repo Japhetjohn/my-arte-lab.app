@@ -276,7 +276,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const message = error.response?.data?.error || error.response?.data?.message || 'Registration failed';
       
       // Provide helpful guidance for common errors
-      if (message.toLowerCase().includes('email already registered')) {
+      if (message.toLowerCase().includes('already registered') || message.toLowerCase().includes('already in use')) {
         toast.error(
           <div className="space-y-2">
             <p className="font-medium">This email is already registered.</p>

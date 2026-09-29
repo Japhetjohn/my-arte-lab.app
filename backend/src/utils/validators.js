@@ -29,32 +29,26 @@ function getPasswordStrength(password) {
     length: password.length >= 8,
     uppercase: /[A-Z]/.test(password),
     lowercase: /[a-z]/.test(password),
-    number: /\d/.test(password),
-    special: /[^a-zA-Z0-9\s]/.test(password),
     longLength: password.length >= 12
   };
 
   strength += checks.length ? 1 : 0;
   strength += checks.uppercase ? 1 : 0;
   strength += checks.lowercase ? 1 : 0;
-  strength += checks.number ? 1 : 0;
-  strength += checks.special ? 1 : 0;
   strength += checks.longLength ? 1 : 0;
 
   const messages = {
     0: 'Very weak',
-    1: 'Very weak',
-    2: 'Weak',
-    3: 'Fair',
-    4: 'Good',
-    5: 'Strong',
-    6: 'Very strong'
+    1: 'Weak',
+    2: 'Fair',
+    3: 'Good',
+    4: 'Strong'
   };
 
   return {
     strength,
-    maxStrength: 6,
-    percentage: (strength / 6) * 100,
+    maxStrength: 4,
+    percentage: (strength / 4) * 100,
     message: messages[strength],
     checks
   };

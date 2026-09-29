@@ -1,4 +1,4 @@
-import { useState, forwardRef } from 'react';
+import { useState, useEffect, forwardRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Eye, EyeOff, Check, X } from 'lucide-react';
@@ -17,16 +17,27 @@ interface StrengthRequirement {
 
 const requirements: StrengthRequirement[] = [
   { label: 'At least 8 characters', test: (p) => p.length >= 8 },
-  { label: 'One uppercase letter', test: (p) => /[A-Z]/.test(p) },
-  { label: 'One lowercase letter', test: (p) => /[a-z]/.test(p) },
-  { label: 'One number', test: (p) => /\d/.test(p) },
-  { label: 'One special character', test: (p) => /[@$!%*?&]/.test(p) },
+  { label: 'At least one uppercase letter', test: (p) => /[A-Z]/.test(p) },
+  { label: 'At least one lowercase letter', test: (p) => /[a-z]/.test(p) },
 ];
 
 export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
   ({ showStrength = false, label, error, className, ...props }, ref) => {
     const [showPassword, setShowPassword] = useState(false);
-    const password = String(props.value || '');
+    const [currentValue, setCurrentValue] = useState(String(props.value || props.defaultValue || ''));
+
+    useEffect(() => {
+      if (props.value !== undefined) {
+        setCurrentValue(String(props.value));
+      }
+    }, [props.value]);
+
+    const password = currentValue;
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      setCurrentValue(e.target.value);
+      props.onChange?.(e);
+    };
 
     const getStrength = () => {
       const passed = requirements.filter((req) => req.test(password)).length;
@@ -34,17 +45,17 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
     };
 
     const getStrengthLabel = () => {
-      const strength = getStrength();
-      if (strength === 0) return '';
-      if (strength <= 40) return 'Weak';
-      if (strength <= 80) return 'Medium';
+      const passed = requirements.filter((req) => req.test(password)).length;
+      if (passed === 0) return '';
+      if (passed === 1) return 'Weak';
+      if (passed === 2) return 'Medium';
       return 'Strong';
     };
 
     const getStrengthColor = () => {
-      const strength = getStrength();
-      if (strength <= 40) return 'bg-red-500';
-      if (strength <= 80) return 'bg-amber-500';
+      const passed = requirements.filter((req) => req.test(password)).length;
+      if (passed <= 1) return 'bg-red-500';
+      if (passed === 2) return 'bg-amber-500';
       return 'bg-green-500';
     };
 
@@ -65,6 +76,7 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
               className
             )}
             {...props}
+            onChange={handleChange}
           />
           <Button
             type="button"
