@@ -229,6 +229,11 @@ const userSchema = new mongoose.Schema({
       type: Number,
       default: 0
     },
+    pendingWithdrawal: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
     lastUpdated: {
       type: Date,
       default: Date.now
@@ -242,6 +247,11 @@ const userSchema = new mongoose.Schema({
     min: 0
   },
   pendingBalance: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  pendingWithdrawal: {
     type: Number,
     default: 0,
     min: 0

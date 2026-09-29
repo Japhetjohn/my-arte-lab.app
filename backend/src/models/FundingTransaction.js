@@ -18,16 +18,14 @@ const fundingTransactionSchema = new mongoose.Schema({
   idempotencyKey: {
     type: String,
     required: true,
-    unique: true,
-    index: true
+    unique: true
   },
 
   // Unique UUID passed to Switch as transaction reference
   reference: {
     type: String,
     required: true,
-    unique: true,
-    index: true
+    unique: true
   },
 
   // Fiat funding origin

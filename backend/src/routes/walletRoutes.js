@@ -6,6 +6,7 @@ const User = require('../models/User');
 const Transaction = require('../models/Transaction');
 const SwitchWallet = require('../models/SwitchWallet');
 const FundingTransaction = require('../models/FundingTransaction');
+const WithdrawalTransaction = require('../models/WithdrawalTransaction');
 const switchService = require('../services/switchService');
 const ledgerService = require('../services/ledgerService');
 const { catchAsync } = require('../utils/errorHandler');
@@ -16,7 +17,7 @@ const { catchAsync } = require('../utils/errorHandler');
  * @access  Private
  */
 router.get('/', protect, catchAsync(async (req, res) => {
-  const user = await User.findById(req.user._id).select('wallet balance pendingBalance totalEarnings currency firstName lastName');
+  const user = await User.findById(req.user._id).select('wallet balance pendingBalance pendingWithdrawal totalEarnings currency firstName lastName');
 
   if (!user) {
     return res.status(404).json({ success: false, error: 'User not found' });
@@ -56,6 +57,10 @@ router.get('/', protect, catchAsync(async (req, res) => {
     ? user.wallet.balance
     : (user.balance || 0);
 
+  const pendingWithdrawal = user.wallet?.pendingWithdrawal !== undefined && user.wallet?.pendingWithdrawal !== null
+    ? user.wallet.pendingWithdrawal
+    : (user.pendingWithdrawal || 0);
+
   // Self-heal field discrepancy if detected
   if (user.balance !== authoritativeBalance || user.wallet?.balance !== authoritativeBalance) {
     await User.findByIdAndUpdate(user._id, {
@@ -73,6 +78,8 @@ router.get('/', protect, catchAsync(async (req, res) => {
         balance: authoritativeBalance,
         usdcBalance: authoritativeBalance,
         pendingBalance: user.pendingBalance || user.wallet?.pendingBalance || 0,
+        pendingWithdrawal,
+        availableBalance: Math.max(0, authoritativeBalance - pendingWithdrawal),
         escrowBalance,
         incomingEarnings,
         currency: user.currency || 'USDC',
@@ -97,6 +104,142 @@ router.get('/funding-options', protect, catchAsync(async (req, res) => {
     success: true,
     data: coverage
   });
+}));
+
+/**
+ * @route   GET /api/wallet/withdraw/options
+ * @desc    Get dynamic Switch-supported off-ramp / withdrawal corridors
+ * @access  Private
+ */
+router.get('/withdraw/options', protect, catchAsync(async (req, res) => {
+  const coverage = await switchService.getCoverage('OFFRAMP');
+
+  res.json({
+    success: true,
+    data: coverage
+  });
+}));
+
+/**
+ * @route   GET /api/wallet/institutions
+ * @desc    Get list of supported banks/institutions for a country
+ * @access  Private
+ */
+router.get('/institutions', protect, catchAsync(async (req, res) => {
+  const { country } = req.query;
+
+  if (!country || typeof country !== 'string' || country.trim().length !== 2) {
+    return res.status(400).json({
+      success: false,
+      error: 'Please provide a valid 2-letter country code (e.g. ?country=NG)'
+    });
+  }
+
+  try {
+    const institutions = await switchService.getInstitutions({
+      country: country.trim().toUpperCase()
+    });
+
+    res.json({
+      success: true,
+      data: institutions
+    });
+  } catch (instErr) {
+    res.status(instErr.status || 400).json({
+      success: false,
+      error: instErr.message || 'Failed to fetch institutions from Switch'
+    });
+  }
+}));
+
+/**
+ * @route   GET /api/wallet/beneficiary-requirements
+ * @desc    Get required beneficiary fields for a country, currency, and channel
+ * @access  Private
+ */
+router.get('/beneficiary-requirements', protect, catchAsync(async (req, res) => {
+  const { country, currency, channel, type } = req.query;
+
+  if (!country || typeof country !== 'string' || country.trim().length !== 2) {
+    return res.status(400).json({
+      success: false,
+      error: 'Please provide a valid 2-letter country code'
+    });
+  }
+
+  if (!currency || typeof currency !== 'string' || currency.trim().length < 2) {
+    return res.status(400).json({
+      success: false,
+      error: 'Please provide a valid currency code'
+    });
+  }
+
+  try {
+    const requirements = await switchService.getBeneficiaryRequirements({
+      country: country.trim().toUpperCase(),
+      currency: currency.trim().toUpperCase(),
+      channel: channel ? String(channel).trim().toUpperCase() : undefined,
+      type: type ? String(type).trim().toUpperCase() : 'INDIVIDUAL'
+    });
+
+    res.json({
+      success: true,
+      data: requirements
+    });
+  } catch (reqErr) {
+    res.status(reqErr.status || 400).json({
+      success: false,
+      error: reqErr.message || 'Failed to fetch beneficiary requirements from Switch'
+    });
+  }
+}));
+
+/**
+ * @route   POST /api/wallet/resolve-account
+ * @desc    Resolve / verify beneficiary bank account details before withdrawal
+ * @access  Private
+ */
+router.post('/resolve-account', protect, catchAsync(async (req, res) => {
+  const { country, accountNumber, bankCode } = req.body;
+
+  if (!country || typeof country !== 'string' || country.trim().length !== 2) {
+    return res.status(400).json({
+      success: false,
+      error: 'Please provide a valid 2-letter country code'
+    });
+  }
+
+  if (!accountNumber || typeof accountNumber !== 'string' || accountNumber.trim().length < 3) {
+    return res.status(400).json({
+      success: false,
+      error: 'Please provide a valid account number'
+    });
+  }
+
+  if (!bankCode || typeof bankCode !== 'string' || bankCode.trim().length < 1) {
+    return res.status(400).json({
+      success: false,
+      error: 'Please provide a valid bank or institution code'
+    });
+  }
+
+  try {
+    const resolution = await switchService.lookupInstitution({
+      country: country.trim().toUpperCase(),
+      accountNumber: accountNumber.trim(),
+      bankCode: bankCode.trim()
+    });
+
+    res.json({
+      success: true,
+      data: resolution
+    });
+  } catch (resErr) {
+    res.status(resErr.status || 400).json({
+      success: false,
+      error: resErr.message || 'Failed to verify account details with Switch'
+    });
+  }
 }));
 
 /**
@@ -144,6 +287,61 @@ router.post('/quote', protect, catchAsync(async (req, res) => {
     res.status(quoteErr.status || 400).json({
       success: false,
       error: quoteErr.message || 'Failed to fetch quote from Switch'
+    });
+  }
+}));
+
+/**
+ * @route   POST /api/wallet/withdraw/quote
+ * @desc    Get guaranteed off-ramp quote from USDC on Solana to fiat
+ * @access  Private
+ */
+router.post('/withdraw/quote', protect, catchAsync(async (req, res) => {
+  const { amount, country, currency, channel, exactOutput } = req.body;
+
+  const numAmount = Number(amount);
+  if (isNaN(numAmount) || numAmount <= 0) {
+    return res.status(400).json({
+      success: false,
+      error: 'Please provide a valid withdrawal amount greater than 0'
+    });
+  }
+
+  if (!country || typeof country !== 'string' || country.trim().length !== 2) {
+    return res.status(400).json({
+      success: false,
+      error: 'Please provide a valid 2-letter country code'
+    });
+  }
+
+  if (!currency || typeof currency !== 'string' || currency.trim().length < 2) {
+    return res.status(400).json({
+      success: false,
+      error: 'Please provide a valid fiat currency code'
+    });
+  }
+
+  // Find user's Switch wallet address if available
+  const switchWallet = await SwitchWallet.findOne({ user: req.user._id });
+
+  try {
+    const quote = await switchService.getOfframpQuote({
+      amount: numAmount,
+      country: country.trim().toUpperCase(),
+      currency: currency.trim().toUpperCase(),
+      channel: channel ? channel.trim().toUpperCase() : undefined,
+      wallet: switchWallet?.solanaAddress || undefined,
+      exactOutput: Boolean(exactOutput)
+    });
+
+    res.json({
+      success: true,
+      data: quote
+    });
+  } catch (quoteErr) {
+    res.status(quoteErr.status || 400).json({
+      success: false,
+      error: quoteErr.message || 'Failed to fetch withdrawal quote from Switch'
     });
   }
 }));

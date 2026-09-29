@@ -649,6 +649,173 @@ class SwitchService {
 
     return res.data;
   }
+
+  /**
+   * Retrieves an off-ramp payout quote from Switch (USDC on Solana -> Fiat).
+   * Documentation: POST /offramp/quote
+   * 
+   * Strictly converts USDC on Solana ('solana:usdc') to local fiat currency.
+   * 
+   * @param {object} params
+   * @param {number|string} params.amount - USDC amount to withdraw (or fiat if exactOutput is true)
+   * @param {string} params.country - 2-letter uppercase ISO country code
+   * @param {string} params.currency - Destination fiat currency code (e.g. NGN, KES, GHS)
+   * @param {string} [params.channel] - Payment channel (e.g. BANK, MOBILEMONEY)
+   * @param {string} [params.wallet] - Source wallet address or Switch wallet ID
+   * @param {boolean} [params.exactOutput=false] - Whether amount is exact destination fiat
+   * @returns {Promise<object>} Detailed off-ramp quote data
+   */
+  async getOfframpQuote({ amount, country, currency, channel, wallet, exactOutput = false }) {
+    const numAmount = Number(amount);
+    if (isNaN(numAmount) || numAmount <= 0) {
+      throw new Error('Withdrawal quote amount must be a positive number greater than 0');
+    }
+
+    if (!country || typeof country !== 'string' || country.trim().length !== 2) {
+      throw new Error('A valid 2-letter ISO country code is required (e.g., NG, KE, GH)');
+    }
+
+    if (!currency || typeof currency !== 'string' || currency.trim().length < 2) {
+      throw new Error('A valid fiat currency code is required (e.g., NGN, KES, GHS)');
+    }
+
+    const payload = {
+      amount: numAmount,
+      country: country.trim().toUpperCase(),
+      asset: 'solana:usdc', // strictly enforced MyArteLab settlement asset
+      currency: currency.trim().toUpperCase(),
+      exact_output: Boolean(exactOutput)
+    };
+
+    if (channel && typeof channel === 'string' && channel.trim().length > 0) {
+      payload.channel = channel.trim().toUpperCase();
+    }
+
+    if (wallet && typeof wallet === 'string' && wallet.trim().length > 0) {
+      payload.wallet = wallet.trim();
+    }
+
+    const res = await this._request('/offramp/quote', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+
+    const quoteData = res.data;
+    if (!quoteData) {
+      throw new Error('No quote data returned from Switch API');
+    }
+
+    return {
+      rate: quoteData.rate,
+      expiry: quoteData.expiry,
+      settlement: quoteData.settlement,
+      channel: quoteData.channel,
+      fee: {
+        total: quoteData.fee?.total !== undefined ? quoteData.fee.total : 0,
+        platform: quoteData.fee?.platform !== undefined ? quoteData.fee.platform : 0,
+        developer: quoteData.fee?.developer !== undefined ? quoteData.fee.developer : 0,
+        currency: quoteData.fee?.currency || 'USD'
+      },
+      source: {
+        amount: quoteData.source?.amount,
+        amountUsd: quoteData.source?.amount_usd,
+        currency: quoteData.source?.currency || 'USDC',
+        network: quoteData.source?.network || 'SOLANA',
+        asset: 'solana:usdc'
+      },
+      destination: {
+        amount: quoteData.destination?.amount,
+        amountUsd: quoteData.destination?.amount_usd,
+        currency: quoteData.destination?.currency || currency.trim().toUpperCase(),
+        network: quoteData.destination?.network || 'FIAT'
+      }
+    };
+  }
+
+  /**
+   * Retrieves required beneficiary fields for a given corridor and payment rail.
+   * Documentation: GET /beneficiary/requirement?direction=OFFRAMP
+   * 
+   * @param {object} params
+   * @param {string} params.country - 2-letter ISO country code
+   * @param {string} params.currency - Destination fiat currency
+   * @param {string} [params.channel] - Payment channel (BANK, MOBILEMONEY)
+   * @param {string} [params.type='INDIVIDUAL'] - Beneficiary type (INDIVIDUAL, BUSINESS)
+   * @returns {Promise<object|Array>} Required beneficiary fields and validation rules
+   */
+  async getBeneficiaryRequirements({ country, currency, channel, type = 'INDIVIDUAL' }) {
+    if (!country || typeof country !== 'string' || country.trim().length !== 2) {
+      throw new Error('A valid 2-letter ISO country code is required');
+    }
+
+    if (!currency || typeof currency !== 'string' || currency.trim().length < 2) {
+      throw new Error('A valid fiat currency code is required');
+    }
+
+    let query = `/beneficiary/requirement?direction=OFFRAMP&country=${encodeURIComponent(country.trim().toUpperCase())}&currency=${encodeURIComponent(currency.trim().toUpperCase())}&type=${encodeURIComponent(type.toUpperCase())}`;
+
+    if (channel && typeof channel === 'string' && channel.trim().length > 0) {
+      query += `&channel=${encodeURIComponent(channel.trim().toUpperCase())}`;
+    }
+
+    const res = await this._request(query, {
+      method: 'GET'
+    });
+
+    return res.data || res;
+  }
+
+  /**
+   * Retrieves supported financial institutions (banks, mobile money operators) for a country.
+   * Documentation: GET /institution?country={country}
+   * 
+   * @param {object} params
+   * @param {string} params.country - 2-letter ISO country code
+   * @returns {Promise<Array>} List of financial institutions
+   */
+  async getInstitutions({ country }) {
+    if (!country || typeof country !== 'string' || country.trim().length !== 2) {
+      throw new Error('A valid 2-letter ISO country code is required');
+    }
+
+    const res = await this._request(`/institution?country=${encodeURIComponent(country.trim().toUpperCase())}`, {
+      method: 'GET'
+    });
+
+    return Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+  }
+
+  /**
+   * Resolves/verifies bank account or mobile money details to confirm beneficiary name.
+   * Documentation: GET /institution/lookup?country={country}&account_number={account_number}&bank_code={bank_code}
+   * 
+   * @param {object} params
+   * @param {string} params.country - 2-letter ISO country code
+   * @param {string} params.accountNumber - Bank account number or mobile money number
+   * @param {string} params.bankCode - Institution / bank code
+   * @returns {Promise<object>} Resolved account name and verification details
+   */
+  async lookupInstitution({ country, accountNumber, bankCode }) {
+    if (!country || typeof country !== 'string' || country.trim().length !== 2) {
+      throw new Error('A valid 2-letter ISO country code is required');
+    }
+
+    if (!accountNumber || typeof accountNumber !== 'string' || accountNumber.trim().length < 3) {
+      throw new Error('A valid account number is required');
+    }
+
+    if (!bankCode || typeof bankCode !== 'string' || bankCode.trim().length < 1) {
+      throw new Error('A valid bank/institution code is required');
+    }
+
+    const query = `/institution/lookup?country=${encodeURIComponent(country.trim().toUpperCase())}&account_number=${encodeURIComponent(accountNumber.trim())}&bank_code=${encodeURIComponent(bankCode.trim())}`;
+
+    const res = await this._request(query, {
+      method: 'GET'
+    });
+
+    return res.data || res;
+  }
 }
 
 module.exports = new SwitchService();
