@@ -50,6 +50,36 @@ export const walletService = {
   getFundingStatus: (reference: string) =>
     api.get(`/wallet/fund/${reference}`),
 
+  getWithdrawOptions: () =>
+    api.get('/wallet/withdraw/options'),
+
+  getWithdrawQuote: (data: { amount: number; country: string; currency: string; channel?: string; exactOutput?: boolean }) =>
+    api.post('/wallet/withdraw/quote', data),
+
+  getInstitutions: (country: string) =>
+    api.get('/wallet/institutions', { params: { country } }),
+
+  getBeneficiaryRequirements: (params: { country: string; currency: string; channel?: string; type?: string }) =>
+    api.get('/wallet/beneficiary-requirements', { params }),
+
+  resolveAccount: (data: { country: string; accountNumber: string; bankCode: string }) =>
+    api.post('/wallet/resolve-account', data),
+
+  initiateWithdrawal: (data: {
+    amount: number;
+    country: string;
+    currency: string;
+    channel?: string;
+    beneficiary: any;
+    idempotencyKey?: string;
+    narration?: string;
+    reason?: string;
+  }) =>
+    api.post('/wallet/withdraw/initiate', data),
+
+  getWithdrawalStatus: (reference: string) =>
+    api.get(`/wallet/withdraw/${reference}`),
+
   getTransactions: (params?: { page?: number; limit?: number; type?: string }) =>
     api.get('/wallet/transactions', { params }),
 };

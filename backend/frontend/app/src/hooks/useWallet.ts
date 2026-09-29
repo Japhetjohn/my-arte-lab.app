@@ -9,6 +9,8 @@ interface WalletState {
   error: string | null;
   balance: number;
   usdcBalance: number;
+  pendingWithdrawal: number;
+  availableBalance: number;
   escrowBalance: number;
   incomingEarnings: number;
   solanaAddress: string | null;
@@ -18,27 +20,36 @@ interface WalletState {
 const CACHE_KEY = 'wallet_balance_cache';
 
 const loadCachedBalance = () => {
-  if (typeof window === 'undefined') return { balance: 0, usdcBalance: 0, escrowBalance: 0, incomingEarnings: 0 };
+  if (typeof window === 'undefined') return { balance: 0, usdcBalance: 0, pendingWithdrawal: 0, availableBalance: 0, escrowBalance: 0, incomingEarnings: 0 };
   try {
     const cached = localStorage.getItem(CACHE_KEY);
     if (cached) {
-      const { balance, usdcBalance, escrowBalance, incomingEarnings, timestamp } = JSON.parse(cached);
+      const { balance, usdcBalance, pendingWithdrawal, availableBalance, escrowBalance, incomingEarnings, timestamp } = JSON.parse(cached);
       if (Date.now() - timestamp < 24 * 60 * 60 * 1000) {
-        return { balance, usdcBalance, escrowBalance, incomingEarnings };
+        return {
+          balance: balance || 0,
+          usdcBalance: usdcBalance || balance || 0,
+          pendingWithdrawal: pendingWithdrawal || 0,
+          availableBalance: availableBalance !== undefined ? availableBalance : Math.max(0, (balance || 0) - (pendingWithdrawal || 0)),
+          escrowBalance: escrowBalance || 0,
+          incomingEarnings: incomingEarnings || 0
+        };
       }
     }
   } catch {
     // Ignore errors
   }
-  return { balance: 0, usdcBalance: 0, escrowBalance: 0, incomingEarnings: 0 };
+  return { balance: 0, usdcBalance: 0, pendingWithdrawal: 0, availableBalance: 0, escrowBalance: 0, incomingEarnings: 0 };
 };
 
-const saveCachedBalance = (balance: number, usdcBalance: number, escrowBalance: number, incomingEarnings: number) => {
+const saveCachedBalance = (balance: number, usdcBalance: number, pendingWithdrawal: number, availableBalance: number, escrowBalance: number, incomingEarnings: number) => {
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(CACHE_KEY, JSON.stringify({
       balance,
       usdcBalance,
+      pendingWithdrawal,
+      availableBalance,
       escrowBalance,
       incomingEarnings,
       timestamp: Date.now()
@@ -58,6 +69,8 @@ export function useWallet() {
     error: null,
     balance: cached.balance,
     usdcBalance: cached.usdcBalance,
+    pendingWithdrawal: cached.pendingWithdrawal,
+    availableBalance: cached.availableBalance,
     escrowBalance: cached.escrowBalance,
     incomingEarnings: cached.incomingEarnings,
     solanaAddress: null,
@@ -73,17 +86,23 @@ export function useWallet() {
       const walletData = response.data?.data?.wallet;
       const newBalance = walletData?.balance || 0;
       const newUsdcBalance = walletData?.usdcBalance || newBalance;
+      const newPendingWithdrawal = walletData?.pendingWithdrawal || 0;
+      const newAvailableBalance = walletData?.availableBalance !== undefined 
+        ? walletData.availableBalance 
+        : Math.max(0, newBalance - newPendingWithdrawal);
       const newEscrowBalance = walletData?.escrowBalance || 0;
       const newIncomingEarnings = walletData?.incomingEarnings || 0;
       const solanaAddress = walletData?.solanaAddress || null;
       
-      saveCachedBalance(newBalance, newUsdcBalance, newEscrowBalance, newIncomingEarnings);
+      saveCachedBalance(newBalance, newUsdcBalance, newPendingWithdrawal, newAvailableBalance, newEscrowBalance, newIncomingEarnings);
       
       setState((prev) => ({
         ...prev,
         assets: walletData?.assets || [],
         balance: newBalance,
         usdcBalance: newUsdcBalance,
+        pendingWithdrawal: newPendingWithdrawal,
+        availableBalance: newAvailableBalance,
         escrowBalance: newEscrowBalance,
         incomingEarnings: newIncomingEarnings,
         solanaAddress,
@@ -134,6 +153,8 @@ export function useWallet() {
   return {
     ...state,
     totalBalanceUSD,
+    availableBalance: state.availableBalance,
+    pendingWithdrawal: state.pendingWithdrawal,
     fetchWallet,
     fetchTransactions,
   };

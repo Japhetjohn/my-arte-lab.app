@@ -114,7 +114,7 @@ export interface Transaction {
   type: 'deposit' | 'withdrawal' | 'payment' | 'earning' | 'refund' | 'platform_fee' | 'escrow' | 'verification';
   amount: number;
   currency: string;
-  status: 'pending' | 'completed' | 'failed' | 'cancelled';
+  status: 'pending' | 'processing' | 'reserved' | 'completed' | 'failed' | 'cancelled' | 'reversed';
   description: string;
   createdAt: string;
   updatedAt?: string;

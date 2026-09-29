@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { WalletCard } from '@/components/shared/WalletCard';
 import { AddFundsModal } from '@/components/wallet/AddFundsModal';
+import { WithdrawModal } from '@/components/wallet/WithdrawModal';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { useWallet } from '@/hooks/useWallet';
 import { useAuth } from '@/contexts/AuthContext';
@@ -16,6 +17,8 @@ export function Wallet() {
     isLoading,
     error,
     totalBalanceUSD,
+    availableBalance,
+    pendingWithdrawal,
     escrowBalance,
     incomingEarnings,
     solanaAddress,
@@ -27,6 +30,7 @@ export function Wallet() {
   const { user } = useAuth();
   const userRole = user?.role || 'client';
   const [isAddFundsOpen, setIsAddFundsOpen] = useState(false);
+  const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
 
   useEffect(() => {
     fetchWallet();
@@ -50,15 +54,21 @@ export function Wallet() {
     const isDebit = transaction.type === 'withdrawal' || transaction.type === 'payment';
     const displayAmount = Math.abs(parseFloat(String(transaction.amount)) || 0);
     const currency = transaction.currency || 'USDC';
+    const status = transaction.status || 'completed';
     
+    let statusBadgeClass = 'text-gray-400';
+    if (status === 'completed') statusBadgeClass = 'text-emerald-600 font-medium';
+    else if (status === 'processing' || status === 'pending') statusBadgeClass = 'text-amber-600 font-medium';
+    else if (status === 'failed' || status === 'reversed' || status === 'cancelled') statusBadgeClass = 'text-red-600 font-medium';
+
     return (
       <div
         key={txId}
-        className="flex items-center justify-between p-4 border-b border-gray-100 last:border-0"
+        className="flex items-center justify-between p-4 border-b border-gray-100 last:border-0 hover:bg-gray-50/50 transition-colors"
       >
         <div className="flex items-center gap-3">
           <div
-            className={`w-10 h-10 rounded-full flex items-center justify-center ${
+            className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
               isCredit
                 ? 'bg-[#F3E8FF] text-[#8A2BE2]'
                 : isDebit
@@ -74,8 +84,14 @@ export function Wallet() {
           </div>
           <div>
             <p className="font-medium text-gray-900">{transaction.description || transaction.type}</p>
-            <p className="text-sm text-gray-500">
-              {transaction.createdAt ? new Date(transaction.createdAt).toLocaleDateString() : '—'}
+            <p className="text-xs text-gray-500">
+              {transaction.createdAt ? new Date(transaction.createdAt).toLocaleDateString(undefined, {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              }) : '—'}
             </p>
           </div>
         </div>
@@ -86,9 +102,9 @@ export function Wallet() {
             }`}
           >
             {isCredit ? '+' : isDebit ? '−' : ''}
-            {displayAmount.toLocaleString()} {currency}
+            ${displayAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {currency}
           </p>
-          <p className="text-xs text-gray-400 capitalize">{transaction.status || 'completed'}</p>
+          <p className={`text-xs capitalize ${statusBadgeClass}`}>{status}</p>
         </div>
       </div>
     );
@@ -109,18 +125,36 @@ export function Wallet() {
       <WalletCard
         balance={totalBalanceUSD}
         currency="USDC"
+        availableBalance={availableBalance}
+        pendingWithdrawal={pendingWithdrawal}
         escrowBalance={escrowBalance}
         incomingEarnings={incomingEarnings}
         solanaAddress={solanaAddress}
         userRole={userRole as 'client' | 'creator'}
         onAddFunds={() => setIsAddFundsOpen(true)}
-        onWithdraw={() => toast.info('Payment processing is currently undergoing upgrade.')}
+        onWithdraw={() => setIsWithdrawOpen(true)}
       />
 
       <AddFundsModal
         isOpen={isAddFundsOpen}
-        onClose={() => setIsAddFundsOpen(false)}
+        onClose={() => {
+          setIsAddFundsOpen(false);
+          fetchWallet();
+        }}
         solanaAddress={solanaAddress}
+      />
+
+      <WithdrawModal
+        isOpen={isWithdrawOpen}
+        onClose={() => {
+          setIsWithdrawOpen(false);
+          fetchWallet();
+        }}
+        availableBalance={availableBalance}
+        onSuccess={() => {
+          fetchWallet();
+          fetchTransactions();
+        }}
       />
 
       <Card>
