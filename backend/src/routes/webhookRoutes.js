@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const switchService = require('../services/switchService');
-
+const ledgerService = require('../services/ledgerService');
 const FundingTransaction = require('../models/FundingTransaction');
 const crypto = require('crypto');
 
@@ -11,7 +11,7 @@ const crypto = require('crypto');
  * 
  * Verifies authenticity of incoming Switch webhooks using HMAC-SHA256 signature and timestamp.
  * Updates FundingTransaction state machine upon verified payment status events.
- * Safeguard: Balance crediting is strictly deferred until Phase 5 settlement accounting.
+ * Phase 5: Triggers idempotent settlement crediting to user balance when status is COMPLETED.
  */
 const handleSwitchWebhook = async (req, res) => {
   const signatureHeader = req.headers['x-switch-signature'];
@@ -65,7 +65,6 @@ const handleSwitchWebhook = async (req, res) => {
               fundingTx.status = 'processing';
             } else if (switchStatus === 'COMPLETED') {
               fundingTx.status = 'completed';
-              // Phase 4 safeguard: Balance crediting is deferred to Phase 5
             } else if (switchStatus === 'FAILED') {
               fundingTx.status = 'failed';
             } else if (switchStatus === 'REVERSED') {
@@ -77,6 +76,12 @@ const handleSwitchWebhook = async (req, res) => {
 
           await fundingTx.save();
           console.log(`[Switch Webhook] Funding ${reference} transitioned to ${fundingTx.status} (Switch: ${switchStatus})`);
+        }
+
+        // Phase 5 settlement accounting: Idempotent balance crediting on settlement
+        if (switchStatus === 'COMPLETED') {
+          const creditResult = await ledgerService.creditFundingDeposit(fundingTx);
+          console.log(`[Switch Webhook] Settlement credit for ${reference}:`, creditResult);
         }
       }
     } catch (dbErr) {

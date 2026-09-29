@@ -591,10 +591,15 @@ userSchema.methods.updateWalletBalance = async function (amount, type = 'add') {
     {
       $inc: {
         'wallet.balance': amountChange,
+        'balance': amountChange,
         'wallet.pendingBalance': amountChange,
+        'pendingBalance': amountChange,
         __v: 1
       },
-      $set: { 'wallet.lastUpdated': Date.now() }
+      $set: {
+        'wallet.lastUpdated': Date.now(),
+        'lastUpdated': Date.now()
+      }
     },
     { new: true }
   );

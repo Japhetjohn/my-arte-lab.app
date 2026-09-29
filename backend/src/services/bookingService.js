@@ -114,9 +114,9 @@ class BookingService {
         const curr = (tx.currency || 'USDC').toUpperCase();
         if (curr !== 'USDC') continue;
         switch (tx.type) {
-          case 'deposit': case 'earning': case 'refund':
+          case 'deposit': case 'earning': case 'refund': case 'bonus': case 'onramp':
             calculatedBalance += amt; break;
-          case 'withdrawal': case 'payment': case 'escrow':
+          case 'withdrawal': case 'payment': case 'escrow': case 'verification': case 'offramp':
             calculatedBalance -= amt; break;
         }
       }
@@ -149,10 +149,13 @@ class BookingService {
         {
           $inc: {
             'wallet.balance': -booking.amount,
-            'wallet.pendingBalance': booking.amount
+            'balance': -booking.amount,
+            'wallet.pendingBalance': booking.amount,
+            'pendingBalance': booking.amount
           },
           $set: {
-            'wallet.lastUpdated': new Date()
+            'wallet.lastUpdated': new Date(),
+            'lastUpdated': new Date()
           }
         },
         {
@@ -292,12 +295,15 @@ class BookingService {
         {
           $inc: {
             'wallet.balance': booking.creatorAmount,
+            'balance': booking.creatorAmount,
             'wallet.totalEarnings': booking.creatorAmount,
+            'totalEarnings': booking.creatorAmount,
             completedBookings: 1,
             __v: 1
           },
           $set: {
-            'wallet.lastUpdated': new Date()
+            'wallet.lastUpdated': new Date(),
+            'lastUpdated': new Date()
           }
         },
         {
@@ -465,11 +471,14 @@ class BookingService {
         {
           $inc: {
             'wallet.balance': booking.amount,
+            'balance': booking.amount,
             'wallet.pendingBalance': -booking.amount,
+            'pendingBalance': -booking.amount,
             __v: 1
           },
           $set: {
-            'wallet.lastUpdated': new Date()
+            'wallet.lastUpdated': new Date(),
+            'lastUpdated': new Date()
           }
         },
         { session, new: true }

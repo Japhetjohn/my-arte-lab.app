@@ -110,9 +110,9 @@ class ProjectService {
         const curr = (tx.currency || 'USDC').toUpperCase();
         if (curr !== 'USDC') continue;
         switch (tx.type) {
-          case 'deposit': case 'earning': case 'refund':
+          case 'deposit': case 'earning': case 'refund': case 'bonus': case 'onramp':
             calculatedBalance += amt; break;
-          case 'withdrawal': case 'payment': case 'escrow':
+          case 'withdrawal': case 'payment': case 'escrow': case 'verification': case 'offramp':
             calculatedBalance -= amt; break;
         }
       }
@@ -137,7 +137,7 @@ class ProjectService {
         );
       }
 
-      // Atomic update - no __v check (syncWalletBalances modifies outside tx)
+      // Atomic update - keep both wallet.balance and balance in lockstep
       const clientUpdate = await User.findOneAndUpdate(
         {
           _id: client._id,
@@ -146,10 +146,13 @@ class ProjectService {
         {
           $inc: {
             'wallet.balance': -projectAmount,
-            'wallet.pendingBalance': projectAmount
+            'balance': -projectAmount,
+            'wallet.pendingBalance': projectAmount,
+            'pendingBalance': projectAmount
           },
           $set: {
-            'wallet.lastUpdated': new Date()
+            'wallet.lastUpdated': new Date(),
+            'lastUpdated': new Date()
           }
         },
         {
@@ -302,11 +305,14 @@ class ProjectService {
         {
           $inc: {
             'wallet.balance': creatorAmount,
+            'balance': creatorAmount,
             'wallet.totalEarnings': creatorAmount,
+            'totalEarnings': creatorAmount,
             __v: 1
           },
           $set: {
-            'wallet.lastUpdated': new Date()
+            'wallet.lastUpdated': new Date(),
+            'lastUpdated': new Date()
           }
         },
         {
@@ -324,7 +330,8 @@ class ProjectService {
         clientId,
         {
           $inc: {
-            'wallet.pendingBalance': -projectAmount
+            'wallet.pendingBalance': -projectAmount,
+            'pendingBalance': -projectAmount
           }
         },
         { session }

@@ -222,7 +222,7 @@ transactionSchema.statics.getUserBalanceSummary = async function (userId) {
         },
         totalWithdrawals: {
           $sum: {
-            $cond: [{ $in: ['$type', ['withdrawal', 'payment', 'offramp']] }, '$netAmount', 0]
+            $cond: [{ $in: ['$type', ['withdrawal', 'payment', 'offramp', 'verification']] }, '$netAmount', 0]
           }
         },
         totalRefunds: {

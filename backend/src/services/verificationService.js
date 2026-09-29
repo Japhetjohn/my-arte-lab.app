@@ -69,17 +69,22 @@ class VerificationService {
 
       if (liveBalance < VERIFICATION_PRICE) {
         throw new ErrorHandler(
-          `Insufficient balance. Verification costs $${VERIFICATION_PRICE} USDC. Your available balance: ${liveBalance.toFixed(2)} USDC`,
+          `Insufficient balance. Verification costs ${VERIFICATION_PRICE.toFixed(2)} USDC. Your available balance: ${liveBalance.toFixed(2)} USDC`,
           400
         );
       }
 
-      // Atomic balance update
+      // Atomic balance update: decrement both wallet.balance and balance
       const userUpdate = await User.findOneAndUpdate(
         { _id: userId, 'wallet.balance': { $gte: VERIFICATION_PRICE } },
         {
-          $inc: { 'wallet.balance': -VERIFICATION_PRICE },
+          $inc: {
+            'wallet.balance': -VERIFICATION_PRICE,
+            'balance': -VERIFICATION_PRICE
+          },
           $set: {
+            'wallet.lastUpdated': new Date(),
+            'lastUpdated': new Date(),
             isVerified: true,
             'verificationSubscription.active': true,
             'verificationSubscription.subscribedAt': new Date(),

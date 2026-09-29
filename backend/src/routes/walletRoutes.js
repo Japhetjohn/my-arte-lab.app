@@ -7,6 +7,7 @@ const Transaction = require('../models/Transaction');
 const SwitchWallet = require('../models/SwitchWallet');
 const FundingTransaction = require('../models/FundingTransaction');
 const switchService = require('../services/switchService');
+const ledgerService = require('../services/ledgerService');
 const { catchAsync } = require('../utils/errorHandler');
 
 /**
@@ -50,13 +51,28 @@ router.get('/', protect, catchAsync(async (req, res) => {
     }
   }
 
+  // Ensure dual balance fields are aligned (authoritative source)
+  const authoritativeBalance = user.wallet?.balance !== undefined && user.wallet?.balance !== null
+    ? user.wallet.balance
+    : (user.balance || 0);
+
+  // Self-heal field discrepancy if detected
+  if (user.balance !== authoritativeBalance || user.wallet?.balance !== authoritativeBalance) {
+    await User.findByIdAndUpdate(user._id, {
+      $set: {
+        'wallet.balance': authoritativeBalance,
+        'balance': authoritativeBalance
+      }
+    });
+  }
+
   res.json({
     success: true,
     data: {
       wallet: {
-        balance: user.balance || 0,
-        usdcBalance: user.balance || 0,
-        pendingBalance: user.pendingBalance || 0,
+        balance: authoritativeBalance,
+        usdcBalance: authoritativeBalance,
+        pendingBalance: user.pendingBalance || user.wallet?.pendingBalance || 0,
         escrowBalance,
         incomingEarnings,
         currency: user.currency || 'USDC',
@@ -324,10 +340,16 @@ router.get('/fund/:reference', protect, catchAsync(async (req, res) => {
       if (switchStatus && switchStatus !== fundingTx.switchStatus) {
         fundingTx.switchStatus = switchStatus;
         if (switchStatus === 'PROCESSING') fundingTx.status = 'processing';
-        if (switchStatus === 'COMPLETED') fundingTx.status = 'completed';
-        if (switchStatus === 'FAILED') fundingTx.status = 'failed';
-        if (switchStatus === 'REVERSED') fundingTx.status = 'reversed';
-        await fundingTx.save();
+        if (switchStatus === 'COMPLETED') {
+          fundingTx.status = 'completed';
+          await fundingTx.save();
+          // Phase 5 settlement accounting: Idempotent balance credit
+          await ledgerService.creditFundingDeposit(fundingTx);
+        } else {
+          if (switchStatus === 'FAILED') fundingTx.status = 'failed';
+          if (switchStatus === 'REVERSED') fundingTx.status = 'reversed';
+          await fundingTx.save();
+        }
       }
     } catch (pollErr) {
       console.warn(`[Wallet] Could not sync Switch payment status for ${reference}:`, pollErr.message);

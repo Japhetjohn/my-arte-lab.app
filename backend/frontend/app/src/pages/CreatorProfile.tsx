@@ -916,7 +916,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Price</span>
-                <span className="font-semibold">$1.00 USDC / month</span>
+                <span className="font-semibold">1.00 USDC / month</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Duration</span>
@@ -973,7 +973,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                 ) : (
                   <>
                     <BadgeCheck className="w-4 h-4 mr-1" />
-                    Pay $1.00 & Verify
+                    Pay 1.00 USDC & Verify
                   </>
                 )}
               </Button>
