@@ -39,7 +39,9 @@ async function runPhase6BTests() {
 
   const testEmail = `test-phase6b-${Date.now()}@example.com`;
   const testUser = await User.create({
-    name: 'Phase 6B Test User',
+    firstName: 'Phase',
+    lastName: 'Tester',
+    name: 'Phase Tester',
     email: testEmail,
     password: 'Password123',
     balance: 100,
