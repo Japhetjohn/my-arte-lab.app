@@ -121,17 +121,18 @@ class BookingService {
         }
       }
       
-      // Subtract active escrow
+      // Subtract active escrow and pending withdrawal reservations
       const activeEscrow = await Booking.find({
         client: clientId,
         status: { $in: ['confirmed', 'in_progress', 'delivered'] },
         paymentStatus: 'paid'
       }).session(session);
       const escrowTotal = activeEscrow.reduce((sum, b) => sum + (parseFloat(b.amount) || 0), 0);
-      calculatedBalance -= escrowTotal;
+      const pendingWithdrawal = client.wallet?.pendingWithdrawal || client.pendingWithdrawal || 0;
+      calculatedBalance -= (escrowTotal + pendingWithdrawal);
       calculatedBalance = Math.max(0, parseFloat(calculatedBalance.toFixed(6)));
       
-      console.log(`[BookingPayment] Calculated balance for ${clientId}: ${calculatedBalance} USDC (escrow: ${escrowTotal})`);
+      console.log(`[BookingPayment] Calculated balance for ${clientId}: ${calculatedBalance} USDC (escrow: ${escrowTotal}, pendingWithdrawal: ${pendingWithdrawal})`);
 
       if (calculatedBalance < booking.amount) {
         throw new ErrorHandler(

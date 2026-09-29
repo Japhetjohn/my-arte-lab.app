@@ -117,7 +117,7 @@ class ProjectService {
         }
       }
       
-      // Subtract active escrow (projects in progress with paid status)
+      // Subtract active escrow (projects in progress with paid status) and pending withdrawals
       const Project = require('../models/Project');
       const activeEscrow = await Project.find({
         clientId: clientId,
@@ -125,10 +125,11 @@ class ProjectService {
         paymentStatus: 'paid'
       }).session(session);
       const escrowTotal = activeEscrow.reduce((sum, p) => sum + (parseFloat(p.acceptedAmount) || 0), 0);
-      calculatedBalance -= escrowTotal;
+      const pendingWithdrawal = client.wallet?.pendingWithdrawal || client.pendingWithdrawal || 0;
+      calculatedBalance -= (escrowTotal + pendingWithdrawal);
       calculatedBalance = Math.max(0, parseFloat(calculatedBalance.toFixed(6)));
       
-      console.log(`[ProjectPayment] Calculated balance for ${clientId}: ${calculatedBalance} USDC (escrow: ${escrowTotal})`);
+      console.log(`[ProjectPayment] Calculated balance for ${clientId}: ${calculatedBalance} USDC (escrow: ${escrowTotal}, pendingWithdrawal: ${pendingWithdrawal})`);
 
       if (calculatedBalance < projectAmount) {
         throw new ErrorHandler(

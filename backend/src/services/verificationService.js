@@ -57,7 +57,7 @@ class VerificationService {
         if (['withdrawal', 'payment', 'escrow', 'verification'].includes(tx.type)) calculatedBalance -= amt;
       }
 
-      // Subtract active escrow
+      // Subtract active escrow & pending withdrawal reservations
       const Booking = require('../models/Booking');
       const activeEscrow = await Booking.find({
         client: userId,
@@ -65,7 +65,8 @@ class VerificationService {
         paymentStatus: 'paid'
       }).session(session);
       const escrowTotal = activeEscrow.reduce((sum, b) => sum + (parseFloat(b.amount) || 0), 0);
-      const liveBalance = Math.max(0, calculatedBalance - escrowTotal);
+      const pendingWithdrawal = user.wallet?.pendingWithdrawal || user.pendingWithdrawal || 0;
+      const liveBalance = Math.max(0, calculatedBalance - escrowTotal - pendingWithdrawal);
 
       if (liveBalance < VERIFICATION_PRICE) {
         throw new ErrorHandler(
@@ -215,7 +216,10 @@ class VerificationService {
           if (['withdrawal', 'payment', 'escrow', 'verification'].includes(tx.type)) calculatedBalance -= amt;
         }
 
-        if (calculatedBalance >= VERIFICATION_PRICE) {
+        const pendingWithdrawal = user.wallet?.pendingWithdrawal || user.pendingWithdrawal || 0;
+        const availableBalance = Math.max(0, calculatedBalance - pendingWithdrawal);
+
+        if (availableBalance >= VERIFICATION_PRICE) {
           await this.subscribe(user._id);
           renewedCount++;
         } else {

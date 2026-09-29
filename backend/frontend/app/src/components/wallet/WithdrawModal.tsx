@@ -992,13 +992,13 @@ export function WithdrawModal({
               </div>
             </div>
 
-            {/* Atomic Reservation Notice */}
-            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 flex items-start gap-2">
-              <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+            {/* Safe Transfer Protection Notice */}
+            <div className="p-3 bg-purple-50 border border-purple-200 rounded-xl text-xs text-purple-900 flex items-start gap-2">
+              <ShieldCheck className="w-4 h-4 text-purple-600 shrink-0 mt-0.5" />
               <div>
-                <span className="font-semibold">Atomic Balance Reservation:</span> Your USDC balance of{' '}
-                <span className="font-bold">${parseFloat(amountUsdc).toFixed(2)} USDC</span> will be reserved safely
-                immediately upon initiation. If the payout fails on Switch, it will be automatically refunded back to your available balance.
+                <span className="font-semibold">Protected Transfer:</span> Your{' '}
+                <span className="font-bold">${parseFloat(amountUsdc).toFixed(2)} USDC</span> is held safely
+                during payout processing. If the bank or network transfer cannot be completed, funds automatically remain safe in your wallet.
               </div>
             </div>
 
