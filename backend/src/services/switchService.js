@@ -387,7 +387,11 @@ class SwitchService {
 
     // Optional timestamp / replay protection check
     if (timestampHeader) {
-      const eventTime = new Date(timestampHeader).getTime();
+      const numTimestamp = Number(timestampHeader);
+      const eventTime = !isNaN(numTimestamp) && numTimestamp > 0
+        ? (numTimestamp < 1e11 ? numTimestamp * 1000 : numTimestamp)
+        : new Date(timestampHeader).getTime();
+
       if (isNaN(eventTime)) {
         return { isValid: false, reason: 'Invalid x-switch-timestamp header format' };
       }
