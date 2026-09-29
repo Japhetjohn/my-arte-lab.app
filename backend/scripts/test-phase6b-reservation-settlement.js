@@ -217,9 +217,15 @@ async function runPhase6BTests() {
     creator: new mongoose.Types.ObjectId(),
     serviceTitle: 'Graphic Design',
     amount: 500,
-    currency: 'USDC'
+    currency: 'USDC',
+    platformCommission: 20,
+    platformFee: 100,
+    creatorAmount: 400,
+    escrowWallet: {
+      address: 'Gy2n4pZePk1vZyx76GtNERaLSgcoQYD2MnohMxFWbtCV'
+    }
   });
-  assert(mockBooking.platformCommission === 20, 'Booking platform commission is 20%');
+  assert(mockBooking.platformCommission === 20, 'Booking marketplace fee is configured at 20%');
   assert(mockBooking.platformFee === 100, '20% booking fee correctly equals 100 USDC on 500 USDC booking');
   assert(mockBooking.creatorAmount === 400, 'Creator receives 80% (400 USDC)');
 
