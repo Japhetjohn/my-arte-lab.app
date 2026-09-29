@@ -369,30 +369,24 @@ class LedgerService {
     const cleanStatus = failureStatus.toUpperCase() === 'REVERSED' ? 'reversed' : 'failed';
     const amount = parseFloat(Number(withdrawalTx.amountUsdc).toFixed(6));
 
-    // Transition withdrawal state
-    const lockedWithdrawalTx = await WithdrawalTransaction.findOneAndUpdate(
-      {
-        _id: withdrawalTx._id,
-        status: { $nin: ['failed', 'reversed', 'cancelled'] }
-      },
-      {
-        $set: {
-          status: cleanStatus,
-          switchStatus: failureStatus.toUpperCase(),
-          failureReason: failureReason || `Switch reported status ${failureStatus}`,
-          'reservation.releasedAt': new Date()
-        }
-      },
-      { new: true }
-    );
-
-    if (!lockedWithdrawalTx) {
+    // 1. Fetch current status before atomic transition
+    const currentTx = await WithdrawalTransaction.findById(withdrawalTx._id);
+    if (!currentTx || ['failed', 'reversed', 'cancelled'].includes(currentTx.status)) {
       return { handled: false, alreadyHandled: true, reference: withdrawalTx.reference };
     }
 
-    // If previous status was 'completed', funds were already deducted from wallet.balance -> perform full refund
-    if (withdrawalTx.status === 'completed') {
-      await User.findByIdAndUpdate(lockedWithdrawalTx.user, {
+    const previousStatus = currentTx.status;
+
+    // 2. Transition state
+    currentTx.status = cleanStatus;
+    currentTx.switchStatus = failureStatus.toUpperCase();
+    currentTx.failureReason = failureReason || `Switch reported status ${failureStatus}`;
+    currentTx.reservation.releasedAt = new Date();
+    await currentTx.save();
+
+    // 3. If previous status was 'completed', funds were already deducted from wallet.balance -> perform full refund
+    if (previousStatus === 'completed') {
+      await User.findByIdAndUpdate(currentTx.user, {
         $inc: {
           'wallet.balance': amount,
           'balance': amount
@@ -407,24 +401,24 @@ class LedgerService {
       const random = crypto.randomBytes(3).toString('hex').toUpperCase();
       await Transaction.create({
         transactionId: `TXN-REF-${timestamp}-${random}`,
-        user: lockedWithdrawalTx.user,
+        user: currentTx.user,
         type: 'refund',
         amount,
         netAmount: amount,
         currency: 'USDC',
         status: 'completed',
-        reference: lockedWithdrawalTx.reference,
-        description: `Refund for reversed withdrawal ${lockedWithdrawalTx.reference}`,
+        reference: currentTx.reference,
+        description: `Refund for reversed withdrawal ${currentTx.reference}`,
         completedAt: new Date()
       });
 
-      console.log(`[Ledger] Refunded ${amount} USDC for reversed completed withdrawal ${lockedWithdrawalTx.reference}`);
+      console.log(`[Ledger] Refunded ${amount} USDC for reversed completed withdrawal ${currentTx.reference}`);
       return { handled: true, refunded: true, status: cleanStatus };
     }
 
     // Otherwise, funds were in pendingWithdrawal reservation -> release pending reservation
-    await this.releaseWithdrawalReservation(lockedWithdrawalTx.user, amount);
-    console.log(`[Ledger] Released reservation of ${amount} USDC for failed withdrawal ${lockedWithdrawalTx.reference}`);
+    await this.releaseWithdrawalReservation(currentTx.user, amount);
+    console.log(`[Ledger] Released reservation of ${amount} USDC for failed withdrawal ${currentTx.reference}`);
 
     return { handled: true, released: true, status: cleanStatus };
   }
