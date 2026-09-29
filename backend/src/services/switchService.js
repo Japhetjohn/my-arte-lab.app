@@ -77,6 +77,11 @@ class SwitchService {
       }
 
       if (!response.ok) {
+        if (response.status === 429 && retries > 0) {
+          console.warn(`[SwitchService] Rate limited (429) on ${endpoint}. Retrying after backoff...`);
+          await new Promise(r => setTimeout(r, 2000));
+          return this._request(endpoint, options, retries - 1);
+        }
         const errorMessage = data?.message || data?.error || `Switch API HTTP error ${response.status}`;
         const error = new Error(this._sanitizeMessage(errorMessage));
         error.status = response.status;
