@@ -110,6 +110,326 @@ class LedgerService {
   }
 
   /**
+   * Atomically reserves available USDC balance for an in-flight withdrawal.
+   * Ensures availableBalance (wallet.balance - wallet.pendingWithdrawal) >= withdrawalAmount
+   * and increments pendingWithdrawal in 100% atomic lockstep.
+   * 
+   * @param {string|ObjectId} userId
+   * @param {number} amountUsdc
+   * @returns {Promise<{ reserved: boolean, reservedAmount: number, availableBalance: number, pendingWithdrawal: number }>}
+   */
+  async reserveWithdrawalBalance(userId, amountUsdc) {
+    const withdrawalAmount = parseFloat(Number(amountUsdc).toFixed(6));
+    if (isNaN(withdrawalAmount) || withdrawalAmount <= 0) {
+      throw new Error('Valid positive withdrawal amount is required for balance reservation');
+    }
+
+    const userUpdate = await User.findOneAndUpdate(
+      {
+        _id: userId,
+        $expr: {
+          $gte: [
+            {
+              $subtract: [
+                { $ifNull: ['$wallet.balance', '$balance'] },
+                { $ifNull: ['$wallet.pendingWithdrawal', 0] }
+              ]
+            },
+            withdrawalAmount
+          ]
+        }
+      },
+      {
+        $inc: {
+          'wallet.pendingWithdrawal': withdrawalAmount,
+          'pendingWithdrawal': withdrawalAmount
+        },
+        $set: {
+          'wallet.lastUpdated': new Date(),
+          'lastUpdated': new Date()
+        }
+      },
+      { new: true }
+    );
+
+    if (!userUpdate) {
+      // Fetch user to provide exact discrepancy details
+      const currentUser = await User.findById(userId);
+      const curBal = currentUser?.wallet?.balance || currentUser?.balance || 0;
+      const curPending = currentUser?.wallet?.pendingWithdrawal || currentUser?.pendingWithdrawal || 0;
+      const available = Math.max(0, curBal - curPending);
+      throw new Error(`Insufficient available balance. Required: ${withdrawalAmount} USDC, Available: ${available} USDC`);
+    }
+
+    const authoritativeBal = userUpdate.wallet?.balance !== undefined ? userUpdate.wallet.balance : userUpdate.balance;
+    const currentPending = userUpdate.wallet?.pendingWithdrawal !== undefined ? userUpdate.wallet.pendingWithdrawal : userUpdate.pendingWithdrawal;
+    const availableBalance = Math.max(0, parseFloat((authoritativeBal - currentPending).toFixed(6)));
+
+    console.log(`[Ledger] Reserved ${withdrawalAmount} USDC for user ${userId}. Pending: ${currentPending} USDC, Available: ${availableBalance} USDC`);
+
+    return {
+      reserved: true,
+      reservedAmount: withdrawalAmount,
+      availableBalance,
+      pendingWithdrawal: currentPending
+    };
+  }
+
+  /**
+   * Atomically releases a previously reserved withdrawal amount back to available balance.
+   * (Decrements pendingWithdrawal without altering wallet.balance).
+   * 
+   * @param {string|ObjectId} userId
+   * @param {number} amountUsdc
+   * @returns {Promise<{ released: boolean, releasedAmount: number, pendingWithdrawal: number }>}
+   */
+  async releaseWithdrawalReservation(userId, amountUsdc) {
+    const releaseAmount = parseFloat(Number(amountUsdc).toFixed(6));
+    if (isNaN(releaseAmount) || releaseAmount <= 0) {
+      return { released: false, reason: 'Invalid release amount' };
+    }
+
+    const userUpdate = await User.findOneAndUpdate(
+      {
+        _id: userId,
+        $expr: {
+          $gte: [
+            { $ifNull: ['$wallet.pendingWithdrawal', 0] },
+            releaseAmount
+          ]
+        }
+      },
+      {
+        $inc: {
+          'wallet.pendingWithdrawal': -releaseAmount,
+          'pendingWithdrawal': -releaseAmount
+        },
+        $set: {
+          'wallet.lastUpdated': new Date(),
+          'lastUpdated': new Date()
+        }
+      },
+      { new: true }
+    );
+
+    // If pending was less than releaseAmount, clamp to 0 safely
+    if (!userUpdate) {
+      await User.findByIdAndUpdate(userId, {
+        $set: {
+          'wallet.pendingWithdrawal': 0,
+          'pendingWithdrawal': 0,
+          'wallet.lastUpdated': new Date(),
+          'lastUpdated': new Date()
+        }
+      });
+    }
+
+    const updatedUser = userUpdate || await User.findById(userId);
+    const currentPending = updatedUser?.wallet?.pendingWithdrawal || updatedUser?.pendingWithdrawal || 0;
+
+    console.log(`[Ledger] Released ${releaseAmount} USDC reservation for user ${userId}. New pending: ${currentPending} USDC`);
+
+    return {
+      released: true,
+      releasedAmount: releaseAmount,
+      pendingWithdrawal: currentPending
+    };
+  }
+
+  /**
+   * Finalizes and settles a completed off-ramp withdrawal:
+   * Atomically decrements wallet.balance, clears pendingWithdrawal, and logs Transaction to ledger.
+   * Exactly-once transition guard prevents duplicate debits.
+   * 
+   * @param {Object} withdrawalTx WithdrawalTransaction document or object
+   * @returns {Promise<{ settled: boolean, alreadySettled?: boolean, amount?: number, ledgerTx?: Object }>}
+   */
+  async settleCompletedWithdrawal(withdrawalTx) {
+    if (!withdrawalTx || !withdrawalTx._id) {
+      throw new Error('Valid withdrawal transaction record is required for settlement');
+    }
+
+    const WithdrawalTransaction = require('../models/WithdrawalTransaction');
+
+    // 1. Query-level atomic guard: update only if status is NOT already completed
+    const lockedWithdrawalTx = await WithdrawalTransaction.findOneAndUpdate(
+      {
+        _id: withdrawalTx._id,
+        status: { $ne: 'completed' }
+      },
+      {
+        $set: {
+          status: 'completed',
+          switchStatus: 'COMPLETED',
+          completedAt: new Date(),
+          'reservation.settledAt': new Date()
+        }
+      },
+      { new: true }
+    );
+
+    if (!lockedWithdrawalTx) {
+      console.log(`[Ledger] Withdrawal ${withdrawalTx.reference || withdrawalTx._id} is already completed. Preventing duplicate debit.`);
+      return {
+        settled: false,
+        alreadySettled: true,
+        reference: withdrawalTx.reference
+      };
+    }
+
+    const settleAmount = parseFloat(Number(lockedWithdrawalTx.amountUsdc).toFixed(6));
+
+    // 2. Create authoritative completed transaction in the ledger
+    const timestamp = Date.now().toString(36).toUpperCase();
+    const random = crypto.randomBytes(3).toString('hex').toUpperCase();
+    const transactionId = `TXN-WD-${timestamp}-${random}`;
+
+    const ledgerTx = await Transaction.create({
+      transactionId,
+      user: lockedWithdrawalTx.user,
+      type: 'withdrawal',
+      amount: settleAmount,
+      netAmount: settleAmount,
+      currency: 'USDC',
+      status: 'completed',
+      reference: lockedWithdrawalTx.reference,
+      paymentMethod: (lockedWithdrawalTx.payoutChannel === 'MOBILEMONEY' || lockedWithdrawalTx.payoutChannel === 'MOBILE_MONEY') ? 'mobile_money' : 'bank_transfer',
+      description: `Switch Offramp Payout: ${settleAmount} USDC -> ${lockedWithdrawalTx.destinationAmount} ${lockedWithdrawalTx.destinationCurrency}`,
+      blockchainNetwork: 'SOLANA',
+      metadata: {
+        provider: 'switch',
+        withdrawalTransactionId: lockedWithdrawalTx._id,
+        destinationCurrency: lockedWithdrawalTx.destinationCurrency,
+        destinationAmount: lockedWithdrawalTx.destinationAmount,
+        exchangeRate: lockedWithdrawalTx.exchangeRate,
+        fee: lockedWithdrawalTx.fee,
+        beneficiary: lockedWithdrawalTx.beneficiary,
+        payoutChannel: lockedWithdrawalTx.payoutChannel,
+        country: lockedWithdrawalTx.destinationCountry,
+        switchReference: lockedWithdrawalTx.switchReference
+      },
+      completedAt: new Date()
+    });
+
+    // 3. Atomically debit user balance and clear pending reservation
+    const userUpdate = await User.findByIdAndUpdate(
+      lockedWithdrawalTx.user,
+      {
+        $inc: {
+          'wallet.balance': -settleAmount,
+          'balance': -settleAmount,
+          'wallet.pendingWithdrawal': -settleAmount,
+          'pendingWithdrawal': -settleAmount
+        },
+        $set: {
+          'wallet.lastUpdated': new Date(),
+          'lastUpdated': new Date()
+        }
+      },
+      { new: true }
+    );
+
+    // Safeguard: Ensure balance and pendingWithdrawal do not drop below 0 due to concurrency
+    if (userUpdate && ((userUpdate.wallet?.pendingWithdrawal || 0) < 0 || (userUpdate.pendingWithdrawal || 0) < 0)) {
+      await User.findByIdAndUpdate(lockedWithdrawalTx.user, {
+        $set: {
+          'wallet.pendingWithdrawal': Math.max(0, userUpdate.wallet?.pendingWithdrawal || 0),
+          'pendingWithdrawal': Math.max(0, userUpdate.pendingWithdrawal || 0)
+        }
+      });
+    }
+
+    console.log(`[Ledger] Successfully settled withdrawal of ${settleAmount} USDC for user ${lockedWithdrawalTx.user}. New balance: ${userUpdate?.wallet?.balance || userUpdate?.balance} USDC. LedgerTx: ${transactionId}`);
+
+    return {
+      settled: true,
+      amount: settleAmount,
+      currency: 'USDC',
+      reference: lockedWithdrawalTx.reference,
+      ledgerTx
+    };
+  }
+
+  /**
+   * Handles failed, expired, or reversed off-ramp transactions:
+   * Releases locked pendingWithdrawal reservation back to available balance.
+   * If already completed and reversed by bank, refunds balance and logs reversal.
+   * 
+   * @param {Object} withdrawalTx
+   * @param {string} [failureStatus='FAILED']
+   * @param {string} [failureReason]
+   * @returns {Promise<{ handled: boolean, released: boolean, status: string }>}
+   */
+  async handleFailedOrReversedWithdrawal(withdrawalTx, failureStatus = 'FAILED', failureReason = '') {
+    if (!withdrawalTx || !withdrawalTx._id) {
+      throw new Error('Valid withdrawal transaction record is required');
+    }
+
+    const WithdrawalTransaction = require('../models/WithdrawalTransaction');
+    const cleanStatus = failureStatus.toUpperCase() === 'REVERSED' ? 'reversed' : 'failed';
+    const amount = parseFloat(Number(withdrawalTx.amountUsdc).toFixed(6));
+
+    // Transition withdrawal state
+    const lockedWithdrawalTx = await WithdrawalTransaction.findOneAndUpdate(
+      {
+        _id: withdrawalTx._id,
+        status: { $nin: ['failed', 'reversed', 'cancelled'] }
+      },
+      {
+        $set: {
+          status: cleanStatus,
+          switchStatus: failureStatus.toUpperCase(),
+          failureReason: failureReason || `Switch reported status ${failureStatus}`,
+          'reservation.releasedAt': new Date()
+        }
+      },
+      { new: true }
+    );
+
+    if (!lockedWithdrawalTx) {
+      return { handled: false, alreadyHandled: true, reference: withdrawalTx.reference };
+    }
+
+    // If previous status was 'completed', funds were already deducted from wallet.balance -> perform full refund
+    if (withdrawalTx.status === 'completed') {
+      await User.findByIdAndUpdate(lockedWithdrawalTx.user, {
+        $inc: {
+          'wallet.balance': amount,
+          'balance': amount
+        },
+        $set: {
+          'wallet.lastUpdated': new Date(),
+          'lastUpdated': new Date()
+        }
+      });
+
+      const timestamp = Date.now().toString(36).toUpperCase();
+      const random = crypto.randomBytes(3).toString('hex').toUpperCase();
+      await Transaction.create({
+        transactionId: `TXN-REF-${timestamp}-${random}`,
+        user: lockedWithdrawalTx.user,
+        type: 'refund',
+        amount,
+        netAmount: amount,
+        currency: 'USDC',
+        status: 'completed',
+        reference: lockedWithdrawalTx.reference,
+        description: `Refund for reversed withdrawal ${lockedWithdrawalTx.reference}`,
+        completedAt: new Date()
+      });
+
+      console.log(`[Ledger] Refunded ${amount} USDC for reversed completed withdrawal ${lockedWithdrawalTx.reference}`);
+      return { handled: true, refunded: true, status: cleanStatus };
+    }
+
+    // Otherwise, funds were in pendingWithdrawal reservation -> release pending reservation
+    await this.releaseWithdrawalReservation(lockedWithdrawalTx.user, amount);
+    console.log(`[Ledger] Released reservation of ${amount} USDC for failed withdrawal ${lockedWithdrawalTx.reference}`);
+
+    return { handled: true, released: true, status: cleanStatus };
+  }
+
+  /**
    * Calculate authoritative balance directly from completed ledger transactions.
    * 
    * @param {string|ObjectId} userId

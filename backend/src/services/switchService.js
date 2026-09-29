@@ -816,6 +816,113 @@ class SwitchService {
 
     return res.data || res;
   }
+
+  /**
+   * Initiates an off-ramp payout transaction on Switch (USDC on Solana -> Fiat).
+   * Documentation: POST /offramp/initiate
+   * 
+   * @param {object} params
+   * @param {number} params.amount - USDC amount to offramp
+   * @param {string} params.country - 2-letter ISO country code (e.g. NG)
+   * @param {string} params.currency - Destination fiat currency code (e.g. NGN)
+   * @param {string} [params.channel='BANK'] - Transfer channel ('BANK' or 'MOBILEMONEY')
+   * @param {string} params.reference - Unique client UUID for transaction tracking
+   * @param {string} [params.callbackUrl] - Webhook callback URL
+   * @param {object} params.beneficiary - Beneficiary details (holder_type, holder_name, account_number, bank_code, etc.)
+   * @param {string} [params.narration] - Memo / transfer narration
+   * @param {string} [params.reason='SERVICE_CHARGES'] - Purpose of payment
+   * @param {string} [params.wallet] - Source Switch wallet ID or address
+   * @param {number} [params.developerFee] - Optional developer fee percentage
+   * @param {boolean} [params.exactOutput=false] - Whether amount is exact output
+   * @returns {Promise<object>} Complete offramp initiation data
+   */
+  async initiateOfframp({
+    amount,
+    country,
+    currency,
+    channel = 'BANK',
+    reference,
+    callbackUrl,
+    beneficiary,
+    narration = 'MyArteLab Payout',
+    reason = 'SERVICE_CHARGES',
+    wallet,
+    developerFee,
+    exactOutput = false
+  }) {
+    const numAmount = Number(amount);
+    if (isNaN(numAmount) || numAmount <= 0) {
+      throw new Error('Withdrawal amount must be a positive number greater than 0');
+    }
+
+    if (!country || typeof country !== 'string' || country.trim().length !== 2) {
+      throw new Error('A valid 2-letter ISO country code is required');
+    }
+
+    if (!currency || typeof currency !== 'string' || currency.trim().length < 2) {
+      throw new Error('A valid fiat currency code is required');
+    }
+
+    if (!reference || typeof reference !== 'string') {
+      throw new Error('A unique transaction reference UUID is required');
+    }
+
+    if (!beneficiary || typeof beneficiary !== 'object') {
+      throw new Error('Beneficiary details object is required');
+    }
+
+    const cleanChannel = (channel || 'BANK').trim().toUpperCase();
+    const cleanCountry = country.trim().toUpperCase();
+    const cleanCurrency = currency.trim().toUpperCase();
+
+    // Construct beneficiary payload according to Switch channel requirements
+    const beneficiaryPayload = {
+      holder_type: beneficiary.holder_type || beneficiary.holderType || 'INDIVIDUAL',
+      holder_name: beneficiary.holder_name || beneficiary.holderName || beneficiary.accountName || 'MyArteLab User'
+    };
+
+    if (cleanChannel === 'MOBILEMONEY' || cleanChannel === 'MOBILE_MONEY') {
+      beneficiaryPayload.mobile_number = beneficiary.mobile_number || beneficiary.mobileNumber || beneficiary.account_number || beneficiary.accountNumber;
+      beneficiaryPayload.mobile_network = beneficiary.mobile_network || beneficiary.mobileNetwork || beneficiary.bank_code || beneficiary.bankCode;
+    } else {
+      beneficiaryPayload.account_number = beneficiary.account_number || beneficiary.accountNumber;
+      beneficiaryPayload.bank_code = beneficiary.bank_code || beneficiary.bankCode;
+    }
+
+    const resolvedCallbackUrl = callbackUrl || process.env.SWITCH_CALLBACK_URL || 'https://app.myartelab.com/webhooks';
+
+    const payload = {
+      amount: numAmount,
+      country: cleanCountry,
+      currency: cleanCurrency,
+      asset: 'solana:usdc', // strictly enforced MyArteLab crypto settlement asset
+      channel: cleanChannel === 'MOBILE_MONEY' ? 'MOBILEMONEY' : cleanChannel,
+      reference: reference.trim(),
+      callback_url: resolvedCallbackUrl,
+      beneficiary: beneficiaryPayload,
+      narration: (narration || 'MyArteLab Payout').trim(),
+      reason: reason || 'SERVICE_CHARGES',
+      exact_output: Boolean(exactOutput)
+    };
+
+    if (wallet && typeof wallet === 'string' && wallet.trim().length > 0) {
+      payload.wallet = wallet.trim();
+    }
+
+    if (developerFee !== undefined && developerFee !== null) {
+      const numDevFee = Number(developerFee);
+      if (!isNaN(numDevFee) && numDevFee >= 0 && numDevFee <= 100) {
+        payload.developer_fee = numDevFee;
+      }
+    }
+
+    const res = await this._request('/offramp/initiate', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+
+    return res.data || res;
+  }
 }
 
 module.exports = new SwitchService();

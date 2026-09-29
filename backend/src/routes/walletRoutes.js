@@ -9,6 +9,7 @@ const FundingTransaction = require('../models/FundingTransaction');
 const WithdrawalTransaction = require('../models/WithdrawalTransaction');
 const switchService = require('../services/switchService');
 const ledgerService = require('../services/ledgerService');
+const withdrawalService = require('../services/withdrawalService');
 const { catchAsync } = require('../utils/errorHandler');
 
 /**
@@ -342,6 +343,51 @@ router.post('/withdraw/quote', protect, catchAsync(async (req, res) => {
     res.status(quoteErr.status || 400).json({
       success: false,
       error: quoteErr.message || 'Failed to fetch withdrawal quote from Switch'
+    });
+  }
+}));
+
+/**
+ * @route   POST /api/wallet/withdraw/initiate
+ * @desc    Initiate off-ramp payout withdrawal via Switch with atomic balance reservation
+ * @access  Private
+ */
+router.post('/withdraw/initiate', protect, catchAsync(async (req, res) => {
+  const { amount, country, currency, channel, beneficiary, idempotencyKey, narration, reason } = req.body;
+
+  const result = await withdrawalService.initiateWithdrawal({
+    user: req.user,
+    amount,
+    country,
+    currency,
+    channel,
+    beneficiary,
+    idempotencyKey,
+    narration,
+    reason
+  });
+
+  res.status(201).json(result);
+}));
+
+/**
+ * @route   GET /api/wallet/withdraw/:reference
+ * @desc    Get status and details of an off-ramp withdrawal attempt
+ * @access  Private
+ */
+router.get('/withdraw/:reference', protect, catchAsync(async (req, res) => {
+  const { reference } = req.params;
+
+  try {
+    const data = await withdrawalService.getWithdrawalStatus(reference, req.user._id);
+    res.json({
+      success: true,
+      data
+    });
+  } catch (err) {
+    res.status(err.status || 404).json({
+      success: false,
+      error: err.message || 'Withdrawal transaction not found'
     });
   }
 }));

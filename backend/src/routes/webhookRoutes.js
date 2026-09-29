@@ -39,9 +39,10 @@ const handleSwitchWebhook = async (req, res) => {
 
   console.log(`[Switch Webhook] Verified event received. Type: ${eventType}, Status: ${switchStatus}, Ref: ${reference || 'N/A'}`);
 
-  // 3. Update matching FundingTransaction if reference exists
+  // 3. Update matching FundingTransaction or WithdrawalTransaction if reference exists
   if (reference) {
     try {
+      // 3A. Check FundingTransaction (On-ramp)
       const fundingTx = await FundingTransaction.findOne({ reference });
       if (fundingTx) {
         // Event deduplication check
@@ -84,8 +85,42 @@ const handleSwitchWebhook = async (req, res) => {
           console.log(`[Switch Webhook] Settlement credit for ${reference}:`, creditResult);
         }
       }
+
+      // 3B. Check WithdrawalTransaction (Off-ramp)
+      const WithdrawalTransaction = require('../models/WithdrawalTransaction');
+      const withdrawalTx = await WithdrawalTransaction.findOne({ reference });
+      if (withdrawalTx) {
+        const alreadyRecorded = withdrawalTx.webhookEvents.some(
+          e => e.status === switchStatus && (Date.now() - new Date(e.timestamp).getTime()) < 30000
+        );
+
+        if (!alreadyRecorded) {
+          withdrawalTx.webhookEvents.push({
+            eventId: req.headers['x-switch-event-id'] || crypto.randomUUID(),
+            status: switchStatus,
+            timestamp: new Date(),
+            payload: data
+          });
+
+          if (switchStatus) {
+            withdrawalTx.switchStatus = switchStatus;
+          }
+
+          await withdrawalTx.save();
+          console.log(`[Switch Webhook] Withdrawal ${reference} event recorded (Switch: ${switchStatus})`);
+        }
+
+        // Phase 6B settlement & reservation accounting
+        if (switchStatus === 'COMPLETED') {
+          const settleResult = await ledgerService.settleCompletedWithdrawal(withdrawalTx);
+          console.log(`[Switch Webhook] Withdrawal settlement debit for ${reference}:`, settleResult);
+        } else if (['FAILED', 'REVERSED', 'EXPIRED'].includes(switchStatus)) {
+          const failureResult = await ledgerService.handleFailedOrReversedWithdrawal(withdrawalTx, switchStatus, data.message);
+          console.log(`[Switch Webhook] Withdrawal failure/reversal handled for ${reference}:`, failureResult);
+        }
+      }
     } catch (dbErr) {
-      console.error(`[Switch Webhook] Error updating funding record for ${reference}:`, dbErr.message);
+      console.error(`[Switch Webhook] Error updating transaction record for ${reference}:`, dbErr.message);
       // Non-blocking: Still acknowledge to Switch to prevent endless webhook retries
     }
   }
