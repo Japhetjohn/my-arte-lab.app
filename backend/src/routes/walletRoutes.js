@@ -227,8 +227,10 @@ router.post('/resolve-account', protect, catchAsync(async (req, res) => {
   try {
     const resolution = await switchService.lookupInstitution({
       country: country.trim().toUpperCase(),
-      accountNumber: accountNumber.trim(),
-      bankCode: bankCode.trim()
+      accountNumber: accountNumber ? accountNumber.trim() : undefined,
+      bankCode: bankCode ? bankCode.trim() : undefined,
+      mobileNetwork: req.body.mobileNetwork ? String(req.body.mobileNetwork).trim() : undefined,
+      phoneNumber: req.body.phoneNumber ? String(req.body.phoneNumber).trim() : undefined
     });
 
     res.json({
@@ -277,7 +279,9 @@ router.post('/quote', protect, catchAsync(async (req, res) => {
       amount: Number(amount),
       country: country.trim().toUpperCase(),
       currency: currency.trim().toUpperCase(),
-      channel: channel ? channel.trim().toUpperCase() : undefined
+      channel: channel ? channel.trim().toUpperCase() : undefined,
+      developerFee: 1,
+      developerRecipient: process.env.PLATFORM_WALLET_ADDRESS
     });
 
     res.json({
@@ -332,7 +336,9 @@ router.post('/withdraw/quote', protect, catchAsync(async (req, res) => {
       currency: currency.trim().toUpperCase(),
       channel: channel ? channel.trim().toUpperCase() : undefined,
       wallet: switchWallet?.solanaAddress || undefined,
-      exactOutput: Boolean(exactOutput)
+      exactOutput: Boolean(exactOutput),
+      developerFee: 1,
+      developerRecipient: process.env.PLATFORM_WALLET_ADDRESS
     });
 
     res.json({
@@ -473,7 +479,9 @@ router.post('/fund/initiate', protect, catchAsync(async (req, res) => {
     amount: numAmount,
     country: cleanCountry,
     currency: cleanCurrency,
-    channel: cleanChannel
+    channel: cleanChannel,
+    developerFee: 1,
+    developerRecipient: process.env.PLATFORM_WALLET_ADDRESS
   });
 
   // 3. Generate unique transaction reference UUID
@@ -496,7 +504,9 @@ router.post('/fund/initiate', protect, catchAsync(async (req, res) => {
         holder_name: userFullName,
         wallet_address: switchWallet.solanaAddress
       },
-      payer: payer || undefined
+      payer: payer || undefined,
+      developerFee: 1,
+      developerRecipient: process.env.PLATFORM_WALLET_ADDRESS
     });
   } catch (initErr) {
     return res.status(initErr.status || 400).json({

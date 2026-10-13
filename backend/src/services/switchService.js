@@ -514,7 +514,7 @@ class SwitchService {
    * @param {string} [params.channel] - Optional payment channel (e.g. BANK, MOBILEMONEY)
    * @returns {Promise<object>} Detailed quote data
    */
-  async getOnrampQuote({ amount, country, currency, channel }) {
+  async getOnrampQuote({ amount, country, currency, channel, developerFee = 1, developerRecipient }) {
     const numAmount = Number(amount);
     if (isNaN(numAmount) || numAmount <= 0) {
       throw new Error('Funding amount must be a positive number greater than 0');
@@ -539,6 +539,16 @@ class SwitchService {
       payload.channel = channel.trim().toUpperCase();
     }
 
+    const resolvedDevFee = developerFee !== undefined && developerFee !== null ? Number(developerFee) : 1;
+    if (!isNaN(resolvedDevFee) && resolvedDevFee >= 0) {
+      payload.developer_fee = resolvedDevFee;
+    }
+
+    const resolvedDevRecipient = developerRecipient || process.env.PLATFORM_WALLET_ADDRESS;
+    if (resolvedDevRecipient) {
+      payload.developer_recipient = resolvedDevRecipient.trim();
+    }
+
     const res = await this._request('/onramp/quote', {
       method: 'POST',
       body: JSON.stringify(payload)
@@ -554,6 +564,12 @@ class SwitchService {
       expiry: quoteData.expiry,
       settlement: quoteData.settlement,
       channel: quoteData.channel,
+      fee: {
+        total: quoteData.fee?.total !== undefined ? quoteData.fee.total : 0,
+        platform: quoteData.fee?.platform !== undefined ? quoteData.fee.platform : 0,
+        developer: quoteData.fee?.developer !== undefined ? quoteData.fee.developer : 0,
+        currency: quoteData.fee?.currency || 'USD'
+      },
       source: {
         amount: quoteData.source?.amount,
         amountUsd: quoteData.source?.amount_usd,
@@ -583,9 +599,11 @@ class SwitchService {
    * @param {string} [params.callbackUrl] - Webhook callback URL
    * @param {object} params.beneficiary - Beneficiary details (holder_type, holder_name, wallet_address)
    * @param {object} [params.payer] - Required if channel is MOBILEMONEY
+   * @param {number} [params.developerFee=1] - Developer fee percentage
+   * @param {string} [params.developerRecipient] - Developer fee recipient wallet
    * @returns {Promise<object>} Complete initiation data and deposit instructions
    */
-  async initiateOnramp({ amount, country, currency, channel = 'BANK', reference, callbackUrl, beneficiary, payer }) {
+  async initiateOnramp({ amount, country, currency, channel = 'BANK', reference, callbackUrl, beneficiary, payer, developerFee = 1, developerRecipient }) {
     const numAmount = Number(amount);
     if (isNaN(numAmount) || numAmount <= 0) {
       throw new Error('Funding amount must be a positive number greater than 0');
@@ -623,6 +641,16 @@ class SwitchService {
         wallet_address: beneficiary.wallet_address.trim()
       }
     };
+
+    const resolvedDevFee = developerFee !== undefined && developerFee !== null ? Number(developerFee) : 1;
+    if (!isNaN(resolvedDevFee) && resolvedDevFee >= 0) {
+      payload.developer_fee = resolvedDevFee;
+    }
+
+    const resolvedDevRecipient = developerRecipient || process.env.PLATFORM_WALLET_ADDRESS;
+    if (resolvedDevRecipient) {
+      payload.developer_recipient = resolvedDevRecipient.trim();
+    }
 
     if (payer && typeof payer === 'object') {
       payload.payer = payer;
@@ -670,7 +698,7 @@ class SwitchService {
    * @param {boolean} [params.exactOutput=false] - Whether amount is exact destination fiat
    * @returns {Promise<object>} Detailed off-ramp quote data
    */
-  async getOfframpQuote({ amount, country, currency, channel, wallet, exactOutput = false }) {
+  async getOfframpQuote({ amount, country, currency, channel, wallet, exactOutput = false, developerFee = 1, developerRecipient }) {
     const numAmount = Number(amount);
     if (isNaN(numAmount) || numAmount <= 0) {
       throw new Error('Withdrawal quote amount must be a positive number greater than 0');
@@ -698,6 +726,16 @@ class SwitchService {
 
     if (wallet && typeof wallet === 'string' && wallet.trim().length > 0) {
       payload.wallet = wallet.trim();
+    }
+
+    const resolvedDevFee = developerFee !== undefined && developerFee !== null ? Number(developerFee) : 1;
+    if (!isNaN(resolvedDevFee) && resolvedDevFee >= 0) {
+      payload.developer_fee = resolvedDevFee;
+    }
+
+    const resolvedDevRecipient = developerRecipient || process.env.PLATFORM_WALLET_ADDRESS;
+    if (resolvedDevRecipient) {
+      payload.developer_recipient = resolvedDevRecipient.trim();
     }
 
     const res = await this._request('/offramp/quote', {
@@ -792,31 +830,39 @@ class SwitchService {
 
   /**
    * Resolves/verifies bank account or mobile money details to confirm beneficiary name.
-   * Documentation: GET /institution/lookup?country={country}&account_number={account_number}&bank_code={bank_code}
+   * Documentation: POST /institution/lookup
    * 
    * @param {object} params
    * @param {string} params.country - 2-letter ISO country code
-   * @param {string} params.accountNumber - Bank account number or mobile money number
-   * @param {string} params.bankCode - Institution / bank code
+   * @param {string} [params.accountNumber] - Bank account number or mobile money number
+   * @param {string} [params.bankCode] - Institution / bank code
+   * @param {string} [params.mobileNetwork] - Mobile network code for mobile money
+   * @param {string} [params.phoneNumber] - Phone number for mobile money
+   * @param {object} [params.beneficiary] - Full beneficiary object
    * @returns {Promise<object>} Resolved account name and verification details
    */
-  async lookupInstitution({ country, accountNumber, bankCode }) {
+  async lookupInstitution({ country, accountNumber, bankCode, mobileNetwork, phoneNumber, beneficiary }) {
     if (!country || typeof country !== 'string' || country.trim().length !== 2) {
       throw new Error('A valid 2-letter ISO country code is required');
     }
 
-    if (!accountNumber || typeof accountNumber !== 'string' || accountNumber.trim().length < 3) {
-      throw new Error('A valid account number is required');
+    const beneficiaryPayload = {};
+    if (beneficiary && typeof beneficiary === 'object') {
+      Object.assign(beneficiaryPayload, beneficiary);
     }
+    if (accountNumber) beneficiaryPayload.account_number = String(accountNumber).trim();
+    if (bankCode) beneficiaryPayload.bank_code = String(bankCode).trim();
+    if (mobileNetwork) beneficiaryPayload.mobile_network = String(mobileNetwork).trim();
+    if (phoneNumber) beneficiaryPayload.phone_number = String(phoneNumber).trim();
 
-    if (!bankCode || typeof bankCode !== 'string' || bankCode.trim().length < 1) {
-      throw new Error('A valid bank/institution code is required');
-    }
+    const payload = {
+      country: country.trim().toUpperCase(),
+      beneficiary: beneficiaryPayload
+    };
 
-    const query = `/institution/lookup?country=${encodeURIComponent(country.trim().toUpperCase())}&account_number=${encodeURIComponent(accountNumber.trim())}&bank_code=${encodeURIComponent(bankCode.trim())}`;
-
-    const res = await this._request(query, {
-      method: 'GET'
+    const res = await this._request('/institution/lookup', {
+      method: 'POST',
+      body: JSON.stringify(payload)
     });
 
     return res.data || res;
@@ -837,7 +883,8 @@ class SwitchService {
    * @param {string} [params.narration] - Memo / transfer narration
    * @param {string} [params.reason='SERVICE_CHARGES'] - Purpose of payment
    * @param {string} [params.wallet] - Source Switch wallet ID or address
-   * @param {number} [params.developerFee] - Optional developer fee percentage
+   * @param {number} [params.developerFee=1] - Developer fee percentage
+   * @param {string} [params.developerRecipient] - Developer fee recipient wallet
    * @param {boolean} [params.exactOutput=false] - Whether amount is exact output
    * @returns {Promise<object>} Complete offramp initiation data
    */
@@ -852,7 +899,8 @@ class SwitchService {
     narration = 'MyArteLab Payout',
     reason = 'SERVICE_CHARGES',
     wallet,
-    developerFee,
+    developerFee = 1,
+    developerRecipient,
     exactOutput = false
   }) {
     const numAmount = Number(amount);
@@ -914,11 +962,14 @@ class SwitchService {
       payload.wallet = wallet.trim();
     }
 
-    if (developerFee !== undefined && developerFee !== null) {
-      const numDevFee = Number(developerFee);
-      if (!isNaN(numDevFee) && numDevFee >= 0 && numDevFee <= 100) {
-        payload.developer_fee = numDevFee;
-      }
+    const resolvedDevFee = developerFee !== undefined && developerFee !== null ? Number(developerFee) : 1;
+    if (!isNaN(resolvedDevFee) && resolvedDevFee >= 0 && resolvedDevFee <= 100) {
+      payload.developer_fee = resolvedDevFee;
+    }
+
+    const resolvedDevRecipient = developerRecipient || process.env.PLATFORM_WALLET_ADDRESS;
+    if (resolvedDevRecipient) {
+      payload.developer_recipient = resolvedDevRecipient.trim();
     }
 
     const res = await this._request('/offramp/initiate', {
