@@ -627,6 +627,13 @@ class SwitchService {
 
     const resolvedCallbackUrl = callbackUrl || process.env.SWITCH_CALLBACK_URL || 'https://app.myartelab.com/webhooks';
 
+    let cleanHolderName = (beneficiary.holder_name || 'MyArteLabUser')
+      .replace(/wallet|crypto|token|coin/gi, '')
+      .replace(/[^a-zA-Z0-9]/g, '');
+    if (!/[a-zA-Z]/.test(cleanHolderName)) {
+      cleanHolderName = `MyArteLab${cleanHolderName}`;
+    }
+
     const payload = {
       amount: numAmount,
       country: country.trim().toUpperCase(),
@@ -637,7 +644,7 @@ class SwitchService {
       callback_url: resolvedCallbackUrl,
       beneficiary: {
         holder_type: beneficiary.holder_type || 'INDIVIDUAL',
-        holder_name: beneficiary.holder_name || 'MyArteLab User',
+        holder_name: cleanHolderName,
         wallet_address: beneficiary.wallet_address.trim()
       }
     };
