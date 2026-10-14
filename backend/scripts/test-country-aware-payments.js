@@ -340,7 +340,7 @@ async function runTestSuite() {
     });
   } catch (err) {
     ghanaWithdrawalBlocked = true;
-    assert(err.message.includes('awaiting Switch provider activation in this sandbox environment'), 'Ghana fiat withdrawal rejected with informative sandbox restriction error');
+    assert(err.message.includes('awaiting Switch provider activation'), 'Ghana fiat withdrawal rejected with informative provider restriction error');
     assert(err.status === 400, 'Ghana fiat withdrawal error has HTTP 400 status');
   }
   assert(ghanaWithdrawalBlocked, 'Ghana fiat withdrawal was prevented before hitting blocked Switch endpoint');

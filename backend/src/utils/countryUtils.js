@@ -133,6 +133,19 @@ const SWITCH_OFFRAMP_SANDBOX_BLOCKED = new Set([
   'CD', 'CM', 'BJ', 'ET', 'GH', 'GM', 'GN', 'KE', 'ZA', 'MW', 'RW', 'SL', 'TZ', 'UG', 'ZM', 'LR'
 ]);
 
+// Active off-ramp remittance corridors in Production
+// Empirically verified against Switch live API: NG is active; other countries await Switch support activation
+function getLiveOfframpActiveSet() {
+  if (process.env.SWITCH_LIVE_REMITTANCE_COUNTRIES) {
+    return new Set(
+      process.env.SWITCH_LIVE_REMITTANCE_COUNTRIES.split(',')
+        .map(c => c.trim().toUpperCase())
+        .filter(Boolean)
+    );
+  }
+  return new Set(['NG']);
+}
+
 /**
  * Normalizes any country representation (name, code, or alias) into a valid 2-letter uppercase ISO code.
  * 
@@ -240,23 +253,35 @@ function getCountryPaymentCapabilities(countryInput, env) {
   // 2. Off-ramp evaluation
   let offramp;
   if (environment === 'production') {
-    // In production, off-ramp is supported if provider has enabled remittance
-    const isLiveSupported = SWITCH_ONRAMP_ACTIVE.has(countryCode) || SWITCH_OFFRAMP_SANDBOX_BLOCKED.has(countryCode);
-    offramp = isLiveSupported
-      ? {
-          supported: true,
-          status: 'ACTIVE',
-          currency: countryMeta.currency,
-          defaultChannel: countryMeta.defaultChannel || 'BANK',
-          channels: countryMeta.defaultChannel === 'MOBILEMONEY' ? ['MOBILEMONEY', 'BANK'] : ['BANK'],
-          institutionsSupported: true
-        }
-      : {
-          supported: false,
-          status: 'UNSUPPORTED',
-          currency: countryMeta.currency,
-          reason: `Local currency payouts are not supported for ${countryMeta.name}. Direct Solana USDC withdrawal is available.`
-        };
+    const liveActive = getLiveOfframpActiveSet();
+    if (liveActive.has(countryCode)) {
+      offramp = {
+        supported: true,
+        status: 'ACTIVE',
+        currency: countryMeta.currency,
+        defaultChannel: countryMeta.defaultChannel || 'BANK',
+        channels: countryMeta.defaultChannel === 'MOBILEMONEY' ? ['MOBILEMONEY', 'BANK'] : ['BANK'],
+        institutionsSupported: true,
+        instructions: `Instant ${countryMeta.defaultChannel === 'MOBILEMONEY' ? 'mobile money' : 'bank transfer'} payout in ${countryMeta.currency}.`
+      };
+    } else if (SWITCH_ONRAMP_ACTIVE.has(countryCode) || SWITCH_OFFRAMP_SANDBOX_BLOCKED.has(countryCode)) {
+      offramp = {
+        supported: false,
+        status: 'BLOCKED_PROVIDER',
+        currency: countryMeta.currency,
+        defaultChannel: countryMeta.defaultChannel || 'MOBILEMONEY',
+        reason: `Local ${countryMeta.defaultChannel === 'MOBILEMONEY' ? 'mobile money' : 'bank'} payouts for ${countryMeta.name} are awaiting Switch provider activation on this production account. Direct Solana USDC withdrawal is fully supported.`,
+        institutionsSupported: false
+      };
+    } else {
+      offramp = {
+        supported: false,
+        status: 'UNSUPPORTED',
+        currency: countryMeta.currency,
+        reason: `Local currency payouts are not supported for ${countryMeta.name}. Direct Solana USDC withdrawal is available.`,
+        institutionsSupported: false
+      };
+    }
   } else {
     // In Sandbox environment
     if (SWITCH_OFFRAMP_SANDBOX_ACTIVE.has(countryCode)) {
@@ -339,5 +364,6 @@ module.exports = {
   getDefaultCurrency,
   resolveEnvironment,
   getCountryPaymentCapabilities,
-  getAllCountriesList
+  getAllCountriesList,
+  getLiveOfframpActiveSet
 };

@@ -62,14 +62,27 @@ class WithdrawalService {
       throw new Error('Beneficiary payment details are required');
     }
 
-    const { normalizeCountryCode, resolveEnvironment, SWITCH_OFFRAMP_SANDBOX_ACTIVE, SWITCH_OFFRAMP_SANDBOX_BLOCKED, getCountryName } = require('../utils/countryUtils');
+    const { normalizeCountryCode, resolveEnvironment, SWITCH_ONRAMP_ACTIVE, SWITCH_OFFRAMP_SANDBOX_ACTIVE, SWITCH_OFFRAMP_SANDBOX_BLOCKED, getCountryName, getLiveOfframpActiveSet } = require('../utils/countryUtils');
     const cleanCountry = normalizeCountryCode(country) || country.trim().toUpperCase();
     const cleanCurrency = currency.trim().toUpperCase();
     const cleanChannel = (channel || 'BANK').trim().toUpperCase();
 
     // Pre-flight corridor capability check based on environment
     const currentEnv = resolveEnvironment();
-    if (currentEnv === 'sandbox') {
+    if (currentEnv === 'production') {
+      const liveActive = getLiveOfframpActiveSet();
+      if (!liveActive.has(cleanCountry)) {
+        if (SWITCH_ONRAMP_ACTIVE.has(cleanCountry) || SWITCH_OFFRAMP_SANDBOX_BLOCKED.has(cleanCountry)) {
+          const err = new Error(`Local currency payout for ${getCountryName(cleanCountry)} is awaiting Switch provider activation on this production account. Please withdraw via Direct Solana USDC.`);
+          err.status = 400;
+          throw err;
+        } else {
+          const err = new Error(`Local currency payout is not supported for ${getCountryName(cleanCountry)}. Please withdraw via Direct Solana USDC.`);
+          err.status = 400;
+          throw err;
+        }
+      }
+    } else {
       if (!SWITCH_OFFRAMP_SANDBOX_ACTIVE.has(cleanCountry)) {
         if (SWITCH_OFFRAMP_SANDBOX_BLOCKED.has(cleanCountry)) {
           const err = new Error(`Local currency payout for ${getCountryName(cleanCountry)} is awaiting Switch provider activation in this sandbox environment. Please withdraw via Direct Solana USDC.`);
