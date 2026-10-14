@@ -78,7 +78,7 @@ async function migrateWallets() {
 
       // Call Switch API with retry for rate limits
       let switchData = null;
-      let retries = 3;
+      let retries = 5;
       while (retries > 0) {
         try {
           switchData = await switchService.createWallet({
@@ -87,9 +87,13 @@ async function migrateWallets() {
           });
           break;
         } catch (callErr) {
-          if (callErr.status === 429 && retries > 1) {
-            console.warn(`   Rate limited by Switch. Backing off 3s...`);
-            await sleep(3000);
+          const isRateLimited = callErr.status === 429 || 
+            callErr.message?.toLowerCase().includes('rate-limit') ||
+            callErr.message?.toLowerCase().includes('rate limited');
+
+          if (isRateLimited && retries > 1) {
+            console.warn(`   Rate limit encountered (${callErr.message}). Backing off 15s (retries left: ${retries - 1})...`);
+            await sleep(15000);
             retries--;
           } else {
             throw callErr;
@@ -135,8 +139,8 @@ async function migrateWallets() {
       console.log(`   ✅ Success! Switch ID: ${switchData.id} | Solana: ${solanaAddress}`);
       createdCount++;
 
-      // Small throttle to avoid hitting Switch rate limits
-      await sleep(250);
+      // Polite throttle between successful creations (1.5s avoids Cloudflare bursts)
+      await sleep(1500);
 
     } catch (err) {
       console.error(`   ❌ Failed for ${userDisplay}: ${err.message}`);
