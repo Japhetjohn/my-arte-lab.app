@@ -89,6 +89,12 @@ interface AddFundsModalProps {
   isOpen: boolean;
   onClose: () => void;
   solanaAddress?: string | null;
+  userCountry?: {
+    countryCode: string;
+    countryName: string;
+    defaultCurrency: string;
+  } | null;
+  paymentCapabilities?: any | null;
 }
 
 const COUNTRY_NAMES: Record<string, string> = {
@@ -117,12 +123,18 @@ const COUNTRY_NAMES: Record<string, string> = {
   MA: 'Morocco',
   GA: 'Gabon',
   TG: 'Togo',
+  US: 'United States',
+  GB: 'United Kingdom',
+  CA: 'Canada',
+  FR: 'France',
+  DE: 'Germany',
+  AE: 'United Arab Emirates',
 };
 
-export function AddFundsModal({ isOpen, onClose, solanaAddress }: AddFundsModalProps) {
+export function AddFundsModal({ isOpen, onClose, solanaAddress, userCountry, paymentCapabilities }: AddFundsModalProps) {
   const [corridors, setCorridors] = useState<FundingCorridor[]>([]);
-  const [selectedCountry, setSelectedCountry] = useState<string>('NG');
-  const [selectedCurrency, setSelectedCurrency] = useState<string>('NGN');
+  const [selectedCountry, setSelectedCountry] = useState<string>(userCountry?.countryCode || 'NG');
+  const [selectedCurrency, setSelectedCurrency] = useState<string>(userCountry?.defaultCurrency || 'NGN');
   const [amount, setAmount] = useState<string>('10000');
   const [isLoadingCorridors, setIsLoadingCorridors] = useState<boolean>(false);
   const [isLoadingQuote, setIsLoadingQuote] = useState<boolean>(false);
@@ -221,6 +233,22 @@ export function AddFundsModal({ isOpen, onClose, solanaAddress }: AddFundsModalP
     }
   };
 
+  // Preselect user country and default funding method on modal open
+  useEffect(() => {
+    if (!isOpen) return;
+    const targetCountry = userCountry?.countryCode || 'NG';
+    const targetCurrency = userCountry?.defaultCurrency || 'NGN';
+    setSelectedCountry(targetCountry);
+    setSelectedCurrency(targetCurrency);
+
+    // Auto-select Solana tab if user's country has no active local-currency on-ramp
+    if (paymentCapabilities?.onramp?.supported === false) {
+      setActiveTab('solana');
+    } else {
+      setActiveTab('fiat');
+    }
+  }, [isOpen, userCountry, paymentCapabilities]);
+
   // Load supported funding corridors from Switch via backend
   useEffect(() => {
     if (!isOpen) return;
@@ -234,10 +262,16 @@ export function AddFundsModal({ isOpen, onClose, solanaAddress }: AddFundsModalP
         const corridorsList = res.data?.data?.corridors || [];
         if (isMounted) {
           setCorridors(corridorsList);
-          if (corridorsList.length > 0) {
-            const initial = corridorsList.find((c: FundingCorridor) => c.country === 'NG') || corridorsList[0];
-            setSelectedCountry(initial.country);
-            setSelectedCurrency(initial.currencies?.[0] || 'NGN');
+          const targetCountry = userCountry?.countryCode || selectedCountry || 'NG';
+          const match = corridorsList.find((c: FundingCorridor) => c.country === targetCountry);
+          if (match && match.currencies?.length > 0) {
+            setSelectedCountry(match.country);
+            setSelectedCurrency(match.currencies[0]);
+          } else if (corridorsList.length > 0 && !match) {
+            // Target country not supported on Switch on-ramp
+            if (paymentCapabilities?.onramp?.supported === false) {
+              setActiveTab('solana');
+            }
           }
         }
       } catch (err: any) {
@@ -256,7 +290,7 @@ export function AddFundsModal({ isOpen, onClose, solanaAddress }: AddFundsModalP
     return () => {
       isMounted = false;
     };
-  }, [isOpen]);
+  }, [isOpen, userCountry]);
 
   const handleCountryChange = (countryCode: string) => {
     setSelectedCountry(countryCode);
@@ -554,10 +588,22 @@ export function AddFundsModal({ isOpen, onClose, solanaAddress }: AddFundsModalP
             </div>
           ) : (
           /* STEP 1: QUOTE CONFIGURATION VIEW */
-          <div className="space-y-5">
+          <div className="space-y-4">
+            {/* Country Location Banner */}
+            {userCountry && (
+              <div className="flex items-center justify-between text-xs text-gray-600 bg-purple-50/60 px-3 py-2 rounded-lg border border-purple-100">
+                <span className="flex items-center gap-1.5 font-medium text-gray-800">
+                  📍 Location: <strong>{userCountry.countryName}</strong>
+                </span>
+                <span className="text-[11px] text-[#8A2BE2] font-semibold">
+                  Default: {selectedCurrency}
+                </span>
+              </div>
+            )}
+
             {/* Country Selector */}
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold uppercase text-gray-500">Select Country</Label>
+              <Label className="text-xs font-semibold uppercase text-gray-500">Payment Country</Label>
               <Select value={selectedCountry} onValueChange={handleCountryChange}>
                 <SelectTrigger className="w-full h-11">
                   <SelectValue placeholder="Select Country" />
@@ -569,9 +615,44 @@ export function AddFundsModal({ isOpen, onClose, solanaAddress }: AddFundsModalP
                       {c.currencies?.[0] ? ` — ${c.currencies[0]}` : ''}
                     </SelectItem>
                   ))}
+                  {/* Also show user's country if not in Switch corridors so it's transparently visible */}
+                  {userCountry && !corridors.some(c => c.country === userCountry.countryCode) && (
+                    <SelectItem value={userCountry.countryCode}>
+                      {userCountry.countryName} ({userCountry.countryCode}) — {userCountry.defaultCurrency} (Unsupported)
+                    </SelectItem>
+                  )}
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Unsupported Corridor Fallback Callout */}
+            {!currentCorridor ? (
+              <div className="p-4 bg-purple-50/80 border border-purple-200 rounded-xl space-y-3">
+                <div className="flex items-start gap-2.5">
+                  <AlertCircle className="w-5 h-5 text-[#8A2BE2] shrink-0 mt-0.5" />
+                  <div className="text-xs text-gray-700 space-y-1">
+                    <p className="font-semibold text-gray-900">
+                      Local currency deposits unavailable for {COUNTRY_NAMES[selectedCountry] || selectedCountry}
+                    </p>
+                    <p>
+                      Switch does not currently support bank or mobile money deposits in {selectedCurrency} for {COUNTRY_NAMES[selectedCountry] || selectedCountry}.
+                    </p>
+                    <p className="font-medium text-[#8A2BE2]">
+                      You can easily fund your wallet with Direct Solana USDC.
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  onClick={() => setActiveTab('solana')}
+                  className="w-full bg-[#8A2BE2] hover:bg-[#7824c7] text-white text-xs font-semibold h-10 shadow-sm"
+                >
+                  <Zap className="w-3.5 h-3.5 mr-1.5" />
+                  Switch to Direct Solana USDC Deposit
+                </Button>
+              </div>
+            ) : (
+              <>
 
             {/* Currency & Amount Input */}
             <div className="space-y-1.5">
@@ -702,6 +783,8 @@ export function AddFundsModal({ isOpen, onClose, solanaAddress }: AddFundsModalP
                 </Button>
               )}
             </div>
+            </>
+            )}
           </div>
           )
         ) : (

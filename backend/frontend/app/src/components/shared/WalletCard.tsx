@@ -12,6 +12,11 @@ interface WalletCardProps {
   incomingEarnings?: number; // For creators: money they'll receive
   userRole?: 'client' | 'creator';
   solanaAddress?: string | null;
+  userCountry?: {
+    countryCode: string;
+    countryName: string;
+    defaultCurrency: string;
+  } | null;
   onAddFunds?: () => void;
   onWithdraw?: () => void;
 }
@@ -25,6 +30,7 @@ export function WalletCard({
   incomingEarnings = 0,
   userRole = 'client',
   solanaAddress,
+  userCountry,
   onAddFunds,
   onWithdraw
 }: WalletCardProps) {
@@ -43,7 +49,14 @@ export function WalletCard({
             </div>
             <span className="font-medium text-white">My Wallet</span>
           </div>
-          <span className="text-sm bg-white/20 px-3 py-1 rounded-full text-white font-medium">{currency}</span>
+          <div className="flex items-center gap-2">
+            {userCountry && (
+              <span className="text-xs bg-white/15 px-2.5 py-1 rounded-full text-white/90 font-medium">
+                📍 {userCountry.countryName} ({userCountry.defaultCurrency})
+              </span>
+            )}
+            <span className="text-sm bg-white/20 px-3 py-1 rounded-full text-white font-medium">{currency}</span>
+          </div>
         </div>
         
         <div className="mb-4">

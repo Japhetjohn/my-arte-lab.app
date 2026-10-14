@@ -19,7 +19,7 @@ const { catchAsync } = require('../utils/errorHandler');
  * @access  Private
  */
 router.get('/', protect, catchAsync(async (req, res) => {
-  const user = await User.findById(req.user._id).select('wallet balance pendingBalance pendingWithdrawal totalEarnings currency firstName lastName');
+  const user = await User.findById(req.user._id).select('wallet balance pendingBalance pendingWithdrawal totalEarnings currency firstName lastName countryCode location');
 
   if (!user) {
     return res.status(404).json({ success: false, error: 'User not found' });
@@ -73,6 +73,12 @@ router.get('/', protect, catchAsync(async (req, res) => {
     });
   }
 
+  const { normalizeCountryCode, getCountryName, getDefaultCurrency, getCountryPaymentCapabilities } = require('../utils/countryUtils');
+  const userCountryCode = user.countryCode || normalizeCountryCode(user.location?.country) || 'NG';
+  const userCountryName = user.location?.country || getCountryName(userCountryCode);
+  const defaultCurrency = getDefaultCurrency(userCountryCode);
+  const paymentCapabilities = getCountryPaymentCapabilities(userCountryCode);
+
   res.json({
     success: true,
     data: {
@@ -89,7 +95,13 @@ router.get('/', protect, catchAsync(async (req, res) => {
         switchWalletId: switchWallet?.switchWalletId || null,
         network: 'Solana',
         asset: 'solana:usdc'
-      }
+      },
+      userCountry: {
+        countryCode: userCountryCode,
+        countryName: userCountryName,
+        defaultCurrency
+      },
+      paymentCapabilities
     }
   });
 }));
@@ -119,6 +131,44 @@ router.get('/withdraw/options', protect, catchAsync(async (req, res) => {
   res.json({
     success: true,
     data: coverage
+  });
+}));
+
+/**
+ * @route   GET /api/wallet/capabilities
+ * @desc    Get user-specific payment capabilities based on saved signup country and provider permissions
+ * @access  Private
+ */
+router.get('/capabilities', protect, catchAsync(async (req, res) => {
+  const { normalizeCountryCode, getCountryPaymentCapabilities, getAllCountriesList } = require('../utils/countryUtils');
+  const user = await User.findById(req.user._id).select('countryCode location');
+  const userCountryCode = user?.countryCode || normalizeCountryCode(user?.location?.country) || 'NG';
+  const capabilities = getCountryPaymentCapabilities(userCountryCode);
+
+  res.json({
+    success: true,
+    data: {
+      userCountry: {
+        countryCode: capabilities.countryCode,
+        countryName: capabilities.countryName,
+        defaultCurrency: capabilities.defaultCurrency
+      },
+      capabilities,
+      countries: getAllCountriesList()
+    }
+  });
+}));
+
+/**
+ * @route   GET /api/wallet/countries
+ * @desc    Get all recognized countries and their operational payment statuses
+ * @access  Private
+ */
+router.get('/countries', protect, catchAsync(async (req, res) => {
+  const { getAllCountriesList } = require('../utils/countryUtils');
+  res.json({
+    success: true,
+    data: getAllCountriesList()
   });
 }));
 
@@ -252,7 +302,8 @@ router.post('/resolve-account', protect, catchAsync(async (req, res) => {
  * @access  Private
  */
 router.post('/quote', protect, catchAsync(async (req, res) => {
-  const { amount, country, currency, channel } = req.body;
+  const { amount, channel } = req.body;
+  const { normalizeCountryCode, SWITCH_ONRAMP_ACTIVE, getCountryName, getDefaultCurrency } = require('../utils/countryUtils');
 
   if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
     return res.status(400).json({
@@ -261,25 +312,31 @@ router.post('/quote', protect, catchAsync(async (req, res) => {
     });
   }
 
-  if (!country || typeof country !== 'string' || country.trim().length !== 2) {
+  // Derive country from request or fallback to user's saved signup country
+  const rawCountry = req.body.country || req.user.countryCode || req.user.location?.country || 'NG';
+  const cleanCountry = normalizeCountryCode(rawCountry);
+
+  if (!cleanCountry) {
     return res.status(400).json({
       success: false,
       error: 'Please provide a valid 2-letter country code'
     });
   }
 
-  if (!currency || typeof currency !== 'string' || currency.trim().length < 2) {
+  if (!SWITCH_ONRAMP_ACTIVE.has(cleanCountry)) {
     return res.status(400).json({
       success: false,
-      error: 'Please provide a valid currency code'
+      error: `Local currency deposit is not currently supported for ${getCountryName(cleanCountry)}. Please use Direct Solana USDC funding.`
     });
   }
+
+  const cleanCurrency = req.body.currency ? String(req.body.currency).trim().toUpperCase() : getDefaultCurrency(cleanCountry);
 
   try {
     const quote = await switchService.getOnrampQuote({
       amount: Number(amount),
-      country: country.trim().toUpperCase(),
-      currency: currency.trim().toUpperCase(),
+      country: cleanCountry,
+      currency: cleanCurrency,
       channel: channel ? channel.trim().toUpperCase() : undefined,
       developerFee: 1,
       developerRecipient: process.env.PLATFORM_WALLET_ADDRESS
@@ -303,7 +360,8 @@ router.post('/quote', protect, catchAsync(async (req, res) => {
  * @access  Private
  */
 router.post('/withdraw/quote', protect, catchAsync(async (req, res) => {
-  const { amount, country, currency, channel, exactOutput } = req.body;
+  const { amount, channel, exactOutput } = req.body;
+  const { normalizeCountryCode, resolveEnvironment, SWITCH_OFFRAMP_SANDBOX_ACTIVE, SWITCH_OFFRAMP_SANDBOX_BLOCKED, getCountryName, getDefaultCurrency } = require('../utils/countryUtils');
 
   const numAmount = Number(amount);
   if (isNaN(numAmount) || numAmount <= 0) {
@@ -313,19 +371,35 @@ router.post('/withdraw/quote', protect, catchAsync(async (req, res) => {
     });
   }
 
-  if (!country || typeof country !== 'string' || country.trim().length !== 2) {
+  const rawCountry = req.body.country || req.user.countryCode || req.user.location?.country || 'NG';
+  const cleanCountry = normalizeCountryCode(rawCountry);
+
+  if (!cleanCountry) {
     return res.status(400).json({
       success: false,
       error: 'Please provide a valid 2-letter country code'
     });
   }
 
-  if (!currency || typeof currency !== 'string' || currency.trim().length < 2) {
-    return res.status(400).json({
-      success: false,
-      error: 'Please provide a valid fiat currency code'
-    });
+  // Pre-flight environment check
+  const currentEnv = resolveEnvironment();
+  if (currentEnv === 'sandbox') {
+    if (!SWITCH_OFFRAMP_SANDBOX_ACTIVE.has(cleanCountry)) {
+      if (SWITCH_OFFRAMP_SANDBOX_BLOCKED.has(cleanCountry)) {
+        return res.status(400).json({
+          success: false,
+          error: `Local currency payout for ${getCountryName(cleanCountry)} is awaiting Switch provider activation in this sandbox environment. Please withdraw via Direct Solana USDC.`
+        });
+      } else {
+        return res.status(400).json({
+          success: false,
+          error: `Local currency payout is not supported for ${getCountryName(cleanCountry)}. Please withdraw via Direct Solana USDC.`
+        });
+      }
+    }
   }
+
+  const cleanCurrency = req.body.currency ? String(req.body.currency).trim().toUpperCase() : getDefaultCurrency(cleanCountry);
 
   // Find user's Switch wallet address if available
   const switchWallet = await SwitchWallet.findOne({ user: req.user._id });
@@ -333,8 +407,8 @@ router.post('/withdraw/quote', protect, catchAsync(async (req, res) => {
   try {
     const quote = await switchService.getOfframpQuote({
       amount: numAmount,
-      country: country.trim().toUpperCase(),
-      currency: currency.trim().toUpperCase(),
+      country: cleanCountry,
+      currency: cleanCurrency,
       channel: channel ? channel.trim().toUpperCase() : undefined,
       wallet: switchWallet?.solanaAddress || undefined,
       exactOutput: Boolean(exactOutput),
@@ -415,22 +489,25 @@ router.post('/fund/initiate', protect, catchAsync(async (req, res) => {
     });
   }
 
-  if (!country || typeof country !== 'string' || country.trim().length !== 2) {
+  const rawCountry = req.body.country || req.user.countryCode || req.user.location?.country || 'NG';
+  const { normalizeCountryCode, SWITCH_ONRAMP_ACTIVE, getCountryName, getDefaultCurrency } = require('../utils/countryUtils');
+  const cleanCountry = normalizeCountryCode(rawCountry);
+
+  if (!cleanCountry) {
     return res.status(400).json({
       success: false,
       error: 'Please provide a valid 2-letter country code'
     });
   }
 
-  if (!currency || typeof currency !== 'string' || currency.trim().length < 2) {
+  if (!SWITCH_ONRAMP_ACTIVE.has(cleanCountry)) {
     return res.status(400).json({
       success: false,
-      error: 'Please provide a valid currency code'
+      error: `Local currency deposit is not currently supported for ${getCountryName(cleanCountry)}. Please use Direct Solana USDC funding.`
     });
   }
 
-  const cleanCountry = country.trim().toUpperCase();
-  const cleanCurrency = currency.trim().toUpperCase();
+  const cleanCurrency = req.body.currency ? String(req.body.currency).trim().toUpperCase() : getDefaultCurrency(cleanCountry);
   const cleanChannel = (channel || 'BANK').trim().toUpperCase();
 
   // Resolve idempotency key (prevent duplicate submissions / double-click)
@@ -750,6 +827,107 @@ router.get('/solana/deposits', protect, catchAsync(async (req, res) => {
   res.json({
     success: true,
     data: result
+  });
+}));
+
+/**
+ * @route   POST /api/wallet/withdraw/solana
+ * @desc    Direct Solana USDC withdrawal to external user wallet address
+ * @access  Private
+ */
+router.post('/withdraw/solana', protect, catchAsync(async (req, res) => {
+  const { amount, solanaAddress } = req.body;
+  const numAmount = parseFloat(Number(amount).toFixed(6));
+
+  const minWithdrawal = parseFloat(process.env.MINIMUM_WITHDRAWAL) || 1;
+  if (isNaN(numAmount) || numAmount < minWithdrawal) {
+    return res.status(400).json({
+      success: false,
+      error: `Please provide a valid withdrawal amount of at least ${minWithdrawal} USDC`
+    });
+  }
+
+  const cleanAddress = String(solanaAddress || '').trim();
+  if (!cleanAddress || !/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(cleanAddress)) {
+    return res.status(400).json({
+      success: false,
+      error: 'Please provide a valid Solana wallet address (32-44 base58 characters)'
+    });
+  }
+
+  // 1. Atomically reserve balance (throws if availableBalance < numAmount)
+  await ledgerService.reserveWithdrawalBalance(req.user._id, numAmount);
+
+  // 2. Generate unique reference and transaction ID
+  const timestamp = Date.now().toString(36).toUpperCase();
+  const random = crypto.randomBytes(3).toString('hex').toUpperCase();
+  const transactionId = `TXN-SOL-WTH-${timestamp}-${random}`;
+  const reference = crypto.randomUUID();
+
+  // 3. Atomically finalize balance debit and clear pending reservation
+  const updatedUser = await User.findOneAndUpdate(
+    {
+      _id: req.user._id,
+      $expr: {
+        $and: [
+          { $gte: [{ $ifNull: ['$wallet.balance', '$balance'] }, numAmount] },
+          { $gte: [{ $ifNull: ['$wallet.pendingWithdrawal', 0] }, numAmount] }
+        ]
+      }
+    },
+    {
+      $inc: {
+        'wallet.balance': -numAmount,
+        'balance': -numAmount,
+        'wallet.pendingWithdrawal': -numAmount,
+        'pendingWithdrawal': -numAmount
+      },
+      $set: {
+        'wallet.lastUpdated': new Date(),
+        'lastUpdated': new Date()
+      }
+    },
+    { new: true }
+  );
+
+  // 4. Create authoritative completed transaction record in ledger
+  const ledgerTx = await Transaction.create({
+    transactionId,
+    user: req.user._id,
+    type: 'withdrawal',
+    amount: numAmount,
+    netAmount: numAmount,
+    currency: 'USDC',
+    status: 'completed',
+    reference,
+    paymentMethod: 'crypto',
+    description: `Direct Solana USDC Withdrawal to ${cleanAddress.slice(0, 4)}...${cleanAddress.slice(-4)}`,
+    blockchainNetwork: 'SOLANA',
+    toAddress: cleanAddress,
+    metadata: {
+      provider: 'solana_direct',
+      destinationAddress: cleanAddress,
+      network: 'SOLANA',
+      token: 'USDC'
+    },
+    completedAt: new Date()
+  });
+
+  const finalBal = updatedUser?.wallet?.balance !== undefined ? updatedUser.wallet.balance : updatedUser?.balance;
+
+  res.status(201).json({
+    success: true,
+    message: `Successfully withdrew ${numAmount} USDC to Solana wallet`,
+    data: {
+      reference,
+      transactionId,
+      amount: numAmount,
+      currency: 'USDC',
+      toAddress: cleanAddress,
+      status: 'completed',
+      balance: finalBal,
+      ledgerTx
+    }
   });
 }));
 

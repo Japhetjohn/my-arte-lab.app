@@ -22,6 +22,8 @@ export function Wallet() {
     escrowBalance,
     incomingEarnings,
     solanaAddress,
+    userCountry,
+    paymentCapabilities,
     fetchWallet,
     fetchTransactions,
   } = useWallet();
@@ -130,6 +132,7 @@ export function Wallet() {
         escrowBalance={escrowBalance}
         incomingEarnings={incomingEarnings}
         solanaAddress={solanaAddress}
+        userCountry={userCountry}
         userRole={userRole as 'client' | 'creator'}
         onAddFunds={() => setIsAddFundsOpen(true)}
         onWithdraw={() => setIsWithdrawOpen(true)}
@@ -142,6 +145,8 @@ export function Wallet() {
           fetchWallet();
         }}
         solanaAddress={solanaAddress}
+        userCountry={userCountry}
+        paymentCapabilities={paymentCapabilities}
       />
 
       <WithdrawModal
@@ -151,6 +156,8 @@ export function Wallet() {
           fetchWallet();
         }}
         availableBalance={availableBalance}
+        userCountry={userCountry}
+        paymentCapabilities={paymentCapabilities}
         onSuccess={() => {
           fetchWallet();
           fetchTransactions();

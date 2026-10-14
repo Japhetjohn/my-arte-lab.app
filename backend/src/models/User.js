@@ -100,6 +100,14 @@ const userSchema = new mongoose.Schema({
     }
   },
 
+  countryCode: {
+    type: String,
+    trim: true,
+    uppercase: true,
+    maxlength: 2,
+    default: null
+  },
+
   phoneNumber: {
     type: String,
     trim: true,
@@ -547,6 +555,28 @@ userSchema.pre('save', async function (next) {
       (!this.seoSlug || this.isModified('firstName') || this.isModified('lastName'))
     ) {
       await this.generateSlug();
+    }
+
+    // Normalize and synchronize countryCode and location.country
+    try {
+      const { normalizeCountryCode, getCountryName } = require('../utils/countryUtils');
+      if (this.countryCode) {
+        const norm = normalizeCountryCode(this.countryCode);
+        if (norm) {
+          this.countryCode = norm;
+          if (!this.location) this.location = {};
+          if (!this.location.country) {
+            this.location.country = getCountryName(norm);
+          }
+        }
+      } else if (this.location && this.location.country) {
+        const norm = normalizeCountryCode(this.location.country);
+        if (norm) {
+          this.countryCode = norm;
+        }
+      }
+    } catch (cErr) {
+      // Safe fallback
     }
 
     next();

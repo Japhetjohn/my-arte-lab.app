@@ -62,6 +62,11 @@ exports.validateRegister = [
     .trim()
     .isLength({ min: 0, max: 100 }).withMessage('Country must be less than 100 characters'),
 
+  body('countryCode')
+    .optional({ nullable: true, checkFalsy: true })
+    .trim()
+    .isLength({ min: 2, max: 2 }).withMessage('Country code must be a 2-letter ISO code'),
+
   body('role')
     .optional()
     .isIn(['client', 'creator']).withMessage('Role must be either client or creator'),
@@ -225,6 +230,16 @@ exports.validateProfileUpdate = [
     .optional()
     .trim()
     .isLength({ max: 100 }).withMessage('Country name cannot exceed 100 characters'),
+
+  body('country')
+    .optional()
+    .trim()
+    .isLength({ min: 2, max: 100 }).withMessage('Country name must be between 2 and 100 characters'),
+
+  body('countryCode')
+    .optional()
+    .trim()
+    .isLength({ min: 2, max: 2 }).withMessage('Country code must be a 2-letter ISO code'),
 
   body('skills')
     .optional()

@@ -99,6 +99,12 @@ interface WithdrawModalProps {
   onClose: () => void;
   availableBalance: number;
   onSuccess?: () => void;
+  userCountry?: {
+    countryCode: string | null;
+    countryName: string;
+    defaultCurrency: string;
+  } | null;
+  paymentCapabilities?: any | null;
 }
 
 const COUNTRY_NAMES: Record<string, string> = {
@@ -127,6 +133,12 @@ const COUNTRY_NAMES: Record<string, string> = {
   MA: 'Morocco',
   GA: 'Gabon',
   TG: 'Togo',
+  US: 'United States',
+  GB: 'United Kingdom',
+  CA: 'Canada',
+  FR: 'France',
+  DE: 'Germany',
+  AE: 'United Arab Emirates',
 };
 
 const COMMON_MOBILE_NETWORKS: Record<string, string[]> = {
@@ -144,15 +156,25 @@ export function WithdrawModal({
   isOpen,
   onClose,
   availableBalance = 0,
-  onSuccess
+  onSuccess,
+  userCountry,
+  paymentCapabilities,
 }: WithdrawModalProps) {
   // Step state: 1 = Configure (amount, corridor, channel, beneficiary), 2 = Review, 3 = Status / Tracking
   const [step, setStep] = useState<1 | 2 | 3>(1);
 
+  // Withdrawal method: 'fiat' (Bank / Mobile Money) vs 'solana' (Direct Solana USDC)
+  const [withdrawMethod, setWithdrawMethod] = useState<'fiat' | 'solana'>('fiat');
+  const [solanaAddress, setSolanaAddress] = useState<string>('');
+  const [solanaAmount, setSolanaAmount] = useState<string>('');
+  const [isSubmittingSolana, setIsSubmittingSolana] = useState<boolean>(false);
+  const [solanaWithdrawResult, setSolanaWithdrawResult] = useState<any | null>(null);
+  const [solanaError, setSolanaError] = useState<string | null>(null);
+
   // Corridor options
   const [corridors, setCorridors] = useState<WithdrawCorridor[]>([]);
-  const [selectedCountry, setSelectedCountry] = useState<string>('NG');
-  const [selectedCurrency, setSelectedCurrency] = useState<string>('NGN');
+  const [selectedCountry, setSelectedCountry] = useState<string>(userCountry?.countryCode || 'NG');
+  const [selectedCurrency, setSelectedCurrency] = useState<string>(userCountry?.defaultCurrency || 'NGN');
   const [selectedChannel, setSelectedChannel] = useState<string>('BANK');
   const [amountUsdc, setAmountUsdc] = useState<string>('');
 
@@ -191,6 +213,11 @@ export function WithdrawModal({
       // Reset state on close
       setStep(1);
       setAmountUsdc('');
+      setSolanaAmount('');
+      setSolanaAddress('');
+      setSolanaError(null);
+      setSolanaWithdrawResult(null);
+      setIsSubmittingSolana(false);
       setQuote(null);
       setActiveWithdrawal(null);
       setErrorMessage(null);
@@ -211,9 +238,10 @@ export function WithdrawModal({
         if (isMounted) {
           setCorridors(corridorsList);
           if (corridorsList.length > 0) {
-            const initial = corridorsList.find((c: WithdrawCorridor) => c.country === 'NG') || corridorsList[0];
+            const preferredCountry = userCountry?.countryCode || 'NG';
+            const initial = corridorsList.find((c: WithdrawCorridor) => c.country === preferredCountry) || corridorsList[0];
             setSelectedCountry(initial.country);
-            setSelectedCurrency(initial.currencies?.[0] || 'NGN');
+            setSelectedCurrency(userCountry?.defaultCurrency || initial.currencies?.[0] || 'NGN');
             const defaultChan = initial.channels?.includes('BANK') ? 'BANK' : (initial.channels?.[0] || 'BANK');
             setSelectedChannel(defaultChan);
           }
@@ -232,7 +260,73 @@ export function WithdrawModal({
     return () => {
       isMounted = false;
     };
-  }, [isOpen]);
+  }, [isOpen, userCountry]);
+
+  // Preselect user country and default payout method on modal open
+  useEffect(() => {
+    if (!isOpen) return;
+    const targetCountry = userCountry?.countryCode || 'NG';
+    const targetCurrency = userCountry?.defaultCurrency || 'NGN';
+    setSelectedCountry(targetCountry);
+    setSelectedCurrency(targetCurrency);
+
+    // Auto-select Solana tab if user's country has off-ramp blocked in sandbox or unsupported
+    if (
+      paymentCapabilities?.offramp?.supported === false ||
+      paymentCapabilities?.offramp?.operationalStatus === 'BLOCKED_PROVIDER'
+    ) {
+      setWithdrawMethod('solana');
+    } else {
+      setWithdrawMethod('fiat');
+    }
+  }, [isOpen, userCountry, paymentCapabilities]);
+
+  // Direct Solana USDC Withdrawal Handler
+  const handleSolanaWithdraw = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const cleanAddr = solanaAddress.trim();
+    const num = parseFloat(solanaAmount);
+
+    if (isNaN(num) || num < 1) {
+      toast.error('Minimum withdrawal amount is 1 USDC');
+      return;
+    }
+
+    if (num > availableBalance) {
+      toast.error(`Amount exceeds your available balance of $${availableBalance.toFixed(2)} USDC`);
+      return;
+    }
+
+    if (!cleanAddr || !/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(cleanAddr)) {
+      toast.error('Please enter a valid Solana wallet address (32-44 base58 characters)');
+      return;
+    }
+
+    setIsSubmittingSolana(true);
+    setSolanaError(null);
+
+    try {
+      const res = await walletService.withdrawSolana({
+        amount: num,
+        solanaAddress: cleanAddr,
+      });
+
+      if (res.data?.success) {
+        const txData = res.data.data;
+        setSolanaWithdrawResult(txData);
+        toast.success(res.data.message || `Successfully withdrew ${num} USDC!`);
+        if (onSuccess) onSuccess();
+      } else {
+        setSolanaError(res.data?.error || 'Failed to process Solana withdrawal');
+      }
+    } catch (err: any) {
+      const msg = err.response?.data?.error || err.message || 'Withdrawal failed. Please check your address and balance.';
+      setSolanaError(msg);
+      toast.error(msg);
+    } finally {
+      setIsSubmittingSolana(false);
+    }
+  };
 
   // 2. Fetch institutions whenever country or channel changes
   useEffect(() => {
@@ -559,16 +653,62 @@ export function WithdrawModal({
             <span className="w-8 h-8 rounded-full bg-[#8A2BE2]/10 text-[#8A2BE2] flex items-center justify-center text-sm font-semibold">
               ↗
             </span>
-            {step === 3 ? 'Withdrawal Status' : step === 2 ? 'Confirm Withdrawal' : 'Withdraw Funds'}
+            {step === 3
+              ? 'Withdrawal Status'
+              : step === 2
+              ? 'Confirm Withdrawal'
+              : withdrawMethod === 'solana'
+              ? 'Withdraw USDC on Solana'
+              : 'Withdraw Funds'}
           </DialogTitle>
           <DialogDescription className="text-xs text-gray-500">
             {step === 3
               ? 'Real-time tracking of your payout settlement to your destination account.'
               : step === 2
               ? 'Review payout details and exchange rate before confirming.'
+              : withdrawMethod === 'solana'
+              ? 'Withdraw USDC directly to your external Solana wallet address.'
               : 'Withdraw USDC on Solana directly to your local bank or mobile money account.'}
           </DialogDescription>
         </DialogHeader>
+
+        {/* Method Selector Tabs in Step 1 */}
+        {step === 1 && (
+          <div className="grid grid-cols-2 gap-1.5 p-1 bg-gray-100 rounded-xl mb-3">
+            <button
+              type="button"
+              onClick={() => {
+                setWithdrawMethod('fiat');
+                setErrorMessage(null);
+                setSolanaError(null);
+              }}
+              className={`py-2 px-3 text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition-all ${
+                withdrawMethod === 'fiat'
+                  ? 'bg-white text-gray-900 shadow-sm font-bold'
+                  : 'text-gray-500 hover:text-gray-900'
+              }`}
+            >
+              <Building2 className="w-3.5 h-3.5 text-[#8A2BE2]" />
+              <span>Bank / Mobile Money</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setWithdrawMethod('solana');
+                setErrorMessage(null);
+                setSolanaError(null);
+              }}
+              className={`py-2 px-3 text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition-all ${
+                withdrawMethod === 'solana'
+                  ? 'bg-white text-[#8A2BE2] shadow-sm font-bold'
+                  : 'text-gray-500 hover:text-gray-900'
+              }`}
+            >
+              <Zap className="w-3.5 h-3.5 text-[#8A2BE2]" />
+              <span>Direct Solana USDC</span>
+            </button>
+          </div>
+        )}
 
         {errorMessage && (
           <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 flex items-start gap-2">
@@ -583,356 +723,571 @@ export function WithdrawModal({
             <p className="text-sm text-gray-500">Loading supported payout corridors...</p>
           </div>
         ) : step === 1 ? (
-          /* STEP 1: CONFIGURE WITHDRAWAL */
-          <div className="space-y-4">
-            {/* Available balance indicator */}
-            <div className="p-3 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-100 rounded-xl flex items-center justify-between">
-              <div>
-                <p className="text-xs text-purple-700 font-medium">Available for Withdrawal</p>
-                <p className="text-lg font-bold text-[#8A2BE2]">
-                  ${availableBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{' '}
-                  <span className="text-xs font-semibold text-purple-600">USDC</span>
-                </p>
-              </div>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => setAmountUsdc(String(availableBalance))}
-                disabled={availableBalance <= 0}
-                className="h-8 text-xs border-purple-300 text-purple-700 hover:bg-purple-100 font-medium"
-              >
-                Max Amount
-              </Button>
-            </div>
-
-            {/* Country & Currency Selection */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="text-xs font-semibold text-gray-700 mb-1 block">Destination Country</Label>
-                <Select value={selectedCountry} onValueChange={handleCountryChange}>
-                  <SelectTrigger className="w-full h-10 text-xs">
-                    <SelectValue placeholder="Select Country" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-56">
-                    {corridors.map((c) => (
-                      <SelectItem key={c.country} value={c.country} className="text-xs">
-                        {COUNTRY_NAMES[c.country] || c.country} ({c.country})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label className="text-xs font-semibold text-gray-700 mb-1 block">Payout Currency</Label>
-                <Select
-                  value={selectedCurrency}
-                  onValueChange={(val) => {
-                    setSelectedCurrency(val);
-                    setQuote(null);
-                  }}
-                >
-                  <SelectTrigger className="w-full h-10 text-xs">
-                    <SelectValue placeholder="Select Currency" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(currentCorridor?.currencies || [selectedCurrency]).map((curr) => (
-                      <SelectItem key={curr} value={curr} className="text-xs font-medium">
-                        {curr}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* Payout Channel Tabs (Bank vs Mobile Money) */}
-            {currentCorridor?.channels && currentCorridor.channels.length > 1 && (
-              <div>
-                <Label className="text-xs font-semibold text-gray-700 mb-1.5 block">Payout Method</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  {currentCorridor.channels.map((chan) => (
-                    <button
-                      key={chan}
-                      type="button"
-                      onClick={() => {
-                        setSelectedChannel(chan);
-                        setQuote(null);
-                      }}
-                      className={`p-2.5 rounded-xl border text-xs font-medium flex items-center justify-center gap-2 transition-all ${
-                        selectedChannel === chan
-                          ? 'border-[#8A2BE2] bg-purple-50 text-[#8A2BE2] shadow-sm font-semibold'
-                          : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
-                      }`}
-                    >
-                      {chan === 'BANK' ? <Building2 className="w-4 h-4" /> : <Smartphone className="w-4 h-4" />}
-                      <span>{chan === 'BANK' ? 'Bank Transfer' : 'Mobile Money'}</span>
-                    </button>
-                  ))}
+          withdrawMethod === 'solana' ? (
+            /* STEP 1 (SOLANA TAB): DIRECT SOLANA USDC WITHDRAWAL */
+            <div className="space-y-4">
+              {/* Available balance indicator */}
+              <div className="p-3 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-100 rounded-xl flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-purple-700 font-medium">Available for Withdrawal</p>
+                  <p className="text-lg font-bold text-[#8A2BE2]">
+                    ${availableBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{' '}
+                    <span className="text-xs font-semibold text-purple-600">USDC</span>
+                  </p>
                 </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setSolanaAmount(String(availableBalance))}
+                  disabled={availableBalance <= 0}
+                  className="h-8 text-xs border-purple-300 text-purple-700 hover:bg-purple-100 font-medium"
+                >
+                  Max Amount
+                </Button>
               </div>
-            )}
 
-            {/* Amount Input */}
-            <div>
-              <div className="flex justify-between items-center mb-1">
-                <Label className="text-xs font-semibold text-gray-700">Withdrawal Amount (USDC)</Label>
-                <span className="text-[11px] text-gray-400">Settled from Solana</span>
-              </div>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-medium">$</span>
-                <Input
-                  type="number"
-                  step="any"
-                  placeholder="0.00"
-                  value={amountUsdc}
-                  onChange={(e) => {
-                    setAmountUsdc(e.target.value);
-                    setQuote(null);
-                  }}
-                  className="pl-7 pr-16 h-10 text-sm font-semibold"
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-gray-400">
-                  USDC
-                </span>
-              </div>
-            </div>
+              {solanaWithdrawResult ? (
+                /* Success Receipt */
+                <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl space-y-3">
+                  <div className="flex items-center gap-2.5 text-emerald-900">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                    <div>
+                      <h4 className="text-sm font-bold">Withdrawal Completed</h4>
+                      <p className="text-xs text-emerald-700">Funds transferred on Solana</p>
+                    </div>
+                  </div>
 
-            {/* Live Quote Breakdown Section */}
-            {amountUsdc && parseFloat(amountUsdc) > 0 && (
-              <div className="p-3 bg-gray-50 border border-gray-200 rounded-xl space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-gray-700 flex items-center gap-1.5">
-                    <Zap className="w-3.5 h-3.5 text-[#8A2BE2]" />
-                    Guaranteed Rate & Payout
-                  </span>
+                  <div className="p-3 bg-white/80 rounded-xl border border-emerald-200/60 space-y-2 text-xs">
+                    <div className="flex justify-between py-1 border-b border-gray-100">
+                      <span className="text-gray-500">Amount Sent:</span>
+                      <span className="font-bold text-gray-900">${solanaWithdrawResult.amount?.toFixed(2)} USDC</span>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-gray-100">
+                      <span className="text-gray-500">Destination:</span>
+                      <span className="font-mono font-medium text-gray-800 text-[11px] truncate max-w-[200px]">
+                        {solanaWithdrawResult.toAddress}
+                      </span>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-gray-100">
+                      <span className="text-gray-500">Reference:</span>
+                      <span className="font-mono text-gray-700 text-[11px]">{solanaWithdrawResult.reference?.slice(0, 14)}...</span>
+                    </div>
+                    <div className="flex justify-between py-1">
+                      <span className="text-gray-500">Status:</span>
+                      <span className="text-emerald-700 font-bold uppercase tracking-wider text-[10px]">
+                        {solanaWithdrawResult.status}
+                      </span>
+                    </div>
+                  </div>
+
                   <Button
                     type="button"
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => handleFetchQuote()}
-                    disabled={isLoadingQuote}
-                    className="h-6 px-2 text-[11px] text-[#8A2BE2] hover:bg-purple-100 flex items-center gap-1"
+                    onClick={() => {
+                      setSolanaWithdrawResult(null);
+                      setSolanaAmount('');
+                      setSolanaAddress('');
+                      onClose();
+                    }}
+                    className="w-full bg-[#8A2BE2] hover:bg-[#6B21A8] text-white text-xs font-semibold h-10 shadow-sm"
                   >
-                    <RefreshCw className={`w-3 h-3 ${isLoadingQuote ? 'animate-spin' : ''}`} />
-                    <span>{isLoadingQuote ? 'Updating...' : 'Refresh'}</span>
+                    Done & View Wallet
                   </Button>
                 </div>
+              ) : (
+                <form onSubmit={handleSolanaWithdraw} className="space-y-4">
+                  {/* Context notice if user's country has offramp blocked in sandbox */}
+                  {selectedCountry !== 'NG' && (
+                    <div className="p-3 bg-purple-50/70 border border-purple-200 rounded-xl flex items-start gap-2 text-xs text-purple-900">
+                      <Zap className="w-4 h-4 text-[#8A2BE2] shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-semibold">Recommended for {COUNTRY_NAMES[selectedCountry] || selectedCountry}:</span>{' '}
+                        Direct Solana USDC withdrawals settle immediately to any external Solana wallet with zero platform fees.
+                      </div>
+                    </div>
+                  )}
 
-                {isLoadingQuote ? (
-                  <div className="py-3 flex justify-center items-center gap-2 text-xs text-gray-500">
-                    <Loader2 className="w-4 h-4 animate-spin text-[#8A2BE2]" />
-                    <span>Fetching live rate from Switch...</span>
+                  {solanaError && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 flex items-start gap-2">
+                      <AlertCircle className="w-4 h-4 shrink-0 text-red-600 mt-0.5" />
+                      <div className="flex-1">{solanaError}</div>
+                    </div>
+                  )}
+
+                  {/* Destination Address Input */}
+                  <div>
+                    <Label className="text-xs font-semibold text-gray-700 mb-1 block">
+                      Destination Solana Wallet Address
+                    </Label>
+                    <Input
+                      type="text"
+                      placeholder="e.g. 7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU"
+                      value={solanaAddress}
+                      onChange={(e) => {
+                        setSolanaAddress(e.target.value);
+                        setSolanaError(null);
+                      }}
+                      className="h-10 text-xs font-mono"
+                    />
+                    <p className="text-[11px] text-gray-400 mt-1">
+                      Enter your Solana mainnet address (Phantom, Solflare, etc.). SPL USDC will be delivered.
+                    </p>
                   </div>
-                ) : quote ? (
-                  <div className="space-y-1.5 pt-1 text-xs">
-                    <div className="flex justify-between text-gray-600">
-                      <span>Rate:</span>
-                      <span className="font-semibold text-gray-900">
-                        1 USDC = {quote.rate?.toLocaleString()} {quote.destination?.currency}
+
+                  {/* Amount Input */}
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <Label className="text-xs font-semibold text-gray-700">Withdrawal Amount (USDC)</Label>
+                      <span className="text-[11px] text-gray-400">Min: 1 USDC</span>
+                    </div>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-medium">$</span>
+                      <Input
+                        type="number"
+                        step="any"
+                        placeholder="0.00"
+                        value={solanaAmount}
+                        onChange={(e) => {
+                          setSolanaAmount(e.target.value);
+                          setSolanaError(null);
+                        }}
+                        className="pl-7 pr-16 h-10 text-sm font-semibold"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-gray-400">
+                        USDC
                       </span>
                     </div>
-                    <div className="flex justify-between text-gray-600">
-                      <span>You receive:</span>
-                      <span className="font-bold text-emerald-700 text-sm">
-                        {quote.destination?.amount?.toLocaleString('en-US', { minimumFractionDigits: 2 })}{' '}
-                        {quote.destination?.currency}
+                  </div>
+
+                  {/* Information summary box */}
+                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-xl space-y-1.5 text-xs text-gray-600">
+                    <div className="flex justify-between">
+                      <span>Network:</span>
+                      <span className="font-semibold text-gray-900">Solana (Mainnet)</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Token Mint:</span>
+                      <span className="font-mono text-gray-700 text-[11px]">EPjFWdd...yTDt1v (USDC)</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Speed:</span>
+                      <span className="font-semibold text-emerald-700">Instant Settlement</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Platform Fee:</span>
+                      <span className="font-semibold text-gray-900">0.00 USDC</span>
+                    </div>
+                  </div>
+
+                  {/* Submit Button */}
+                  <Button
+                    type="submit"
+                    disabled={
+                      isSubmittingSolana ||
+                      !solanaAddress ||
+                      !solanaAmount ||
+                      parseFloat(solanaAmount) < 1 ||
+                      parseFloat(solanaAmount) > availableBalance
+                    }
+                    className="w-full h-11 bg-[#8A2BE2] hover:bg-[#6B21A8] text-white font-semibold text-sm rounded-xl flex items-center justify-center gap-2 shadow-md transition-all"
+                  >
+                    {isSubmittingSolana ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Processing Solana Withdrawal...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Withdraw {solanaAmount && parseFloat(solanaAmount) > 0 ? `$${parseFloat(solanaAmount).toFixed(2)} USDC` : 'USDC'} to Solana</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </>
+                    )}
+                  </Button>
+                </form>
+              )}
+            </div>
+          ) : (
+            /* STEP 1 (FIAT TAB): BANK & MOBILE MONEY VIA SWITCH */
+            <div className="space-y-4">
+              {/* Available balance indicator */}
+              <div className="p-3 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-100 rounded-xl flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-purple-700 font-medium">Available for Withdrawal</p>
+                  <p className="text-lg font-bold text-[#8A2BE2]">
+                    ${availableBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{' '}
+                    <span className="text-xs font-semibold text-purple-600">USDC</span>
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setAmountUsdc(String(availableBalance))}
+                  disabled={availableBalance <= 0}
+                  className="h-8 text-xs border-purple-300 text-purple-700 hover:bg-purple-100 font-medium"
+                >
+                  Max Amount
+                </Button>
+              </div>
+
+              {/* Country & Currency Selection */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs font-semibold text-gray-700 mb-1 block">Destination Country</Label>
+                  <Select value={selectedCountry} onValueChange={handleCountryChange}>
+                    <SelectTrigger className="w-full h-10 text-xs">
+                      <SelectValue placeholder="Select Country" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-56">
+                      {corridors.map((c) => (
+                        <SelectItem key={c.country} value={c.country} className="text-xs">
+                          {COUNTRY_NAMES[c.country] || c.country} ({c.country})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className="text-xs font-semibold text-gray-700 mb-1 block">Payout Currency</Label>
+                  <Select
+                    value={selectedCurrency}
+                    onValueChange={(val) => {
+                      setSelectedCurrency(val);
+                      setQuote(null);
+                    }}
+                  >
+                    <SelectTrigger className="w-full h-10 text-xs">
+                      <SelectValue placeholder="Select Currency" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(currentCorridor?.currencies || [selectedCurrency]).map((curr) => (
+                        <SelectItem key={curr} value={curr} className="text-xs font-medium">
+                          {curr}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Sandbox Off-ramp Restriction Callout for non-NG corridors */}
+              {selectedCountry !== 'NG' ? (
+                <div className="p-4 bg-purple-50/80 border border-purple-200 rounded-xl space-y-3">
+                  <div className="flex items-start gap-2.5">
+                    <AlertCircle className="w-5 h-5 text-[#8A2BE2] shrink-0 mt-0.5" />
+                    <div className="text-xs text-gray-700 space-y-1">
+                      <p className="font-semibold text-gray-900">
+                        Fiat Payouts Restricted in Sandbox for {COUNTRY_NAMES[selectedCountry] || selectedCountry}
+                      </p>
+                      <p>
+                        Switch's sandbox environment currently limits bank and mobile money remittance to Nigeria (NGN). Payouts for {COUNTRY_NAMES[selectedCountry] || selectedCountry} ({selectedCurrency}) require production corridor authorization.
+                      </p>
+                      <p className="font-medium text-[#8A2BE2]">
+                        You can withdraw your entire available balance instantly using Direct Solana USDC.
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    onClick={() => setWithdrawMethod('solana')}
+                    className="w-full bg-[#8A2BE2] hover:bg-[#7824c7] text-white text-xs font-semibold h-10 shadow-sm"
+                  >
+                    <Zap className="w-3.5 h-3.5 mr-1.5" />
+                    Switch to Direct Solana USDC Withdrawal
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  {/* Payout Channel Tabs (Bank vs Mobile Money) */}
+                  {currentCorridor?.channels && currentCorridor.channels.length > 1 && (
+                    <div>
+                      <Label className="text-xs font-semibold text-gray-700 mb-1.5 block">Payout Method</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {currentCorridor.channels.map((chan) => (
+                          <button
+                            key={chan}
+                            type="button"
+                            onClick={() => {
+                              setSelectedChannel(chan);
+                              setQuote(null);
+                            }}
+                            className={`p-2.5 rounded-xl border text-xs font-medium flex items-center justify-center gap-2 transition-all ${
+                              selectedChannel === chan
+                                ? 'border-[#8A2BE2] bg-purple-50 text-[#8A2BE2] shadow-sm font-semibold'
+                                : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                            }`}
+                          >
+                            {chan === 'BANK' ? <Building2 className="w-4 h-4" /> : <Smartphone className="w-4 h-4" />}
+                            <span>{chan === 'BANK' ? 'Bank Transfer' : 'Mobile Money'}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Amount Input */}
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <Label className="text-xs font-semibold text-gray-700">Withdrawal Amount (USDC)</Label>
+                      <span className="text-[11px] text-gray-400">Settled from Solana</span>
+                    </div>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-medium">$</span>
+                      <Input
+                        type="number"
+                        step="any"
+                        placeholder="0.00"
+                        value={amountUsdc}
+                        onChange={(e) => {
+                          setAmountUsdc(e.target.value);
+                          setQuote(null);
+                        }}
+                        className="pl-7 pr-16 h-10 text-sm font-semibold"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-gray-400">
+                        USDC
                       </span>
                     </div>
-                    <div className="flex justify-between text-gray-500 text-[11px] pt-1 border-t border-gray-200/60">
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3 text-gray-400" />
-                        Settlement: {quote.settlement || 'Fast'}
-                      </span>
-                      {quoteSecondsLeft !== null && (
-                        <span className={quoteSecondsLeft < 15 ? 'text-red-600 font-semibold' : 'text-gray-500'}>
-                          Quote expires in {quoteSecondsLeft}s
+                  </div>
+
+                  {/* Live Quote Breakdown Section */}
+                  {amountUsdc && parseFloat(amountUsdc) > 0 && (
+                    <div className="p-3 bg-gray-50 border border-gray-200 rounded-xl space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-gray-700 flex items-center gap-1.5">
+                          <Zap className="w-3.5 h-3.5 text-[#8A2BE2]" />
+                          Guaranteed Rate & Payout
                         </span>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleFetchQuote()}
+                          disabled={isLoadingQuote}
+                          className="h-6 px-2 text-[11px] text-[#8A2BE2] hover:bg-purple-100 flex items-center gap-1"
+                        >
+                          <RefreshCw className={`w-3 h-3 ${isLoadingQuote ? 'animate-spin' : ''}`} />
+                          <span>{isLoadingQuote ? 'Updating...' : 'Refresh'}</span>
+                        </Button>
+                      </div>
+
+                      {isLoadingQuote ? (
+                        <div className="py-3 flex justify-center items-center gap-2 text-xs text-gray-500">
+                          <Loader2 className="w-4 h-4 animate-spin text-[#8A2BE2]" />
+                          <span>Fetching live rate from Switch...</span>
+                        </div>
+                      ) : quote ? (
+                        <div className="space-y-1.5 pt-1 text-xs">
+                          <div className="flex justify-between text-gray-600">
+                            <span>Rate:</span>
+                            <span className="font-semibold text-gray-900">
+                              1 USDC = {quote.rate?.toLocaleString()} {quote.destination?.currency}
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-gray-600">
+                            <span>You receive:</span>
+                            <span className="font-bold text-emerald-700 text-sm">
+                              {quote.destination?.amount?.toLocaleString('en-US', { minimumFractionDigits: 2 })}{' '}
+                              {quote.destination?.currency}
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-gray-500 text-[11px] pt-1 border-t border-gray-200/60">
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3 h-3 text-gray-400" />
+                              Settlement: {quote.settlement || 'Fast'}
+                            </span>
+                            {quoteSecondsLeft !== null && (
+                              <span className={quoteSecondsLeft < 15 ? 'text-red-600 font-semibold' : 'text-gray-500'}>
+                                Quote expires in {quoteSecondsLeft}s
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-center py-2">
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={() => handleFetchQuote()}
+                            className="h-7 text-xs bg-[#8A2BE2] hover:bg-[#6B21A8] text-white"
+                          >
+                            Get Payout Quote
+                          </Button>
+                        </div>
                       )}
                     </div>
-                  </div>
-                ) : (
-                  <div className="text-center py-2">
-                    <Button
-                      type="button"
-                      size="sm"
-                      onClick={() => handleFetchQuote()}
-                      className="h-7 text-xs bg-[#8A2BE2] hover:bg-[#6B21A8] text-white"
-                    >
-                      Get Payout Quote
-                    </Button>
-                  </div>
-                )}
-              </div>
-            )}
+                  )}
 
-            {/* Beneficiary Details Section */}
-            <div className="pt-2 border-t border-gray-100 space-y-3">
-              <p className="text-xs font-bold text-gray-800 uppercase tracking-wide">Beneficiary Details</p>
+                  {/* Beneficiary Details Section */}
+                  <div className="pt-2 border-t border-gray-100 space-y-3">
+                    <p className="text-xs font-bold text-gray-800 uppercase tracking-wide">Beneficiary Details</p>
 
-              {selectedChannel === 'BANK' ? (
-                <>
-                  {/* Bank Selector */}
-                  <div>
-                    <Label className="text-xs font-semibold text-gray-700 mb-1 block">Select Bank</Label>
-                    {isLoadingInstitutions ? (
-                      <div className="flex items-center gap-2 p-2 border rounded-md text-xs text-gray-400">
-                        <Loader2 className="w-3.5 h-3.5 animate-spin text-[#8A2BE2]" />
-                        <span>Loading banks...</span>
-                      </div>
-                    ) : (
-                      <Select
-                        value={selectedBankCode}
-                        onValueChange={(val) => {
-                          setSelectedBankCode(val);
-                          setIsAccountVerified(false);
-                          setVerifiedName(null);
-                        }}
-                      >
-                        <SelectTrigger className="w-full h-10 text-xs">
-                          <SelectValue placeholder="Search or select bank..." />
-                        </SelectTrigger>
-                        <SelectContent className="max-h-56">
-                          <div className="p-2 border-b">
-                            <div className="relative">
-                              <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
-                              <Input
-                                placeholder="Filter bank..."
-                                value={bankSearch}
-                                onChange={(e) => setBankSearch(e.target.value)}
-                                className="h-7 text-xs pl-8"
-                              />
+                    {selectedChannel === 'BANK' ? (
+                      <>
+                        {/* Bank Selector */}
+                        <div>
+                          <Label className="text-xs font-semibold text-gray-700 mb-1 block">Select Bank</Label>
+                          {isLoadingInstitutions ? (
+                            <div className="flex items-center gap-2 p-2 border rounded-md text-xs text-gray-400">
+                              <Loader2 className="w-3.5 h-3.5 animate-spin text-[#8A2BE2]" />
+                              <span>Loading banks...</span>
                             </div>
-                          </div>
-                          {filteredInstitutions.length > 0 ? (
-                            filteredInstitutions.map((inst) => (
-                              <SelectItem key={inst.code} value={inst.code} className="text-xs">
-                                {inst.name}
-                              </SelectItem>
-                            ))
                           ) : (
-                            <div className="p-3 text-xs text-gray-400 text-center">No banks found</div>
+                            <Select
+                              value={selectedBankCode}
+                              onValueChange={(val) => {
+                                setSelectedBankCode(val);
+                                setIsAccountVerified(false);
+                                setVerifiedName(null);
+                              }}
+                            >
+                              <SelectTrigger className="w-full h-10 text-xs">
+                                <SelectValue placeholder="Search or select bank..." />
+                              </SelectTrigger>
+                              <SelectContent className="max-h-56">
+                                <div className="p-2 border-b">
+                                  <div className="relative">
+                                    <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                                    <Input
+                                      placeholder="Filter bank..."
+                                      value={bankSearch}
+                                      onChange={(e) => setBankSearch(e.target.value)}
+                                      className="h-7 text-xs pl-8"
+                                    />
+                                  </div>
+                                </div>
+                                {filteredInstitutions.length > 0 ? (
+                                  filteredInstitutions.map((inst) => (
+                                    <SelectItem key={inst.code} value={inst.code} className="text-xs">
+                                      {inst.name}
+                                    </SelectItem>
+                                  ))
+                                ) : (
+                                  <div className="p-3 text-xs text-gray-400 text-center">No banks found</div>
+                                )}
+                              </SelectContent>
+                            </Select>
                           )}
-                        </SelectContent>
-                      </Select>
+                        </div>
+
+                        {/* Account Number & Lookup Button */}
+                        <div>
+                          <Label className="text-xs font-semibold text-gray-700 mb-1 block">Account Number</Label>
+                          <div className="flex gap-2">
+                            <Input
+                              type="text"
+                              placeholder="e.g. 0123456789"
+                              value={accountNumber}
+                              onChange={(e) => {
+                                setAccountNumber(e.target.value);
+                                setIsAccountVerified(false);
+                                setVerifiedName(null);
+                              }}
+                              className="h-10 text-xs font-mono"
+                            />
+                            {selectedCountry === 'NG' && (
+                              <Button
+                                type="button"
+                                onClick={handleVerifyAccount}
+                                disabled={isVerifyingAccount || !selectedBankCode || accountNumber.length < 9}
+                                className="h-10 px-3 text-xs bg-[#8A2BE2] hover:bg-[#6B21A8] text-white shrink-0"
+                              >
+                                {isVerifyingAccount ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                  'Verify'
+                                )}
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Account Name */}
+                        <div>
+                          <div className="flex justify-between items-center mb-1">
+                            <Label className="text-xs font-semibold text-gray-700">Account Holder Name</Label>
+                            {isAccountVerified && verifiedName && (
+                              <span className="text-[11px] text-emerald-600 font-medium flex items-center gap-1">
+                                <CheckCircle2 className="w-3 h-3" /> Verified by Switch
+                              </span>
+                            )}
+                          </div>
+                          <Input
+                            type="text"
+                            placeholder="Account holder's full legal name"
+                            value={verifiedName || accountName}
+                            onChange={(e) => setAccountName(e.target.value)}
+                            readOnly={Boolean(isAccountVerified && verifiedName)}
+                            className={`h-10 text-xs ${isAccountVerified && verifiedName ? 'bg-emerald-50 border-emerald-300 font-semibold text-emerald-900' : ''}`}
+                          />
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        {/* Mobile Money Details */}
+                        <div>
+                          <Label className="text-xs font-semibold text-gray-700 mb-1 block">Mobile Network / Provider</Label>
+                          <Select value={mobileNetwork} onValueChange={setMobileNetwork}>
+                            <SelectTrigger className="w-full h-10 text-xs">
+                              <SelectValue placeholder="Select network provider..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {(COMMON_MOBILE_NETWORKS[selectedCountry] || ['MTN', 'Airtel', 'Vodafone', 'Orange']).map((net) => (
+                                <SelectItem key={net} value={net} className="text-xs">
+                                  {net}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div>
+                          <Label className="text-xs font-semibold text-gray-700 mb-1 block">Mobile Phone Number</Label>
+                          <Input
+                            type="tel"
+                            placeholder="e.g. +233..."
+                            value={mobileNumber}
+                            onChange={(e) => setMobileNumber(e.target.value)}
+                            className="h-10 text-xs"
+                          />
+                        </div>
+
+                        <div>
+                          <Label className="text-xs font-semibold text-gray-700 mb-1 block">Account / Recipient Name</Label>
+                          <Input
+                            type="text"
+                            placeholder="Full name as registered with mobile network"
+                            value={accountName}
+                            onChange={(e) => setAccountName(e.target.value)}
+                            className="h-10 text-xs"
+                          />
+                        </div>
+                      </>
                     )}
                   </div>
 
-                  {/* Account Number & Lookup Button */}
-                  <div>
-                    <Label className="text-xs font-semibold text-gray-700 mb-1 block">Account Number</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        type="text"
-                        placeholder="e.g. 0123456789"
-                        value={accountNumber}
-                        onChange={(e) => {
-                          setAccountNumber(e.target.value);
-                          setIsAccountVerified(false);
-                          setVerifiedName(null);
-                        }}
-                        className="h-10 text-xs font-mono"
-                      />
-                      {selectedCountry === 'NG' && (
-                        <Button
-                          type="button"
-                          onClick={handleVerifyAccount}
-                          disabled={isVerifyingAccount || !selectedBankCode || accountNumber.length < 9}
-                          className="h-10 px-3 text-xs bg-[#8A2BE2] hover:bg-[#6B21A8] text-white shrink-0"
-                        >
-                          {isVerifyingAccount ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          ) : (
-                            'Verify'
-                          )}
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Account Name */}
-                  <div>
-                    <div className="flex justify-between items-center mb-1">
-                      <Label className="text-xs font-semibold text-gray-700">Account Holder Name</Label>
-                      {isAccountVerified && verifiedName && (
-                        <span className="text-[11px] text-emerald-600 font-medium flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3" /> Verified by Switch
-                        </span>
-                      )}
-                    </div>
-                    <Input
-                      type="text"
-                      placeholder="Account holder's full legal name"
-                      value={verifiedName || accountName}
-                      onChange={(e) => setAccountName(e.target.value)}
-                      readOnly={Boolean(isAccountVerified && verifiedName)}
-                      className={`h-10 text-xs ${isAccountVerified && verifiedName ? 'bg-emerald-50 border-emerald-300 font-semibold text-emerald-900' : ''}`}
-                    />
-                  </div>
-                </>
-              ) : (
-                <>
-                  {/* Mobile Money Details */}
-                  <div>
-                    <Label className="text-xs font-semibold text-gray-700 mb-1 block">Mobile Network / Provider</Label>
-                    <Select value={mobileNetwork} onValueChange={setMobileNetwork}>
-                      <SelectTrigger className="w-full h-10 text-xs">
-                        <SelectValue placeholder="Select network provider..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {(COMMON_MOBILE_NETWORKS[selectedCountry] || ['MTN', 'Airtel', 'Vodafone', 'Orange']).map((net) => (
-                          <SelectItem key={net} value={net} className="text-xs">
-                            {net}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label className="text-xs font-semibold text-gray-700 mb-1 block">Mobile Phone Number</Label>
-                    <Input
-                      type="tel"
-                      placeholder="e.g. +233..."
-                      value={mobileNumber}
-                      onChange={(e) => setMobileNumber(e.target.value)}
-                      className="h-10 text-xs"
-                    />
-                  </div>
-
-                  <div>
-                    <Label className="text-xs font-semibold text-gray-700 mb-1 block">Account / Recipient Name</Label>
-                    <Input
-                      type="text"
-                      placeholder="Full name as registered with mobile network"
-                      value={accountName}
-                      onChange={(e) => setAccountName(e.target.value)}
-                      className="h-10 text-xs"
-                    />
+                  {/* Next Button */}
+                  <div className="pt-2">
+                    <Button
+                      type="button"
+                      onClick={handleProceedToReview}
+                      disabled={
+                        !amountUsdc ||
+                        parseFloat(amountUsdc) <= 0 ||
+                        parseFloat(amountUsdc) > availableBalance ||
+                        isLoadingQuote
+                      }
+                      className="w-full h-11 bg-[#8A2BE2] hover:bg-[#6B21A8] text-white font-semibold text-sm rounded-xl flex items-center justify-center gap-2 shadow-md transition-all"
+                    >
+                      <span>Continue to Review</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </Button>
                   </div>
                 </>
               )}
             </div>
-
-            {/* Next Button */}
-            <div className="pt-2">
-              <Button
-                type="button"
-                onClick={handleProceedToReview}
-                disabled={
-                  !amountUsdc ||
-                  parseFloat(amountUsdc) <= 0 ||
-                  parseFloat(amountUsdc) > availableBalance ||
-                  isLoadingQuote
-                }
-                className="w-full h-11 bg-[#8A2BE2] hover:bg-[#6B21A8] text-white font-semibold text-sm rounded-xl flex items-center justify-center gap-2 shadow-md transition-all"
-              >
-                <span>Continue to Review</span>
-                <ArrowRight className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
+          )
         ) : step === 2 ? (
           /* STEP 2: REVIEW & CONFIRM WITHDRAWAL */
           <div className="space-y-4">

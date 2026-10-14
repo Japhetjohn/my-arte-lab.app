@@ -14,6 +14,12 @@ interface WalletState {
   escrowBalance: number;
   incomingEarnings: number;
   solanaAddress: string | null;
+  userCountry: {
+    countryCode: string;
+    countryName: string;
+    defaultCurrency: string;
+  } | null;
+  paymentCapabilities: any | null;
   isInitialLoad: boolean;
 }
 
@@ -74,6 +80,8 @@ export function useWallet() {
     escrowBalance: cached.escrowBalance,
     incomingEarnings: cached.incomingEarnings,
     solanaAddress: null,
+    userCountry: null,
+    paymentCapabilities: null,
     isInitialLoad: true,
   });
 
@@ -84,6 +92,8 @@ export function useWallet() {
     try {
       const response = await walletService.getWallet();
       const walletData = response.data?.data?.wallet;
+      const userCountry = response.data?.data?.userCountry || null;
+      const paymentCapabilities = response.data?.data?.paymentCapabilities || null;
       const newBalance = walletData?.balance || 0;
       const newUsdcBalance = walletData?.usdcBalance || newBalance;
       const newPendingWithdrawal = walletData?.pendingWithdrawal || 0;
@@ -106,6 +116,8 @@ export function useWallet() {
         escrowBalance: newEscrowBalance,
         incomingEarnings: newIncomingEarnings,
         solanaAddress,
+        userCountry,
+        paymentCapabilities,
         isLoading: false,
         isInitialLoad: false,
       }));

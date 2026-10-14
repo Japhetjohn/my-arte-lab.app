@@ -13,13 +13,16 @@ const { escapeHtml } = require('../utils/sanitize');
 exports.register = catchAsync(async (req, res, next) => {
   const { firstName, lastName, email, password, role, category, avatar, coverImage } = req.body;
   
-  // Handle location fields - support both nested and flat formats
+  // Handle location and country fields - support both nested and flat formats
+  const { normalizeCountryCode, getCountryName } = require('../utils/countryUtils');
   const localArea = req.body.localArea || req.body.location?.localArea;
   const state = req.body.state || req.body.location?.state;
-  const country = req.body.country || req.body.location?.country;
+  const rawCountry = req.body.countryCode || req.body.country || req.body.location?.country || req.body.location?.countryCode;
+  const normalizedCountryCode = normalizeCountryCode(rawCountry) || 'NG';
+  const countryName = getCountryName(normalizedCountryCode) || 'Nigeria';
 
   console.log('[Register] Request body:', JSON.stringify(req.body, null, 2));
-  console.log('[Register] Extracted location:', { localArea, state, country });
+  console.log('[Register] Extracted location & country:', { localArea, state, country: countryName, countryCode: normalizedCountryCode });
 
   // Validate required fields
   if (!firstName || !lastName || !email || !password) {
@@ -54,10 +57,11 @@ exports.register = catchAsync(async (req, res, next) => {
       coverImage: userCoverImage,
       role: role || 'client',
       category: role === 'creator' ? (Array.isArray(category) ? category : category ? [category] : []) : undefined,
+      countryCode: normalizedCountryCode,
       location: {
         localArea,
         state,
-        country
+        country: countryName
       },
       wallet: {
         currency: 'USDC',
@@ -346,7 +350,7 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
 });
 
 exports.updateProfile = catchAsync(async (req, res, next) => {
-  const allowedFields = ['firstName', 'lastName', 'bio', 'location', 'skills', 'avatar', 'coverImage', 'phoneNumber', 'phoneNumberVisible', 'category', 'portfolio', 'services', 'profileVisibility', 'privacy'];
+  const allowedFields = ['firstName', 'lastName', 'bio', 'location', 'countryCode', 'country', 'skills', 'avatar', 'coverImage', 'phoneNumber', 'phoneNumberVisible', 'category', 'portfolio', 'services', 'profileVisibility', 'privacy'];
   const updates = {};
 
   Object.keys(req.body).forEach(key => {
@@ -354,6 +358,25 @@ exports.updateProfile = catchAsync(async (req, res, next) => {
       updates[key] = req.body[key];
     }
   });
+
+  // Handle explicit country / countryCode updates
+  const { normalizeCountryCode, getCountryName } = require('../utils/countryUtils');
+  const rawCountry = req.body.countryCode || req.body.country || req.body.location?.country || req.body.location?.countryCode;
+  if (rawCountry !== undefined && rawCountry !== null && String(rawCountry).trim() !== '') {
+    const normCode = normalizeCountryCode(String(rawCountry));
+    if (!normCode) {
+      return next(new ErrorHandler(`Invalid country: "${rawCountry}". Please select a valid country.`, 400));
+    }
+    updates.countryCode = normCode;
+    const countryName = getCountryName(normCode);
+    const existingLoc = req.user.location?.toObject ? req.user.location.toObject() : (req.user.location || {});
+    updates.location = {
+      ...existingLoc,
+      ...(updates.location || {}),
+      country: countryName
+    };
+    delete updates.country; // Normalized to countryCode and location.country
+  }
   
   // Handle category - normalize to array and remove if empty
   if (updates.category !== undefined) {

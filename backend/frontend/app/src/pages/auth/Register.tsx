@@ -12,6 +12,41 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+
+const REGISTRATION_COUNTRIES = [
+  { code: 'NG', name: 'Nigeria' },
+  { code: 'GH', name: 'Ghana' },
+  { code: 'KE', name: 'Kenya' },
+  { code: 'CD', name: 'DR Congo' },
+  { code: 'CM', name: 'Cameroon' },
+  { code: 'BJ', name: 'Benin' },
+  { code: 'EG', name: 'Egypt' },
+  { code: 'GM', name: 'Gambia' },
+  { code: 'RW', name: 'Rwanda' },
+  { code: 'SL', name: 'Sierra Leone' },
+  { code: 'TZ', name: 'Tanzania' },
+  { code: 'UG', name: 'Uganda' },
+  { code: 'ZM', name: 'Zambia' },
+  { code: 'BW', name: 'Botswana' },
+  { code: 'LR', name: 'Liberia' },
+  { code: 'ZA', name: 'South Africa' },
+  { code: 'ET', name: 'Ethiopia' },
+  { code: 'CI', name: "Côte d'Ivoire" },
+  { code: 'SN', name: 'Senegal' },
+  { code: 'MA', name: 'Morocco' },
+  { code: 'US', name: 'United States' },
+  { code: 'GB', name: 'United Kingdom' },
+  { code: 'CA', name: 'Canada' },
+  { code: 'FR', name: 'France' },
+  { code: 'DE', name: 'Germany' },
+];
 
 import { PasswordInput } from '@/components/shared/PasswordInput';
 import { AuthLayout } from '@/layouts/AuthLayout';
@@ -567,11 +602,23 @@ export function Register() {
               />
             </div>
           </div>
-          <Input
-            placeholder="Country"
-            className="h-12 sm:h-11 text-base"
-            {...step3Form.register('location.country')}
-          />
+          <div className="pt-1">
+            <Select
+              value={step3Form.watch('location.country')}
+              onValueChange={(val) => step3Form.setValue('location.country', val)}
+            >
+              <SelectTrigger className="h-12 sm:h-11 text-base">
+                <SelectValue placeholder="Select Country" />
+              </SelectTrigger>
+              <SelectContent className="max-h-56">
+                {REGISTRATION_COUNTRIES.map((c) => (
+                  <SelectItem key={c.code} value={c.name}>
+                    {c.name} ({c.code})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {/* Auto-agree to terms - checkbox removed */}

@@ -91,6 +91,15 @@ export const walletService = {
 
   getSolanaDeposits: (params?: { page?: number; limit?: number }) =>
     api.get('/wallet/solana/deposits', { params }),
+
+  getCapabilities: () =>
+    api.get('/wallet/capabilities'),
+
+  getCountries: () =>
+    api.get('/wallet/countries'),
+
+  withdrawSolana: (data: { amount: number; solanaAddress: string }) =>
+    api.post('/wallet/withdraw/solana', data),
 };
 
 // Upload Service

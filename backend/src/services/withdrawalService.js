@@ -38,6 +38,11 @@ class WithdrawalService {
     narration = 'MyArteLab Payout',
     reason = 'SERVICE_CHARGES'
   }) {
+    if (!user) {
+      const err = new Error('User is required for withdrawal initiation');
+      err.status = 400;
+      throw err;
+    }
     const userId = user._id || user;
     const numAmount = parseFloat(Number(amount).toFixed(6));
 
@@ -57,9 +62,26 @@ class WithdrawalService {
       throw new Error('Beneficiary payment details are required');
     }
 
-    const cleanCountry = country.trim().toUpperCase();
+    const { normalizeCountryCode, resolveEnvironment, SWITCH_OFFRAMP_SANDBOX_ACTIVE, SWITCH_OFFRAMP_SANDBOX_BLOCKED, getCountryName } = require('../utils/countryUtils');
+    const cleanCountry = normalizeCountryCode(country) || country.trim().toUpperCase();
     const cleanCurrency = currency.trim().toUpperCase();
     const cleanChannel = (channel || 'BANK').trim().toUpperCase();
+
+    // Pre-flight corridor capability check based on environment
+    const currentEnv = resolveEnvironment();
+    if (currentEnv === 'sandbox') {
+      if (!SWITCH_OFFRAMP_SANDBOX_ACTIVE.has(cleanCountry)) {
+        if (SWITCH_OFFRAMP_SANDBOX_BLOCKED.has(cleanCountry)) {
+          const err = new Error(`Local currency payout for ${getCountryName(cleanCountry)} is awaiting Switch provider activation in this sandbox environment. Please withdraw via Direct Solana USDC.`);
+          err.status = 400;
+          throw err;
+        } else {
+          const err = new Error(`Local currency payout is not supported for ${getCountryName(cleanCountry)}. Please withdraw via Direct Solana USDC.`);
+          err.status = 400;
+          throw err;
+        }
+      }
+    }
 
     // 1. Resolve idempotency key (prevent double clicks & repeat submissions)
     const resolvedKey = idempotencyKey
