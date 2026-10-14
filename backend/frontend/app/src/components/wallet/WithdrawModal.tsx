@@ -122,6 +122,11 @@ const COUNTRY_NAMES: Record<string, string> = {
   EG: 'Egypt',
   BW: 'Botswana',
   ZA: 'South Africa',
+  ET: 'Ethiopia',
+  GN: 'Guinea',
+  MA: 'Morocco',
+  GA: 'Gabon',
+  TG: 'Togo',
 };
 
 const COMMON_MOBILE_NETWORKS: Record<string, string[]> = {

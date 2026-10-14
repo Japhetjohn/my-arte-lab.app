@@ -126,19 +126,19 @@ async function runPhase7FullRegression() {
   assert(!duplicateCreditApplied, '3.5 Duplicate COMPLETED deposit webhook rejected idempotently (no double crediting)');
 
   // ================================================================
-  // 4. MARKETPLACE BOOKING & ESCROW COMMISSIONS (20% ISOLATION)
+  // 4. MARKETPLACE BOOKING & ESCROW COMMISSIONS (10% ISOLATION)
   // ================================================================
-  console.log('\n--- SECTION 4: MARKETPLACE 20% BOOKING COMMISSION & ESCROW ---');
+  console.log('\n--- SECTION 4: MARKETPLACE 10% BOOKING COMMISSION & ESCROW ---');
   
-  assert(PLATFORM_CONFIG.COMMISSION_RATE === 20, '4.1 Platform commission rate is exactly 20% in PLATFORM_CONFIG');
+  assert(PLATFORM_CONFIG.COMMISSION_RATE === 10, '4.1 Platform commission rate is exactly 10% in PLATFORM_CONFIG');
 
   const clientBalance = 100.00;
   const bookingTotal = 50.00;
-  const platformFee = bookingTotal * (PLATFORM_CONFIG.COMMISSION_RATE / 100); // 10.00 USDC (20%)
-  const creatorPayout = bookingTotal - platformFee; // 40.00 USDC (80%)
+  const platformFee = bookingTotal * (PLATFORM_CONFIG.COMMISSION_RATE / 100); // 5.00 USDC (10%)
+  const creatorPayout = bookingTotal - platformFee; // 45.00 USDC (90%)
 
-  assert(platformFee === 10.00, '4.2 20% Platform fee calculated correctly (10.00 USDC on 50.00 USDC booking)');
-  assert(creatorPayout === 40.00, '4.3 80% Creator earnings calculated correctly (40.00 USDC on 50.00 USDC booking)');
+  assert(platformFee === 5.00, '4.2 10% Platform fee calculated correctly (5.00 USDC on 50.00 USDC booking)');
+  assert(creatorPayout === 45.00, '4.3 90% Creator earnings calculated correctly (45.00 USDC on 50.00 USDC booking)');
 
   // Simulate client paying for booking -> funds held in escrow
   let clientCurrentBalance = clientBalance - bookingTotal; // 50.00 USDC
@@ -158,7 +158,7 @@ async function runPhase7FullRegression() {
   creatorWallet.wallet.balance += creatorPayout;
   escrowHeld -= bookingTotal;
 
-  assert(creatorWallet.balance === 40.00 && creatorWallet.wallet.balance === 40.00, '4.6 Creator wallet receives net 40.00 USDC upon approval');
+  assert(creatorWallet.balance === 45.00 && creatorWallet.wallet.balance === 45.00, '4.6 Creator wallet receives net 45.00 USDC upon approval');
   assert(escrowHeld === 0.00, '4.7 Escrow balance cleared upon completion');
 
   // ================================================================

@@ -110,6 +110,12 @@ const COUNTRY_NAMES: Record<string, string> = {
   GM: 'Gambia',
   EG: 'Egypt',
   BW: 'Botswana',
+  ET: 'Ethiopia',
+  GN: 'Guinea',
+  ZA: 'South Africa',
+  MA: 'Morocco',
+  GA: 'Gabon',
+  TG: 'Togo',
 };
 
 export function AddFundsModal({ isOpen, onClose, solanaAddress }: AddFundsModalProps) {
