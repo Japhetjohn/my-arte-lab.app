@@ -323,7 +323,8 @@ class BookingService {
         clientId,
         {
           $inc: {
-            'wallet.pendingBalance': -booking.amount
+            'wallet.pendingBalance': -booking.amount,
+            'pendingBalance': -booking.amount
           }
         },
         { session }

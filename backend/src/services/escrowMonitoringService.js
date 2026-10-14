@@ -95,7 +95,9 @@ class EscrowMonitoringService {
             if (client) {
                 // Refund full amount to client
                 client.wallet.balance += booking.amount;
+                client.balance = (client.balance || 0) + booking.amount;
                 client.wallet.pendingBalance -= booking.amount;
+                client.pendingBalance = Math.max(0, (client.pendingBalance || 0) - booking.amount);
                 await client.save({ session, validateBeforeSave: false });
 
                 // Record refund transaction
@@ -151,7 +153,9 @@ class EscrowMonitoringService {
 
             if (client) {
                 client.wallet.balance += amount;
+                client.balance = (client.balance || 0) + amount;
                 client.wallet.pendingBalance -= amount;
+                client.pendingBalance = Math.max(0, (client.pendingBalance || 0) - amount);
                 await client.save({ session, validateBeforeSave: false });
 
                 await Transaction.create([{

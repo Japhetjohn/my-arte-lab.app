@@ -10,7 +10,7 @@
     "kill-port": "bash kill-port.sh",
     "build": "npm ci && cd frontend && npm ci && npm run build && cd ..",
     "migrate:wallet-encryption": "node scripts/migrateWalletEncryption.js",
-    "test": "jest --coverage",
+    "test": "node scripts/test-phase9-master-suite.js",
     "lint": "eslint src/"
   },
   "keywords": [
