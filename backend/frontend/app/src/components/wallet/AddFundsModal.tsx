@@ -28,7 +28,8 @@ import {
   CheckCircle2,
   Building2,
   RefreshCw,
-  ArrowLeft
+  ArrowLeft,
+  ExternalLink
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -131,6 +132,94 @@ export function AddFundsModal({ isOpen, onClose, solanaAddress }: AddFundsModalP
   const [activeFunding, setActiveFunding] = useState<ActiveFunding | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  // Two funding methods: 'fiat' (Bank / Mobile Money) vs 'solana' (Deposit USDC on Solana)
+  const [activeTab, setActiveTab] = useState<'fiat' | 'solana'>('fiat');
+  const [solanaInstructions, setSolanaInstructions] = useState<{
+    network: string;
+    token: string;
+    mint: string;
+    decimals: number;
+    recipientAddress: string;
+    instructions: string[];
+  } | null>(null);
+  const [isLoadingSolana, setIsLoadingSolana] = useState<boolean>(false);
+  const [solanaSignature, setSolanaSignature] = useState<string>('');
+  const [isVerifyingSolana, setIsVerifyingSolana] = useState<boolean>(false);
+  const [solanaVerifyResult, setSolanaVerifyResult] = useState<{
+    success: boolean;
+    amountUsdc?: number;
+    balance?: number;
+    signature?: string;
+    message?: string;
+  } | null>(null);
+  const [solanaError, setSolanaError] = useState<string | null>(null);
+
+  // Load Solana deposit instructions
+  useEffect(() => {
+    if (!isOpen) return;
+
+    let isMounted = true;
+    const fetchSolanaInstructions = async () => {
+      setIsLoadingSolana(true);
+      try {
+        const res = await walletService.getSolanaDepositInstructions();
+        if (isMounted && res.data?.data) {
+          setSolanaInstructions(res.data.data);
+        }
+      } catch (err: any) {
+        if (isMounted) {
+          console.warn('[AddFundsModal] Could not fetch Solana instructions:', err.message);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingSolana(false);
+        }
+      }
+    };
+
+    fetchSolanaInstructions();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isOpen]);
+
+  const handleVerifySolanaDeposit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const cleanSig = solanaSignature.trim();
+    if (!cleanSig || cleanSig.length < 32) {
+      toast.error('Please enter a valid Solana transaction signature');
+      return;
+    }
+
+    setIsVerifyingSolana(true);
+    setSolanaError(null);
+    setSolanaVerifyResult(null);
+
+    try {
+      const res = await walletService.verifySolanaDeposit(cleanSig);
+      if (res.data?.success) {
+        setSolanaVerifyResult({
+          success: true,
+          amountUsdc: res.data.data?.amountUsdc,
+          balance: res.data.data?.balance,
+          signature: res.data.data?.signature,
+          message: res.data.message || 'Deposit successfully verified and credited!'
+        });
+        toast.success(res.data.message || `Successfully credited ${res.data.data?.amountUsdc} USDC!`);
+        setSolanaSignature('');
+      } else {
+        setSolanaError(res.data?.error || 'Verification failed');
+      }
+    } catch (err: any) {
+      const msg = err.response?.data?.error || err.message || 'Failed to verify transaction signature on Solana';
+      setSolanaError(msg);
+      toast.error(msg);
+    } finally {
+      setIsVerifyingSolana(false);
+    }
+  };
 
   // Load supported funding corridors from Switch via backend
   useEffect(() => {
@@ -283,22 +372,53 @@ export function AddFundsModal({ isOpen, onClose, solanaAddress }: AddFundsModalP
             <span className="w-8 h-8 rounded-full bg-[#8A2BE2]/10 text-[#8A2BE2] flex items-center justify-center text-sm font-semibold">
               $
             </span>
-            {activeFunding ? 'Deposit Instructions' : 'Add Funds to MyArteLab'}
+            {activeFunding 
+              ? 'Deposit Instructions' 
+              : activeTab === 'solana' 
+                ? 'Deposit USDC on Solana' 
+                : 'Add Funds to MyArteLab'}
           </DialogTitle>
           <DialogDescription className="text-xs text-gray-500">
             {activeFunding 
               ? 'Transfer the exact amount below to fund your wallet with USDC on Solana.'
-              : 'Fund your MyArteLab balance with local fiat currency settled in USDC on Solana.'
+              : activeTab === 'solana'
+                ? 'Send Solana USDC to your deposit address. Deposits credit your unified wallet balance.'
+                : 'Fund your MyArteLab balance with local fiat currency settled in USDC on Solana.'
             }
           </DialogDescription>
         </DialogHeader>
 
-        {isLoadingCorridors ? (
-          <div className="py-12 flex flex-col items-center justify-center gap-3">
-            <Loader2 className="w-8 h-8 animate-spin text-[#8A2BE2]" />
-            <p className="text-sm text-gray-500">Loading supported payment corridors...</p>
+        {/* Tab Selector when not in active fiat payment instructions */}
+        {!activeFunding && (
+          <div className="grid grid-cols-2 gap-1.5 p-1 bg-gray-100 rounded-xl mb-3">
+            <button
+              type="button"
+              onClick={() => { setActiveTab('fiat'); setErrorMessage(null); }}
+              className={`py-2 px-3 text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition-all ${
+                activeTab === 'fiat'
+                  ? 'bg-white text-gray-900 shadow-sm font-bold'
+                  : 'text-gray-500 hover:text-gray-900'
+              }`}
+            >
+              <Building2 className="w-3.5 h-3.5 text-[#8A2BE2]" />
+              <span>Bank / Mobile Money</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => { setActiveTab('solana'); setErrorMessage(null); }}
+              className={`py-2 px-3 text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition-all ${
+                activeTab === 'solana'
+                  ? 'bg-white text-[#8A2BE2] shadow-sm font-bold'
+                  : 'text-gray-500 hover:text-gray-900'
+              }`}
+            >
+              <Zap className="w-3.5 h-3.5 text-[#8A2BE2]" />
+              <span>Deposit USDC on Solana</span>
+            </button>
           </div>
-        ) : activeFunding ? (
+        )}
+
+        {activeFunding ? (
           /* STEP 2: PAYMENT INSTRUCTIONS VIEW */
           <div className="space-y-4">
             {/* Status Header Badge */}
@@ -426,7 +546,13 @@ export function AddFundsModal({ isOpen, onClose, solanaAddress }: AddFundsModalP
               </Button>
             </div>
           </div>
-        ) : (
+        ) : activeTab === 'fiat' ? (
+          isLoadingCorridors ? (
+            <div className="py-12 flex flex-col items-center justify-center gap-3">
+              <Loader2 className="w-8 h-8 animate-spin text-[#8A2BE2]" />
+              <p className="text-sm text-gray-500">Loading supported payment corridors...</p>
+            </div>
+          ) : (
           /* STEP 1: QUOTE CONFIGURATION VIEW */
           <div className="space-y-5">
             {/* Country Selector */}
@@ -576,6 +702,181 @@ export function AddFundsModal({ isOpen, onClose, solanaAddress }: AddFundsModalP
                 </Button>
               )}
             </div>
+          </div>
+          )
+        ) : (
+          /* SOLANA DIRECT USDC DEPOSIT VIEW */
+          <div className="space-y-4">
+            {/* Header info card */}
+            <div className="p-3.5 bg-purple-50/70 border border-purple-200/80 rounded-xl space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-purple-900 uppercase tracking-wide flex items-center gap-1.5">
+                  <Zap className="w-3.5 h-3.5 text-[#8A2BE2]" />
+                  Direct Solana USDC Deposit
+                </span>
+                <span className="px-2 py-0.5 text-[10px] font-semibold bg-purple-100 text-[#8A2BE2] rounded-full border border-purple-200">
+                  Solana Mainnet
+                </span>
+              </div>
+              <p className="text-xs text-purple-800/80">
+                Send USDC directly from Phantom, Solflare, Coinbase, or any external Solana wallet. Both fiat and Solana deposits credit the same authoritative balance.
+              </p>
+            </div>
+
+            {/* Recipient Address Card */}
+            <div className="p-4 bg-white border border-gray-200 rounded-xl space-y-3 shadow-sm">
+              <div className="flex justify-between items-center pb-2 border-b border-gray-100">
+                <span className="text-xs font-semibold text-gray-700">Your Solana Receiving Address</span>
+                <span className="text-[10px] text-gray-400 font-mono">SPL Token</span>
+              </div>
+
+              {isLoadingSolana ? (
+                <div className="py-4 flex items-center justify-center gap-2 text-xs text-gray-500">
+                  <Loader2 className="w-4 h-4 animate-spin text-[#8A2BE2]" />
+                  <span>Loading deposit address...</span>
+                </div>
+              ) : (
+                <div className="flex justify-between items-center py-2 bg-gray-50 px-3 rounded-lg border border-gray-200">
+                  <div className="min-w-0 pr-2">
+                    <p className="text-[10px] text-gray-400 uppercase font-semibold">Deposit Address</p>
+                    <p className="font-mono text-xs font-bold text-gray-900 truncate">
+                      {solanaInstructions?.recipientAddress || solanaAddress || 'Address loading...'}
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => copyToClipboard(
+                      solanaInstructions?.recipientAddress || solanaAddress || '',
+                      'Deposit Address'
+                    )}
+                    disabled={!solanaInstructions?.recipientAddress && !solanaAddress}
+                    className="h-8 px-2.5 text-xs text-[#8A2BE2] hover:bg-[#8A2BE2]/10 shrink-0"
+                  >
+                    {copiedField === 'Deposit Address' ? <CheckCircle2 className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5 mr-1" />}
+                    {copiedField === 'Deposit Address' ? 'Copied' : 'Copy'}
+                  </Button>
+                </div>
+              )}
+
+              {/* Token Mint & Settlement Specs */}
+              <div className="grid grid-cols-2 gap-2 text-[11px] pt-1">
+                <div className="p-2 bg-gray-50 rounded-lg border border-gray-100">
+                  <span className="text-gray-400 block text-[10px] uppercase font-semibold">Accepted Asset</span>
+                  <span className="font-semibold text-gray-900">USDC (USD Coin)</span>
+                </div>
+                <div className="p-2 bg-gray-50 rounded-lg border border-gray-100">
+                  <span className="text-gray-400 block text-[10px] uppercase font-semibold">Decimals & Settlement</span>
+                  <span className="font-semibold text-gray-900">6 Decimals • Finalized</span>
+                </div>
+              </div>
+
+              {/* Official Mint Verification */}
+              <div className="flex justify-between items-center p-2 bg-gray-50/70 rounded-lg border border-gray-100 text-[11px]">
+                <div className="truncate pr-2">
+                  <span className="text-gray-400 text-[10px] uppercase font-semibold block">Official USDC Mint (Solana)</span>
+                  <span className="font-mono text-[11px] text-gray-700 truncate">
+                    {solanaInstructions?.mint || 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'}
+                  </span>
+                </div>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => copyToClipboard(
+                    solanaInstructions?.mint || 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+                    'Token Mint'
+                  )}
+                  className="h-7 px-2 text-[10px] text-gray-600 hover:text-gray-900 shrink-0"
+                >
+                  {copiedField === 'Token Mint' ? <CheckCircle2 className="w-3 h-3 text-green-600" /> : <Copy className="w-3 h-3" />}
+                </Button>
+              </div>
+
+              {/* Important Safety Notes */}
+              <div className="p-2.5 bg-amber-50/70 border border-amber-200/60 rounded-lg text-[11px] text-amber-900 space-y-1">
+                <div className="flex items-center gap-1 font-semibold text-amber-900">
+                  <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                  <span>Important Transfer Safety</span>
+                </div>
+                <p className="text-[10px] text-amber-800 leading-relaxed">
+                  Only transfer SPL USDC on Solana mainnet. Do not send via Ethereum, BSC, Polygon, or Arbitrum. Do not send native SOL or USDT.
+                </p>
+              </div>
+            </div>
+
+            {/* Verification Form */}
+            <form onSubmit={handleVerifySolanaDeposit} className="space-y-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold uppercase text-gray-500">
+                  Already Sent? Enter Transaction Signature
+                </Label>
+                <Input
+                  type="text"
+                  placeholder="Paste 88-character Solana signature (e.g. 5xY8...)"
+                  value={solanaSignature}
+                  onChange={(e) => setSolanaSignature(e.target.value)}
+                  className="font-mono text-xs h-10"
+                  disabled={isVerifyingSolana}
+                />
+                <p className="text-[10px] text-gray-400">
+                  Transactions are confirmed server-side on Solana and credited atomically to your balance.
+                </p>
+              </div>
+
+              {solanaError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-semibold block">Deposit Verification Failed</span>
+                    <span>{solanaError}</span>
+                  </div>
+                </div>
+              )}
+
+              {solanaVerifyResult && (
+                <div className="p-3.5 bg-green-50 border border-green-200 rounded-xl text-xs text-green-800 space-y-1.5">
+                  <div className="flex items-center gap-1.5 font-bold text-green-900">
+                    <CheckCircle2 className="w-4 h-4 text-green-600" />
+                    <span>Deposit Confirmed & Credited!</span>
+                  </div>
+                  <p className="text-xs">
+                    Credited <strong className="font-semibold">{solanaVerifyResult.amountUsdc} USDC</strong> to your wallet.
+                    {solanaVerifyResult.balance !== undefined && (
+                      <span> New balance: <strong className="font-semibold">${solanaVerifyResult.balance.toFixed(2)} USDC</strong></span>
+                    )}
+                  </p>
+                  {solanaVerifyResult.signature && (
+                    <a
+                      href={`https://explorer.solana.com/tx/${solanaVerifyResult.signature}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[11px] text-green-700 hover:text-green-900 underline flex items-center gap-1 pt-0.5"
+                    >
+                      <span>View on Solana Explorer</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
+                </div>
+              )}
+
+              <Button
+                type="submit"
+                disabled={isVerifyingSolana || !solanaSignature.trim()}
+                className="w-full h-11 bg-[#8A2BE2] hover:bg-[#7823c9] text-white font-semibold flex items-center justify-center gap-2"
+              >
+                {isVerifyingSolana ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Verifying On-Chain...</span>
+                  </>
+                ) : (
+                  <>
+                    <ShieldCheck className="w-4 h-4" />
+                    <span>Verify & Credit Deposit</span>
+                  </>
+                )}
+              </Button>
+            </form>
           </div>
         )}
       </DialogContent>

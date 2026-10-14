@@ -491,6 +491,114 @@ class LedgerService {
       newBalance: calculatedBalance
     };
   }
+
+  /**
+   * Atomically and idempotently credits a verified on-chain Solana USDC deposit.
+   * Updates user.balance and user.wallet.balance in 100% lockstep.
+   * Records completed Transaction entry in the authoritative ledger.
+   * 
+   * @param {Object} solanaDeposit SolanaDeposit document or object with _id
+   * @returns {Promise<{ credited: boolean, alreadyCredited?: boolean, amount?: number, ledgerTx?: Object }>}
+   */
+  async creditSolanaDeposit(solanaDeposit) {
+    if (!solanaDeposit || !solanaDeposit._id) {
+      throw new Error('Valid Solana deposit record is required for ledger crediting');
+    }
+
+    const SolanaDeposit = require('../models/SolanaDeposit');
+
+    // 1. Atomic query-level check to guarantee exactly-once crediting
+    const lockedDeposit = await SolanaDeposit.findOneAndUpdate(
+      {
+        _id: solanaDeposit._id,
+        isCredited: false
+      },
+      {
+        $set: {
+          isCredited: true,
+          creditedAt: new Date(),
+          status: 'credited'
+        }
+      },
+      { new: true }
+    );
+
+    if (!lockedDeposit) {
+      console.log(`[Ledger] Solana deposit ${solanaDeposit.signature || solanaDeposit._id} is already credited. Preventing duplicate credit.`);
+      return {
+        credited: false,
+        alreadyCredited: true,
+        signature: solanaDeposit.signature
+      };
+    }
+
+    const creditAmount = Number(lockedDeposit.amountUsdc);
+    if (!creditAmount || creditAmount <= 0) {
+      throw new Error(`Invalid Solana deposit credit amount: ${creditAmount}`);
+    }
+
+    // 2. Create authoritative completed transaction in the ledger
+    const timestamp = Date.now().toString(36).toUpperCase();
+    const random = crypto.randomBytes(3).toString('hex').toUpperCase();
+    const transactionId = `TXN-SOL-${timestamp}-${random}`;
+
+    const ledgerTx = await Transaction.create({
+      transactionId,
+      user: lockedDeposit.user,
+      type: 'deposit',
+      amount: creditAmount,
+      netAmount: creditAmount,
+      currency: 'USDC',
+      status: 'completed',
+      reference: lockedDeposit.signature,
+      paymentMethod: 'solana_direct',
+      blockchainNetwork: 'SOLANA',
+      fromAddress: lockedDeposit.fromAddress,
+      toAddress: lockedDeposit.toAddress,
+      transactionHash: lockedDeposit.signature,
+      confirmations: 32,
+      description: `Direct Solana USDC Deposit: ${creditAmount} USDC`,
+      metadata: {
+        depositType: 'solana_direct',
+        signature: lockedDeposit.signature,
+        mint: lockedDeposit.mint,
+        slot: lockedDeposit.slot,
+        network: lockedDeposit.network
+      },
+      completedAt: new Date()
+    });
+
+    // 3. Atomically update user balance: keep BOTH wallet.balance and user.balance in 100% lockstep
+    const userUpdate = await User.findByIdAndUpdate(
+      lockedDeposit.user,
+      {
+        $inc: {
+          'wallet.balance': creditAmount,
+          'balance': creditAmount
+        },
+        $set: {
+          'wallet.lastUpdated': new Date(),
+          'lastUpdated': new Date()
+        }
+      },
+      { new: true }
+    );
+
+    // Update SolanaDeposit with ledger transaction ID
+    await SolanaDeposit.findByIdAndUpdate(lockedDeposit._id, {
+      $set: { ledgerTransactionId: transactionId }
+    });
+
+    console.log(`[Ledger] Successfully credited ${creditAmount} USDC from Solana tx ${lockedDeposit.signature} to user ${lockedDeposit.user}. New balance: ${userUpdate?.wallet?.balance || userUpdate?.balance} USDC. LedgerTx: ${transactionId}`);
+
+    return {
+      credited: true,
+      amount: creditAmount,
+      currency: 'USDC',
+      signature: lockedDeposit.signature,
+      ledgerTx
+    };
+  }
 }
 
 module.exports = new LedgerService();

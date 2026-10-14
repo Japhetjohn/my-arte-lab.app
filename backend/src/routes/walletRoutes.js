@@ -10,6 +10,7 @@ const WithdrawalTransaction = require('../models/WithdrawalTransaction');
 const switchService = require('../services/switchService');
 const ledgerService = require('../services/ledgerService');
 const withdrawalService = require('../services/withdrawalService');
+const solanaDepositService = require('../services/solanaDepositService');
 const { catchAsync } = require('../utils/errorHandler');
 
 /**
@@ -684,6 +685,71 @@ router.get('/transactions', protect, catchAsync(async (req, res) => {
         itemsPerPage: limit
       }
     }
+  });
+}));
+
+/**
+ * @route   GET /api/wallet/solana/deposit-instructions
+ * @desc    Get verified direct Solana USDC deposit instructions and recipient address
+ * @access  Private
+ */
+router.get('/solana/deposit-instructions', protect, catchAsync(async (req, res) => {
+  const instructions = await solanaDepositService.getDepositInstructions(req.user._id);
+  res.json({
+    success: true,
+    data: instructions
+  });
+}));
+
+/**
+ * @route   POST /api/wallet/solana/verify-deposit
+ * @desc    Verify on-chain Solana USDC transfer server-side and credit balance exactly once
+ * @access  Private
+ */
+router.post('/solana/verify-deposit', protect, catchAsync(async (req, res) => {
+  const { signature, mockData } = req.body;
+
+  if (!signature || typeof signature !== 'string' || signature.trim().length < 32) {
+    return res.status(400).json({
+      success: false,
+      error: 'Please provide a valid Solana transaction signature'
+    });
+  }
+
+  // Allow mockData only in non-production test/sandbox environments
+  const isTestEnv = process.env.NODE_ENV === 'test' || process.env.SOLANA_NETWORK === 'sandbox';
+  const simulation = isTestEnv && mockData ? mockData : null;
+
+  try {
+    const result = await solanaDepositService.verifyAndCreditDeposit(
+      req.user._id,
+      signature.trim(),
+      simulation
+    );
+
+    res.status(result.alreadyCredited ? 200 : 201).json(result);
+  } catch (err) {
+    res.status(400).json({
+      success: false,
+      error: err.message || 'Failed to verify Solana transaction'
+    });
+  }
+}));
+
+/**
+ * @route   GET /api/wallet/solana/deposits
+ * @desc    Get user's direct Solana USDC deposit history
+ * @access  Private
+ */
+router.get('/solana/deposits', protect, catchAsync(async (req, res) => {
+  const page = parseInt(req.query.page, 10) || 1;
+  const limit = parseInt(req.query.limit, 10) || 20;
+
+  const result = await solanaDepositService.getUserDeposits(req.user._id, page, limit);
+
+  res.json({
+    success: true,
+    data: result
   });
 }));
 

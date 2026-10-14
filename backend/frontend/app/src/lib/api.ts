@@ -82,6 +82,15 @@ export const walletService = {
 
   getTransactions: (params?: { page?: number; limit?: number; type?: string }) =>
     api.get('/wallet/transactions', { params }),
+
+  getSolanaDepositInstructions: () =>
+    api.get('/wallet/solana/deposit-instructions'),
+
+  verifySolanaDeposit: (signature: string, mockData?: any) =>
+    api.post('/wallet/solana/verify-deposit', { signature, mockData }),
+
+  getSolanaDeposits: (params?: { page?: number; limit?: number }) =>
+    api.get('/wallet/solana/deposits', { params }),
 };
 
 // Upload Service
