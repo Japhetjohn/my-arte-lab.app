@@ -50,27 +50,36 @@ async function migrateWallets() {
     const progress = `[${i + 1}/${users.length}]`;
 
     try {
-      // Check existing wallet
-      const existingWallet = await SwitchWallet.findOne({ user: user._id });
+      // Check existing wallet with .lean() for plain object access
+      const existingWallet = await SwitchWallet.findOne({ user: user._id }).lean();
 
-      // Determine if existing wallet is already a genuine live wallet
-      // Simulated sandbox wallets used deterministic 24-char sha256 slice or had specific simulation patterns
-      const isSimulated = existingWallet && (
-        !existingWallet.addresses?.SOLANA ||
-        existingWallet.addresses.SOLANA === process.env.PLATFORM_WALLET_ADDRESS ||
-        existingWallet.solanaAddress === process.env.PLATFORM_WALLET_ADDRESS
-      );
+      // Check if wallet is already a valid genuine Switch wallet
+      const hasSolana = existingWallet?.solanaAddress && existingWallet.solanaAddress !== process.env.PLATFORM_WALLET_ADDRESS;
+      const isGenuineLive = existingWallet && 
+        existingWallet.status === 'active' && 
+        existingWallet.switchWalletId && 
+        hasSolana;
 
-      if (existingWallet && !isSimulated && existingWallet.status === 'active' && existingWallet.addresses?.SOLANA) {
+      if (isGenuineLive) {
         console.log(`${progress} User ${userDisplay} already has live Switch wallet: ${existingWallet.solanaAddress}`);
         alreadyLiveCount++;
         continue;
       }
 
       // Prepare clean name for Switch wallet
-      let rawName = user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email?.split('@')[0] || `User${user._id.toString().slice(-6)}`;
+      let rawName = user.name;
+      if (!rawName) {
+        const full = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+        if (full) rawName = full;
+      }
+      if (!rawName && user.email) {
+        rawName = user.email.split('@')[0];
+      }
+      if (!rawName) {
+        rawName = `User${user._id.toString().slice(-6)}`;
+      }
       let cleanName = rawName.replace(/[^a-zA-Z0-9]/g, '');
-      if (!/[a-zA-Z]/.test(cleanName)) {
+      if (!cleanName || !/[a-zA-Z]/.test(cleanName)) {
         cleanName = `User${cleanName || user._id.toString().slice(-6)}`;
       }
 
