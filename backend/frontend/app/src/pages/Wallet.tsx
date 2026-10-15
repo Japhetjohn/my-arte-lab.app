@@ -5,14 +5,19 @@ import { MobileWallet } from '@/components/wallet/MobileWallet';
 import { DesktopWallet } from '@/components/wallet/DesktopWallet';
 import { useWallet } from '@/hooks/useWallet';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function Wallet() {
   const {
     transactions,
-    isLoading,
+    isWalletLoading,
+    isTransactionsLoading,
+    isLoadingMoreTransactions,
+    isInitialLoad,
     error,
+    walletError,
+    transactionsError,
     totalBalanceUSD,
     availableBalance,
     pendingWithdrawal,
@@ -21,8 +26,10 @@ export function Wallet() {
     solanaAddress,
     userCountry,
     paymentCapabilities,
+    pagination,
     fetchWallet,
     fetchTransactions,
+    loadMoreTransactions,
   } = useWallet();
   
   // Get user role from auth context
@@ -42,12 +49,39 @@ export function Wallet() {
     }
   }, [error]);
 
-  // Filter to only show USDC transactions, exclude internal platform_fee transactions
-  const usdcTransactions = transactions.filter(
-    (t) => (t.currency === 'USDC' || t.currency === 'USD') && (t.type as string) !== 'platform_fee'
+  // Exclude internal platform fees, keep all real user transactions (USDC, NGN, etc.)
+  const displayTransactions = transactions.filter(
+    (t) => (t.type as string) !== 'platform_fee'
   );
 
-  if (isLoading) {
+  const hasMoreTransactions = pagination ? pagination.currentPage < pagination.totalPages : false;
+
+  // Handle fatal initial failure when no cached data exists
+  if (isInitialLoad && walletError && totalBalanceUSD === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] p-6 text-center">
+        <div className="w-12 h-12 rounded-full bg-red-50 text-red-600 flex items-center justify-center mb-3">
+          <AlertCircle className="w-6 h-6" />
+        </div>
+        <h2 className="text-lg font-bold text-gray-900 mb-1">Unable to load wallet</h2>
+        <p className="text-sm text-gray-500 max-w-sm mb-4">{walletError}</p>
+        <button
+          type="button"
+          onClick={() => {
+            fetchWallet();
+            fetchTransactions();
+          }}
+          className="px-4 py-2 bg-[#9747FF] text-white rounded-xl text-sm font-medium hover:bg-[#8534f0] transition-colors inline-flex items-center gap-2 cursor-pointer"
+        >
+          <RefreshCw className="w-4 h-4" />
+          <span>Try Again</span>
+        </button>
+      </div>
+    );
+  }
+
+  // Initial spinner only when there's zero cached data and initial request is in-flight
+  if (isInitialLoad) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <Loader2 className="w-8 h-8 animate-spin text-[#9747FF]" />
@@ -68,14 +102,20 @@ export function Wallet() {
           solanaAddress={solanaAddress}
           userCountry={userCountry}
           userRole={userRole as 'client' | 'creator'}
-          transactions={usdcTransactions}
-          isLoading={isLoading}
+          transactions={displayTransactions}
+          isWalletLoading={isWalletLoading}
+          isTransactionsLoading={isTransactionsLoading}
+          isLoadingMore={isLoadingMoreTransactions}
+          hasMoreTransactions={hasMoreTransactions}
+          walletError={walletError}
+          transactionsError={transactionsError}
           onAddFunds={() => setIsAddFundsOpen(true)}
           onWithdraw={() => setIsWithdrawOpen(true)}
           onRefresh={() => {
             fetchWallet();
             fetchTransactions();
           }}
+          onLoadMore={loadMoreTransactions}
         />
       </div>
 
@@ -90,14 +130,20 @@ export function Wallet() {
           solanaAddress={solanaAddress}
           userCountry={userCountry}
           userRole={userRole as 'client' | 'creator'}
-          transactions={usdcTransactions}
-          isLoading={isLoading}
+          transactions={displayTransactions}
+          isWalletLoading={isWalletLoading}
+          isTransactionsLoading={isTransactionsLoading}
+          isLoadingMore={isLoadingMoreTransactions}
+          hasMoreTransactions={hasMoreTransactions}
+          walletError={walletError}
+          transactionsError={transactionsError}
           onAddFunds={() => setIsAddFundsOpen(true)}
           onWithdraw={() => setIsWithdrawOpen(true)}
           onRefresh={() => {
             fetchWallet();
             fetchTransactions();
           }}
+          onLoadMore={loadMoreTransactions}
         />
       </div>
 
@@ -111,6 +157,10 @@ export function Wallet() {
         solanaAddress={solanaAddress}
         userCountry={userCountry}
         paymentCapabilities={paymentCapabilities}
+        onSuccess={() => {
+          fetchWallet();
+          fetchTransactions();
+        }}
       />
 
       <WithdrawModal

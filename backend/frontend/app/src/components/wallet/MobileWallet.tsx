@@ -12,6 +12,7 @@ import {
   Plus,
   RefreshCw,
   Loader2,
+  AlertCircle,
 } from 'lucide-react';
 import type { Transaction } from '@/types';
 import { toast } from 'sonner';
@@ -32,9 +33,16 @@ interface MobileWalletProps {
   userRole?: 'client' | 'creator';
   transactions: Transaction[];
   isLoading?: boolean;
+  isWalletLoading?: boolean;
+  isTransactionsLoading?: boolean;
+  isLoadingMore?: boolean;
+  hasMoreTransactions?: boolean;
+  walletError?: string | null;
+  transactionsError?: string | null;
   onAddFunds: () => void;
   onWithdraw: () => void;
   onRefresh?: () => void;
+  onLoadMore?: () => void;
 }
 
 type FilterTab = 'all' | 'deposits' | 'payments' | 'withdrawals' | 'earnings';
@@ -47,24 +55,47 @@ export function MobileWallet({
   incomingEarnings = 0,
   solanaAddress,
   userCountry,
-  userRole = 'client',
   transactions = [],
-  isLoading = false,
+  isWalletLoading = false,
+  isTransactionsLoading = false,
+  isLoadingMore = false,
+  hasMoreTransactions = false,
+  walletError,
+  transactionsError,
   onAddFunds,
   onWithdraw,
   onRefresh,
+  onLoadMore,
 }: MobileWalletProps) {
   const [copied, setCopied] = useState(false);
   const [activeFilter, setActiveFilter] = useState<FilterTab>('all');
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Handle copy Solana address
-  const handleCopyAddress = () => {
+  // Safe clipboard copy with fallback
+  const handleCopyAddress = async () => {
     if (!solanaAddress) return;
-    navigator.clipboard.writeText(solanaAddress);
-    setCopied(true);
-    toast.success('Solana address copied to clipboard');
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(solanaAddress);
+      } else {
+        const textArea = document.createElement('textarea');
+        textArea.value = solanaAddress;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textArea);
+        if (!successful) throw new Error('Copy command failed');
+      }
+      setCopied(true);
+      toast.success('Solana address copied to clipboard');
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error('Could not copy address. Please copy it manually.');
+    }
   };
 
   const handleRefresh = async () => {
@@ -93,16 +124,15 @@ export function MobileWallet({
   const [wholePart, decimalPart] = formattedBalance.split('.');
   const hasPendingWithdrawal = pendingWithdrawal > 0;
 
-  // Filter transactions
+  // Filter transactions including aliases
   const filteredTransactions = useMemo(() => {
     return transactions.filter((t) => {
-      // Exclude internal platform fees
-      if ((t.type as string) === 'platform_fee') return false;
-      // Filter by type
-      if (activeFilter === 'deposits') return t.type === 'deposit';
-      if (activeFilter === 'payments') return t.type === 'payment' || t.type === 'escrow';
-      if (activeFilter === 'withdrawals') return t.type === 'withdrawal';
-      if (activeFilter === 'earnings') return t.type === 'earning';
+      const type = (t.type || '').toLowerCase();
+      if (type === 'platform_fee') return false;
+      if (activeFilter === 'deposits') return type === 'deposit' || type === 'onramp';
+      if (activeFilter === 'payments') return type === 'payment' || type === 'escrow' || type === 'verification';
+      if (activeFilter === 'withdrawals') return type === 'withdrawal' || type === 'offramp';
+      if (activeFilter === 'earnings') return type === 'earning' || type === 'bonus';
       return true;
     });
   }, [transactions, activeFilter]);
@@ -150,8 +180,11 @@ export function MobileWallet({
         groups[key] = { label, subtotal: 0, items: [] };
       }
       groups[key].items.push(tx);
-      const amount = Math.abs(parseFloat(String(tx.amount)) || 0);
-      groups[key].subtotal += amount;
+      const isUsdc = (tx.currency || 'USDC').toUpperCase() === 'USDC' || (tx.currency || '').toUpperCase() === 'USD';
+      if (isUsdc) {
+        const amount = Math.abs(parseFloat(String(tx.amount)) || 0);
+        groups[key].subtotal += amount;
+      }
     });
 
     return Object.values(groups);
@@ -160,30 +193,30 @@ export function MobileWallet({
   // Determine category visual styling and illustration
   const getCategoryMeta = (tx: Transaction) => {
     const desc = (tx.description || '').toLowerCase();
-    const type = tx.type;
+    const type = (tx.type || '').toLowerCase();
 
-    if (type === 'deposit' || desc.includes('deposit') || desc.includes('funding')) {
+    if (type === 'deposit' || type === 'onramp' || desc.includes('deposit') || desc.includes('funding')) {
       return {
         emoji: '💳',
         isCredit: true,
         categoryName: 'Deposit',
       };
     }
-    if (type === 'earning' || desc.includes('earning') || desc.includes('payout')) {
+    if (type === 'earning' || type === 'bonus' || desc.includes('earning') || desc.includes('payout')) {
       return {
         emoji: '💰',
         isCredit: true,
-        categoryName: 'Salary / Earning',
+        categoryName: 'Earnings',
       };
     }
-    if (type === 'refund' || desc.includes('refund')) {
+    if (type === 'refund' || type === 'reversal' || desc.includes('refund') || desc.includes('reversal')) {
       return {
         emoji: '🔄',
         isCredit: true,
         categoryName: 'Refund',
       };
     }
-    if (type === 'withdrawal' || desc.includes('withdraw')) {
+    if (type === 'withdrawal' || type === 'offramp' || desc.includes('withdraw')) {
       return {
         emoji: '🏦',
         isCredit: false,
@@ -222,6 +255,33 @@ export function MobileWallet({
       emoji: '🛍️',
       isCredit: false,
       categoryName: 'Payment',
+    };
+  };
+
+  // Safe multi-currency formatter
+  const formatTxAmount = (tx: Transaction) => {
+    const currency = (tx.currency || 'USDC').toUpperCase();
+    const amount = Math.abs(parseFloat(String(tx.amount)) || 0);
+    const formattedNumber = amount.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+
+    if (currency === 'NGN') {
+      return {
+        text: `₦${formattedNumber}`,
+        currencyBadge: 'NGN',
+      };
+    }
+    if (currency === 'USDC' || currency === 'USD') {
+      return {
+        text: `$${formattedNumber}`,
+        currencyBadge: 'USDC',
+      };
+    }
+    return {
+      text: `${formattedNumber}`,
+      currencyBadge: currency,
     };
   };
 
@@ -272,7 +332,10 @@ export function MobileWallet({
 
       {/* 2.B: Prominent Available Balance */}
       <section className="text-center pt-3 pb-2">
-        <p className="text-xs font-normal text-gray-400 mb-1">Available balance</p>
+        <div className="flex items-center justify-center gap-1.5 mb-1">
+          <p className="text-xs font-normal text-gray-400">Available balance</p>
+          {isWalletLoading && <Loader2 className="w-3 h-3 animate-spin text-[#9747FF]" />}
+        </div>
         <div className="flex items-baseline justify-center">
           <span className="text-2xl sm:text-3xl font-normal text-gray-400 mr-0.5 align-baseline">$</span>
           <span className="text-5xl sm:text-6xl font-bold tracking-tight text-gray-900">{wholePart}</span>
@@ -281,6 +344,28 @@ export function MobileWallet({
             USDC
           </span>
         </div>
+
+        {/* Recoverable Wallet Error Banner */}
+        {walletError && (
+          <div className="mt-3 p-3 rounded-xl bg-red-50/90 border border-red-200/80 text-center max-w-sm mx-auto">
+            <div className="flex items-center justify-center gap-1.5 text-red-700 text-xs font-semibold mb-1">
+              <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+              <span>Failed to load wallet data</span>
+            </div>
+            <p className="text-[11px] text-red-600 mb-2">{walletError}</p>
+            {onRefresh && (
+              <button
+                type="button"
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className="px-3 py-1 bg-white border border-red-200 text-red-700 rounded-lg text-xs font-medium hover:bg-red-50/50 inline-flex items-center gap-1.5 cursor-pointer"
+              >
+                <RefreshCw className={cn('w-3 h-3', isRefreshing && 'animate-spin')} />
+                <span>Retry</span>
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Subtle Pending Withdrawal Reservation */}
         {hasPendingWithdrawal && (
@@ -365,7 +450,7 @@ export function MobileWallet({
         {hasEscrowActivity ? (
           <div className="space-y-2">
             {/* Client Escrow */}
-            {userRole === 'client' && escrowBalance > 0 && (
+            {escrowBalance > 0 && (
               <div className="bg-white border border-gray-100 rounded-xl p-3 shadow-xs flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-full bg-purple-50 text-[#9747FF] flex items-center justify-center shrink-0">
@@ -389,7 +474,7 @@ export function MobileWallet({
             )}
 
             {/* Creator Incoming Earnings */}
-            {userRole === 'creator' && incomingEarnings > 0 && (
+            {incomingEarnings > 0 && (
               <div className="bg-white border border-gray-100 rounded-xl p-3 shadow-xs flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
@@ -456,8 +541,30 @@ export function MobileWallet({
           })}
         </div>
 
+        {/* Recoverable Transactions Error Banner */}
+        {transactionsError && (
+          <div className="mb-3 p-3 rounded-xl bg-red-50/90 border border-red-200/80 text-center">
+            <div className="flex items-center justify-center gap-1.5 text-red-700 text-xs font-semibold mb-1">
+              <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+              <span>Failed to load transactions</span>
+            </div>
+            <p className="text-[11px] text-red-600 mb-2">{transactionsError}</p>
+            {onRefresh && (
+              <button
+                type="button"
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className="px-3 py-1 bg-white border border-red-200 text-red-700 rounded-lg text-xs font-medium hover:bg-red-50/50 inline-flex items-center gap-1.5 cursor-pointer"
+              >
+                <RefreshCw className={cn('w-3 h-3', isRefreshing && 'animate-spin')} />
+                <span>Retry</span>
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Grouped Chronological List replicating Screenshot 1 */}
-        {isLoading ? (
+        {isTransactionsLoading && transactions.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12">
             <Loader2 className="w-6 h-6 animate-spin text-[#9747FF] mb-2" />
             <p className="text-xs text-gray-400">Loading transactions...</p>
@@ -480,7 +587,7 @@ export function MobileWallet({
                     const txId = tx.id || tx._id || `tx-${Math.random()}`;
                     const meta = getCategoryMeta(tx);
                     const isCredit = meta.isCredit;
-                    const amount = Math.abs(parseFloat(String(tx.amount)) || 0);
+                    const formatted = formatTxAmount(tx);
                     const txDate = tx.createdAt ? new Date(tx.createdAt) : null;
                     const formattedTime = txDate
                       ? txDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
@@ -516,12 +623,12 @@ export function MobileWallet({
                               isCredit ? 'text-emerald-600' : 'text-gray-900'
                             )}
                           >
-                            {isCredit ? '+' : '−'}$
-                            {amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            {isCredit ? '+' : '−'}
+                            {formatted.text}
                           </p>
                           <p className="text-[11px] text-gray-400 capitalize mt-0.5">
                             {status === 'completed' ? (
-                              'USDC'
+                              formatted.currencyBadge
                             ) : (
                               <span
                                 className={cn(
@@ -541,6 +648,21 @@ export function MobileWallet({
                 </div>
               </div>
             ))}
+
+            {/* Pagination: Load More */}
+            {hasMoreTransactions && onLoadMore && (
+              <div className="text-center pt-2 pb-1">
+                <button
+                  type="button"
+                  onClick={onLoadMore}
+                  disabled={isLoadingMore}
+                  className="px-4 py-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-xl text-xs font-medium transition-all inline-flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  {isLoadingMore && <Loader2 className="w-3.5 h-3.5 animate-spin text-[#9747FF]" />}
+                  <span>{isLoadingMore ? 'Loading older transactions...' : 'Load older transactions'}</span>
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="text-center py-12 px-4 bg-gray-50/50 rounded-2xl border border-gray-100 mt-2">
@@ -550,7 +672,7 @@ export function MobileWallet({
             <p className="font-medium text-gray-800 text-sm">No transactions found</p>
             <p className="text-xs text-gray-400 mt-1 max-w-xs mx-auto">
               {activeFilter === 'all'
-                ? 'Your USDC transaction history will appear here'
+                ? 'Your transaction history will appear here'
                 : `No ${activeFilter} recorded yet`}
             </p>
           </div>

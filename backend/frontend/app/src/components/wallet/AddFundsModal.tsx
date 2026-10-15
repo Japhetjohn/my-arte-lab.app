@@ -95,6 +95,7 @@ interface AddFundsModalProps {
     defaultCurrency: string;
   } | null;
   paymentCapabilities?: any | null;
+  onSuccess?: () => void;
 }
 
 const COUNTRY_NAMES: Record<string, string> = {
@@ -131,7 +132,7 @@ const COUNTRY_NAMES: Record<string, string> = {
   AE: 'United Arab Emirates',
 };
 
-export function AddFundsModal({ isOpen, onClose, solanaAddress, userCountry, paymentCapabilities }: AddFundsModalProps) {
+export function AddFundsModal({ isOpen, onClose, solanaAddress, userCountry, paymentCapabilities, onSuccess }: AddFundsModalProps) {
   const [corridors, setCorridors] = useState<FundingCorridor[]>([]);
   const [selectedCountry, setSelectedCountry] = useState<string>(userCountry?.countryCode || 'NG');
   const [selectedCurrency, setSelectedCurrency] = useState<string>(userCountry?.defaultCurrency || 'NGN');
@@ -221,6 +222,9 @@ export function AddFundsModal({ isOpen, onClose, solanaAddress, userCountry, pay
         });
         toast.success(res.data.message || `Successfully credited ${res.data.data?.amountUsdc} USDC!`);
         setSolanaSignature('');
+        if (onSuccess) {
+          onSuccess();
+        }
       } else {
         setSolanaError(res.data?.error || 'Verification failed');
       }
@@ -376,13 +380,16 @@ export function AddFundsModal({ isOpen, onClose, solanaAddress, userCountry, pay
         setActiveFunding(prev => prev ? { ...prev, status: updated.status, switchStatus: updated.switchStatus } : null);
         if (updated.status === 'completed') {
           toast.success('Deposit confirmed! Settlement recorded.');
+          if (onSuccess) {
+            onSuccess();
+          }
         } else if (updated.status === 'processing') {
           toast.info('Deposit received! Switch is processing the transfer.');
         } else {
           toast.info(`Current status: ${updated.status || 'Pending payment'}`);
         }
       }
-    } catch (err: any) {
+    } catch {
       toast.error('Could not refresh status at this moment.');
     } finally {
       setIsCheckingStatus(false);
