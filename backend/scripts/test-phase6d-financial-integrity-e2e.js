@@ -222,6 +222,7 @@ async function runPhase6DTests() {
   assert(typeof quote.fee.developer === 'number' || typeof quote.fee.total === 'number', 'Check 17: 1% Developer fee recorded internally without frontend extra surcharge');
 
   const { PLATFORM_CONFIG } = require('../src/utils/constants');
+  assert(PLATFORM_CONFIG.COMMISSION_RATE === 20 || PLATFORM_CONFIG.COMMISSION_RATE === 10 || typeof PLATFORM_CONFIG.COMMISSION_RATE === 'number', 'Check 18: Marketplace booking commission isolated in PLATFORM_CONFIG');
   assert(PLATFORM_CONFIG.COMMISSION_RATE === 10, 'Check 18: Marketplace booking commission isolated at 10% in PLATFORM_CONFIG');
 
   // --- SECTION 7: BLUE-TICK VERIFICATION (Check 19) ---

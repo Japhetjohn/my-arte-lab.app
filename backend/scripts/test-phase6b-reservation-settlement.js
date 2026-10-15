@@ -218,6 +218,9 @@ async function runPhase6BTests() {
     serviceTitle: 'Graphic Design',
     amount: 500,
     currency: 'USDC',
+    platformCommission: 20,
+    platformFee: 100,
+    creatorAmount: 400,
     platformCommission: 10,
     platformFee: 50,
     creatorAmount: 450,
@@ -225,6 +228,9 @@ async function runPhase6BTests() {
       address: 'Gy2n4pZePk1vZyx76GtNERaLSgcoQYD2MnohMxFWbtCV'
     }
   });
+  assert(mockBooking.platformCommission === 20, 'Booking marketplace fee is configured at 20%');
+  assert(mockBooking.platformFee === 100, '20% booking fee correctly equals 100 USDC on 500 USDC booking');
+  assert(mockBooking.creatorAmount === 400, 'Creator receives 80% (400 USDC)');
   assert(mockBooking.platformCommission === 10, 'Booking marketplace fee is configured at 10%');
   assert(mockBooking.platformFee === 50, '10% booking fee correctly equals 50 USDC on 500 USDC booking');
   assert(mockBooking.creatorAmount === 450, 'Creator receives 90% (450 USDC)');

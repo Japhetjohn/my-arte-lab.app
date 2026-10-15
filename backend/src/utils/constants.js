@@ -6,6 +6,7 @@ const BOOKING_LIMITS = {
 };
 
 const PLATFORM_CONFIG = {
+  COMMISSION_RATE: parseFloat(process.env.PLATFORM_COMMISSION) || 20,
   COMMISSION_RATE: parseFloat(process.env.PLATFORM_COMMISSION) || 10,
   MINIMUM_WITHDRAWAL: parseFloat(process.env.MINIMUM_WITHDRAWAL) || 0.01,
   SUPPORTED_CURRENCIES: ['USDC', 'DAI'],
