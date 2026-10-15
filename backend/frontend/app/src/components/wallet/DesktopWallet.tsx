@@ -2,8 +2,6 @@ import { useState, useMemo } from 'react';
 import {
   ArrowDownLeft,
   ArrowUpRight,
-  Copy,
-  Check,
   Lock,
   ShieldCheck,
   TrendingUp,
@@ -14,17 +12,16 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import type { Transaction } from '@/types';
-import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 interface DesktopWalletProps {
   balance: number;
   availableBalance: number;
-  pendingWithdrawal: number;
-  escrowBalance: number;
-  incomingEarnings: number;
-  solanaAddress: string | null;
-  userCountry: {
+  pendingWithdrawal?: number;
+  escrowBalance?: number;
+  incomingEarnings?: number;
+  solanaAddress?: string | null;
+  userCountry?: {
     countryCode: string;
     countryName: string;
     defaultCurrency: string;
@@ -44,16 +41,12 @@ interface DesktopWalletProps {
   onLoadMore?: () => void;
 }
 
-type FilterTab = 'all' | 'deposits' | 'payments' | 'withdrawals' | 'earnings';
-
 export function DesktopWallet({
   balance,
   availableBalance,
   pendingWithdrawal = 0,
   escrowBalance = 0,
   incomingEarnings = 0,
-  solanaAddress,
-  userCountry,
   transactions = [],
   isWalletLoading = false,
   isTransactionsLoading = false,
@@ -66,36 +59,7 @@ export function DesktopWallet({
   onRefresh,
   onLoadMore,
 }: DesktopWalletProps) {
-  const [copied, setCopied] = useState(false);
-  const [activeFilter, setActiveFilter] = useState<FilterTab>('all');
   const [isRefreshing, setIsRefreshing] = useState(false);
-
-  // Safe clipboard copy with fallback
-  const handleCopyAddress = async () => {
-    if (!solanaAddress) return;
-    try {
-      if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(solanaAddress);
-      } else {
-        const textArea = document.createElement('textarea');
-        textArea.value = solanaAddress;
-        textArea.style.position = 'fixed';
-        textArea.style.left = '-999999px';
-        textArea.style.top = '-999999px';
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-        const successful = document.execCommand('copy');
-        document.body.removeChild(textArea);
-        if (!successful) throw new Error('Copy command failed');
-      }
-      setCopied(true);
-      toast.success('Solana address copied to clipboard');
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      toast.error('Could not copy address. Please copy it manually.');
-    }
-  };
 
   const handleRefresh = async () => {
     if (!onRefresh || isRefreshing) return;
@@ -116,27 +80,17 @@ export function DesktopWallet({
   const [wholePart, decimalPart] = formattedBalance.split('.');
   const hasPendingWithdrawal = pendingWithdrawal > 0;
 
-  // Filtered transactions including onramp/offramp/bonus aliases
-  const filteredTransactions = useMemo(() => {
-    return transactions.filter((t) => {
-      const type = (t.type || '').toLowerCase();
-      if (type === 'platform_fee') return false;
-      if (activeFilter === 'deposits') return type === 'deposit' || type === 'onramp';
-      if (activeFilter === 'payments') return type === 'payment' || type === 'escrow' || type === 'verification';
-      if (activeFilter === 'withdrawals') return type === 'withdrawal' || type === 'offramp';
-      if (activeFilter === 'earnings') return type === 'earning' || type === 'bonus';
-      return true;
-    });
-  }, [transactions, activeFilter]);
-
-  // Grouped chronological transactions
+  // Grouped chronological transactions (no filter tabs per specification)
   const groupedTransactions = useMemo(() => {
     const groups: { [key: string]: { label: string; subtotal: number; items: Transaction[] } } = {};
     const today = new Date();
     const yesterday = new Date();
     yesterday.setDate(today.getDate() - 1);
 
-    filteredTransactions.forEach((tx) => {
+    transactions.forEach((tx) => {
+      // Exclude internal platform fees
+      if ((tx.type as string) === 'platform_fee') return;
+
       const txDate = tx.createdAt ? new Date(tx.createdAt) : new Date();
       let key = 'Other';
       let label = 'Earlier';
@@ -172,56 +126,65 @@ export function DesktopWallet({
         groups[key] = { label, subtotal: 0, items: [] };
       }
       groups[key].items.push(tx);
-      const amount = Math.abs(parseFloat(String(tx.amount)) || 0);
-      groups[key].subtotal += amount;
+      const isUsdc = (tx.currency || 'USDC').toUpperCase() === 'USDC' || (tx.currency || '').toUpperCase() === 'USD';
+      if (isUsdc) {
+        const amount = Math.abs(parseFloat(String(tx.amount)) || 0);
+        groups[key].subtotal += amount;
+      }
     });
 
     return Object.values(groups);
-  }, [filteredTransactions]);
+  }, [transactions]);
 
-  // Determine category icon and styling
+  // Determine category metadata (pure vector icons, NO EMOJIS)
   const getCategoryMeta = (tx: Transaction) => {
     const desc = (tx.description || '').toLowerCase();
     const type = (tx.type || '').toLowerCase();
 
     if (type === 'deposit' || type === 'onramp' || desc.includes('deposit') || desc.includes('funding')) {
       return {
-        emoji: '💳',
         isCredit: true,
+        isEscrow: false,
+        isRefund: false,
         categoryName: 'Deposit',
       };
     }
     if (type === 'earning' || type === 'bonus' || desc.includes('earning') || desc.includes('payout')) {
       return {
-        emoji: '💰',
         isCredit: true,
+        isEscrow: false,
+        isRefund: false,
         categoryName: 'Earnings',
       };
     }
     if (type === 'refund' || type === 'reversal' || desc.includes('refund') || desc.includes('reversal')) {
       return {
-        emoji: '🔄',
         isCredit: true,
+        isEscrow: false,
+        isRefund: true,
         categoryName: 'Refund',
       };
     }
     if (type === 'withdrawal' || type === 'offramp' || desc.includes('withdraw')) {
       return {
-        emoji: '🏦',
         isCredit: false,
+        isEscrow: false,
+        isRefund: false,
         categoryName: 'Withdrawal',
       };
     }
     if (desc.includes('escrow') || type === 'escrow') {
       return {
-        emoji: '🔒',
         isCredit: false,
+        isEscrow: true,
+        isRefund: false,
         categoryName: 'Escrow Payment',
       };
     }
     return {
-      emoji: '🛍️',
       isCredit: false,
+      isEscrow: false,
+      isRefund: false,
       categoryName: 'Payment',
     };
   };
@@ -256,38 +219,21 @@ export function DesktopWallet({
   const hasEscrowActivity = escrowBalance > 0 || incomingEarnings > 0;
 
   return (
-    <div className="bg-white border border-gray-100/90 rounded-2xl p-6 lg:p-8 shadow-xs space-y-8 text-gray-900 selection:bg-purple-100 selection:text-purple-900">
-      {/* 2.A: Page Header */}
-      <div className="flex items-center justify-between border-b border-gray-100 pb-5">
-        <div>
-          <h1 className="text-2xl lg:text-3xl font-bold tracking-tight text-gray-900">My Wallet</h1>
-          <p className="text-sm text-gray-400 mt-1">Manage your balance, escrow payments, and transactions.</p>
-        </div>
-
-        <div className="flex items-center gap-2.5">
-          {userCountry && (
-            <span className="inline-flex items-center text-xs font-medium bg-gray-100/80 text-gray-600 px-3 py-1 rounded-full border border-gray-200/50">
-              {userCountry.countryCode === 'NG' ? '🇳🇬' : '📍'} {userCountry.countryName} ({userCountry.defaultCurrency})
-            </span>
-          )}
-
-          <span className="text-xs font-semibold tracking-wide bg-purple-50 text-[#9747FF] border border-purple-200/60 px-2.5 py-1 rounded-full">
-            USDC
-          </span>
-
-          {onRefresh && (
-            <button
-              type="button"
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-              className="w-9 h-9 rounded-lg border border-gray-200 hover:bg-gray-50 active:scale-95 text-gray-500 hover:text-gray-900 flex items-center justify-center transition-all cursor-pointer ml-1"
-              title="Refresh wallet"
-              aria-label="Refresh wallet"
-            >
-              <RefreshCw className={cn('w-4 h-4', isRefreshing && 'animate-spin text-[#9747FF]')} />
-            </button>
-          )}
-        </div>
+    <div className="bg-white border border-gray-150 rounded-2xl p-6 lg:p-8 shadow-2xs space-y-7 text-gray-900 selection:bg-purple-100 selection:text-purple-900">
+      {/* 1. Header: Refresh as the only action (No redundant title, no currency badges, no plus button) */}
+      <div className="flex items-center justify-end">
+        {onRefresh && (
+          <button
+            type="button"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="w-8 h-8 rounded-lg border border-gray-200 hover:bg-gray-50 active:scale-95 text-gray-500 hover:text-gray-900 flex items-center justify-center transition-all cursor-pointer"
+            title="Refresh wallet"
+            aria-label="Refresh wallet"
+          >
+            <RefreshCw className={cn('w-3.5 h-3.5', isRefreshing && 'animate-spin text-[#9747FF]')} />
+          </button>
+        )}
       </div>
 
       {/* Recoverable Error Banner */}
@@ -309,108 +255,75 @@ export function DesktopWallet({
         </div>
       )}
 
-      {/* 2.B & 2.D: Balance Overview & Primary Actions */}
+      {/* 2. Simplified Balance Section & Consistent Primary Actions */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-gray-100">
         <div>
-          <p className="text-xs font-medium uppercase tracking-wider text-gray-400 mb-1.5">
-            Available Balance
-          </p>
+          <div className="flex items-center gap-2 mb-1.5">
+            <p className="text-xs font-medium uppercase tracking-wider text-gray-400">
+              Available Balance
+            </p>
+            {isWalletLoading && <Loader2 className="w-3 h-3 animate-spin text-[#9747FF]" />}
+          </div>
           <div className="flex items-baseline">
             <span className="text-3xl font-light text-gray-400 mr-1 align-baseline">$</span>
             <span className="text-5xl lg:text-6xl font-bold tracking-tight text-gray-900">{wholePart}</span>
             <span className="text-3xl font-semibold tracking-tight text-gray-900">.{decimalPart}</span>
-            <span className="text-sm font-semibold text-[#9747FF] bg-purple-50 border border-purple-200/60 px-2.5 py-0.5 rounded-md ml-2.5 align-baseline">
+            <span className="text-xs font-semibold text-[#9747FF] bg-purple-50 border border-purple-200/60 px-2 py-0.5 rounded-md ml-2 align-baseline">
               USDC
             </span>
           </div>
 
-          {/* Pending Withdrawal Reservation Note */}
+          {/* Pending Withdrawal Reservation Notice */}
           {hasPendingWithdrawal && (
             <div className="mt-3 inline-flex items-center gap-2 px-3 py-1 bg-amber-50/90 border border-amber-200/70 rounded-full text-xs text-amber-800">
-              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse shrink-0" />
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse shrink-0" />
               <span>
-                <strong>${pendingWithdrawal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDC</strong> reserved for pending withdrawal (Total: ${balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDC)
+                ${pendingWithdrawal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDC reserved for pending withdrawal
               </span>
             </div>
           )}
         </div>
 
-        {/* Primary Actions */}
+        {/* Consistent Add Funds and Withdraw Buttons (Identical visual treatment, no visual competition) */}
         <div className="flex items-center gap-3 shrink-0">
           <button
             type="button"
             onClick={onAddFunds}
-            className="h-11 px-5 rounded-xl bg-[#9747FF] hover:bg-[#8534f0] active:scale-[0.98] text-white font-medium text-sm flex items-center gap-2 shadow-xs transition-all cursor-pointer"
+            className="h-11 px-5 rounded-xl bg-gray-100 hover:bg-gray-200/80 active:scale-[0.98] border border-gray-200/70 text-gray-900 font-medium text-sm flex items-center gap-2 shadow-2xs transition-all cursor-pointer"
           >
-            <ArrowDownLeft className="w-4 h-4" />
+            <ArrowDownLeft className="w-4 h-4 text-gray-700" />
             <span>Add Funds</span>
           </button>
 
           <button
             type="button"
             onClick={onWithdraw}
-            className="h-11 px-5 rounded-xl bg-white hover:bg-gray-50 active:scale-[0.98] border border-gray-200 text-gray-800 font-medium text-sm flex items-center gap-2 shadow-2xs transition-all cursor-pointer"
+            className="h-11 px-5 rounded-xl bg-gray-100 hover:bg-gray-200/80 active:scale-[0.98] border border-gray-200/70 text-gray-900 font-medium text-sm flex items-center gap-2 shadow-2xs transition-all cursor-pointer"
           >
-            <ArrowUpRight className="w-4 h-4 text-gray-600" />
+            <ArrowUpRight className="w-4 h-4 text-gray-700" />
             <span>Withdraw</span>
           </button>
         </div>
       </div>
 
-      {/* 2.C: Wallet Address Section */}
-      {isWalletLoading && !solanaAddress ? (
-        <div className="h-12 bg-gray-50/70 border border-gray-150 animate-pulse rounded-xl" />
-      ) : solanaAddress ? (
-        <div className="bg-gray-50/70 border border-gray-200/70 rounded-xl px-4 py-3 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-            <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 shrink-0">
-              USDC on Solana:
-            </span>
-            <span className="font-mono text-xs text-gray-700 font-medium truncate select-all">
-              {solanaAddress}
-            </span>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleCopyAddress}
-            className="h-8 px-3 rounded-lg bg-white hover:bg-gray-100 active:scale-95 border border-gray-200/80 text-xs font-medium text-gray-700 flex items-center gap-1.5 transition-all shrink-0 cursor-pointer shadow-2xs"
-            aria-label="Copy Solana wallet address"
-          >
-            {copied ? (
-              <>
-                <Check className="w-3.5 h-3.5 text-emerald-600" />
-                <span className="text-emerald-600 font-medium">Copied</span>
-              </>
-            ) : (
-              <>
-                <Copy className="w-3.5 h-3.5 text-gray-500" />
-                <span>Copy Address</span>
-              </>
-            )}
-          </button>
-        </div>
-      ) : null}
-
-      {/* 2.E: Escrow Overview Section */}
+      {/* 3. Escrow Overview Section (Clean, no emojis) */}
       <div>
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 text-[#9747FF]" />
-            <h2 className="text-base font-semibold text-gray-900 tracking-tight">Escrow Activity</h2>
+            <h2 className="text-sm font-semibold text-gray-900 tracking-tight">Escrow Activity</h2>
           </div>
-          <span className="text-xs text-gray-400">Milestone and project protection</span>
+          <span className="text-xs text-gray-400">Protected Funds</span>
         </div>
 
         {hasEscrowActivity ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Held in Escrow (Client funds held for active bookings) */}
+            {/* Client Escrow */}
             {escrowBalance > 0 && (
               <div className="bg-white border border-gray-200/80 rounded-xl p-4 flex items-center justify-between shadow-2xs hover:border-gray-300 transition-colors">
                 <div className="flex items-center gap-3.5">
-                  <div className="w-10 h-10 rounded-full bg-purple-50 text-[#9747FF] flex items-center justify-center shrink-0">
-                    <Lock className="w-5 h-5" />
+                  <div className="w-9 h-9 rounded-full bg-purple-50 text-[#9747FF] flex items-center justify-center shrink-0">
+                    <Lock className="w-4 h-4" />
                   </div>
                   <div>
                     <p className="font-medium text-sm text-gray-900">Held in Escrow</p>
@@ -434,8 +347,8 @@ export function DesktopWallet({
             {incomingEarnings > 0 && (
               <div className="bg-white border border-gray-200/80 rounded-xl p-4 flex items-center justify-between shadow-2xs hover:border-gray-300 transition-colors">
                 <div className="flex items-center gap-3.5">
-                  <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                    <TrendingUp className="w-5 h-5" />
+                  <div className="w-9 h-9 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                    <TrendingUp className="w-4 h-4" />
                   </div>
                   <div>
                     <p className="font-medium text-sm text-gray-900">Incoming Earnings</p>
@@ -456,61 +369,34 @@ export function DesktopWallet({
             )}
           </div>
         ) : (
-          <div className="bg-gray-50/70 border border-dashed border-gray-200/80 rounded-xl p-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <ShieldCheck className="w-5 h-5 text-gray-400" />
-              <div>
-                <p className="text-sm font-medium text-gray-700">No active escrow funds</p>
-                <p className="text-xs text-gray-400 mt-0.5">
-                  Payments for active bookings are held securely in escrow until milestones are completed.
-                </p>
-              </div>
-            </div>
-
+          <div className="bg-gray-50/50 border border-dashed border-gray-200/80 rounded-xl p-4 text-center">
+            <p className="text-xs font-medium text-gray-700">No active escrow funds</p>
+            <p className="text-xs text-gray-400 mt-0.5">
+              Funds for booked projects are securely held in escrow until milestones are completed.
+            </p>
             <a
               href="/bookings"
-              className="text-xs font-medium text-[#9747FF] hover:text-[#8534f0] flex items-center gap-1 hover:underline shrink-0 ml-4"
+              className="inline-flex items-center gap-1 text-xs font-medium text-[#9747FF] hover:underline mt-2"
             >
-              View Bookings <ArrowRight className="w-3.5 h-3.5" />
+              <span>View Bookings</span>
+              <ArrowRight className="w-3.5 h-3.5" />
             </a>
           </div>
         )}
       </div>
 
-      {/* 2.F: Transaction History Section */}
+      {/* 4. Recent Transactions Section (NO filter tabs, pure line icons, NO emojis) */}
       <div className="space-y-4 pt-2">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-3">
+        <div className="flex items-center justify-between border-b border-gray-100 pb-3">
           <div className="flex items-center gap-2">
-            <h2 className="text-base font-semibold text-gray-900 tracking-tight">Transaction History</h2>
+            <h2 className="text-sm font-semibold text-gray-900 tracking-tight">Recent Transactions</h2>
             {isTransactionsLoading && (
               <Loader2 className="w-3.5 h-3.5 animate-spin text-[#9747FF]" />
             )}
           </div>
-
-          {/* Compact Category Filter Tabs */}
-          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
-            {(['all', 'deposits', 'payments', 'withdrawals', 'earnings'] as const).map((tab) => {
-              const isActive = activeFilter === tab;
-              return (
-                <button
-                  key={tab}
-                  type="button"
-                  onClick={() => setActiveFilter(tab)}
-                  className={cn(
-                    'px-3.5 py-1.5 rounded-full text-xs font-medium transition-all shrink-0 capitalize cursor-pointer',
-                    isActive
-                      ? 'bg-gray-900 text-white shadow-xs'
-                      : 'bg-gray-100 hover:bg-gray-200/70 text-gray-600'
-                  )}
-                >
-                  {tab}
-                </button>
-              );
-            })}
-          </div>
         </div>
 
-        {/* Transactions Error notice */}
+        {/* Transactions Error Notice */}
         {transactionsError && (
           <div className="p-3 bg-red-50/70 border border-red-200/70 rounded-xl text-xs text-red-600 flex items-center justify-between">
             <span>{transactionsError}</span>
@@ -549,7 +435,7 @@ export function DesktopWallet({
                 {/* Rows in Date Group */}
                 <div className="divide-y divide-gray-100">
                   {group.items.map((tx) => {
-                    const txId = tx.id || tx._id || `tx-${Math.random()}`;
+                    const txId = tx.id || (tx as any)._id || `tx-${Math.random()}`;
                     const meta = getCategoryMeta(tx);
                     const isCredit = meta.isCredit;
                     const formatted = formatTxAmount(tx);
@@ -571,10 +457,18 @@ export function DesktopWallet({
                         key={txId}
                         className="flex items-center justify-between py-3.5 px-2 hover:bg-gray-50/60 transition-colors rounded-lg"
                       >
-                        {/* Left: Icon & Description */}
+                        {/* Left: Monochrome vector icon & Description (NO EMOJIS) */}
                         <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                          <div className="w-10 h-10 rounded-full flex items-center justify-center text-lg bg-gray-50 border border-gray-150 shrink-0">
-                            {meta.emoji}
+                          <div className="w-9 h-9 rounded-full bg-gray-100 border border-gray-200/60 flex items-center justify-center shrink-0">
+                            {meta.isEscrow ? (
+                              <Lock className="w-4 h-4 text-purple-600" />
+                            ) : meta.isRefund ? (
+                              <RefreshCw className="w-4 h-4 text-emerald-600" />
+                            ) : isCredit ? (
+                              <ArrowDownLeft className="w-4 h-4 text-emerald-600" />
+                            ) : (
+                              <ArrowUpRight className="w-4 h-4 text-gray-600" />
+                            )}
                           </div>
 
                           <div className="min-w-0 flex-1">
@@ -649,9 +543,7 @@ export function DesktopWallet({
             </div>
             <p className="font-medium text-gray-800 text-sm">No transactions found</p>
             <p className="text-xs text-gray-400 mt-1 max-w-xs mx-auto">
-              {activeFilter === 'all'
-                ? 'Your transaction history will appear here'
-                : `No ${activeFilter} recorded in your account yet`}
+              Your transaction history will appear here
             </p>
           </div>
         )}
