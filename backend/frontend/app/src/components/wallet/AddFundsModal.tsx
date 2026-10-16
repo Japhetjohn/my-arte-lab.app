@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import QRCode from 'qrcode';
 import {
   Dialog,
   DialogContent,
@@ -19,7 +20,6 @@ import {
   AlertCircle,
   Copy,
   CheckCircle2,
-  ExternalLink,
   ChevronLeft,
   X,
   Landmark,
@@ -206,16 +206,30 @@ export function AddFundsModal({
     instructions: string[];
   } | null>(null);
   const [isLoadingSolana, setIsLoadingSolana] = useState<boolean>(false);
-  const [solanaSignature, setSolanaSignature] = useState<string>('');
-  const [isVerifyingSolana, setIsVerifyingSolana] = useState<boolean>(false);
-  const [solanaVerifyResult, setSolanaVerifyResult] = useState<{
-    success: boolean;
-    amountUsdc?: number;
-    balance?: number;
-    signature?: string;
-    message?: string;
-  } | null>(null);
-  const [solanaError, setSolanaError] = useState<string | null>(null);
+  const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
+
+  const depositAddress = solanaInstructions?.recipientAddress || solanaAddress || '';
+
+  // Generate high-contrast, clean QR code for deposit address
+  useEffect(() => {
+    if (depositAddress) {
+      QRCode.toDataURL(depositAddress, {
+        width: 220,
+        margin: 1,
+        errorCorrectionLevel: 'M',
+        color: {
+          dark: '#000000',
+          light: '#ffffff',
+        },
+      })
+        .then((url) => setQrCodeUrl(url))
+        .catch((err) => {
+          console.error('[AddFundsModal] QR generation failed:', err);
+        });
+    } else {
+      setQrCodeUrl('');
+    }
+  }, [depositAddress]);
 
   // Initialize and load Solana instructions
   useEffect(() => {
@@ -282,23 +296,26 @@ export function AddFundsModal({
     };
   }, [isOpen, userCountry]);
 
-  // Reset or initialize view when opening modal
+  // Clean reset function for transient funding session state
+  const resetFundingSession = () => {
+    setStep('select-method');
+    setActiveFunding(null);
+    setQuote(null);
+    setErrorMessage(null);
+    setIsLoadingQuote(false);
+    setIsInitiating(false);
+    setIsSubmittingPaid(false);
+    if (paymentCapabilities?.onramp?.supported === false) {
+      setSelectedMethod('crypto');
+    } else {
+      setSelectedMethod('bank');
+    }
+  };
+
+  // Reset or initialize view whenever modal opens
   useEffect(() => {
     if (isOpen) {
-      if (!activeFunding) {
-        setStep('select-method');
-        setQuote(null);
-        setErrorMessage(null);
-        setSolanaError(null);
-        setSolanaVerifyResult(null);
-
-        // Pre-select crypto if onramp is unsupported for this country
-        if (paymentCapabilities?.onramp?.supported === false) {
-          setSelectedMethod('crypto');
-        } else {
-          setSelectedMethod('bank');
-        }
-      }
+      resetFundingSession();
     }
   }, [isOpen, paymentCapabilities]);
 
@@ -315,9 +332,7 @@ export function AddFundsModal({
       }
       window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     }
-    setErrorMessage(null);
-    setSolanaError(null);
-    setSolanaVerifyResult(null);
+    resetFundingSession();
     onClose();
   };
 
@@ -449,48 +464,6 @@ export function AddFundsModal({
     }, 600);
   };
 
-  // Verify on-chain Solana USDC transfer
-  const handleVerifySolanaDeposit = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    const cleanSig = solanaSignature.trim();
-    if (!cleanSig || cleanSig.length < 32) {
-      setSolanaError('Please enter a valid Solana transaction signature (64-88 characters)');
-      return;
-    }
-
-    setIsVerifyingSolana(true);
-    setSolanaError(null);
-    setSolanaVerifyResult(null);
-
-    try {
-      const res = await walletService.verifySolanaDeposit(cleanSig);
-      if (res.data?.success) {
-        setSolanaVerifyResult({
-          success: true,
-          amountUsdc: res.data.data?.amountUsdc,
-          balance: res.data.data?.balance,
-          signature: res.data.data?.signature,
-          message: res.data.message || 'Deposit successfully verified and credited!',
-        });
-        toast.success(res.data.message || `Successfully credited ${res.data.data?.amountUsdc} USDC!`);
-        setSolanaSignature('');
-        if (onSuccess) {
-          onSuccess();
-        }
-      } else {
-        setSolanaError(res.data?.error || 'Verification failed');
-      }
-    } catch (err: any) {
-      const msg =
-        err.response?.data?.error ||
-        err.message ||
-        'Failed to verify transaction signature on Solana';
-      setSolanaError(msg);
-    } finally {
-      setIsVerifyingSolana(false);
-    }
-  };
-
   // Back action navigation
   const handleBack = () => {
     setErrorMessage(null);
@@ -520,13 +493,11 @@ export function AddFundsModal({
       case 'bank-instructions':
         return 'Payment Instructions';
       case 'crypto-transfer':
-        return 'Transfer from Another Wallet';
+        return 'Deposit USDC';
       default:
         return 'Add Funds';
     }
   };
-
-  const depositAddress = solanaInstructions?.recipientAddress || solanaAddress || '';
 
   // Render the persistent action footer for each step
   const renderFooterActions = () => {
@@ -605,30 +576,13 @@ export function AddFundsModal({
 
       case 'crypto-transfer':
         return (
-          <div className="space-y-2">
-            <button
-              type="button"
-              onClick={handleVerifySolanaDeposit}
-              disabled={isVerifyingSolana || !solanaSignature.trim()}
-              className="w-full h-12 bg-[#9747FF] hover:bg-[#8535ed] text-white font-medium rounded-xl text-sm transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-2xs"
-            >
-              {isVerifyingSolana ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Verifying On-Chain...</span>
-                </>
-              ) : (
-                <span>Verify & Credit Deposit</span>
-              )}
-            </button>
-            <button
-              type="button"
-              onClick={handleModalClose}
-              className="w-full h-11 bg-gray-100 hover:bg-gray-200/80 text-gray-800 font-medium rounded-xl text-sm transition-all flex items-center justify-center cursor-pointer"
-            >
-              Done
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={handleModalClose}
+            className="w-full h-12 bg-[#9747FF] hover:bg-[#8535ed] text-white font-medium rounded-xl text-sm transition-all flex items-center justify-center cursor-pointer shadow-2xs"
+          >
+            Close
+          </button>
         );
 
       default:
@@ -929,152 +883,61 @@ export function AddFundsModal({
           </div>
         )}
 
-        {/* Step 5: Direct Solana Crypto Deposit */}
+        {/* Step 5: Direct Solana Crypto Deposit (Clean, Minimalist Fintech UI) */}
         {step === 'crypto-transfer' && (
-          <div className="space-y-4">
-            <div className="p-4 bg-white border border-gray-200/80 rounded-2xl space-y-3 shadow-2xs">
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-semibold text-gray-800">
-                  Your Solana Deposit Address
-                </span>
-                <span className="text-xs font-semibold text-[#9747FF] bg-purple-50 border border-purple-200/60 px-2 py-0.5 rounded-md">
-                  USDC (Solana)
-                </span>
-              </div>
-
-              {isLoadingSolana ? (
-                <div className="py-6 flex items-center justify-center gap-2 text-sm text-gray-500">
-                  <Loader2 className="w-4 h-4 animate-spin text-[#9747FF]" />
-                  <span>Loading deposit address...</span>
-                </div>
-              ) : (
-                <div className="p-3 bg-gray-50 rounded-xl border border-gray-200/70 space-y-2">
-                  <p className="font-mono text-sm font-semibold text-gray-900 break-all select-all leading-relaxed">
-                    {depositAddress || 'Address unavailable'}
-                  </p>
-                  <div className="flex justify-end">
-                    <button
-                      type="button"
-                      onClick={() => copyToClipboard(depositAddress, 'Deposit Address')}
-                      disabled={!depositAddress}
-                      className="h-8 px-3 text-xs bg-white border border-gray-200 text-gray-800 hover:bg-gray-100 rounded-lg flex items-center gap-1.5 font-medium transition-colors cursor-pointer"
-                    >
-                      {copiedField === 'Deposit Address' ? (
-                        <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
-                      ) : (
-                        <Copy className="w-3.5 h-3.5" />
-                      )}
-                      <span>{copiedField === 'Deposit Address' ? 'Copied' : 'Copy Address'}</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-2 text-sm pt-1">
-                <div className="p-2.5 bg-gray-50/80 rounded-xl border border-gray-100">
-                  <span className="text-gray-500 block text-xs uppercase font-semibold">
-                    Accepted Asset
-                  </span>
-                  <span className="text-sm font-semibold text-gray-900">USDC (USD Coin)</span>
-                </div>
-                <div className="p-2.5 bg-gray-50/80 rounded-xl border border-gray-100">
-                  <span className="text-gray-500 block text-xs uppercase font-semibold">
-                    Network
-                  </span>
-                  <span className="text-sm font-semibold text-gray-900">Solana Mainnet</span>
-                </div>
-              </div>
-
-              <div className="flex justify-between items-center p-2.5 bg-gray-50/80 rounded-xl border border-gray-100 text-sm">
-                <div className="truncate pr-2">
-                  <span className="text-gray-500 text-xs uppercase font-semibold block">
-                    Official USDC Mint
-                  </span>
-                  <span className="font-mono text-xs text-gray-800 truncate">
-                    {solanaInstructions?.mint || 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() =>
-                    copyToClipboard(
-                      solanaInstructions?.mint || 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
-                      'Token Mint'
-                    )
-                  }
-                  className="h-7 px-2 text-xs text-gray-600 hover:text-gray-900 rounded flex items-center gap-1 cursor-pointer"
-                >
-                  {copiedField === 'Token Mint' ? (
-                    <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
-                  ) : (
-                    <Copy className="w-3.5 h-3.5" />
-                  )}
-                </button>
-              </div>
-
-              <p className="text-xs text-gray-500 leading-relaxed pt-1">
-                Send only SPL USDC on Solana mainnet. Transfers from other networks (Ethereum, BSC,
-                Polygon) or other tokens (SOL, USDT) are not supported.
-              </p>
+          <div className="flex flex-col items-center text-center space-y-4 py-1">
+            {/* 3. Short network warning or deposit instruction */}
+            <div className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl text-xs sm:text-sm text-gray-600 leading-relaxed text-center">
+              Send USDC using the <strong className="font-semibold text-gray-900">Solana</strong> network. Deposits sent through an unsupported network may not be credited.
             </div>
 
-            {/* Signature Verification Form */}
-            <form onSubmit={handleVerifySolanaDeposit} className="space-y-3 pt-1">
-              <div className="space-y-1.5">
-                <label className="text-sm font-semibold text-gray-800">
-                  Already sent? Enter transaction signature
-                </label>
-                <input
-                  type="text"
-                  placeholder="Paste 64-88 character Solana signature (e.g. 5xY8...)"
-                  value={solanaSignature}
-                  onChange={(e) => setSolanaSignature(e.target.value)}
-                  className="w-full h-11 px-3 text-sm font-mono bg-white border border-gray-200/80 rounded-xl focus:border-[#9747FF] focus:outline-none"
-                  disabled={isVerifyingSolana}
+            {/* 4. Large, centered QR code */}
+            <div className="bg-white p-3.5 rounded-2xl border border-gray-200/90 shadow-2xs flex items-center justify-center">
+              {isLoadingSolana || (!depositAddress && !qrCodeUrl) ? (
+                <div className="w-[180px] h-[180px] sm:w-[200px] sm:h-[200px] flex flex-col items-center justify-center gap-2 text-xs text-gray-400">
+                  <Loader2 className="w-5 h-5 animate-spin text-[#9747FF]" />
+                  <span>Loading deposit address...</span>
+                </div>
+              ) : qrCodeUrl ? (
+                <img
+                  src={qrCodeUrl}
+                  alt="USDC Solana Deposit QR Code"
+                  className="w-[180px] h-[180px] sm:w-[200px] sm:h-[200px] object-contain rounded-lg"
                 />
-              </div>
-
-              {solanaError && (
-                <div className="p-3 bg-red-50 border border-red-200/80 rounded-xl text-xs sm:text-sm text-red-700 flex items-start gap-2">
-                  <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
-                  <span>{solanaError}</span>
+              ) : (
+                <div className="w-[180px] h-[180px] sm:w-[200px] sm:h-[200px] flex items-center justify-center text-xs text-gray-400">
+                  Address unavailable
                 </div>
               )}
+            </div>
 
-              {solanaVerifyResult && (
-                <div className="p-3.5 bg-green-50 border border-green-200/80 rounded-xl text-sm text-green-800 space-y-1.5">
-                  <div className="flex items-center gap-1.5 font-semibold text-green-900">
-                    <CheckCircle2 className="w-4 h-4 text-green-600" />
-                    <span>Deposit Confirmed & Credited</span>
-                  </div>
-                  <p>
-                    Credited{' '}
-                    <strong className="font-semibold">{solanaVerifyResult.amountUsdc} USDC</strong>{' '}
-                    to your wallet.
-                    {solanaVerifyResult.balance !== undefined && (
-                      <span>
-                        {' '}
-                        New balance:{' '}
-                        <strong className="font-semibold">
-                          ${solanaVerifyResult.balance.toFixed(2)} USDC
-                        </strong>
-                      </span>
-                    )}
-                  </p>
-                  {solanaVerifyResult.signature && (
-                    <a
-                      href={`https://explorer.solana.com/tx/${solanaVerifyResult.signature}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-green-700 hover:text-green-900 underline flex items-center gap-1 pt-0.5"
-                    >
-                      <span>View on Solana Explorer</span>
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
+            {/* 5. Actual deposit wallet address in a readable, copyable format */}
+            <div className="w-full">
+              <div className="p-2.5 sm:p-3 bg-gray-50 rounded-xl border border-gray-200/80 flex items-center justify-between gap-2">
+                <span className="font-mono text-xs sm:text-sm font-semibold text-gray-900 truncate select-all text-left">
+                  {depositAddress || 'Generating wallet address...'}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => copyToClipboard(depositAddress, 'Deposit Address')}
+                  disabled={!depositAddress}
+                  className="h-8 px-3 shrink-0 text-xs bg-white border border-gray-200 text-gray-800 hover:bg-gray-100 rounded-lg flex items-center gap-1.5 font-medium transition-colors cursor-pointer shadow-2xs disabled:opacity-50"
+                  aria-label="Copy deposit address"
+                >
+                  {copiedField === 'Deposit Address' ? (
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  ) : (
+                    <Copy className="w-3.5 h-3.5 text-gray-500" />
                   )}
-                </div>
-              )}
-            </form>
+                  <span>{copiedField === 'Deposit Address' ? 'Copied' : 'Copy'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* 6. Concise supporting description */}
+            <p className="text-xs text-gray-400 max-w-xs leading-normal">
+              Only send SPL USDC on Solana to this address. Minimum deposit 1 USDC.
+            </p>
           </div>
         )}
       </div>
