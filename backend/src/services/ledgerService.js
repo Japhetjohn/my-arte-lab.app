@@ -150,7 +150,11 @@ class LedgerService {
   async reserveWithdrawalBalance(userId, amountUsdc) {
     const withdrawalAmount = parseFloat(Number(amountUsdc).toFixed(6));
     if (isNaN(withdrawalAmount) || withdrawalAmount <= 0) {
-      throw new Error('Valid positive withdrawal amount is required for balance reservation');
+      const err = new Error('Valid positive withdrawal amount is required for balance reservation');
+      err.status = 400;
+      err.statusCode = 400;
+      err.isOperational = true;
+      throw err;
     }
 
     const userUpdate = await User.findOneAndUpdate(
@@ -187,7 +191,11 @@ class LedgerService {
       const curBal = currentUser?.wallet?.balance || currentUser?.balance || 0;
       const curPending = currentUser?.wallet?.pendingWithdrawal || currentUser?.pendingWithdrawal || 0;
       const available = Math.max(0, curBal - curPending);
-      throw new Error(`Insufficient available balance. Required: ${withdrawalAmount} USDC, Available: ${available} USDC`);
+      const err = new Error(`Insufficient available balance. Required: ${withdrawalAmount} USDC, Available: ${available} USDC`);
+      err.status = 400;
+      err.statusCode = 400;
+      err.isOperational = true;
+      throw err;
     }
 
     const authoritativeBal = userUpdate.wallet?.balance !== undefined ? userUpdate.wallet.balance : userUpdate.balance;

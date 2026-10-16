@@ -123,6 +123,27 @@ class WithdrawalService {
       switchWallet = await switchService.getOrCreateUserWallet(userId, userName);
     }
 
+    // Pre-flight check: Verify live Switch wallet balance before reserving or initiating
+    if (switchWallet?.switchWalletId) {
+      try {
+        const switchBalanceInfo = await switchService.getWalletBalance(switchWallet.switchWalletId);
+        if (switchBalanceInfo?.isLive && typeof switchBalanceInfo.balance === 'number') {
+          const liveBal = switchBalanceInfo.balance;
+          if (numAmount > liveBal) {
+            const maxAllowed = Math.floor(liveBal * 100) / 100;
+            const balErr = new Error(`Insufficient wallet balance on Switch. Your live available balance is $${maxAllowed.toFixed(2)} USDC.`);
+            balErr.status = 400;
+            balErr.statusCode = 400;
+            balErr.isOperational = true;
+            throw balErr;
+          }
+        }
+      } catch (balErr) {
+        if (balErr.status === 400 || balErr.statusCode === 400) throw balErr;
+        // Non-blocking if Switch balance lookup is transiently unavailable; Switch offramp API will validate
+      }
+    }
+
     const devFeeRecipient = process.env.FEE_COLLECTION_WALLET || process.env.PLATFORM_WALLET_ADDRESS;
     const quote = await switchService.getOfframpQuote({
       amount: numAmount,
@@ -261,6 +282,11 @@ class WithdrawalService {
       withdrawalTx.reservation.isReserved = false;
       withdrawalTx.reservation.releasedAt = new Date();
       await withdrawalTx.save();
+
+      // Preserve status code and mark operational for user-facing error response
+      apiErr.status = apiErr.status || apiErr.statusCode || 400;
+      apiErr.statusCode = apiErr.statusCode || apiErr.status || 400;
+      apiErr.isOperational = true;
 
       throw apiErr;
     }

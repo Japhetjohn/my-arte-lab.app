@@ -73,7 +73,8 @@ export function DesktopWallet({
 
   // Formatted available balance
   const effectiveAvailable = availableBalance !== undefined ? availableBalance : Math.max(0, balance - pendingWithdrawal);
-  const formattedBalance = effectiveAvailable.toLocaleString('en-US', {
+  const flooredAvailable = Math.floor(effectiveAvailable * 100) / 100;
+  const formattedBalance = flooredAvailable.toLocaleString('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });

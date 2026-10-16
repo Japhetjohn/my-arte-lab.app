@@ -15,7 +15,7 @@ const catchAsync = (fn) => {
 };
 
 const sendErrorResponse = (err, res) => {
-  const statusCode = err.statusCode || 500;
+  const statusCode = err.statusCode || err.status || 500;
   const message = err.message || 'Internal Server Error';
 
   if (process.env.NODE_ENV === 'development') {
@@ -26,9 +26,10 @@ const sendErrorResponse = (err, res) => {
       stack: err.stack
     });
   } else {
+    const isClientError = statusCode >= 400 && statusCode < 500;
     res.status(statusCode).json({
       success: false,
-      error: err.isOperational ? message : 'Something went wrong',
+      error: (err.isOperational || isClientError) ? message : 'Something went wrong',
       statusCode
     });
   }
@@ -37,15 +38,18 @@ const sendErrorResponse = (err, res) => {
 const errorMiddleware = async (err, req, res, next) => {
   console.error(' Error:', err);
 
-  // Send email notification for critical errors in production
-  if (process.env.NODE_ENV === 'production') {
+  const statusCode = err.statusCode || err.status || 500;
+  const isClientError = statusCode >= 400 && statusCode < 500;
+
+  // Send email notification for critical unexpected errors in production (exclude normal 4xx client errors)
+  if (process.env.NODE_ENV === 'production' && !isClientError) {
     const shouldNotify =
       !err.isOperational || // Unexpected errors
-      err.statusCode >= 500 || // Server errors
+      statusCode >= 500 || // Server errors
       err.name === 'MongoError' || // Database errors
-      err.message?.includes('payment') || // Payment-related errors
-      err.message?.includes('wallet') || // Wallet-related errors
-      err.message?.includes('escrow'); // Escrow-related errors
+      err.message?.includes('payment') || // Payment-related system errors
+      err.message?.includes('wallet') || // Wallet-related system errors
+      err.message?.includes('escrow'); // Escrow-related system errors
 
     if (shouldNotify) {
       try {

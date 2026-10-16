@@ -104,6 +104,8 @@ class SwitchService {
         const errorMessage = data?.message || data?.error || `Switch API HTTP error ${response.status}`;
         const error = new Error(this._sanitizeMessage(errorMessage));
         error.status = response.status;
+        error.statusCode = response.status;
+        error.isOperational = response.status < 500;
         error.data = data;
         throw error;
       }

@@ -79,27 +79,30 @@ router.get('/', protect, catchAsync(async (req, res) => {
   const rawBalance = user.wallet?.balance !== undefined && user.wallet?.balance !== null
     ? user.wallet.balance
     : (user.balance || 0);
-  const dbBalance = Math.round((Number(rawBalance) || 0) * 100) / 100;
+  const dbBalance = Math.floor((Number(rawBalance) || 0) * 100) / 100;
 
   const rawPendingWithdrawal = user.wallet?.pendingWithdrawal !== undefined && user.wallet?.pendingWithdrawal !== null
     ? user.wallet.pendingWithdrawal
     : (user.pendingWithdrawal || 0);
-  const pendingWithdrawal = Math.round((Number(rawPendingWithdrawal) || 0) * 100) / 100;
+  const pendingWithdrawal = Math.ceil((Number(rawPendingWithdrawal) || 0) * 100) / 100;
 
   let authoritativeBalance = dbBalance;
-  let availableBalance = Math.max(0, Math.round((dbBalance - pendingWithdrawal) * 100) / 100);
+  let availableBalance = Math.max(0, Math.floor((dbBalance - pendingWithdrawal) * 100) / 100);
 
   // Accounting Rule: Available balance = reconciled Switch balance - applicable escrow/reserved funds - valid holds
   // NEVER subtract holds twice!
+  // CRITICAL: NEVER round UP live crypto balances (e.g. Math.round(3.627485*100)/100 -> 3.63).
+  // Rounding up creates phantom fractions of a cent that do not exist on-chain and cause Switch offramp to reject with Insufficient Balance.
+  // ALWAYS floor to 2 decimal places to ensure safe, spendable available balance.
   if (isSwitchLive && typeof switchBalanceInfo?.balance === 'number') {
-    const liveSwitchBalance = Math.round(Number(switchBalanceInfo.balance) * 100) / 100;
+    const liveSwitchBalance = Math.floor(Number(switchBalanceInfo.balance) * 100) / 100;
     // Switch on-chain balance does not yet have escrow deducted: subtract escrow and pending withdrawals
-    availableBalance = Math.max(0, Math.round((liveSwitchBalance - escrowBalance - pendingWithdrawal) * 100) / 100);
-    authoritativeBalance = Math.max(dbBalance, liveSwitchBalance);
+    availableBalance = Math.max(0, Math.floor((liveSwitchBalance - escrowBalance - pendingWithdrawal) * 100) / 100);
+    authoritativeBalance = liveSwitchBalance;
 
-    // If Switch balance has new funds exceeding db balance, sync DB balance
-    const expectedDbBalance = Math.max(0, Math.round((liveSwitchBalance - escrowBalance) * 100) / 100);
-    if (liveSwitchBalance > 0 && Math.abs(dbBalance - expectedDbBalance) > 0.009) {
+    // Keep DB balance synchronized with floored live Switch balance
+    const expectedDbBalance = Math.max(0, Math.floor((liveSwitchBalance - escrowBalance) * 100) / 100);
+    if (Math.abs(dbBalance - expectedDbBalance) > 0.005) {
       await User.findByIdAndUpdate(user._id, {
         $set: {
           'wallet.balance': expectedDbBalance,
@@ -533,19 +536,28 @@ router.post('/withdraw/quote', protect, catchAsync(async (req, res) => {
 router.post('/withdraw/initiate', protect, catchAsync(async (req, res) => {
   const { amount, country, currency, channel, beneficiary, idempotencyKey, narration, reason } = req.body;
 
-  const result = await withdrawalService.initiateWithdrawal({
-    user: req.user,
-    amount,
-    country,
-    currency,
-    channel,
-    beneficiary,
-    idempotencyKey,
-    narration,
-    reason
-  });
+  try {
+    const result = await withdrawalService.initiateWithdrawal({
+      user: req.user,
+      amount,
+      country,
+      currency,
+      channel,
+      beneficiary,
+      idempotencyKey,
+      narration,
+      reason
+    });
 
-  res.status(201).json(result);
+    res.status(201).json(result);
+  } catch (err) {
+    const statusCode = err.statusCode || err.status || 400;
+    return res.status(statusCode).json({
+      success: false,
+      error: err.message || 'Failed to initiate withdrawal',
+      statusCode
+    });
+  }
 }));
 
 /**
@@ -1306,80 +1318,89 @@ router.post('/withdraw/solana', protect, catchAsync(async (req, res) => {
     });
   }
 
-  // 1. Atomically reserve balance (throws if availableBalance < numAmount)
-  await ledgerService.reserveWithdrawalBalance(req.user._id, numAmount);
+  try {
+    // 1. Atomically reserve balance (throws if availableBalance < numAmount)
+    await ledgerService.reserveWithdrawalBalance(req.user._id, numAmount);
 
-  // 2. Generate unique reference and transaction ID
-  const timestamp = Date.now().toString(36).toUpperCase();
-  const random = crypto.randomBytes(3).toString('hex').toUpperCase();
-  const transactionId = `TXN-SOL-WTH-${timestamp}-${random}`;
-  const reference = crypto.randomUUID();
+    // 2. Generate unique reference and transaction ID
+    const timestamp = Date.now().toString(36).toUpperCase();
+    const random = crypto.randomBytes(3).toString('hex').toUpperCase();
+    const transactionId = `TXN-SOL-WTH-${timestamp}-${random}`;
+    const reference = crypto.randomUUID();
 
-  // 3. Atomically finalize balance debit and clear pending reservation
-  const updatedUser = await User.findOneAndUpdate(
-    {
-      _id: req.user._id,
-      $expr: {
-        $and: [
-          { $gte: [{ $ifNull: ['$wallet.balance', '$balance'] }, numAmount] },
-          { $gte: [{ $ifNull: ['$wallet.pendingWithdrawal', 0] }, numAmount] }
-        ]
-      }
-    },
-    {
-      $inc: {
-        'wallet.balance': -numAmount,
-        'balance': -numAmount,
-        'wallet.pendingWithdrawal': -numAmount,
-        'pendingWithdrawal': -numAmount
+    // 3. Atomically finalize balance debit and clear pending reservation
+    const updatedUser = await User.findOneAndUpdate(
+      {
+        _id: req.user._id,
+        $expr: {
+          $and: [
+            { $gte: [{ $ifNull: ['$wallet.balance', '$balance'] }, numAmount] },
+            { $gte: [{ $ifNull: ['$wallet.pendingWithdrawal', 0] }, numAmount] }
+          ]
+        }
       },
-      $set: {
-        'wallet.lastUpdated': new Date(),
-        'lastUpdated': new Date()
-      }
-    },
-    { new: true }
-  );
+      {
+        $inc: {
+          'wallet.balance': -numAmount,
+          'balance': -numAmount,
+          'wallet.pendingWithdrawal': -numAmount,
+          'pendingWithdrawal': -numAmount
+        },
+        $set: {
+          'wallet.lastUpdated': new Date(),
+          'lastUpdated': new Date()
+        }
+      },
+      { new: true }
+    );
 
-  // 4. Create authoritative completed transaction record in ledger
-  const ledgerTx = await Transaction.create({
-    transactionId,
-    user: req.user._id,
-    type: 'withdrawal',
-    amount: numAmount,
-    netAmount: numAmount,
-    currency: 'USDC',
-    status: 'completed',
-    reference,
-    paymentMethod: 'crypto',
-    description: `Direct Solana USDC Withdrawal to ${cleanAddress.slice(0, 4)}...${cleanAddress.slice(-4)}`,
-    blockchainNetwork: 'SOLANA',
-    toAddress: cleanAddress,
-    metadata: {
-      provider: 'solana_direct',
-      destinationAddress: cleanAddress,
-      network: 'SOLANA',
-      token: 'USDC'
-    },
-    completedAt: new Date()
-  });
-
-  const finalBal = updatedUser?.wallet?.balance !== undefined ? updatedUser.wallet.balance : updatedUser?.balance;
-
-  res.status(201).json({
-    success: true,
-    message: `Successfully withdrew ${numAmount} USDC to Solana wallet`,
-    data: {
-      reference,
+    // 4. Create authoritative completed transaction record in ledger
+    const ledgerTx = await Transaction.create({
       transactionId,
+      user: req.user._id,
+      type: 'withdrawal',
       amount: numAmount,
+      netAmount: numAmount,
       currency: 'USDC',
-      toAddress: cleanAddress,
       status: 'completed',
-      balance: finalBal,
-      ledgerTx
-    }
-  });
+      reference,
+      paymentMethod: 'crypto',
+      description: `Direct Solana USDC Withdrawal to ${cleanAddress.slice(0, 4)}...${cleanAddress.slice(-4)}`,
+      blockchainNetwork: 'SOLANA',
+      toAddress: cleanAddress,
+      metadata: {
+        provider: 'solana_direct',
+        destinationAddress: cleanAddress,
+        network: 'SOLANA',
+        token: 'USDC'
+      },
+      completedAt: new Date()
+    });
+
+    const finalBal = updatedUser?.wallet?.balance !== undefined ? updatedUser.wallet.balance : updatedUser?.balance;
+
+    res.status(201).json({
+      success: true,
+      message: `Successfully withdrew ${numAmount} USDC to Solana wallet`,
+      data: {
+        reference,
+        transactionId,
+        amount: numAmount,
+        currency: 'USDC',
+        toAddress: cleanAddress,
+        status: 'completed',
+        balance: finalBal,
+        ledgerTx
+      }
+    });
+  } catch (err) {
+    const statusCode = err.statusCode || err.status || 400;
+    return res.status(statusCode).json({
+      success: false,
+      error: err.message || 'Failed to process Solana withdrawal',
+      statusCode
+    });
+  }
 }));
 
 module.exports = router;
