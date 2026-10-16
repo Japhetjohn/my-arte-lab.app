@@ -1015,12 +1015,14 @@ class SwitchService {
         developer: quoteData.fee?.developer !== undefined ? quoteData.fee.developer : 0,
         currency: quoteData.fee?.currency || 'USD'
       },
+      asset: payload.asset,
+      network: quoteData.source?.network || (payload.asset.startsWith('solana') ? 'SOLANA' : 'BASE'),
       source: {
         amount: quoteData.source?.amount,
         amountUsd: quoteData.source?.amount_usd,
         currency: quoteData.source?.currency || 'USDC',
-        network: quoteData.source?.network || 'SOLANA',
-        asset: 'solana:usdc'
+        network: quoteData.source?.network || (payload.asset.startsWith('solana') ? 'SOLANA' : 'BASE'),
+        asset: quoteData.source?.asset || payload.asset
       },
       destination: {
         amount: quoteData.destination?.amount,
