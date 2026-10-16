@@ -261,7 +261,14 @@ class SwitchService {
       const res = await this._request(`/wallet/${walletId}/balance`, {
         method: 'GET'
       });
-      return res.data;
+      return {
+        balance: res.data?.balance || 0,
+        balance_in_usd: res.data?.balance_in_usd || 0,
+        breakdown: Array.isArray(res.data?.breakdown) ? res.data.breakdown : [],
+        isLive: true,
+        providerStatus: 'live',
+        retrievedAt: new Date().toISOString()
+      };
     } catch (err) {
       if (err.status === 404 || err.message?.includes('Resource does not exist') || err.message?.includes('not supported')) {
         return {
@@ -273,11 +280,177 @@ class SwitchService {
               balance: 0,
               balance_in_usd: 0
             }
-          ]
+          ],
+          isLive: false,
+          providerStatus: err.message?.includes('not supported') ? 'sandbox_unsupported' : 'not_found',
+          error: err.message,
+          retrievedAt: new Date().toISOString()
         };
       }
       throw err;
     }
+  }
+
+  /**
+   * Official list of supported blockchains for unsupported token rescue according to OnSwitch API.
+   */
+  static SUPPORTED_RESCUE_CHAINS = [
+    'BASE',
+    'ETHEREUM',
+    'SOLANA',
+    'POLYGON',
+    'BSC',
+    'ARBITRUM',
+    'OPTIMISM',
+    'AVALANCHE',
+    'MONAD',
+    'GNOSIS',
+    'PLASMA'
+  ];
+
+  /**
+   * Rescues unsupported tokens sent to the user's Switch wallet address.
+   * Documentation: POST /wallet/rescue
+   * 
+   * @param {object} params
+   * @param {string} params.walletId - 24-character hex Switch wallet ID
+   * @param {string} params.blockchain - Blockchain identifier ('BASE', 'ETHEREUM', 'SOLANA', etc.)
+   * @param {string} params.tokenAddress - Contract or mint address of the unsupported token
+   * @param {string} params.recipient - Destination wallet address matching the blockchain format
+   * @returns {Promise<object>} Result of the rescue operation { success: true, ... }
+   */
+  async rescueToken({ walletId, blockchain, tokenAddress, recipient }) {
+    if (!walletId || !/^[a-f0-9]{24}$/.test(String(walletId).trim())) {
+      throw new Error('Invalid Switch wallet ID format (must be 24-character hexadecimal)');
+    }
+
+    const cleanChain = String(blockchain || '').trim().toUpperCase();
+    if (!SwitchService.SUPPORTED_RESCUE_CHAINS.includes(cleanChain)) {
+      throw new Error(`Unsupported blockchain '${blockchain}'. Supported chains: ${SwitchService.SUPPORTED_RESCUE_CHAINS.join(', ')}`);
+    }
+
+    const cleanToken = String(tokenAddress || '').trim();
+    const cleanRecipient = String(recipient || '').trim();
+
+    if (!cleanToken) {
+      throw new Error('Token contract or mint address is required');
+    }
+
+    if (!cleanRecipient) {
+      throw new Error('Destination recipient wallet address is required');
+    }
+
+    // Format validation based on blockchain type
+    if (cleanChain === 'SOLANA') {
+      const solanaRegex = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+      if (!solanaRegex.test(cleanToken)) {
+        throw new Error('Invalid Solana token mint address format (must be 32-44 Base58 characters)');
+      }
+      if (!solanaRegex.test(cleanRecipient)) {
+        throw new Error('Invalid Solana recipient wallet address format (must be 32-44 Base58 characters)');
+      }
+    } else {
+      // EVM Chains
+      const evmRegex = /^0x[a-fA-F0-9]{40}$/;
+      if (!evmRegex.test(cleanToken)) {
+        throw new Error(`Invalid ${cleanChain} token contract address format (must be valid 0x hexadecimal address)`);
+      }
+      if (!evmRegex.test(cleanRecipient)) {
+        throw new Error(`Invalid ${cleanChain} recipient address format (must be valid 0x hexadecimal address)`);
+      }
+    }
+
+    const payload = {
+      wallet_id: String(walletId).trim(),
+      blockchain: cleanChain,
+      token_address: cleanToken,
+      recipient: cleanRecipient
+    };
+
+    const res = await this._request('/wallet/rescue', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+
+    return res?.data || res || { success: true };
+  }
+
+  /**
+   * Estimates network/wallet transaction fees for wallet operations.
+   * Documentation: POST /wallet/fee
+   * 
+   * @param {object} params
+   * @param {string} params.walletId - 24-character hex Switch wallet ID
+   * @param {number|string} params.amount - Amount
+   * @param {string} params.asset - Asset identifier (e.g., 'solana:usdc', 'base:usdc')
+   * @returns {Promise<object>} Fee estimation data
+   */
+  async estimateWalletFee({ walletId, amount, asset }) {
+    if (!walletId || !/^[a-f0-9]{24}$/.test(String(walletId).trim())) {
+      throw new Error('Invalid Switch wallet ID format');
+    }
+
+    const payload = {
+      wallet_id: String(walletId).trim(),
+      amount: Number(amount) || 0,
+      asset: String(asset || 'solana:usdc').trim()
+    };
+
+    const res = await this._request('/wallet/fee', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+
+    return res?.data || res;
+  }
+
+  /**
+   * Transfers funds from a Switch wallet to another address.
+   * Documentation: POST /wallet/transfer
+   * 
+   * @param {object} params
+   * @param {string} params.walletId - 24-character hex Switch wallet ID
+   * @param {string} params.asset - Asset identifier (e.g., 'solana:usdc')
+   * @param {string} params.recipient - Destination wallet address
+   * @param {number} [params.amount] - Amount to transfer
+   * @param {boolean} [params.fullBalance=false] - Whether to transfer entire balance
+   * @returns {Promise<object>} Transfer result
+   */
+  async transferFunds({ walletId, asset, recipient, amount, fullBalance = false }) {
+    if (!walletId || !/^[a-f0-9]{24}$/.test(String(walletId).trim())) {
+      throw new Error('Invalid Switch wallet ID format');
+    }
+
+    if (!asset) {
+      throw new Error('Asset identifier is required (e.g. solana:usdc)');
+    }
+
+    if (!recipient) {
+      throw new Error('Recipient address is required');
+    }
+
+    const payload = {
+      wallet_id: String(walletId).trim(),
+      asset: String(asset).trim(),
+      recipient: String(recipient).trim()
+    };
+
+    if (fullBalance) {
+      payload.full_balance = true;
+    } else {
+      const numAmt = Number(amount);
+      if (isNaN(numAmt) || numAmt <= 0) {
+        throw new Error('Transfer amount must be a positive number');
+      }
+      payload.amount = numAmt;
+    }
+
+    const res = await this._request('/wallet/transfer', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+
+    return res?.data || res;
   }
 
   /**

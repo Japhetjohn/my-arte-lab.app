@@ -100,6 +100,18 @@ export const walletService = {
 
   withdrawSolana: (data: { amount: number; solanaAddress: string }) =>
     api.post('/wallet/withdraw/solana', data),
+
+  getSwitchWallet: () =>
+    api.get('/wallet/switch'),
+
+  getRescueSupportedChains: () =>
+    api.get('/wallet/rescue/supported-chains'),
+
+  rescueToken: (data: { blockchain: string; tokenAddress: string; recipient: string }) =>
+    api.post('/wallet/rescue', data),
+
+  getRescueHistory: (params?: { page?: number; limit?: number }) =>
+    api.get('/wallet/rescue/history', { params }),
 };
 
 // Upload Service

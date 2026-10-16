@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { AddFundsModal } from '@/components/wallet/AddFundsModal';
 import { WithdrawModal } from '@/components/wallet/WithdrawModal';
+import { RescueTokenModal } from '@/components/wallet/RescueTokenModal';
 import { MobileWallet } from '@/components/wallet/MobileWallet';
 import { DesktopWallet } from '@/components/wallet/DesktopWallet';
 import { useWallet } from '@/hooks/useWallet';
@@ -27,7 +28,9 @@ export function Wallet() {
     userCountry,
     paymentCapabilities,
     pagination,
+    providerData,
     fetchWallet,
+    fetchProviderBalance,
     fetchTransactions,
     loadMoreTransactions,
   } = useWallet();
@@ -37,11 +40,13 @@ export function Wallet() {
   const userRole = user?.role || 'client';
   const [isAddFundsOpen, setIsAddFundsOpen] = useState(false);
   const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
+  const [isRescueOpen, setIsRescueOpen] = useState(false);
 
   useEffect(() => {
     fetchWallet();
     fetchTransactions();
-  }, [fetchWallet, fetchTransactions]);
+    fetchProviderBalance();
+  }, [fetchWallet, fetchTransactions, fetchProviderBalance]);
 
   useEffect(() => {
     if (error) {
@@ -100,6 +105,7 @@ export function Wallet() {
           escrowBalance={escrowBalance}
           incomingEarnings={incomingEarnings}
           solanaAddress={solanaAddress}
+          providerData={providerData}
           userCountry={userCountry}
           userRole={userRole as 'client' | 'creator'}
           transactions={displayTransactions}
@@ -111,9 +117,11 @@ export function Wallet() {
           transactionsError={transactionsError}
           onAddFunds={() => setIsAddFundsOpen(true)}
           onWithdraw={() => setIsWithdrawOpen(true)}
+          onRescueToken={() => setIsRescueOpen(true)}
           onRefresh={() => {
             fetchWallet();
             fetchTransactions();
+            fetchProviderBalance();
           }}
           onLoadMore={loadMoreTransactions}
         />
@@ -128,6 +136,7 @@ export function Wallet() {
           escrowBalance={escrowBalance}
           incomingEarnings={incomingEarnings}
           solanaAddress={solanaAddress}
+          providerData={providerData}
           userCountry={userCountry}
           userRole={userRole as 'client' | 'creator'}
           transactions={displayTransactions}
@@ -139,9 +148,11 @@ export function Wallet() {
           transactionsError={transactionsError}
           onAddFunds={() => setIsAddFundsOpen(true)}
           onWithdraw={() => setIsWithdrawOpen(true)}
+          onRescueToken={() => setIsRescueOpen(true)}
           onRefresh={() => {
             fetchWallet();
             fetchTransactions();
+            fetchProviderBalance();
           }}
           onLoadMore={loadMoreTransactions}
         />
@@ -154,6 +165,7 @@ export function Wallet() {
           setIsAddFundsOpen(false);
           fetchWallet();
           fetchTransactions();
+          fetchProviderBalance();
         }}
         solanaAddress={solanaAddress}
         userCountry={userCountry}
@@ -161,6 +173,7 @@ export function Wallet() {
         onSuccess={() => {
           fetchWallet();
           fetchTransactions();
+          fetchProviderBalance();
         }}
       />
 
@@ -170,6 +183,7 @@ export function Wallet() {
           setIsWithdrawOpen(false);
           fetchWallet();
           fetchTransactions();
+          fetchProviderBalance();
         }}
         availableBalance={availableBalance}
         userCountry={userCountry}
@@ -177,6 +191,23 @@ export function Wallet() {
         onSuccess={() => {
           fetchWallet();
           fetchTransactions();
+          fetchProviderBalance();
+        }}
+      />
+
+      <RescueTokenModal
+        isOpen={isRescueOpen}
+        onClose={() => {
+          setIsRescueOpen(false);
+          fetchWallet();
+          fetchTransactions();
+          fetchProviderBalance();
+        }}
+        userSolanaAddress={solanaAddress}
+        onSuccess={() => {
+          fetchWallet();
+          fetchTransactions();
+          fetchProviderBalance();
         }}
       />
     </>

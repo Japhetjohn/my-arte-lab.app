@@ -31,6 +31,7 @@ const notificationSchema = new mongoose.Schema({
       'insufficient_balance',
       'message',
       'system',
+      'unsupported_token_detected',
       'work_delivered',
       // Project notifications
       'project_created',

@@ -10,6 +10,7 @@ import {
   RefreshCw,
   Loader2,
   AlertCircle,
+  LifeBuoy,
 } from 'lucide-react';
 import type { Transaction } from '@/types';
 import { cn } from '@/lib/utils';
@@ -21,6 +22,14 @@ interface DesktopWalletProps {
   escrowBalance?: number;
   incomingEarnings?: number;
   solanaAddress?: string | null;
+  providerData?: {
+    balance: number;
+    balanceInUsd: number;
+    isLive: boolean;
+    providerStatus: string;
+    breakdown: any[];
+    retrievedAt?: string;
+  } | null;
   userCountry?: {
     countryCode: string;
     countryName: string;
@@ -37,6 +46,7 @@ interface DesktopWalletProps {
   transactionsError?: string | null;
   onAddFunds: () => void;
   onWithdraw: () => void;
+  onRescueToken?: () => void;
   onRefresh?: () => void;
   onLoadMore?: () => void;
 }
@@ -47,6 +57,7 @@ export function DesktopWallet({
   pendingWithdrawal = 0,
   escrowBalance = 0,
   incomingEarnings = 0,
+  providerData,
   transactions = [],
   isWalletLoading = false,
   isTransactionsLoading = false,
@@ -56,6 +67,7 @@ export function DesktopWallet({
   transactionsError,
   onAddFunds,
   onWithdraw,
+  onRescueToken,
   onRefresh,
   onLoadMore,
 }: DesktopWalletProps) {
@@ -220,20 +232,54 @@ export function DesktopWallet({
 
   return (
     <div className="bg-white border border-gray-150 rounded-2xl p-6 lg:p-8 shadow-2xs space-y-7 text-gray-900 selection:bg-purple-100 selection:text-purple-900">
-      {/* 1. Header: Refresh as the only action (No redundant title, no currency badges, no plus button) */}
-      <div className="flex items-center justify-end">
-        {onRefresh && (
-          <button
-            type="button"
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            className="w-8 h-8 rounded-lg border border-gray-200 hover:bg-gray-50 active:scale-95 text-gray-500 hover:text-gray-900 flex items-center justify-center transition-all cursor-pointer"
-            title="Refresh wallet"
-            aria-label="Refresh wallet"
-          >
-            <RefreshCw className={cn('w-3.5 h-3.5', isRefreshing && 'animate-spin text-[#9747FF]')} />
-          </button>
-        )}
+      {/* 1. Header: Provider Status Indicator, Token Rescue action, and Refresh */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          {providerData && (
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-50 border border-gray-200/80 rounded-lg text-xs text-gray-600">
+              <span
+                className={cn(
+                  'w-1.5 h-1.5 rounded-full shrink-0',
+                  providerData.isLive ? 'bg-emerald-500' : 'bg-amber-500'
+                )}
+              />
+              <span>
+                {providerData.isLive
+                  ? `OnSwitch On-Chain: $${providerData.balance.toFixed(2)} USDC`
+                  : providerData.providerStatus === 'sandbox_unsupported'
+                  ? 'Switch Sandbox'
+                  : 'Ledger Reconciled'}
+              </span>
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          {onRescueToken && (
+            <button
+              type="button"
+              onClick={onRescueToken}
+              className="h-8 px-3 rounded-lg border border-gray-200 hover:bg-gray-50 text-xs font-medium text-gray-600 hover:text-gray-900 inline-flex items-center gap-1.5 transition-all cursor-pointer"
+              title="Recover unsupported tokens sent to your deposit address"
+            >
+              <LifeBuoy className="w-3.5 h-3.5 text-[#9747FF]" />
+              <span>Token Rescue</span>
+            </button>
+          )}
+
+          {onRefresh && (
+            <button
+              type="button"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="w-8 h-8 rounded-lg border border-gray-200 hover:bg-gray-50 active:scale-95 text-gray-500 hover:text-gray-900 flex items-center justify-center transition-all cursor-pointer"
+              title="Refresh wallet"
+              aria-label="Refresh wallet"
+            >
+              <RefreshCw className={cn('w-3.5 h-3.5', isRefreshing && 'animate-spin text-[#9747FF]')} />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Recoverable Error Banner */}

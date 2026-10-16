@@ -423,23 +423,58 @@ class SolanaDepositService {
       return { handled: false, reason: 'No transaction hash provided' };
     }
 
-    // Verify asset is USDC
-    const isUsdc = (asset === 'solana:usdc') || (token === this.USDC_MINT_MAINNET);
-    if (!isUsdc) {
-      return { handled: false, reason: 'Unsupported asset received (not Solana USDC)' };
-    }
-
-    // Locate user by Solana wallet address
+    // Locate user by Solana or EVM wallet address, or Switch wallet ID
     const switchWallet = await SwitchWallet.findOne({
       $or: [
         { solanaAddress: address },
-        { switchWalletId: data.wallet }
+        { evmAddress: address },
+        { switchWalletId: data.wallet },
+        { 'addresses.SOLANA': address },
+        { 'addresses.BASE': address },
+        { 'addresses.ETHEREUM': address },
+        { 'addresses.POLYGON': address },
+        { 'addresses.BSC': address },
+        { 'addresses.ARBITRUM': address }
       ]
     });
 
     if (!switchWallet) {
       console.warn(`[SolanaDeposit] No user found for Switch wallet address ${address}`);
       return { handled: false, reason: 'Wallet not registered to any MyArteLab user' };
+    }
+
+    // Verify asset is USDC
+    const isUsdc = (asset === 'solana:usdc') || (token === this.USDC_MINT_MAINNET);
+    if (!isUsdc) {
+      console.warn(`[SolanaDeposit] Unsupported asset received for user ${switchWallet.user}: ${asset || token}`);
+      try {
+        const Notification = require('../models/Notification');
+        await Notification.createNotification({
+          recipient: switchWallet.user,
+          type: 'unsupported_token_detected',
+          title: 'Unsupported Token Received',
+          message: `An unsupported token (${asset || token || 'asset'}) was received at your wallet address. Only USDC and USDT count toward your spendable balance. You can recover this asset using the Token Rescue tool.`,
+          link: '/wallet',
+          metadata: {
+            asset: asset || token,
+            tokenAddress: token || null,
+            txHash: hash,
+            blockchain: data.blockchain || data.network || 'SOLANA',
+            rawAmount: amount,
+            receivedAt: new Date()
+          }
+        });
+      } catch (notifErr) {
+        console.warn('[SolanaDeposit] Could not create unsupported token notification:', notifErr.message);
+      }
+
+      return {
+        handled: true,
+        unsupportedToken: true,
+        reason: 'Unsupported asset received. User notified for token rescue.',
+        asset: asset || token,
+        walletId: switchWallet.switchWalletId
+      };
     }
 
     const dec = decimals || 6;

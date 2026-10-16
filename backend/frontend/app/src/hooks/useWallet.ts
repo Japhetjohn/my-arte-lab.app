@@ -27,6 +27,17 @@ interface WalletState {
   escrowBalance: number;
   incomingEarnings: number;
   solanaAddress: string | null;
+  evmAddress: string | null;
+  switchWalletId: string | null;
+  providerData: {
+    balance: number;
+    balanceInUsd: number;
+    isLive: boolean;
+    providerStatus: string;
+    breakdown: any[];
+    retrievedAt?: string;
+  } | null;
+  isProviderLoading: boolean;
   userCountry: {
     countryCode: string;
     countryName: string;
@@ -133,6 +144,10 @@ export function useWallet() {
     escrowBalance: cached.escrowBalance,
     incomingEarnings: cached.incomingEarnings,
     solanaAddress: null,
+    evmAddress: null,
+    switchWalletId: null,
+    providerData: null,
+    isProviderLoading: false,
     userCountry: null,
     paymentCapabilities: null,
     isInitialLoad: true,
@@ -185,6 +200,8 @@ export function useWallet() {
       const newEscrowBalance = typeof walletData?.escrowBalance === 'number' ? walletData.escrowBalance : parseFloat(walletData?.escrowBalance) || 0;
       const newIncomingEarnings = typeof walletData?.incomingEarnings === 'number' ? walletData.incomingEarnings : parseFloat(walletData?.incomingEarnings) || 0;
       const solanaAddress = walletData?.solanaAddress || null;
+      const evmAddress = walletData?.evmAddress || null;
+      const switchWalletId = walletData?.switchWalletId || null;
 
       saveCachedBalance(
         activeUserIdRef.current,
@@ -206,6 +223,8 @@ export function useWallet() {
         escrowBalance: newEscrowBalance,
         incomingEarnings: newIncomingEarnings,
         solanaAddress,
+        evmAddress,
+        switchWalletId,
         userCountry,
         paymentCapabilities,
         isWalletLoading: false,
@@ -224,6 +243,31 @@ export function useWallet() {
         walletError: errorMsg,
         error: errorMsg,
       }));
+    }
+  }, []);
+
+  const fetchProviderBalance = useCallback(async () => {
+    setState((prev) => ({ ...prev, isProviderLoading: true }));
+    try {
+      const response = await walletService.getSwitchWallet();
+      const data = response.data?.data;
+      setState((prev) => ({
+        ...prev,
+        isProviderLoading: false,
+        evmAddress: data?.evmAddress || prev.evmAddress,
+        solanaAddress: data?.solanaAddress || prev.solanaAddress,
+        switchWalletId: data?.walletId || prev.switchWalletId,
+        providerData: {
+          balance: typeof data?.switchBalance === 'number' ? data.switchBalance : 0,
+          balanceInUsd: typeof data?.switchBalanceUsd === 'number' ? data.switchBalanceUsd : 0,
+          isLive: Boolean(data?.isLive),
+          providerStatus: data?.providerStatus || 'unavailable',
+          breakdown: Array.isArray(data?.breakdown) ? data.breakdown : [],
+          retrievedAt: data?.retrievedAt,
+        },
+      }));
+    } catch {
+      setState((prev) => ({ ...prev, isProviderLoading: false }));
     }
   }, []);
 
@@ -318,6 +362,7 @@ export function useWallet() {
     availableBalance: state.availableBalance,
     pendingWithdrawal: state.pendingWithdrawal,
     fetchWallet,
+    fetchProviderBalance,
     fetchTransactions,
     loadMoreTransactions,
   };

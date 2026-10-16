@@ -96,6 +96,7 @@ router.get('/', protect, catchAsync(async (req, res) => {
         incomingEarnings,
         currency: user.currency || 'USDC',
         solanaAddress: switchWallet?.solanaAddress || null,
+        evmAddress: switchWallet?.evmAddress || null,
         switchWalletId: switchWallet?.switchWalletId || null,
         network: 'Solana',
         asset: 'solana:usdc'
@@ -894,12 +895,250 @@ router.get('/switch', protect, catchAsync(async (req, res) => {
     data: {
       walletId: wallet.id,
       solanaAddress: wallet.solanaAddress,
+      evmAddress: wallet.evmAddress,
+      addresses: wallet.addresses,
       network: 'Solana',
       asset: 'solana:usdc',
       status: wallet.status,
+      isLive: switchBalance?.isLive || false,
+      providerStatus: switchBalance?.providerStatus || (switchBalance?.isLive ? 'live' : 'unavailable'),
       switchBalance: switchBalance?.balance || 0,
       switchBalanceUsd: switchBalance?.balance_in_usd || 0,
-      breakdown: switchBalance?.breakdown || []
+      breakdown: switchBalance?.breakdown || [],
+      retrievedAt: switchBalance?.retrievedAt || new Date().toISOString()
+    }
+  });
+}));
+
+/**
+ * @route   GET /api/wallet/rescue/supported-chains
+ * @desc    Returns supported blockchains for unsupported token rescue with formatting rules
+ * @access  Private
+ */
+router.get('/rescue/supported-chains', protect, (req, res) => {
+  const chains = [
+    { id: 'SOLANA', name: 'Solana', format: 'base58', example: 'G2NKvCAfXUSjVrn63VYHoXqN8j79B3cx2nY6tG1fnjAx', isEvm: false },
+    { id: 'BASE', name: 'Base', format: 'hex', example: '0x4357efdfF55c30d68F0D327491Bd810D805749F5', isEvm: true },
+    { id: 'ETHEREUM', name: 'Ethereum', format: 'hex', example: '0x4357efdfF55c30d68F0D327491Bd810D805749F5', isEvm: true },
+    { id: 'POLYGON', name: 'Polygon', format: 'hex', example: '0x4357efdfF55c30d68F0D327491Bd810D805749F5', isEvm: true },
+    { id: 'BSC', name: 'BNB Smart Chain (BSC)', format: 'hex', example: '0x4357efdfF55c30d68F0D327491Bd810D805749F5', isEvm: true },
+    { id: 'ARBITRUM', name: 'Arbitrum One', format: 'hex', example: '0x4357efdfF55c30d68F0D327491Bd810D805749F5', isEvm: true },
+    { id: 'OPTIMISM', name: 'Optimism (OP Mainnet)', format: 'hex', example: '0x4357efdfF55c30d68F0D327491Bd810D805749F5', isEvm: true },
+    { id: 'AVALANCHE', name: 'Avalanche C-Chain', format: 'hex', example: '0x4357efdfF55c30d68F0D327491Bd810D805749F5', isEvm: true },
+    { id: 'MONAD', name: 'Monad', format: 'hex', example: '0x4357efdfF55c30d68F0D327491Bd810D805749F5', isEvm: true },
+    { id: 'GNOSIS', name: 'Gnosis', format: 'hex', example: '0x4357efdfF55c30d68F0D327491Bd810D805749F5', isEvm: true },
+    { id: 'PLASMA', name: 'Plasma', format: 'hex', example: '0x4357efdfF55c30d68F0D327491Bd810D805749F5', isEvm: true }
+  ];
+
+  res.json({
+    success: true,
+    data: {
+      chains,
+      note: 'OnSwitch unified balance only aggregates USDC and USDT. All other tokens require rescue to an external destination.'
+    }
+  });
+});
+
+/**
+ * @route   POST /api/wallet/rescue
+ * @desc    Rescue unsupported tokens sent to user Switch wallet address to an external recipient
+ * @access  Private
+ */
+router.post('/rescue', protect, catchAsync(async (req, res) => {
+  const { blockchain, tokenAddress, recipient } = req.body;
+
+  // 1. Resolve user's Switch wallet
+  const switchWallet = await SwitchWallet.findOne({ user: req.user._id });
+  if (!switchWallet || !switchWallet.switchWalletId) {
+    return res.status(400).json({
+      success: false,
+      error: 'No active Switch wallet found for your account. Please deposit or generate a wallet first.'
+    });
+  }
+
+  // 2. Validate Blockchain
+  const cleanChain = String(blockchain || '').trim().toUpperCase();
+  const validChains = [
+    'BASE', 'ETHEREUM', 'SOLANA', 'POLYGON', 'BSC',
+    'ARBITRUM', 'OPTIMISM', 'AVALANCHE', 'MONAD', 'GNOSIS', 'PLASMA'
+  ];
+
+  if (!validChains.includes(cleanChain)) {
+    return res.status(400).json({
+      success: false,
+      error: `Invalid blockchain '${blockchain}'. Supported chains: ${validChains.join(', ')}`
+    });
+  }
+
+  // 3. Validate Token Address and Recipient Address Formats
+  const cleanToken = String(tokenAddress || '').trim();
+  const cleanRecipient = String(recipient || '').trim();
+
+  if (!cleanToken) {
+    return res.status(400).json({
+      success: false,
+      error: 'Token contract or mint address is required'
+    });
+  }
+
+  if (!cleanRecipient) {
+    return res.status(400).json({
+      success: false,
+      error: 'External destination recipient wallet address is required'
+    });
+  }
+
+  if (cleanChain === 'SOLANA') {
+    const solanaRegex = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+    if (!solanaRegex.test(cleanToken)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid Solana token mint address format (must be 32-44 Base58 characters)'
+      });
+    }
+    if (!solanaRegex.test(cleanRecipient)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid Solana recipient address format (must be 32-44 Base58 characters)'
+      });
+    }
+  } else {
+    const evmRegex = /^0x[a-fA-F0-9]{40}$/;
+    if (!evmRegex.test(cleanToken)) {
+      return res.status(400).json({
+        success: false,
+        error: `Invalid ${cleanChain} token address format (must be a valid 0x hexadecimal address)`
+      });
+    }
+    if (!evmRegex.test(cleanRecipient)) {
+      return res.status(400).json({
+        success: false,
+        error: `Invalid ${cleanChain} recipient address format (must be a valid 0x hexadecimal address)`
+      });
+    }
+  }
+
+  // 4. Prevent Self-Send: Recipient cannot be the user's own Switch deposit address!
+  const userAddresses = [
+    switchWallet.solanaAddress,
+    switchWallet.evmAddress,
+    ...(switchWallet.addresses ? Object.values(switchWallet.addresses.toJSON ? switchWallet.addresses.toJSON() : switchWallet.addresses) : [])
+  ].filter(Boolean).map(a => String(a).toLowerCase());
+
+  if (userAddresses.includes(cleanRecipient.toLowerCase())) {
+    return res.status(400).json({
+      success: false,
+      error: 'Destination address cannot be your own Switch deposit address. You must provide an external wallet that you control.'
+    });
+  }
+
+  // Prevent sending to platform fee collection wallet
+  const feeWallet = (process.env.FEE_COLLECTION_WALLET || '').toLowerCase();
+  const platformWallet = (process.env.PLATFORM_WALLET_ADDRESS || '').toLowerCase();
+  if ((feeWallet && cleanRecipient.toLowerCase() === feeWallet) || (platformWallet && cleanRecipient.toLowerCase() === platformWallet)) {
+    return res.status(400).json({
+      success: false,
+      error: 'Destination address cannot be the platform fee address.'
+    });
+  }
+
+  // 5. Rate limiting: Max 5 rescue requests per 5 minutes per user
+  const RescueTransaction = require('../models/RescueTransaction');
+  const recentRescueCount = await RescueTransaction.countDocuments({
+    user: req.user._id,
+    createdAt: { $gte: new Date(Date.now() - 5 * 60 * 1000) }
+  });
+
+  if (recentRescueCount >= 5) {
+    return res.status(429).json({
+      success: false,
+      error: 'Too many rescue attempts. Please wait 5 minutes before submitting another rescue request.'
+    });
+  }
+
+  // 6. Create pending audit record
+  const rescueRecord = await RescueTransaction.create({
+    user: req.user._id,
+    walletId: switchWallet.switchWalletId,
+    blockchain: cleanChain,
+    tokenAddress: cleanToken,
+    recipient: cleanRecipient,
+    status: 'pending',
+    ipAddress: req.ip,
+    userAgent: req.headers['user-agent']
+  });
+
+  // 7. Invoke official OnSwitch POST /wallet/rescue
+  try {
+    const providerResult = await switchService.rescueToken({
+      walletId: switchWallet.switchWalletId,
+      blockchain: cleanChain,
+      tokenAddress: cleanToken,
+      recipient: cleanRecipient
+    });
+
+    rescueRecord.status = 'completed';
+    rescueRecord.providerResponse = providerResult;
+    if (providerResult?.transaction_hash || providerResult?.txHash || providerResult?.hash) {
+      rescueRecord.transactionHash = providerResult.transaction_hash || providerResult.txHash || providerResult.hash;
+    }
+    await rescueRecord.save();
+
+    res.json({
+      success: true,
+      message: 'Unsupported token rescue initiated successfully on OnSwitch',
+      data: {
+        rescueId: rescueRecord._id,
+        blockchain: cleanChain,
+        tokenAddress: cleanToken,
+        recipient: cleanRecipient,
+        status: 'completed',
+        providerResponse: providerResult
+      }
+    });
+  } catch (rescueErr) {
+    rescueRecord.status = 'failed';
+    rescueRecord.errorMessage = rescueErr.message;
+    rescueRecord.providerResponse = rescueErr.data || null;
+    await rescueRecord.save();
+
+    res.status(rescueErr.status || 400).json({
+      success: false,
+      error: rescueErr.message || 'OnSwitch provider rejected the token rescue request',
+      details: rescueErr.data || null
+    });
+  }
+}));
+
+/**
+ * @route   GET /api/wallet/rescue/history
+ * @desc    Get user's unsupported token rescue history
+ * @access  Private
+ */
+router.get('/rescue/history', protect, catchAsync(async (req, res) => {
+  const RescueTransaction = require('../models/RescueTransaction');
+  const page = parseInt(req.query.page, 10) || 1;
+  const limit = parseInt(req.query.limit, 10) || 10;
+  const skip = (page - 1) * limit;
+
+  const [rescues, total] = await Promise.all([
+    RescueTransaction.find({ user: req.user._id })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit),
+    RescueTransaction.countDocuments({ user: req.user._id })
+  ]);
+
+  res.json({
+    success: true,
+    data: {
+      rescues,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(total / limit) || 1,
+        totalItems: total,
+        itemsPerPage: limit
+      }
     }
   });
 }));
