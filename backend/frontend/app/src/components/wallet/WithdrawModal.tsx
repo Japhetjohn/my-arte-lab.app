@@ -11,6 +11,7 @@ import {
   DrawerTitle,
   DrawerDescription,
 } from '@/components/ui/drawer';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { walletService } from '@/lib/api';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
@@ -189,6 +190,7 @@ export function WithdrawModal({
   const [bankSearch, setBankSearch] = useState<string>('');
   const [isBankPickerOpen, setIsBankPickerOpen] = useState<boolean>(false);
   const bankDropdownRef = useRef<HTMLDivElement | null>(null);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   // Verification & Quote state
   const [isVerifyingAccount, setIsVerifyingAccount] = useState<boolean>(false);
@@ -257,20 +259,6 @@ export function WithdrawModal({
       resetViewport();
     };
   }, [isOpen, step]);
-
-  // Click outside listener to automatically dismiss bank dropdown
-  useEffect(() => {
-    if (!isBankPickerOpen) return;
-    const handleClickOutside = (event: MouseEvent) => {
-      if (bankDropdownRef.current && !bankDropdownRef.current.contains(event.target as Node)) {
-        setIsBankPickerOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isBankPickerOpen]);
 
   // Load supported withdrawal corridors on open
   useEffect(() => {
@@ -524,6 +512,7 @@ export function WithdrawModal({
 
   // Close handler with full state reset
   const handleModalClose = () => {
+    setIsBankPickerOpen(false);
     if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
     if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
     onClose();
@@ -531,6 +520,7 @@ export function WithdrawModal({
 
   // Back button handler preserving form data
   const handleBack = () => {
+    setIsBankPickerOpen(false);
     setErrorMessage(null);
     switch (step) {
       case 'bank-amount':
@@ -1203,42 +1193,56 @@ export function WithdrawModal({
               <span className="font-bold text-gray-900">${parseFloat(amountUsdc || '0').toFixed(2)} USDC</span>
             </div>
 
-            {/* 1. Bank Selection Dropdown / Selector (Anchored Overlay) */}
-            <div className="space-y-1.5 relative" ref={bankDropdownRef}>
+            {/* 1. Bank Selection Dropdown / Selector (Portalled Floating Popover) */}
+            <div className="space-y-1.5" ref={bankDropdownRef}>
               <label className="text-xs font-semibold text-gray-700">Select bank</label>
-              <button
-                type="button"
-                onClick={() => setIsBankPickerOpen((prev) => !prev)}
-                className="w-full h-11 px-3.5 bg-white border border-gray-200 rounded-xl text-left text-sm flex items-center justify-between hover:border-gray-300 focus:outline-none focus:border-[#9747FF] focus:ring-1 focus:ring-[#9747FF] transition-colors cursor-pointer"
-              >
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 shrink-0">
-                    <Building2 className="w-3.5 h-3.5" />
-                  </div>
-                  <span className={selectedBank ? 'font-medium text-gray-900 truncate' : 'text-gray-400'}>
-                    {selectedBank ? selectedBank.name : 'Select bank'}
-                  </span>
-                </div>
-                <ChevronDown
-                  className={cn(
-                    'w-4 h-4 text-gray-400 transition-transform duration-200 shrink-0',
-                    isBankPickerOpen && 'rotate-180 text-gray-600'
-                  )}
-                />
-              </button>
+              <Popover open={isBankPickerOpen} onOpenChange={setIsBankPickerOpen}>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className="w-full h-11 px-3.5 bg-white border border-gray-200 rounded-xl text-left text-sm flex items-center justify-between hover:border-gray-300 focus:outline-none focus:border-[#9747FF] focus:ring-1 focus:ring-[#9747FF] transition-colors cursor-pointer"
+                    aria-expanded={isBankPickerOpen}
+                    aria-haspopup="listbox"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 shrink-0">
+                        <Building2 className="w-3.5 h-3.5" />
+                      </div>
+                      <span className={selectedBank ? 'font-medium text-gray-900 truncate' : 'text-gray-400'}>
+                        {selectedBank ? selectedBank.name : 'Select bank'}
+                      </span>
+                    </div>
+                    <ChevronDown
+                      className={cn(
+                        'w-4 h-4 text-gray-400 transition-transform duration-200 shrink-0',
+                        isBankPickerOpen && 'rotate-180 text-gray-600'
+                      )}
+                    />
+                  </button>
+                </PopoverTrigger>
 
-              {isBankPickerOpen && (
-                <div className="absolute top-[calc(100%+6px)] left-0 right-0 z-50 bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden animate-in fade-in duration-150">
+                <PopoverContent
+                  side="bottom"
+                  align="start"
+                  sideOffset={6}
+                  avoidCollisions={true}
+                  collisionPadding={{ top: 16, bottom: 84, left: 16, right: 16 }}
+                  className="z-[200] w-[var(--radix-popover-trigger-width)] max-w-[calc(100vw-32px)] p-0 bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden focus:outline-none"
+                  onOpenAutoFocus={(e) => {
+                    e.preventDefault();
+                    searchInputRef.current?.focus({ preventScroll: true });
+                  }}
+                >
                   {/* Search Input Header */}
                   <div className="p-2.5 border-b border-gray-100 bg-gray-50/70">
                     <div className="relative flex items-center">
                       <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                       <input
+                        ref={searchInputRef}
                         type="text"
                         value={bankSearch}
                         onChange={(e) => setBankSearch(e.target.value)}
                         placeholder="Search banks"
-                        autoFocus
                         className="w-full h-9 pl-9 pr-8 text-xs bg-white rounded-lg border border-gray-200 focus:outline-none focus:border-[#9747FF] focus:ring-1 focus:ring-[#9747FF] placeholder:text-gray-400"
                       />
                       {bankSearch && (
@@ -1255,7 +1259,10 @@ export function WithdrawModal({
                   </div>
 
                   {/* Dropdown Options List */}
-                  <div className="max-h-60 overflow-y-auto overscroll-contain text-xs divide-y divide-gray-50">
+                  <div
+                    className="max-h-[min(var(--radix-popover-content-available-height,320px),260px)] overflow-y-auto overscroll-contain text-xs divide-y divide-gray-50"
+                    data-vaul-no-drag
+                  >
                     {isLoadingInstitutions ? (
                       <div className="py-8 text-center text-gray-400">
                         <Loader2 className="w-5 h-5 animate-spin mx-auto mb-2 text-[#9747FF]" />
@@ -1277,15 +1284,18 @@ export function WithdrawModal({
                               setVerificationError(null);
                             }}
                             className={cn(
-                              'w-full px-3.5 py-2.5 text-left hover:bg-gray-50 flex items-center justify-between cursor-pointer transition-colors',
-                              selectedBankCode === inst.code && 'bg-purple-50/60 text-[#9747FF] font-semibold'
+                              'w-full px-3.5 py-2.5 text-left hover:bg-gray-50 flex items-center justify-between cursor-pointer transition-colors text-xs',
+                              selectedBankCode === inst.code ? 'bg-purple-50/70 text-[#9747FF] font-semibold' : 'text-gray-800'
                             )}
                           >
                             <div className="flex items-center gap-2.5 min-w-0">
-                              <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 shrink-0 text-[10px]">
-                                <Building2 className="w-3 h-3" />
+                              <div className={cn(
+                                "w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[10px]",
+                                selectedBankCode === inst.code ? "bg-purple-100 text-[#9747FF]" : "bg-gray-100 text-gray-500"
+                              )}>
+                                <Building2 className="w-3.5 h-3.5" />
                               </div>
-                              <span className="truncate">{inst.name}</span>
+                              <span className="truncate font-medium">{inst.name}</span>
                             </div>
                             {selectedBankCode === inst.code && <Check className="w-3.5 h-3.5 text-[#9747FF] shrink-0" />}
                           </button>
@@ -1317,15 +1327,18 @@ export function WithdrawModal({
                                   setVerificationError(null);
                                 }}
                                 className={cn(
-                                  'w-full px-3.5 py-2.5 text-left hover:bg-gray-50 flex items-center justify-between cursor-pointer transition-colors',
-                                  selectedBankCode === inst.code && 'bg-purple-50/60 text-[#9747FF] font-semibold'
+                                  'w-full px-3.5 py-2.5 text-left hover:bg-gray-50 flex items-center justify-between cursor-pointer transition-colors text-xs',
+                                  selectedBankCode === inst.code ? 'bg-purple-50/70 text-[#9747FF] font-semibold' : 'text-gray-800'
                                 )}
                               >
                                 <div className="flex items-center gap-2.5 min-w-0">
-                                  <div className="w-5 h-5 rounded-full bg-purple-50 text-[#9747FF] flex items-center justify-center shrink-0 text-[10px] font-bold">
+                                  <div className={cn(
+                                    "w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold",
+                                    selectedBankCode === inst.code ? "bg-purple-100 text-[#9747FF]" : "bg-purple-50 text-[#9747FF]"
+                                  )}>
                                     ★
                                   </div>
-                                  <span className="truncate">{inst.name}</span>
+                                  <span className="truncate font-medium">{inst.name}</span>
                                 </div>
                                 {selectedBankCode === inst.code && <Check className="w-3.5 h-3.5 text-[#9747FF] shrink-0" />}
                               </button>
@@ -1350,15 +1363,18 @@ export function WithdrawModal({
                                 setVerificationError(null);
                               }}
                               className={cn(
-                                'w-full px-3.5 py-2.5 text-left hover:bg-gray-50 flex items-center justify-between cursor-pointer transition-colors',
-                                selectedBankCode === inst.code && 'bg-purple-50/60 text-[#9747FF] font-semibold'
+                                'w-full px-3.5 py-2.5 text-left hover:bg-gray-50 flex items-center justify-between cursor-pointer transition-colors text-xs',
+                                selectedBankCode === inst.code ? 'bg-purple-50/70 text-[#9747FF] font-semibold' : 'text-gray-800'
                               )}
                             >
                               <div className="flex items-center gap-2.5 min-w-0">
-                                <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 shrink-0 text-[10px]">
+                                <div className={cn(
+                                  "w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[10px]",
+                                  selectedBankCode === inst.code ? "bg-purple-100 text-[#9747FF]" : "bg-gray-100 text-gray-500"
+                                )}>
                                   <Building2 className="w-3 h-3" />
                                 </div>
-                                <span className="truncate">{inst.name}</span>
+                                <span className="truncate font-medium">{inst.name}</span>
                               </div>
                               {selectedBankCode === inst.code && <Check className="w-3.5 h-3.5 text-[#9747FF] shrink-0" />}
                             </button>
@@ -1367,8 +1383,8 @@ export function WithdrawModal({
                       </>
                     )}
                   </div>
-                </div>
-              )}
+                </PopoverContent>
+              </Popover>
             </div>
 
             {/* 2. Account Number Form Field */}

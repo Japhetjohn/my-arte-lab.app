@@ -113,12 +113,20 @@ const assertions = [
     check: withdrawContent.includes('Select bank')
   },
   {
-    name: 'Anchored overlay dropdown floating over content without pushing fields downward (absolute z-50)',
-    check: withdrawContent.includes('absolute top-[calc(100%+6px)]') && withdrawContent.includes('z-50')
+    name: 'Portalled floating Popover dropdown overlays content without expanding form (z-[200], avoidCollisions, collisionPadding)',
+    check:
+      withdrawContent.includes('<Popover') &&
+      withdrawContent.includes('<PopoverTrigger') &&
+      withdrawContent.includes('<PopoverContent') &&
+      withdrawContent.includes('avoidCollisions={true}') &&
+      withdrawContent.includes('z-[200]')
   },
   {
-    name: 'Bank dropdown has ref and outside click listener to dismiss automatically',
-    check: withdrawContent.includes('bankDropdownRef') && withdrawContent.includes('handleClickOutside')
+    name: 'Dropdown width aligns with trigger field and results are bounded with independent scrolling',
+    check:
+      withdrawContent.includes('w-[var(--radix-popover-trigger-width)]') &&
+      withdrawContent.includes('data-vaul-no-drag') &&
+      withdrawContent.includes('overscroll-contain')
   },
   {
     name: 'Search input inside dropdown with placeholder "Search banks"',
