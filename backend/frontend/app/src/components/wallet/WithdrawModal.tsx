@@ -21,6 +21,8 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  Building2,
   X,
   Landmark,
   Wallet,
@@ -68,6 +70,26 @@ interface Institution {
   code: string;
   logo?: string;
 }
+
+interface TopBankDefinition {
+  name: string;
+  code: string;
+  aliases: string[];
+}
+
+// Top 10 priority commercial & neo-banks for Nigeria
+const NIGERIA_TOP_BANKS: TopBankDefinition[] = [
+  { name: 'Access Bank', code: '000014', aliases: ['access'] },
+  { name: 'GTBank (Guaranty Trust Bank)', code: '000013', aliases: ['guaranty trust', 'gtbank', 'gtb'] },
+  { name: 'Zenith Bank', code: '000015', aliases: ['zenith'] },
+  { name: 'United Bank for Africa (UBA)', code: '000004', aliases: ['united bank for africa', 'uba'] },
+  { name: 'First Bank of Nigeria', code: '000016', aliases: ['first bank'] },
+  { name: 'Kuda Bank', code: '090267', aliases: ['kuda'] },
+  { name: 'OPay', code: '100004', aliases: ['opay', 'paycom'] },
+  { name: 'PalmPay', code: '100033', aliases: ['palmpay'] },
+  { name: 'Moniepoint', code: '090405', aliases: ['moniepoint'] },
+  { name: 'Fidelity Bank', code: '000007', aliases: ['fidelity'] },
+];
 
 interface ActiveWithdrawal {
   reference: string;
@@ -169,10 +191,13 @@ export function WithdrawModal({
   const [accountName, setAccountName] = useState<string>('');
   const [bankSearch, setBankSearch] = useState<string>('');
   const [isBankPickerOpen, setIsBankPickerOpen] = useState<boolean>(false);
+  const bankDropdownRef = useRef<HTMLDivElement | null>(null);
 
   // Verification & Quote state
   const [isVerifyingAccount, setIsVerifyingAccount] = useState<boolean>(false);
   const [verifiedName, setVerifiedName] = useState<string | null>(null);
+  const [verificationError, setVerificationError] = useState<string | null>(null);
+  const verificationReqIdRef = useRef<number>(0);
   const [quote, setQuote] = useState<WithdrawQuote | null>(null);
   const [quoteSecondsLeft, setQuoteSecondsLeft] = useState<number | null>(null);
 
@@ -240,6 +265,20 @@ export function WithdrawModal({
     };
   }, [isOpen, step]);
 
+  // Click outside listener to automatically dismiss bank dropdown
+  useEffect(() => {
+    if (!isBankPickerOpen) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      if (bankDropdownRef.current && !bankDropdownRef.current.contains(event.target as Node)) {
+        setIsBankPickerOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isBankPickerOpen]);
+
   // Load supported withdrawal corridors on open
   useEffect(() => {
     if (!isOpen) {
@@ -256,12 +295,14 @@ export function WithdrawModal({
       setAccountNumber('');
       setAccountName('');
       setVerifiedName(null);
+      setVerificationError(null);
       setQuote(null);
       setActiveWithdrawal(null);
       setSolanaWithdrawResult(null);
       setErrorMessage(null);
       setCopiedField(null);
       setIsBankPickerOpen(false);
+      setBankSearch('');
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
       if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
       return;
@@ -362,50 +403,63 @@ export function WithdrawModal({
     };
   }, [isOpen, step, selectedCountry, institutions.length]);
 
-  // Automatic account resolution when account number reaches 10 digits and bank is chosen
+  // Automatic account resolution when account number reaches required digits and bank is chosen
   useEffect(() => {
     if (step !== 'bank-details') return;
     const cleanAcc = accountNumber.trim();
+    const isRequiredLength = selectedCountry === 'NG' ? cleanAcc.length === 10 : cleanAcc.length >= 8;
 
-    if (selectedBankCode && cleanAcc.length === 10) {
-      let isMounted = true;
-      const resolve = async () => {
-        setIsVerifyingAccount(true);
-        setErrorMessage(null);
-        try {
-          const res = await walletService.resolveAccount({
-            country: selectedCountry,
-            bankCode: selectedBankCode,
-            accountNumber: cleanAcc,
-          });
+    // Immediately clear previous verification and error when inputs change
+    setVerifiedName(null);
+    setAccountName('');
+    setVerificationError(null);
+
+    if (selectedBankCode && isRequiredLength) {
+      const currentReqId = ++verificationReqIdRef.current;
+      setIsVerifyingAccount(true);
+
+      walletService
+        .resolveAccount({
+          country: selectedCountry,
+          bankCode: selectedBankCode,
+          accountNumber: cleanAcc,
+        })
+        .then((res) => {
+          // Guard against race conditions from out-of-order responses
+          if (verificationReqIdRef.current !== currentReqId) return;
+
           const data = res.data?.data;
           const resolved = data?.account_name || data?.accountName || data?.holder_name;
-          if (isMounted) {
-            if (resolved) {
-              setVerifiedName(resolved);
-              setAccountName(resolved);
-            } else {
-              setVerifiedName(accountName || 'Verified Account');
-            }
-          }
-        } catch (err: any) {
-          if (isMounted) {
-            console.warn('[WithdrawModal] Could not resolve account:', err.message);
+          if (resolved) {
+            setVerifiedName(resolved);
+            setAccountName(resolved);
+            setVerificationError(null);
+          } else {
             setVerifiedName(null);
+            setAccountName('');
+            setVerificationError("We couldn't verify this account. Please check the bank and account number.");
           }
-        } finally {
-          if (isMounted) {
+        })
+        .catch((err) => {
+          if (verificationReqIdRef.current !== currentReqId) return;
+          console.warn('[WithdrawModal] Could not resolve account:', err.message);
+          setVerifiedName(null);
+          setAccountName('');
+          const errorDetail = err.response?.data?.error || err.response?.data?.message;
+          setVerificationError(
+            errorDetail && typeof errorDetail === 'string' && errorDetail.length < 100
+              ? errorDetail
+              : "We couldn't verify this account. Please check the bank and account number."
+          );
+        })
+        .finally(() => {
+          if (verificationReqIdRef.current === currentReqId) {
             setIsVerifyingAccount(false);
           }
-        }
-      };
-
-      resolve();
-      return () => {
-        isMounted = false;
-      };
+        });
     } else {
-      setVerifiedName(null);
+      verificationReqIdRef.current++;
+      setIsVerifyingAccount(false);
     }
   }, [accountNumber, selectedBankCode, selectedCountry, step]);
 
@@ -573,12 +627,18 @@ export function WithdrawModal({
       setErrorMessage('Please select your destination bank');
       return;
     }
-    if (!accountNumber || accountNumber.trim().length < 5) {
-      setErrorMessage('Please enter a valid account number');
+    const cleanAcc = accountNumber.trim();
+    const reqLen = selectedCountry === 'NG' ? 10 : 8;
+    if (!cleanAcc || cleanAcc.length < reqLen) {
+      setErrorMessage(
+        selectedCountry === 'NG'
+          ? 'Please enter a valid 10-digit account number'
+          : 'Please enter a valid account number'
+      );
       return;
     }
-    if (!accountName && !verifiedName) {
-      setErrorMessage('Please verify your account holder name');
+    if (!verifiedName) {
+      setErrorMessage('Please verify your account holder name before continuing');
       return;
     }
 
@@ -825,15 +885,49 @@ export function WithdrawModal({
     }
   };
 
-  // Filtered banks for search
-  const filteredInstitutions = useMemo(() => {
-    if (!bankSearch.trim()) return institutions;
-    const q = bankSearch.toLowerCase();
-    return institutions.filter(
-      (inst) =>
-        inst.name.toLowerCase().includes(q) ||
-        inst.code.toLowerCase().includes(q)
-    );
+  // Top 10 priority banks for Nigeria
+  const topBanks = useMemo(() => {
+    if (selectedCountry !== 'NG' || institutions.length === 0) return [];
+    const result: Institution[] = [];
+    const usedCodes = new Set<string>();
+
+    for (const def of NIGERIA_TOP_BANKS) {
+      let match = institutions.find((inst) => inst.code === def.code);
+      if (!match) {
+        match = institutions.find((inst) =>
+          def.aliases.some((alias) => inst.name.toLowerCase().includes(alias))
+        );
+      }
+      if (match && !usedCodes.has(match.code)) {
+        usedCodes.add(match.code);
+        result.push(match);
+      }
+    }
+    return result;
+  }, [institutions, selectedCountry]);
+
+  // Remaining supported banks sorted alphabetically
+  const otherBanks = useMemo(() => {
+    if (selectedCountry !== 'NG') {
+      return [...institutions].sort((a, b) => a.name.localeCompare(b.name));
+    }
+    const topCodes = new Set(topBanks.map((b) => b.code));
+    return institutions
+      .filter((inst) => !topCodes.has(inst.code))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [institutions, selectedCountry, topBanks]);
+
+  // Filtered banks across the entire directory when searching
+  const searchResults = useMemo(() => {
+    if (!bankSearch.trim()) return [];
+    const q = bankSearch.trim().toLowerCase();
+    return institutions
+      .filter(
+        (inst) =>
+          inst.name.toLowerCase().includes(q) ||
+          inst.code.toLowerCase().includes(q)
+      )
+      .sort((a, b) => a.name.localeCompare(b.name));
   }, [institutions, bankSearch]);
 
   const selectedBank = institutions.find((i) => i.code === selectedBankCode);
@@ -868,7 +962,9 @@ export function WithdrawModal({
           </button>
         );
 
-      case 'bank-details':
+      case 'bank-details': {
+        const cleanAcc = accountNumber.trim();
+        const isAccValid = selectedCountry === 'NG' ? cleanAcc.length === 10 : cleanAcc.length >= 8;
         return (
           <button
             type="button"
@@ -877,8 +973,8 @@ export function WithdrawModal({
               isLoadingQuote ||
               isVerifyingAccount ||
               !selectedBankCode ||
-              !accountNumber.trim() ||
-              (!verifiedName && !accountName.trim())
+              !isAccValid ||
+              !verifiedName
             }
             className="w-full h-12 bg-[#9747FF] hover:bg-[#8535ed] text-white font-medium rounded-xl text-sm transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-2xs"
           >
@@ -893,10 +989,11 @@ export function WithdrawModal({
                 <span>Verifying Account...</span>
               </>
             ) : (
-              <span>Review Withdrawal</span>
+              <span>Continue</span>
             )}
           </button>
         );
+      }
 
       case 'bank-review':
         return (
@@ -1177,41 +1274,68 @@ export function WithdrawModal({
               <span className="font-bold text-gray-900">${parseFloat(amountUsdc || '0').toFixed(2)} USDC</span>
             </div>
 
-            {/* Bank Selection Dropdown / Selector */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-gray-700">Select Bank</label>
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setIsBankPickerOpen((prev) => !prev)}
-                  className="w-full h-11 px-3.5 bg-white border border-gray-200 rounded-xl text-left text-sm flex items-center justify-between hover:border-gray-300 transition-colors cursor-pointer"
-                >
+            {/* 1. Bank Selection Dropdown / Selector (Anchored Overlay) */}
+            <div className="space-y-1.5 relative" ref={bankDropdownRef}>
+              <label className="text-xs font-semibold text-gray-700">Select bank</label>
+              <button
+                type="button"
+                onClick={() => setIsBankPickerOpen((prev) => !prev)}
+                className="w-full h-11 px-3.5 bg-white border border-gray-200 rounded-xl text-left text-sm flex items-center justify-between hover:border-gray-300 focus:outline-none focus:border-[#9747FF] focus:ring-1 focus:ring-[#9747FF] transition-colors cursor-pointer"
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 shrink-0">
+                    <Building2 className="w-3.5 h-3.5" />
+                  </div>
                   <span className={selectedBank ? 'font-medium text-gray-900 truncate' : 'text-gray-400'}>
-                    {selectedBank ? selectedBank.name : 'Choose a destination bank'}
+                    {selectedBank ? selectedBank.name : 'Select bank'}
                   </span>
-                  <span className="text-xs text-gray-400">Change</span>
-                </button>
+                </div>
+                <ChevronDown
+                  className={cn(
+                    'w-4 h-4 text-gray-400 transition-transform duration-200 shrink-0',
+                    isBankPickerOpen && 'rotate-180 text-gray-600'
+                  )}
+                />
+              </button>
 
-                {isBankPickerOpen && (
-                  <div className="absolute top-12 left-0 right-0 z-30 bg-white border border-gray-200 rounded-xl shadow-lg p-2 space-y-2">
-                    <div className="relative">
-                      <Search className="w-4 h-4 text-gray-400 absolute left-2.5 top-2.5" />
+              {isBankPickerOpen && (
+                <div className="absolute top-[calc(100%+6px)] left-0 right-0 z-50 bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden animate-in fade-in duration-150">
+                  {/* Search Input Header */}
+                  <div className="p-2.5 border-b border-gray-100 bg-gray-50/70">
+                    <div className="relative flex items-center">
+                      <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                       <input
                         type="text"
                         value={bankSearch}
                         onChange={(e) => setBankSearch(e.target.value)}
-                        placeholder="Search banks..."
-                        className="w-full h-9 pl-8 pr-3 text-xs bg-gray-50 rounded-lg border border-gray-200 focus:outline-none"
+                        placeholder="Search banks"
+                        autoFocus
+                        className="w-full h-9 pl-9 pr-8 text-xs bg-white rounded-lg border border-gray-200 focus:outline-none focus:border-[#9747FF] focus:ring-1 focus:ring-[#9747FF] placeholder:text-gray-400"
                       />
+                      {bankSearch && (
+                        <button
+                          type="button"
+                          onClick={() => setBankSearch('')}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-gray-400 hover:text-gray-600 rounded transition-colors cursor-pointer"
+                          aria-label="Clear search"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
-                    <div className="max-h-48 overflow-y-auto divide-y divide-gray-50 text-xs">
-                      {isLoadingInstitutions ? (
-                        <div className="p-3 text-center text-gray-400">
-                          <Loader2 className="w-4 h-4 animate-spin mx-auto mb-1 text-[#9747FF]" />
-                          Loading banks...
-                        </div>
-                      ) : filteredInstitutions.length > 0 ? (
-                        filteredInstitutions.map((inst) => (
+                  </div>
+
+                  {/* Dropdown Options List */}
+                  <div className="max-h-60 overflow-y-auto overscroll-contain text-xs divide-y divide-gray-50">
+                    {isLoadingInstitutions ? (
+                      <div className="py-8 text-center text-gray-400">
+                        <Loader2 className="w-5 h-5 animate-spin mx-auto mb-2 text-[#9747FF]" />
+                        <span>Loading supported banks...</span>
+                      </div>
+                    ) : bankSearch.trim() ? (
+                      /* Search active: Direct flat list */
+                      searchResults.length > 0 ? (
+                        searchResults.map((inst) => (
                           <button
                             key={inst.code}
                             type="button"
@@ -1219,60 +1343,183 @@ export function WithdrawModal({
                               setSelectedBankCode(inst.code);
                               setIsBankPickerOpen(false);
                               setBankSearch('');
+                              setVerifiedName(null);
+                              setAccountName('');
+                              setVerificationError(null);
                             }}
                             className={cn(
-                              'w-full p-2.5 text-left rounded-lg hover:bg-gray-50 flex items-center justify-between cursor-pointer',
-                              selectedBankCode === inst.code && 'bg-purple-50/50 text-[#9747FF] font-semibold'
+                              'w-full px-3.5 py-2.5 text-left hover:bg-gray-50 flex items-center justify-between cursor-pointer transition-colors',
+                              selectedBankCode === inst.code && 'bg-purple-50/60 text-[#9747FF] font-semibold'
                             )}
                           >
-                            <span className="truncate">{inst.name}</span>
-                            {selectedBankCode === inst.code && <Check className="w-3.5 h-3.5 text-[#9747FF]" />}
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 shrink-0 text-[10px]">
+                                <Building2 className="w-3 h-3" />
+                              </div>
+                              <span className="truncate">{inst.name}</span>
+                            </div>
+                            {selectedBankCode === inst.code && <Check className="w-3.5 h-3.5 text-[#9747FF] shrink-0" />}
                           </button>
                         ))
                       ) : (
-                        <div className="p-3 text-center text-gray-400">No banks found</div>
-                      )}
-                    </div>
+                        <div className="py-8 px-4 text-center">
+                          <p className="text-xs font-semibold text-gray-700">No banks found matching "{bankSearch}"</p>
+                          <p className="text-[11px] text-gray-400 mt-1">Please check the spelling or search with a different bank name.</p>
+                        </div>
+                      )
+                    ) : (
+                      /* Default state: Popular Banks first, then All Supported Banks */
+                      <>
+                        {topBanks.length > 0 && (
+                          <div>
+                            <div className="px-3.5 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider bg-gray-50/80 sticky top-0 z-10 border-b border-gray-100">
+                              Popular Banks
+                            </div>
+                            {topBanks.map((inst) => (
+                              <button
+                                key={`top-${inst.code}`}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedBankCode(inst.code);
+                                  setIsBankPickerOpen(false);
+                                  setBankSearch('');
+                                  setVerifiedName(null);
+                                  setAccountName('');
+                                  setVerificationError(null);
+                                }}
+                                className={cn(
+                                  'w-full px-3.5 py-2.5 text-left hover:bg-gray-50 flex items-center justify-between cursor-pointer transition-colors',
+                                  selectedBankCode === inst.code && 'bg-purple-50/60 text-[#9747FF] font-semibold'
+                                )}
+                              >
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                  <div className="w-5 h-5 rounded-full bg-purple-50 text-[#9747FF] flex items-center justify-center shrink-0 text-[10px] font-bold">
+                                    ★
+                                  </div>
+                                  <span className="truncate">{inst.name}</span>
+                                </div>
+                                {selectedBankCode === inst.code && <Check className="w-3.5 h-3.5 text-[#9747FF] shrink-0" />}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+
+                        <div>
+                          <div className="px-3.5 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider bg-gray-50/80 sticky top-0 z-10 border-b border-gray-100">
+                            All Supported Banks
+                          </div>
+                          {otherBanks.map((inst) => (
+                            <button
+                              key={`other-${inst.code}`}
+                              type="button"
+                              onClick={() => {
+                                setSelectedBankCode(inst.code);
+                                setIsBankPickerOpen(false);
+                                setBankSearch('');
+                                setVerifiedName(null);
+                                setAccountName('');
+                                setVerificationError(null);
+                              }}
+                              className={cn(
+                                'w-full px-3.5 py-2.5 text-left hover:bg-gray-50 flex items-center justify-between cursor-pointer transition-colors',
+                                selectedBankCode === inst.code && 'bg-purple-50/60 text-[#9747FF] font-semibold'
+                              )}
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 shrink-0 text-[10px]">
+                                  <Building2 className="w-3 h-3" />
+                                </div>
+                                <span className="truncate">{inst.name}</span>
+                              </div>
+                              {selectedBankCode === inst.code && <Check className="w-3.5 h-3.5 text-[#9747FF] shrink-0" />}
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
 
-            {/* Account Number Input */}
+            {/* 2. Account Number Form Field */}
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-gray-700">Account Number</label>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-gray-700">Account number</label>
+                {accountNumber.length > 0 && (
+                  <span
+                    className={cn(
+                      'text-[11px] font-medium transition-colors',
+                      selectedCountry === 'NG'
+                        ? accountNumber.length === 10
+                          ? 'text-emerald-600'
+                          : 'text-amber-600'
+                        : accountNumber.length >= 8
+                        ? 'text-emerald-600'
+                        : 'text-amber-600'
+                    )}
+                  >
+                    {selectedCountry === 'NG'
+                      ? `${accountNumber.length}/10 digits`
+                      : `${accountNumber.length} digits`}
+                  </span>
+                )}
+              </div>
               <input
                 type="text"
                 inputMode="numeric"
-                maxLength={10}
+                maxLength={selectedCountry === 'NG' ? 10 : 20}
                 value={accountNumber}
                 onChange={(e) => {
                   const val = e.target.value.replace(/\D/g, '');
                   setAccountNumber(val);
                   setErrorMessage(null);
                 }}
-                placeholder="10-digit account number"
-                className="w-full h-11 px-3.5 bg-white border border-gray-200 rounded-xl text-sm font-mono tracking-wider focus:outline-none focus:border-[#9747FF] focus:ring-1 focus:ring-[#9747FF]"
+                placeholder={selectedCountry === 'NG' ? '10-digit account number' : 'Enter account number'}
+                className="w-full h-11 px-3.5 bg-white border border-gray-200 rounded-xl text-sm font-mono tracking-wider focus:outline-none focus:border-[#9747FF] focus:ring-1 focus:ring-[#9747FF] placeholder:font-sans placeholder:tracking-normal placeholder:text-gray-400"
               />
             </div>
 
-            {/* Account Resolution Feedback */}
-            {isVerifyingAccount ? (
-              <div className="p-3 bg-purple-50/60 border border-purple-100 rounded-xl flex items-center gap-2 text-xs text-[#9747FF]">
-                <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
-                <span>Resolving account holder name...</span>
-              </div>
-            ) : verifiedName ? (
-              <div className="p-3 bg-emerald-50/80 border border-emerald-200/80 rounded-xl flex items-center justify-between text-xs text-emerald-800">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span className="font-semibold uppercase tracking-wide truncate max-w-[260px]">
-                    {verifiedName}
+            {/* 3. Automatic Account Verification (Read-only Account Name) */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-gray-700">Account name</label>
+                {verifiedName && (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                    Verified
                   </span>
-                </div>
-                <span className="text-[10px] text-emerald-600 font-medium">Verified</span>
+                )}
               </div>
-            ) : null}
+              <div className="relative">
+                <input
+                  type="text"
+                  readOnly
+                  tabIndex={-1}
+                  value={isVerifyingAccount ? '' : verifiedName || ''}
+                  placeholder={isVerifyingAccount ? 'Verifying account...' : 'Account name will appear after verification'}
+                  className={cn(
+                    'w-full h-11 px-3.5 rounded-xl text-sm font-medium transition-colors select-none cursor-default pr-10',
+                    verifiedName
+                      ? 'bg-emerald-50/50 border border-emerald-200/80 text-emerald-950 font-semibold tracking-wide uppercase'
+                      : 'bg-gray-50/80 border border-gray-200 text-gray-500 placeholder:text-gray-400 placeholder:font-normal placeholder:normal-case'
+                  )}
+                />
+                <div className="absolute right-3.5 top-1/2 -translate-y-1/2 flex items-center pointer-events-none">
+                  {isVerifyingAccount ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-[#9747FF]" />
+                  ) : verifiedName ? (
+                    <Check className="w-4 h-4 text-emerald-600" />
+                  ) : null}
+                </div>
+              </div>
+              {verificationError && (
+                <div className="p-3 bg-red-50 border border-red-200/80 rounded-xl flex items-start gap-2 text-xs text-red-700 mt-1">
+                  <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                  <span>{verificationError}</span>
+                </div>
+              )}
+            </div>
 
             {errorMessage && (
               <div className="p-3 bg-red-50 border border-red-200/80 rounded-xl flex items-start gap-2 text-xs text-red-700">
@@ -1321,7 +1568,12 @@ export function WithdrawModal({
 
               <div className="flex justify-between items-center py-1 border-t border-gray-100 pt-2">
                 <span className="text-gray-500 font-medium">Platform Fee</span>
-                <span className="font-semibold text-gray-900">$0.00 USDC</span>
+                <span className="font-semibold text-emerald-600">Free ($0.00)</span>
+              </div>
+
+              <div className="flex justify-between items-center py-1 border-t border-gray-100 pt-2">
+                <span className="text-gray-500 font-medium">Processing Time</span>
+                <span className="font-semibold text-gray-900">Instant to 15 minutes</span>
               </div>
 
               <div className="flex justify-between items-center py-1 border-t border-gray-100 pt-2">
@@ -1333,7 +1585,9 @@ export function WithdrawModal({
 
               <div className="flex justify-between items-center py-1 border-t border-gray-100 pt-2">
                 <span className="text-gray-500 font-medium">Account Number</span>
-                <span className="font-mono font-semibold text-gray-900">{accountNumber}</span>
+                <span className="font-mono font-semibold text-gray-900">
+                  {accountNumber.length > 4 ? `••••${accountNumber.slice(-4)}` : accountNumber}
+                </span>
               </div>
 
               <div className="flex justify-between items-center py-1 border-t border-gray-100 pt-2">
