@@ -765,17 +765,17 @@ export function WithdrawModal({
                     </div>
                     <div className="flex justify-between py-1 border-b border-gray-100">
                       <span className="text-gray-500">Destination:</span>
-                      <span className="font-mono font-medium text-gray-800 text-[11px] truncate max-w-[200px]">
+                      <span className="font-mono font-medium text-gray-800 text-xs truncate max-w-[200px]">
                         {solanaWithdrawResult.toAddress}
                       </span>
                     </div>
                     <div className="flex justify-between py-1 border-b border-gray-100">
                       <span className="text-gray-500">Reference:</span>
-                      <span className="font-mono text-gray-700 text-[11px]">{solanaWithdrawResult.reference?.slice(0, 14)}...</span>
+                      <span className="font-mono text-gray-700 text-xs">{solanaWithdrawResult.reference?.slice(0, 14)}...</span>
                     </div>
                     <div className="flex justify-between py-1">
                       <span className="text-gray-500">Status:</span>
-                      <span className="text-emerald-700 font-bold uppercase tracking-wider text-[10px]">
+                      <span className="text-emerald-700 font-bold uppercase tracking-wider text-xs">
                         {solanaWithdrawResult.status}
                       </span>
                     </div>
@@ -829,7 +829,7 @@ export function WithdrawModal({
                       }}
                       className="h-10 text-xs font-mono"
                     />
-                    <p className="text-[11px] text-gray-400 mt-1">
+                    <p className="text-xs text-gray-500 mt-1">
                       Enter your Solana mainnet address (Phantom, Solflare, etc.). SPL USDC will be delivered.
                     </p>
                   </div>
@@ -838,7 +838,7 @@ export function WithdrawModal({
                   <div>
                     <div className="flex justify-between items-center mb-1">
                       <Label className="text-xs font-semibold text-gray-700">Withdrawal Amount (USDC)</Label>
-                      <span className="text-[11px] text-gray-400">Min: 1 USDC</span>
+                      <span className="text-xs text-gray-500 font-medium">Min: 1 USDC</span>
                     </div>
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-medium">$</span>
@@ -867,7 +867,7 @@ export function WithdrawModal({
                     </div>
                     <div className="flex justify-between">
                       <span>Token Mint:</span>
-                      <span className="font-mono text-gray-700 text-[11px]">EPjFWdd...yTDt1v (USDC)</span>
+                      <span className="font-mono text-gray-700 text-xs">EPjFWdd...yTDt1v (USDC)</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Speed:</span>
@@ -1030,7 +1030,7 @@ export function WithdrawModal({
                   <div>
                     <div className="flex justify-between items-center mb-1">
                       <Label className="text-xs font-semibold text-gray-700">Withdrawal Amount (USDC)</Label>
-                      <span className="text-[11px] text-gray-400">Settled from Solana</span>
+                      <span className="text-xs text-gray-500 font-medium">Settled from Solana</span>
                     </div>
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-medium">$</span>
@@ -1065,7 +1065,7 @@ export function WithdrawModal({
                           variant="ghost"
                           onClick={() => handleFetchQuote()}
                           disabled={isLoadingQuote}
-                          className="h-6 px-2 text-[11px] text-[#8A2BE2] hover:bg-purple-100 flex items-center gap-1"
+                          className="h-6 px-2.5 text-xs text-[#8A2BE2] hover:bg-purple-100 flex items-center gap-1 font-medium"
                         >
                           <RefreshCw className={`w-3 h-3 ${isLoadingQuote ? 'animate-spin' : ''}`} />
                           <span>{isLoadingQuote ? 'Updating...' : 'Refresh'}</span>
@@ -1092,7 +1092,7 @@ export function WithdrawModal({
                               {quote.destination?.currency}
                             </span>
                           </div>
-                          <div className="flex justify-between text-gray-500 text-[11px] pt-1 border-t border-gray-200/60">
+                          <div className="flex justify-between text-gray-500 text-xs pt-1 border-t border-gray-200/60">
                             <span className="flex items-center gap-1">
                               <Clock className="w-3 h-3 text-gray-400" />
                               Settlement: {quote.settlement || 'Fast'}
@@ -1208,8 +1208,8 @@ export function WithdrawModal({
                           <div className="flex justify-between items-center mb-1">
                             <Label className="text-xs font-semibold text-gray-700">Account Holder Name</Label>
                             {isAccountVerified && verifiedName && (
-                              <span className="text-[11px] text-emerald-600 font-medium flex items-center gap-1">
-                                <CheckCircle2 className="w-3 h-3" /> Verified by Switch
+                              <span className="text-xs text-emerald-600 font-semibold flex items-center gap-1">
+                                <CheckCircle2 className="w-3.5 h-3.5" /> Verified by Switch
                               </span>
                             )}
                           </div>

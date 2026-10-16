@@ -3,6 +3,7 @@ const router = express.Router();
 const switchService = require('../services/switchService');
 const ledgerService = require('../services/ledgerService');
 const FundingTransaction = require('../models/FundingTransaction');
+const Transaction = require('../models/Transaction');
 const crypto = require('crypto');
 
 /**
@@ -75,14 +76,30 @@ const handleSwitchWebhook = async (req, res) => {
             // Controlled state machine transitions
             if (switchStatus === 'PROCESSING') {
               fundingTx.status = 'processing';
+              await Transaction.findOneAndUpdate(
+                { reference: fundingTx.reference },
+                { status: 'processing', processedAt: new Date() }
+              );
             } else if (switchStatus === 'COMPLETED') {
               fundingTx.status = 'completed';
             } else if (switchStatus === 'FAILED') {
               fundingTx.status = 'failed';
+              await Transaction.findOneAndUpdate(
+                { reference: fundingTx.reference },
+                { status: 'failed', failedAt: new Date() }
+              );
             } else if (switchStatus === 'REVERSED') {
               fundingTx.status = 'reversed';
+              await Transaction.findOneAndUpdate(
+                { reference: fundingTx.reference },
+                { status: 'failed', failedAt: new Date() }
+              );
             } else if (switchStatus === 'EXPIRED') {
               fundingTx.status = 'expired';
+              await Transaction.findOneAndUpdate(
+                { reference: fundingTx.reference },
+                { status: 'cancelled', failedAt: new Date() }
+              );
             }
           }
 

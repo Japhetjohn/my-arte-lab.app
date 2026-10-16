@@ -153,6 +153,7 @@ export function Wallet() {
         onClose={() => {
           setIsAddFundsOpen(false);
           fetchWallet();
+          fetchTransactions();
         }}
         solanaAddress={solanaAddress}
         userCountry={userCountry}
@@ -168,6 +169,7 @@ export function Wallet() {
         onClose={() => {
           setIsWithdrawOpen(false);
           fetchWallet();
+          fetchTransactions();
         }}
         availableBalance={availableBalance}
         userCountry={userCountry}

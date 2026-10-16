@@ -50,37 +50,65 @@ class LedgerService {
       throw new Error(`Invalid deposit credit amount: ${creditAmount}`);
     }
 
-    // 2. Create authoritative completed transaction in the ledger
-    const timestamp = Date.now().toString(36).toUpperCase();
-    const random = crypto.randomBytes(3).toString('hex').toUpperCase();
-    const transactionId = `TXN-DEP-${timestamp}-${random}`;
-
-    const ledgerTx = await Transaction.create({
-      transactionId,
+    // 2. Find existing pending transaction or create authoritative completed transaction in the ledger
+    let ledgerTx = await Transaction.findOne({
       user: lockedFundingTx.user,
-      type: 'deposit',
-      amount: creditAmount,
-      netAmount: creditAmount,
-      currency: 'USDC',
-      status: 'completed',
-      reference: lockedFundingTx.reference,
-      paymentMethod: lockedFundingTx.channel === 'MOBILEMONEY' ? 'mobile_money' : 'bank_transfer',
-      description: `Switch Onramp: ${lockedFundingTx.fiatAmount} ${lockedFundingTx.fiatCurrency} -> ${creditAmount} USDC`,
-      blockchainNetwork: 'SOLANA',
-      toAddress: lockedFundingTx.destinationAddress,
-      metadata: {
-        provider: 'switch',
-        fundingTransactionId: lockedFundingTx._id,
-        fiatCurrency: lockedFundingTx.fiatCurrency,
-        fiatAmount: lockedFundingTx.fiatAmount,
-        quoteRate: lockedFundingTx.quoteRate,
-        quotedUsdcAmount: creditAmount,
-        channel: lockedFundingTx.channel,
-        country: lockedFundingTx.country,
-        switchReference: lockedFundingTx.switchReference
-      },
-      completedAt: new Date()
+      $or: [
+        { reference: lockedFundingTx.reference },
+        { 'metadata.fundingTransactionId': lockedFundingTx._id },
+        { 'metadata.switchReference': lockedFundingTx.switchReference }
+      ]
     });
+
+    if (ledgerTx) {
+      ledgerTx.status = 'completed';
+      ledgerTx.amount = creditAmount;
+      ledgerTx.netAmount = creditAmount;
+      ledgerTx.currency = 'USDC';
+      ledgerTx.completedAt = new Date();
+      if (!ledgerTx.metadata) ledgerTx.metadata = {};
+      ledgerTx.metadata.provider = 'switch';
+      ledgerTx.metadata.fundingTransactionId = lockedFundingTx._id;
+      ledgerTx.metadata.fiatCurrency = lockedFundingTx.fiatCurrency;
+      ledgerTx.metadata.fiatAmount = lockedFundingTx.fiatAmount;
+      ledgerTx.metadata.quoteRate = lockedFundingTx.quoteRate;
+      ledgerTx.metadata.quotedUsdcAmount = creditAmount;
+      ledgerTx.metadata.channel = lockedFundingTx.channel;
+      ledgerTx.metadata.country = lockedFundingTx.country;
+      ledgerTx.metadata.switchReference = lockedFundingTx.switchReference;
+      await ledgerTx.save();
+    } else {
+      const timestamp = Date.now().toString(36).toUpperCase();
+      const random = crypto.randomBytes(3).toString('hex').toUpperCase();
+      const transactionId = `TXN-DEP-${timestamp}-${random}`;
+
+      ledgerTx = await Transaction.create({
+        transactionId,
+        user: lockedFundingTx.user,
+        type: 'deposit',
+        amount: creditAmount,
+        netAmount: creditAmount,
+        currency: 'USDC',
+        status: 'completed',
+        reference: lockedFundingTx.reference,
+        paymentMethod: lockedFundingTx.channel === 'MOBILEMONEY' ? 'mobile_money' : 'bank_transfer',
+        description: `Switch Onramp: ${lockedFundingTx.fiatAmount} ${lockedFundingTx.fiatCurrency} -> ${creditAmount} USDC`,
+        blockchainNetwork: 'SOLANA',
+        toAddress: lockedFundingTx.destinationAddress,
+        metadata: {
+          provider: 'switch',
+          fundingTransactionId: lockedFundingTx._id,
+          fiatCurrency: lockedFundingTx.fiatCurrency,
+          fiatAmount: lockedFundingTx.fiatAmount,
+          quoteRate: lockedFundingTx.quoteRate,
+          quotedUsdcAmount: creditAmount,
+          channel: lockedFundingTx.channel,
+          country: lockedFundingTx.country,
+          switchReference: lockedFundingTx.switchReference
+        },
+        completedAt: new Date()
+      });
+    }
 
     // 3. Atomically update user balance: keep BOTH wallet.balance and user.balance in 100% lockstep
     const userUpdate = await User.findByIdAndUpdate(

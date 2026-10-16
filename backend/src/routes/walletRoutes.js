@@ -522,6 +522,56 @@ router.post('/fund/initiate', protect, catchAsync(async (req, res) => {
   });
 
   if (existingTx) {
+    // Ensure an authoritative pending Transaction record exists in the ledger for transaction history
+    const existingLedgerTx = await Transaction.findOne({
+      user: req.user._id,
+      $or: [
+        { reference: existingTx.reference },
+        { 'metadata.fundingTransactionId': existingTx._id }
+      ]
+    });
+
+    if (!existingLedgerTx) {
+      const timestamp = Date.now().toString(36).toUpperCase();
+      const random = crypto.randomBytes(3).toString('hex').toUpperCase();
+      const usdcAmt = Number(existingTx.quotedUsdcAmount) || Number(existingTx.fiatAmount);
+
+      await Transaction.create({
+        transactionId: `TXN-DEP-${timestamp}-${random}`,
+        user: req.user._id,
+        type: 'deposit',
+        amount: usdcAmt,
+        netAmount: usdcAmt,
+        currency: 'USDC',
+        status: existingTx.status || 'pending',
+        reference: existingTx.reference,
+        paymentMethod: existingTx.channel === 'MOBILEMONEY' ? 'mobile_money' : 'bank_transfer',
+        description: `Deposit: ${existingTx.fiatAmount} ${existingTx.fiatCurrency} -> ${usdcAmt} USDC`,
+        blockchainNetwork: 'SOLANA',
+        toAddress: existingTx.destinationAddress,
+        paymentDetails: {
+          accountNumber: existingTx.depositDetails?.accountNumber,
+          accountName: existingTx.depositDetails?.accountName,
+          bankName: existingTx.depositDetails?.bankName,
+          targetCurrency: existingTx.fiatCurrency,
+          targetAmount: existingTx.fiatAmount,
+          exchangeRate: existingTx.quoteRate,
+          reference: existingTx.reference
+        },
+        metadata: {
+          provider: 'switch',
+          fundingTransactionId: existingTx._id,
+          fiatCurrency: existingTx.fiatCurrency,
+          fiatAmount: existingTx.fiatAmount,
+          quoteRate: existingTx.quoteRate,
+          quotedUsdcAmount: existingTx.quotedUsdcAmount,
+          channel: existingTx.channel,
+          country: existingTx.country,
+          switchReference: existingTx.switchReference
+        }
+      });
+    }
+
     return res.json({
       success: true,
       message: 'Existing funding transaction returned (idempotency)',
@@ -628,6 +678,46 @@ router.post('/fund/initiate', protect, catchAsync(async (req, res) => {
     isCredited: false
   });
 
+  // 6. Create corresponding pending Transaction record so it immediately appears in transaction history
+  const timestamp = Date.now().toString(36).toUpperCase();
+  const random = crypto.randomBytes(3).toString('hex').toUpperCase();
+  const usdcAmt = Number(quote.destination?.amount) || numAmount;
+
+  await Transaction.create({
+    transactionId: `TXN-DEP-${timestamp}-${random}`,
+    user: req.user._id,
+    type: 'deposit',
+    amount: usdcAmt,
+    netAmount: usdcAmt,
+    currency: 'USDC',
+    status: 'pending',
+    reference,
+    paymentMethod: cleanChannel === 'MOBILEMONEY' ? 'mobile_money' : 'bank_transfer',
+    description: `Deposit: ${numAmount} ${cleanCurrency} -> ${usdcAmt} USDC`,
+    blockchainNetwork: 'SOLANA',
+    toAddress: switchWallet.solanaAddress,
+    paymentDetails: {
+      accountNumber: deposit.accountNumber,
+      accountName: deposit.accountName,
+      bankName: deposit.bankName,
+      targetCurrency: cleanCurrency,
+      targetAmount: numAmount,
+      exchangeRate: quote.rate,
+      reference
+    },
+    metadata: {
+      provider: 'switch',
+      fundingTransactionId: fundingTx._id,
+      fiatCurrency: cleanCurrency,
+      fiatAmount: numAmount,
+      quoteRate: quote.rate,
+      quotedUsdcAmount: usdcAmt,
+      channel: cleanChannel,
+      country: cleanCountry,
+      switchReference: initiateResult.reference || reference
+    }
+  });
+
   res.status(201).json({
     success: true,
     message: 'Funding initiated successfully',
@@ -671,15 +761,33 @@ router.get('/fund/:reference', protect, catchAsync(async (req, res) => {
       const switchStatus = switchStatusRes?.status;
       if (switchStatus && switchStatus !== fundingTx.switchStatus) {
         fundingTx.switchStatus = switchStatus;
-        if (switchStatus === 'PROCESSING') fundingTx.status = 'processing';
+        if (switchStatus === 'PROCESSING') {
+          fundingTx.status = 'processing';
+          await Transaction.findOneAndUpdate(
+            { reference: fundingTx.reference, user: req.user._id },
+            { status: 'processing', processedAt: new Date() }
+          );
+        }
         if (switchStatus === 'COMPLETED') {
           fundingTx.status = 'completed';
           await fundingTx.save();
           // Phase 5 settlement accounting: Idempotent balance credit
           await ledgerService.creditFundingDeposit(fundingTx);
         } else {
-          if (switchStatus === 'FAILED') fundingTx.status = 'failed';
-          if (switchStatus === 'REVERSED') fundingTx.status = 'reversed';
+          if (switchStatus === 'FAILED') {
+            fundingTx.status = 'failed';
+            await Transaction.findOneAndUpdate(
+              { reference: fundingTx.reference, user: req.user._id },
+              { status: 'failed', failedAt: new Date() }
+            );
+          }
+          if (switchStatus === 'REVERSED') {
+            fundingTx.status = 'reversed';
+            await Transaction.findOneAndUpdate(
+              { reference: fundingTx.reference, user: req.user._id },
+              { status: 'failed', failedAt: new Date() }
+            );
+          }
           await fundingTx.save();
         }
       }

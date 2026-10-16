@@ -652,7 +652,7 @@ export function AddFundsModal({
               <ChevronLeft className="w-5 h-5" />
             </button>
           )}
-          <h2 className="text-base font-semibold text-gray-900">{getHeaderTitle()}</h2>
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-900 tracking-tight">{getHeaderTitle()}</h2>
         </div>
         <button
           type="button"
@@ -691,14 +691,14 @@ export function AddFundsModal({
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold text-gray-900">Bank Transfer</span>
+                  <span className="text-base font-semibold text-gray-900">Bank Transfer</span>
                   {!isBankSupported && (
-                    <span className="text-[10px] font-medium text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                    <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2.5 py-0.5 rounded-full">
                       {isLoadingCorridors ? 'Loading...' : 'Unavailable'}
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
+                <p className="text-sm text-gray-500 mt-0.5 leading-relaxed">
                   Fund your wallet using a supported local payment method.
                 </p>
               </div>
@@ -732,11 +732,11 @@ export function AddFundsModal({
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold text-gray-900">
+                  <span className="text-base font-semibold text-gray-900">
                     Transfer from Another Wallet
                   </span>
                 </div>
-                <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
+                <p className="text-sm text-gray-500 mt-0.5 leading-relaxed">
                   Send supported crypto to your MyArteLab wallet.
                 </p>
               </div>
@@ -815,38 +815,38 @@ export function AddFundsModal({
                   USDC
                 </span>
               </div>
-              <p className="text-xs text-gray-500 mt-1.5">Settles on Solana Mainnet</p>
+              <p className="text-xs sm:text-sm text-gray-500 mt-1.5">Settles on Solana Mainnet</p>
             </div>
 
-            <div className="p-4 bg-white border border-gray-200/80 rounded-2xl space-y-3 text-xs">
+            <div className="p-4 bg-white border border-gray-200/80 rounded-2xl space-y-3 text-sm">
               <div className="flex justify-between items-center py-1">
-                <span className="text-gray-500">You Pay</span>
-                <span className="font-semibold text-gray-900">
+                <span className="text-gray-500 font-medium">You Pay</span>
+                <span className="text-sm sm:text-base font-semibold text-gray-900">
                   {quote.source.amount.toLocaleString()} {quote.source.currency}
                 </span>
               </div>
               <div className="flex justify-between items-center py-1 border-t border-gray-100 pt-2">
-                <span className="text-gray-500">Exchange Rate</span>
-                <span className="font-semibold text-gray-900">
+                <span className="text-gray-500 font-medium">Exchange Rate</span>
+                <span className="text-sm sm:text-base font-semibold text-gray-900">
                   1 USDC ≈{' '}
                   {quote.rate.toLocaleString('en-US', { maximumFractionDigits: 2 })}{' '}
                   {quote.source.currency}
                 </span>
               </div>
               <div className="flex justify-between items-center py-1 border-t border-gray-100 pt-2">
-                <span className="text-gray-500">Settlement Speed</span>
-                <span className="font-semibold text-gray-900">{quote.settlement || 'Instant'}</span>
+                <span className="text-gray-500 font-medium">Settlement Speed</span>
+                <span className="text-sm sm:text-base font-semibold text-gray-900">{quote.settlement || 'Instant'}</span>
               </div>
               <div className="flex justify-between items-center py-1 border-t border-gray-100 pt-2">
-                <span className="text-gray-500">Payment Method</span>
-                <span className="font-semibold text-gray-900">
+                <span className="text-gray-500 font-medium">Payment Method</span>
+                <span className="text-sm sm:text-base font-semibold text-gray-900">
                   {quote.channel === 'MOBILEMONEY' ? 'Mobile Money' : 'Bank Transfer'}
                 </span>
               </div>
             </div>
 
             {errorMessage && (
-              <div className="p-3 bg-red-50 border border-red-200/80 rounded-xl flex items-start gap-2 text-xs text-red-700">
+              <div className="p-3 bg-red-50 border border-red-200/80 rounded-xl flex items-start gap-2 text-xs sm:text-sm text-red-700">
                 <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
                 <span>{errorMessage}</span>
               </div>
@@ -856,7 +856,7 @@ export function AddFundsModal({
 
         {/* Step 4: Payment Instructions */}
         {step === 'bank-instructions' && activeFunding && (
-          <div className="space-y-5">
+          <div className="space-y-4">
             {/* Top Caution/Payment Instructions Icon */}
             <div className="flex justify-center pt-1 pb-0.5">
               <div className="w-12 h-12 rounded-full bg-purple-50/80 border border-purple-100 flex items-center justify-center text-[#9747FF]">
@@ -865,7 +865,7 @@ export function AddFundsModal({
             </div>
 
             {/* Prominent Exact Amount & Instructions */}
-            <div className="text-center space-y-1 mb-5">
+            <div className="text-center space-y-1 mb-4">
               <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-gray-900">
                 {getCurrencySymbol(activeFunding.fiatCurrency)}
                 {activeFunding.deposit.amount.toLocaleString()}{' '}
@@ -873,20 +873,20 @@ export function AddFundsModal({
                   {activeFunding.fiatCurrency}
                 </span>
               </h3>
-              <p className="text-xs sm:text-sm text-gray-600 font-medium">
+              <p className="text-sm text-gray-600 font-medium">
                 Send the exact amount to the account below.
               </p>
-              <p className="text-[11px] text-gray-400">
-                Settles ≈ <span className="font-semibold text-gray-600">{activeFunding.quotedUsdcAmount.toFixed(4)} USDC</span>
+              <p className="text-xs sm:text-sm text-gray-500">
+                Settles ≈ <span className="font-semibold text-gray-700">{activeFunding.quotedUsdcAmount.toFixed(4)} USDC</span>
               </p>
             </div>
 
             {/* Recipient Details Card */}
             {activeFunding.deposit.accountNumber && (
-              <div className="bg-white border border-gray-100 rounded-2xl shadow-2xs divide-y divide-gray-100 overflow-hidden text-xs">
+              <div className="bg-white border border-gray-150 rounded-2xl shadow-2xs divide-y divide-gray-100 overflow-hidden text-sm">
                 {/* Bank Name */}
                 <div className="flex items-center justify-between px-4 py-3.5">
-                  <span className="text-gray-400 font-medium">Bank Name</span>
+                  <span className="text-gray-500 font-medium">Bank Name</span>
                   <span className="text-gray-900 font-semibold text-right">
                     {activeFunding.deposit.bankName || 'Partner Bank'}
                   </span>
@@ -894,9 +894,9 @@ export function AddFundsModal({
 
                 {/* Account Number */}
                 <div className="flex items-center justify-between px-4 py-3.5">
-                  <span className="text-gray-400 font-medium">Account Number</span>
+                  <span className="text-gray-500 font-medium">Account Number</span>
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-sm font-bold text-gray-900 tracking-wider">
+                    <span className="font-mono text-base font-bold text-gray-900 tracking-wider">
                       {activeFunding.deposit.accountNumber}
                     </span>
                     <button
@@ -904,7 +904,7 @@ export function AddFundsModal({
                       onClick={() =>
                         copyToClipboard(activeFunding.deposit.accountNumber!, 'Account Number')
                       }
-                      className="h-7 px-2 text-xs text-[#9747FF] hover:bg-purple-50 rounded-md flex items-center gap-1 font-medium transition-colors cursor-pointer"
+                      className="h-7 px-2.5 text-xs text-[#9747FF] hover:bg-purple-50 rounded-md flex items-center gap-1 font-semibold transition-colors cursor-pointer"
                       aria-label="Copy account number"
                     >
                       {copiedField === 'Account Number' ? (
@@ -919,39 +919,11 @@ export function AddFundsModal({
 
                 {/* Account Name */}
                 <div className="flex items-center justify-between px-4 py-3.5">
-                  <span className="text-gray-400 font-medium">Account Name</span>
-                  <span className="text-gray-900 font-semibold text-right truncate max-w-[180px] sm:max-w-[220px]">
+                  <span className="text-gray-500 font-medium">Account Name</span>
+                  <span className="text-gray-900 font-semibold text-right truncate max-w-[180px] sm:max-w-[240px]">
                     {activeFunding.deposit.accountName || 'Switch Checkout'}
                   </span>
                 </div>
-
-                {/* Reference / Memo */}
-                {activeFunding.reference && (
-                  <div className="flex items-center justify-between px-4 py-3.5">
-                    <span className="text-gray-400 font-medium">Reference</span>
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span
-                        className="font-mono text-xs font-semibold text-gray-800 truncate max-w-[140px] sm:max-w-[180px]"
-                        title={activeFunding.reference}
-                      >
-                        {activeFunding.reference}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => copyToClipboard(activeFunding.reference, 'Reference')}
-                        className="h-7 px-2 text-xs text-[#9747FF] hover:bg-purple-50 rounded-md flex items-center gap-1 font-medium transition-colors cursor-pointer shrink-0"
-                        aria-label="Copy reference"
-                      >
-                        {copiedField === 'Reference' ? (
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                        ) : (
-                          <Copy className="w-3.5 h-3.5" />
-                        )}
-                        <span>{copiedField === 'Reference' ? 'Copied' : 'Copy'}</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
               </div>
             )}
           </div>
@@ -962,22 +934,22 @@ export function AddFundsModal({
           <div className="space-y-4">
             <div className="p-4 bg-white border border-gray-200/80 rounded-2xl space-y-3 shadow-2xs">
               <div className="flex justify-between items-center">
-                <span className="text-xs font-semibold text-gray-700">
+                <span className="text-sm font-semibold text-gray-800">
                   Your Solana Deposit Address
                 </span>
-                <span className="text-[11px] font-semibold text-[#9747FF] bg-purple-50 border border-purple-200/60 px-2 py-0.5 rounded-md">
+                <span className="text-xs font-semibold text-[#9747FF] bg-purple-50 border border-purple-200/60 px-2 py-0.5 rounded-md">
                   USDC (Solana)
                 </span>
               </div>
 
               {isLoadingSolana ? (
-                <div className="py-6 flex items-center justify-center gap-2 text-xs text-gray-500">
+                <div className="py-6 flex items-center justify-center gap-2 text-sm text-gray-500">
                   <Loader2 className="w-4 h-4 animate-spin text-[#9747FF]" />
                   <span>Loading deposit address...</span>
                 </div>
               ) : (
                 <div className="p-3 bg-gray-50 rounded-xl border border-gray-200/70 space-y-2">
-                  <p className="font-mono text-xs font-semibold text-gray-900 break-all select-all leading-relaxed">
+                  <p className="font-mono text-sm font-semibold text-gray-900 break-all select-all leading-relaxed">
                     {depositAddress || 'Address unavailable'}
                   </p>
                   <div className="flex justify-end">
@@ -998,27 +970,27 @@ export function AddFundsModal({
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-2 text-xs pt-1">
+              <div className="grid grid-cols-2 gap-2 text-sm pt-1">
                 <div className="p-2.5 bg-gray-50/80 rounded-xl border border-gray-100">
-                  <span className="text-gray-400 block text-[10px] uppercase font-semibold">
+                  <span className="text-gray-500 block text-xs uppercase font-semibold">
                     Accepted Asset
                   </span>
-                  <span className="font-semibold text-gray-900">USDC (USD Coin)</span>
+                  <span className="text-sm font-semibold text-gray-900">USDC (USD Coin)</span>
                 </div>
                 <div className="p-2.5 bg-gray-50/80 rounded-xl border border-gray-100">
-                  <span className="text-gray-400 block text-[10px] uppercase font-semibold">
+                  <span className="text-gray-500 block text-xs uppercase font-semibold">
                     Network
                   </span>
-                  <span className="font-semibold text-gray-900">Solana Mainnet</span>
+                  <span className="text-sm font-semibold text-gray-900">Solana Mainnet</span>
                 </div>
               </div>
 
-              <div className="flex justify-between items-center p-2.5 bg-gray-50/80 rounded-xl border border-gray-100 text-xs">
+              <div className="flex justify-between items-center p-2.5 bg-gray-50/80 rounded-xl border border-gray-100 text-sm">
                 <div className="truncate pr-2">
-                  <span className="text-gray-400 text-[10px] uppercase font-semibold block">
+                  <span className="text-gray-500 text-xs uppercase font-semibold block">
                     Official USDC Mint
                   </span>
-                  <span className="font-mono text-[11px] text-gray-700 truncate">
+                  <span className="font-mono text-xs text-gray-800 truncate">
                     {solanaInstructions?.mint || 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'}
                   </span>
                 </div>
@@ -1040,7 +1012,7 @@ export function AddFundsModal({
                 </button>
               </div>
 
-              <p className="text-[11px] text-gray-500 leading-relaxed pt-1">
+              <p className="text-xs text-gray-500 leading-relaxed pt-1">
                 Send only SPL USDC on Solana mainnet. Transfers from other networks (Ethereum, BSC,
                 Polygon) or other tokens (SOL, USDT) are not supported.
               </p>
@@ -1049,7 +1021,7 @@ export function AddFundsModal({
             {/* Signature Verification Form */}
             <form onSubmit={handleVerifySolanaDeposit} className="space-y-3 pt-1">
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-gray-700">
+                <label className="text-sm font-semibold text-gray-800">
                   Already sent? Enter transaction signature
                 </label>
                 <input
@@ -1057,20 +1029,20 @@ export function AddFundsModal({
                   placeholder="Paste 64-88 character Solana signature (e.g. 5xY8...)"
                   value={solanaSignature}
                   onChange={(e) => setSolanaSignature(e.target.value)}
-                  className="w-full h-11 px-3 text-xs font-mono bg-white border border-gray-200/80 rounded-xl focus:border-[#9747FF] focus:outline-none"
+                  className="w-full h-11 px-3 text-sm font-mono bg-white border border-gray-200/80 rounded-xl focus:border-[#9747FF] focus:outline-none"
                   disabled={isVerifyingSolana}
                 />
               </div>
 
               {solanaError && (
-                <div className="p-3 bg-red-50 border border-red-200/80 rounded-xl text-xs text-red-700 flex items-start gap-2">
+                <div className="p-3 bg-red-50 border border-red-200/80 rounded-xl text-xs sm:text-sm text-red-700 flex items-start gap-2">
                   <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
                   <span>{solanaError}</span>
                 </div>
               )}
 
               {solanaVerifyResult && (
-                <div className="p-3.5 bg-green-50 border border-green-200/80 rounded-xl text-xs text-green-800 space-y-1.5">
+                <div className="p-3.5 bg-green-50 border border-green-200/80 rounded-xl text-sm text-green-800 space-y-1.5">
                   <div className="flex items-center gap-1.5 font-semibold text-green-900">
                     <CheckCircle2 className="w-4 h-4 text-green-600" />
                     <span>Deposit Confirmed & Credited</span>
@@ -1094,7 +1066,7 @@ export function AddFundsModal({
                       href={`https://explorer.solana.com/tx/${solanaVerifyResult.signature}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[11px] text-green-700 hover:text-green-900 underline flex items-center gap-1 pt-0.5"
+                      className="text-xs text-green-700 hover:text-green-900 underline flex items-center gap-1 pt-0.5"
                     >
                       <span>View on Solana Explorer</span>
                       <ExternalLink className="w-3 h-3" />
