@@ -123,13 +123,15 @@ class WithdrawalService {
       switchWallet = await switchService.getOrCreateUserWallet(userId, userName);
     }
 
-    // 3. Fetch fresh guaranteed quote from Switch
+    const devFeeRecipient = process.env.FEE_COLLECTION_WALLET || process.env.PLATFORM_WALLET_ADDRESS;
     const quote = await switchService.getOfframpQuote({
       amount: numAmount,
       country: cleanCountry,
       currency: cleanCurrency,
       channel: cleanChannel,
-      wallet: switchWallet?.solanaAddress || undefined
+      wallet: switchWallet?.solanaAddress || undefined,
+      developerFee: 1,
+      developerRecipient: devFeeRecipient
     });
 
     const destinationAmount = quote.destination?.amount;
@@ -209,13 +211,17 @@ class WithdrawalService {
         narration: withdrawalTx.narration,
         reason: withdrawalTx.reason,
         wallet: switchWallet?.switchWalletId || switchWallet?.solanaAddress,
-        developerFee: 1 // 1% internal platform fee parameter
+        developerFee: 1, // 1% internal platform fee parameter
+        developerRecipient: devFeeRecipient
       });
 
       // Update status to processing on successful call
       withdrawalTx.status = 'processing';
       withdrawalTx.switchStatus = switchInitiateResult.status || 'PROCESSING';
       withdrawalTx.switchReference = switchInitiateResult.reference || reference;
+      if (!withdrawalTx.metadata) withdrawalTx.metadata = {};
+      withdrawalTx.metadata.developerFee = 1;
+      withdrawalTx.metadata.developerRecipient = devFeeRecipient;
       await withdrawalTx.save();
 
       return {

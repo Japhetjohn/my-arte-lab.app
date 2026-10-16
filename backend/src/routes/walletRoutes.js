@@ -54,16 +54,20 @@ router.get('/', protect, catchAsync(async (req, res) => {
     }
   }
 
-  // Ensure dual balance fields are aligned (authoritative source)
-  const authoritativeBalance = user.wallet?.balance !== undefined && user.wallet?.balance !== null
+  // Ensure dual balance fields are aligned (authoritative source) and decimal-rounded
+  const rawBalance = user.wallet?.balance !== undefined && user.wallet?.balance !== null
     ? user.wallet.balance
     : (user.balance || 0);
+  const authoritativeBalance = Math.round((Number(rawBalance) || 0) * 100) / 100;
 
-  const pendingWithdrawal = user.wallet?.pendingWithdrawal !== undefined && user.wallet?.pendingWithdrawal !== null
+  const rawPendingWithdrawal = user.wallet?.pendingWithdrawal !== undefined && user.wallet?.pendingWithdrawal !== null
     ? user.wallet.pendingWithdrawal
     : (user.pendingWithdrawal || 0);
+  const pendingWithdrawal = Math.round((Number(rawPendingWithdrawal) || 0) * 100) / 100;
 
-  // Self-heal field discrepancy if detected
+  const availableBalance = Math.max(0, Math.round((authoritativeBalance - pendingWithdrawal) * 100) / 100);
+
+  // Self-heal field discrepancy or floating-point noise if detected
   if (user.balance !== authoritativeBalance || user.wallet?.balance !== authoritativeBalance) {
     await User.findByIdAndUpdate(user._id, {
       $set: {
@@ -87,7 +91,7 @@ router.get('/', protect, catchAsync(async (req, res) => {
         usdcBalance: authoritativeBalance,
         pendingBalance: user.pendingBalance || user.wallet?.pendingBalance || 0,
         pendingWithdrawal,
-        availableBalance: Math.max(0, authoritativeBalance - pendingWithdrawal),
+        availableBalance,
         escrowBalance,
         incomingEarnings,
         currency: user.currency || 'USDC',
@@ -102,6 +106,50 @@ router.get('/', protect, catchAsync(async (req, res) => {
         defaultCurrency
       },
       paymentCapabilities
+    }
+  });
+}));
+
+/**
+ * @route   GET /api/wallet/reconcile
+ * @desc    Reconciles internal double-entry ledger with stored user balance and reports live Switch balance
+ * @access  Private
+ */
+router.get('/reconcile', protect, catchAsync(async (req, res) => {
+  const syncResult = await ledgerService.syncUserBalance(req.user._id);
+
+  let switchBalance = null;
+  let switchWallet = await SwitchWallet.findOne({ user: req.user._id });
+  if (switchWallet?.switchWalletId) {
+    try {
+      switchBalance = await switchService.getWalletBalance(switchWallet.switchWalletId);
+    } catch (swErr) {
+      console.warn('[Wallet Reconcile] Failed to fetch Switch wallet balance:', swErr.message);
+    }
+  }
+
+  const feeRecipient = process.env.FEE_COLLECTION_WALLET || process.env.PLATFORM_WALLET_ADDRESS;
+
+  res.json({
+    success: true,
+    data: {
+      userId: req.user._id,
+      ledger: {
+        totalCredits: syncResult.totalCredits,
+        totalDebits: syncResult.totalDebits,
+        calculatedBalance: syncResult.newBalance,
+        previousStoredBalance: syncResult.previousBalance,
+        reconciled: true
+      },
+      switch: {
+        walletId: switchWallet?.switchWalletId || null,
+        solanaAddress: switchWallet?.solanaAddress || null,
+        onChainData: switchBalance
+      },
+      feeConfiguration: {
+        developerFeePercent: 1,
+        feeCollectionWallet: feeRecipient
+      }
     }
   });
 }));
@@ -332,6 +380,7 @@ router.post('/quote', protect, catchAsync(async (req, res) => {
 
   const cleanCurrency = req.body.currency ? String(req.body.currency).trim().toUpperCase() : getDefaultCurrency(cleanCountry);
 
+  const devFeeRecipient = process.env.FEE_COLLECTION_WALLET || process.env.PLATFORM_WALLET_ADDRESS;
   try {
     const quote = await switchService.getOnrampQuote({
       amount: Number(amount),
@@ -339,7 +388,7 @@ router.post('/quote', protect, catchAsync(async (req, res) => {
       currency: cleanCurrency,
       channel: channel ? channel.trim().toUpperCase() : undefined,
       developerFee: 1,
-      developerRecipient: process.env.PLATFORM_WALLET_ADDRESS
+      developerRecipient: devFeeRecipient
     });
 
     res.json({
@@ -404,6 +453,7 @@ router.post('/withdraw/quote', protect, catchAsync(async (req, res) => {
   // Find user's Switch wallet address if available
   const switchWallet = await SwitchWallet.findOne({ user: req.user._id });
 
+  const devFeeRecipient = process.env.FEE_COLLECTION_WALLET || process.env.PLATFORM_WALLET_ADDRESS;
   try {
     const quote = await switchService.getOfframpQuote({
       amount: numAmount,
@@ -413,7 +463,7 @@ router.post('/withdraw/quote', protect, catchAsync(async (req, res) => {
       wallet: switchWallet?.solanaAddress || undefined,
       exactOutput: Boolean(exactOutput),
       developerFee: 1,
-      developerRecipient: process.env.PLATFORM_WALLET_ADDRESS
+      developerRecipient: devFeeRecipient
     });
 
     res.json({
@@ -602,6 +652,8 @@ router.post('/fund/initiate', protect, catchAsync(async (req, res) => {
     });
   }
 
+  const devFeeRecipient = process.env.FEE_COLLECTION_WALLET || process.env.PLATFORM_WALLET_ADDRESS;
+
   // 2. Fetch fresh quote from Switch to verify live rate & corridor limits
   const quote = await switchService.getOnrampQuote({
     amount: numAmount,
@@ -609,7 +661,7 @@ router.post('/fund/initiate', protect, catchAsync(async (req, res) => {
     currency: cleanCurrency,
     channel: cleanChannel,
     developerFee: 1,
-    developerRecipient: process.env.PLATFORM_WALLET_ADDRESS
+    developerRecipient: devFeeRecipient
   });
 
   // 3. Generate unique transaction reference UUID
@@ -634,7 +686,7 @@ router.post('/fund/initiate', protect, catchAsync(async (req, res) => {
       },
       payer: payer || undefined,
       developerFee: 1,
-      developerRecipient: process.env.PLATFORM_WALLET_ADDRESS
+      developerRecipient: devFeeRecipient
     });
   } catch (initErr) {
     return res.status(initErr.status || 400).json({
@@ -675,7 +727,11 @@ router.post('/fund/initiate', protect, catchAsync(async (req, res) => {
     status: 'pending',
     depositDetails,
     switchReference: initiateResult.reference || reference,
-    isCredited: false
+    isCredited: false,
+    metadata: {
+      developerFee: 1,
+      developerRecipient: devFeeRecipient
+    }
   });
 
   // 6. Create corresponding pending Transaction record so it immediately appears in transaction history
@@ -714,7 +770,9 @@ router.post('/fund/initiate', protect, catchAsync(async (req, res) => {
       quotedUsdcAmount: usdcAmt,
       channel: cleanChannel,
       country: cleanCountry,
-      switchReference: initiateResult.reference || reference
+      switchReference: initiateResult.reference || reference,
+      developerFee: 1,
+      developerRecipient: devFeeRecipient
     }
   });
 

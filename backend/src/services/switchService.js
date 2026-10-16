@@ -38,6 +38,25 @@ class SwitchService {
   }
 
   /**
+   * Resolves and validates developer recipient wallet address on Solana (Base58, 32-44 characters).
+   * Checks explicit param first, then FEE_COLLECTION_WALLET, then PLATFORM_WALLET_ADDRESS.
+   * @private
+   * @param {string} [recipient]
+   * @returns {string|undefined}
+   */
+  _resolveDeveloperRecipient(recipient) {
+    const raw = recipient || process.env.FEE_COLLECTION_WALLET || process.env.PLATFORM_WALLET_ADDRESS;
+    if (!raw) return undefined;
+    const trimmed = String(raw).trim();
+    if (/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(trimmed)) {
+      return trimmed;
+    }
+    console.warn(`[SwitchService] Invalid developer recipient address '${trimmed}', falling back to default.`);
+    const fallback = (process.env.PLATFORM_WALLET_ADDRESS || '').trim();
+    return fallback || undefined;
+  }
+
+  /**
    * Centralized HTTP request helper for Switch API.
    * @private
    * @param {string} endpoint - API path (e.g., '/asset')
@@ -544,9 +563,9 @@ class SwitchService {
       payload.developer_fee = resolvedDevFee;
     }
 
-    const resolvedDevRecipient = developerRecipient || process.env.PLATFORM_WALLET_ADDRESS;
+    const resolvedDevRecipient = this._resolveDeveloperRecipient(developerRecipient);
     if (resolvedDevRecipient) {
-      payload.developer_recipient = resolvedDevRecipient.trim();
+      payload.developer_recipient = resolvedDevRecipient;
     }
 
     const res = await this._request('/onramp/quote', {
@@ -654,9 +673,9 @@ class SwitchService {
       payload.developer_fee = resolvedDevFee;
     }
 
-    const resolvedDevRecipient = developerRecipient || process.env.PLATFORM_WALLET_ADDRESS;
+    const resolvedDevRecipient = this._resolveDeveloperRecipient(developerRecipient);
     if (resolvedDevRecipient) {
-      payload.developer_recipient = resolvedDevRecipient.trim();
+      payload.developer_recipient = resolvedDevRecipient;
     }
 
     if (payer && typeof payer === 'object') {
@@ -740,9 +759,9 @@ class SwitchService {
       payload.developer_fee = resolvedDevFee;
     }
 
-    const resolvedDevRecipient = developerRecipient || process.env.PLATFORM_WALLET_ADDRESS;
+    const resolvedDevRecipient = this._resolveDeveloperRecipient(developerRecipient);
     if (resolvedDevRecipient) {
-      payload.developer_recipient = resolvedDevRecipient.trim();
+      payload.developer_recipient = resolvedDevRecipient;
     }
 
     const res = await this._request('/offramp/quote', {
@@ -974,9 +993,9 @@ class SwitchService {
       payload.developer_fee = resolvedDevFee;
     }
 
-    const resolvedDevRecipient = developerRecipient || process.env.PLATFORM_WALLET_ADDRESS;
+    const resolvedDevRecipient = this._resolveDeveloperRecipient(developerRecipient);
     if (resolvedDevRecipient) {
-      payload.developer_recipient = resolvedDevRecipient.trim();
+      payload.developer_recipient = resolvedDevRecipient;
     }
 
     const res = await this._request('/offramp/initiate', {

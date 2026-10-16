@@ -141,7 +141,7 @@ export function DesktopWallet({
     const desc = (tx.description || '').toLowerCase();
     const type = (tx.type || '').toLowerCase();
 
-    if (type === 'deposit' || type === 'onramp' || desc.includes('deposit') || desc.includes('funding')) {
+    if (type === 'deposit' || type === 'onramp' || desc.includes('deposit') || desc.includes('funding') || desc.includes('onramp')) {
       return {
         isCredit: true,
         isEscrow: false,
@@ -149,12 +149,20 @@ export function DesktopWallet({
         categoryName: 'Deposit',
       };
     }
-    if (type === 'earning' || type === 'bonus' || desc.includes('earning') || desc.includes('payout')) {
+    if (type === 'withdrawal' || type === 'offramp' || desc.includes('withdraw') || desc.includes('offramp') || desc.includes('payout')) {
       return {
-        isCredit: true,
+        isCredit: false,
         isEscrow: false,
         isRefund: false,
-        categoryName: 'Earnings',
+        categoryName: 'Withdrawal',
+      };
+    }
+    if (type === 'escrow' || type === 'booking' || type === 'payment' || desc.includes('escrow') || desc.includes('booking') || desc.includes('service')) {
+      return {
+        isCredit: false,
+        isEscrow: true,
+        isRefund: false,
+        categoryName: 'Booking',
       };
     }
     if (type === 'refund' || type === 'reversal' || desc.includes('refund') || desc.includes('reversal')) {
@@ -165,20 +173,12 @@ export function DesktopWallet({
         categoryName: 'Refund',
       };
     }
-    if (type === 'withdrawal' || type === 'offramp' || desc.includes('withdraw')) {
+    if (type === 'earning' || type === 'bonus' || desc.includes('earning')) {
       return {
-        isCredit: false,
+        isCredit: true,
         isEscrow: false,
         isRefund: false,
-        categoryName: 'Withdrawal',
-      };
-    }
-    if (desc.includes('escrow') || type === 'escrow') {
-      return {
-        isCredit: false,
-        isEscrow: true,
-        isRefund: false,
-        categoryName: 'Escrow Payment',
+        categoryName: 'Earnings',
       };
     }
     return {
@@ -441,14 +441,7 @@ export function DesktopWallet({
                     const formatted = formatTxAmount(tx);
                     const txDate = tx.createdAt ? new Date(tx.createdAt) : null;
                     const formattedDateTime = txDate
-                      ? txDate.toLocaleString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric',
-                          hour: 'numeric',
-                          minute: '2-digit',
-                          hour12: true,
-                        })
+                      ? `${txDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · ${txDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`
                       : '—';
                     const status = tx.status || 'completed';
 
@@ -472,8 +465,11 @@ export function DesktopWallet({
                           </div>
 
                           <div className="min-w-0 flex-1">
-                            <p className="font-semibold text-gray-900 text-sm sm:text-base truncate">
-                              {tx.description || meta.categoryName}
+                            <p
+                              className="font-semibold text-gray-900 text-sm sm:text-base truncate"
+                              title={tx.description || meta.categoryName}
+                            >
+                              {meta.categoryName}
                             </p>
                             <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
                               {formattedDateTime}

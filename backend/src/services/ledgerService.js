@@ -481,12 +481,12 @@ class LedgerService {
       }
     }
 
-    const calculatedBalance = Math.max(0, parseFloat((totalCredits - totalDebits).toFixed(6)));
+    const calculatedBalance = Math.max(0, Math.round((totalCredits - totalDebits) * 100) / 100);
 
     return {
       calculatedBalance,
-      totalCredits: parseFloat(totalCredits.toFixed(6)),
-      totalDebits: parseFloat(totalDebits.toFixed(6))
+      totalCredits: Math.round(totalCredits * 100) / 100,
+      totalDebits: Math.round(totalDebits * 100) / 100
     };
   }
 
@@ -495,14 +495,17 @@ class LedgerService {
    * Ensures wallet.balance and balance are identical and match completed transactions.
    * 
    * @param {string|ObjectId} userId
-   * @returns {Promise<{ synced: boolean, previousBalance: number, newBalance: number }>}
+   * @returns {Promise<{ synced: boolean, previousBalance: number, newBalance: number, totalCredits: number, totalDebits: number }>}
    */
   async syncUserBalance(userId) {
-    const { calculatedBalance } = await this.calculateAuthoritativeBalance(userId);
+    const { calculatedBalance, totalCredits, totalDebits } = await this.calculateAuthoritativeBalance(userId);
     const user = await User.findById(userId);
     if (!user) return { synced: false, error: 'User not found' };
 
-    const previousBalance = user.wallet?.balance || user.balance || 0;
+    const rawPrev = user.wallet?.balance !== undefined && user.wallet?.balance !== null
+      ? user.wallet.balance
+      : (user.balance || 0);
+    const previousBalance = Math.round((Number(rawPrev) || 0) * 100) / 100;
 
     await User.findByIdAndUpdate(userId, {
       $set: {
@@ -516,7 +519,9 @@ class LedgerService {
     return {
       synced: true,
       previousBalance,
-      newBalance: calculatedBalance
+      newBalance: calculatedBalance,
+      totalCredits,
+      totalDebits
     };
   }
 
