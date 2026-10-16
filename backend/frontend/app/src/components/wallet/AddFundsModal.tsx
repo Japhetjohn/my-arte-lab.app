@@ -19,7 +19,6 @@ import {
   AlertCircle,
   Copy,
   CheckCircle2,
-  RefreshCw,
   ExternalLink,
   ChevronLeft,
   X,
@@ -147,11 +146,55 @@ export function AddFundsModal({
   const [isLoadingCorridors, setIsLoadingCorridors] = useState<boolean>(false);
   const [isLoadingQuote, setIsLoadingQuote] = useState<boolean>(false);
   const [isInitiating, setIsInitiating] = useState<boolean>(false);
-  const [isCheckingStatus, setIsCheckingStatus] = useState<boolean>(false);
+  const [isSubmittingPaid, setIsSubmittingPaid] = useState<boolean>(false);
   const [quote, setQuote] = useState<QuoteDetails | null>(null);
   const [activeFunding, setActiveFunding] = useState<ActiveFunding | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  // Mobile virtual keyboard & viewport recovery effect
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const resetViewport = () => {
+      if (typeof window !== 'undefined') {
+        if (window.scrollY !== 0 || document.documentElement.scrollTop !== 0) {
+          window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+        }
+        // Clear any stale inline styles that might have been applied to drawer DOM elements
+        const drawerElements = document.querySelectorAll<HTMLElement>(
+          '[data-vaul-drawer], [data-slot="drawer-content"]'
+        );
+        drawerElements.forEach((el) => {
+          el.style.removeProperty('bottom');
+          el.style.removeProperty('height');
+          el.style.removeProperty('transform');
+        });
+      }
+    };
+
+    const handleFocusOut = (e: FocusEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) {
+        setTimeout(resetViewport, 120);
+      }
+    };
+
+    const handleVisualViewportResize = () => {
+      if (window.visualViewport && window.visualViewport.height >= window.innerHeight - 60) {
+        resetViewport();
+      }
+    };
+
+    document.addEventListener('focusout', handleFocusOut);
+    window.visualViewport?.addEventListener('resize', handleVisualViewportResize);
+
+    return () => {
+      document.removeEventListener('focusout', handleFocusOut);
+      window.visualViewport?.removeEventListener('resize', handleVisualViewportResize);
+      resetViewport();
+    };
+  }, [isOpen, step]);
 
   // Crypto / Solana state
   const [solanaInstructions, setSolanaInstructions] = useState<{
@@ -265,16 +308,53 @@ export function AddFundsModal({
     paymentCapabilities?.onramp?.supported !== false &&
     (!corridors.length || !!currentCorridor);
 
-  const copyToClipboard = (text: string, fieldName: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedField(fieldName);
-    toast.success(`${fieldName} copied to clipboard`);
-    setTimeout(() => setCopiedField(null), 2500);
+  const handleModalClose = () => {
+    if (typeof window !== 'undefined') {
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    }
+    setErrorMessage(null);
+    setSolanaError(null);
+    setSolanaVerifyResult(null);
+    onClose();
+  };
+
+  const copyToClipboard = async (text: string, fieldName: string) => {
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.position = 'fixed';
+        textArea.style.opacity = '0';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
+      setCopiedField(fieldName);
+      toast.success(`${fieldName} copied to clipboard`);
+      setTimeout(() => setCopiedField(null), 2500);
+    } catch (err) {
+      console.error('Clipboard copy failed:', err);
+      toast.error(`Could not copy ${fieldName}. Please copy manually.`);
+    }
   };
 
   // Step 1 -> Step 2: Get quote on Continue
   const handleFetchQuote = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    }
+
     const parsedAmount = parseFloat(amount);
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
       setErrorMessage('Please enter a valid deposit amount greater than 0');
@@ -310,6 +390,13 @@ export function AddFundsModal({
 
   // Step 2 -> Step 3: Initiate funding on Continue
   const handleInitiateFunding = async () => {
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    }
+
     const parsedAmount = parseFloat(amount);
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
       setErrorMessage('Please enter a valid deposit amount');
@@ -342,32 +429,24 @@ export function AddFundsModal({
     }
   };
 
-  // Check live payment status
-  const handleCheckStatus = async () => {
-    if (!activeFunding?.reference) return;
+  // Primary action for bank instructions: I Have Paid
+  const handleIHavePaid = () => {
+    if (isSubmittingPaid) return;
+    setIsSubmittingPaid(true);
 
-    setIsCheckingStatus(true);
-    try {
-      const res = await walletService.getFundingStatus(activeFunding.reference);
-      const updated = res.data?.data;
-      if (updated) {
-        setActiveFunding((prev) =>
-          prev ? { ...prev, status: updated.status, switchStatus: updated.switchStatus } : null
-        );
-        if (updated.status === 'completed') {
-          toast.success('Deposit confirmed and credited to your wallet balance!');
-          if (onSuccess) onSuccess();
-        } else if (updated.status === 'processing') {
-          toast.info('Payment received and is currently being settled to USDC.');
-        } else {
-          toast.info(`Current status: ${updated.status || 'Awaiting payment'}`);
-        }
-      }
-    } catch {
-      toast.error('Could not refresh status at this time.');
-    } finally {
-      setIsCheckingStatus(false);
+    toast.info(
+      'Payment confirmation pending. Your wallet will be credited once your deposit is confirmed.'
+    );
+
+    if (onSuccess) {
+      onSuccess();
     }
+
+    handleModalClose();
+
+    setTimeout(() => {
+      setIsSubmittingPaid(false);
+    }, 600);
   };
 
   // Verify on-chain Solana USDC transfer
@@ -415,6 +494,12 @@ export function AddFundsModal({
   // Back action navigation
   const handleBack = () => {
     setErrorMessage(null);
+    if (typeof window !== 'undefined') {
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    }
     if (step === 'bank-amount' || step === 'crypto-transfer') {
       setStep('select-method');
     } else if (step === 'bank-quote') {
@@ -433,7 +518,7 @@ export function AddFundsModal({
       case 'bank-quote':
         return 'Confirm Deposit';
       case 'bank-instructions':
-        return 'Payment Details';
+        return 'Payment Instructions';
       case 'crypto-transfer':
         return 'Transfer from Another Wallet';
       default:
@@ -501,33 +586,21 @@ export function AddFundsModal({
 
       case 'bank-instructions':
         return (
-          <div className="space-y-2">
-            <button
-              type="button"
-              onClick={handleCheckStatus}
-              disabled={isCheckingStatus}
-              className="w-full h-12 bg-[#9747FF] hover:bg-[#8535ed] text-white font-medium rounded-xl text-sm transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shadow-2xs"
-            >
-              {isCheckingStatus ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Checking Status...</span>
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="w-4 h-4" />
-                  <span>Check Deposit Status</span>
-                </>
-              )}
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="w-full h-11 bg-gray-100 hover:bg-gray-200/80 text-gray-800 font-medium rounded-xl text-sm transition-all flex items-center justify-center cursor-pointer"
-            >
-              Done
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={handleIHavePaid}
+            disabled={isSubmittingPaid}
+            className="w-full h-12 bg-[#9747FF] hover:bg-[#8535ed] text-white font-medium rounded-xl text-sm transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shadow-2xs"
+          >
+            {isSubmittingPaid ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Processing...</span>
+              </>
+            ) : (
+              <span>I Have Paid</span>
+            )}
+          </button>
         );
 
       case 'crypto-transfer':
@@ -550,7 +623,7 @@ export function AddFundsModal({
             </button>
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleModalClose}
               className="w-full h-11 bg-gray-100 hover:bg-gray-200/80 text-gray-800 font-medium rounded-xl text-sm transition-all flex items-center justify-center cursor-pointer"
             >
               Done
@@ -583,7 +656,7 @@ export function AddFundsModal({
         </div>
         <button
           type="button"
-          onClick={onClose}
+          onClick={handleModalClose}
           className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
           aria-label="Close"
         >
@@ -703,9 +776,13 @@ export function AddFundsModal({
                     setAmount(val);
                     setErrorMessage(null);
                   }}
+                  onBlur={() => {
+                    if (typeof window !== 'undefined') {
+                      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+                    }
+                  }}
                   placeholder="0.00"
                   className="text-4xl sm:text-5xl font-bold tracking-tight text-gray-900 bg-transparent text-center focus:outline-none w-auto max-w-[280px]"
-                  autoFocus
                 />
               </div>
               <p className="text-xs text-gray-500 mt-2">
@@ -779,84 +856,102 @@ export function AddFundsModal({
 
         {/* Step 4: Payment Instructions */}
         {step === 'bank-instructions' && activeFunding && (
-          <div className="space-y-4">
-            <div className="p-4 bg-gray-50/70 rounded-2xl border border-gray-100 text-center">
-              <p className="text-xs text-gray-500 uppercase tracking-wider font-medium">
-                Exact Amount to Pay
+          <div className="space-y-5">
+            {/* Top Caution/Payment Instructions Icon */}
+            <div className="flex justify-center pt-1 pb-0.5">
+              <div className="w-12 h-12 rounded-full bg-purple-50/80 border border-purple-100 flex items-center justify-center text-[#9747FF]">
+                <AlertCircle className="w-6 h-6" />
+              </div>
+            </div>
+
+            {/* Prominent Exact Amount & Instructions */}
+            <div className="text-center space-y-1 mb-5">
+              <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-gray-900">
+                {getCurrencySymbol(activeFunding.fiatCurrency)}
+                {activeFunding.deposit.amount.toLocaleString()}{' '}
+                <span className="text-lg sm:text-xl font-bold text-gray-500">
+                  {activeFunding.fiatCurrency}
+                </span>
+              </h3>
+              <p className="text-xs sm:text-sm text-gray-600 font-medium">
+                Send the exact amount to the account below.
               </p>
-              <p className="text-3xl font-extrabold text-gray-900 font-mono tracking-tight mt-1">
-                {activeFunding.deposit.amount.toLocaleString()} {activeFunding.fiatCurrency}
-              </p>
-              <p className="text-xs text-gray-500 mt-1">
-                Credits{' '}
-                <span className="font-semibold text-[#9747FF]">
-                  {activeFunding.quotedUsdcAmount.toFixed(4)} USDC
-                </span>{' '}
-                upon settlement
+              <p className="text-[11px] text-gray-400">
+                Settles ≈ <span className="font-semibold text-gray-600">{activeFunding.quotedUsdcAmount.toFixed(4)} USDC</span>
               </p>
             </div>
 
+            {/* Recipient Details Card */}
             {activeFunding.deposit.accountNumber && (
-              <div className="p-4 bg-white border border-gray-200/80 rounded-2xl space-y-3 shadow-2xs text-xs">
-                <div className="flex justify-between items-center py-1">
-                  <span className="text-gray-500">Bank Name</span>
-                  <span className="font-semibold text-gray-900">
+              <div className="bg-white border border-gray-100 rounded-2xl shadow-2xs divide-y divide-gray-100 overflow-hidden text-xs">
+                {/* Bank Name */}
+                <div className="flex items-center justify-between px-4 py-3.5">
+                  <span className="text-gray-400 font-medium">Bank Name</span>
+                  <span className="text-gray-900 font-semibold text-right">
                     {activeFunding.deposit.bankName || 'Partner Bank'}
                   </span>
                 </div>
 
-                <div className="flex justify-between items-center py-2 bg-gray-50 px-3 rounded-xl border border-gray-100">
-                  <div>
-                    <p className="text-[10px] text-gray-400 uppercase font-semibold">Account Number</p>
-                    <p className="font-mono text-base font-bold text-gray-900 tracking-wider">
+                {/* Account Number */}
+                <div className="flex items-center justify-between px-4 py-3.5">
+                  <span className="text-gray-400 font-medium">Account Number</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-sm font-bold text-gray-900 tracking-wider">
                       {activeFunding.deposit.accountNumber}
-                    </p>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        copyToClipboard(activeFunding.deposit.accountNumber!, 'Account Number')
+                      }
+                      className="h-7 px-2 text-xs text-[#9747FF] hover:bg-purple-50 rounded-md flex items-center gap-1 font-medium transition-colors cursor-pointer"
+                      aria-label="Copy account number"
+                    >
+                      {copiedField === 'Account Number' ? (
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      ) : (
+                        <Copy className="w-3.5 h-3.5" />
+                      )}
+                      <span>{copiedField === 'Account Number' ? 'Copied' : 'Copy'}</span>
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      copyToClipboard(activeFunding.deposit.accountNumber!, 'Account Number')
-                    }
-                    className="h-8 px-2.5 text-xs text-[#9747FF] hover:bg-purple-50 rounded-lg flex items-center gap-1 font-medium transition-colors cursor-pointer"
-                  >
-                    {copiedField === 'Account Number' ? (
-                      <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
-                    ) : (
-                      <Copy className="w-3.5 h-3.5" />
-                    )}
-                    <span>{copiedField === 'Account Number' ? 'Copied' : 'Copy'}</span>
-                  </button>
                 </div>
 
-                <div className="flex justify-between items-center py-1">
-                  <span className="text-gray-500">Account Name</span>
-                  <span className="font-semibold text-gray-900">
+                {/* Account Name */}
+                <div className="flex items-center justify-between px-4 py-3.5">
+                  <span className="text-gray-400 font-medium">Account Name</span>
+                  <span className="text-gray-900 font-semibold text-right truncate max-w-[180px] sm:max-w-[220px]">
                     {activeFunding.deposit.accountName || 'Switch Checkout'}
                   </span>
                 </div>
 
-                <div className="flex justify-between items-center py-2 bg-gray-50 px-3 rounded-xl border border-gray-100">
-                  <div className="min-w-0 pr-2">
-                    <p className="text-[10px] text-gray-400 uppercase font-semibold">
-                      Reference / Memo
-                    </p>
-                    <p className="font-mono text-xs font-semibold text-gray-800 truncate max-w-[200px]">
-                      {activeFunding.reference}
-                    </p>
+                {/* Reference / Memo */}
+                {activeFunding.reference && (
+                  <div className="flex items-center justify-between px-4 py-3.5">
+                    <span className="text-gray-400 font-medium">Reference</span>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span
+                        className="font-mono text-xs font-semibold text-gray-800 truncate max-w-[140px] sm:max-w-[180px]"
+                        title={activeFunding.reference}
+                      >
+                        {activeFunding.reference}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => copyToClipboard(activeFunding.reference, 'Reference')}
+                        className="h-7 px-2 text-xs text-[#9747FF] hover:bg-purple-50 rounded-md flex items-center gap-1 font-medium transition-colors cursor-pointer shrink-0"
+                        aria-label="Copy reference"
+                      >
+                        {copiedField === 'Reference' ? (
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                        ) : (
+                          <Copy className="w-3.5 h-3.5" />
+                        )}
+                        <span>{copiedField === 'Reference' ? 'Copied' : 'Copy'}</span>
+                      </button>
+                    </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => copyToClipboard(activeFunding.reference, 'Reference')}
-                    className="h-8 px-2.5 text-xs text-[#9747FF] hover:bg-purple-50 rounded-lg flex items-center gap-1 font-medium transition-colors cursor-pointer shrink-0"
-                  >
-                    {copiedField === 'Reference' ? (
-                      <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
-                    ) : (
-                      <Copy className="w-3.5 h-3.5" />
-                    )}
-                    <span>{copiedField === 'Reference' ? 'Copied' : 'Copy'}</span>
-                  </button>
-                </div>
+                )}
               </div>
             )}
           </div>
@@ -1022,7 +1117,11 @@ export function AddFundsModal({
   // Responsive presentation: Mobile Bottom Sheet (Drawer) vs Desktop Modal (Dialog)
   if (isMobile) {
     return (
-      <Drawer open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <Drawer
+        open={isOpen}
+        onOpenChange={(open) => !open && handleModalClose()}
+        repositionInputs={false}
+      >
         <DrawerContent className="bg-white rounded-t-3xl max-h-[90dvh] flex flex-col p-5 pb-0 border-none shadow-2xl focus:outline-none z-[150]">
           <DrawerTitle className="sr-only">Add Funds</DrawerTitle>
           <DrawerDescription className="sr-only">
@@ -1035,7 +1134,7 @@ export function AddFundsModal({
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && handleModalClose()}>
       <DialogContent
         showCloseButton={false}
         className="bg-white rounded-2xl max-h-[85vh] sm:max-w-[460px] flex flex-col p-6 pb-0 border border-gray-100 shadow-xl focus:outline-none z-[150]"
