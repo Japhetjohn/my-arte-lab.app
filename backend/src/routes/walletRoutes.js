@@ -54,27 +54,70 @@ router.get('/', protect, catchAsync(async (req, res) => {
     }
   }
 
-  // Ensure dual balance fields are aligned (authoritative source) and decimal-rounded
+  // Live Switch Provider Reconciliation
+  let switchBalanceInfo = null;
+  let isSwitchLive = false;
+  let providerStatus = 'unavailable';
+  let lastUpdated = user.updatedAt ? user.updatedAt.toISOString() : new Date().toISOString();
+
+  if (switchWallet?.switchWalletId) {
+    try {
+      switchBalanceInfo = await switchService.getWalletBalance(switchWallet.switchWalletId);
+      if (switchBalanceInfo) {
+        isSwitchLive = Boolean(switchBalanceInfo.isLive);
+        providerStatus = switchBalanceInfo.providerStatus || (isSwitchLive ? 'live' : 'unavailable');
+        if (switchBalanceInfo.retrievedAt) {
+          lastUpdated = switchBalanceInfo.retrievedAt;
+        }
+      }
+    } catch (swErr) {
+      console.warn('[Wallet] Switch balance query error on GET /:', swErr.message);
+    }
+  }
+
+  // Internal Ledger and DB balances
   const rawBalance = user.wallet?.balance !== undefined && user.wallet?.balance !== null
     ? user.wallet.balance
     : (user.balance || 0);
-  const authoritativeBalance = Math.round((Number(rawBalance) || 0) * 100) / 100;
+  const dbBalance = Math.round((Number(rawBalance) || 0) * 100) / 100;
 
   const rawPendingWithdrawal = user.wallet?.pendingWithdrawal !== undefined && user.wallet?.pendingWithdrawal !== null
     ? user.wallet.pendingWithdrawal
     : (user.pendingWithdrawal || 0);
   const pendingWithdrawal = Math.round((Number(rawPendingWithdrawal) || 0) * 100) / 100;
 
-  const availableBalance = Math.max(0, Math.round((authoritativeBalance - pendingWithdrawal) * 100) / 100);
+  let authoritativeBalance = dbBalance;
+  let availableBalance = Math.max(0, Math.round((dbBalance - pendingWithdrawal) * 100) / 100);
 
-  // Self-heal field discrepancy or floating-point noise if detected
-  if (user.balance !== authoritativeBalance || user.wallet?.balance !== authoritativeBalance) {
-    await User.findByIdAndUpdate(user._id, {
-      $set: {
-        'wallet.balance': authoritativeBalance,
-        'balance': authoritativeBalance
-      }
-    });
+  // Accounting Rule: Available balance = reconciled Switch balance - applicable escrow/reserved funds - valid holds
+  // NEVER subtract holds twice!
+  if (isSwitchLive && typeof switchBalanceInfo?.balance === 'number') {
+    const liveSwitchBalance = Math.round(Number(switchBalanceInfo.balance) * 100) / 100;
+    // Switch on-chain balance does not yet have escrow deducted: subtract escrow and pending withdrawals
+    availableBalance = Math.max(0, Math.round((liveSwitchBalance - escrowBalance - pendingWithdrawal) * 100) / 100);
+    authoritativeBalance = Math.max(dbBalance, liveSwitchBalance);
+
+    // If Switch balance has new funds exceeding db balance, sync DB balance
+    const expectedDbBalance = Math.max(0, Math.round((liveSwitchBalance - escrowBalance) * 100) / 100);
+    if (liveSwitchBalance > 0 && Math.abs(dbBalance - expectedDbBalance) > 0.009) {
+      await User.findByIdAndUpdate(user._id, {
+        $set: {
+          'wallet.balance': expectedDbBalance,
+          'balance': expectedDbBalance
+        }
+      });
+      authoritativeBalance = expectedDbBalance;
+    }
+  } else {
+    // If Switch is unavailable or sandbox: fall back to honest ledger balance without fabricating or zeroing
+    if (user.balance !== authoritativeBalance || user.wallet?.balance !== authoritativeBalance) {
+      await User.findByIdAndUpdate(user._id, {
+        $set: {
+          'wallet.balance': authoritativeBalance,
+          'balance': authoritativeBalance
+        }
+      });
+    }
   }
 
   const { normalizeCountryCode, getCountryName, getDefaultCurrency, getCountryPaymentCapabilities } = require('../utils/countryUtils');
@@ -99,7 +142,10 @@ router.get('/', protect, catchAsync(async (req, res) => {
         evmAddress: switchWallet?.evmAddress || null,
         switchWalletId: switchWallet?.switchWalletId || null,
         network: 'Solana',
-        asset: 'solana:usdc'
+        asset: 'solana:usdc',
+        isLive: isSwitchLive,
+        providerStatus,
+        lastUpdated
       },
       userCountry: {
         countryCode: userCountryCode,

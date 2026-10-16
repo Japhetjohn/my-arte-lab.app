@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,9 +9,11 @@ import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/contexts/AuthContext';
+import { walletService } from '@/lib/api';
 import { getImageUrl } from '@/lib/imageUrl';
 import { toast } from 'sonner';
-import { User, Bell, Shield, Moon, Globe, Smartphone, Camera, Loader2, Lock } from 'lucide-react';
+import { User, Bell, Shield, Moon, Globe, Smartphone, Camera, Loader2, Lock, Wallet, Copy, Check } from 'lucide-react';
+import { RescueTokenModal } from '@/components/wallet/RescueTokenModal';
 import {
   Dialog,
   DialogContent,
@@ -20,9 +23,85 @@ import {
 
 export function Settings() {
   const { user: currentUser, updateUser } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab');
+  const validTabs = ['profile', 'wallet', 'notifications', 'privacy', 'appearance'];
+  const [activeTab, setActiveTab] = useState(
+    tabParam && validTabs.includes(tabParam) ? tabParam : 'profile'
+  );
+
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Wallet and Token Recovery state
+  const [isRescueModalOpen, setIsRescueModalOpen] = useState(false);
+  const [walletDetails, setWalletDetails] = useState<{
+    solanaAddress: string | null;
+    evmAddress: string | null;
+    switchWalletId: string | null;
+    isLoading: boolean;
+  }>({
+    solanaAddress: null,
+    evmAddress: null,
+    switchWalletId: null,
+    isLoading: false,
+  });
+  const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (tabParam && validTabs.includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
+
+  const handleTabChange = (val: string) => {
+    setActiveTab(val);
+    setSearchParams((prev) => {
+      const newParams = new URLSearchParams(prev);
+      if (val === 'profile') {
+        newParams.delete('tab');
+      } else {
+        newParams.set('tab', val);
+      }
+      return newParams;
+    });
+  };
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadWallet = async () => {
+      try {
+        setWalletDetails((prev) => ({ ...prev, isLoading: true }));
+        const res = await walletService.getWallet();
+        const w = res.data?.data?.wallet;
+        if (isMounted && w) {
+          setWalletDetails({
+            solanaAddress: w.solanaAddress || null,
+            evmAddress: w.evmAddress || null,
+            switchWalletId: w.switchWalletId || null,
+            isLoading: false,
+          });
+        }
+      } catch {
+        if (isMounted) {
+          setWalletDetails((prev) => ({ ...prev, isLoading: false }));
+        }
+      }
+    };
+    loadWallet();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const copyToClipboard = (text: string, label: string) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    setCopiedAddress(label);
+    toast.success(`${label} copied to clipboard`);
+    setTimeout(() => setCopiedAddress(null), 2000);
+  };
 
   // Profile form state
   const [profileForm, setProfileForm] = useState({
@@ -213,9 +292,10 @@ export function Settings() {
     <div className="space-y-6 pb-20 lg:pb-8">
       <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
 
-      <Tabs defaultValue="profile" className="w-full">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="flex w-full overflow-x-auto scrollbar-hide lg:w-auto lg:inline-flex">
           <TabsTrigger value="profile" className="flex-shrink-0">Profile</TabsTrigger>
+          <TabsTrigger value="wallet" className="flex-shrink-0">Wallet</TabsTrigger>
           <TabsTrigger value="notifications" className="flex-shrink-0">Notifications</TabsTrigger>
           <TabsTrigger value="privacy" className="flex-shrink-0">Privacy</TabsTrigger>
           <TabsTrigger value="appearance" className="flex-shrink-0">Appearance</TabsTrigger>
@@ -544,6 +624,111 @@ export function Settings() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Wallet & Token Recovery Settings */}
+        <TabsContent value="wallet" className="space-y-4 mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Wallet className="w-5 h-5 text-[#9747FF]" />
+                Wallet & Token Recovery
+              </CardTitle>
+              <CardDescription>
+                View your deposit addresses and recover unsupported tokens sent to your wallet
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Deposit Addresses */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-gray-900">Your Deposit Addresses</h3>
+                <p className="text-xs text-gray-500">
+                  These non-custodial deposit addresses are assigned to your MyArteLab account for USDC & USDT deposits.
+                </p>
+
+                <div className="space-y-3 pt-1">
+                  {/* Solana Address */}
+                  <div className="p-3.5 bg-gray-50/80 border border-gray-200/80 rounded-xl space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-semibold text-gray-700">Solana Deposit Address (USDC / USDT)</span>
+                      {walletDetails.solanaAddress && (
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard(walletDetails.solanaAddress!, 'Solana Address')}
+                          className="inline-flex items-center gap-1 text-[#9747FF] hover:text-[#8534f0] font-medium transition-colors cursor-pointer"
+                        >
+                          {copiedAddress === 'Solana Address' ? (
+                            <>
+                              <Check className="w-3.5 h-3.5 text-emerald-600" />
+                              <span className="text-emerald-600">Copied</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3.5 h-3.5" />
+                              <span>Copy</span>
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </div>
+                    <p className="font-mono text-xs text-gray-600 break-all select-all">
+                      {walletDetails.solanaAddress || (walletDetails.isLoading ? 'Loading address...' : 'Generating address...')}
+                    </p>
+                  </div>
+
+                  {/* EVM Address (if available) */}
+                  {walletDetails.evmAddress && (
+                    <div className="p-3.5 bg-gray-50/80 border border-gray-200/80 rounded-xl space-y-1.5">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-semibold text-gray-700">EVM Address (Base / Ethereum / Polygon)</span>
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard(walletDetails.evmAddress!, 'EVM Address')}
+                          className="inline-flex items-center gap-1 text-[#9747FF] hover:text-[#8534f0] font-medium transition-colors cursor-pointer"
+                        >
+                          {copiedAddress === 'EVM Address' ? (
+                            <>
+                              <Check className="w-3.5 h-3.5 text-emerald-600" />
+                              <span className="text-emerald-600">Copied</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3.5 h-3.5" />
+                              <span>Copy</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                      <p className="font-mono text-xs text-gray-600 break-all select-all">
+                        {walletDetails.evmAddress}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Unsupported Token Recovery Section */}
+              <div className="space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl border border-gray-200 bg-gray-50/50">
+                  <div className="space-y-1">
+                    <h3 className="text-sm font-semibold text-gray-900">Unsupported Token Recovery</h3>
+                    <p className="text-xs text-gray-500 max-w-xl leading-relaxed">
+                      MyArteLab unified balances only account for USDC and USDT. If tokens on other blockchains or non-USDC assets were transferred to your deposit address, you can safely rescue and transfer them to an external wallet you control.
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    onClick={() => setIsRescueModalOpen(true)}
+                    className="bg-white hover:bg-gray-50 border border-gray-200 text-gray-900 hover:text-gray-900 shadow-2xs font-semibold text-xs px-4 h-9 shrink-0 cursor-pointer"
+                  >
+                    Recover Tokens
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
 
       {/* Change Password Dialog */}
@@ -600,6 +785,13 @@ export function Settings() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Unsupported Token Recovery Modal */}
+      <RescueTokenModal
+        isOpen={isRescueModalOpen}
+        onClose={() => setIsRescueModalOpen(false)}
+        userSolanaAddress={walletDetails.solanaAddress}
+      />
     </div>
   );
 }

@@ -10,7 +10,6 @@ import {
   RefreshCw,
   Loader2,
   AlertCircle,
-  LifeBuoy,
 } from 'lucide-react';
 import type { Transaction } from '@/types';
 import { cn } from '@/lib/utils';
@@ -22,14 +21,6 @@ interface MobileWalletProps {
   escrowBalance?: number;
   incomingEarnings?: number;
   solanaAddress?: string | null;
-  providerData?: {
-    balance: number;
-    balanceInUsd: number;
-    isLive: boolean;
-    providerStatus: string;
-    breakdown: any[];
-    retrievedAt?: string;
-  } | null;
   userCountry?: {
     countryCode: string;
     countryName: string;
@@ -46,7 +37,6 @@ interface MobileWalletProps {
   transactionsError?: string | null;
   onAddFunds: () => void;
   onWithdraw: () => void;
-  onRescueToken?: () => void;
   onRefresh?: () => void;
   onLoadMore?: () => void;
 }
@@ -57,7 +47,6 @@ export function MobileWallet({
   pendingWithdrawal = 0,
   escrowBalance = 0,
   incomingEarnings = 0,
-  providerData,
   transactions = [],
   isWalletLoading = false,
   isTransactionsLoading = false,
@@ -67,7 +56,6 @@ export function MobileWallet({
   transactionsError,
   onAddFunds,
   onWithdraw,
-  onRescueToken,
   onRefresh,
   onLoadMore,
 }: MobileWalletProps) {
@@ -232,54 +220,21 @@ export function MobileWallet({
 
   return (
     <div className="bg-white min-h-[calc(100vh-4rem)] -mx-3 sm:-mx-4 -mt-3 sm:-mt-4 p-4 sm:p-6 pb-32 text-gray-900 selection:bg-purple-100 selection:text-purple-900">
-      {/* 1. Header: Provider status, Token Rescue action, and Refresh */}
-      <header className="flex items-center justify-between pt-1 pb-1">
-        <div>
-          {providerData && (
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-50 border border-gray-200/80 rounded-lg text-[11px] text-gray-600">
-              <span
-                className={cn(
-                  'w-1.5 h-1.5 rounded-full shrink-0',
-                  providerData.isLive ? 'bg-emerald-500' : 'bg-amber-500'
-                )}
-              />
-              <span>
-                {providerData.isLive
-                  ? `On-Chain: $${providerData.balance.toFixed(2)}`
-                  : providerData.providerStatus === 'sandbox_unsupported'
-                  ? 'Switch Sandbox'
-                  : 'Ledger Reconciled'}
-              </span>
-            </div>
-          )}
-        </div>
-
-        <div className="flex items-center gap-2">
-          {onRescueToken && (
-            <button
-              type="button"
-              onClick={onRescueToken}
-              className="h-8 px-2.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-xs font-medium text-gray-600 hover:text-gray-900 inline-flex items-center gap-1.5 transition-all cursor-pointer"
-            >
-              <LifeBuoy className="w-3.5 h-3.5 text-[#9747FF]" />
-              <span>Token Rescue</span>
-            </button>
-          )}
-
-          {onRefresh && (
-            <button
-              type="button"
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-              className="w-8 h-8 rounded-full bg-gray-50 hover:bg-gray-100 active:scale-95 text-gray-500 hover:text-gray-900 flex items-center justify-center transition-all cursor-pointer"
-              aria-label="Refresh wallet"
-              title="Refresh wallet"
-            >
-              <RefreshCw className={cn('w-3.5 h-3.5', isRefreshing && 'animate-spin text-[#9747FF]')} />
-            </button>
-          )}
-        </div>
-      </header>
+      {/* 1. Header: Quick Actions (Refresh) */}
+      {onRefresh && (
+        <header className="flex items-center justify-end pt-1 pb-1">
+          <button
+            type="button"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="w-8 h-8 rounded-full bg-gray-50 hover:bg-gray-100 active:scale-95 text-gray-500 hover:text-gray-900 flex items-center justify-center transition-all cursor-pointer"
+            aria-label="Refresh wallet"
+            title="Refresh wallet"
+          >
+            <RefreshCw className={cn('w-3.5 h-3.5', isRefreshing && 'animate-spin text-[#9747FF]')} />
+          </button>
+        </header>
+      )}
 
       {/* 2. Available Balance Section */}
       <section className="text-center pt-2 pb-2">
