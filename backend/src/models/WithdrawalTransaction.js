@@ -156,6 +156,7 @@ const withdrawalTransactionSchema = new mongoose.Schema({
     enum: [
       'INITIATED',
       'AWAITING_DEPOSIT',
+      'TRANSFER_PENDING',
       'PROCESSING',
       'COMPLETED',
       'FAILED',

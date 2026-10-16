@@ -449,6 +449,330 @@ async function runTestSuite() {
     assert(0.5 < minAmount, '0.5 USDC rejected below minimum threshold');
   });
 
+  // --- SECTION 6: SWITCH DEPOSIT-TO-OFF-RAMP FUNDING FLOW ---
+  console.log('\n--- SECTION 6: Switch Deposit-to-Off-Ramp Funding Flow & Recovery ---');
+
+  await itAsync('Initiate offramp triggers wallet transfer when deposit address is returned', async () => {
+    const mockUserId = '6983ea1691b5040eb0fb0276';
+    const mockUser = {
+      _id: mockUserId,
+      name: 'Deposit Tester',
+      email: 'deposit-tester@example.com'
+    };
+
+    const origSwFindOne = SwitchWallet.findOne;
+    const origGetWalletBalance = switchService.getWalletBalance;
+    const origGetFee = switchService.getNetworkTransferFee;
+    const origGetQuote = switchService.getOfframpQuote;
+    const origReserve = ledgerService.reserveWithdrawalBalance;
+    const origInitiate = switchService.initiateOfframp;
+    const origTransfer = switchService.transferFunds;
+    const origTxCreate = WithdrawalTransaction.create;
+    const origTxFindOne = WithdrawalTransaction.findOne;
+
+    let transferCalledWith = null;
+
+    try {
+      SwitchWallet.findOne = async () => ({
+        switchWalletId: '6acf99b9f419026f8d11bbe0',
+        solanaAddress: 'G2NKvCAfXUSjVrn63VYHoXqN8j79B3cx2nY6tG1fnjAx'
+      });
+
+      switchService.getWalletBalance = async () => ({
+        isLive: true,
+        balance: 5.0,
+        balance_in_usd: 5.0
+      });
+
+      switchService.getNetworkTransferFee = async () => 0.091;
+
+      switchService.getOfframpQuote = async () => ({
+        rate: 1350,
+        expiry: new Date(Date.now() + 600000),
+        destination: { amount: 2700, currency: 'NGN' },
+        source: { amount: 2.0, currency: 'USDC' },
+        fee: { total: 0 }
+      });
+
+      ledgerService.reserveWithdrawalBalance = async () => ({ reserved: true });
+      WithdrawalTransaction.findOne = async () => null;
+
+      let savedTx = null;
+      WithdrawalTransaction.create = async (doc) => {
+        savedTx = {
+          ...doc,
+          save: async () => {}
+        };
+        return savedTx;
+      };
+
+      // Mock Switch returning AWAITING_DEPOSIT with one-time deposit address
+      switchService.initiateOfframp = async () => ({
+        status: 'AWAITING_DEPOSIT',
+        reference: 'mock-ref-12345',
+        deposit: {
+          address: 'DevdQ1QWPYTZu9gtiffvDxHXu9pGPVuAi8dEp2Wk5KKq',
+          amount: 2.0,
+          asset: 'solana:usdc'
+        }
+      });
+
+      switchService.transferFunds = async (params) => {
+        transferCalledWith = params;
+        return { success: true, txHash: '5xTestSolanaSignature12345' };
+      };
+
+      const result = await withdrawalService.initiateWithdrawal({
+        user: mockUser,
+        amount: 2.0,
+        country: 'NG',
+        currency: 'NGN',
+        channel: 'BANK',
+        beneficiary: {
+          bank_code: '100004',
+          account_number: '1234567890',
+          holder_name: 'Deposit Tester'
+        }
+      });
+
+      assert(result.success, 'Initiation succeeded');
+      assert(transferCalledWith !== null, 'switchService.transferFunds was called');
+      assert.strictEqual(transferCalledWith.walletId, '6acf99b9f419026f8d11bbe0', 'Transferred from user Switch wallet');
+      assert.strictEqual(transferCalledWith.recipient, 'DevdQ1QWPYTZu9gtiffvDxHXu9pGPVuAi8dEp2Wk5KKq', 'Transferred to deposit address');
+      assert.strictEqual(transferCalledWith.amount, 2.0, 'Transferred correct amount');
+      assert.strictEqual(transferCalledWith.asset, 'solana:usdc', 'Asset is solana:usdc');
+      assert(savedTx.metadata.fundedAt instanceof Date, 'Metadata records fundedAt timestamp');
+      assert.strictEqual(savedTx.metadata.switchDepositAddress, 'DevdQ1QWPYTZu9gtiffvDxHXu9pGPVuAi8dEp2Wk5KKq', 'Metadata records deposit address');
+    } finally {
+      SwitchWallet.findOne = origSwFindOne;
+      switchService.getWalletBalance = origGetWalletBalance;
+      switchService.getNetworkTransferFee = origGetFee;
+      switchService.getOfframpQuote = origGetQuote;
+      ledgerService.reserveWithdrawalBalance = origReserve;
+      switchService.initiateOfframp = origInitiate;
+      switchService.transferFunds = origTransfer;
+      WithdrawalTransaction.create = origTxCreate;
+      WithdrawalTransaction.findOne = origTxFindOne;
+    }
+  });
+
+  await itAsync('Transfer failure synchronously releases reserved funds', async () => {
+    const mockUserId = '6983ea1691b5040eb0fb0276';
+    const mockUser = { _id: mockUserId, name: 'Rejection Tester' };
+
+    const origSwFindOne = SwitchWallet.findOne;
+    const origGetWalletBalance = switchService.getWalletBalance;
+    const origGetQuote = switchService.getOfframpQuote;
+    const origReserve = ledgerService.reserveWithdrawalBalance;
+    const origRelease = ledgerService.releaseWithdrawalReservation;
+    const origInitiate = switchService.initiateOfframp;
+    const origTransfer = switchService.transferFunds;
+    const origTxCreate = WithdrawalTransaction.create;
+    const origTxFindOne = WithdrawalTransaction.findOne;
+
+    let releasedAmount = 0;
+
+    try {
+      SwitchWallet.findOne = async () => ({
+        switchWalletId: '6acf99b9f419026f8d11bbe0',
+        solanaAddress: 'G2NKvCAfXUSjVrn63VYHoXqN8j79B3cx2nY6tG1fnjAx'
+      });
+      switchService.getWalletBalance = async () => ({ isLive: true, balance: 5.0 });
+      switchService.getNetworkTransferFee = async () => 0.091;
+      switchService.getOfframpQuote = async () => ({
+        rate: 1350,
+        destination: { amount: 2700, currency: 'NGN' },
+        source: { amount: 2.0, currency: 'USDC' },
+        fee: { total: 0 }
+      });
+      ledgerService.reserveWithdrawalBalance = async () => ({ reserved: true });
+      ledgerService.releaseWithdrawalReservation = async (uId, amt) => {
+        releasedAmount = amt;
+        return { released: true };
+      };
+      WithdrawalTransaction.findOne = async () => null;
+
+      let savedTx = null;
+      WithdrawalTransaction.create = async (doc) => {
+        savedTx = { ...doc, save: async () => {} };
+        return savedTx;
+      };
+
+      switchService.initiateOfframp = async () => ({
+        status: 'AWAITING_DEPOSIT',
+        deposit: { address: 'DevdQ1QWPYTZu9gtiffvDxHXu9pGPVuAi8dEp2Wk5KKq', amount: 2.0 }
+      });
+
+      // Transfer rejects (e.g. RPC node failure or insufficient fees)
+      switchService.transferFunds = async () => {
+        const err = new Error('Solana node transaction simulation failed');
+        err.status = 400;
+        throw err;
+      };
+
+      let threw = false;
+      try {
+        await withdrawalService.initiateWithdrawal({
+          user: mockUser,
+          amount: 2.0,
+          country: 'NG',
+          currency: 'NGN',
+          channel: 'BANK',
+          beneficiary: { bank_code: '100004', account_number: '1234567890' }
+        });
+      } catch (err) {
+        threw = true;
+        assert.strictEqual(err.message, 'Solana node transaction simulation failed');
+      }
+
+      assert(threw, 'Should throw transfer failure');
+      assert.strictEqual(releasedAmount, 2.0, 'Reservation released immediately on transfer failure');
+      assert.strictEqual(savedTx.status, 'failed', 'Transaction marked failed');
+      assert.strictEqual(savedTx.failureReason, 'Funding transfer failed: Solana node transaction simulation failed');
+      assert.strictEqual(savedTx.reservation.isReserved, false, 'Reservation marked unreserved');
+    } finally {
+      SwitchWallet.findOne = origSwFindOne;
+      switchService.getWalletBalance = origGetWalletBalance;
+      switchService.getOfframpQuote = origGetQuote;
+      ledgerService.reserveWithdrawalBalance = origReserve;
+      ledgerService.releaseWithdrawalReservation = origRelease;
+      switchService.initiateOfframp = origInitiate;
+      switchService.transferFunds = origTransfer;
+      WithdrawalTransaction.create = origTxCreate;
+      WithdrawalTransaction.findOne = origTxFindOne;
+    }
+  });
+
+  await itAsync('Transfer timeout safely retains reservation in TRANSFER_PENDING', async () => {
+    const mockUserId = '6983ea1691b5040eb0fb0276';
+    const mockUser = { _id: mockUserId, name: 'Timeout Tester' };
+
+    const origSwFindOne = SwitchWallet.findOne;
+    const origGetWalletBalance = switchService.getWalletBalance;
+    const origGetQuote = switchService.getOfframpQuote;
+    const origReserve = ledgerService.reserveWithdrawalBalance;
+    const origRelease = ledgerService.releaseWithdrawalReservation;
+    const origInitiate = switchService.initiateOfframp;
+    const origTransfer = switchService.transferFunds;
+    const origTxCreate = WithdrawalTransaction.create;
+    const origTxFindOne = WithdrawalTransaction.findOne;
+
+    let releaseCalled = false;
+
+    try {
+      SwitchWallet.findOne = async () => ({
+        switchWalletId: '6acf99b9f419026f8d11bbe0',
+        solanaAddress: 'G2NKvCAfXUSjVrn63VYHoXqN8j79B3cx2nY6tG1fnjAx'
+      });
+      switchService.getWalletBalance = async () => ({ isLive: true, balance: 5.0 });
+      switchService.getNetworkTransferFee = async () => 0.091;
+      switchService.getOfframpQuote = async () => ({
+        rate: 1350,
+        destination: { amount: 2700, currency: 'NGN' },
+        source: { amount: 2.0, currency: 'USDC' },
+        fee: { total: 0 }
+      });
+      ledgerService.reserveWithdrawalBalance = async () => ({ reserved: true });
+      ledgerService.releaseWithdrawalReservation = async () => {
+        releaseCalled = true;
+      };
+      WithdrawalTransaction.findOne = async () => null;
+
+      let savedTx = null;
+      WithdrawalTransaction.create = async (doc) => {
+        savedTx = { ...doc, save: async () => {} };
+        return savedTx;
+      };
+
+      switchService.initiateOfframp = async () => ({
+        status: 'AWAITING_DEPOSIT',
+        deposit: { address: 'DevdQ1QWPYTZu9gtiffvDxHXu9pGPVuAi8dEp2Wk5KKq', amount: 2.0 }
+      });
+
+      // Transfer times out
+      switchService.transferFunds = async () => {
+        const err = new Error('The operation was aborted due to timeout');
+        err.name = 'AbortError';
+        throw err;
+      };
+
+      const res = await withdrawalService.initiateWithdrawal({
+        user: mockUser,
+        amount: 2.0,
+        country: 'NG',
+        currency: 'NGN',
+        channel: 'BANK',
+        beneficiary: { bank_code: '100004', account_number: '1234567890' }
+      });
+
+      assert(res.success, 'Returns success response indicating pending settlement');
+      assert(!releaseCalled, 'Reservation was NOT released during timeout');
+      assert.strictEqual(savedTx.status, 'processing', 'Status remains processing');
+      assert.strictEqual(savedTx.switchStatus, 'TRANSFER_PENDING', 'SwitchStatus marked TRANSFER_PENDING');
+    } finally {
+      SwitchWallet.findOne = origSwFindOne;
+      switchService.getWalletBalance = origGetWalletBalance;
+      switchService.getOfframpQuote = origGetQuote;
+      ledgerService.reserveWithdrawalBalance = origReserve;
+      ledgerService.releaseWithdrawalReservation = origRelease;
+      switchService.initiateOfframp = origInitiate;
+      switchService.transferFunds = origTransfer;
+      WithdrawalTransaction.create = origTxCreate;
+      WithdrawalTransaction.findOne = origTxFindOne;
+    }
+  });
+
+  await itAsync('getWithdrawalStatus auto-releases reservation when AWAITING_DEPOSIT is older than 30m without funding', async () => {
+    const origFindOne = WithdrawalTransaction.findOne;
+    const origFindById = WithdrawalTransaction.findById;
+    const origGetPaymentStatus = switchService.getPaymentStatus;
+    const origHandleFailed = ledgerService.handleFailedOrReversedWithdrawal;
+
+    let handleFailedCalledWith = null;
+
+    try {
+      // 45 minutes old transaction in AWAITING_DEPOSIT
+      const staleTx = {
+        _id: '6ad29f5f3ef64167cebbfddc',
+        reference: 'a7173c9c-04e1-4247-9f77-4acc87a6bb4f',
+        status: 'processing',
+        switchStatus: 'AWAITING_DEPOSIT',
+        createdAt: new Date(Date.now() - 45 * 60 * 1000),
+        metadata: {},
+        amountUsdc: 3.53,
+        user: '6983ea1691b5040eb0fb0276',
+        reservation: { isReserved: true },
+        save: async () => {}
+      };
+
+      WithdrawalTransaction.findOne = async () => staleTx;
+      WithdrawalTransaction.findById = async () => staleTx;
+
+      switchService.getPaymentStatus = async () => ({
+        status: 'AWAITING_DEPOSIT',
+        reference: 'a7173c9c-04e1-4247-9f77-4acc87a6bb4f'
+      });
+
+      ledgerService.handleFailedOrReversedWithdrawal = async (tx, status, reason) => {
+        handleFailedCalledWith = { tx, status, reason };
+        tx.status = 'failed';
+        tx.switchStatus = status;
+        tx.reservation.isReserved = false;
+        return { handled: true, released: true };
+      };
+
+      const res = await withdrawalService.getWithdrawalStatus('a7173c9c-04e1-4247-9f77-4acc87a6bb4f', '6983ea1691b5040eb0fb0276');
+      assert(handleFailedCalledWith !== null, 'handleFailedOrReversedWithdrawal was called');
+      assert.strictEqual(handleFailedCalledWith.status, 'EXPIRED', 'Status passed was EXPIRED');
+      assert(handleFailedCalledWith.reason.includes('expired (30m)'), 'Reason explains 30m window expiration');
+    } finally {
+      WithdrawalTransaction.findOne = origFindOne;
+      WithdrawalTransaction.findById = origFindById;
+      switchService.getPaymentStatus = origGetPaymentStatus;
+      ledgerService.handleFailedOrReversedWithdrawal = origHandleFailed;
+    }
+  });
+
   console.log('\n============================================================');
   console.log(`🎉 ALL TESTS COMPLETED: ${passedTests}/${totalTests} PASSED`);
   console.log('============================================================\n');
@@ -458,3 +782,4 @@ runTestSuite().catch((err) => {
   console.error('Fatal test runner failure:', err);
   process.exit(1);
 });
+

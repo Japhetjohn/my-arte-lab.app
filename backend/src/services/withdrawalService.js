@@ -246,6 +246,67 @@ class WithdrawalService {
         developerRecipient: devFeeRecipient
       });
 
+      // 8. If Switch generated a one-time deposit address for off-ramp funding, execute the transfer from user's Switch wallet
+      if (switchInitiateResult.deposit?.address && switchWallet?.switchWalletId) {
+        const depositAddress = switchInitiateResult.deposit.address;
+        const depositAmount = Number(switchInitiateResult.deposit.amount) || numAmount;
+
+        // Idempotency check: Ensure this withdrawal has not already executed funding
+        if (!withdrawalTx.metadata?.fundedAt && !withdrawalTx.metadata?.transferResult) {
+          try {
+            console.log(`[WithdrawalService] Funding Switch offramp ${reference}: transferring ${depositAmount} USDC from wallet ${switchWallet.switchWalletId} to ${depositAddress}`);
+            const transferRes = await switchService.transferFunds({
+              walletId: switchWallet.switchWalletId,
+              asset: 'solana:usdc',
+              recipient: depositAddress,
+              amount: depositAmount
+            });
+            console.log(`[WithdrawalService] Funding transfer submitted for ${reference}:`, transferRes);
+
+            if (!withdrawalTx.metadata) withdrawalTx.metadata = {};
+            withdrawalTx.metadata.transferResult = transferRes;
+            withdrawalTx.metadata.switchDepositAddress = depositAddress;
+            withdrawalTx.metadata.switchDepositAmount = depositAmount;
+            withdrawalTx.metadata.fundedAt = new Date();
+          } catch (transferErr) {
+            const isTimeout = transferErr.name === 'AbortError' || 
+              transferErr.code === 'UND_ERR_CONNECT_TIMEOUT' || 
+              transferErr.message?.includes('timed out');
+
+            if (isTimeout) {
+              console.warn(`[WithdrawalService] Switch transfer timed out for ${reference}. Keeping reservation locked for confirmation.`);
+              withdrawalTx.status = 'processing';
+              withdrawalTx.switchStatus = 'TRANSFER_PENDING';
+              withdrawalTx.failureReason = 'Transfer request timed out; awaiting blockchain confirmation';
+              if (!withdrawalTx.metadata) withdrawalTx.metadata = {};
+              withdrawalTx.metadata.switchDepositAddress = depositAddress;
+              await withdrawalTx.save();
+
+              return {
+                success: true,
+                message: 'Withdrawal submitted. Transfer confirmation is pending blockchain settlement.',
+                data: this._formatWithdrawalResponse(withdrawalTx)
+              };
+            }
+
+            console.error(`[WithdrawalService] Switch transfer rejected for ${reference}:`, transferErr.message);
+            await ledgerService.releaseWithdrawalReservation(userId, numAmount);
+
+            withdrawalTx.status = 'failed';
+            withdrawalTx.switchStatus = 'FAILED';
+            withdrawalTx.failureReason = `Funding transfer failed: ${transferErr.message}`;
+            withdrawalTx.reservation.isReserved = false;
+            withdrawalTx.reservation.releasedAt = new Date();
+            await withdrawalTx.save();
+
+            transferErr.status = transferErr.status || transferErr.statusCode || 400;
+            transferErr.statusCode = transferErr.statusCode || transferErr.status || 400;
+            transferErr.isOperational = true;
+            throw transferErr;
+          }
+        }
+      }
+
       // Update status to processing on successful call
       withdrawalTx.status = 'processing';
       withdrawalTx.switchStatus = switchInitiateResult.status || 'PROCESSING';
@@ -261,6 +322,10 @@ class WithdrawalService {
         data: this._formatWithdrawalResponse(withdrawalTx)
       };
     } catch (apiErr) {
+      if (withdrawalTx.status === 'failed') {
+        throw apiErr;
+      }
+
       const isTimeout = apiErr.name === 'AbortError' || 
         apiErr.code === 'UND_ERR_CONNECT_TIMEOUT' || 
         apiErr.message?.includes('timed out');
@@ -334,6 +399,17 @@ class WithdrawalService {
           } else if (switchStatus === 'PROCESSING') {
             withdrawalTx.status = 'processing';
             await withdrawalTx.save();
+          }
+        } else if (switchStatus === 'AWAITING_DEPOSIT') {
+          // If the deposit window has expired without funding (>30 minutes old), release reservation
+          const ageMs = Date.now() - new Date(withdrawalTx.createdAt).getTime();
+          if (ageMs > 30 * 60 * 1000 && !withdrawalTx.metadata?.fundedAt) {
+            console.log(`[WithdrawalService] Withdrawal ${reference} expired in AWAITING_DEPOSIT without funding. Releasing reservation.`);
+            await ledgerService.handleFailedOrReversedWithdrawal(
+              withdrawalTx,
+              'EXPIRED',
+              'Switch off-ramp deposit window expired (30m) without wallet transfer'
+            );
           }
         }
       } catch (pollErr) {
