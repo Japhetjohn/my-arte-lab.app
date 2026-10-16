@@ -182,7 +182,7 @@ async function runTestSuite() {
   const SwitchWallet = require('../src/models/SwitchWallet');
   const WithdrawalTransaction = require('../src/models/WithdrawalTransaction');
 
-  await itAsync('Pre-flight balance check rejects withdrawal before calling Switch if amount > live balance', async () => {
+  await itAsync('Pre-flight balance check rejects withdrawal before calling Switch if amount + network fee > live balance', async () => {
     const testUserId = '6983ea1691b5040eb0fb0276';
     const mockUser = {
       _id: testUserId,
@@ -193,6 +193,7 @@ async function runTestSuite() {
     // Mock SwitchWallet.findOne
     const origSwFindOne = SwitchWallet.findOne;
     const origGetWalletBalance = switchService.getWalletBalance;
+    const origGetFee = switchService.getNetworkTransferFee;
     const origTxFindOne = WithdrawalTransaction.findOne;
 
     try {
@@ -203,20 +204,21 @@ async function runTestSuite() {
         solanaAddress: 'G2NKvCAfXUSjVrn63VYHoXqN8j79B3cx2nY6tG1fnjAx'
       });
 
-      // Mock live balance as 3.627485 USDC
+      // Mock live balance as 3.627485 USDC and network fee as 0.091196 USDC
       switchService.getWalletBalance = async () => ({
         balance: 3.627485,
         isLive: true,
         providerStatus: 'live'
       });
+      switchService.getNetworkTransferFee = async () => 0.091196;
 
-      // Attempt to withdraw 3.63 USDC (which exceeds 3.627485)
+      // 1. Attempt to withdraw 3.62 USDC (exceeds spendable balance once network fee 0.091196 is added: 3.62 + 0.091196 = 3.711196 > 3.627485)
       let threw = false;
       let caughtErr = null;
       try {
         await withdrawalService.initiateWithdrawal({
           user: mockUser,
-          amount: 3.63,
+          amount: 3.62,
           country: 'NG',
           currency: 'NGN',
           channel: 'BANK',
@@ -231,15 +233,96 @@ async function runTestSuite() {
         caughtErr = err;
       }
 
-      assert(threw, 'Should have thrown error on pre-flight balance check');
+      assert(threw, 'Should have thrown error on pre-flight balance and fee check');
       assert.strictEqual(caughtErr.status, 400, 'Error status should be 400');
       assert.strictEqual(caughtErr.statusCode, 400, 'Error statusCode should be 400');
       assert(caughtErr.message.includes('Insufficient wallet balance on Switch'), 'Error message is clear and actionable');
-      assert(caughtErr.message.includes('3.62 USDC'), 'Informs user of exact max allowed floored balance');
+      assert(caughtErr.message.includes('3.53 USDC'), 'Informs user of exact max allowed spendable balance ($3.53 USDC)');
+      assert(caughtErr.message.includes('network transfer fees'), 'Mentions network transfer fee');
     } finally {
       SwitchWallet.findOne = origSwFindOne;
       switchService.getWalletBalance = origGetWalletBalance;
+      switchService.getNetworkTransferFee = origGetFee;
       WithdrawalTransaction.findOne = origTxFindOne;
+    }
+  });
+
+  await itAsync('Pre-flight balance check accepts withdrawal when amount <= maxSpendable (net of network fee)', async () => {
+    const testUserId = '6983ea1691b5040eb0fb0276';
+    const mockUser = {
+      _id: testUserId,
+      name: 'Tester User',
+      countryCode: 'NG'
+    };
+
+    const origSwFindOne = SwitchWallet.findOne;
+    const origGetWalletBalance = switchService.getWalletBalance;
+    const origGetFee = switchService.getNetworkTransferFee;
+    const origTxFindOne = WithdrawalTransaction.findOne;
+    const origGetQuote = switchService.getOfframpQuote;
+    const origReserve = ledgerService.reserveWithdrawalBalance;
+    const origInitiate = switchService.initiateOfframp;
+    const origTxCreate = WithdrawalTransaction.create;
+
+    try {
+      WithdrawalTransaction.findOne = async () => null;
+      SwitchWallet.findOne = async () => ({
+        user: testUserId,
+        switchWalletId: '6acf99b9f419026f8d11bbe0',
+        solanaAddress: 'G2NKvCAfXUSjVrn63VYHoXqN8j79B3cx2nY6tG1fnjAx'
+      });
+
+      switchService.getWalletBalance = async () => ({
+        balance: 3.627485,
+        isLive: true,
+        providerStatus: 'live'
+      });
+      switchService.getNetworkTransferFee = async () => 0.091196;
+
+      switchService.getOfframpQuote = async () => ({
+        rate: 1340,
+        destination: { amount: 4730.2 },
+        source: { amount: 3.53 },
+        fee: { total: 0 }
+      });
+
+      ledgerService.reserveWithdrawalBalance = async () => ({ reserved: true, reservedAmount: 3.53 });
+      WithdrawalTransaction.create = async (doc) => ({
+        ...doc,
+        save: async () => {}
+      });
+
+      let switchCalledWith = null;
+      switchService.initiateOfframp = async (params) => {
+        switchCalledWith = params;
+        return { status: 'PROCESSING', reference: 'ref-switch-123' };
+      };
+
+      // Attempt to withdraw exactly 3.53 USDC (spendable balance)
+      const res = await withdrawalService.initiateWithdrawal({
+        user: mockUser,
+        amount: 3.53,
+        country: 'NG',
+        currency: 'NGN',
+        channel: 'BANK',
+        beneficiary: {
+          bank_code: '100004',
+          account_number: '7031632438',
+          holder_name: 'Tester User'
+        }
+      });
+
+      assert(res.success === true, 'Withdrawal initiated successfully');
+      assert.strictEqual(switchCalledWith.amount, 3.53, 'Switch called with 3.53 USDC');
+    } finally {
+      SwitchWallet.findOne = origSwFindOne;
+      switchService.getWalletBalance = origGetWalletBalance;
+      switchService.getNetworkTransferFee = origGetFee;
+      WithdrawalTransaction.findOne = origTxFindOne;
+      switchService.getOfframpQuote = origGetQuote;
+      ledgerService.reserveWithdrawalBalance = origReserve;
+      switchService.initiateOfframp = origInitiate;
+      WithdrawalTransaction.create = origTxCreate;
     }
   });
 

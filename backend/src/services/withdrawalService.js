@@ -123,15 +123,25 @@ class WithdrawalService {
       switchWallet = await switchService.getOrCreateUserWallet(userId, userName);
     }
 
-    // Pre-flight check: Verify live Switch wallet balance before reserving or initiating
+    // Pre-flight check: Verify live Switch wallet balance and network transfer fee before reserving or initiating
     if (switchWallet?.switchWalletId) {
       try {
         const switchBalanceInfo = await switchService.getWalletBalance(switchWallet.switchWalletId);
         if (switchBalanceInfo?.isLive && typeof switchBalanceInfo.balance === 'number') {
           const liveBal = switchBalanceInfo.balance;
-          if (numAmount > liveBal) {
-            const maxAllowed = Math.floor(liveBal * 100) / 100;
-            const balErr = new Error(`Insufficient wallet balance on Switch. Your live available balance is $${maxAllowed.toFixed(2)} USDC.`);
+          const estimatedFee = await switchService.getNetworkTransferFee({
+            walletId: switchWallet.switchWalletId,
+            amount: numAmount,
+            asset: 'solana:usdc'
+          });
+
+          const maxSpendable = Math.max(0, Math.floor((liveBal - estimatedFee) * 100) / 100);
+          if (numAmount > maxSpendable || (numAmount + estimatedFee > liveBal)) {
+            const balErr = new Error(
+              `Insufficient wallet balance on Switch to cover withdrawal and network transfer fee. ` +
+              `Switch requires ~$${estimatedFee.toFixed(2)} USDC for network transfer fees. ` +
+              `Your maximum spendable withdrawal amount is $${maxSpendable.toFixed(2)} USDC.`
+            );
             balErr.status = 400;
             balErr.statusCode = 400;
             balErr.isOperational = true;

@@ -88,16 +88,34 @@ router.get('/', protect, catchAsync(async (req, res) => {
 
   let authoritativeBalance = dbBalance;
   let availableBalance = Math.max(0, Math.floor((dbBalance - pendingWithdrawal) * 100) / 100);
+  let estimatedNetworkFee = 0;
 
-  // Accounting Rule: Available balance = reconciled Switch balance - applicable escrow/reserved funds - valid holds
+  // Accounting Rule: Available balance = reconciled Switch balance - applicable escrow/reserved funds - valid holds - estimated network transfer fee
   // NEVER subtract holds twice!
   // CRITICAL: NEVER round UP live crypto balances (e.g. Math.round(3.627485*100)/100 -> 3.63).
   // Rounding up creates phantom fractions of a cent that do not exist on-chain and cause Switch offramp to reject with Insufficient Balance.
   // ALWAYS floor to 2 decimal places to ensure safe, spendable available balance.
   if (isSwitchLive && typeof switchBalanceInfo?.balance === 'number') {
-    const liveSwitchBalance = Math.floor(Number(switchBalanceInfo.balance) * 100) / 100;
-    // Switch on-chain balance does not yet have escrow deducted: subtract escrow and pending withdrawals
-    availableBalance = Math.max(0, Math.floor((liveSwitchBalance - escrowBalance - pendingWithdrawal) * 100) / 100);
+    const rawLiveBalance = Number(switchBalanceInfo.balance) || 0;
+    const liveSwitchBalance = Math.floor(rawLiveBalance * 100) / 100;
+
+    // Estimate network transfer fee for on-chain wallet operations
+    try {
+      estimatedNetworkFee = await switchService.getNetworkTransferFee({
+        walletId: switchWallet.switchWalletId,
+        amount: 1,
+        asset: 'solana:usdc'
+      });
+    } catch (feeErr) {
+      estimatedNetworkFee = 0.095;
+    }
+
+    // Switch on-chain balance does not yet have escrow or network fee deducted: subtract escrow, network fee, and pending withdrawals
+    // CRITICAL: Available balance is the true spendable balance net of provider transfer fees.
+    availableBalance = Math.max(
+      0,
+      Math.floor((rawLiveBalance - estimatedNetworkFee - escrowBalance - pendingWithdrawal) * 100) / 100
+    );
     authoritativeBalance = liveSwitchBalance;
 
     // Keep DB balance synchronized with floored live Switch balance
@@ -138,6 +156,7 @@ router.get('/', protect, catchAsync(async (req, res) => {
         pendingBalance: user.pendingBalance || user.wallet?.pendingBalance || 0,
         pendingWithdrawal,
         availableBalance,
+        estimatedNetworkFee,
         escrowBalance,
         incomingEarnings,
         currency: user.currency || 'USDC',
@@ -503,6 +522,31 @@ router.post('/withdraw/quote', protect, catchAsync(async (req, res) => {
   // Find user's Switch wallet address if available
   const switchWallet = await SwitchWallet.findOne({ user: req.user._id });
 
+  let networkTransferFee = 0;
+  if (switchWallet?.switchWalletId) {
+    try {
+      networkTransferFee = await switchService.getNetworkTransferFee({
+        walletId: switchWallet.switchWalletId,
+        amount: numAmount,
+        asset: 'solana:usdc'
+      });
+
+      const switchBalanceInfo = await switchService.getWalletBalance(switchWallet.switchWalletId);
+      if (switchBalanceInfo?.isLive && typeof switchBalanceInfo.balance === 'number') {
+        const liveBal = switchBalanceInfo.balance;
+        const maxSpendable = Math.max(0, Math.floor((liveBal - networkTransferFee) * 100) / 100);
+        if (numAmount > maxSpendable || (numAmount + networkTransferFee > liveBal)) {
+          return res.status(400).json({
+            success: false,
+            error: `Insufficient wallet balance on Switch to cover withdrawal and network transfer fee. Switch requires ~$${networkTransferFee.toFixed(2)} USDC for network transfer fees. Your maximum spendable withdrawal amount is $${maxSpendable.toFixed(2)} USDC.`
+          });
+        }
+      }
+    } catch (checkErr) {
+      if (checkErr.status === 400 || checkErr.statusCode === 400) throw checkErr;
+    }
+  }
+
   const devFeeRecipient = process.env.FEE_COLLECTION_WALLET || process.env.PLATFORM_WALLET_ADDRESS;
   try {
     const quote = await switchService.getOfframpQuote({
@@ -515,6 +559,14 @@ router.post('/withdraw/quote', protect, catchAsync(async (req, res) => {
       developerFee: 1,
       developerRecipient: devFeeRecipient
     });
+
+    if (networkTransferFee > 0) {
+      quote.networkFee = {
+        amount: networkTransferFee,
+        currency: 'USDC',
+        asset: 'solana:usdc'
+      };
+    }
 
     res.json({
       success: true,
@@ -1318,6 +1370,33 @@ router.post('/withdraw/solana', protect, catchAsync(async (req, res) => {
     });
   }
 
+  const switchWallet = await SwitchWallet.findOne({ user: req.user._id });
+  let networkTransferFee = 0;
+
+  if (switchWallet?.switchWalletId) {
+    try {
+      const switchBalanceInfo = await switchService.getWalletBalance(switchWallet.switchWalletId);
+      if (switchBalanceInfo?.isLive && typeof switchBalanceInfo.balance === 'number') {
+        const liveBal = switchBalanceInfo.balance;
+        networkTransferFee = await switchService.getNetworkTransferFee({
+          walletId: switchWallet.switchWalletId,
+          amount: numAmount,
+          asset: 'solana:usdc'
+        });
+
+        const maxSpendable = Math.max(0, Math.floor((liveBal - networkTransferFee) * 100) / 100);
+        if (numAmount > maxSpendable || (numAmount + networkTransferFee > liveBal)) {
+          return res.status(400).json({
+            success: false,
+            error: `Insufficient wallet balance on Switch to cover transfer and network fee. Switch requires ~$${networkTransferFee.toFixed(2)} USDC for network transfer fees. Your maximum spendable withdrawal amount is $${maxSpendable.toFixed(2)} USDC.`
+          });
+        }
+      }
+    } catch (checkErr) {
+      if (checkErr.status === 400 || checkErr.statusCode === 400) throw checkErr;
+    }
+  }
+
   try {
     // 1. Atomically reserve balance (throws if availableBalance < numAmount)
     await ledgerService.reserveWithdrawalBalance(req.user._id, numAmount);
@@ -1328,7 +1407,27 @@ router.post('/withdraw/solana', protect, catchAsync(async (req, res) => {
     const transactionId = `TXN-SOL-WTH-${timestamp}-${random}`;
     const reference = crypto.randomUUID();
 
-    // 3. Atomically finalize balance debit and clear pending reservation
+    // 3. Execute on-chain transfer via Switch if active
+    let transferResult = null;
+    if (switchWallet?.switchWalletId) {
+      try {
+        transferResult = await switchService.transferFunds({
+          walletId: switchWallet.switchWalletId,
+          asset: 'solana:usdc',
+          recipient: cleanAddress,
+          amount: numAmount
+        });
+      } catch (transferErr) {
+        // Safely release reserved balance upon on-chain rejection
+        await ledgerService.releaseWithdrawalReservation(req.user._id, numAmount);
+        transferErr.status = transferErr.status || transferErr.statusCode || 400;
+        transferErr.statusCode = transferErr.status;
+        transferErr.isOperational = true;
+        throw transferErr;
+      }
+    }
+
+    // 4. Atomically finalize balance debit and clear pending reservation
     const updatedUser = await User.findOneAndUpdate(
       {
         _id: req.user._id,
@@ -1354,7 +1453,10 @@ router.post('/withdraw/solana', protect, catchAsync(async (req, res) => {
       { new: true }
     );
 
-    // 4. Create authoritative completed transaction record in ledger
+    const txHash = transferResult?.transaction_hash || transferResult?.data?.transaction_hash || null;
+    const explorerUrl = transferResult?.explorer_url || transferResult?.data?.explorer_url || null;
+
+    // 5. Create authoritative completed transaction record in ledger
     const ledgerTx = await Transaction.create({
       transactionId,
       user: req.user._id,
@@ -1369,10 +1471,13 @@ router.post('/withdraw/solana', protect, catchAsync(async (req, res) => {
       blockchainNetwork: 'SOLANA',
       toAddress: cleanAddress,
       metadata: {
-        provider: 'solana_direct',
+        provider: 'switch_wallet',
         destinationAddress: cleanAddress,
         network: 'SOLANA',
-        token: 'USDC'
+        token: 'USDC',
+        transactionHash: txHash,
+        explorerUrl,
+        estimatedNetworkFee: networkTransferFee
       },
       completedAt: new Date()
     });
@@ -1390,6 +1495,8 @@ router.post('/withdraw/solana', protect, catchAsync(async (req, res) => {
         toAddress: cleanAddress,
         status: 'completed',
         balance: finalBal,
+        transactionHash: txHash,
+        explorerUrl,
         ledgerTx
       }
     });

@@ -407,6 +407,58 @@ class SwitchService {
   }
 
   /**
+   * Retrieves current network transfer fee in USDC for operations on a Switch wallet.
+   * Caches response for 60 seconds to avoid latency overhead.
+   * Falls back safely to 0.095 USDC if Switch API is temporarily unreachable.
+   * 
+   * @param {object} params
+   * @param {string} params.walletId - 24-character hex Switch wallet ID
+   * @param {number} [params.amount=1] - Amount
+   * @param {string} [params.asset='solana:usdc'] - Asset identifier
+   * @returns {Promise<number>} Network fee in USDC
+   */
+  async getNetworkTransferFee({ walletId, amount = 1, asset = 'solana:usdc' }) {
+    if (!walletId || !/^[a-f0-9]{24}$/.test(String(walletId).trim())) {
+      return 0.095;
+    }
+
+    const cleanWalletId = String(walletId).trim();
+    const cleanAsset = String(asset || 'solana:usdc').trim();
+    const cacheKey = `fee_${cleanWalletId}_${cleanAsset}`;
+    const now = Date.now();
+
+    if (!this._feeCache) {
+      this._feeCache = {};
+    }
+
+    const cached = this._feeCache[cacheKey];
+    if (cached && (now - cached.timestamp < 60000)) {
+      return cached.fee;
+    }
+
+    try {
+      const probeAmount = Math.max(1, Number(amount) || 1);
+      const res = await this.estimateWalletFee({
+        walletId: cleanWalletId,
+        amount: probeAmount,
+        asset: cleanAsset
+      });
+
+      const rawFee = res?.estimated_fee !== undefined ? res.estimated_fee : res?.data?.estimated_fee;
+      const feeNum = Number(rawFee);
+      if (!isNaN(feeNum) && feeNum > 0) {
+        this._feeCache[cacheKey] = { fee: feeNum, timestamp: now };
+        return feeNum;
+      }
+    } catch (err) {
+      // Non-blocking fallback: return cached fee if available or conservative default
+      if (cached) return cached.fee;
+    }
+
+    return 0.095;
+  }
+
+  /**
    * Transfers funds from a Switch wallet to another address.
    * Documentation: POST /wallet/transfer
    * 

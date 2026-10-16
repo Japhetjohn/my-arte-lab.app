@@ -1805,7 +1805,7 @@ export function WithdrawModal({
 
               <div className="flex justify-between items-center py-1 border-t border-gray-100 pt-2">
                 <span className="text-gray-500 font-medium">Network Fee</span>
-                <span className="font-semibold text-emerald-600">0.00 USDC (Free!)</span>
+                <span className="font-semibold text-emerald-600">Covered by wallet</span>
               </div>
 
               <div className="flex justify-between items-center py-1 border-t border-gray-100 pt-2">

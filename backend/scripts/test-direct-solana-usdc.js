@@ -172,6 +172,9 @@ function setupStore() {
     store.transactions.set(tx.transactionId, tx);
     return tx;
   };
+  Transaction.findOne = async (query) => {
+    return null;
+  };
 
   // SwitchWallet Mock
   SwitchWallet.findOne = async (query) => {
