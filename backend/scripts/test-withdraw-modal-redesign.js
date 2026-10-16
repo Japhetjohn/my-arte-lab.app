@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-console.log('--- Verifying Withdraw Modal Redesign (External Wallet & Bank Transfer Parity) ---\n');
+console.log('--- Verifying Withdraw Modal Redesign (Simplified Two-Screen External Wallet & Bank Review Fix) ---\n');
 
 const withdrawModalPath = path.resolve(__dirname, '../frontend/app/src/components/wallet/WithdrawModal.tsx');
 const walletPagePath = path.resolve(__dirname, '../frontend/app/src/pages/Wallet.tsx');
@@ -20,27 +20,94 @@ const walletContent = fs.readFileSync(walletPagePath, 'utf8');
 
 const assertions = [
   // ==========================================
-  // PART A: SHARED & EXTERNAL WALLET FLOW
+  // PART A: BANK WITHDRAWAL REVIEW FIX
   // ==========================================
-  { name: 'Uses useIsMobile hook', check: withdrawContent.includes('useIsMobile') },
-  { name: 'Uses Vaul / Drawer for mobile view', check: withdrawContent.includes('<Drawer') && withdrawContent.includes('DrawerContent') },
-  { name: 'Uses Dialog for desktop view', check: withdrawContent.includes('<Dialog') && withdrawContent.includes('DialogContent') },
-  { name: 'Contains keyboard dismissal blur on mobile backdrop/drawer', check: withdrawContent.includes('repositionInputs={false}') },
-  { name: 'Contains Send to header', check: withdrawContent.includes('<span>Send to</span>') },
-  { name: 'Displays destination wallet card with Change button', check: withdrawContent.includes('Change') && withdrawContent.includes('ChevronRight') },
-  { name: 'Visual address masking matches reference style (xxxx **** **** xxxx)', check: withdrawContent.includes('**** ****') },
-  { name: 'Contains inline address editor with Paste button', check: withdrawContent.includes('isEditingAddress') && withdrawContent.includes('Paste') },
-  { name: 'Prevents self-transfers to own deposit address', check: withdrawContent.includes('Cannot withdraw to your own deposit address') },
-  { name: 'Contains large centered amount display with blinking cursor', check: withdrawContent.includes('text-5xl sm:text-6xl font-extrabold') && withdrawContent.includes('animate-pulse') },
-  { name: 'Displays dynamic quick shortcut pills adapted to balance', check: withdrawContent.includes('quickShortcuts') && withdrawContent.includes('Max') },
-  { name: 'Contains 3x4 custom numeric keypad grid with digits & letters', check: withdrawContent.includes('grid grid-cols-3') && withdrawContent.includes('PQRS') && withdrawContent.includes('WXYZ') },
-  { name: 'Calls authoritative backend withdrawSolana endpoint', check: withdrawContent.includes('walletService.withdrawSolana') },
-  { name: 'Contains centered confetti celebration SVG particles in result modal', check: withdrawContent.includes('Confetti particles') && withdrawContent.includes('<svg') && withdrawContent.includes('circle cx="20"') },
+  {
+    name: 'Platform Fee row is completely removed from bank review screen',
+    check: !withdrawContent.includes('Platform Fee') && !withdrawContent.includes('Free ($0.00)')
+  },
 
   // ==========================================
-  // PART B: REDESIGNED WITHDRAW TO BANK SECTION
+  // PART B: STREAMLINED TWO-SCREEN EXTERNAL WALLET FLOW
   // ==========================================
-  // 1. Select Bank — Clean Searchable Dropdown
+  {
+    name: 'Modal supports responsive Drawer for mobile and Dialog for desktop',
+    check: withdrawContent.includes('<Drawer') && withdrawContent.includes('<Dialog')
+  },
+  {
+    name: 'Contains keyboard dismissal blur on mobile backdrop/drawer',
+    check: withdrawContent.includes('repositionInputs={false}')
+  },
+  {
+    name: 'WithdrawStep definition contains exactly wallet-amount and wallet-review (no wallet-status)',
+    check:
+      withdrawContent.includes("'wallet-amount'") &&
+      withdrawContent.includes("'wallet-review'") &&
+      !withdrawContent.includes("'wallet-status'")
+  },
+  {
+    name: 'No custom numeric keypad or letter mapping (uses standard input)',
+    check: !withdrawContent.includes('handleKeypadPress') && !withdrawContent.includes('PQRS')
+  },
+  {
+    name: 'No separate address-editing modal or intermediate state (isEditingAddress eliminated)',
+    check: !withdrawContent.includes('isEditingAddress') && !withdrawContent.includes('addressInputTemp')
+  },
+  {
+    name: 'Screen 1: Amount entry with Max shortcut button',
+    check: withdrawContent.includes('setWalletAmount(String(maxVal > 0 ? maxVal : \'\'))')
+  },
+  {
+    name: 'Screen 1: Destination Solana address input with Paste button',
+    check: withdrawContent.includes('Destination Solana Address') && withdrawContent.includes('handlePasteAddress')
+  },
+  {
+    name: 'Screen 1: Address clear (X) button when text is present',
+    check: withdrawContent.includes("setDestinationAddress('')") && withdrawContent.includes('title="Clear address"')
+  },
+  {
+    name: 'Screen 1: Validates Base58 32-44 characters',
+    check: withdrawContent.includes('/^[1-9A-HJ-NP-Za-km-z]{32,44}$/')
+  },
+  {
+    name: 'Screen 1: Prevents self-transfers to own deposit address',
+    check: withdrawContent.includes('Cannot withdraw to your own deposit address')
+  },
+  {
+    name: 'Screen 1: Footer button is Continue and disabled until valid',
+    check: withdrawContent.includes('handleProceedToWalletReview') && withdrawContent.includes('!isValidAmount || !isValidAddr')
+  },
+  {
+    name: 'Screen 2: Review card displays Settles on Solana Mainnet',
+    check: withdrawContent.includes('Settles on Solana Mainnet')
+  },
+  {
+    name: 'Screen 2: Review card displays masked destination address with copy button',
+    check: withdrawContent.includes('copyToClipboard(destinationAddress, \'Address\')')
+  },
+  {
+    name: 'Screen 2: Footer button is Confirm Send with loading spinner',
+    check: withdrawContent.includes('Confirm Send') && withdrawContent.includes('isSubmittingSolana')
+  },
+  {
+    name: 'Calls authoritative backend withdrawSolana endpoint',
+    check: withdrawContent.includes('walletService.withdrawSolana')
+  },
+  {
+    name: 'On success: shows success toast, closes modal, and refreshes wallet (no status screen)',
+    check:
+      withdrawContent.includes("toast.success(res.data?.message || 'Withdrawal sent successfully.')") &&
+      withdrawContent.includes('handleModalClose()') &&
+      withdrawContent.includes('if (onSuccess) onSuccess()')
+  },
+  {
+    name: 'On failure: displays error toast, preserves review screen so user can retry',
+    check: withdrawContent.includes('toast.error(errorMsg)') && withdrawContent.includes('setIsSubmittingSolana(false)')
+  },
+
+  // ==========================================
+  // PART C: BANK WITHDRAWAL FLOW INTEGRITY
+  // ==========================================
   {
     name: 'Form field labelled "Select bank"',
     check: withdrawContent.includes('Select bank')
@@ -88,8 +155,6 @@ const assertions = [
     name: 'Clean friendly empty state when no bank matches query',
     check: withdrawContent.includes('No banks found matching')
   },
-
-  // 2. Account Number Form Field
   {
     name: 'Clean input field labelled "Account number"',
     check: withdrawContent.includes('Account number')
@@ -106,8 +171,6 @@ const assertions = [
     name: 'Shows inline length feedback counter',
     check: withdrawContent.includes('/10 digits')
   },
-
-  // 3. Automatic Account Verification
   {
     name: 'Read-only "Account name" field below account number with non-editable styling',
     check:
@@ -143,13 +206,9 @@ const assertions = [
     name: 'Protects against out-of-order race conditions with request tracking',
     check: withdrawContent.includes('verificationReqIdRef') && withdrawContent.includes('currentReqId')
   },
-
-  // 4. Continue to Review Page
   {
-    name: 'Action button labelled "Continue" (not "Review Withdrawal")',
-    check:
-      withdrawContent.includes("<span>Continue</span>") &&
-      !withdrawContent.includes("<span>Review Withdrawal</span>")
+    name: 'Action button labelled "Continue"',
+    check: withdrawContent.includes("<span>Continue</span>")
   },
   {
     name: 'Continue button disabled until bank selected, valid account number, and verified',
@@ -169,10 +228,6 @@ const assertions = [
   {
     name: 'Review page masks account number for privacy (••••1234)',
     check: withdrawContent.includes('••••${accountNumber.slice(-4)}')
-  },
-  {
-    name: 'Review page displays Platform Fee as Free ($0.00)',
-    check: withdrawContent.includes('Free ($0.00)')
   },
   {
     name: 'Review page displays estimated Processing Time (Instant to 15 minutes)',
@@ -206,5 +261,5 @@ if (failed > 0) {
   console.error(`\nValidation failed: ${failed} check(s) did not pass.`);
   process.exit(1);
 } else {
-  console.log(`\nAll ${assertions.length} architectural, visual reference, and bank redesign checks passed successfully!`);
+  console.log(`\nAll ${assertions.length} architectural, two-screen external wallet, and bank redesign checks passed successfully!`);
 }

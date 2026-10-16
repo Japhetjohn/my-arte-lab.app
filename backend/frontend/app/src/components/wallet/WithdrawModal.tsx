@@ -20,7 +20,6 @@ import {
   Copy,
   CheckCircle2,
   ChevronLeft,
-  ChevronRight,
   ChevronDown,
   Building2,
   X,
@@ -30,7 +29,6 @@ import {
   Check,
   Clock,
   ShieldAlert,
-  Delete,
 } from 'lucide-react';
 import { toast } from '@/components/ui/sonner';
 
@@ -155,8 +153,7 @@ type WithdrawStep =
   | 'bank-review'
   | 'bank-status'
   | 'wallet-amount'
-  | 'wallet-review'
-  | 'wallet-status';
+  | 'wallet-review';
 
 export function WithdrawModal({
   isOpen,
@@ -204,10 +201,6 @@ export function WithdrawModal({
   // External Wallet state
   const [walletAmount, setWalletAmount] = useState<string>('');
   const [destinationAddress, setDestinationAddress] = useState<string>('');
-  const [isEditingAddress, setIsEditingAddress] = useState<boolean>(false);
-  const [addressInputTemp, setAddressInputTemp] = useState<string>('');
-  const [addressError, setAddressError] = useState<string | null>(null);
-  const [solanaWithdrawResult, setSolanaWithdrawResult] = useState<any | null>(null);
   const [isSubmittingSolana, setIsSubmittingSolana] = useState<boolean>(false);
 
   // Status & Transaction Tracking
@@ -288,9 +281,6 @@ export function WithdrawModal({
       setAmountUsdc('');
       setWalletAmount('');
       setDestinationAddress('');
-      setIsEditingAddress(false);
-      setAddressInputTemp('');
-      setAddressError(null);
       setSelectedBankCode('');
       setAccountNumber('');
       setAccountName('');
@@ -298,7 +288,6 @@ export function WithdrawModal({
       setVerificationError(null);
       setQuote(null);
       setActiveWithdrawal(null);
-      setSolanaWithdrawResult(null);
       setErrorMessage(null);
       setCopiedField(null);
       setIsBankPickerOpen(false);
@@ -543,11 +532,6 @@ export function WithdrawModal({
   // Back button handler preserving form data
   const handleBack = () => {
     setErrorMessage(null);
-    if (isEditingAddress) {
-      setIsEditingAddress(false);
-      setAddressError(null);
-      return;
-    }
     switch (step) {
       case 'bank-amount':
         setStep('select-method');
@@ -567,9 +551,6 @@ export function WithdrawModal({
       case 'wallet-review':
         setStep('wallet-amount');
         break;
-      case 'wallet-status':
-        handleModalClose();
-        break;
       default:
         setStep('select-method');
     }
@@ -577,9 +558,6 @@ export function WithdrawModal({
 
   // Header Title
   const getHeaderTitle = () => {
-    if (isEditingAddress) {
-      return 'Destination Address';
-    }
     switch (step) {
       case 'select-method':
         return 'Withdraw';
@@ -592,11 +570,9 @@ export function WithdrawModal({
       case 'bank-status':
         return 'Withdrawal Status';
       case 'wallet-amount':
-        return 'Send Money';
+        return 'Send to External Wallet';
       case 'wallet-review':
         return 'Review Transfer';
-      case 'wallet-status':
-        return 'Send Money';
       default:
         return 'Withdraw';
     }
@@ -725,83 +701,33 @@ export function WithdrawModal({
     }
   };
 
-  // Quick amounts calculation based on user's actual available balance
-  const quickShortcuts = useMemo(() => {
-    const bal = availableBalance;
-    if (bal <= 0) return ['5', '10', '25', '50'];
-    if (bal <= 20) {
-      const list = [5, 10, 15].filter((v) => v <= bal);
-      return [...list.map(String), 'Max'];
-    }
-    if (bal <= 100) {
-      const list = [10, 25, 50, 75].filter((v) => v <= bal);
-      return [...list.map(String), 'Max'];
-    }
-    if (bal <= 500) {
-      const list = [25, 50, 100, 250].filter((v) => v <= bal);
-      return [...list.map(String), 'Max'];
-    }
-    const list = [50, 100, 250, 500, 1000].filter((v) => v <= bal);
-    return [...list.map(String), 'Max'];
-  }, [availableBalance]);
-
-  // Keypad press handler
-  const handleKeypadPress = (key: string) => {
-    setErrorMessage(null);
-    if (key === 'backspace') {
-      setWalletAmount((prev) => prev.slice(0, -1));
-      return;
-    }
-    if (key === '.') {
-      if (!walletAmount) {
-        setWalletAmount('0.');
+  // External wallet flow: Handle reading from clipboard
+  const handlePasteAddress = async () => {
+    try {
+      if (!navigator.clipboard || !navigator.clipboard.readText) {
+        toast.error('Clipboard access not supported. Please paste manually.');
         return;
       }
-      if (walletAmount.includes('.')) return;
-      setWalletAmount((prev) => prev + '.');
-      return;
-    }
-    if (walletAmount === '0') {
-      setWalletAmount(key);
-      return;
-    }
-    if (walletAmount.includes('.')) {
-      const [, decimals] = walletAmount.split('.');
-      if (decimals && decimals.length >= 2) return;
-    }
-    if (walletAmount.replace('.', '').length >= 7) return;
+      const text = await navigator.clipboard.readText();
+      const clean = text?.trim();
+      if (!clean) {
+        toast.error('Clipboard is empty.');
+        return;
+      }
+      setDestinationAddress(clean);
+      setErrorMessage(null);
 
-    setWalletAmount((prev) => prev + key);
+      if (!/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(clean)) {
+        toast.error('Pasted text is not a valid Solana address (32–44 Base58 characters).');
+      } else if (solanaAddress && clean.toLowerCase() === solanaAddress.toLowerCase()) {
+        toast.error('Cannot withdraw to your own deposit address.');
+      } else {
+        toast.success('Address pasted');
+      }
+    } catch (_) {
+      toast.error('Clipboard permission denied. Please paste manually.');
+    }
   };
-
-  // Keyboard navigation on desktop
-  useEffect(() => {
-    if (!isOpen || step !== 'wallet-amount' || isEditingAddress) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const activeEl = document.activeElement;
-      if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
-        return;
-      }
-
-      if (e.key >= '0' && e.key <= '9') {
-        e.preventDefault();
-        handleKeypadPress(e.key);
-      } else if (e.key === '.' || e.key === ',') {
-        e.preventDefault();
-        handleKeypadPress('.');
-      } else if (e.key === 'Backspace') {
-        e.preventDefault();
-        handleKeypadPress('backspace');
-      } else if (e.key === 'Enter') {
-        e.preventDefault();
-        handleProceedToWalletReview();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, step, isEditingAddress, walletAmount, destinationAddress, availableBalance]);
 
   // External wallet flow: Validate and advance to review
   const handleProceedToWalletReview = (e?: React.FormEvent) => {
@@ -809,30 +735,24 @@ export function WithdrawModal({
     const num = parseFloat(walletAmount);
     const cleanAddr = destinationAddress.trim();
 
-    if (!cleanAddr) {
-      setErrorMessage('Please enter a destination Solana address');
-      setAddressInputTemp('');
-      setIsEditingAddress(true);
-      return;
-    }
-    if (!/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(cleanAddr)) {
-      setErrorMessage('Please enter a valid Solana wallet address (32-44 base58 characters)');
-      setAddressInputTemp(cleanAddr);
-      setIsEditingAddress(true);
-      return;
-    }
-    if (solanaAddress && cleanAddr.toLowerCase() === solanaAddress.toLowerCase()) {
-      setErrorMessage('Destination address cannot be your own MyArteLab deposit address.');
-      setAddressInputTemp(cleanAddr);
-      setIsEditingAddress(true);
-      return;
-    }
     if (isNaN(num) || num < 1) {
       setErrorMessage('Minimum withdrawal amount is 1 USDC');
       return;
     }
     if (num > availableBalance) {
       setErrorMessage(`Amount exceeds your available balance of $${availableBalance.toFixed(2)} USDC`);
+      return;
+    }
+    if (!cleanAddr) {
+      setErrorMessage('Please enter a destination Solana address');
+      return;
+    }
+    if (!/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(cleanAddr)) {
+      setErrorMessage('Please enter a valid Solana wallet address (32–44 Base58 characters)');
+      return;
+    }
+    if (solanaAddress && cleanAddr.toLowerCase() === solanaAddress.toLowerCase()) {
+      setErrorMessage('Destination address cannot be your own MyArteLab deposit address');
       return;
     }
 
@@ -845,6 +765,30 @@ export function WithdrawModal({
     const num = parseFloat(walletAmount);
     const cleanAddr = destinationAddress.trim();
 
+    if (isNaN(num) || num < 1) {
+      setErrorMessage('Minimum withdrawal amount is 1 USDC');
+      toast.error('Minimum withdrawal amount is 1 USDC');
+      return;
+    }
+    if (num > availableBalance) {
+      const msg = `Amount exceeds your available balance of $${availableBalance.toFixed(2)} USDC`;
+      setErrorMessage(msg);
+      toast.error(msg);
+      return;
+    }
+    if (!cleanAddr || !/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(cleanAddr)) {
+      const msg = 'Please provide a valid Solana wallet address (32–44 Base58 characters)';
+      setErrorMessage(msg);
+      toast.error(msg);
+      return;
+    }
+    if (solanaAddress && cleanAddr.toLowerCase() === solanaAddress.toLowerCase()) {
+      const msg = 'Destination address cannot be your own MyArteLab deposit address';
+      setErrorMessage(msg);
+      toast.error(msg);
+      return;
+    }
+
     setIsSubmittingSolana(true);
     setErrorMessage(null);
 
@@ -855,29 +799,23 @@ export function WithdrawModal({
       });
 
       if (res.data?.success) {
-        const data = res.data.data;
-        const now = new Date();
-        setSolanaWithdrawResult({
-          reference: data.reference,
-          transactionId: data.transactionId,
-          amount: data.amount || num,
-          currency: data.currency || 'USDC',
-          toAddress: data.toAddress || cleanAddr,
-          status: data.status || 'completed',
-          date: now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
-          time: now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false }),
-        });
         try {
           localStorage.setItem('myartelab_last_solana_withdraw_addr', cleanAddr);
         } catch (_) {}
-        setStep('wallet-status');
-        toast.success(res.data.message || `Successfully sent ${num} USDC!`);
+
+        toast.success(res.data?.message || 'Withdrawal sent successfully.');
+        handleModalClose();
         if (onSuccess) onSuccess();
       } else {
-        setErrorMessage(res.data?.error || 'Failed to process Solana withdrawal');
+        const errorMsg = res.data?.error || 'Failed to process withdrawal';
+        setErrorMessage(errorMsg);
+        toast.error(errorMsg);
       }
     } catch (err: any) {
-      const msg = err.response?.data?.error || err.message || 'Withdrawal failed. Please check your address and balance.';
+      const msg =
+        err.response?.data?.error ||
+        err.message ||
+        'Withdrawal failed. Please check your address and balance.';
       setErrorMessage(msg);
       toast.error(msg);
     } finally {
@@ -1025,10 +963,25 @@ export function WithdrawModal({
           </button>
         );
 
-      case 'wallet-amount':
-        // The primary Continue button and custom Keypad are integrated directly into the scrollable body,
-        // matching the left phone reference screenshot!
-        return null;
+      case 'wallet-amount': {
+        const num = parseFloat(walletAmount || '0');
+        const cleanAddr = destinationAddress.trim();
+        const isValidAddr =
+          /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(cleanAddr) &&
+          (!solanaAddress || cleanAddr.toLowerCase() !== solanaAddress.toLowerCase());
+        const isValidAmount = !isNaN(num) && num >= 1 && num <= availableBalance;
+
+        return (
+          <button
+            type="button"
+            onClick={handleProceedToWalletReview}
+            disabled={!isValidAmount || !isValidAddr}
+            className="w-full h-12 bg-[#9747FF] hover:bg-[#8535ed] text-white font-medium rounded-xl text-sm transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-2xs"
+          >
+            <span>Continue</span>
+          </button>
+        );
+      }
 
       case 'wallet-review':
         return (
@@ -1036,27 +989,16 @@ export function WithdrawModal({
             type="button"
             onClick={handleConfirmSolanaWithdrawal}
             disabled={isSubmittingSolana}
-            className="w-full h-12 bg-neutral-900 hover:bg-neutral-800 text-white font-semibold rounded-2xl text-sm transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow-sm active:scale-[0.99]"
+            className="w-full h-12 bg-[#9747FF] hover:bg-[#8535ed] text-white font-medium rounded-xl text-sm transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-2xs"
           >
             {isSubmittingSolana ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Processing Transfer...</span>
+                <span>Sending...</span>
               </>
             ) : (
-              <span>Confirm & Withdraw</span>
+              <span>Confirm Send</span>
             )}
-          </button>
-        );
-
-      case 'wallet-status':
-        return (
-          <button
-            type="button"
-            onClick={handleModalClose}
-            className="w-full h-12 bg-neutral-900 hover:bg-neutral-800 text-white font-semibold rounded-2xl text-sm transition-all flex items-center justify-center cursor-pointer shadow-sm active:scale-[0.99]"
-          >
-            Done
           </button>
         );
 
@@ -1071,39 +1013,26 @@ export function WithdrawModal({
       {/* 1. Header Bar: Back button, Title, Close button */}
       <div className="shrink-0 flex items-center justify-between pb-3.5 pt-1 border-b border-gray-100 bg-white">
         <div className="flex items-center gap-2">
-          {step === 'wallet-status' ? (
+          {step !== 'select-method' && step !== 'bank-status' && (
             <button
               type="button"
-              onClick={handleModalClose}
+              onClick={handleBack}
               className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors cursor-pointer"
-              aria-label="Close"
+              aria-label="Back"
             >
-              <X className="w-5 h-5" />
+              <ChevronLeft className="w-5 h-5" />
             </button>
-          ) : (
-            (isEditingAddress || (step !== 'select-method' && step !== 'bank-status')) && (
-              <button
-                type="button"
-                onClick={handleBack}
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors cursor-pointer"
-                aria-label="Back"
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-            )
           )}
           <h2 className="text-lg sm:text-xl font-semibold text-gray-900 tracking-tight">{getHeaderTitle()}</h2>
         </div>
-        {step !== 'wallet-status' && (
-          <button
-            type="button"
-            onClick={handleModalClose}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
-            aria-label="Close"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={handleModalClose}
+          className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
+          aria-label="Close"
+        >
+          <X className="w-4 h-4" />
+        </button>
       </div>
 
       {/* 2. Scrollable Body */}
@@ -1567,11 +1496,6 @@ export function WithdrawModal({
               </div>
 
               <div className="flex justify-between items-center py-1 border-t border-gray-100 pt-2">
-                <span className="text-gray-500 font-medium">Platform Fee</span>
-                <span className="font-semibold text-emerald-600">Free ($0.00)</span>
-              </div>
-
-              <div className="flex justify-between items-center py-1 border-t border-gray-100 pt-2">
                 <span className="text-gray-500 font-medium">Processing Time</span>
                 <span className="font-semibold text-gray-900">Instant to 15 minutes</span>
               </div>
@@ -1697,315 +1621,147 @@ export function WithdrawModal({
           </div>
         )}
 
-        {/* Step: External Wallet Amount Input (Matching Left Phone in Reference UI) */}
+        {/* Step: External Wallet Amount & Address Input (Screen 1) */}
         {step === 'wallet-amount' && (
-          isEditingAddress ? (
-            <div className="space-y-4 py-2">
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-gray-700">Recipient Solana Address</label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={addressInputTemp}
-                    onChange={(e) => {
-                      setAddressInputTemp(e.target.value);
-                      setAddressError(null);
-                    }}
-                    placeholder="Paste or enter 32-44 character address"
-                    className="w-full h-11 pl-3.5 pr-20 bg-white border border-gray-200 rounded-xl text-xs sm:text-sm font-mono focus:outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900"
-                    autoFocus
-                  />
+          <form onSubmit={handleProceedToWalletReview} className="space-y-4">
+            <div className="flex items-center justify-between text-xs px-1">
+              <span className="text-gray-500 font-medium">Available balance</span>
+              <div className="flex items-center gap-1.5">
+                <span className="font-semibold text-gray-900">
+                  ${availableBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDC
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const maxVal = Math.floor(availableBalance * 100) / 100;
+                    setWalletAmount(String(maxVal > 0 ? maxVal : ''));
+                    setErrorMessage(null);
+                  }}
+                  className="text-xs font-semibold text-[#9747FF] hover:text-[#8535ed] bg-purple-50 hover:bg-purple-100/80 px-2 py-0.5 rounded-md transition-colors cursor-pointer"
+                >
+                  Max
+                </button>
+              </div>
+            </div>
+
+            {/* Prominent Amount Card */}
+            <div className="py-6 text-center bg-gray-50/60 rounded-2xl border border-gray-100">
+              <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">
+                Withdrawal Amount
+              </p>
+              <div className="inline-flex items-baseline justify-center">
+                <span className="text-3xl font-light text-gray-400 mr-1.5">$</span>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={walletAmount}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^0-9.]/g, '');
+                    setWalletAmount(val);
+                    setErrorMessage(null);
+                  }}
+                  placeholder="0.00"
+                  className="text-4xl sm:text-5xl font-bold tracking-tight text-gray-900 bg-transparent text-center focus:outline-none w-auto max-w-[280px]"
+                  autoFocus
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                Asset: <span className="font-semibold text-gray-700">USDC (SPL Token)</span>
+              </p>
+            </div>
+
+            {/* Destination Solana Wallet Address Input */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-gray-700">Destination Solana Address</label>
+                <span className="text-[11px] font-medium text-purple-700 bg-purple-50 border border-purple-200/60 px-2 py-0.5 rounded-full">
+                  Solana Mainnet
+                </span>
+              </div>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={destinationAddress}
+                  onChange={(e) => {
+                    setDestinationAddress(e.target.value.trim());
+                    setErrorMessage(null);
+                  }}
+                  placeholder="Enter or paste Solana address"
+                  className="w-full h-11 pl-3.5 pr-20 bg-white border border-gray-200 rounded-xl text-xs sm:text-sm font-mono focus:outline-none focus:border-[#9747FF] focus:ring-1 focus:ring-[#9747FF]"
+                />
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                  {destinationAddress ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDestinationAddress('');
+                        setErrorMessage(null);
+                      }}
+                      className="p-1 text-gray-400 hover:text-gray-600 rounded-md transition-colors"
+                      title="Clear address"
+                      aria-label="Clear address"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  ) : null}
                   <button
                     type="button"
-                    onClick={async () => {
-                      try {
-                        const text = await navigator.clipboard.readText();
-                        if (text) {
-                          setAddressInputTemp(text.trim());
-                          setAddressError(null);
-                        }
-                      } catch (_) {
-                        toast.error('Clipboard access not allowed. Please paste manually.');
-                      }
-                    }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1 text-xs font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors cursor-pointer"
+                    onClick={handlePasteAddress}
+                    className="px-2.5 py-1 text-xs font-semibold text-[#9747FF] bg-purple-50 hover:bg-purple-100/80 rounded-lg transition-colors cursor-pointer"
                   >
                     Paste
                   </button>
                 </div>
               </div>
 
-              {addressInputTemp.trim() && (
-                <div>
-                  {/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(addressInputTemp.trim()) ? (
-                    solanaAddress && addressInputTemp.trim().toLowerCase() === solanaAddress.toLowerCase() ? (
-                      <p className="text-xs font-medium text-red-600 flex items-center gap-1">
-                        <AlertCircle className="w-3.5 h-3.5" />
+              {/* Address validation feedback */}
+              {destinationAddress && (
+                <div className="pt-0.5 px-0.5">
+                  {/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(destinationAddress) ? (
+                    solanaAddress && destinationAddress.toLowerCase() === solanaAddress.toLowerCase() ? (
+                      <p className="text-xs font-medium text-red-600 flex items-center gap-1.5">
+                        <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                         Cannot withdraw to your own deposit address
                       </p>
                     ) : (
-                      <p className="text-xs font-medium text-emerald-600 flex items-center gap-1">
-                        <Check className="w-3.5 h-3.5" />
+                      <p className="text-xs font-medium text-emerald-600 flex items-center gap-1.5">
+                        <Check className="w-3.5 h-3.5 shrink-0" />
                         Valid Solana address format (Base58)
                       </p>
                     )
                   ) : (
-                    <p className="text-xs font-medium text-amber-600 flex items-center gap-1">
-                      <AlertCircle className="w-3.5 h-3.5" />
+                    <p className="text-xs font-medium text-amber-600 flex items-center gap-1.5">
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                       Address must be 32–44 Base58 characters
                     </p>
                   )}
                 </div>
               )}
+            </div>
 
-              {addressError && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 flex items-start gap-2">
-                  <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
-                  <span>{addressError}</span>
-                </div>
-              )}
-
-              <div className="p-3 bg-amber-50/80 border border-amber-200/80 rounded-xl flex items-start gap-2.5 text-xs text-amber-800">
-                <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                <div className="leading-relaxed">
-                  Only send to a <strong className="font-semibold">Solana</strong> address supporting SPL USDC. Transfers sent through other networks will be permanently lost.
-                </div>
-              </div>
-
-              <div className="flex gap-2.5 pt-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsEditingAddress(false);
-                    setAddressError(null);
-                  }}
-                  className="flex-1 h-11 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-xl text-sm transition-colors cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const clean = addressInputTemp.trim();
-                    if (!clean) {
-                      setAddressError('Please enter an address');
-                      return;
-                    }
-                    if (!/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(clean)) {
-                      setAddressError('Invalid Solana address. Must be 32–44 Base58 characters.');
-                      return;
-                    }
-                    if (solanaAddress && clean.toLowerCase() === solanaAddress.toLowerCase()) {
-                      setAddressError('Cannot withdraw to your own deposit address.');
-                      return;
-                    }
-                    setDestinationAddress(clean);
-                    try {
-                      localStorage.setItem('myartelab_last_solana_withdraw_addr', clean);
-                    } catch (_) {}
-                    setIsEditingAddress(false);
-                    setErrorMessage(null);
-                  }}
-                  disabled={
-                    !addressInputTemp.trim() ||
-                    !/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(addressInputTemp.trim()) ||
-                    Boolean(solanaAddress && addressInputTemp.trim().toLowerCase() === solanaAddress.toLowerCase())
-                  }
-                  className="flex-1 h-11 bg-neutral-900 hover:bg-neutral-800 text-white font-medium rounded-xl text-sm transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow-xs"
-                >
-                  Save Address
-                </button>
+            {/* Network Note / Warning */}
+            <div className="p-3 bg-amber-50/80 border border-amber-200/80 rounded-xl flex items-start gap-2.5 text-xs text-amber-800">
+              <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+              <div className="leading-relaxed">
+                Only send to a <strong className="font-semibold">Solana</strong> address supporting SPL USDC. Transfers sent through other networks will be permanently lost.
               </div>
             </div>
-          ) : (
-            <div className="space-y-4">
-              {/* 1. Destination Section: "Send to" */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between text-xs font-semibold text-gray-500 uppercase tracking-wider px-1">
-                  <span>Send to</span>
-                  {destinationAddress && (
-                    <span className="text-[11px] font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                      Solana Mainnet
-                    </span>
-                  )}
-                </div>
 
-                <div className="p-3 bg-gray-50/80 border border-gray-200/80 rounded-2xl flex items-center justify-between transition-all">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-500 to-indigo-600 flex items-center justify-center text-white shrink-0 shadow-xs">
-                      <Wallet className="w-5 h-5" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-gray-900 truncate">
-                        {destinationAddress ? 'Solana External Wallet' : 'Select Destination'}
-                      </p>
-                      <p className="text-xs text-gray-500 font-mono truncate">
-                        {destinationAddress
-                          ? `${destinationAddress.slice(0, 4)} **** **** ${destinationAddress.slice(-4)}`
-                          : 'Tap to enter recipient address'}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAddressInputTemp(destinationAddress);
-                      setIsEditingAddress(true);
-                    }}
-                    className="shrink-0 text-xs font-semibold text-gray-700 bg-white hover:bg-gray-50 border border-gray-200 px-3 py-1.5 rounded-full transition-colors flex items-center gap-1 cursor-pointer shadow-2xs"
-                  >
-                    <span>{destinationAddress ? 'Change' : 'Enter'}</span>
-                    <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
-                  </button>
-                </div>
+            {/* Error Message */}
+            {errorMessage && (
+              <div className="p-3 bg-red-50 border border-red-200/80 rounded-xl flex items-start gap-2 text-xs text-red-700">
+                <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                <span>{errorMessage}</span>
               </div>
-
-              {/* 2. Large Centered Amount Display with Cursor */}
-              <div className="py-2 sm:py-3 flex flex-col items-center justify-center text-center">
-                <div className="flex items-baseline justify-center">
-                  <span className="text-3xl sm:text-4xl font-light text-gray-400 mr-1">$</span>
-                  <span className="text-5xl sm:text-6xl font-extrabold tracking-tight text-gray-900">
-                    {walletAmount || '0'}
-                  </span>
-                  <span className="inline-block w-[3px] h-9 sm:h-11 bg-gray-900 animate-pulse ml-1 rounded-full align-middle" />
-                </div>
-                <p className="text-xs sm:text-sm text-gray-500 font-medium mt-1">
-                  {parseFloat(walletAmount || '0') > availableBalance ? (
-                    <span className="text-red-600 font-semibold">Exceeds available balance (${availableBalance.toFixed(2)})</span>
-                  ) : (
-                    <span>Enter Amount</span>
-                  )}
-                </p>
-              </div>
-
-              {/* 3. Quick Amount Shortcut Pills */}
-              <div className="flex items-center justify-center gap-2 overflow-x-auto py-1 px-1 scrollbar-none">
-                {quickShortcuts.map((pill) => {
-                  const isSelected =
-                    pill === 'Max'
-                      ? parseFloat(walletAmount || '0') === availableBalance && availableBalance > 0
-                      : walletAmount === pill;
-                  return (
-                    <button
-                      key={pill}
-                      type="button"
-                      onClick={() => {
-                        if (pill === 'Max') {
-                          const maxVal = Math.floor(availableBalance * 100) / 100;
-                          setWalletAmount(String(maxVal > 0 ? maxVal : ''));
-                        } else {
-                          setWalletAmount(pill);
-                        }
-                        setErrorMessage(null);
-                      }}
-                      className={cn(
-                        "h-8 px-3 rounded-full text-xs font-semibold transition-all cursor-pointer shrink-0 border",
-                        isSelected
-                          ? "bg-neutral-900 text-white border-neutral-900 shadow-xs"
-                          : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100 hover:border-gray-300"
-                      )}
-                    >
-                      {pill === 'Max' ? 'Max' : `$${pill}`}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* 4. Balance Source Card ("From" / "MUFG Card style") */}
-              <div className="p-3 bg-gray-50/80 border border-gray-200/80 rounded-2xl flex items-center justify-between">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 rounded-xl bg-purple-100/80 border border-purple-200/70 flex items-center justify-center text-[#9747FF] shrink-0">
-                    <Landmark className="w-5 h-5" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-gray-900 truncate">
-                      MyArteLab Wallet
-                    </p>
-                    <p className="text-xs text-gray-500 font-medium truncate">
-                      Balance: ${availableBalance.toFixed(2)} USDC
-                    </p>
-                  </div>
-                </div>
-                <span className="text-[11px] font-semibold text-purple-700 bg-purple-50 border border-purple-200 px-2.5 py-1 rounded-full">
-                  Solana SPL
-                </span>
-              </div>
-
-              {/* Inline error if any */}
-              {errorMessage && (
-                <div className="p-3 bg-red-50 border border-red-200/80 rounded-xl flex items-start gap-2 text-xs text-red-700">
-                  <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
-                  <span>{errorMessage}</span>
-                </div>
-              )}
-
-              {/* 5. Primary Action Button (Positioned above keypad, matching Left Phone in screenshot) */}
-              <button
-                type="button"
-                onClick={handleProceedToWalletReview}
-                disabled={
-                  !walletAmount ||
-                  parseFloat(walletAmount) < 1 ||
-                  parseFloat(walletAmount) > availableBalance ||
-                  !destinationAddress.trim() ||
-                  !/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(destinationAddress.trim())
-                }
-                className="w-full h-12 bg-neutral-900 hover:bg-neutral-800 text-white font-semibold rounded-2xl text-sm transition-all flex items-center justify-center cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow-sm active:scale-[0.99]"
-              >
-                <span>Continue</span>
-              </button>
-
-              {/* 6. Custom Numeric Keypad */}
-              <div className="pt-1 select-none">
-                <div className="grid grid-cols-3 gap-2 sm:gap-2.5 max-w-[340px] mx-auto">
-                  {[
-                    { key: '1', letters: '' },
-                    { key: '2', letters: 'ABC' },
-                    { key: '3', letters: 'DEF' },
-                    { key: '4', letters: 'GHI' },
-                    { key: '5', letters: 'JKL' },
-                    { key: '6', letters: 'MNO' },
-                    { key: '7', letters: 'PQRS' },
-                    { key: '8', letters: 'TUV' },
-                    { key: '9', letters: 'WXYZ' },
-                    { key: '.', letters: '' },
-                    { key: '0', letters: '' },
-                    { key: 'backspace', letters: '' },
-                  ].map((item) => (
-                    <button
-                      key={item.key}
-                      type="button"
-                      onClick={() => handleKeypadPress(item.key)}
-                      className="h-11 sm:h-12 bg-gray-50/80 hover:bg-gray-100 active:bg-gray-200 rounded-xl flex flex-col items-center justify-center transition-colors cursor-pointer border border-gray-150 shadow-2xs"
-                      aria-label={item.key === 'backspace' ? 'Delete' : item.key}
-                    >
-                      {item.key === 'backspace' ? (
-                        <Delete className="w-5 h-5 text-gray-700" />
-                      ) : (
-                        <>
-                          <span className="text-xl font-semibold text-gray-900 leading-none">
-                            {item.key}
-                          </span>
-                          {item.letters && (
-                            <span className="text-[9px] font-bold text-gray-400 tracking-wider mt-0.5 leading-none">
-                              {item.letters}
-                            </span>
-                          )}
-                        </>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )
+            )}
+          </form>
         )}
 
-        {/* Step: External Wallet Review */}
+        {/* Step: External Wallet Review & Confirmation (Screen 2) */}
         {step === 'wallet-review' && (
-          <div className="space-y-4 py-1">
-            <div className="text-center py-5 bg-gray-50/80 rounded-2xl border border-gray-100">
-              <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">
+          <div className="space-y-4">
+            <div className="text-center py-5 bg-gray-50/60 rounded-2xl border border-gray-100">
+              <p className="text-xs text-gray-400 uppercase tracking-wider font-medium">
                 Total Transfer
               </p>
               <div className="flex items-baseline justify-center mt-1">
@@ -2039,13 +1795,16 @@ export function WithdrawModal({
               <div className="flex justify-between items-center py-1 border-t border-gray-100 pt-2">
                 <span className="text-gray-500 font-medium">Destination</span>
                 <div className="flex items-center gap-1.5">
-                  <span className="font-mono text-xs font-semibold text-gray-900 truncate max-w-[180px]">
-                    {destinationAddress}
+                  <span className="font-mono text-xs font-semibold text-gray-900" title={destinationAddress}>
+                    {destinationAddress.length > 10
+                      ? `${destinationAddress.slice(0, 4)}...${destinationAddress.slice(-4)}`
+                      : destinationAddress}
                   </span>
                   <button
                     type="button"
                     onClick={() => copyToClipboard(destinationAddress, 'Address')}
                     className="p-1 text-gray-400 hover:text-gray-700 transition-colors cursor-pointer"
+                    aria-label="Copy destination address"
                   >
                     {copiedField === 'Address' ? (
                       <Check className="w-3.5 h-3.5 text-emerald-600" />
@@ -2075,154 +1834,6 @@ export function WithdrawModal({
                 <span>{errorMessage}</span>
               </div>
             )}
-          </div>
-        )}
-
-        {/* Step: External Wallet Status (Matching Right Phone in Reference UI) */}
-        {step === 'wallet-status' && solanaWithdrawResult && (
-          <div className="space-y-4 text-center py-1">
-            {/* 1. Centered Status Icon with Confetti particles */}
-            <div className="flex justify-center pt-2">
-              {solanaWithdrawResult.status === 'completed' ? (
-                <div className="relative inline-flex items-center justify-center py-1">
-                  {/* Confetti particles matching Right Phone in Screenshot */}
-                  <svg className="w-24 h-24 absolute -top-1 pointer-events-none" viewBox="0 0 100 100" fill="none">
-                    <circle cx="20" cy="22" r="3" fill="#EC4899" />
-                    <rect x="75" y="16" width="6" height="3" rx="1.5" fill="#FBBF24" transform="rotate(25 75 16)" />
-                    <path d="M 12 50 Q 15 42 19 46" stroke="#3B82F6" strokeWidth="2.5" strokeLinecap="round" />
-                    <circle cx="86" cy="46" r="2.5" fill="#A855F7" />
-                    <path d="M 72 26 Q 76 22 80 27" stroke="#F97316" strokeWidth="2.5" strokeLinecap="round" />
-                    <rect x="15" y="70" width="7" height="3" rx="1.5" fill="#10B981" transform="rotate(-30 15 70)" />
-                    <circle cx="78" cy="74" r="2.5" fill="#06B6D4" />
-                  </svg>
-                  <div className="w-18 h-18 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/25">
-                    <Check className="w-10 h-10 stroke-[3.5]" />
-                  </div>
-                </div>
-              ) : solanaWithdrawResult.status === 'processing' ? (
-                <div className="w-16 h-16 rounded-full bg-amber-500 text-white flex items-center justify-center shadow-lg shadow-amber-500/25">
-                  <Clock className="w-9 h-9 stroke-[2.5] animate-pulse" />
-                </div>
-              ) : (
-                <div className="w-16 h-16 rounded-full bg-red-500 text-white flex items-center justify-center shadow-lg shadow-red-500/25">
-                  <AlertCircle className="w-9 h-9 stroke-[2.5]" />
-                </div>
-              )}
-            </div>
-
-            {/* 2. Headline & Subtitle matching Right Phone in Reference UI */}
-            <div className="space-y-1">
-              <h3 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">
-                {solanaWithdrawResult.status === 'completed'
-                  ? 'Payment Successful'
-                  : solanaWithdrawResult.status === 'processing'
-                  ? 'Withdrawal Processing'
-                  : 'Withdrawal Failed'}
-              </h3>
-              <p className="text-xs sm:text-sm text-gray-500 font-mono">
-                {destinationAddress
-                  ? `To: ${destinationAddress.slice(0, 4)} **** **** ${destinationAddress.slice(-4)}`
-                  : 'To: Solana External Wallet'}
-              </p>
-            </div>
-
-            {/* 3. Transaction Details Section with clean dotted dividers matching Right Phone */}
-            <div className="p-4 bg-gray-50/70 border border-gray-150 rounded-2xl text-left text-xs sm:text-sm space-y-2.5">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                Transaction details
-              </p>
-
-              <div className="flex justify-between items-center py-0.5">
-                <span className="text-gray-500 font-medium">Status</span>
-                {solanaWithdrawResult.status === 'completed' ? (
-                  <span className="font-semibold text-emerald-600 flex items-center gap-1">
-                    Completed <CheckCircle2 className="w-3.5 h-3.5" />
-                  </span>
-                ) : solanaWithdrawResult.status === 'processing' ? (
-                  <span className="font-semibold text-amber-600 flex items-center gap-1">
-                    Processing <Clock className="w-3.5 h-3.5" />
-                  </span>
-                ) : (
-                  <span className="font-semibold text-red-600 flex items-center gap-1">
-                    Failed <AlertCircle className="w-3.5 h-3.5" />
-                  </span>
-                )}
-              </div>
-
-              <div className="flex justify-between items-center py-0.5">
-                <span className="text-gray-500 font-medium">Added to</span>
-                <span className="font-semibold text-gray-900">External Solana Wallet</span>
-              </div>
-
-              <div className="flex justify-between items-center py-0.5">
-                <span className="text-gray-500 font-medium">Time</span>
-                <span className="font-semibold text-gray-900">
-                  {solanaWithdrawResult.time || 'Just now'}
-                </span>
-              </div>
-
-              <div className="flex justify-between items-center py-0.5">
-                <span className="text-gray-500 font-medium">Date</span>
-                <span className="font-semibold text-gray-900">
-                  {solanaWithdrawResult.date || 'Today'}
-                </span>
-              </div>
-
-              {(solanaWithdrawResult.transactionId || solanaWithdrawResult.reference) && (
-                <div className="flex justify-between items-center py-0.5">
-                  <span className="text-gray-500 font-medium">Transaction ID</span>
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-mono text-xs font-semibold text-gray-900 truncate max-w-[150px]">
-                      {solanaWithdrawResult.transactionId || solanaWithdrawResult.reference}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        copyToClipboard(
-                          solanaWithdrawResult.transactionId || solanaWithdrawResult.reference,
-                          'Transaction ID'
-                        )
-                      }
-                      className="p-1 text-gray-400 hover:text-gray-700 transition-colors cursor-pointer"
-                      aria-label="Copy transaction ID"
-                    >
-                      {copiedField === 'Transaction ID' ? (
-                        <Check className="w-3.5 h-3.5 text-emerald-600" />
-                      ) : (
-                        <Copy className="w-3.5 h-3.5" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Dotted divider matching Right Phone in screenshot */}
-              <div className="border-t border-dashed border-gray-200 my-2 pt-1" />
-
-              <div className="flex justify-between items-center py-0.5">
-                <span className="text-gray-500 font-medium">Amount</span>
-                <span className="font-semibold text-gray-900">
-                  ${parseFloat(walletAmount || '0').toFixed(2)}
-                </span>
-              </div>
-
-              <div className="flex justify-between items-center py-0.5">
-                <span className="text-gray-500 font-medium">Platform fee</span>
-                <span className="font-semibold text-emerald-600">
-                  $0.00 Free!
-                </span>
-              </div>
-
-              {/* Dotted divider matching Right Phone in screenshot */}
-              <div className="border-t border-dashed border-gray-200 my-2 pt-1" />
-
-              <div className="flex justify-between items-center py-0.5">
-                <span className="text-sm font-bold text-gray-900">Total</span>
-                <span className="text-base font-extrabold text-gray-900">
-                  ${parseFloat(walletAmount || '0').toFixed(2)}
-                </span>
-              </div>
-            </div>
           </div>
         )}
       </div>
