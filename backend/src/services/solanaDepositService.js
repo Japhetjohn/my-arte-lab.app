@@ -549,6 +549,33 @@ class SolanaDepositService {
       }
     };
   }
+
+  /**
+   * Checks whether a destination Solana address has an initialized USDC Associated Token Account.
+   * SPL token transfers fail on Solana if the recipient has no token account and no ATA is created.
+   * 
+   * @param {string} address - Base58 Solana public key
+   * @returns {Promise<boolean>} True if address has at least one active USDC token account
+   */
+  async hasUsdcTokenAccount(address) {
+    if (!address || typeof address !== 'string' || !/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(address.trim())) {
+      return false;
+    }
+
+    try {
+      const res = await this._callRpc('getTokenAccountsByOwner', [
+        address.trim(),
+        { mint: this.USDC_MINT_MAINNET },
+        { encoding: 'jsonParsed' }
+      ]);
+      const accounts = res?.value || [];
+      return accounts.length > 0;
+    } catch (err) {
+      console.warn(`[SolanaDeposit] Could not verify USDC token account for ${address}:`, err.message);
+      // Non-blocking fallback if RPC is transiently down; allow transfer attempt to proceed
+      return true;
+    }
+  }
 }
 
 module.exports = new SolanaDepositService();

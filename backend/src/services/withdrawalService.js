@@ -132,7 +132,7 @@ class WithdrawalService {
           const estimatedFee = await switchService.getNetworkTransferFee({
             walletId: switchWallet.switchWalletId,
             amount: numAmount,
-            asset: 'solana:usdc'
+            asset: 'base:usdc'
           });
 
           const maxSpendable = Math.max(0, Math.floor((liveBal - estimatedFee) * 100) / 100);
@@ -161,6 +161,7 @@ class WithdrawalService {
       currency: cleanCurrency,
       channel: cleanChannel,
       wallet: switchWallet?.solanaAddress || undefined,
+      asset: 'base:usdc',
       developerFee: 1,
       developerRecipient: devFeeRecipient
     });
@@ -193,8 +194,8 @@ class WithdrawalService {
       user: userId,
       idempotencyKey: resolvedKey,
       reference,
-      sourceAsset: 'solana:usdc',
-      sourceNetwork: 'SOLANA',
+      sourceAsset: quote.asset || 'base:usdc',
+      sourceNetwork: quote.network || 'BASE',
       amountUsdc: numAmount,
       destinationCountry: cleanCountry,
       destinationCurrency: cleanCurrency,
@@ -242,6 +243,7 @@ class WithdrawalService {
         narration: withdrawalTx.narration,
         reason: withdrawalTx.reason,
         wallet: switchWallet?.switchWalletId || switchWallet?.solanaAddress,
+        asset: 'base:usdc',
         developerFee: 1, // 1% internal platform fee parameter
         developerRecipient: devFeeRecipient
       });
@@ -250,14 +252,23 @@ class WithdrawalService {
       if (switchInitiateResult.deposit?.address && switchWallet?.switchWalletId) {
         const depositAddress = switchInitiateResult.deposit.address;
         const depositAmount = Number(switchInitiateResult.deposit.amount) || numAmount;
+        const depositAsset = switchInitiateResult.deposit.asset || 'base:usdc';
+
+        // Update transaction records with provider deposit asset & network
+        if (switchInitiateResult.deposit.asset) {
+          withdrawalTx.sourceAsset = switchInitiateResult.deposit.asset;
+        }
+        if (switchInitiateResult.deposit.network) {
+          withdrawalTx.sourceNetwork = switchInitiateResult.deposit.network;
+        }
 
         // Idempotency check: Ensure this withdrawal has not already executed funding
         if (!withdrawalTx.metadata?.fundedAt && !withdrawalTx.metadata?.transferResult) {
           try {
-            console.log(`[WithdrawalService] Funding Switch offramp ${reference}: transferring ${depositAmount} USDC from wallet ${switchWallet.switchWalletId} to ${depositAddress}`);
+            console.log(`[WithdrawalService] Funding Switch offramp ${reference}: transferring ${depositAmount} USDC from wallet ${switchWallet.switchWalletId} to ${depositAddress} (${depositAsset})`);
             const transferRes = await switchService.transferFunds({
               walletId: switchWallet.switchWalletId,
-              asset: 'solana:usdc',
+              asset: depositAsset,
               recipient: depositAddress,
               amount: depositAmount
             });
@@ -267,6 +278,7 @@ class WithdrawalService {
             withdrawalTx.metadata.transferResult = transferRes;
             withdrawalTx.metadata.switchDepositAddress = depositAddress;
             withdrawalTx.metadata.switchDepositAmount = depositAmount;
+            withdrawalTx.metadata.switchDepositAsset = depositAsset;
             withdrawalTx.metadata.fundedAt = new Date();
           } catch (transferErr) {
             const isTimeout = transferErr.name === 'AbortError' || 
@@ -280,6 +292,7 @@ class WithdrawalService {
               withdrawalTx.failureReason = 'Transfer request timed out; awaiting blockchain confirmation';
               if (!withdrawalTx.metadata) withdrawalTx.metadata = {};
               withdrawalTx.metadata.switchDepositAddress = depositAddress;
+              withdrawalTx.metadata.switchDepositAsset = depositAsset;
               await withdrawalTx.save();
 
               return {
@@ -289,12 +302,17 @@ class WithdrawalService {
               };
             }
 
-            console.error(`[WithdrawalService] Switch transfer rejected for ${reference}:`, transferErr.message);
+            console.error(`[WithdrawalService] Switch transfer rejected for ${reference}:`, transferErr.message, transferErr.data || '');
             await ledgerService.releaseWithdrawalReservation(userId, numAmount);
+
+            let failureReasonMsg = `Funding transfer failed: ${transferErr.message}`;
+            if (transferErr.message?.includes('On-chain execution error')) {
+              failureReasonMsg = 'Funding transfer failed: On-chain execution error during simulation. Please verify wallet balance and network availability.';
+            }
 
             withdrawalTx.status = 'failed';
             withdrawalTx.switchStatus = 'FAILED';
-            withdrawalTx.failureReason = `Funding transfer failed: ${transferErr.message}`;
+            withdrawalTx.failureReason = failureReasonMsg;
             withdrawalTx.reservation.isReserved = false;
             withdrawalTx.reservation.releasedAt = new Date();
             await withdrawalTx.save();

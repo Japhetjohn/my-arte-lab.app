@@ -414,16 +414,18 @@ class SwitchService {
    * @param {object} params
    * @param {string} params.walletId - 24-character hex Switch wallet ID
    * @param {number} [params.amount=1] - Amount
-   * @param {string} [params.asset='solana:usdc'] - Asset identifier
+   * @param {string} [params.asset='base:usdc'] - Asset identifier
    * @returns {Promise<number>} Network fee in USDC
    */
-  async getNetworkTransferFee({ walletId, amount = 1, asset = 'solana:usdc' }) {
+  async getNetworkTransferFee({ walletId, amount = 1, asset = 'base:usdc' }) {
+    const cleanAsset = String(asset || 'base:usdc').trim();
+    const fallbackFee = cleanAsset.startsWith('solana') ? 0.095 : 0.05;
+
     if (!walletId || !/^[a-f0-9]{24}$/.test(String(walletId).trim())) {
-      return 0.095;
+      return fallbackFee;
     }
 
     const cleanWalletId = String(walletId).trim();
-    const cleanAsset = String(asset || 'solana:usdc').trim();
     const cacheKey = `fee_${cleanWalletId}_${cleanAsset}`;
     const now = Date.now();
 
@@ -455,7 +457,7 @@ class SwitchService {
       if (cached) return cached.fee;
     }
 
-    return 0.095;
+    return fallbackFee;
   }
 
   /**
@@ -948,10 +950,11 @@ class SwitchService {
    * @param {string} params.currency - Destination fiat currency code (e.g. NGN, KES, GHS)
    * @param {string} [params.channel] - Payment channel (e.g. BANK, MOBILEMONEY)
    * @param {string} [params.wallet] - Source wallet address or Switch wallet ID
+   * @param {string} [params.asset='base:usdc'] - Stablecoin asset to off-ramp
    * @param {boolean} [params.exactOutput=false] - Whether amount is exact destination fiat
    * @returns {Promise<object>} Detailed off-ramp quote data
    */
-  async getOfframpQuote({ amount, country, currency, channel, wallet, exactOutput = false, developerFee = 1, developerRecipient }) {
+  async getOfframpQuote({ amount, country, currency, channel, wallet, asset = 'base:usdc', exactOutput = false, developerFee = 1, developerRecipient }) {
     const numAmount = Number(amount);
     if (isNaN(numAmount) || numAmount <= 0) {
       throw new Error('Withdrawal quote amount must be a positive number greater than 0');
@@ -968,7 +971,7 @@ class SwitchService {
     const payload = {
       amount: numAmount,
       country: country.trim().toUpperCase(),
-      asset: 'solana:usdc', // strictly enforced MyArteLab settlement asset
+      asset: (asset || 'base:usdc').trim(),
       currency: currency.trim().toUpperCase(),
       exact_output: Boolean(exactOutput)
     };
@@ -1152,6 +1155,7 @@ class SwitchService {
     narration = 'MyArteLab Payout',
     reason = 'SERVICE_CHARGES',
     wallet,
+    asset = 'base:usdc',
     developerFee = 1,
     developerRecipient,
     exactOutput = false
@@ -1201,7 +1205,7 @@ class SwitchService {
       amount: numAmount,
       country: cleanCountry,
       currency: cleanCurrency,
-      asset: 'solana:usdc', // strictly enforced MyArteLab crypto settlement asset
+      asset: (asset || 'base:usdc').trim(),
       channel: cleanChannel === 'MOBILE_MONEY' ? 'MOBILEMONEY' : cleanChannel,
       reference: reference.trim(),
       callback_url: resolvedCallbackUrl,

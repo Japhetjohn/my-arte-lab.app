@@ -104,10 +104,10 @@ router.get('/', protect, catchAsync(async (req, res) => {
       estimatedNetworkFee = await switchService.getNetworkTransferFee({
         walletId: switchWallet.switchWalletId,
         amount: 1,
-        asset: 'solana:usdc'
+        asset: 'base:usdc'
       });
     } catch (feeErr) {
-      estimatedNetworkFee = 0.095;
+      estimatedNetworkFee = 0.05;
     }
 
     // Switch on-chain balance does not yet have escrow or network fee deducted: subtract escrow, network fee, and pending withdrawals
@@ -528,7 +528,7 @@ router.post('/withdraw/quote', protect, catchAsync(async (req, res) => {
       networkTransferFee = await switchService.getNetworkTransferFee({
         walletId: switchWallet.switchWalletId,
         amount: numAmount,
-        asset: 'solana:usdc'
+        asset: 'base:usdc'
       });
 
       const switchBalanceInfo = await switchService.getWalletBalance(switchWallet.switchWalletId);
@@ -555,6 +555,7 @@ router.post('/withdraw/quote', protect, catchAsync(async (req, res) => {
       currency: cleanCurrency,
       channel: channel ? channel.trim().toUpperCase() : undefined,
       wallet: switchWallet?.solanaAddress || undefined,
+      asset: 'base:usdc',
       exactOutput: Boolean(exactOutput),
       developerFee: 1,
       developerRecipient: devFeeRecipient
@@ -564,7 +565,7 @@ router.post('/withdraw/quote', protect, catchAsync(async (req, res) => {
       quote.networkFee = {
         amount: networkTransferFee,
         currency: 'USDC',
-        asset: 'solana:usdc'
+        asset: 'base:usdc'
       };
     }
 
@@ -1397,6 +1398,19 @@ router.post('/withdraw/solana', protect, catchAsync(async (req, res) => {
     }
   }
 
+  // Pre-flight check: Verify that recipient Solana address has an initialized USDC token account
+  try {
+    const hasAta = await solanaDepositService.hasUsdcTokenAccount(cleanAddress);
+    if (!hasAta) {
+      return res.status(400).json({
+        success: false,
+        error: 'Recipient Solana address does not have an active USDC token account. Please ensure your destination wallet has received USDC at least once to initialize its token account, or withdraw to your bank account.'
+      });
+    }
+  } catch (ataErr) {
+    // Non-blocking on network error
+  }
+
   try {
     // 1. Atomically reserve balance (throws if availableBalance < numAmount)
     await ledgerService.reserveWithdrawalBalance(req.user._id, numAmount);
@@ -1420,10 +1434,17 @@ router.post('/withdraw/solana', protect, catchAsync(async (req, res) => {
       } catch (transferErr) {
         // Safely release reserved balance upon on-chain rejection
         await ledgerService.releaseWithdrawalReservation(req.user._id, numAmount);
-        transferErr.status = transferErr.status || transferErr.statusCode || 400;
-        transferErr.statusCode = transferErr.status;
-        transferErr.isOperational = true;
-        throw transferErr;
+
+        let clientMessage = transferErr.message || 'On-chain transfer failed';
+        if (clientMessage.includes('On-chain execution error')) {
+          clientMessage = 'On-chain Solana transfer failed. Ensure the recipient Solana wallet is initialized with an active USDC token account and try again.';
+        }
+
+        const safeErr = new Error(clientMessage);
+        safeErr.status = transferErr.status || transferErr.statusCode || 400;
+        safeErr.statusCode = safeErr.status;
+        safeErr.isOperational = true;
+        throw safeErr;
       }
     }
 

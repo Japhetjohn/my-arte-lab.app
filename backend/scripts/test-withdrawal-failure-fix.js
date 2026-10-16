@@ -773,6 +773,210 @@ async function runTestSuite() {
     }
   });
 
+  console.log('\n--- SECTION 7: On-Chain Execution Error Prevention & Base Offramp Verification ---');
+
+  await itAsync('Bank off-ramp initiates and funds via base:usdc, eliminating uninitialized Solana ATA failures', async () => {
+    const mockUserId = '6983ea1691b5040eb0fb0276';
+    const mockUser = { _id: mockUserId, name: 'Base Offramp Tester' };
+
+    const origSwFindOne = SwitchWallet.findOne;
+    const origGetWalletBalance = switchService.getWalletBalance;
+    const origGetQuote = switchService.getOfframpQuote;
+    const origReserve = ledgerService.reserveWithdrawalBalance;
+    const origRelease = ledgerService.releaseWithdrawalReservation;
+    const origInitiate = switchService.initiateOfframp;
+    const origTransfer = switchService.transferFunds;
+    const origTxCreate = WithdrawalTransaction.create;
+    const origTxFindOne = WithdrawalTransaction.findOne;
+
+    let initiateCalledWith = null;
+    let transferCalledWith = null;
+
+    try {
+      SwitchWallet.findOne = async () => ({
+        switchWalletId: '6acf99b9f419026f8d11bbe0',
+        solanaAddress: 'G2NKvCAfXUSjVrn63VYHoXqN8j79B3cx2nY6tG1fnjAx'
+      });
+      switchService.getWalletBalance = async () => ({ isLive: true, balance: 10.0 });
+      switchService.getNetworkTransferFee = async ({ asset }) => (asset === 'base:usdc' ? 0.05 : 0.095);
+      switchService.getOfframpQuote = async (params) => ({
+        rate: 1353.926,
+        destination: { amount: 4738.74, currency: 'NGN' },
+        source: { amount: 3.5, currency: 'USDC' },
+        asset: params.asset || 'base:usdc',
+        network: 'BASE',
+        fee: { total: 0 }
+      });
+      ledgerService.reserveWithdrawalBalance = async () => ({ reserved: true });
+      WithdrawalTransaction.findOne = async () => null;
+
+      let savedTx = null;
+      WithdrawalTransaction.create = async (doc) => {
+        savedTx = { ...doc, save: async () => {} };
+        return savedTx;
+      };
+
+      switchService.initiateOfframp = async (payload) => {
+        initiateCalledWith = payload;
+        return {
+          status: 'AWAITING_DEPOSIT',
+          reference: payload.reference,
+          deposit: {
+            address: '0x38B972194EB98938476Db7b5119BF22862F258aC',
+            amount: 3.5,
+            asset: 'base:usdc',
+            network: 'BASE'
+          }
+        };
+      };
+
+      switchService.transferFunds = async (payload) => {
+        transferCalledWith = payload;
+        return {
+          success: true,
+          reference: 'mock-transfer-uuid',
+          transaction_hash: '0xBaseTxHash123456789'
+        };
+      };
+
+      const res = await withdrawalService.initiateWithdrawal({
+        user: mockUser,
+        amount: 3.5,
+        country: 'NG',
+        currency: 'NGN',
+        channel: 'BANK',
+        beneficiary: { bank_code: '100004', account_number: '8188216769' }
+      });
+
+      assert(res.success, 'Withdrawal initiated successfully');
+      assert.strictEqual(initiateCalledWith.asset, 'base:usdc', 'Initiate offramp explicitly requested base:usdc');
+      assert.strictEqual(transferCalledWith.asset, 'base:usdc', 'Funding transfer executed using base:usdc');
+      assert.strictEqual(transferCalledWith.recipient, '0x38B972194EB98938476Db7b5119BF22862F258aC', 'Recipient is Base EVM address without ATA restrictions');
+      assert.strictEqual(savedTx.sourceAsset, 'base:usdc', 'Transaction source asset is base:usdc');
+      assert.strictEqual(savedTx.sourceNetwork, 'BASE', 'Transaction source network is BASE');
+    } finally {
+      SwitchWallet.findOne = origSwFindOne;
+      switchService.getWalletBalance = origGetWalletBalance;
+      switchService.getOfframpQuote = origGetQuote;
+      ledgerService.reserveWithdrawalBalance = origReserve;
+      ledgerService.releaseWithdrawalReservation = origRelease;
+      switchService.initiateOfframp = origInitiate;
+      switchService.transferFunds = origTransfer;
+      WithdrawalTransaction.create = origTxCreate;
+      WithdrawalTransaction.findOne = origTxFindOne;
+    }
+  });
+
+  await itAsync('solanaDepositService.hasUsdcTokenAccount verifies active USDC token accounts on Solana', async () => {
+    const solanaDepositService = require('../src/services/solanaDepositService');
+    const origCallRpc = solanaDepositService._callRpc;
+
+    try {
+      // 1. Account with NO token account
+      solanaDepositService._callRpc = async () => ({ value: [] });
+      const hasNone = await solanaDepositService.hasUsdcTokenAccount('Ef3dTTgR3ZEmCgJQcev4rztKyHJ3MVjHZMSuc8yg88eP');
+      assert.strictEqual(hasNone, false, 'Uninitialized Solana address correctly returns false');
+
+      // 2. Account with active USDC ATA
+      solanaDepositService._callRpc = async () => ({ value: [{ pubkey: 'TokenAccount123' }] });
+      const hasOne = await solanaDepositService.hasUsdcTokenAccount('Gy2n4pZePk1vZyx76GtNERaLSgcoQYD2MnohMxFWbtCV');
+      assert.strictEqual(hasOne, true, 'Address with active USDC token account returns true');
+
+      // 3. Invalid address format
+      const invalid = await solanaDepositService.hasUsdcTokenAccount('not-a-solana-key');
+      assert.strictEqual(invalid, false, 'Invalid public key returns false immediately');
+    } finally {
+      solanaDepositService._callRpc = origCallRpc;
+    }
+  });
+
+  await itAsync('On-chain execution error during funding transfer safely restores balance and records informative failureReason', async () => {
+    const mockUserId = '6983ea1691b5040eb0fb0276';
+    const mockUser = { _id: mockUserId, name: 'OnChain Error Tester' };
+
+    const origSwFindOne = SwitchWallet.findOne;
+    const origGetWalletBalance = switchService.getWalletBalance;
+    const origGetQuote = switchService.getOfframpQuote;
+    const origReserve = ledgerService.reserveWithdrawalBalance;
+    const origRelease = ledgerService.releaseWithdrawalReservation;
+    const origInitiate = switchService.initiateOfframp;
+    const origTransfer = switchService.transferFunds;
+    const origTxCreate = WithdrawalTransaction.create;
+    const origTxFindOne = WithdrawalTransaction.findOne;
+
+    let releaseCalled = false;
+    let savedTx = null;
+
+    try {
+      SwitchWallet.findOne = async () => ({
+        switchWalletId: '6acf99b9f419026f8d11bbe0',
+        solanaAddress: 'G2NKvCAfXUSjVrn63VYHoXqN8j79B3cx2nY6tG1fnjAx'
+      });
+      switchService.getWalletBalance = async () => ({ isLive: true, balance: 10.0 });
+      switchService.getNetworkTransferFee = async () => 0.05;
+      switchService.getOfframpQuote = async () => ({
+        rate: 1353.926,
+        destination: { amount: 4738.74, currency: 'NGN' },
+        source: { amount: 3.5, currency: 'USDC' },
+        fee: { total: 0 }
+      });
+      ledgerService.reserveWithdrawalBalance = async () => ({ reserved: true });
+      ledgerService.releaseWithdrawalReservation = async () => {
+        releaseCalled = true;
+      };
+      WithdrawalTransaction.findOne = async () => null;
+
+      WithdrawalTransaction.create = async (doc) => {
+        savedTx = { ...doc, save: async () => {} };
+        return savedTx;
+      };
+
+      switchService.initiateOfframp = async () => ({
+        status: 'AWAITING_DEPOSIT',
+        deposit: { address: '0x38B972194EB98938476Db7b5119BF22862F258aC', amount: 3.5, asset: 'base:usdc' }
+      });
+
+      // Transfer rejects with on-chain simulation error
+      switchService.transferFunds = async () => {
+        const err = new Error('On-chain execution error');
+        err.status = 400;
+        err.statusCode = 400;
+        throw err;
+      };
+
+      let threw = false;
+      try {
+        await withdrawalService.initiateWithdrawal({
+          user: mockUser,
+          amount: 3.5,
+          country: 'NG',
+          currency: 'NGN',
+          channel: 'BANK',
+          beneficiary: { bank_code: '100004', account_number: '8188216769' }
+        });
+      } catch (err) {
+        threw = true;
+        assert(err.message.includes('On-chain execution error'), 'Error explains on-chain execution issue');
+      }
+
+      assert(threw, 'Should throw transfer error');
+      assert(releaseCalled, 'Reservation was released back to user balance immediately');
+      assert.strictEqual(savedTx.status, 'failed', 'Transaction marked failed');
+      assert(savedTx.failureReason.includes('On-chain execution error during simulation'), 'Recorded descriptive failure reason');
+      assert.strictEqual(savedTx.reservation.isReserved, false, 'Reservation marked unreserved');
+    } finally {
+      SwitchWallet.findOne = origSwFindOne;
+      switchService.getWalletBalance = origGetWalletBalance;
+      switchService.getOfframpQuote = origGetQuote;
+      ledgerService.reserveWithdrawalBalance = origReserve;
+      ledgerService.releaseWithdrawalReservation = origRelease;
+      switchService.initiateOfframp = origInitiate;
+      switchService.transferFunds = origTransfer;
+      WithdrawalTransaction.create = origTxCreate;
+      WithdrawalTransaction.findOne = origTxFindOne;
+    }
+  });
+
   console.log('\n============================================================');
   console.log(`🎉 ALL TESTS COMPLETED: ${passedTests}/${totalTests} PASSED`);
   console.log('============================================================\n');
