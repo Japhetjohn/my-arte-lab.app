@@ -172,6 +172,7 @@ export function Wallet() {
           fetchTransactions();
         }}
         availableBalance={availableBalance}
+        solanaAddress={solanaAddress}
         userCountry={userCountry}
         paymentCapabilities={paymentCapabilities}
         onSuccess={() => {
