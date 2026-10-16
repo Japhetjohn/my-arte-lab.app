@@ -86,7 +86,7 @@ const transactionSchema = new mongoose.Schema({
   reference: String,                 // Unique reference for the transaction
   paymentMethod: {
     type: String,
-    enum: ['bank_transfer', 'mobile_money', 'crypto', 'card', ''],
+    enum: ['bank_transfer', 'mobile_money', 'crypto', 'card', 'solana_direct', ''],
     default: ''
   },
   paymentDetails: {

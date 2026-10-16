@@ -126,7 +126,8 @@ class LedgerService {
       { new: true }
     );
 
-    console.log(`[Ledger] Successfully credited ${creditAmount} USDC to user ${lockedFundingTx.user}. New balance: ${userUpdate?.wallet?.balance || userUpdate?.balance} USDC. LedgerTx: ${transactionId}`);
+    const finalTxId = ledgerTx?.transactionId || ledgerTx?._id || 'TXN-DEP';
+    console.log(`[Ledger] Successfully credited ${creditAmount} USDC to user ${lockedFundingTx.user}. New balance: ${userUpdate?.wallet?.balance || userUpdate?.balance} USDC. LedgerTx: ${finalTxId}`);
 
     return {
       credited: true,
