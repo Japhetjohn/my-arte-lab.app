@@ -181,6 +181,7 @@ async function runTestSuite() {
   const User = require('../src/models/User');
   const SwitchWallet = require('../src/models/SwitchWallet');
   const WithdrawalTransaction = require('../src/models/WithdrawalTransaction');
+  const Transaction = require('../src/models/Transaction');
 
   await itAsync('Pre-flight balance check rejects withdrawal before calling Switch if amount + network fee > live balance', async () => {
     const testUserId = '6983ea1691b5040eb0fb0276';
@@ -974,6 +975,211 @@ async function runTestSuite() {
       switchService.transferFunds = origTransfer;
       WithdrawalTransaction.create = origTxCreate;
       WithdrawalTransaction.findOne = origTxFindOne;
+    }
+  });
+
+  // --- SECTION 8: DEVELOPER RECIPIENT NETWORK MATCHING & ATOMIC INTERNAL TRANSFERS ---
+  console.log('\n--- SECTION 8: Developer Recipient Matching & Atomic Internal Transfers ---');
+
+  it('SwitchService._resolveDeveloperRecipient validates address against target network', () => {
+    const solanaAddress = 'Gy2n4pZePk1vZyx76GtNERaLSgcoQYD2MnohMxFWbtCV';
+    const evmAddress = '0x38B972194EB98938476Db7b5119BF22862F258aC';
+
+    // 1. Solana asset with Solana address passes
+    assert.strictEqual(
+      switchService._resolveDeveloperRecipient(solanaAddress, 'solana:usdc'),
+      solanaAddress,
+      'Solana address is accepted for solana:usdc'
+    );
+
+    // 2. Base/EVM asset with Solana address is rejected (returns undefined to avoid Switch 400)
+    assert.strictEqual(
+      switchService._resolveDeveloperRecipient(solanaAddress, 'base:usdc'),
+      undefined,
+      'Solana address is rejected for base:usdc to prevent Switch 400 rejection'
+    );
+
+    // 3. Base/EVM asset with EVM address passes
+    assert.strictEqual(
+      switchService._resolveDeveloperRecipient(evmAddress, 'base:usdc'),
+      evmAddress,
+      'EVM address is accepted for base:usdc'
+    );
+
+    // 4. Solana asset with EVM address is rejected
+    assert.strictEqual(
+      switchService._resolveDeveloperRecipient(evmAddress, 'solana:usdc'),
+      undefined,
+      'EVM address is rejected for solana:usdc'
+    );
+  });
+
+  await itAsync('switchService.initiateOfframp omits developer_fee when no network-compatible recipient exists', async () => {
+    let capturedPayload = null;
+    const origRequest = switchService._request;
+    const origResolve = switchService._resolveDeveloperRecipient;
+
+    try {
+      // Force resolve to return undefined (simulating Solana wallet configured on Base offramp)
+      switchService._resolveDeveloperRecipient = () => undefined;
+      switchService._request = async (endpoint, opts) => {
+        capturedPayload = JSON.parse(opts.body);
+        return { data: { status: 'AWAITING_DEPOSIT', deposit: { address: '0x123', amount: 10, asset: 'base:usdc' } } };
+      };
+
+      await switchService.initiateOfframp({
+        amount: 10,
+        country: 'NG',
+        currency: 'NGN',
+        beneficiary: { bank_code: '100004', account_number: '8188216769' },
+        reference: '00000000-0000-0000-0000-000000000001',
+        asset: 'base:usdc',
+        developerFee: 1
+      });
+
+      assert(capturedPayload !== null, 'Request was made');
+      assert.strictEqual(capturedPayload.developer_fee, undefined, 'developer_fee omitted when recipient invalid');
+      assert.strictEqual(capturedPayload.developer_recipient, undefined, 'developer_recipient omitted when recipient invalid');
+    } finally {
+      switchService._request = origRequest;
+      switchService._resolveDeveloperRecipient = origResolve;
+    }
+  });
+
+  await itAsync('ledgerService.transferBetweenWallets atomically debits sender, credits recipient, and records transactions', async () => {
+    const senderId = '6983ea1691b5040eb0fb0276';
+    const recipientId = '6983ea1691b5040eb0fb0277';
+    const amount = 5;
+
+    let senderBalance = 20;
+    let recipientBalance = 10;
+    const createdTxs = [];
+
+    const origSenderFindOneAndUpdate = User.findOneAndUpdate;
+    const origRecipientFindByIdAndUpdate = User.findByIdAndUpdate;
+    const origUserFindById = User.findById;
+    const origTxFindOne = Transaction.findOne;
+    const origTxCreate = Transaction.create;
+
+    try {
+      Transaction.findOne = async () => null; // No prior transfer with this ref
+      User.findById = async (id) => {
+        if (id === senderId) return { _id: senderId, name: 'Sender User', email: 'sender@example.com', wallet: { balance: senderBalance, pendingWithdrawal: 0 } };
+        if (id === recipientId) return { _id: recipientId, name: 'Recipient User', email: 'recipient@example.com', wallet: { balance: recipientBalance, pendingWithdrawal: 0 } };
+        return null;
+      };
+
+      User.findOneAndUpdate = async (query, update) => {
+        if (query._id === senderId) {
+          senderBalance += update.$inc['wallet.balance'];
+          return { _id: senderId, wallet: { balance: senderBalance }, balance: senderBalance };
+        }
+        return null;
+      };
+
+      User.findByIdAndUpdate = async (id, update) => {
+        if (id === recipientId) {
+          recipientBalance += update.$inc['wallet.balance'];
+          return { _id: recipientId, wallet: { balance: recipientBalance }, balance: recipientBalance };
+        }
+        return null;
+      };
+
+      Transaction.create = async (doc) => {
+        createdTxs.push(doc);
+        return doc;
+      };
+
+      const result = await ledgerService.transferBetweenWallets({
+        senderId,
+        recipientId,
+        amount,
+        note: 'Payment for artwork design',
+        idempotencyKey: 'idem-test-12345'
+      });
+
+      assert.strictEqual(result.success, true, 'Transfer succeeded');
+      assert.strictEqual(senderBalance, 15, 'Sender debited exactly 5 USDC');
+      assert.strictEqual(recipientBalance, 15, 'Recipient credited exactly 5 USDC');
+      assert.strictEqual(createdTxs.length, 2, 'Created 2 immutable ledger transactions');
+      assert.strictEqual(createdTxs[0].type, 'transfer_out', 'Sender tx is transfer_out');
+      assert.strictEqual(createdTxs[1].type, 'transfer_in', 'Recipient tx is transfer_in');
+      assert.strictEqual(createdTxs[0].amount, 5, 'Amount is 5 USDC');
+      assert.strictEqual(createdTxs[1].amount, 5, 'Amount is 5 USDC');
+      assert.strictEqual(createdTxs[0].paymentMethod, 'internal_transfer', 'Payment method is internal_transfer');
+    } finally {
+      User.findOneAndUpdate = origSenderFindOneAndUpdate;
+      User.findByIdAndUpdate = origRecipientFindByIdAndUpdate;
+      User.findById = origUserFindById;
+      Transaction.findOne = origTxFindOne;
+      Transaction.create = origTxCreate;
+    }
+  });
+
+  await itAsync('ledgerService.transferBetweenWallets enforces idempotency and rejects self-transfer', async () => {
+    const senderId = '6983ea1691b5040eb0fb0276';
+
+    // 1. Self transfer rejection
+    let selfThrew = false;
+    try {
+      await ledgerService.transferBetweenWallets({
+        senderId,
+        recipientId: senderId,
+        amount: 5
+      });
+    } catch (err) {
+      selfThrew = true;
+      assert(err.message.includes('yourself'), 'Self-transfer rejected');
+    }
+    assert(selfThrew, 'Should throw error on self-transfer');
+
+    // 2. Idempotent retry returns existing transfer without double-debiting
+    const origTxFindOne = Transaction.findOne;
+    const origUserFindById = User.findById;
+    try {
+      Transaction.findOne = async (q) => ({
+        transactionId: 'TXN-TRF-EXISTING',
+        user: q.user,
+        type: q.type,
+        amount: 5,
+        reference: 'idem-test-12345'
+      });
+      User.findById = async () => ({ wallet: { balance: 25 }, balance: 25 });
+
+      const idemResult = await ledgerService.transferBetweenWallets({
+        senderId,
+        recipientId: '6983ea1691b5040eb0fb0277',
+        amount: 5,
+        idempotencyKey: 'idem-test-12345'
+      });
+
+      assert.strictEqual(idemResult.success, true, 'Returns success');
+      assert.strictEqual(idemResult.alreadyProcessed, true, 'Flagged as alreadyProcessed');
+      assert.strictEqual(idemResult.amount, 5, 'Preserved original amount');
+    } finally {
+      Transaction.findOne = origTxFindOne;
+      User.findById = origUserFindById;
+    }
+  });
+
+  await itAsync('calculateAuthoritativeBalance correctly computes balance with internal transfer types', async () => {
+    const origTxFind = Transaction.find;
+    try {
+      Transaction.find = () => ({
+        session: () => {},
+        then: (resolve) => resolve([
+          { type: 'deposit', amount: 100, status: 'completed', currency: 'USDC' },
+          { type: 'transfer_out', amount: 30, status: 'completed', currency: 'USDC' },
+          { type: 'transfer_in', amount: 10, status: 'completed', currency: 'USDC' }
+        ])
+      });
+
+      const bal = await ledgerService.calculateAuthoritativeBalance('mock-user-123');
+      assert.strictEqual(bal.totalCredits, 110, '100 deposit + 10 transfer_in = 110 credits');
+      assert.strictEqual(bal.totalDebits, 30, '30 transfer_out = 30 debits');
+      assert.strictEqual(bal.calculatedBalance, 80, '110 - 30 = 80 USDC');
+    } finally {
+      Transaction.find = origTxFind;
     }
   });
 

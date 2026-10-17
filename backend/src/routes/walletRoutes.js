@@ -1531,4 +1531,68 @@ router.post('/withdraw/solana', protect, catchAsync(async (req, res) => {
   }
 }));
 
+/**
+ * @route   POST /api/wallet/transfer
+ * @desc    Atomic internal wallet-to-wallet transfer between MyArteLab users
+ * @access  Private
+ */
+router.post('/transfer', protect, catchAsync(async (req, res) => {
+  const { recipient, amount, note, idempotencyKey } = req.body;
+
+  const numAmount = parseFloat(Number(amount).toFixed(6));
+  if (isNaN(numAmount) || numAmount <= 0) {
+    return res.status(400).json({
+      success: false,
+      error: 'Please provide a valid transfer amount greater than 0 USDC'
+    });
+  }
+
+  const cleanRecipient = String(recipient || '').trim();
+  if (!cleanRecipient) {
+    return res.status(400).json({
+      success: false,
+      error: 'Recipient is required (email, username, or user ID)'
+    });
+  }
+
+  let recipientUser = null;
+  if (/^[a-f0-9]{24}$/i.test(cleanRecipient)) {
+    recipientUser = await User.findById(cleanRecipient);
+  }
+  if (!recipientUser && cleanRecipient.includes('@')) {
+    recipientUser = await User.findOne({ email: cleanRecipient.toLowerCase() });
+  }
+  if (!recipientUser) {
+    recipientUser = await User.findOne({ username: cleanRecipient.toLowerCase() });
+  }
+
+  if (!recipientUser) {
+    return res.status(404).json({
+      success: false,
+      error: 'Recipient user not found. Please verify the email, username, or user ID.'
+    });
+  }
+
+  if (recipientUser._id.toString() === req.user._id.toString()) {
+    return res.status(400).json({
+      success: false,
+      error: 'Cannot transfer funds to yourself'
+    });
+  }
+
+  const transferResult = await ledgerService.transferBetweenWallets({
+    senderId: req.user._id,
+    recipientId: recipientUser._id,
+    amount: numAmount,
+    note,
+    idempotencyKey
+  });
+
+  res.status(transferResult.alreadyProcessed ? 200 : 201).json({
+    success: true,
+    message: `Successfully transferred ${numAmount} USDC to ${recipientUser.name || recipientUser.email}`,
+    data: transferResult
+  });
+}));
+
 module.exports = router;

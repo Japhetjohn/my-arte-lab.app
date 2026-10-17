@@ -42,18 +42,36 @@ class SwitchService {
    * Checks explicit param first, then FEE_COLLECTION_WALLET, then PLATFORM_WALLET_ADDRESS.
    * @private
    * @param {string} [recipient]
+  /**
+   * Resolves developer fee recipient address securely, matching the requested asset network (EVM vs Solana).
+   * @private
+   * @param {string} [recipient] - Optional recipient override
+   * @param {string} [asset='solana:usdc'] - Target asset
    * @returns {string|undefined}
    */
-  _resolveDeveloperRecipient(recipient) {
+  _resolveDeveloperRecipient(recipient, asset = 'solana:usdc') {
     const raw = recipient || process.env.FEE_COLLECTION_WALLET || process.env.PLATFORM_WALLET_ADDRESS;
     if (!raw) return undefined;
     const trimmed = String(raw).trim();
-    if (/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(trimmed)) {
-      return trimmed;
+    const cleanAsset = String(asset || '').toLowerCase();
+    const isEvmAsset = cleanAsset.startsWith('base:') || 
+                       cleanAsset.startsWith('ethereum:') || 
+                       cleanAsset.startsWith('polygon:') || 
+                       cleanAsset.startsWith('bsc:') || 
+                       cleanAsset.startsWith('arbitrum:') || 
+                       cleanAsset.startsWith('optimism:');
+
+    if (isEvmAsset) {
+      if (/^0x[a-fA-F0-9]{40}$/.test(trimmed)) {
+        return trimmed;
+      }
+      return undefined;
+    } else {
+      if (/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(trimmed)) {
+        return trimmed;
+      }
+      return undefined;
     }
-    console.warn(`[SwitchService] Invalid developer recipient address '${trimmed}', falling back to default.`);
-    const fallback = (process.env.PLATFORM_WALLET_ADDRESS || '').trim();
-    return fallback || undefined;
   }
 
   /**
@@ -788,12 +806,9 @@ class SwitchService {
     }
 
     const resolvedDevFee = developerFee !== undefined && developerFee !== null ? Number(developerFee) : 1;
-    if (!isNaN(resolvedDevFee) && resolvedDevFee >= 0) {
+    const resolvedDevRecipient = this._resolveDeveloperRecipient(developerRecipient, payload.asset);
+    if (resolvedDevRecipient && !isNaN(resolvedDevFee) && resolvedDevFee > 0) {
       payload.developer_fee = resolvedDevFee;
-    }
-
-    const resolvedDevRecipient = this._resolveDeveloperRecipient(developerRecipient);
-    if (resolvedDevRecipient) {
       payload.developer_recipient = resolvedDevRecipient;
     }
 
@@ -898,12 +913,9 @@ class SwitchService {
     };
 
     const resolvedDevFee = developerFee !== undefined && developerFee !== null ? Number(developerFee) : 1;
-    if (!isNaN(resolvedDevFee) && resolvedDevFee >= 0) {
+    const resolvedDevRecipient = this._resolveDeveloperRecipient(developerRecipient, payload.asset);
+    if (resolvedDevRecipient && !isNaN(resolvedDevFee) && resolvedDevFee > 0) {
       payload.developer_fee = resolvedDevFee;
-    }
-
-    const resolvedDevRecipient = this._resolveDeveloperRecipient(developerRecipient);
-    if (resolvedDevRecipient) {
       payload.developer_recipient = resolvedDevRecipient;
     }
 
@@ -985,12 +997,9 @@ class SwitchService {
     }
 
     const resolvedDevFee = developerFee !== undefined && developerFee !== null ? Number(developerFee) : 1;
-    if (!isNaN(resolvedDevFee) && resolvedDevFee >= 0) {
+    const resolvedDevRecipient = this._resolveDeveloperRecipient(developerRecipient, payload.asset);
+    if (resolvedDevRecipient && !isNaN(resolvedDevFee) && resolvedDevFee > 0) {
       payload.developer_fee = resolvedDevFee;
-    }
-
-    const resolvedDevRecipient = this._resolveDeveloperRecipient(developerRecipient);
-    if (resolvedDevRecipient) {
       payload.developer_recipient = resolvedDevRecipient;
     }
 
@@ -1222,12 +1231,9 @@ class SwitchService {
     }
 
     const resolvedDevFee = developerFee !== undefined && developerFee !== null ? Number(developerFee) : 1;
-    if (!isNaN(resolvedDevFee) && resolvedDevFee >= 0 && resolvedDevFee <= 100) {
+    const resolvedDevRecipient = this._resolveDeveloperRecipient(developerRecipient, payload.asset);
+    if (resolvedDevRecipient && !isNaN(resolvedDevFee) && resolvedDevFee > 0) {
       payload.developer_fee = resolvedDevFee;
-    }
-
-    const resolvedDevRecipient = this._resolveDeveloperRecipient(developerRecipient);
-    if (resolvedDevRecipient) {
       payload.developer_recipient = resolvedDevRecipient;
     }
 

@@ -26,7 +26,9 @@ const transactionSchema = new mongoose.Schema({
       'reversal',
       'onramp',
       'offramp',
-      'verification'
+      'verification',
+      'transfer_in',
+      'transfer_out'
     ],
     required: true
   },
@@ -86,7 +88,7 @@ const transactionSchema = new mongoose.Schema({
   reference: String,                 // Unique reference for the transaction
   paymentMethod: {
     type: String,
-    enum: ['bank_transfer', 'mobile_money', 'crypto', 'card', 'solana_direct', ''],
+    enum: ['bank_transfer', 'mobile_money', 'crypto', 'card', 'solana_direct', 'internal_transfer', ''],
     default: ''
   },
   paymentDetails: {

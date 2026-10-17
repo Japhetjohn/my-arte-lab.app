@@ -483,9 +483,9 @@ class LedgerService {
       const curr = (tx.currency || 'USDC').toUpperCase();
       if (curr !== 'USDC') continue;
 
-      if (['deposit', 'earning', 'bonus', 'onramp', 'refund'].includes(tx.type)) {
+      if (['deposit', 'earning', 'bonus', 'onramp', 'refund', 'transfer_in'].includes(tx.type)) {
         totalCredits += amt;
-      } else if (['withdrawal', 'payment', 'escrow', 'verification', 'offramp', 'platform_fee'].includes(tx.type)) {
+      } else if (['withdrawal', 'payment', 'escrow', 'verification', 'offramp', 'platform_fee', 'transfer_out'].includes(tx.type)) {
         totalDebits += amt;
       }
     }
@@ -639,6 +639,243 @@ class LedgerService {
       currency: 'USDC',
       signature: lockedDeposit.signature,
       ledgerTx
+    };
+  }
+
+  /**
+   * Executes an atomic internal wallet-to-wallet transfer between users.
+   * Guarantees:
+   * 1. Idempotency via unique idempotencyKey / reference
+   * 2. Sender available balance check ($gte: balance - pendingWithdrawal >= amount)
+   * 3. Atomic dual-balance debit for sender
+   * 4. Atomic dual-balance credit for recipient
+   * 5. Immutable auditable Transaction ledger records for both parties
+   * 6. Safe rollback if recipient update fails
+   *
+   * @param {Object} params
+   * @param {string|ObjectId} params.senderId - Sender user ID
+   * @param {string|ObjectId} params.recipientId - Recipient user ID
+   * @param {number} params.amount - Transfer amount in USDC
+   * @param {string} [params.note] - Optional memo
+   * @param {string} [params.idempotencyKey] - Unique idempotency key
+   * @returns {Promise<{ success: boolean, amount: number, reference: string, senderTx: Object, recipientTx: Object, senderBalance: number, recipientBalance: number }>}
+   */
+  async transferBetweenWallets({ senderId, recipientId, amount, note = '', idempotencyKey = null }) {
+    const numAmount = parseFloat(Number(amount).toFixed(6));
+    if (isNaN(numAmount) || numAmount <= 0) {
+      const err = new Error('Transfer amount must be a positive number greater than 0');
+      err.status = 400;
+      err.statusCode = 400;
+      err.isOperational = true;
+      throw err;
+    }
+
+    if (String(senderId) === String(recipientId)) {
+      const err = new Error('Cannot transfer funds to yourself');
+      err.status = 400;
+      err.statusCode = 400;
+      err.isOperational = true;
+      throw err;
+    }
+
+    const resolvedReference = (idempotencyKey && String(idempotencyKey).trim()) || crypto.randomUUID();
+
+    // 1. Idempotency check: If this exact transfer was already completed, return existing result
+    const existingSenderTx = await Transaction.findOne({
+      user: senderId,
+      type: 'transfer_out',
+      reference: resolvedReference,
+      status: 'completed'
+    });
+
+    if (existingSenderTx) {
+      const existingRecipientTx = await Transaction.findOne({
+        user: recipientId,
+        type: 'transfer_in',
+        reference: resolvedReference,
+        status: 'completed'
+      });
+
+      const sender = await User.findById(senderId);
+      const recipient = await User.findById(recipientId);
+
+      return {
+        success: true,
+        alreadyProcessed: true,
+        reference: resolvedReference,
+        amount: numAmount,
+        senderTx: existingSenderTx,
+        recipientTx: existingRecipientTx,
+        senderBalance: sender?.wallet?.balance !== undefined ? sender.wallet.balance : sender?.balance,
+        recipientBalance: recipient?.wallet?.balance !== undefined ? recipient.wallet.balance : recipient?.balance
+      };
+    }
+
+    const recipient = await User.findById(recipientId);
+    if (!recipient) {
+      const err = new Error('Recipient user not found');
+      err.status = 404;
+      err.statusCode = 404;
+      err.isOperational = true;
+      throw err;
+    }
+
+    const sender = await User.findById(senderId);
+    if (!sender) {
+      const err = new Error('Sender user not found');
+      err.status = 404;
+      err.statusCode = 404;
+      err.isOperational = true;
+      throw err;
+    }
+
+    // 2. Atomic debit of sender available balance
+    const senderUpdate = await User.findOneAndUpdate(
+      {
+        _id: senderId,
+        $expr: {
+          $gte: [
+            {
+              $subtract: [
+                { $ifNull: ['$wallet.balance', '$balance'] },
+                { $ifNull: ['$wallet.pendingWithdrawal', 0] }
+              ]
+            },
+            numAmount
+          ]
+        }
+      },
+      {
+        $inc: {
+          'wallet.balance': -numAmount,
+          'balance': -numAmount
+        },
+        $set: {
+          'wallet.lastUpdated': new Date(),
+          'lastUpdated': new Date()
+        }
+      },
+      { new: true }
+    );
+
+    if (!senderUpdate) {
+      const curBal = sender.wallet?.balance !== undefined ? sender.wallet.balance : (sender.balance || 0);
+      const curPending = sender.wallet?.pendingWithdrawal || sender.pendingWithdrawal || 0;
+      const available = Math.max(0, curBal - curPending);
+      const err = new Error(`Insufficient available balance. Required: ${numAmount} USDC, Available: ${available} USDC`);
+      err.status = 400;
+      err.statusCode = 400;
+      err.isOperational = true;
+      throw err;
+    }
+
+    // 3. Atomic credit of recipient balance
+    let recipientUpdate = null;
+    try {
+      recipientUpdate = await User.findByIdAndUpdate(
+        recipientId,
+        {
+          $inc: {
+            'wallet.balance': numAmount,
+            'balance': numAmount
+          },
+          $set: {
+            'wallet.lastUpdated': new Date(),
+            'lastUpdated': new Date()
+          }
+        },
+        { new: true }
+      );
+    } catch (creditErr) {
+      // Safe rollback of sender debit if recipient update fails
+      await User.findByIdAndUpdate(senderId, {
+        $inc: {
+          'wallet.balance': numAmount,
+          'balance': numAmount
+        }
+      });
+      throw creditErr;
+    }
+
+    if (!recipientUpdate) {
+      // Safe rollback of sender debit if recipient record unexpectedly disappeared
+      await User.findByIdAndUpdate(senderId, {
+        $inc: {
+          'wallet.balance': numAmount,
+          'balance': numAmount
+        }
+      });
+      const err = new Error('Failed to credit recipient user');
+      err.status = 500;
+      throw err;
+    }
+
+    // 4. Generate unique transaction IDs
+    const timestamp = Date.now().toString(36).toUpperCase();
+    const random1 = crypto.randomBytes(3).toString('hex').toUpperCase();
+    const random2 = crypto.randomBytes(3).toString('hex').toUpperCase();
+    const senderTxId = `TXN-TRF-OUT-${timestamp}-${random1}`;
+    const recipientTxId = `TXN-TRF-IN-${timestamp}-${random2}`;
+
+    const cleanNote = String(note || '').trim();
+    const senderName = sender.name || `${sender.firstName || ''} ${sender.lastName || ''}`.trim() || sender.email;
+    const recipientName = recipient.name || `${recipient.firstName || ''} ${recipient.lastName || ''}`.trim() || recipient.email;
+
+    // 5. Create immutable ledger records
+    const senderTx = await Transaction.create({
+      transactionId: senderTxId,
+      user: senderId,
+      type: 'transfer_out',
+      amount: numAmount,
+      netAmount: numAmount,
+      currency: 'USDC',
+      status: 'completed',
+      reference: resolvedReference,
+      paymentMethod: 'internal_transfer',
+      toAddress: recipient.email || recipient._id.toString(),
+      description: cleanNote ? `Transfer to ${recipientName}: ${cleanNote}` : `Transfer to ${recipientName}`,
+      metadata: {
+        counterpartyId: recipientId,
+        counterpartyEmail: recipient.email,
+        counterpartyName: recipientName,
+        note: cleanNote,
+        idempotencyKey: resolvedReference
+      },
+      completedAt: new Date()
+    });
+
+    const recipientTx = await Transaction.create({
+      transactionId: recipientTxId,
+      user: recipientId,
+      type: 'transfer_in',
+      amount: numAmount,
+      netAmount: numAmount,
+      currency: 'USDC',
+      status: 'completed',
+      reference: resolvedReference,
+      paymentMethod: 'internal_transfer',
+      fromAddress: sender.email || sender._id.toString(),
+      description: cleanNote ? `Transfer from ${senderName}: ${cleanNote}` : `Transfer from ${senderName}`,
+      metadata: {
+        counterpartyId: senderId,
+        counterpartyEmail: sender.email,
+        counterpartyName: senderName,
+        note: cleanNote,
+        idempotencyKey: resolvedReference
+      },
+      completedAt: new Date()
+    });
+
+    console.log(`[Ledger] Successfully executed internal transfer of ${numAmount} USDC from ${senderId} to ${recipientId}. Ref: ${resolvedReference}`);
+
+    return {
+      success: true,
+      amount: numAmount,
+      reference: resolvedReference,
+      senderTx,
+      recipientTx,
+      senderBalance: senderUpdate.wallet?.balance !== undefined ? senderUpdate.wallet.balance : senderUpdate.balance,
+      recipientBalance: recipientUpdate.wallet?.balance !== undefined ? recipientUpdate.wallet.balance : recipientUpdate.balance
     };
   }
 }
