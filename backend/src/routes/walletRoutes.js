@@ -101,13 +101,14 @@ router.get('/', protect, catchAsync(async (req, res) => {
 
     // Estimate network transfer fee for on-chain wallet operations
     try {
+      const sourceAssetInfo = await switchService.resolveWalletSourceAsset(switchWallet.switchWalletId);
       estimatedNetworkFee = await switchService.getNetworkTransferFee({
         walletId: switchWallet.switchWalletId,
         amount: 1,
-        asset: 'base:usdc'
+        asset: sourceAssetInfo?.asset || 'solana:usdc'
       });
     } catch (feeErr) {
-      estimatedNetworkFee = 0.05;
+      estimatedNetworkFee = 0.095;
     }
 
     // Switch on-chain balance does not yet have escrow or network fee deducted: subtract escrow, network fee, and pending withdrawals
@@ -523,17 +524,20 @@ router.post('/withdraw/quote', protect, catchAsync(async (req, res) => {
   const switchWallet = await SwitchWallet.findOne({ user: req.user._id });
 
   let networkTransferFee = 0;
+  let targetAsset = 'solana:usdc';
   if (switchWallet?.switchWalletId) {
     try {
+      const sourceAssetInfo = await switchService.resolveWalletSourceAsset(switchWallet.switchWalletId);
+      targetAsset = sourceAssetInfo?.asset || 'solana:usdc';
+
       networkTransferFee = await switchService.getNetworkTransferFee({
         walletId: switchWallet.switchWalletId,
         amount: numAmount,
-        asset: 'base:usdc'
+        asset: targetAsset
       });
 
-      const switchBalanceInfo = await switchService.getWalletBalance(switchWallet.switchWalletId);
-      if (switchBalanceInfo?.isLive && typeof switchBalanceInfo.balance === 'number') {
-        const liveBal = switchBalanceInfo.balance;
+      const liveBal = sourceAssetInfo.liveBal || sourceAssetInfo.balance;
+      if (typeof liveBal === 'number' && liveBal > 0) {
         const maxSpendable = Math.max(0, Math.floor((liveBal - networkTransferFee) * 100) / 100);
         if (numAmount > maxSpendable || (numAmount + networkTransferFee > liveBal)) {
           return res.status(400).json({
@@ -555,7 +559,7 @@ router.post('/withdraw/quote', protect, catchAsync(async (req, res) => {
       currency: cleanCurrency,
       channel: channel ? channel.trim().toUpperCase() : undefined,
       wallet: switchWallet?.solanaAddress || undefined,
-      asset: 'base:usdc',
+      asset: targetAsset,
       exactOutput: Boolean(exactOutput),
       developerFee: 1,
       developerRecipient: devFeeRecipient
@@ -565,7 +569,7 @@ router.post('/withdraw/quote', protect, catchAsync(async (req, res) => {
       quote.networkFee = {
         amount: networkTransferFee,
         currency: 'USDC',
-        asset: 'base:usdc'
+        asset: targetAsset
       };
     }
 

@@ -312,6 +312,88 @@ class SwitchService {
   }
 
   /**
+   * Resolves the primary funded asset for a Switch wallet based on live on-chain balances.
+   * If the wallet holds Solana USDC, returns 'solana:usdc'.
+   * If the wallet holds Base USDC, returns 'base:usdc'.
+   * Defaults safely to 'solana:usdc' if balance lookup is inconclusive.
+   * 
+   * @param {string} walletId - 24-character hex Switch wallet ID
+   * @param {string} [preferredAsset] - Optional preferred asset override
+   * @returns {Promise<{ asset: string, network: string, balance: number, liveBal: number, breakdown: Array }>}
+   */
+  async resolveWalletSourceAsset(walletId, preferredAsset = null) {
+    if (!walletId || !/^[a-f0-9]{24}$/.test(String(walletId).trim())) {
+      const fallbackAsset = preferredAsset || 'solana:usdc';
+      return {
+        asset: fallbackAsset,
+        network: fallbackAsset.startsWith('base:') ? 'BASE' : 'SOLANA',
+        balance: 0,
+        liveBal: 0,
+        breakdown: []
+      };
+    }
+
+    try {
+      const bal = await this.getWalletBalance(walletId);
+      const breakdown = Array.isArray(bal?.breakdown) ? bal.breakdown : [];
+      
+      // If preferred asset was passed and holds balance, honor it
+      if (preferredAsset) {
+        const found = breakdown.find(b => b.id === preferredAsset);
+        if (found && (Number(found.balance) || 0) > 0) {
+          return {
+            asset: preferredAsset,
+            network: preferredAsset.startsWith('base:') ? 'BASE' : (preferredAsset.startsWith('solana:') ? 'SOLANA' : 'BASE'),
+            balance: Number(found.balance) || 0,
+            liveBal: Number(bal.balance) || 0,
+            breakdown
+          };
+        }
+      }
+
+      // Find all funded assets with positive balance sorted descending
+      const funded = breakdown
+        .filter(b => (Number(b.balance) || 0) > 0)
+        .sort((a, b) => (Number(b.balance) || 0) - (Number(a.balance) || 0));
+
+      if (funded.length > 0) {
+        const primary = funded[0];
+        const primaryAsset = primary.id;
+        const network = primaryAsset.startsWith('base:') ? 'BASE' : 
+                        (primaryAsset.startsWith('solana:') ? 'SOLANA' : 
+                        (primaryAsset.startsWith('polygon:') ? 'POLYGON' : 'SOLANA'));
+        return {
+          asset: primaryAsset,
+          network,
+          balance: Number(primary.balance) || 0,
+          liveBal: Number(bal.balance) || 0,
+          breakdown
+        };
+      }
+
+      // Default fallback
+      const defaultAsset = preferredAsset || 'solana:usdc';
+      return {
+        asset: defaultAsset,
+        network: defaultAsset.startsWith('base:') ? 'BASE' : 'SOLANA',
+        balance: Number(bal.balance) || 0,
+        liveBal: Number(bal.balance) || 0,
+        breakdown
+      };
+    } catch (err) {
+      console.warn(`[SwitchService] resolveWalletSourceAsset lookup error for ${walletId}:`, err.message);
+      const defaultAsset = preferredAsset || 'solana:usdc';
+      return {
+        asset: defaultAsset,
+        network: defaultAsset.startsWith('base:') ? 'BASE' : 'SOLANA',
+        balance: 0,
+        liveBal: 0,
+        breakdown: []
+      };
+    }
+  }
+
+  /**
    * Official list of supported blockchains for unsupported token rescue according to OnSwitch API.
    */
   static SUPPORTED_RESCUE_CHAINS = [
@@ -432,11 +514,11 @@ class SwitchService {
    * @param {object} params
    * @param {string} params.walletId - 24-character hex Switch wallet ID
    * @param {number} [params.amount=1] - Amount
-   * @param {string} [params.asset='base:usdc'] - Asset identifier
+   * @param {string} [params.asset='solana:usdc'] - Asset identifier
    * @returns {Promise<number>} Network fee in USDC
    */
-  async getNetworkTransferFee({ walletId, amount = 1, asset = 'base:usdc' }) {
-    const cleanAsset = String(asset || 'base:usdc').trim();
+  async getNetworkTransferFee({ walletId, amount = 1, asset = 'solana:usdc' }) {
+    const cleanAsset = String(asset || 'solana:usdc').trim();
     const fallbackFee = cleanAsset.startsWith('solana') ? 0.095 : 0.05;
 
     if (!walletId || !/^[a-f0-9]{24}$/.test(String(walletId).trim())) {
@@ -951,10 +1033,37 @@ class SwitchService {
   }
 
   /**
-   * Retrieves an off-ramp payout quote from Switch (USDC on Solana -> Fiat).
-   * Documentation: POST /offramp/quote
+   * Manually confirms an off-ramp payment deposit with Switch engine.
+   * Documentation: POST /payment/confirm
    * 
-   * Strictly converts USDC on Solana ('solana:usdc') to local fiat currency.
+   * @param {object} params
+   * @param {string} params.reference - Transaction reference UUID
+   * @param {string} [params.hash] - Blockchain transaction hash/signature
+   * @returns {Promise<object>} Confirmation status result
+   */
+  async confirmPayment({ reference, hash }) {
+    if (!reference || typeof reference !== 'string') {
+      throw new Error('Transaction reference UUID is required');
+    }
+
+    const payload = {
+      reference: String(reference).trim()
+    };
+    if (hash) {
+      payload.hash = String(hash).trim();
+    }
+
+    const res = await this._request('/payment/confirm', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+
+    return res.data || res;
+  }
+
+  /**
+   * Retrieves an off-ramp payout quote from Switch (USDC -> Fiat).
+   * Documentation: POST /offramp/quote
    * 
    * @param {object} params
    * @param {number|string} params.amount - USDC amount to withdraw (or fiat if exactOutput is true)
@@ -962,11 +1071,11 @@ class SwitchService {
    * @param {string} params.currency - Destination fiat currency code (e.g. NGN, KES, GHS)
    * @param {string} [params.channel] - Payment channel (e.g. BANK, MOBILEMONEY)
    * @param {string} [params.wallet] - Source wallet address or Switch wallet ID
-   * @param {string} [params.asset='base:usdc'] - Stablecoin asset to off-ramp
+   * @param {string} [params.asset='solana:usdc'] - Stablecoin asset to off-ramp
    * @param {boolean} [params.exactOutput=false] - Whether amount is exact destination fiat
    * @returns {Promise<object>} Detailed off-ramp quote data
    */
-  async getOfframpQuote({ amount, country, currency, channel, wallet, asset = 'base:usdc', exactOutput = false, developerFee = 1, developerRecipient }) {
+  async getOfframpQuote({ amount, country, currency, channel, wallet, asset = 'solana:usdc', exactOutput = false, developerFee = 1, developerRecipient }) {
     const numAmount = Number(amount);
     if (isNaN(numAmount) || numAmount <= 0) {
       throw new Error('Withdrawal quote amount must be a positive number greater than 0');
@@ -983,7 +1092,7 @@ class SwitchService {
     const payload = {
       amount: numAmount,
       country: country.trim().toUpperCase(),
-      asset: (asset || 'base:usdc').trim(),
+      asset: (asset || 'solana:usdc').trim(),
       currency: currency.trim().toUpperCase(),
       exact_output: Boolean(exactOutput)
     };
@@ -1166,7 +1275,7 @@ class SwitchService {
     narration = 'MyArteLab Payout',
     reason = 'SERVICE_CHARGES',
     wallet,
-    asset = 'base:usdc',
+    asset = 'solana:usdc',
     developerFee = 1,
     developerRecipient,
     exactOutput = false
@@ -1216,7 +1325,7 @@ class SwitchService {
       amount: numAmount,
       country: cleanCountry,
       currency: cleanCurrency,
-      asset: (asset || 'base:usdc').trim(),
+      asset: (asset || 'solana:usdc').trim(),
       channel: cleanChannel === 'MOBILE_MONEY' ? 'MOBILEMONEY' : cleanChannel,
       reference: reference.trim(),
       callback_url: resolvedCallbackUrl,

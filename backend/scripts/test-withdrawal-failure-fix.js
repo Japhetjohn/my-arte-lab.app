@@ -774,9 +774,116 @@ async function runTestSuite() {
     }
   });
 
-  console.log('\n--- SECTION 7: On-Chain Execution Error Prevention & Base Offramp Verification ---');
+  console.log('\n--- SECTION 7: Dynamic Multi-Chain Asset Resolution & Off-ramp Verification ---');
 
-  await itAsync('Bank off-ramp initiates and funds via base:usdc, eliminating uninitialized Solana ATA failures', async () => {
+  await itAsync('Bank off-ramp dynamically resolves source asset and funds via solana:usdc for Solana-funded wallet', async () => {
+    const mockUserId = '6983ea1691b5040eb0fb0276';
+    const mockUser = { _id: mockUserId, name: 'Solana Offramp Tester' };
+
+    const origSwFindOne = SwitchWallet.findOne;
+    const origGetWalletBalance = switchService.getWalletBalance;
+    const origGetQuote = switchService.getOfframpQuote;
+    const origReserve = ledgerService.reserveWithdrawalBalance;
+    const origRelease = ledgerService.releaseWithdrawalReservation;
+    const origInitiate = switchService.initiateOfframp;
+    const origTransfer = switchService.transferFunds;
+    const origConfirm = switchService.confirmPayment;
+    const origTxCreate = WithdrawalTransaction.create;
+    const origTxFindOne = WithdrawalTransaction.findOne;
+
+    let initiateCalledWith = null;
+    let transferCalledWith = null;
+    let confirmCalledWith = null;
+
+    try {
+      SwitchWallet.findOne = async () => ({
+        switchWalletId: '6acf99b9f419026f8d11bbe0',
+        solanaAddress: 'G2NKvCAfXUSjVrn63VYHoXqN8j79B3cx2nY6tG1fnjAx'
+      });
+      // Mock wallet holding Solana USDC (matching production user 6acf99b9f419026f8d11bbe0)
+      switchService.getWalletBalance = async () => ({
+        isLive: true,
+        balance: 3.627485,
+        breakdown: [{ id: 'solana:usdc', balance: 3.627485 }]
+      });
+      switchService.getNetworkTransferFee = async ({ asset }) => (asset === 'solana:usdc' ? 0.09 : 0.05);
+      switchService.getOfframpQuote = async (params) => ({
+        rate: 1353.926,
+        destination: { amount: 4738.74, currency: 'NGN' },
+        source: { amount: 3.5, currency: 'USDC' },
+        asset: params.asset || 'solana:usdc',
+        network: 'SOLANA',
+        fee: { total: 0 }
+      });
+      ledgerService.reserveWithdrawalBalance = async () => ({ reserved: true });
+      WithdrawalTransaction.findOne = async () => null;
+
+      let savedTx = null;
+      WithdrawalTransaction.create = async (doc) => {
+        savedTx = { ...doc, save: async () => {} };
+        return savedTx;
+      };
+
+      switchService.initiateOfframp = async (payload) => {
+        initiateCalledWith = payload;
+        return {
+          status: 'AWAITING_DEPOSIT',
+          reference: payload.reference,
+          deposit: {
+            address: 'DevdQ1QWPYTZu9gtiffvDxHXu9pGPVuAi8dEp2Wk5KKq',
+            amount: 3.5,
+            asset: 'solana:usdc',
+            network: 'SOLANA'
+          }
+        };
+      };
+
+      switchService.transferFunds = async (payload) => {
+        transferCalledWith = payload;
+        return {
+          success: true,
+          reference: 'mock-transfer-uuid',
+          hash: '5xTestSolanaSignature12345'
+        };
+      };
+
+      switchService.confirmPayment = async (payload) => {
+        confirmCalledWith = payload;
+        return { success: true };
+      };
+
+      const res = await withdrawalService.initiateWithdrawal({
+        user: mockUser,
+        amount: 3.5,
+        country: 'NG',
+        currency: 'NGN',
+        channel: 'BANK',
+        beneficiary: { bank_code: '100004', account_number: '7031632438' }
+      });
+
+      assert(res.success, 'Withdrawal initiated successfully');
+      assert.strictEqual(initiateCalledWith.asset, 'solana:usdc', 'Initiate offramp requested solana:usdc');
+      assert.strictEqual(transferCalledWith.asset, 'solana:usdc', 'Funding transfer executed using solana:usdc');
+      assert.strictEqual(transferCalledWith.recipient, 'DevdQ1QWPYTZu9gtiffvDxHXu9pGPVuAi8dEp2Wk5KKq', 'Recipient is Solana deposit address');
+      assert.strictEqual(savedTx.sourceAsset, 'solana:usdc', 'Transaction source asset is solana:usdc');
+      assert.strictEqual(savedTx.sourceNetwork, 'SOLANA', 'Transaction source network is SOLANA');
+      assert(confirmCalledWith !== null, 'confirmPayment was called');
+      assert.strictEqual(confirmCalledWith.hash, '5xTestSolanaSignature12345', 'Payment confirmed with signature');
+    } finally {
+      SwitchWallet.findOne = origSwFindOne;
+      switchService.getWalletBalance = origGetWalletBalance;
+      switchService.getOfframpQuote = origGetQuote;
+      ledgerService.reserveWithdrawalBalance = origReserve;
+      ledgerService.releaseWithdrawalReservation = origRelease;
+      switchService.initiateOfframp = origInitiate;
+      switchService.transferFunds = origTransfer;
+      switchService.confirmPayment = origConfirm;
+      WithdrawalTransaction.create = origTxCreate;
+      WithdrawalTransaction.findOne = origTxFindOne;
+    }
+  });
+
+  await itAsync('Bank off-ramp dynamically resolves source asset and funds via base:usdc for Base-funded wallet', async () => {
     const mockUserId = '6983ea1691b5040eb0fb0276';
     const mockUser = { _id: mockUserId, name: 'Base Offramp Tester' };
 
@@ -787,6 +894,7 @@ async function runTestSuite() {
     const origRelease = ledgerService.releaseWithdrawalReservation;
     const origInitiate = switchService.initiateOfframp;
     const origTransfer = switchService.transferFunds;
+    const origConfirm = switchService.confirmPayment;
     const origTxCreate = WithdrawalTransaction.create;
     const origTxFindOne = WithdrawalTransaction.findOne;
 
@@ -798,7 +906,12 @@ async function runTestSuite() {
         switchWalletId: '6acf99b9f419026f8d11bbe0',
         solanaAddress: 'G2NKvCAfXUSjVrn63VYHoXqN8j79B3cx2nY6tG1fnjAx'
       });
-      switchService.getWalletBalance = async () => ({ isLive: true, balance: 10.0 });
+      // Mock wallet holding Base USDC
+      switchService.getWalletBalance = async () => ({
+        isLive: true,
+        balance: 10.0,
+        breakdown: [{ id: 'base:usdc', balance: 10.0 }]
+      });
       switchService.getNetworkTransferFee = async ({ asset }) => (asset === 'base:usdc' ? 0.05 : 0.095);
       switchService.getOfframpQuote = async (params) => ({
         rate: 1353.926,
@@ -840,6 +953,8 @@ async function runTestSuite() {
         };
       };
 
+      switchService.confirmPayment = async () => ({ success: true });
+
       const res = await withdrawalService.initiateWithdrawal({
         user: mockUser,
         amount: 3.5,
@@ -852,7 +967,7 @@ async function runTestSuite() {
       assert(res.success, 'Withdrawal initiated successfully');
       assert.strictEqual(initiateCalledWith.asset, 'base:usdc', 'Initiate offramp explicitly requested base:usdc');
       assert.strictEqual(transferCalledWith.asset, 'base:usdc', 'Funding transfer executed using base:usdc');
-      assert.strictEqual(transferCalledWith.recipient, '0x38B972194EB98938476Db7b5119BF22862F258aC', 'Recipient is Base EVM address without ATA restrictions');
+      assert.strictEqual(transferCalledWith.recipient, '0x38B972194EB98938476Db7b5119BF22862F258aC', 'Recipient is Base EVM address');
       assert.strictEqual(savedTx.sourceAsset, 'base:usdc', 'Transaction source asset is base:usdc');
       assert.strictEqual(savedTx.sourceNetwork, 'BASE', 'Transaction source network is BASE');
     } finally {
@@ -863,6 +978,7 @@ async function runTestSuite() {
       ledgerService.releaseWithdrawalReservation = origRelease;
       switchService.initiateOfframp = origInitiate;
       switchService.transferFunds = origTransfer;
+      switchService.confirmPayment = origConfirm;
       WithdrawalTransaction.create = origTxCreate;
       WithdrawalTransaction.findOne = origTxFindOne;
     }

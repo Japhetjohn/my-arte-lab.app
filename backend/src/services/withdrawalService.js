@@ -123,16 +123,26 @@ class WithdrawalService {
       switchWallet = await switchService.getOrCreateUserWallet(userId, userName);
     }
 
+    // Resolve funded source asset dynamically (e.g. solana:usdc vs base:usdc)
+    let sourceAssetInfo = { asset: 'solana:usdc', network: 'SOLANA', balance: 0, liveBal: 0 };
+    if (switchWallet?.switchWalletId) {
+      try {
+        sourceAssetInfo = await switchService.resolveWalletSourceAsset(switchWallet.switchWalletId);
+      } catch (assetErr) {
+        console.warn(`[WithdrawalService] Failed to resolve wallet source asset for ${switchWallet.switchWalletId}:`, assetErr.message);
+      }
+    }
+    const targetAsset = sourceAssetInfo.asset || 'solana:usdc';
+
     // Pre-flight check: Verify live Switch wallet balance and network transfer fee before reserving or initiating
     if (switchWallet?.switchWalletId) {
       try {
-        const switchBalanceInfo = await switchService.getWalletBalance(switchWallet.switchWalletId);
-        if (switchBalanceInfo?.isLive && typeof switchBalanceInfo.balance === 'number') {
-          const liveBal = switchBalanceInfo.balance;
+        const liveBal = sourceAssetInfo.liveBal || sourceAssetInfo.balance;
+        if (typeof liveBal === 'number' && liveBal > 0) {
           const estimatedFee = await switchService.getNetworkTransferFee({
             walletId: switchWallet.switchWalletId,
             amount: numAmount,
-            asset: 'base:usdc'
+            asset: targetAsset
           });
 
           const maxSpendable = Math.max(0, Math.floor((liveBal - estimatedFee) * 100) / 100);
@@ -161,7 +171,7 @@ class WithdrawalService {
       currency: cleanCurrency,
       channel: cleanChannel,
       wallet: switchWallet?.solanaAddress || undefined,
-      asset: 'base:usdc',
+      asset: targetAsset,
       developerFee: 1,
       developerRecipient: devFeeRecipient
     });
@@ -194,8 +204,8 @@ class WithdrawalService {
       user: userId,
       idempotencyKey: resolvedKey,
       reference,
-      sourceAsset: quote.asset || 'base:usdc',
-      sourceNetwork: quote.network || 'BASE',
+      sourceAsset: quote.asset || targetAsset || 'solana:usdc',
+      sourceNetwork: quote.network || sourceAssetInfo.network || 'SOLANA',
       amountUsdc: numAmount,
       destinationCountry: cleanCountry,
       destinationCurrency: cleanCurrency,
@@ -243,7 +253,7 @@ class WithdrawalService {
         narration: withdrawalTx.narration,
         reason: withdrawalTx.reason,
         wallet: switchWallet?.switchWalletId || switchWallet?.solanaAddress,
-        asset: 'base:usdc',
+        asset: targetAsset,
         developerFee: 1, // 1% internal platform fee parameter
         developerRecipient: devFeeRecipient
       });
@@ -252,7 +262,7 @@ class WithdrawalService {
       if (switchInitiateResult.deposit?.address && switchWallet?.switchWalletId) {
         const depositAddress = switchInitiateResult.deposit.address;
         const depositAmount = Number(switchInitiateResult.deposit.amount) || numAmount;
-        const depositAsset = switchInitiateResult.deposit.asset || 'base:usdc';
+        const depositAsset = switchInitiateResult.deposit.asset || targetAsset || 'solana:usdc';
 
         // Update transaction records with provider deposit asset & network
         if (switchInitiateResult.deposit.asset) {
@@ -280,6 +290,20 @@ class WithdrawalService {
             withdrawalTx.metadata.switchDepositAmount = depositAmount;
             withdrawalTx.metadata.switchDepositAsset = depositAsset;
             withdrawalTx.metadata.fundedAt = new Date();
+
+            // Notify Switch engine immediately of the deposit via confirmPayment
+            const txHash = transferRes?.hash || transferRes?.signature || transferRes?.txHash || transferRes?.id;
+            try {
+              console.log(`[WithdrawalService] Confirming payment for offramp ${reference} with hash: ${txHash || 'none'}`);
+              const confirmRes = await switchService.confirmPayment({
+                reference,
+                hash: txHash
+              });
+              console.log(`[WithdrawalService] Payment confirmed for ${reference}:`, confirmRes);
+              withdrawalTx.metadata.confirmPaymentResult = confirmRes;
+            } catch (confirmErr) {
+              console.warn(`[WithdrawalService] Non-blocking confirmPayment notice for ${reference}:`, confirmErr.message);
+            }
           } catch (transferErr) {
             const isTimeout = transferErr.name === 'AbortError' || 
               transferErr.code === 'UND_ERR_CONNECT_TIMEOUT' || 
