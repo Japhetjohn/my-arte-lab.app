@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { AddFundsModal } from '@/components/wallet/AddFundsModal';
 import { WithdrawModal } from '@/components/wallet/WithdrawModal';
+import { TransactionDetailsModal } from '@/components/wallet/TransactionDetailsModal';
 import { MobileWallet } from '@/components/wallet/MobileWallet';
 import { DesktopWallet } from '@/components/wallet/DesktopWallet';
 import { useWallet } from '@/hooks/useWallet';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
+import type { Transaction } from '@/types';
 
 export function Wallet() {
   const {
@@ -37,6 +39,7 @@ export function Wallet() {
   const userRole = user?.role || 'client';
   const [isAddFundsOpen, setIsAddFundsOpen] = useState(false);
   const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
 
   useEffect(() => {
     fetchWallet();
@@ -116,6 +119,7 @@ export function Wallet() {
             fetchTransactions();
           }}
           onLoadMore={loadMoreTransactions}
+          onSelectTransaction={setSelectedTransaction}
         />
       </div>
 
@@ -144,6 +148,7 @@ export function Wallet() {
             fetchTransactions();
           }}
           onLoadMore={loadMoreTransactions}
+          onSelectTransaction={setSelectedTransaction}
         />
       </div>
 
@@ -179,6 +184,13 @@ export function Wallet() {
           fetchWallet();
           fetchTransactions();
         }}
+      />
+
+      {/* Interactive Transaction Details Modal/Drawer */}
+      <TransactionDetailsModal
+        isOpen={!!selectedTransaction}
+        transaction={selectedTransaction}
+        onClose={() => setSelectedTransaction(null)}
       />
     </>
   );

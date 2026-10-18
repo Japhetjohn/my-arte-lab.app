@@ -83,6 +83,9 @@ export const walletService = {
   getTransactions: (params?: { page?: number; limit?: number; type?: string }) =>
     api.get('/wallet/transactions', { params }),
 
+  getTransactionDetails: (id: string) =>
+    api.get(`/wallet/transactions/${id}`),
+
   getSolanaDepositInstructions: () =>
     api.get('/wallet/solana/deposit-instructions'),
 

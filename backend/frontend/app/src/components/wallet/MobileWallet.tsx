@@ -10,6 +10,7 @@ import {
   RefreshCw,
   Loader2,
   AlertCircle,
+  ChevronRight,
 } from 'lucide-react';
 import type { Transaction } from '@/types';
 import { cn } from '@/lib/utils';
@@ -39,6 +40,7 @@ interface MobileWalletProps {
   onWithdraw: () => void;
   onRefresh?: () => void;
   onLoadMore?: () => void;
+  onSelectTransaction?: (tx: Transaction) => void;
 }
 
 export function MobileWallet({
@@ -58,6 +60,7 @@ export function MobileWallet({
   onWithdraw,
   onRefresh,
   onLoadMore,
+  onSelectTransaction,
 }: MobileWalletProps) {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -452,11 +455,21 @@ export function MobileWallet({
                     return (
                       <div
                         key={txId}
-                        className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0 hover:bg-gray-50/50 transition-colors"
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => onSelectTransaction?.(tx)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            onSelectTransaction?.(tx);
+                          }
+                        }}
+                        className="flex items-center justify-between py-3 px-1.5 border-b border-gray-100 last:border-0 hover:bg-purple-50/40 active:bg-purple-50/70 active:scale-[0.99] rounded-xl transition-all cursor-pointer group"
+                        aria-label={`View details for ${meta.categoryName} of ${formatted.text}`}
                       >
                         {/* Left: Monochrome vector icon & Description (NO EMOJIS) */}
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-9 h-9 rounded-full bg-gray-100 border border-gray-200/60 flex items-center justify-center shrink-0">
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                          <div className="w-9 h-9 rounded-full bg-gray-100 group-hover:bg-purple-100/60 border border-gray-200/60 group-hover:border-purple-200 flex items-center justify-center shrink-0 transition-colors">
                             {meta.isEscrow ? (
                               <Lock className="w-4 h-4 text-purple-600" />
                             ) : meta.isRefund ? (
@@ -470,7 +483,7 @@ export function MobileWallet({
 
                           <div className="min-w-0 flex-1">
                             <p
-                              className="font-semibold text-gray-900 text-sm sm:text-base truncate"
+                              className="font-semibold text-gray-900 group-hover:text-[#9747FF] text-sm sm:text-base truncate transition-colors"
                               title={tx.description || meta.categoryName}
                             >
                               {meta.categoryName}
@@ -481,33 +494,36 @@ export function MobileWallet({
                           </div>
                         </div>
 
-                        {/* Right: Amount & Secondary indicator */}
-                        <div className="text-right shrink-0 ml-3">
-                          <p
-                            className={cn(
-                              'text-sm sm:text-base font-bold tracking-tight',
-                              isCredit ? 'text-emerald-600' : 'text-gray-900'
-                            )}
-                          >
-                            {isCredit ? '+' : '−'}
-                            {formatted.text}
-                          </p>
-                          <p className="text-xs text-gray-500 capitalize mt-0.5">
-                            {status === 'completed' ? (
-                              <span className="font-medium text-gray-500">{formatted.currencyBadge}</span>
-                            ) : (
-                              <span
-                                className={cn(
-                                  'font-semibold',
-                                  status === 'pending' || status === 'processing'
-                                    ? 'text-amber-600'
-                                    : 'text-red-500'
-                                )}
-                              >
-                                {status}
-                              </span>
-                            )}
-                          </p>
+                        {/* Right: Amount & Secondary indicator + Chevron */}
+                        <div className="flex items-center gap-1.5 shrink-0 ml-3">
+                          <div className="text-right">
+                            <p
+                              className={cn(
+                                'text-sm sm:text-base font-bold tracking-tight',
+                                isCredit ? 'text-emerald-600' : 'text-gray-900'
+                              )}
+                            >
+                              {isCredit ? '+' : '−'}
+                              {formatted.text}
+                            </p>
+                            <p className="text-xs text-gray-500 capitalize mt-0.5">
+                              {status === 'completed' ? (
+                                <span className="font-medium text-gray-500">{formatted.currencyBadge}</span>
+                              ) : (
+                                <span
+                                  className={cn(
+                                    'font-semibold',
+                                    status === 'pending' || status === 'processing'
+                                      ? 'text-amber-600'
+                                      : 'text-red-500'
+                                  )}
+                                >
+                                  {status}
+                                </span>
+                              )}
+                            </p>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-[#9747FF] group-hover:translate-x-0.5 transition-all shrink-0" />
                         </div>
                       </div>
                     );

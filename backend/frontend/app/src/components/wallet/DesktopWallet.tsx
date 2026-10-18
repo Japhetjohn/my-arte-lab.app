@@ -10,6 +10,7 @@ import {
   RefreshCw,
   Loader2,
   AlertCircle,
+  ChevronRight,
 } from 'lucide-react';
 import type { Transaction } from '@/types';
 import { cn } from '@/lib/utils';
@@ -39,6 +40,7 @@ interface DesktopWalletProps {
   onWithdraw: () => void;
   onRefresh?: () => void;
   onLoadMore?: () => void;
+  onSelectTransaction?: (tx: Transaction) => void;
 }
 
 export function DesktopWallet({
@@ -58,6 +60,7 @@ export function DesktopWallet({
   onWithdraw,
   onRefresh,
   onLoadMore,
+  onSelectTransaction,
 }: DesktopWalletProps) {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -449,11 +452,21 @@ export function DesktopWallet({
                     return (
                       <div
                         key={txId}
-                        className="flex items-center justify-between py-3.5 px-2 hover:bg-gray-50/60 transition-colors rounded-lg"
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => onSelectTransaction?.(tx)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            onSelectTransaction?.(tx);
+                          }
+                        }}
+                        className="flex items-center justify-between py-3.5 px-3 hover:bg-purple-50/40 active:bg-purple-50/70 active:scale-[0.99] transition-all rounded-xl cursor-pointer group"
+                        aria-label={`View details for ${meta.categoryName} of ${formatted.text}`}
                       >
                         {/* Left: Monochrome vector icon & Description (NO EMOJIS) */}
                         <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                          <div className="w-9 h-9 rounded-full bg-gray-100 border border-gray-200/60 flex items-center justify-center shrink-0">
+                          <div className="w-9 h-9 rounded-full bg-gray-100 group-hover:bg-purple-100/60 border border-gray-200/60 group-hover:border-purple-200 flex items-center justify-center shrink-0 transition-colors">
                             {meta.isEscrow ? (
                               <Lock className="w-4 h-4 text-purple-600" />
                             ) : meta.isRefund ? (
@@ -467,7 +480,7 @@ export function DesktopWallet({
 
                           <div className="min-w-0 flex-1">
                             <p
-                              className="font-semibold text-gray-900 text-sm sm:text-base truncate"
+                              className="font-semibold text-gray-900 group-hover:text-[#9747FF] text-sm sm:text-base truncate transition-colors"
                               title={tx.description || meta.categoryName}
                             >
                               {meta.categoryName}
@@ -494,22 +507,25 @@ export function DesktopWallet({
                           </span>
                         </div>
 
-                        {/* Right: Amount with Currency Badge */}
-                        <div className="text-right shrink-0 min-w-[120px]">
-                          <p
-                            className={cn(
-                              'text-sm sm:text-base font-bold tracking-tight',
-                              isCredit ? 'text-emerald-600' : 'text-gray-900'
-                            )}
-                          >
-                            {isCredit ? '+' : '−'}
-                            {formatted.text}{' '}
-                            <span className="text-xs sm:text-sm font-medium text-gray-500">{formatted.currencyBadge}</span>
-                          </p>
+                        {/* Right: Amount with Currency Badge + Chevron */}
+                        <div className="flex items-center gap-3 shrink-0">
+                          <div className="text-right min-w-[100px]">
+                            <p
+                              className={cn(
+                                'text-sm sm:text-base font-bold tracking-tight',
+                                isCredit ? 'text-emerald-600' : 'text-gray-900'
+                              )}
+                            >
+                              {isCredit ? '+' : '−'}
+                              {formatted.text}{' '}
+                              <span className="text-xs sm:text-sm font-medium text-gray-500">{formatted.currencyBadge}</span>
+                            </p>
 
-                          <p className="text-xs font-semibold text-gray-500 sm:hidden capitalize mt-0.5">
-                            {status}
-                          </p>
+                            <p className="text-xs font-semibold text-gray-500 sm:hidden capitalize mt-0.5">
+                              {status}
+                            </p>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-[#9747FF] group-hover:translate-x-0.5 transition-all shrink-0" />
                         </div>
                       </div>
                     );

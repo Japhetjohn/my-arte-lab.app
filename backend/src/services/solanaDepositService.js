@@ -478,7 +478,12 @@ class SolanaDepositService {
     }
 
     const dec = decimals || 6;
-    const amountUsdc = Number(amount) / Math.pow(10, dec);
+    const numAmt = Number(amount);
+    // Switch sends human token amounts (e.g. 3.627485), NOT micro-units (3627485).
+    // If numAmt is already a float or less than 100,000, it is already in human token units.
+    const amountUsdc = (numAmt >= 100000 && Number.isInteger(numAmt))
+      ? numAmt / Math.pow(10, dec)
+      : numAmt;
 
     return this.verifyAndCreditDeposit(switchWallet.user, hash, {
       amountUsdc,

@@ -108,17 +108,58 @@ export interface Wallet {
   transactions: Transaction[];
 }
 
+export interface TransactionTimelineEvent {
+  title: string;
+  description: string;
+  timestamp: string;
+  status: 'completed' | 'processing' | 'failed' | 'pending';
+  hash?: string;
+}
+
 export interface Transaction {
   id: string;
   _id?: string;
-  type: 'deposit' | 'withdrawal' | 'payment' | 'earning' | 'refund' | 'platform_fee' | 'escrow' | 'verification';
+  transactionId?: string;
+  type: 'deposit' | 'withdrawal' | 'payment' | 'earning' | 'refund' | 'platform_fee' | 'escrow' | 'verification' | 'transfer_in' | 'transfer_out' | string;
   amount: number;
+  fee?: number;
+  netAmount?: number;
   currency: string;
-  status: 'pending' | 'processing' | 'reserved' | 'completed' | 'failed' | 'cancelled' | 'reversed';
+  status: 'pending' | 'processing' | 'reserved' | 'completed' | 'failed' | 'cancelled' | 'reversed' | string;
   description: string;
   createdAt: string;
   updatedAt?: string;
+  reference?: string;
+  paymentMethod?: string;
+  fromAddress?: string;
+  toAddress?: string;
+  transactionHash?: string;
+  blockchainNetwork?: string;
+  completedAt?: string;
+  failedAt?: string;
+  errorMessage?: string;
   metadata?: Record<string, any>;
+  beneficiary?: {
+    bankName?: string;
+    accountNumberMasked?: string;
+    accountName?: string;
+  };
+  destinationAmount?: number;
+  destinationCurrency?: string;
+  exchangeRate?: number;
+  fiatAmount?: number;
+  fiatCurrency?: string;
+  quotedUsdcAmount?: number;
+  quoteRate?: number;
+  switchStatus?: string;
+  failureReason?: string;
+  solscanUrl?: string;
+  counterparty?: {
+    name?: string;
+    email?: string;
+    note?: string;
+  };
+  timeline?: TransactionTimelineEvent[];
 }
 
 export interface Project {

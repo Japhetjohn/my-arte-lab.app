@@ -41,7 +41,10 @@ const handleSwitchWebhook = async (req, res) => {
   console.log(`[Switch Webhook] Verified event received. Type: ${eventType}, Status: ${switchStatus}, Ref: ${reference || 'N/A'}`);
 
   // 3. Handle Switch Wallet direct receive webhooks (e.g. Solana USDC received)
-  if (eventType === 'receive' || eventType === 'WALLET_RECEIVE' || data.type === 'receive' || (data.hash && (data.asset?.includes('solana') || data.token))) {
+  const isExplicitReceive = eventType === 'receive' || eventType === 'WALLET_RECEIVE' || data.type === 'receive' || data.type === 'WALLET_RECEIVE';
+  const isOutgoingOrPayout = ['send', 'OFFRAMP', 'WITHDRAWAL', 'payout'].includes(eventType) || ['send', 'OFFRAMP', 'WITHDRAWAL', 'payout'].includes(data.type);
+
+  if (isExplicitReceive && !isOutgoingOrPayout) {
     try {
       const solanaDepositService = require('../services/solanaDepositService');
       const receiveResult = await solanaDepositService.processSwitchWalletReceiveWebhook(payload);

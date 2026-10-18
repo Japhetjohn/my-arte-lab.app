@@ -2,11 +2,13 @@ const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
 const { protect } = require('../middleware/auth');
+const mongoose = require('mongoose');
 const User = require('../models/User');
 const Transaction = require('../models/Transaction');
 const SwitchWallet = require('../models/SwitchWallet');
 const FundingTransaction = require('../models/FundingTransaction');
 const WithdrawalTransaction = require('../models/WithdrawalTransaction');
+const SolanaDeposit = require('../models/SolanaDeposit');
 const switchService = require('../services/switchService');
 const ledgerService = require('../services/ledgerService');
 const withdrawalService = require('../services/withdrawalService');
@@ -1282,6 +1284,260 @@ router.get('/transactions', protect, catchAsync(async (req, res) => {
         itemsPerPage: limit
       }
     }
+  });
+}));
+
+/**
+ * @route   GET /api/wallet/transactions/:id
+ * @desc    Get detailed transaction record with verified ownership, enriched context, and event timeline
+ * @access  Private
+ */
+router.get('/transactions/:id', protect, catchAsync(async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user._id;
+
+  const isObjectId = mongoose.Types.ObjectId.isValid(id);
+  const query = {
+    user: userId,
+    $or: [
+      { transactionId: id },
+      ...(isObjectId ? [{ _id: id }] : []),
+      { reference: id }
+    ]
+  };
+
+  const tx = await Transaction.findOne(query).populate('booking', 'bookingId serviceTitle').lean();
+  if (!tx) {
+    return res.status(404).json({
+      success: false,
+      error: 'Transaction not found'
+    });
+  }
+
+  // Ensure Booking is registered for safety
+  try {
+    require('../models/Booking');
+  } catch (e) {}
+
+  const enriched = { ...tx };
+  const timeline = [];
+
+  const createdAt = tx.createdAt || tx.completedAt || new Date();
+
+  // Milestone 1: Transaction Initiated
+  timeline.push({
+    title: 'Transaction Initiated',
+    description: tx.description || `${tx.type} requested`,
+    timestamp: createdAt,
+    status: 'completed'
+  });
+
+  // 1. Bank Withdrawal / Offramp Enrichment
+  if (tx.type === 'withdrawal' || tx.type === 'offramp' || tx.paymentMethod === 'bank_transfer') {
+    const wtx = await WithdrawalTransaction.findOne({
+      $or: [
+        { reference: tx.reference },
+        { user: userId, reference: tx.reference }
+      ]
+    }).lean();
+
+    if (wtx) {
+      enriched.beneficiary = {
+        bankName: wtx.beneficiary?.bankName || 'Bank Account',
+        accountNumberMasked: wtx.beneficiary?.accountNumber
+          ? `•••• ${String(wtx.beneficiary.accountNumber).slice(-4)}`
+          : null,
+        accountName: wtx.beneficiary?.accountName || null
+      };
+      enriched.destinationAmount = wtx.destinationAmount;
+      enriched.destinationCurrency = wtx.destinationCurrency || 'NGN';
+      enriched.exchangeRate = wtx.exchangeRate;
+      enriched.sourceAsset = wtx.sourceAsset || 'solana:usdc';
+      enriched.sourceNetwork = wtx.sourceNetwork || 'SOLANA';
+      enriched.switchStatus = wtx.switchStatus;
+      enriched.failureReason = wtx.failureReason;
+
+      if (wtx.reservation?.reservedAt) {
+        timeline.push({
+          title: 'Funds Reserved',
+          description: `${tx.amount} USDC held in reservation`,
+          timestamp: wtx.reservation.reservedAt,
+          status: 'completed'
+        });
+      }
+
+      if (Array.isArray(wtx.webhookEvents) && wtx.webhookEvents.length > 0) {
+        const sortedEvents = [...wtx.webhookEvents].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+        for (const ev of sortedEvents) {
+          const evStatus = String(ev.status).toUpperCase();
+          if (evStatus === 'PROCESSING') {
+            const hash = ev.payload?.meta?.hash || ev.payload?.hash;
+            timeline.push({
+              title: 'Transfer Submitted & Processing',
+              description: hash
+                ? `Funding transfer broadcast on Solana (${hash.slice(0, 4)}...${hash.slice(-4)})`
+                : 'Payout processing via banking partner',
+              timestamp: ev.timestamp,
+              status: 'completed',
+              hash: hash || null
+            });
+          } else if (evStatus === 'COMPLETED') {
+            timeline.push({
+              title: 'Withdrawal Completed',
+              description: wtx.destinationAmount
+                ? `₦${Number(wtx.destinationAmount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} sent to ${wtx.beneficiary?.bankName || 'bank account'}`
+                : 'Payout confirmed by banking network',
+              timestamp: ev.timestamp,
+              status: 'completed'
+            });
+          } else if (['FAILED', 'REVERSED'].includes(evStatus)) {
+            timeline.push({
+              title: 'Withdrawal Failed',
+              description: wtx.failureReason || ev.payload?.message || 'Transaction could not be completed. Reserved balance restored.',
+              timestamp: ev.timestamp,
+              status: 'failed'
+            });
+          }
+        }
+      }
+    }
+  }
+
+  // 2. Deposit / On-ramp Enrichment
+  if (tx.type === 'deposit' && tx.paymentMethod !== 'solana_direct') {
+    const ftx = await FundingTransaction.findOne({
+      $or: [
+        { reference: tx.reference },
+        { user: userId, reference: tx.reference }
+      ]
+    }).lean();
+
+    if (ftx) {
+      enriched.fiatAmount = ftx.amountNgn;
+      enriched.fiatCurrency = 'NGN';
+      enriched.quotedUsdcAmount = ftx.quotedUsdcAmount;
+      enriched.quoteRate = ftx.quoteRate;
+      enriched.switchStatus = ftx.switchStatus;
+
+      if (Array.isArray(ftx.webhookEvents) && ftx.webhookEvents.length > 0) {
+        const sortedEvents = [...ftx.webhookEvents].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+        for (const ev of sortedEvents) {
+          const evStatus = String(ev.status).toUpperCase();
+          if (evStatus === 'PROCESSING') {
+            timeline.push({
+              title: 'Payment Detected',
+              description: 'Fiat deposit received and converted to USDC',
+              timestamp: ev.timestamp,
+              status: 'completed'
+            });
+          } else if (evStatus === 'COMPLETED') {
+            timeline.push({
+              title: 'Deposit Confirmed & Credited',
+              description: `${tx.amount} USDC credited to your wallet balance`,
+              timestamp: ev.timestamp,
+              status: 'completed'
+            });
+          }
+        }
+      }
+    }
+  }
+
+  // 3. Solana On-Chain Direct Deposit Enrichment
+  if (tx.type === 'deposit' && (tx.paymentMethod === 'solana_direct' || tx.blockchainNetwork === 'SOLANA')) {
+    const sdep = await SolanaDeposit.findOne({
+      $or: [
+        { signature: tx.transactionHash },
+        { signature: tx.reference },
+        { user: userId, signature: tx.transactionHash }
+      ]
+    }).lean();
+
+    if (sdep) {
+      enriched.slot = sdep.slot;
+      enriched.blockTime = sdep.blockTime;
+      enriched.mint = sdep.mint;
+      enriched.fromAddress = sdep.fromAddress;
+      enriched.toAddress = sdep.toAddress;
+      enriched.confirmationStatus = sdep.confirmationStatus;
+
+      timeline.push({
+        title: 'On-Chain Confirmation',
+        description: `Verified on Solana (slot ${sdep.slot}) with finalized status`,
+        timestamp: sdep.verificationDetails?.verifiedAt || sdep.blockTime || sdep.createdAt,
+        status: 'completed',
+        hash: sdep.signature
+      });
+
+      if (sdep.isCredited) {
+        timeline.push({
+          title: 'Balance Credited',
+          description: `${sdep.amountUsdc || tx.amount} USDC added to spendable balance`,
+          timestamp: sdep.creditedAt || tx.completedAt || new Date(),
+          status: 'completed'
+        });
+      }
+    }
+  }
+
+  // 4. Internal Transfer Enrichment
+  if (tx.type === 'transfer_in' || tx.type === 'transfer_out') {
+    const isOut = tx.type === 'transfer_out';
+    const counterparty = tx.metadata?.counterpartyName || (isOut ? tx.toAddress : tx.fromAddress);
+    enriched.counterparty = {
+      name: tx.metadata?.counterpartyName || null,
+      email: tx.metadata?.counterpartyEmail || null,
+      note: tx.metadata?.note || null
+    };
+
+    timeline.push({
+      title: isOut ? 'Transferred to Counterparty' : 'Received from Counterparty',
+      description: isOut
+        ? `Sent to ${counterparty || 'recipient'}${tx.metadata?.note ? `: "${tx.metadata.note}"` : ''}`
+        : `Received from ${counterparty || 'sender'}${tx.metadata?.note ? `: "${tx.metadata.note}"` : ''}`,
+      timestamp: tx.completedAt || tx.createdAt,
+      status: 'completed'
+    });
+  }
+
+  // Ensure a final status milestone is present
+  const hasTerminal = timeline.some(t => t.title.toLowerCase().includes('completed') || t.status === 'failed');
+  if (!hasTerminal) {
+    if (tx.status === 'completed') {
+      timeline.push({
+        title: 'Transaction Completed',
+        description: 'Successfully settled in your wallet ledger',
+        timestamp: tx.completedAt || tx.updatedAt || tx.createdAt,
+        status: 'completed'
+      });
+    } else if (tx.status === 'failed' || tx.status === 'cancelled') {
+      timeline.push({
+        title: tx.status === 'cancelled' ? 'Transaction Cancelled' : 'Transaction Failed',
+        description: tx.errorMessage || 'Transaction could not be completed',
+        timestamp: tx.failedAt || tx.updatedAt || tx.createdAt,
+        status: 'failed'
+      });
+    } else if (tx.status === 'processing' || tx.status === 'pending') {
+      timeline.push({
+        title: 'Processing',
+        description: 'Transaction is currently awaiting final settlement',
+        timestamp: tx.processedAt || tx.updatedAt || tx.createdAt,
+        status: 'processing'
+      });
+    }
+  }
+
+  // Attach verified Solscan URL if valid Base58 Solana signature is present
+  const sig = enriched.transactionHash || enriched.metadata?.signature || (enriched.blockchainNetwork === 'SOLANA' && tx.reference?.length > 40 ? tx.reference : null);
+  if (sig && /^[1-9A-HJ-NP-Za-km-z]{64,128}$/.test(sig)) {
+    enriched.solscanUrl = `https://solscan.io/tx/${sig}`;
+  }
+
+  enriched.timeline = timeline;
+
+  res.json({
+    success: true,
+    data: enriched
   });
 }));
 
