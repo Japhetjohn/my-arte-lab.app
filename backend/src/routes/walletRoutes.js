@@ -536,13 +536,13 @@ router.post('/withdraw/quote', protect, catchAsync(async (req, res) => {
         asset: targetAsset
       });
 
-      const liveBal = sourceAssetInfo.liveBal || sourceAssetInfo.balance;
-      if (typeof liveBal === 'number' && liveBal > 0) {
+      const liveBal = Number(sourceAssetInfo.balance);
+      if (typeof liveBal === 'number' && !isNaN(liveBal)) {
         const maxSpendable = Math.max(0, Math.floor((liveBal - networkTransferFee) * 100) / 100);
         if (numAmount > maxSpendable || (numAmount + networkTransferFee > liveBal)) {
           return res.status(400).json({
             success: false,
-            error: `Insufficient wallet balance on Switch to cover withdrawal and network transfer fee. Switch requires ~$${networkTransferFee.toFixed(2)} USDC for network transfer fees. Your maximum spendable withdrawal amount is $${maxSpendable.toFixed(2)} USDC.`
+            error: `Insufficient Solana USDC balance on Switch to cover withdrawal and network transfer fee. Switch requires ~$${networkTransferFee.toFixed(2)} USDC for Solana network transfer fees. Your maximum spendable withdrawal amount is $${maxSpendable.toFixed(2)} USDC.`
           });
         }
       }

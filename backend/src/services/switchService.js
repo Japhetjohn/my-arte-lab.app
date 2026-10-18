@@ -312,21 +312,17 @@ class SwitchService {
   }
 
   /**
-   * Resolves the primary funded asset for a Switch wallet based on live on-chain balances.
-   * If the wallet holds Solana USDC, returns 'solana:usdc'.
-   * If the wallet holds Base USDC, returns 'base:usdc'.
-   * Defaults safely to 'solana:usdc' if balance lookup is inconclusive.
+   * Resolves the live Solana USDC balance for a Switch wallet.
+   * Strictly enforces MyArteLab's Solana-only architecture (solana:usdc).
    * 
    * @param {string} walletId - 24-character hex Switch wallet ID
-   * @param {string} [preferredAsset] - Optional preferred asset override
-   * @returns {Promise<{ asset: string, network: string, balance: number, liveBal: number, breakdown: Array }>}
+   * @returns {Promise<{ asset: 'solana:usdc', network: 'SOLANA', balance: number, liveBal: number, breakdown: Array }>}
    */
-  async resolveWalletSourceAsset(walletId, preferredAsset = null) {
+  async resolveWalletSourceAsset(walletId) {
     if (!walletId || !/^[a-f0-9]{24}$/.test(String(walletId).trim())) {
-      const fallbackAsset = preferredAsset || 'solana:usdc';
       return {
-        asset: fallbackAsset,
-        network: fallbackAsset.startsWith('base:') ? 'BASE' : 'SOLANA',
+        asset: 'solana:usdc',
+        network: 'SOLANA',
         balance: 0,
         liveBal: 0,
         breakdown: []
@@ -336,56 +332,21 @@ class SwitchService {
     try {
       const bal = await this.getWalletBalance(walletId);
       const breakdown = Array.isArray(bal?.breakdown) ? bal.breakdown : [];
-      
-      // If preferred asset was passed and holds balance, honor it
-      if (preferredAsset) {
-        const found = breakdown.find(b => b.id === preferredAsset);
-        if (found && (Number(found.balance) || 0) > 0) {
-          return {
-            asset: preferredAsset,
-            network: preferredAsset.startsWith('base:') ? 'BASE' : (preferredAsset.startsWith('solana:') ? 'SOLANA' : 'BASE'),
-            balance: Number(found.balance) || 0,
-            liveBal: Number(bal.balance) || 0,
-            breakdown
-          };
-        }
-      }
+      const solanaEntry = breakdown.find(b => b.id === 'solana:usdc');
+      const solanaBal = solanaEntry ? (Number(solanaEntry.balance) || 0) : (Number(bal.balance) || 0);
 
-      // Find all funded assets with positive balance sorted descending
-      const funded = breakdown
-        .filter(b => (Number(b.balance) || 0) > 0)
-        .sort((a, b) => (Number(b.balance) || 0) - (Number(a.balance) || 0));
-
-      if (funded.length > 0) {
-        const primary = funded[0];
-        const primaryAsset = primary.id;
-        const network = primaryAsset.startsWith('base:') ? 'BASE' : 
-                        (primaryAsset.startsWith('solana:') ? 'SOLANA' : 
-                        (primaryAsset.startsWith('polygon:') ? 'POLYGON' : 'SOLANA'));
-        return {
-          asset: primaryAsset,
-          network,
-          balance: Number(primary.balance) || 0,
-          liveBal: Number(bal.balance) || 0,
-          breakdown
-        };
-      }
-
-      // Default fallback
-      const defaultAsset = preferredAsset || 'solana:usdc';
       return {
-        asset: defaultAsset,
-        network: defaultAsset.startsWith('base:') ? 'BASE' : 'SOLANA',
-        balance: Number(bal.balance) || 0,
+        asset: 'solana:usdc',
+        network: 'SOLANA',
+        balance: solanaBal,
         liveBal: Number(bal.balance) || 0,
         breakdown
       };
     } catch (err) {
       console.warn(`[SwitchService] resolveWalletSourceAsset lookup error for ${walletId}:`, err.message);
-      const defaultAsset = preferredAsset || 'solana:usdc';
       return {
-        asset: defaultAsset,
-        network: defaultAsset.startsWith('base:') ? 'BASE' : 'SOLANA',
+        asset: 'solana:usdc',
+        network: 'SOLANA',
         balance: 0,
         liveBal: 0,
         breakdown: []

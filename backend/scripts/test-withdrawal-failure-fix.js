@@ -237,7 +237,7 @@ async function runTestSuite() {
       assert(threw, 'Should have thrown error on pre-flight balance and fee check');
       assert.strictEqual(caughtErr.status, 400, 'Error status should be 400');
       assert.strictEqual(caughtErr.statusCode, 400, 'Error statusCode should be 400');
-      assert(caughtErr.message.includes('Insufficient wallet balance on Switch'), 'Error message is clear and actionable');
+      assert(caughtErr.message.includes('balance on Switch'), 'Error message is clear and actionable');
       assert(caughtErr.message.includes('3.53 USDC'), 'Informs user of exact max allowed spendable balance ($3.53 USDC)');
       assert(caughtErr.message.includes('network transfer fees'), 'Mentions network transfer fee');
     } finally {
@@ -883,103 +883,55 @@ async function runTestSuite() {
     }
   });
 
-  await itAsync('Bank off-ramp dynamically resolves source asset and funds via base:usdc for Base-funded wallet', async () => {
+  await itAsync('Bank off-ramp strictly validates Solana USDC balance without falling back to other chains', async () => {
     const mockUserId = '6983ea1691b5040eb0fb0276';
-    const mockUser = { _id: mockUserId, name: 'Base Offramp Tester' };
+    const mockUser = { _id: mockUserId, name: 'Solana Strict Tester' };
 
     const origSwFindOne = SwitchWallet.findOne;
     const origGetWalletBalance = switchService.getWalletBalance;
     const origGetQuote = switchService.getOfframpQuote;
     const origReserve = ledgerService.reserveWithdrawalBalance;
     const origRelease = ledgerService.releaseWithdrawalReservation;
-    const origInitiate = switchService.initiateOfframp;
-    const origTransfer = switchService.transferFunds;
-    const origConfirm = switchService.confirmPayment;
-    const origTxCreate = WithdrawalTransaction.create;
     const origTxFindOne = WithdrawalTransaction.findOne;
 
-    let initiateCalledWith = null;
-    let transferCalledWith = null;
-
     try {
+      WithdrawalTransaction.findOne = async () => null;
       SwitchWallet.findOne = async () => ({
         switchWalletId: '6acf99b9f419026f8d11bbe0',
         solanaAddress: 'G2NKvCAfXUSjVrn63VYHoXqN8j79B3cx2nY6tG1fnjAx'
       });
-      // Mock wallet holding Base USDC
+      // Wallet holds 0 on Solana, but has 10 on Base
       switchService.getWalletBalance = async () => ({
         isLive: true,
         balance: 10.0,
-        breakdown: [{ id: 'base:usdc', balance: 10.0 }]
+        breakdown: [
+          { id: 'solana:usdc', balance: 0 },
+          { id: 'base:usdc', balance: 10.0 }
+        ]
       });
-      switchService.getNetworkTransferFee = async ({ asset }) => (asset === 'base:usdc' ? 0.05 : 0.095);
-      switchService.getOfframpQuote = async (params) => ({
-        rate: 1353.926,
-        destination: { amount: 4738.74, currency: 'NGN' },
-        source: { amount: 3.5, currency: 'USDC' },
-        asset: params.asset || 'base:usdc',
-        network: 'BASE',
-        fee: { total: 0 }
-      });
-      ledgerService.reserveWithdrawalBalance = async () => ({ reserved: true });
-      WithdrawalTransaction.findOne = async () => null;
+      switchService.getNetworkTransferFee = async () => 0.09;
 
-      let savedTx = null;
-      WithdrawalTransaction.create = async (doc) => {
-        savedTx = { ...doc, save: async () => {} };
-        return savedTx;
-      };
-
-      switchService.initiateOfframp = async (payload) => {
-        initiateCalledWith = payload;
-        return {
-          status: 'AWAITING_DEPOSIT',
-          reference: payload.reference,
-          deposit: {
-            address: '0x38B972194EB98938476Db7b5119BF22862F258aC',
-            amount: 3.5,
-            asset: 'base:usdc',
-            network: 'BASE'
-          }
-        };
-      };
-
-      switchService.transferFunds = async (payload) => {
-        transferCalledWith = payload;
-        return {
-          success: true,
-          reference: 'mock-transfer-uuid',
-          transaction_hash: '0xBaseTxHash123456789'
-        };
-      };
-
-      switchService.confirmPayment = async () => ({ success: true });
-
-      const res = await withdrawalService.initiateWithdrawal({
-        user: mockUser,
-        amount: 3.5,
-        country: 'NG',
-        currency: 'NGN',
-        channel: 'BANK',
-        beneficiary: { bank_code: '100004', account_number: '8188216769' }
-      });
-
-      assert(res.success, 'Withdrawal initiated successfully');
-      assert.strictEqual(initiateCalledWith.asset, 'base:usdc', 'Initiate offramp explicitly requested base:usdc');
-      assert.strictEqual(transferCalledWith.asset, 'base:usdc', 'Funding transfer executed using base:usdc');
-      assert.strictEqual(transferCalledWith.recipient, '0x38B972194EB98938476Db7b5119BF22862F258aC', 'Recipient is Base EVM address');
-      assert.strictEqual(savedTx.sourceAsset, 'base:usdc', 'Transaction source asset is base:usdc');
-      assert.strictEqual(savedTx.sourceNetwork, 'BASE', 'Transaction source network is BASE');
+      let threw = false;
+      try {
+        await withdrawalService.initiateWithdrawal({
+          user: mockUser,
+          amount: 3.5,
+          country: 'NG',
+          currency: 'NGN',
+          channel: 'BANK',
+          beneficiary: { bank_code: '100004', account_number: '7031632438' }
+        });
+      } catch (err) {
+        threw = true;
+        assert(err.message.includes('Insufficient Solana USDC balance'), 'Rejects with Insufficient Solana USDC balance without falling back to Base');
+      }
+      assert(threw, 'Should reject withdrawal when Solana balance is 0 despite Base balance');
     } finally {
       SwitchWallet.findOne = origSwFindOne;
       switchService.getWalletBalance = origGetWalletBalance;
       switchService.getOfframpQuote = origGetQuote;
       ledgerService.reserveWithdrawalBalance = origReserve;
       ledgerService.releaseWithdrawalReservation = origRelease;
-      switchService.initiateOfframp = origInitiate;
-      switchService.transferFunds = origTransfer;
-      switchService.confirmPayment = origConfirm;
-      WithdrawalTransaction.create = origTxCreate;
       WithdrawalTransaction.findOne = origTxFindOne;
     }
   });

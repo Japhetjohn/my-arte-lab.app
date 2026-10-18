@@ -123,22 +123,16 @@ class WithdrawalService {
       switchWallet = await switchService.getOrCreateUserWallet(userId, userName);
     }
 
-    // Resolve funded source asset dynamically (e.g. solana:usdc vs base:usdc)
-    let sourceAssetInfo = { asset: 'solana:usdc', network: 'SOLANA', balance: 0, liveBal: 0 };
-    if (switchWallet?.switchWalletId) {
-      try {
-        sourceAssetInfo = await switchService.resolveWalletSourceAsset(switchWallet.switchWalletId);
-      } catch (assetErr) {
-        console.warn(`[WithdrawalService] Failed to resolve wallet source asset for ${switchWallet.switchWalletId}:`, assetErr.message);
-      }
-    }
-    const targetAsset = sourceAssetInfo.asset || 'solana:usdc';
+    // Strictly enforce MyArteLab's Solana USDC settlement asset
+    const targetAsset = 'solana:usdc';
+    const targetNetwork = 'SOLANA';
 
-    // Pre-flight check: Verify live Switch wallet balance and network transfer fee before reserving or initiating
+    // Pre-flight check: Verify live Switch wallet Solana balance and network transfer fee before reserving or initiating
     if (switchWallet?.switchWalletId) {
       try {
-        const liveBal = sourceAssetInfo.liveBal || sourceAssetInfo.balance;
-        if (typeof liveBal === 'number' && liveBal > 0) {
+        const sourceAssetInfo = await switchService.resolveWalletSourceAsset(switchWallet.switchWalletId);
+        const liveBal = Number(sourceAssetInfo.balance);
+        if (typeof liveBal === 'number' && !isNaN(liveBal)) {
           const estimatedFee = await switchService.getNetworkTransferFee({
             walletId: switchWallet.switchWalletId,
             amount: numAmount,
@@ -148,8 +142,8 @@ class WithdrawalService {
           const maxSpendable = Math.max(0, Math.floor((liveBal - estimatedFee) * 100) / 100);
           if (numAmount > maxSpendable || (numAmount + estimatedFee > liveBal)) {
             const balErr = new Error(
-              `Insufficient wallet balance on Switch to cover withdrawal and network transfer fee. ` +
-              `Switch requires ~$${estimatedFee.toFixed(2)} USDC for network transfer fees. ` +
+              `Insufficient Solana USDC balance on Switch to cover withdrawal and network transfer fee. ` +
+              `Switch requires ~$${estimatedFee.toFixed(2)} USDC for Solana network transfer fees. ` +
               `Your maximum spendable withdrawal amount is $${maxSpendable.toFixed(2)} USDC.`
             );
             balErr.status = 400;
@@ -204,8 +198,8 @@ class WithdrawalService {
       user: userId,
       idempotencyKey: resolvedKey,
       reference,
-      sourceAsset: quote.asset || targetAsset || 'solana:usdc',
-      sourceNetwork: quote.network || sourceAssetInfo.network || 'SOLANA',
+      sourceAsset: targetAsset,
+      sourceNetwork: targetNetwork,
       amountUsdc: numAmount,
       destinationCountry: cleanCountry,
       destinationCurrency: cleanCurrency,
