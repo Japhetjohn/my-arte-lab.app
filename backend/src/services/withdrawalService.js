@@ -321,6 +321,31 @@ class WithdrawalService {
             }
 
             console.error(`[WithdrawalService] Switch transfer rejected for ${reference}:`, transferErr.message, transferErr.data || '');
+
+            // Provider reconciliation guard: Before releasing reservation, check if Switch already ingested or processed the deposit
+            try {
+              const livePayment = await switchService.getPaymentStatus(reference);
+              const provStatus = (livePayment?.status || '').toUpperCase();
+              if (['PROCESSING', 'COMPLETED', 'PAID', 'AWAITING_PAYOUT'].includes(provStatus) || livePayment?.meta?.hash) {
+                console.log(`[WithdrawalService] Switch transfer returned error but provider status is ${provStatus} (hash: ${livePayment?.meta?.hash}). Keeping reservation in processing.`);
+                withdrawalTx.status = 'processing';
+                withdrawalTx.switchStatus = provStatus || 'PROCESSING';
+                if (!withdrawalTx.metadata) withdrawalTx.metadata = {};
+                withdrawalTx.metadata.switchDepositAddress = depositAddress;
+                withdrawalTx.metadata.switchDepositAsset = depositAsset;
+                withdrawalTx.metadata.livePayment = livePayment;
+                await withdrawalTx.save();
+
+                return {
+                  success: true,
+                  message: 'Withdrawal submitted and recognized by payment provider.',
+                  data: this._formatWithdrawalResponse(withdrawalTx)
+                };
+              }
+            } catch (statusLookupErr) {
+              // Non-blocking; proceed to safe release if provider lookup confirms no active payment
+            }
+
             await ledgerService.releaseWithdrawalReservation(userId, numAmount);
 
             let failureReasonMsg = `Funding transfer failed: ${transferErr.message}`;

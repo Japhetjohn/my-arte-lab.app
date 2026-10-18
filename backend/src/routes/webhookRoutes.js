@@ -130,19 +130,22 @@ const handleSwitchWebhook = async (req, res) => {
             payload: data
           });
 
-          if (switchStatus) {
-            withdrawalTx.switchStatus = switchStatus;
+          // Monotonic state progression: Prevent out-of-order webhooks from downgrading a completed withdrawal
+          if (withdrawalTx.status !== 'completed') {
+            if (switchStatus) {
+              withdrawalTx.switchStatus = switchStatus;
+            }
           }
 
           await withdrawalTx.save();
-          console.log(`[Switch Webhook] Withdrawal ${reference} event recorded (Switch: ${switchStatus})`);
+          console.log(`[Switch Webhook] Withdrawal ${reference} event recorded (Switch: ${switchStatus}, Current Status: ${withdrawalTx.status})`);
         }
 
-        // Phase 6B settlement & reservation accounting
+        // Monotonic settlement accounting: Never re-process failure if already completed
         if (switchStatus === 'COMPLETED') {
           const settleResult = await ledgerService.settleCompletedWithdrawal(withdrawalTx);
           console.log(`[Switch Webhook] Withdrawal settlement debit for ${reference}:`, settleResult);
-        } else if (['FAILED', 'REVERSED', 'EXPIRED'].includes(switchStatus)) {
+        } else if (['FAILED', 'REVERSED', 'EXPIRED'].includes(switchStatus) && withdrawalTx.status !== 'completed') {
           const failureResult = await ledgerService.handleFailedOrReversedWithdrawal(withdrawalTx, switchStatus, data.message);
           console.log(`[Switch Webhook] Withdrawal failure/reversal handled for ${reference}:`, failureResult);
         }

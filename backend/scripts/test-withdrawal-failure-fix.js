@@ -1147,8 +1147,21 @@ async function runTestSuite() {
 
       User.findByIdAndUpdate = async (id, update) => {
         if (id === recipientId) {
-          recipientBalance += update.$inc['wallet.balance'];
+          if (update.$inc && update.$inc['wallet.balance'] !== undefined) {
+            recipientBalance += update.$inc['wallet.balance'];
+          }
+          if (update.$set && update.$set['wallet.balance'] !== undefined) {
+            recipientBalance = update.$set['wallet.balance'];
+          }
           return { _id: recipientId, wallet: { balance: recipientBalance }, balance: recipientBalance };
+        } else if (id === senderId) {
+          if (update.$inc && update.$inc['wallet.balance'] !== undefined) {
+            senderBalance += update.$inc['wallet.balance'];
+          }
+          if (update.$set && update.$set['wallet.balance'] !== undefined) {
+            senderBalance = update.$set['wallet.balance'];
+          }
+          return { _id: senderId, wallet: { balance: senderBalance }, balance: senderBalance };
         }
         return null;
       };
@@ -1248,6 +1261,206 @@ async function runTestSuite() {
       assert.strictEqual(bal.calculatedBalance, 80, '110 - 30 = 80 USDC');
     } finally {
       Transaction.find = origTxFind;
+    }
+  });
+
+  console.log('\n--- SECTION 9: Hardened Ledger Rollback & Monotonic State Progression ---');
+
+  await itAsync('transferBetweenWallets rolls back both sender and recipient balances if transaction creation fails', async () => {
+    const senderId = '6983ea1691b5040eb0fb0276';
+    const recipientId = '6983ea1691b5040eb0fb0277';
+    let senderBalance = 20;
+    let recipientBalance = 10;
+
+    const origSenderFindOneAndUpdate = User.findOneAndUpdate;
+    const origRecipientFindByIdAndUpdate = User.findByIdAndUpdate;
+    const origUserFindById = User.findById;
+    const origTxFindOne = Transaction.findOne;
+    const origTxCreate = Transaction.create;
+
+    try {
+      Transaction.findOne = async () => null;
+      User.findById = async (id) => ({
+        _id: id,
+        wallet: { balance: id === senderId ? senderBalance : recipientBalance },
+        balance: id === senderId ? senderBalance : recipientBalance
+      });
+
+      User.findOneAndUpdate = async (filter, update) => {
+        senderBalance += update.$inc['wallet.balance'];
+        return { _id: senderId, wallet: { balance: senderBalance }, balance: senderBalance };
+      };
+
+      User.findByIdAndUpdate = async (id, update) => {
+        if (id === recipientId) {
+          recipientBalance += update.$inc['wallet.balance'];
+          return { _id: recipientId, wallet: { balance: recipientBalance }, balance: recipientBalance };
+        } else if (id === senderId) {
+          senderBalance += update.$inc['wallet.balance'];
+          return { _id: senderId, wallet: { balance: senderBalance }, balance: senderBalance };
+        }
+        return null;
+      };
+
+      // Simulate catastrophic failure during ledger Transaction record write
+      Transaction.create = async () => {
+        throw new Error('Database write collision: Transaction collection unavailable');
+      };
+
+      let threw = false;
+      try {
+        await ledgerService.transferBetweenWallets({
+          senderId,
+          recipientId,
+          amount: 5,
+          idempotencyKey: 'fail-rollback-test-key'
+        });
+      } catch (err) {
+        threw = true;
+        assert(err.message.includes('Database write collision'), 'Original error propagated');
+      }
+
+      assert.strictEqual(threw, true, 'transferBetweenWallets must throw on transaction creation error');
+      assert.strictEqual(senderBalance, 20, 'Sender balance rolled back to initial 20 USDC');
+      assert.strictEqual(recipientBalance, 10, 'Recipient balance rolled back to initial 10 USDC');
+    } finally {
+      User.findOneAndUpdate = origSenderFindOneAndUpdate;
+      User.findByIdAndUpdate = origRecipientFindByIdAndUpdate;
+      User.findById = origUserFindById;
+      Transaction.findOne = origTxFindOne;
+      Transaction.create = origTxCreate;
+    }
+  });
+
+  await itAsync('settleCompletedWithdrawal does not decrement pendingWithdrawal when wasReserved is false and clamps float drift', async () => {
+    const origFindOneAndUpdate = WithdrawalTransaction.findOneAndUpdate;
+    const origUserFindByIdAndUpdate = User.findByIdAndUpdate;
+    const origTxCreate = Transaction.create;
+
+    let pendingWithdrawalVal = 0;
+    let balanceVal = 3.62;
+
+    try {
+      WithdrawalTransaction.findOneAndUpdate = async () => ({
+        _id: 'mock-wd-id',
+        user: 'mock-user-id',
+        amountUsdc: 3.53,
+        destinationAmount: 4731.42,
+        destinationCurrency: 'NGN',
+        reference: 'mock-ref-uuid',
+        reservation: { isReserved: false } // Reservation was already released
+      });
+
+      Transaction.create = async (doc) => doc;
+
+      User.findByIdAndUpdate = async (id, update) => {
+        if (update.$inc) {
+          balanceVal += update.$inc['wallet.balance'];
+          if (update.$inc['wallet.pendingWithdrawal']) {
+            pendingWithdrawalVal += update.$inc['wallet.pendingWithdrawal'];
+          }
+        }
+        if (update.$set && update.$set['wallet.balance'] !== undefined) {
+          balanceVal = update.$set['wallet.balance'];
+          pendingWithdrawalVal = update.$set['wallet.pendingWithdrawal'];
+        }
+        return { wallet: { balance: balanceVal, pendingWithdrawal: pendingWithdrawalVal }, balance: balanceVal, pendingWithdrawal: pendingWithdrawalVal };
+      };
+
+      const res = await ledgerService.settleCompletedWithdrawal({
+        _id: 'mock-wd-id',
+        reference: 'mock-ref-uuid',
+        reservation: { isReserved: false }
+      });
+
+      assert.strictEqual(res.settled, true, 'Settlement succeeds');
+      assert.strictEqual(pendingWithdrawalVal, 0, 'pendingWithdrawal remains 0 and does not drop negative');
+      assert.strictEqual(balanceVal, 0.09, 'Balance settled cleanly to 0.09 without floating point drift');
+    } finally {
+      WithdrawalTransaction.findOneAndUpdate = origFindOneAndUpdate;
+      User.findByIdAndUpdate = origUserFindByIdAndUpdate;
+      Transaction.create = origTxCreate;
+    }
+  });
+
+  await itAsync('withdrawalService reconciles live payment status before failing on transfer error', async () => {
+    const origSwFindOne = SwitchWallet.findOne;
+    const origTransferFunds = switchService.transferFunds;
+    const origGetPaymentStatus = switchService.getPaymentStatus;
+    const origInitiateOfframp = switchService.initiateOfframp;
+    const origGetOfframpQuote = switchService.getOfframpQuote;
+    const origResolveAsset = switchService.resolveWalletSourceAsset;
+    const origGetFee = switchService.getNetworkTransferFee;
+    const origReserve = ledgerService.reserveWithdrawalBalance;
+    const origTxCreate = WithdrawalTransaction.create;
+    const origTxFindOne = WithdrawalTransaction.findOne;
+
+    try {
+      SwitchWallet.findOne = async () => ({
+        switchWalletId: '6acf99b9f419026f8d11bbe0',
+        solanaAddress: 'G2NKvCAfXUSjVrn63VYHoXqN8j79B3cx2nY6tG1fnjAx'
+      });
+      switchService.resolveWalletSourceAsset = async () => ({
+        asset: 'solana:usdc',
+        balance: 10,
+        network: 'SOLANA'
+      });
+      switchService.getNetworkTransferFee = async () => 0.05;
+      WithdrawalTransaction.findOne = async () => null;
+      ledgerService.reserveWithdrawalBalance = async () => ({ reserved: true, reservedAmount: 2, availableBalance: 10, pendingWithdrawal: 2 });
+      switchService.getOfframpQuote = async () => ({
+        rate: 1340,
+        destination: { amount: 2680 },
+        asset: 'solana:usdc',
+        network: 'SOLANA',
+        fee: { total: 0 }
+      });
+      switchService.initiateOfframp = async () => ({
+        reference: 'reconcile-test-ref',
+        deposit: { address: 'JfGFMXwA4bZqEsp1kihiTMzJW7qqSJkEHAa7ViHWtVv', amount: 2, asset: 'solana:usdc', network: 'SOLANA' }
+      });
+
+      let statusSaved = null;
+      WithdrawalTransaction.create = async (doc) => {
+        doc.save = async function() { statusSaved = this.status; return this; };
+        return doc;
+      };
+
+      // Simulate Switch transfer returning Insufficient primary token balance
+      switchService.transferFunds = async () => {
+        const err = new Error('Insufficient primary token balance');
+        err.status = 400;
+        throw err;
+      };
+
+      // But provider lookup confirms the transaction was actually ingested and is PROCESSING
+      switchService.getPaymentStatus = async (ref) => ({
+        status: 'PROCESSING',
+        reference: ref,
+        meta: { hash: '5pfuTAFjehMiysbZotg9FZ2qSwUT8TPU77HDWamVq3vtBvr6cgLwUbvZP8GkLucNDA7BShJ4KCxmteUQpzbDd9RT' }
+      });
+
+      const res = await withdrawalService.initiateWithdrawal({
+        user: { _id: '6983ea1691b5040eb0fb0276', name: 'Test User' },
+        amount: 2,
+        country: 'NG',
+        currency: 'NGN',
+        beneficiary: { accountNumber: '7031632438', bankCode: '100004' }
+      });
+
+      assert.strictEqual(res.success, true, 'Initiation returns success via provider reconciliation');
+      assert.strictEqual(statusSaved, 'processing', 'Transaction remains in processing instead of falsely failing');
+    } finally {
+      SwitchWallet.findOne = origSwFindOne;
+      switchService.transferFunds = origTransferFunds;
+      switchService.getPaymentStatus = origGetPaymentStatus;
+      switchService.initiateOfframp = origInitiateOfframp;
+      switchService.getOfframpQuote = origGetOfframpQuote;
+      switchService.resolveWalletSourceAsset = origResolveAsset;
+      switchService.getNetworkTransferFee = origGetFee;
+      ledgerService.reserveWithdrawalBalance = origReserve;
+      WithdrawalTransaction.create = origTxCreate;
+      WithdrawalTransaction.findOne = origTxFindOne;
     }
   });
 

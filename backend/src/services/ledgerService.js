@@ -348,16 +348,21 @@ class LedgerService {
       completedAt: new Date()
     });
 
-    // 3. Atomically debit user balance and clear pending reservation
+    // 3. Atomically debit user balance and clear pending reservation if currently active
+    const wasReserved = lockedWithdrawalTx.reservation?.isReserved === true;
+    const incPayload = {
+      'wallet.balance': -settleAmount,
+      'balance': -settleAmount
+    };
+    if (wasReserved) {
+      incPayload['wallet.pendingWithdrawal'] = -settleAmount;
+      incPayload['pendingWithdrawal'] = -settleAmount;
+    }
+
     const userUpdate = await User.findByIdAndUpdate(
       lockedWithdrawalTx.user,
       {
-        $inc: {
-          'wallet.balance': -settleAmount,
-          'balance': -settleAmount,
-          'wallet.pendingWithdrawal': -settleAmount,
-          'pendingWithdrawal': -settleAmount
-        },
+        $inc: incPayload,
         $set: {
           'wallet.lastUpdated': new Date(),
           'lastUpdated': new Date()
@@ -366,12 +371,19 @@ class LedgerService {
       { new: true }
     );
 
-    // Safeguard: Ensure balance and pendingWithdrawal do not drop below 0 due to concurrency
-    if (userUpdate && ((userUpdate.wallet?.pendingWithdrawal || 0) < 0 || (userUpdate.pendingWithdrawal || 0) < 0)) {
+    // Safeguard: Ensure clean floating-point precision and non-negative balances
+    if (userUpdate) {
+      const rawBal = userUpdate.wallet?.balance !== undefined ? userUpdate.wallet.balance : (userUpdate.balance || 0);
+      const cleanBal = Math.max(0, Math.round(Number(rawBal) * 100) / 100);
+      const rawPending = userUpdate.wallet?.pendingWithdrawal !== undefined ? userUpdate.wallet.pendingWithdrawal : (userUpdate.pendingWithdrawal || 0);
+      const cleanPending = Math.max(0, Math.round(Number(rawPending) * 100) / 100);
+
       await User.findByIdAndUpdate(lockedWithdrawalTx.user, {
         $set: {
-          'wallet.pendingWithdrawal': Math.max(0, userUpdate.wallet?.pendingWithdrawal || 0),
-          'pendingWithdrawal': Math.max(0, userUpdate.pendingWithdrawal || 0)
+          'wallet.balance': cleanBal,
+          'balance': cleanBal,
+          'wallet.pendingWithdrawal': cleanPending,
+          'pendingWithdrawal': cleanPending
         }
       });
     }
@@ -821,50 +833,77 @@ class LedgerService {
     const senderName = sender.name || `${sender.firstName || ''} ${sender.lastName || ''}`.trim() || sender.email;
     const recipientName = recipient.name || `${recipient.firstName || ''} ${recipient.lastName || ''}`.trim() || recipient.email;
 
-    // 5. Create immutable ledger records
-    const senderTx = await Transaction.create({
-      transactionId: senderTxId,
-      user: senderId,
-      type: 'transfer_out',
-      amount: numAmount,
-      netAmount: numAmount,
-      currency: 'USDC',
-      status: 'completed',
-      reference: resolvedReference,
-      paymentMethod: 'internal_transfer',
-      toAddress: recipient.email || recipient._id.toString(),
-      description: cleanNote ? `Transfer to ${recipientName}: ${cleanNote}` : `Transfer to ${recipientName}`,
-      metadata: {
-        counterpartyId: recipientId,
-        counterpartyEmail: recipient.email,
-        counterpartyName: recipientName,
-        note: cleanNote,
-        idempotencyKey: resolvedReference
-      },
-      completedAt: new Date()
-    });
+    // 5. Create immutable ledger records with automatic rollback if record creation fails
+    let senderTx, recipientTx;
+    try {
+      senderTx = await Transaction.create({
+        transactionId: senderTxId,
+        user: senderId,
+        type: 'transfer_out',
+        amount: numAmount,
+        netAmount: numAmount,
+        currency: 'USDC',
+        status: 'completed',
+        reference: resolvedReference,
+        paymentMethod: 'internal_transfer',
+        toAddress: recipient.email || recipient._id.toString(),
+        description: cleanNote ? `Transfer to ${recipientName}: ${cleanNote}` : `Transfer to ${recipientName}`,
+        metadata: {
+          counterpartyId: recipientId,
+          counterpartyEmail: recipient.email,
+          counterpartyName: recipientName,
+          note: cleanNote,
+          idempotencyKey: resolvedReference
+        },
+        completedAt: new Date()
+      });
 
-    const recipientTx = await Transaction.create({
-      transactionId: recipientTxId,
-      user: recipientId,
-      type: 'transfer_in',
-      amount: numAmount,
-      netAmount: numAmount,
-      currency: 'USDC',
-      status: 'completed',
-      reference: resolvedReference,
-      paymentMethod: 'internal_transfer',
-      fromAddress: sender.email || sender._id.toString(),
-      description: cleanNote ? `Transfer from ${senderName}: ${cleanNote}` : `Transfer from ${senderName}`,
-      metadata: {
-        counterpartyId: senderId,
-        counterpartyEmail: sender.email,
-        counterpartyName: senderName,
-        note: cleanNote,
-        idempotencyKey: resolvedReference
-      },
-      completedAt: new Date()
-    });
+      recipientTx = await Transaction.create({
+        transactionId: recipientTxId,
+        user: recipientId,
+        type: 'transfer_in',
+        amount: numAmount,
+        netAmount: numAmount,
+        currency: 'USDC',
+        status: 'completed',
+        reference: resolvedReference,
+        paymentMethod: 'internal_transfer',
+        fromAddress: sender.email || sender._id.toString(),
+        description: cleanNote ? `Transfer from ${senderName}: ${cleanNote}` : `Transfer from ${senderName}`,
+        metadata: {
+          counterpartyId: senderId,
+          counterpartyEmail: sender.email,
+          counterpartyName: senderName,
+          note: cleanNote,
+          idempotencyKey: resolvedReference
+        },
+        completedAt: new Date()
+      });
+    } catch (recordErr) {
+      console.error(`[Ledger] Error creating transaction records for transfer ${resolvedReference}. Rolling back balances:`, recordErr.message);
+      await User.findByIdAndUpdate(senderId, {
+        $inc: { 'wallet.balance': numAmount, 'balance': numAmount }
+      });
+      await User.findByIdAndUpdate(recipientId, {
+        $inc: { 'wallet.balance': -numAmount, 'balance': -numAmount }
+      });
+      throw recordErr;
+    }
+
+    const rawSenderBal = senderUpdate.wallet?.balance !== undefined ? senderUpdate.wallet.balance : senderUpdate.balance;
+    const cleanSenderBal = Math.max(0, Math.round(Number(rawSenderBal) * 100) / 100);
+    const rawRecipientBal = recipientUpdate.wallet?.balance !== undefined ? recipientUpdate.wallet.balance : recipientUpdate.balance;
+    const cleanRecipientBal = Math.max(0, Math.round(Number(rawRecipientBal) * 100) / 100);
+
+    // Persist clean rounded balances to eliminate float precision anomalies
+    await Promise.all([
+      User.findByIdAndUpdate(senderId, {
+        $set: { 'wallet.balance': cleanSenderBal, 'balance': cleanSenderBal }
+      }),
+      User.findByIdAndUpdate(recipientId, {
+        $set: { 'wallet.balance': cleanRecipientBal, 'balance': cleanRecipientBal }
+      })
+    ]);
 
     console.log(`[Ledger] Successfully executed internal transfer of ${numAmount} USDC from ${senderId} to ${recipientId}. Ref: ${resolvedReference}`);
 
@@ -874,8 +913,8 @@ class LedgerService {
       reference: resolvedReference,
       senderTx,
       recipientTx,
-      senderBalance: senderUpdate.wallet?.balance !== undefined ? senderUpdate.wallet.balance : senderUpdate.balance,
-      recipientBalance: recipientUpdate.wallet?.balance !== undefined ? recipientUpdate.wallet.balance : recipientUpdate.balance
+      senderBalance: cleanSenderBal,
+      recipientBalance: cleanRecipientBal
     };
   }
 }

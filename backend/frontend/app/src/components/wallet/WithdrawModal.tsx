@@ -11,7 +11,6 @@ import {
   DrawerTitle,
   DrawerDescription,
 } from '@/components/ui/drawer';
-import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { walletService } from '@/lib/api';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
@@ -259,6 +258,39 @@ export function WithdrawModal({
       resetViewport();
     };
   }, [isOpen, step]);
+
+  // Click-outside and Escape key handler for bank picker dropdown
+  useEffect(() => {
+    if (!isBankPickerOpen) return;
+
+    // Auto-focus search input when opened
+    const timer = setTimeout(() => {
+      searchInputRef.current?.focus({ preventScroll: true });
+    }, 50);
+
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      if (bankDropdownRef.current && !bankDropdownRef.current.contains(e.target as Node)) {
+        setIsBankPickerOpen(false);
+      }
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsBankPickerOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isBankPickerOpen]);
 
   // Load supported withdrawal corridors on open
   useEffect(() => {
@@ -1193,45 +1225,37 @@ export function WithdrawModal({
               <span className="font-bold text-gray-900">${parseFloat(amountUsdc || '0').toFixed(2)} USDC</span>
             </div>
 
-            {/* 1. Bank Selection Dropdown / Selector (Portalled Floating Popover) */}
-            <div className="space-y-1.5" ref={bankDropdownRef}>
+            {/* 1. Bank Selection Dropdown / Selector (Form-anchored with zero mobile horizontal overflow) */}
+            <div className="relative space-y-1.5" ref={bankDropdownRef}>
               <label className="text-xs font-semibold text-gray-700">Select bank</label>
-              <Popover open={isBankPickerOpen} onOpenChange={setIsBankPickerOpen}>
-                <PopoverTrigger asChild>
-                  <button
-                    type="button"
-                    className="w-full h-11 px-3.5 bg-white border border-gray-200 rounded-xl text-left text-sm flex items-center justify-between hover:border-gray-300 focus:outline-none focus:border-[#9747FF] focus:ring-1 focus:ring-[#9747FF] transition-colors cursor-pointer"
-                    aria-expanded={isBankPickerOpen}
-                    aria-haspopup="listbox"
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 shrink-0">
-                        <Building2 className="w-3.5 h-3.5" />
-                      </div>
-                      <span className={selectedBank ? 'font-medium text-gray-900 truncate' : 'text-gray-400'}>
-                        {selectedBank ? selectedBank.name : 'Select bank'}
-                      </span>
-                    </div>
-                    <ChevronDown
-                      className={cn(
-                        'w-4 h-4 text-gray-400 transition-transform duration-200 shrink-0',
-                        isBankPickerOpen && 'rotate-180 text-gray-600'
-                      )}
-                    />
-                  </button>
-                </PopoverTrigger>
+              <button
+                type="button"
+                onClick={() => setIsBankPickerOpen((prev) => !prev)}
+                className="w-full h-11 px-3.5 bg-white border border-gray-200 rounded-xl text-left text-sm flex items-center justify-between hover:border-gray-300 focus:outline-none focus:border-[#9747FF] focus:ring-1 focus:ring-[#9747FF] transition-colors cursor-pointer"
+                aria-expanded={isBankPickerOpen}
+                aria-haspopup="listbox"
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 shrink-0">
+                    <Building2 className="w-3.5 h-3.5" />
+                  </div>
+                  <span className={selectedBank ? 'font-medium text-gray-900 truncate' : 'text-gray-400'}>
+                    {selectedBank ? selectedBank.name : 'Select bank'}
+                  </span>
+                </div>
+                <ChevronDown
+                  className={cn(
+                    'w-4 h-4 text-gray-400 transition-transform duration-200 shrink-0',
+                    isBankPickerOpen && 'rotate-180 text-gray-600'
+                  )}
+                />
+              </button>
 
-                <PopoverContent
-                  side="bottom"
-                  align="start"
-                  sideOffset={6}
-                  avoidCollisions={true}
-                  collisionPadding={{ top: 16, bottom: 84, left: 16, right: 16 }}
-                  className="z-[200] w-[var(--radix-popover-trigger-width)] max-w-[calc(100vw-32px)] p-0 bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden focus:outline-none"
-                  onOpenAutoFocus={(e) => {
-                    e.preventDefault();
-                    searchInputRef.current?.focus({ preventScroll: true });
-                  }}
+              {isBankPickerOpen && (
+                <div
+                  className="absolute left-0 right-0 top-[calc(100%+6px)] w-full z-50 bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden focus:outline-none"
+                  role="listbox"
+                  aria-label="Supported banks"
                 >
                   {/* Search Input Header */}
                   <div className="p-2.5 border-b border-gray-100 bg-gray-50/70">
@@ -1260,7 +1284,7 @@ export function WithdrawModal({
 
                   {/* Dropdown Options List */}
                   <div
-                    className="max-h-[min(var(--radix-popover-content-available-height,320px),260px)] overflow-y-auto overscroll-contain text-xs divide-y divide-gray-50"
+                    className="max-h-60 overflow-y-auto overscroll-contain text-xs divide-y divide-gray-50"
                     data-vaul-no-drag
                   >
                     {isLoadingInstitutions ? (
@@ -1383,8 +1407,8 @@ export function WithdrawModal({
                       </>
                     )}
                   </div>
-                </PopoverContent>
-              </Popover>
+                </div>
+              )}
             </div>
 
             {/* 2. Account Number Form Field */}
