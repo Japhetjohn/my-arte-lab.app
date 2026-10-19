@@ -16,6 +16,7 @@ router.use(authLimiter);
 router.post('/register', validateRegister, handleValidationErrors, authController.register);
 router.post('/login', validateLogin, handleValidationErrors, authController.login);
 router.post('/forgot-password', authController.forgotPassword);
+router.post('/verify-reset-code', authController.verifyResetCode);
 router.post('/reset-password', authController.resetPassword);
 router.post('/verify-email', authController.verifyEmail);
 router.post('/resend-verification', authController.resendVerification);

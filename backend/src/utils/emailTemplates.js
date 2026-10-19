@@ -543,36 +543,62 @@ const emailTemplates = {
   /**
    * Password Reset
    */
-  passwordReset: (resetUrl) => baseTemplate(`
-    <h1 class="greeting">Reset Your Password</h1>
-    
-    <p class="body-text">
-        You requested a password reset for your MyArteLab account. Click the button below to create a new password:
-    </p>
+  passwordReset: (nameOrUrl, code, url) => {
+    let firstName = 'there';
+    let resetCode = null;
+    let resetUrl = '';
 
-    <div class="button-container">
-        <a href="${resetUrl}" class="button">Reset Password</a>
-    </div>
+    if (code) {
+      firstName = nameOrUrl || 'there';
+      resetCode = code;
+      resetUrl = url || '';
+    } else {
+      resetUrl = nameOrUrl || '';
+    }
 
-    <p class="body-text" style="font-size: 14px;">
-        Or copy and paste this link into your browser:<br>
-        <span class="link-block">${resetUrl}</span>
-    </p>
+    const codeBlock = resetCode ? `
+      <div class="code-container" style="text-align: center; margin: 28px 0; padding: 20px; background-color: #f8f5ff; border: 1.5px solid #e9d5ff; border-radius: 16px;">
+          <div class="code-label" style="font-size: 13px; font-weight: 600; color: #6b21a8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">Verification Code</div>
+          <div class="code" style="font-size: 34px; font-weight: 800; letter-spacing: 8px; color: #111827; font-family: monospace;">${resetCode}</div>
+          <div class="code-expiry" style="font-size: 12px; color: #7e22ce; margin-top: 8px;">⏰ Expires in 30 minutes</div>
+      </div>
+      <p class="body-text">Enter this 6-digit code on the verification screen to reset your password.</p>
+    ` : '';
 
-    <div class="info-box warning-box">
-        <div class="info-box-title">🔒 Security Notice</div>
-        <p class="info-box-text">
-            If you didn't request this password reset, please ignore this email. Your password will remain unchanged. This link expires in 30 minutes.
-        </p>
-    </div>
+    const buttonBlock = resetUrl ? `
+      <div class="button-container" style="margin: 24px 0;">
+          <a href="${resetUrl}" class="button" style="display: inline-block; padding: 12px 28px; background-color: #9747FF; color: #ffffff; text-decoration: none; border-radius: 9999px; font-weight: 600;">Reset Password Directly</a>
+      </div>
+    ` : '';
 
-    <div class="signature">
-        <p class="signature-text">
-            Best regards,<br>
-            <span class="signature-team">The MyArteLab Team</span>
-        </p>
-    </div>
-  `, 'Reset your MyArteLab password securely', { title: 'Password Reset' }),
+    return baseTemplate(`
+      <h1 class="greeting">Reset Your Password</h1>
+      
+      <p class="body-text">Hi ${firstName},</p>
+
+      <p class="body-text">
+          You requested a password reset for your MyArteLab account.
+      </p>
+
+      ${codeBlock}
+
+      ${buttonBlock}
+
+      <div class="info-box warning-box">
+          <div class="info-box-title">🔒 Security Notice</div>
+          <p class="info-box-text">
+              If you didn't request this password reset, please ignore this email. Your password will remain unchanged. This code expires in 30 minutes.
+          </p>
+      </div>
+
+      <div class="signature">
+          <p class="signature-text">
+              Best regards,<br>
+              <span class="signature-team">The MyArteLab Team</span>
+          </p>
+      </div>
+    `, 'Reset your MyArteLab password securely', { title: 'Password Reset' });
+  },
 
   /**
    * Test Email

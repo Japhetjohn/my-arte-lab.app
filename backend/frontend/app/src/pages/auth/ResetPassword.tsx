@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,7 @@ export function ResetPassword() {
   const [isValidToken, setIsValidToken] = useState(true);
 
   const token = searchParams.get('token');
+  const email = searchParams.get('email') || '';
 
   useEffect(() => {
     if (!token) {
@@ -53,19 +54,28 @@ export function ResetPassword() {
     return (
       <AuthLayout
         title="Invalid Link"
-        subtitle="This password reset link is invalid or has expired"
-        illustration="/images/auth-illustration.svg"
+        subtitle="This password reset session is invalid or has expired"
+        illustration="/undraw_working-from-anywhere_33m9.svg"
         showBackButton={false}
       >
         <div className="text-center space-y-6">
-          <p className="text-gray-600">
-            Please request a new password reset link.
+          <p className="text-gray-600 text-sm">
+            Please request a new 6-digit verification code to reset your password.
           </p>
-          <a href="/forgot-password">
-            <Button className="w-full bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white">
-              Request New Link
+          <Link to={email ? `/forgot-password?email=${encodeURIComponent(email)}` : '/forgot-password'}>
+            <Button className="w-full bg-[#9747FF] hover:bg-[#8534f0] text-white rounded-full h-12 font-semibold shadow-md shadow-[#9747FF]/20 cursor-pointer">
+              Request New Code
             </Button>
-          </a>
+          </Link>
+          <div className="pt-2">
+            <Link
+              to="/login"
+              className="inline-flex items-center text-sm text-[#9747FF] hover:underline font-medium"
+            >
+              <ArrowLeft className="w-4 h-4 mr-1.5" />
+              Back to Login
+            </Link>
+          </div>
         </div>
       </AuthLayout>
     );
@@ -76,16 +86,16 @@ export function ResetPassword() {
       <AuthLayout
         title="Password Reset!"
         subtitle="Your password has been successfully reset"
-        illustration="/images/auth-illustration.svg"
+        illustration="/undraw_working-from-anywhere_33m9.svg"
         showBackButton={false}
       >
         <div className="text-center space-y-6">
-          <div className="w-16 h-16 bg-[#F3E8FF] rounded-full flex items-center justify-center mx-auto">
-            <CheckCircle2 className="w-8 h-8 text-[#8A2BE2]" />
+          <div className="w-16 h-16 bg-[#F3E8FF] rounded-full flex items-center justify-center mx-auto text-[#9747FF]">
+            <CheckCircle2 className="w-8 h-8" />
           </div>
 
           <div className="space-y-2">
-            <p className="text-gray-600">
+            <p className="text-gray-700 font-medium">
               Your password has been successfully reset.
             </p>
             <p className="text-sm text-gray-500">
@@ -95,7 +105,7 @@ export function ResetPassword() {
 
           <Button
             onClick={() => navigate('/login')}
-            className="w-full bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white"
+            className="w-full bg-[#9747FF] hover:bg-[#8534f0] text-white rounded-full h-12 font-semibold shadow-md shadow-[#9747FF]/20 cursor-pointer"
           >
             Sign In
           </Button>
@@ -108,7 +118,7 @@ export function ResetPassword() {
     <AuthLayout
       title="Reset Password"
       subtitle="Create a new password for your account"
-      illustration="/images/auth-illustration.svg"
+      illustration="/undraw_working-from-anywhere_33m9.svg"
       showBackButton={false}
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
@@ -136,26 +146,26 @@ export function ResetPassword() {
         <Button
           type="submit"
           disabled={isLoading}
-          className="w-full bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white h-11"
+          className="w-full bg-[#9747FF] hover:bg-[#8534f0] text-white h-12 rounded-full font-semibold shadow-md shadow-[#9747FF]/20 cursor-pointer"
         >
           {isLoading ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Resetting...
+              Resetting Password...
             </>
           ) : (
             'Reset Password'
           )}
         </Button>
 
-        <p className="text-center text-sm">
-          <a
-            href="/login"
-            className="inline-flex items-center text-[#8A2BE2] hover:underline"
+        <p className="text-center text-sm pt-2">
+          <Link
+            to="/login"
+            className="inline-flex items-center text-[#9747FF] hover:underline font-medium"
           >
-            <ArrowLeft className="w-4 h-4 mr-1" />
+            <ArrowLeft className="w-4 h-4 mr-1.5" />
             Back to Login
-          </a>
+          </Link>
         </p>
       </form>
     </AuthLayout>

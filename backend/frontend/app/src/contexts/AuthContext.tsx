@@ -90,9 +90,10 @@ interface AuthContextType extends AuthState {
   loginWithGoogle: (data: GoogleAuthPayload) => Promise<User>;
   register: (userData: RegisterData) => Promise<void>;
   logout: () => void;
-  verifyEmail: (code: string) => Promise<void>;
+  verifyEmail: (code: string, email?: string) => Promise<void>;
   resendVerification: (email?: string) => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
+  verifyResetCode: (email: string, code: string) => Promise<string>;
   resetPassword: (token: string, newPassword: string) => Promise<void>;
   updateProfile: (data: Partial<User>) => Promise<void>;
   refreshToken: () => Promise<void>;
@@ -343,20 +344,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     toast.info('Logged out successfully');
   }, []);
 
-  const verifyEmail = useCallback(async (code: string) => {
+  const verifyEmail = useCallback(async (code: string, email?: string) => {
     try {
-      await api.post('/auth/verify-email', { code });
-      
-      // Update user state
-      if (state.user) {
+      const response = await api.post('/auth/verify-email', { code, email });
+      const data = response.data.data || response.data;
+      const { token, user } = data;
+
+      if (token && user) {
+        const storage = localStorage;
+        storage.setItem('token', token);
+        storage.setItem('user', JSON.stringify(user));
+        api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        setState({
+          user,
+          isAuthenticated: true,
+          isLoading: false,
+          token,
+        });
+      } else if (state.user) {
         const updatedUser = { ...state.user, isEmailVerified: true };
         setState(prev => ({ ...prev, user: updatedUser }));
-        
         const storage = localStorage.getItem('token') ? localStorage : sessionStorage;
         storage.setItem('user', JSON.stringify(updatedUser));
       }
 
-      toast.success('Email verified!');
+      toast.success('Email verified successfully!');
     } catch (error: any) {
       const message = error.response?.data?.error || error.response?.data?.message || 'Verification failed';
       toast.error(message);
@@ -378,9 +390,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const forgotPassword = useCallback(async (email: string) => {
     try {
       await api.post('/auth/forgot-password', { email });
-      toast.success('Reset link sent! Check your email.');
+      toast.success('Verification code sent! Check your email.');
     } catch (error: any) {
-      const message = error.response?.data?.error || error.response?.data?.message || 'Failed to send reset link';
+      const message = error.response?.data?.error || error.response?.data?.message || 'Failed to send reset code';
+      toast.error(message);
+      throw error;
+    }
+  }, []);
+
+  const verifyResetCode = useCallback(async (email: string, code: string) => {
+    try {
+      const response = await api.post('/auth/verify-reset-code', { email, code });
+      const resetToken = response.data.data?.resetToken || response.data.resetToken;
+      toast.success('Code verified successfully');
+      return resetToken;
+    } catch (error: any) {
+      const message = error.response?.data?.error || error.response?.data?.message || 'Verification failed';
       toast.error(message);
       throw error;
     }
@@ -449,6 +474,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         verifyEmail,
         resendVerification,
         forgotPassword,
+        verifyResetCode,
         resetPassword,
         updateProfile,
         refreshToken,

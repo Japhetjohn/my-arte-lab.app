@@ -278,43 +278,87 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Please provide your email', 400));
   }
 
-  const user = await User.findOne({ email });
+  const normalizedEmail = email.toLowerCase().trim();
+  const user = await User.findOne({ email: normalizedEmail });
 
   if (!user) {
-    return successResponse(res, 200, 'If an account with that email exists, a reset link has been sent');
+    // Generic response to prevent account enumeration
+    return successResponse(res, 200, 'If an account with that email exists, a verification code has been sent', {
+      email: normalizedEmail
+    });
   }
 
-  const resetToken = crypto.randomBytes(32).toString('hex');
-  const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+  // Generate a secure 6-digit verification code
+  const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+  const hashedCode = crypto.createHash('sha256').update(resetCode).digest('hex');
 
-  user.resetPasswordToken = hashedToken;
-  user.resetPasswordExpire = Date.now() + 30 * 60 * 1000;
+  user.resetPasswordToken = hashedCode;
+  user.resetPasswordExpire = Date.now() + 30 * 60 * 1000; // 30 minutes
   await user.save({ validateBeforeSave: false });
 
-  const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
+  const resetUrl = `${process.env.FRONTEND_URL}/reset-password?code=${resetCode}&email=${encodeURIComponent(user.email)}`;
 
   try {
     await emailConfig.sendEmail({
       to: user.email,
       subject: 'Reset Your MyArteLab Password',
-      html: emailTemplates.passwordReset(resetUrl)
+      html: emailTemplates.passwordReset(user.firstName || 'there', resetCode, resetUrl)
     });
 
-    successResponse(res, 200, 'Password reset email sent');
+    successResponse(res, 200, 'Password reset verification code sent', {
+      email: user.email
+    });
   } catch (error) {
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
     await user.save({ validateBeforeSave: false });
 
-    return next(new ErrorHandler('Email could not be sent', 500));
+    console.error(`[ForgotPassword] Email failed for ${user.email}:`, error.message);
+    console.log(`[SUPPORT] Password reset code for ${user.email}: ${resetCode}`);
+
+    return next(new ErrorHandler('Email could not be sent. Please try again.', 500));
   }
 });
 
-exports.resetPassword = catchAsync(async (req, res, next) => {
-  const { token, newPassword } = req.body;
+exports.verifyResetCode = catchAsync(async (req, res, next) => {
+  const { email, code } = req.body;
 
-  if (!token || !newPassword) {
-    return next(new ErrorHandler('Please provide token and new password', 400));
+  if (!email || !code) {
+    return next(new ErrorHandler('Please provide email and verification code', 400));
+  }
+
+  const normalizedEmail = email.toLowerCase().trim();
+  const hashedCode = crypto.createHash('sha256').update(code.toString().trim()).digest('hex');
+
+  const user = await User.findOne({
+    email: normalizedEmail,
+    resetPasswordToken: hashedCode,
+    resetPasswordExpire: { $gt: Date.now() }
+  });
+
+  if (!user) {
+    return next(new ErrorHandler('Invalid or expired verification code', 400));
+  }
+
+  // Code is valid! Issue a short-lived (15 min), single-use reset authorization token
+  const resetAuthToken = crypto.randomBytes(32).toString('hex');
+  const hashedAuthToken = crypto.createHash('sha256').update(resetAuthToken).digest('hex');
+
+  user.resetPasswordToken = hashedAuthToken;
+  user.resetPasswordExpire = Date.now() + 15 * 60 * 1000; // 15 minutes to set a new password
+  await user.save({ validateBeforeSave: false });
+
+  successResponse(res, 200, 'Verification code verified successfully', {
+    resetToken: resetAuthToken,
+    email: user.email
+  });
+});
+
+exports.resetPassword = catchAsync(async (req, res, next) => {
+  const { token, code, email, newPassword } = req.body;
+
+  if ((!token && (!code || !email)) || !newPassword) {
+    return next(new ErrorHandler('Please provide reset authorization and new password', 400));
   }
 
   if (typeof newPassword !== 'string' || newPassword.length < 8) {
@@ -324,12 +368,24 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Password must contain at least one uppercase and one lowercase letter', 400));
   }
 
-  const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+  let user = null;
 
-  const user = await User.findOne({
-    resetPasswordToken: hashedToken,
-    resetPasswordExpire: { $gt: Date.now() }
-  });
+  if (token) {
+    // Verified via 32-byte reset authorization token
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+    user = await User.findOne({
+      resetPasswordToken: hashedToken,
+      resetPasswordExpire: { $gt: Date.now() }
+    });
+  } else if (code && email) {
+    // Direct code + email submission
+    const hashedCode = crypto.createHash('sha256').update(code.toString().trim()).digest('hex');
+    user = await User.findOne({
+      email: email.toLowerCase().trim(),
+      resetPasswordToken: hashedCode,
+      resetPasswordExpire: { $gt: Date.now() }
+    });
+  }
 
   if (!user) {
     return next(new ErrorHandler('Invalid or expired reset token', 400));
@@ -454,18 +510,26 @@ exports.deleteAccount = catchAsync(async (req, res, next) => {
 });
 
 exports.verifyEmail = catchAsync(async (req, res, next) => {
-  const { code } = req.body;
+  const { code, email } = req.body;
 
   if (!code) {
     return next(new ErrorHandler('Please provide verification code', 400));
   }
 
-  const hashedCode = crypto.createHash('sha256').update(code.toString()).digest('hex');
+  const hashedCode = crypto.createHash('sha256').update(code.toString().trim()).digest('hex');
 
-  const user = await User.findOne({
+  const query = {
     emailVerificationToken: hashedCode,
     emailVerificationExpire: { $gt: Date.now() }
-  });
+  };
+
+  if (email) {
+    query.email = email.toLowerCase().trim();
+  } else if (req.user) {
+    query._id = req.user._id;
+  }
+
+  const user = await User.findOne(query);
 
   if (!user) {
     return next(new ErrorHandler('Invalid or expired verification code', 400));
@@ -476,18 +540,21 @@ exports.verifyEmail = catchAsync(async (req, res, next) => {
   user.emailVerificationExpire = undefined;
   await user.save({ validateBeforeSave: false });
 
+  const jwtToken = generateToken(user._id);
+
   emailConfig.sendEmail({
     to: user.email,
     subject: 'Email Verified Successfully!',
     html: `
       <h1>Email Verified!</h1>
-      <p>Hi ${user.name},</p>
+      <p>Hi ${user.firstName || user.name || 'there'},</p>
       <p>Your email has been verified successfully. You now have full access to all MyArteLab features!</p>
       <p>Best regards,<br/>MyArteLab Team</p>
     `
   }).catch(err => console.error('Verification confirmation email failed:', err));
 
   successResponse(res, 200, 'Email verified successfully', {
+    token: jwtToken,
     user: user.getPublicProfile()
   });
 });

@@ -135,7 +135,7 @@ function AppContent() {
   };
 
   // Auth-only pages (rendered without the main app layout)
-  const authRoutes = ['/login', '/register', '/forgot-password', '/reset-password'];
+  const authRoutes = ['/login', '/register', '/forgot-password', '/reset-password', '/verify-email'];
   const isAuthRoute = authRoutes.some(route => currentPath.startsWith(route));
 
   if (isAuthRoute) {
@@ -148,6 +148,8 @@ function AppContent() {
         return <ForgotPassword />;
       case currentPath.startsWith('/reset-password'):
         return <ResetPassword />;
+      case currentPath.startsWith('/verify-email'):
+        return <VerifyEmail />;
       default:
         return <Login />;
     }
@@ -237,8 +239,6 @@ function AppContent() {
         return <PrivacyPolicy />;
       case '/profile':
         return user ? <CreatorProfile creatorId={user.id} isOwnProfile={true} /> : <Settings />;
-      case '/verify-email':
-        return <VerifyEmail />;
       default:
         return (
           <EmptyState
