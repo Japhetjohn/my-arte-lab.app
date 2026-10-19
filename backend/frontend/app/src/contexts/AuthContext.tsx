@@ -77,8 +77,17 @@ interface AuthState {
   token: string | null;
 }
 
+export interface GoogleAuthPayload {
+  credential?: string;
+  code?: string;
+  redirectUri?: string;
+  role?: 'client' | 'creator';
+  category?: string;
+}
+
 interface AuthContextType extends AuthState {
   login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
+  loginWithGoogle: (data: GoogleAuthPayload) => Promise<User>;
   register: (userData: RegisterData) => Promise<void>;
   logout: () => void;
   verifyEmail: (code: string) => Promise<void>;
@@ -237,6 +246,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       toast.success('Welcome back!');
     } catch (error: any) {
       const message = error.response?.data?.error || error.response?.data?.message || 'Login failed';
+      toast.error(message);
+      throw error;
+    }
+  }, []);
+
+  const loginWithGoogle = useCallback(async (data: GoogleAuthPayload) => {
+    try {
+      const response = await api.post('/auth/google', data);
+      const { user, token } = response.data.data || response.data;
+
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+      setState({
+        user,
+        isAuthenticated: true,
+        isLoading: false,
+        token,
+      });
+
+      toast.success(user.firstName ? `Welcome, ${user.firstName}!` : 'Authentication successful!');
+      return user;
+    } catch (error: any) {
+      const message = error.response?.data?.error || error.response?.data?.message || 'Google authentication failed';
       toast.error(message);
       throw error;
     }
@@ -408,6 +443,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       value={{
         ...state,
         login,
+        loginWithGoogle,
         register,
         logout,
         verifyEmail,

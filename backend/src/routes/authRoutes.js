@@ -20,6 +20,10 @@ router.post('/reset-password', authController.resetPassword);
 router.post('/verify-email', authController.verifyEmail);
 router.post('/resend-verification', authController.resendVerification);
 
+// Google OAuth routes
+router.post('/google', authController.googleAuth);
+router.get('/google/url', authController.getGoogleAuthUrl);
+
 router.use(protect);
 
 router.get('/me', authController.getMe);

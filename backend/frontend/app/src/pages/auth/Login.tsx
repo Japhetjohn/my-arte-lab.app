@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from 'react-router-dom';
@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/dialog';
 
 export function Login() {
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   
   // Verification modal state
@@ -32,6 +32,27 @@ export function Login() {
   const [isVerifying, setIsVerifying] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  // Handle Google OAuth redirect code in query params if present
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    if (code) {
+      setIsLoading(true);
+      window.history.replaceState({}, document.title, window.location.pathname);
+      loginWithGoogle({
+        code,
+        redirectUri: window.location.origin + window.location.pathname,
+        role: 'client',
+      })
+        .then(() => {
+          window.location.href = '/home';
+        })
+        .catch(() => {
+          setIsLoading(false);
+        });
+    }
+  }, [loginWithGoogle]);
 
   const {
     register,
@@ -121,9 +142,6 @@ export function Login() {
       title="Welcome back"
       subtitle="Log in to continue to MyArteLab."
       illustration="/images/auth-illustration.svg"
-      illustrationHeadline="Connect with Top African Creatives"
-      illustrationSubtext="Discover, collaborate, and book talented creative professionals."
-      showBackButton={false}
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         {/* Email Input */}

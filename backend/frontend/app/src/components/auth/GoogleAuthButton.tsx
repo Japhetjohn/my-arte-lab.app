@@ -1,60 +1,198 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { api } from '@/contexts/AuthContext';
+import { useAuth, api } from '@/contexts/AuthContext';
+
+declare global {
+  interface Window {
+    google?: any;
+    _googleGsiLoaded?: boolean;
+  }
+}
 
 interface GoogleAuthButtonProps {
   className?: string;
   text?: string;
   disabled?: boolean;
+  role?: 'client' | 'creator';
+  category?: string;
+  onSuccess?: () => void;
 }
 
 export function GoogleAuthButton({
   className = '',
   text = 'Continue with Google',
   disabled = false,
+  role = 'client',
+  category,
+  onSuccess,
 }: GoogleAuthButtonProps) {
+  const navigate = useNavigate();
+  const { loginWithGoogle } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const gsiScriptLoaded = useRef(false);
 
-  const handleGoogleClick = async () => {
+  const clientId =
+    import.meta.env.VITE_GOOGLE_CLIENT_ID ||
+    '349133501173-8q51dm2dalrpg244mq07lfhlcrhk1ota.apps.googleusercontent.com';
+
+  // Ensure Google Identity Services script is loaded
+  useEffect(() => {
+    if (window.google?.accounts?.id || window.google?.accounts?.oauth2) {
+      gsiScriptLoaded.current = true;
+      return;
+    }
+
+    const existingScript = document.querySelector('script[src="https://accounts.google.com/gsi/client"]');
+    if (existingScript) {
+      existingScript.addEventListener('load', () => {
+        gsiScriptLoaded.current = true;
+      });
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    script.onload = () => {
+      gsiScriptLoaded.current = true;
+    };
+    document.head.appendChild(script);
+  }, []);
+
+  const handleGoogleAuth = async () => {
+    if (disabled || isLoading) return;
     setIsLoading(true);
+
     try {
-      // 1. Check if backend exposes google oauth initiation endpoint
-      const response = await api.get('/auth/google/url').catch(() => null);
-      if (response?.data?.data?.url || response?.data?.url) {
-        const targetUrl = response.data.data?.url || response.data.url;
+      // Strategy 1: Google Identity Services OAuth 2.0 Code Client (Popup)
+      if (window.google?.accounts?.oauth2?.initCodeClient) {
+        const client = window.google.accounts.oauth2.initCodeClient({
+          client_id: clientId,
+          scope: 'openid email profile',
+          ux_mode: 'popup',
+          callback: async (response: any) => {
+            if (response?.error) {
+              setIsLoading(false);
+              if (response.error !== 'popup_closed_by_user') {
+                toast.error(`Google sign-in error: ${response.error}`);
+              }
+              return;
+            }
+
+            if (response?.code) {
+              try {
+                await loginWithGoogle({
+                  code: response.code,
+                  redirectUri: 'postmessage',
+                  role,
+                  category,
+                });
+                if (onSuccess) {
+                  onSuccess();
+                } else {
+                  navigate('/home');
+                }
+              } catch (err: any) {
+                // Handled in context
+              } finally {
+                setIsLoading(false);
+              }
+            } else {
+              setIsLoading(false);
+            }
+          },
+          error_callback: (err: any) => {
+            setIsLoading(false);
+            console.warn('[GoogleAuth] Popup error callback:', err);
+            // Fallback to URL redirect if popup blocked
+            triggerRedirectFallback();
+          },
+        });
+
+        client.requestCode();
+        return;
+      }
+
+      // Strategy 2: Google Identity Services ID Token (One Tap / Credential)
+      if (window.google?.accounts?.id) {
+        window.google.accounts.id.initialize({
+          client_id: clientId,
+          callback: async (response: any) => {
+            if (response?.credential) {
+              try {
+                await loginWithGoogle({
+                  credential: response.credential,
+                  role,
+                  category,
+                });
+                if (onSuccess) {
+                  onSuccess();
+                } else {
+                  navigate('/home');
+                }
+              } catch (err: any) {
+                // Handled in context
+              } finally {
+                setIsLoading(false);
+              }
+            } else {
+              setIsLoading(false);
+            }
+          },
+        });
+
+        window.google.accounts.id.prompt((notification: any) => {
+          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+            triggerRedirectFallback();
+          }
+        });
+        return;
+      }
+
+      // Strategy 3: Server-generated OAuth Redirect Fallback
+      await triggerRedirectFallback();
+    } catch (error: any) {
+      console.error('[GoogleAuth] Execution error:', error);
+      setIsLoading(false);
+      toast.error('Unable to initiate Google sign-in. Please try again or use email.');
+    }
+  };
+
+  const triggerRedirectFallback = async () => {
+    try {
+      const redirectUri = window.location.origin + window.location.pathname;
+      const res = await api.get('/auth/google/url', {
+        params: {
+          redirectUri,
+          role,
+        },
+      });
+
+      const targetUrl = res.data?.data?.url || res.data?.url;
+      if (targetUrl) {
         window.location.href = targetUrl;
         return;
       }
-
-      // 2. Fallback check for direct redirect endpoint
-      const directCheck = await api.get('/auth/google').catch((err) => err?.response);
-      if (directCheck && directCheck.status !== 404 && directCheck.data?.url) {
-        window.location.href = directCheck.data.url;
-        return;
-      }
-
-      // 3. Graceful handling if Google OAuth credentials are not configured on the current backend environment
-      toast.info('Google sign-in is not configured on this server. Please use email and password.', {
-        duration: 4500,
-      });
-    } catch (error: any) {
-      toast.error(error?.response?.data?.message || 'Unable to connect to Google authentication');
-    } finally {
+      throw new Error('Google OAuth URL not returned');
+    } catch (err: any) {
       setIsLoading(false);
+      toast.error('Google sign-in is currently unavailable. Please use email and password.');
     }
   };
 
   return (
     <button
       type="button"
-      onClick={handleGoogleClick}
+      onClick={handleGoogleAuth}
       disabled={disabled || isLoading}
-      className={`w-full h-11 sm:h-12 bg-white hover:bg-gray-50/80 active:bg-gray-100 border border-gray-200 hover:border-gray-300 text-gray-700 font-medium text-sm sm:text-base rounded-xl transition-all shadow-2xs flex items-center justify-center gap-3 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+      className={`w-full h-11 sm:h-12 bg-white hover:bg-gray-50/90 active:bg-gray-100 border border-gray-200 hover:border-gray-300 text-gray-700 font-medium text-sm sm:text-base rounded-xl transition-all shadow-2xs flex items-center justify-center gap-3 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
       aria-label={text}
     >
       {isLoading ? (
-        <Loader2 className="w-4 h-4 animate-spin text-gray-500" />
+        <Loader2 className="w-4 h-4 animate-spin text-[#9747FF]" />
       ) : (
         <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
           <path
@@ -75,7 +213,7 @@ export function GoogleAuthButton({
           />
         </svg>
       )}
-      <span>{text}</span>
+      <span>{isLoading ? 'Connecting to Google...' : text}</span>
     </button>
   );
 }

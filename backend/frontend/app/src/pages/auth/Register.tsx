@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useNavigate } from 'react-router-dom';
@@ -28,7 +28,7 @@ import {
 
 export function Register() {
   const navigate = useNavigate();
-  const { register: registerUser, login } = useAuth();
+  const { register: registerUser, login, loginWithGoogle } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [selectedRole, setSelectedRole] = useState<'client' | 'creator'>('client');
   
@@ -46,6 +46,7 @@ export function Register() {
     handleSubmit,
     setValue,
     setError,
+    watch,
     formState: { errors },
   } = useForm<SignUpFormData>({
     resolver: zodResolver(signUpSchema),
@@ -54,6 +55,27 @@ export function Register() {
       category: '',
     },
   });
+
+  // Handle Google OAuth redirect code in query params if present
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    if (code) {
+      setIsLoading(true);
+      window.history.replaceState({}, document.title, window.location.pathname);
+      loginWithGoogle({
+        code,
+        redirectUri: window.location.origin + window.location.pathname,
+        role: selectedRole,
+      })
+        .then(() => {
+          navigate('/home');
+        })
+        .catch(() => {
+          setIsLoading(false);
+        });
+    }
+  }, [loginWithGoogle, selectedRole, navigate]);
 
   const handleRoleChange = (role: 'client' | 'creator') => {
     setSelectedRole(role);
@@ -172,11 +194,8 @@ export function Register() {
       title="Create your account"
       subtitle="Join MyArteLab and connect with creative opportunities."
       illustration="/images/auth-illustration.svg"
-      illustrationHeadline="Connect with Top African Creatives"
-      illustrationSubtext="Discover, collaborate, and book talented creative professionals."
-      showBackButton={false}
     >
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-3.5 sm:space-y-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         {/* Subtle Role Toggle: Client vs Creator */}
         <div className="space-y-1">
           <div className="flex p-0.5 bg-gray-100 rounded-xl border border-gray-200/60 text-xs font-medium">
@@ -337,7 +356,12 @@ export function Register() {
         </div>
 
         {/* 10. Full-width Continue with Google button */}
-        <GoogleAuthButton text="Continue with Google" disabled={isLoading} />
+        <GoogleAuthButton
+          text="Continue with Google"
+          disabled={isLoading}
+          role={selectedRole}
+          category={selectedRole === 'creator' ? (watch('category') || undefined) : undefined}
+        />
 
         {/* 11. Account navigation link */}
         <p className="text-center text-xs sm:text-sm text-gray-500 pt-2 sm:pt-3">

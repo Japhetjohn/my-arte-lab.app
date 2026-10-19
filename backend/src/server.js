@@ -80,20 +80,38 @@ if (process.env.WALLET_ENCRYPTION_KEY.length < 32) {
 connectDatabase();
 
 app.use(helmet({
-  crossOriginOpenerPolicy: false,  // Required for Coinbase SDK
+  crossOriginOpenerPolicy: false,  // Required for Coinbase SDK and OAuth popups
   crossOriginEmbedderPolicy: false,  // Required for wallet integrations
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://challenges.cloudflare.com", "https://*.coinbase.com", "https://*.walletconnect.com"],
+      scriptSrc: [
+        "'self'",
+        "'unsafe-inline'",
+        "'unsafe-eval'",
+        "https://challenges.cloudflare.com",
+        "https://*.coinbase.com",
+        "https://*.walletconnect.com",
+        "https://accounts.google.com/gsi/client"
+      ],
       scriptSrcAttr: ["'unsafe-inline'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://accounts.google.com/gsi/style"],
       imgSrc: ["'self'", "data:", "https:", "blob:"],
-      connectSrc: ["'self'", "https://processor-prod.up.railway.app", "https://api.cloudinary.com", "https://*.coinbase.com", "https://*.walletconnect.com", "wss://*.walletconnect.com", "https://*.base.org"],
+      connectSrc: [
+        "'self'",
+        "https://processor-prod.up.railway.app",
+        "https://api.cloudinary.com",
+        "https://*.coinbase.com",
+        "https://*.walletconnect.com",
+        "wss://*.walletconnect.com",
+        "https://*.base.org",
+        "https://accounts.google.com/gsi/",
+        "https://oauth2.googleapis.com"
+      ],
       fontSrc: ["'self'", "data:"],
       objectSrc: ["'none'"],
       mediaSrc: ["'self'"],
-      frameSrc: ["'self'", "https://*.coinbase.com"],
+      frameSrc: ["'self'", "https://*.coinbase.com", "https://accounts.google.com/gsi/"],
       baseUri: ["'self'"],
       formAction: ["'self'"],
       frameAncestors: ["'none'"],
@@ -113,10 +131,12 @@ const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:3001',
   'http://localhost:5000',
+  'http://localhost:5173',
   'http://localhost:8000',
   'http://127.0.0.1:3000',
   'http://127.0.0.1:3001',
   'http://127.0.0.1:5000',
+  'http://127.0.0.1:5173',
   'http://127.0.0.1:8000',
   'http://0.0.0.0:5000',
   'http://0.0.0.0:8000',
@@ -143,9 +163,14 @@ app.use(cors({
       return callback(null, true);
     }
 
-    // In production, only allow the official domain
+    // In production, allow the official domains
     if (process.env.NODE_ENV === 'production') {
-      if (origin === 'https://app.myartelab.com') {
+      const productionDomains = [
+        'https://app.myartelab.com',
+        'https://myartelab.com',
+        'https://www.myartelab.com'
+      ];
+      if (productionDomains.includes(origin)) {
         return callback(null, true);
       }
       return callback(null, false);
