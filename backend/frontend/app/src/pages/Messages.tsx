@@ -7,7 +7,7 @@ import { api, useAuth } from '@/contexts/AuthContext';
 import { Search, Send, Phone, Video, MoreVertical, ChevronLeft, Ban, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getImageUrl } from '@/lib/imageUrl';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/sonner';
 import {
   DropdownMenu,
   DropdownMenuContent,

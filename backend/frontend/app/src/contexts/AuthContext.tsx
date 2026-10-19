@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/sonner';
 
 // API base URL - use relative path for production, fallback to localhost for dev
 const API_URL = '/api';

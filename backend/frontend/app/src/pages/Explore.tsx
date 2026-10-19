@@ -10,7 +10,7 @@ import { getCreatorProfileUrl } from '@/lib/utils';
 import { api } from '@/contexts/AuthContext';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Creator, Category } from '@/types';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/sonner';
 
 const defaultCategories: Category[] = [
   { id: 'photography', name: 'Photography', icon: '/images/category-photography.png', description: 'Professional photos', creatorCount: 0 },

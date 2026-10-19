@@ -8,7 +8,7 @@ import { AuthLayout } from '@/layouts/AuthLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { resetPasswordSchema, type ResetPasswordFormData } from '@/lib/validations/authSchemas';
 import { Loader2, CheckCircle2, ArrowLeft } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/sonner';
 
 export function ResetPassword() {
   const navigate = useNavigate();

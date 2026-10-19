@@ -17,7 +17,7 @@ import {
   AlertCircle,
   CheckCheck
 } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/sonner';
 
 interface Notification {
   _id: string;

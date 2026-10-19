@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { api } from '@/contexts/AuthContext';
 import { getImageUrl } from '@/lib/imageUrl';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/sonner';
 import { Loader2, Calendar, DollarSign } from 'lucide-react';
 
 interface Creator {

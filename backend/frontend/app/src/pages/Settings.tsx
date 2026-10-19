@@ -11,7 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/contexts/AuthContext';
 import { walletService } from '@/lib/api';
 import { getImageUrl } from '@/lib/imageUrl';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/sonner';
 import { User, Bell, Shield, Moon, Globe, Smartphone, Camera, Loader2, Lock, Wallet, Copy, Check } from 'lucide-react';
 import { RescueTokenModal } from '@/components/wallet/RescueTokenModal';
 import {

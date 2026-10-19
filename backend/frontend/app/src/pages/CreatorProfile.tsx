@@ -8,7 +8,7 @@ import { VerifiedBadge } from '@/components/shared/VerifiedBadge';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { api } from '@/contexts/AuthContext';
 import { Star, MapPin, MessageSquare, Bookmark, Share2, ArrowLeft, Plus, Trash2, ExternalLink, BadgeCheck, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/sonner';
 import type { Creator } from '@/types';
 import {
   Dialog,

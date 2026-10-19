@@ -7,7 +7,7 @@ import { DesktopWallet } from '@/components/wallet/DesktopWallet';
 import { useWallet } from '@/hooks/useWallet';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/sonner';
 import type { Transaction } from '@/types';
 
 export function Wallet() {

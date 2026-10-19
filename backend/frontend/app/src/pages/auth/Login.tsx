@@ -12,7 +12,7 @@ import { AuthLayout } from '@/layouts/AuthLayout';
 import { useAuth, api } from '@/contexts/AuthContext';
 import { loginSchema, type LoginFormData } from '@/lib/validations/authSchemas';
 import { Loader2, Mail, Lock } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/sonner';
 
 import {
   Dialog,

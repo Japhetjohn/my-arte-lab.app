@@ -5,7 +5,7 @@ import { CreatorCard } from '@/components/shared/CreatorCard';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { getCreatorProfileUrl } from '@/lib/utils';
 import { api } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/sonner';
 import type { Creator } from '@/types';
 
 export function Creators() {

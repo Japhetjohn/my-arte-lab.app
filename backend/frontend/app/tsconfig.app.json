@@ -12,6 +12,9 @@
     "paths": {
       "@/*": [
         "./src/*"
+      ],
+      "sonner": [
+        "./src/components/ui/sonner.tsx"
       ]
     },
     /* Bundler mode */
