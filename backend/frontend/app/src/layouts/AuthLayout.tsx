@@ -74,7 +74,7 @@ export function AuthLayout({
                 Terms of Service
               </a>{' '}
               and{' '}
-              <a href="/legal" className="text-gray-600 hover:text-[#9747FF] underline transition-colors">
+              <a href="/privacy-policy" className="text-gray-600 hover:text-[#9747FF] underline transition-colors">
                 Privacy Policy
               </a>.
             </p>

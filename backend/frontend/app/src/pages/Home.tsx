@@ -234,6 +234,24 @@ export function Home() {
           Browse All Creators
         </Button>
       </section>
+
+      {/* Public Footer with Privacy Policy & Terms */}
+      <footer className="pt-8 pb-12 mt-4 border-t border-gray-150 text-center">
+        <div className="flex flex-wrap items-center justify-center gap-6 text-xs sm:text-sm text-gray-500 font-medium">
+          <a href="/privacy-policy" className="hover:text-[#9747FF] transition-colors">
+            Privacy Policy
+          </a>
+          <a href="/legal" className="hover:text-[#9747FF] transition-colors">
+            Terms of Service
+          </a>
+          <a href="mailto:support@myartelab.com" className="hover:text-[#9747FF] transition-colors">
+            Support
+          </a>
+        </div>
+        <p className="text-xs text-gray-400 mt-3">
+          © {new Date().getFullYear()} MyArteLab. Built for African creators, trusted by clients globally.
+        </p>
+      </footer>
     </div>
   );
 }

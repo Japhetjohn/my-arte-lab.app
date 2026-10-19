@@ -24,6 +24,7 @@ import { CreatorProfile } from '@/pages/CreatorProfile';
 import { Explore } from '@/pages/Explore';
 import { Creators } from '@/pages/Creators';
 import { Legal } from '@/pages/Legal';
+import { PrivacyPolicy } from '@/pages/PrivacyPolicy';
 import { EmptyState, preloadOfflineImage } from '@/components/shared/EmptyState';
 import { Toaster } from '@/components/ui/sonner';
 import './App.css';
@@ -153,7 +154,7 @@ function AppContent() {
   }
 
   // Public browsing pages: visible to guests and logged-in users
-  const publicBrowsingRoutes = ['/', '/home', '/creators', '/explore', '/legal'];
+  const publicBrowsingRoutes = ['/', '/home', '/creators', '/explore', '/legal', '/privacy-policy'];
   const isPublicBrowsingRoute =
     publicBrowsingRoutes.includes(currentPath) ||
     currentPath.startsWith('/creator/');
@@ -232,6 +233,8 @@ function AppContent() {
         return <Creators />;
       case '/legal':
         return <Legal />;
+      case '/privacy-policy':
+        return <PrivacyPolicy />;
       case '/profile':
         return user ? <CreatorProfile creatorId={user.id} isOwnProfile={true} /> : <Settings />;
       case '/verify-email':
