@@ -8,6 +8,7 @@ interface PasswordInputProps extends React.InputHTMLAttributes<HTMLInputElement>
   showStrength?: boolean;
   label?: string;
   error?: string;
+  leftIcon?: React.ReactNode;
 }
 
 interface StrengthRequirement {
@@ -22,7 +23,7 @@ const requirements: StrengthRequirement[] = [
 ];
 
 export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
-  ({ showStrength = false, label, error, className, ...props }, ref) => {
+  ({ showStrength = false, label, error, leftIcon, className, ...props }, ref) => {
     const [showPassword, setShowPassword] = useState(false);
     const [currentValue, setCurrentValue] = useState(String(props.value || props.defaultValue || ''));
 
@@ -67,11 +68,17 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
           </label>
         )}
         <div className="relative">
+          {leftIcon && (
+            <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10 flex items-center justify-center">
+              {leftIcon}
+            </div>
+          )}
           <Input
             ref={ref}
             type={showPassword ? 'text' : 'password'}
             className={cn(
               'pr-10',
+              leftIcon && 'pl-10',
               error && 'border-red-500 focus-visible:ring-red-500',
               className
             )}

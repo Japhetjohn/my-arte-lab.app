@@ -75,6 +75,35 @@ export const registerSchema = registerStep1Schema
 
 export type RegisterFormData = z.infer<typeof registerSchema>;
 
+// Streamlined mobile-first sign up schema
+export const signUpSchema = z.object({
+  firstName: z.string().trim().min(2, 'First name must be at least 2 characters'),
+  lastName: z.string().trim().min(2, 'Last name must be at least 2 characters'),
+  email: z.string().trim().email('Please enter a valid email address'),
+  password: z
+    .string()
+    .min(8, 'Password must be at least 8 characters')
+    .regex(
+      /^(?=.*[a-z])(?=.*[A-Z])/,
+      'Password must contain at least one uppercase and one lowercase letter'
+    ),
+  role: z.enum(['client', 'creator']),
+  category: z.string().optional(),
+}).refine(
+  (data) => {
+    if (data.role === 'creator') {
+      return !!data.category && data.category.length > 0;
+    }
+    return true;
+  },
+  {
+    message: 'Please select a primary creative category',
+    path: ['category'],
+  }
+);
+
+export type SignUpFormData = z.infer<typeof signUpSchema>;
+
 // Email verification schema
 export const verifyEmailSchema = z.object({
   code: z.string().length(6, 'Verification code must be 6 digits'),

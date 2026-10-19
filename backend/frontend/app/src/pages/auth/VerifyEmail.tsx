@@ -115,7 +115,7 @@ export function VerifyEmail() {
       <AuthLayout
         title="Verify Your Email"
         subtitle={`Enter the 6-digit code sent to ${user?.email || pendingEmail || 'your email'}`}
-        illustration="/images/email-verified.png"
+        illustration="/images/auth-illustration.svg"
         showBackButton={false}
       >
         <div className="space-y-6">

@@ -2,9 +2,22 @@ import { useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useNavigate } from 'react-router-dom';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { PasswordInput } from '@/components/shared/PasswordInput';
+import { GoogleAuthButton } from '@/components/auth/GoogleAuthButton';
+import { AuthLayout } from '@/layouts/AuthLayout';
+import { useAuth, api } from '@/contexts/AuthContext';
+import {
+  signUpSchema,
+  CREATOR_CATEGORIES,
+  type SignUpFormData,
+} from '@/lib/validations/authSchemas';
+import { Loader2, User, Mail, Lock } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 import {
   Dialog,
@@ -12,162 +25,85 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-
-const REGISTRATION_COUNTRIES = [
-  { code: 'NG', name: 'Nigeria' },
-  { code: 'GH', name: 'Ghana' },
-  { code: 'KE', name: 'Kenya' },
-  { code: 'CD', name: 'DR Congo' },
-  { code: 'CM', name: 'Cameroon' },
-  { code: 'BJ', name: 'Benin' },
-  { code: 'EG', name: 'Egypt' },
-  { code: 'GM', name: 'Gambia' },
-  { code: 'RW', name: 'Rwanda' },
-  { code: 'SL', name: 'Sierra Leone' },
-  { code: 'TZ', name: 'Tanzania' },
-  { code: 'UG', name: 'Uganda' },
-  { code: 'ZM', name: 'Zambia' },
-  { code: 'BW', name: 'Botswana' },
-  { code: 'LR', name: 'Liberia' },
-  { code: 'ZA', name: 'South Africa' },
-  { code: 'ET', name: 'Ethiopia' },
-  { code: 'CI', name: "Côte d'Ivoire" },
-  { code: 'SN', name: 'Senegal' },
-  { code: 'MA', name: 'Morocco' },
-  { code: 'US', name: 'United States' },
-  { code: 'GB', name: 'United Kingdom' },
-  { code: 'CA', name: 'Canada' },
-  { code: 'FR', name: 'France' },
-  { code: 'DE', name: 'Germany' },
-];
-
-import { PasswordInput } from '@/components/shared/PasswordInput';
-import { AuthLayout } from '@/layouts/AuthLayout';
-import { useAuth, api } from '@/contexts/AuthContext';
-import {
-  registerStep1Schema,
-  registerStep2Schema,
-  registerStep3Schema,
-  CREATOR_CATEGORIES,
-  type RegisterStep1Data,
-  type RegisterStep2Data,
-  type RegisterStep3Data,
-} from '@/lib/validations/authSchemas';
-import { X } from 'lucide-react';
-import { Loader2, User, Mail, Briefcase, Check } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
-
-type Step = 1 | 2 | 3;
 
 export function Register() {
   const navigate = useNavigate();
   const { register: registerUser, login } = useAuth();
-  const [currentStep, setCurrentStep] = useState<Step>(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<'client' | 'creator'>('client');
   
   // Verification modal state
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [verifyCode, setVerifyCode] = useState(['', '', '', '', '', '']);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [isResending, setIsResending] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState('');
   const [registeredPassword, setRegisteredPassword] = useState('');
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // Form data state
-  const [step1Data, setStep1Data] = useState<RegisterStep1Data | null>(null);
-  const [step2Data, setStep2Data] = useState<RegisterStep2Data | null>(null);
-
-  // Step 1 Form
-  const step1Form = useForm<RegisterStep1Data>({
-    resolver: zodResolver(registerStep1Schema),
-  });
-
-  // Step 2 Form
-  const step2Form = useForm<RegisterStep2Data>({
-    resolver: zodResolver(registerStep2Schema),
-    defaultValues: {
-      gender: undefined,
-    },
-  });
-
-  // Step 3 Form
-  const step3Form = useForm<RegisterStep3Data>({
-    resolver: zodResolver(registerStep3Schema),
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    setError,
+    formState: { errors },
+  } = useForm<SignUpFormData>({
+    resolver: zodResolver(signUpSchema),
     defaultValues: {
       role: 'client',
-      gender: undefined,
-      location: {
-        localArea: '',
-        state: '',
-        country: 'Nigeria',
-      },
-      categories: [],
-      agreeToTerms: true, // Auto-agree to terms
+      category: '',
     },
   });
 
-  const handleStep1Submit = (data: RegisterStep1Data) => {
-    setStep1Data(data);
-    setCurrentStep(2);
+  const handleRoleChange = (role: 'client' | 'creator') => {
+    setSelectedRole(role);
+    setValue('role', role, { shouldValidate: true });
+    if (role === 'client') {
+      setValue('category', '');
+    }
   };
 
-  const handleStep2Submit = (data: RegisterStep2Data) => {
-    setStep2Data(data);
-    setCurrentStep(3);
-  };
-
-  const handleStep3Submit = async (data: RegisterStep3Data) => {
-    if (!step1Data || !step2Data) return;
-
-    // Get avatar URL based on gender
-    const getAvatarUrl = (g?: string) => {
-      switch (g) {
-        case 'male': return '/images/avatar-2.png';
-        case 'female': return '/images/avatar-1.png';
-        default: return '/images/avatar-3.png';
-      }
-    };
-
+  const onSubmit = async (data: SignUpFormData) => {
     setIsLoading(true);
     try {
-      // Map categories to category array for backend compatibility
-      const payload = {
-        ...step1Data,
-        ...step2Data,
-        ...data,
-        category: data.categories as string[] | undefined,
-        avatar: getAvatarUrl(step2Data.gender),
-        coverImage: '/images/hero-bg.jpg', // Default cover image
+      // Map categories to array for backend compatibility
+      const payload: any = {
+        firstName: data.firstName.trim(),
+        lastName: data.lastName.trim(),
+        email: data.email.trim(),
+        password: data.password,
+        role: data.role || 'client',
+        category: data.role === 'creator' && data.category ? [data.category] : undefined,
+        avatar: '/images/default-avatar.png',
+        coverImage: '/images/hero-bg.jpg',
+        location: {
+          country: 'Nigeria',
+          state: '',
+          localArea: '',
+        },
       };
-      await registerUser(payload as any);
+
+      await registerUser(payload);
       // Store credentials for auto-login after verification
-      setRegisteredEmail(step1Data.email);
-      setRegisteredPassword(step1Data.password);
+      setRegisteredEmail(data.email.trim());
+      setRegisteredPassword(data.password);
       setShowVerifyModal(true);
     } catch (error: any) {
       const errRes = error?.response?.data;
       const errorMsg = (errRes?.error || errRes?.message || error?.message || '').toLowerCase();
       
       if (errorMsg.includes('email') || errorMsg.includes('already registered')) {
-        setCurrentStep(1);
-        step1Form.setError('email', {
+        setError('email', {
           type: 'manual',
           message: 'This email is already registered. Please log in or use a different email.',
         });
       } else if (errorMsg.includes('password')) {
-        setCurrentStep(1);
-        step1Form.setError('password', {
+        setError('password', {
           type: 'manual',
           message: errRes?.error || errRes?.message || 'Password must be at least 8 characters and contain at least one uppercase and one lowercase letter.',
         });
+      } else {
+        toast.error(errRes?.error || errRes?.message || 'Registration failed. Please try again.');
       }
     } finally {
       setIsLoading(false);
@@ -176,8 +112,8 @@ export function Register() {
 
   // Handle verification code input
   const handleCodeChange = (index: number, value: string) => {
-    if (value.length > 1) value = value[0]; // Only allow single digit
-    if (!/^\d*$/.test(value)) return; // Only allow numbers
+    if (value.length > 1) value = value[0];
+    if (!/^\d*$/.test(value)) return;
 
     const newCode = [...verifyCode];
     newCode[index] = value;
@@ -189,7 +125,6 @@ export function Register() {
     }
   };
 
-  // Handle backspace
   const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
     if (e.key === 'Backspace' && !verifyCode[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
@@ -207,13 +142,13 @@ export function Register() {
     setIsVerifying(true);
     try {
       await api.post('/auth/verify-email', { code });
-      toast.success('Email verified!');
+      toast.success('Email verified! Logging you in...');
       
       // Auto-login after verification
       await login(registeredEmail, registeredPassword);
       navigate('/home');
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Invalid code');
+      toast.error(error.response?.data?.message || 'Invalid verification code');
     } finally {
       setIsVerifying(false);
     }
@@ -221,473 +156,218 @@ export function Register() {
 
   // Resend code
   const handleResend = async () => {
+    setIsResending(true);
     try {
       await api.post('/auth/resend-verification', { email: registeredEmail });
-      toast.success('Code resent!');
+      toast.success('New verification code sent!');
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to resend');
+      toast.error(error.response?.data?.message || 'Failed to resend code');
+    } finally {
+      setIsResending(false);
     }
-  };
-
-  const steps = [
-    { number: 1, label: 'Personal Info' },
-    { number: 2, label: 'Avatar' },
-    { number: 3, label: 'Role' },
-  ];
-
-  const renderStepIndicator = () => (
-    <div className="mb-8">
-      <div className="flex items-center justify-between">
-        {steps.map((step, index) => (
-          <div key={step.number} className="flex items-center">
-            <div
-              className={cn(
-                'w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors',
-                currentStep >= step.number
-                  ? 'bg-[#8A2BE2] text-white'
-                  : 'bg-gray-100 text-gray-500'
-              )}
-            >
-              {currentStep > step.number ? (
-                <Check className="w-4 h-4" />
-              ) : (
-                step.number
-              )}
-            </div>
-            <span
-              className={cn(
-                'ml-2 text-sm hidden sm:block',
-                currentStep >= step.number ? 'text-gray-900' : 'text-gray-400'
-              )}
-            >
-              {step.label}
-            </span>
-            {index < steps.length - 1 && (
-              <div
-                className={cn(
-                  'w-8 sm:w-12 h-0.5 mx-2 sm:mx-4',
-                  currentStep > step.number ? 'bg-[#8A2BE2]' : 'bg-gray-200'
-                )}
-              />
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-
-  const renderStep1 = () => (
-    <form onSubmit={step1Form.handleSubmit(handleStep1Submit)} className="space-y-4 sm:space-y-5">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="firstName" className="text-sm sm:text-base">First Name</Label>
-          <div className="relative">
-            <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <Input
-              id="firstName"
-              placeholder="John"
-              className="pl-10 h-12 sm:h-11 text-base"
-              {...step1Form.register('firstName')}
-            />
-          </div>
-          {step1Form.formState.errors.firstName && (
-            <p className="text-sm text-red-500">
-              {step1Form.formState.errors.firstName.message}
-            </p>
-          )}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="lastName" className="text-sm sm:text-base">Last Name</Label>
-          <Input
-            id="lastName"
-            placeholder="Doe"
-            className="h-12 sm:h-11 text-base"
-            {...step1Form.register('lastName')}
-          />
-          {step1Form.formState.errors.lastName && (
-            <p className="text-sm text-red-500">
-              {step1Form.formState.errors.lastName.message}
-            </p>
-          )}
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="email" className="text-sm sm:text-base">Email Address</Label>
-        <div className="relative">
-          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <Input
-            id="email"
-            type="email"
-            placeholder="you@example.com"
-            className="pl-10 h-12 sm:h-11 text-base"
-            {...step1Form.register('email')}
-          />
-        </div>
-        {step1Form.formState.errors.email && (
-          <p className="text-sm text-red-500">
-            {step1Form.formState.errors.email.message}
-          </p>
-        )}
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="password" className="text-sm sm:text-base">Password</Label>
-        <PasswordInput
-          id="password"
-          showStrength
-          placeholder="Create a password"
-          error={step1Form.formState.errors.password?.message}
-          className="h-12 sm:h-11 text-base"
-          {...step1Form.register('password')}
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="confirmPassword" className="text-sm sm:text-base">Confirm Password</Label>
-        <PasswordInput
-          id="confirmPassword"
-          placeholder="Confirm your password"
-          error={step1Form.formState.errors.confirmPassword?.message}
-          className="h-12 sm:h-11 text-base"
-          {...step1Form.register('confirmPassword')}
-        />
-      </div>
-
-      <Button
-        type="submit"
-        className="w-full bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white h-12 sm:h-11 text-base mt-2"
-      >
-        Continue
-      </Button>
-
-      <p className="text-center text-sm text-gray-600 pt-2">
-        Already have an account?{' '}
-        <a href="/login" className="text-[#8A2BE2] hover:underline font-medium">
-          Sign in
-        </a>
-      </p>
-    </form>
-  );
-
-  const renderStep2 = () => {
-    const gender = step2Form.watch('gender');
-    
-    const getAvatarUrl = (g: string) => {
-      switch (g) {
-        case 'male': return '/images/avatar-2.png';  // Male avatar
-        case 'female': return '/images/avatar-1.png';  // Female avatar
-        default: return '/images/avatar-3.png';  // Neutral avatar
-      }
-    };
-
-    return (
-      <form onSubmit={step2Form.handleSubmit(handleStep2Submit)} className="space-y-5">
-        <div className="text-center mb-6">
-          <h3 className="text-lg font-semibold mb-2">Choose Your Avatar</h3>
-          <p className="text-gray-500 text-sm">Select your gender to get a cool default avatar</p>
-        </div>
-
-        {/* Avatar Preview */}
-        <div className="flex justify-center mb-6">
-          <div className="relative">
-            <img
-              src={gender ? getAvatarUrl(gender) : '/images/avatar-3.png'}
-              alt="Avatar Preview"
-              className="w-32 h-32 rounded-full object-cover border-4 border-[#8A2BE2]/20"
-            />
-            <div className="absolute bottom-0 right-0 w-8 h-8 bg-[#8A2BE2] rounded-full flex items-center justify-center">
-              <User className="w-4 h-4 text-white" />
-            </div>
-          </div>
-        </div>
-
-        {/* Gender Selection */}
-        <div className="space-y-2">
-          <Label className="text-sm sm:text-base">Select your gender</Label>
-          <div className="grid grid-cols-3 gap-3">
-            <button
-              type="button"
-              onClick={() => step2Form.setValue('gender', 'male')}
-              className={cn(
-                'p-3 border rounded-lg text-center transition-all',
-                gender === 'male'
-                  ? 'border-[#8A2BE2] bg-[#8A2BE2]/5'
-                  : 'border-gray-200 hover:border-gray-300'
-              )}
-            >
-              <div className="w-10 h-10 mx-auto bg-blue-100 rounded-full flex items-center justify-center mb-2">
-                <span className="text-xl">👨</span>
-              </div>
-              <p className="font-medium text-sm">Male</p>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => step2Form.setValue('gender', 'female')}
-              className={cn(
-                'p-3 border rounded-lg text-center transition-all',
-                gender === 'female'
-                  ? 'border-[#8A2BE2] bg-[#8A2BE2]/5'
-                  : 'border-gray-200 hover:border-gray-300'
-              )}
-            >
-              <div className="w-10 h-10 mx-auto bg-pink-100 rounded-full flex items-center justify-center mb-2">
-                <span className="text-xl">👩</span>
-              </div>
-              <p className="font-medium text-sm">Female</p>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => step2Form.setValue('gender', 'other')}
-              className={cn(
-                'p-3 border rounded-lg text-center transition-all',
-                gender === 'other'
-                  ? 'border-[#8A2BE2] bg-[#8A2BE2]/5'
-                  : 'border-gray-200 hover:border-gray-300'
-              )}
-            >
-              <div className="w-10 h-10 mx-auto bg-purple-100 rounded-full flex items-center justify-center mb-2">
-                <span className="text-xl">🧑</span>
-              </div>
-              <p className="font-medium text-sm">Other</p>
-            </button>
-          </div>
-          {step2Form.formState.errors.gender && (
-            <p className="text-sm text-red-500">
-              {step2Form.formState.errors.gender.message}
-            </p>
-          )}
-        </div>
-
-        <p className="text-xs text-gray-500 text-center">
-          You can change your avatar later in your profile settings
-        </p>
-
-        <div className="flex gap-3">
-          <Button
-            type="button"
-            variant="outline"
-            className="flex-1 h-12 sm:h-11 text-base"
-            onClick={() => setCurrentStep(1)}
-          >
-            Back
-          </Button>
-          <Button
-            type="submit"
-            className="flex-1 bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white h-12 sm:h-11 text-base"
-          >
-            Continue
-          </Button>
-        </div>
-      </form>
-    );
-  };
-
-  const renderStep3 = () => {
-    const role = step3Form.watch('role');
-
-    return (
-      <form onSubmit={step3Form.handleSubmit(handleStep3Submit)} className="space-y-4 sm:space-y-5">
-        <div className="space-y-2">
-          <Label className="text-sm sm:text-base">I want to join as</Label>
-          <div className="grid grid-cols-2 gap-3 sm:gap-4">
-            <button
-              type="button"
-              onClick={() => step3Form.setValue('role', 'client')}
-              className={cn(
-                'p-3 sm:p-4 border rounded-lg text-left transition-all',
-                role === 'client'
-                  ? 'border-[#8A2BE2] bg-[#8A2BE2]/5'
-                  : 'border-gray-200 hover:border-gray-300'
-              )}
-            >
-              <div className="w-10 h-10 bg-[#8A2BE2]/10 rounded-full flex items-center justify-center mb-2">
-                <User className="w-5 h-5 text-[#8A2BE2]" />
-              </div>
-              <p className="font-medium text-sm sm:text-base">Client</p>
-              <p className="text-xs sm:text-sm text-gray-500">I want to hire creators</p>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => step3Form.setValue('role', 'creator')}
-              className={cn(
-                'p-3 sm:p-4 border rounded-lg text-left transition-all',
-                role === 'creator'
-                  ? 'border-[#8A2BE2] bg-[#8A2BE2]/5'
-                  : 'border-gray-200 hover:border-gray-300'
-              )}
-            >
-              <div className="w-10 h-10 bg-[#8A2BE2]/10 rounded-full flex items-center justify-center mb-2">
-                <Briefcase className="w-5 h-5 text-[#8A2BE2]" />
-              </div>
-              <p className="font-medium text-sm sm:text-base">Creator</p>
-              <p className="text-xs sm:text-sm text-gray-500">I want to offer services</p>
-            </button>
-          </div>
-        </div>
-
-        {role === 'creator' && (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label>Select your categories <span className="text-gray-400 font-normal">(max 3)</span></Label>
-              <span className="text-xs text-gray-500">
-                {(step3Form.watch('categories') || []).length}/3 selected
-              </span>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              {CREATOR_CATEGORIES.map((cat) => {
-                const selectedCats = step3Form.watch('categories') || [];
-                const isSelected = selectedCats.includes(cat.id);
-                const isMaxReached = selectedCats.length >= 3 && !isSelected;
-                
-                return (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    disabled={isMaxReached}
-                    onClick={() => {
-                      const current = step3Form.watch('categories') || [];
-                      if (isSelected) {
-                        step3Form.setValue('categories', current.filter((c: string) => c !== cat.id));
-                      } else {
-                        step3Form.setValue('categories', [...current, cat.id]);
-                      }
-                    }}
-                    className={cn(
-                      'p-3 border rounded-lg text-left text-sm transition-all relative',
-                      isSelected
-                        ? 'border-[#8A2BE2] bg-[#8A2BE2]/5 text-[#8A2BE2]'
-                        : isMaxReached
-                          ? 'border-gray-100 text-gray-300 cursor-not-allowed'
-                          : 'border-gray-200 hover:border-gray-300'
-                    )}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span>{cat.name}</span>
-                      {isSelected && (
-                        <X className="w-3 h-3" />
-                      )}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-            {step3Form.formState.errors.categories && (
-              <p className="text-sm text-red-500">
-                {step3Form.formState.errors.categories.message}
-              </p>
-            )}
-          </div>
-        )}
-
-        <div className="space-y-2">
-          <Label className="text-sm sm:text-base">Location</Label>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Input
-                placeholder="City/Area"
-                className="h-12 sm:h-11 text-base"
-                {...step3Form.register('location.localArea')}
-              />
-            </div>
-            <div>
-              <Input
-                placeholder="State"
-                className="h-12 sm:h-11 text-base"
-                {...step3Form.register('location.state')}
-              />
-            </div>
-          </div>
-          <div className="pt-1">
-            <Select
-              value={step3Form.watch('location.country')}
-              onValueChange={(val) => step3Form.setValue('location.country', val)}
-            >
-              <SelectTrigger className="h-12 sm:h-11 text-base">
-                <SelectValue placeholder="Select Country" />
-              </SelectTrigger>
-              <SelectContent className="max-h-56">
-                {REGISTRATION_COUNTRIES.map((c) => (
-                  <SelectItem key={c.code} value={c.name}>
-                    {c.name} ({c.code})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        {/* Auto-agree to terms - checkbox removed */}
-        <p className="text-xs text-gray-500 text-center">
-          By creating an account, you agree to our{' '}
-          <Link to="/terms" className="text-[#8A2BE2] hover:underline">
-            Terms of Service
-          </Link>{' '}
-          and{' '}
-          <Link to="/privacy" className="text-[#8A2BE2] hover:underline">
-            Privacy Policy
-          </Link>
-        </p>
-
-        <div className="flex gap-3">
-          <Button
-            type="button"
-            variant="outline"
-            className="flex-1 h-12 sm:h-11 text-base"
-            onClick={() => setCurrentStep(2)}
-          >
-            Back
-          </Button>
-          <Button
-            type="submit"
-            disabled={isLoading}
-            className="flex-1 bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white h-12 sm:h-11 text-base"
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Creating account...
-              </>
-            ) : (
-              'Create Account'
-            )}
-          </Button>
-        </div>
-      </form>
-    );
   };
 
   return (
     <AuthLayout
-      title="Create Account"
-      subtitle="Join MyArteLab and start your journey"
-      illustration="/images/welcome.png"
+      title="Create your account"
+      subtitle="Join MyArteLab and connect with creative opportunities."
+      illustration="/images/auth-illustration.svg"
+      illustrationHeadline="Connect with Top African Creatives"
+      illustrationSubtext="Discover, collaborate, and book talented creative professionals."
       showBackButton={false}
     >
-      {renderStepIndicator()}
-      {currentStep === 1 && renderStep1()}
-      {currentStep === 2 && renderStep2()}
-      {currentStep === 3 && renderStep3()}
-      
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-3.5 sm:space-y-4">
+        {/* Subtle Role Toggle: Client vs Creator */}
+        <div className="space-y-1">
+          <div className="flex p-0.5 bg-gray-100 rounded-xl border border-gray-200/60 text-xs font-medium">
+            <button
+              type="button"
+              onClick={() => handleRoleChange('client')}
+              className={cn(
+                'flex-1 py-1.5 rounded-lg text-center transition-all cursor-pointer',
+                selectedRole === 'client'
+                  ? 'bg-white text-gray-900 shadow-2xs font-semibold'
+                  : 'text-gray-500 hover:text-gray-800'
+              )}
+            >
+              Client (Hire creators)
+            </button>
+            <button
+              type="button"
+              onClick={() => handleRoleChange('creator')}
+              className={cn(
+                'flex-1 py-1.5 rounded-lg text-center transition-all cursor-pointer',
+                selectedRole === 'creator'
+                  ? 'bg-white text-gray-900 shadow-2xs font-semibold'
+                  : 'text-gray-500 hover:text-gray-800'
+              )}
+            >
+              Creator (Offer services)
+            </button>
+          </div>
+        </div>
+
+        {/* 5. Name Fields: First Name and Last Name */}
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="firstName" className="text-xs font-semibold text-gray-700">
+              First name
+            </Label>
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              <Input
+                id="firstName"
+                type="text"
+                autoComplete="given-name"
+                placeholder="Jane"
+                className="pl-9 h-11 sm:h-12 bg-white border-gray-200 focus-visible:border-[#9747FF] focus-visible:ring-[#9747FF]/20 rounded-xl text-sm"
+                {...register('firstName')}
+              />
+            </div>
+            {errors.firstName && (
+              <p className="text-[11px] text-red-500 font-medium">{errors.firstName.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="lastName" className="text-xs font-semibold text-gray-700">
+              Last name
+            </Label>
+            <Input
+              id="lastName"
+              type="text"
+              autoComplete="family-name"
+              placeholder="Doe"
+              className="h-11 sm:h-12 bg-white border-gray-200 focus-visible:border-[#9747FF] focus-visible:ring-[#9747FF]/20 rounded-xl text-sm"
+              {...register('lastName')}
+            />
+            {errors.lastName && (
+              <p className="text-[11px] text-red-500 font-medium">{errors.lastName.message}</p>
+            )}
+          </div>
+        </div>
+
+        {/* Creator Category Dropdown (conditionally shown if Creator is selected) */}
+        {selectedRole === 'creator' && (
+          <div className="space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-150">
+            <Label htmlFor="category" className="text-xs font-semibold text-gray-700">
+              Primary creative category
+            </Label>
+            <select
+              id="category"
+              className="w-full h-11 sm:h-12 bg-white border border-gray-200 focus:border-[#9747FF] focus:ring-2 focus:ring-[#9747FF]/20 rounded-xl text-sm px-3 text-gray-800 outline-none transition-all cursor-pointer"
+              {...register('category')}
+            >
+              <option value="">Select your primary specialty...</option>
+              {CREATOR_CATEGORIES.map((cat) => (
+                <option key={cat.id} value={cat.name}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+            {errors.category && (
+              <p className="text-[11px] text-red-500 font-medium">{errors.category.message}</p>
+            )}
+          </div>
+        )}
+
+        {/* 6. Email Input */}
+        <div className="space-y-1.5">
+          <Label htmlFor="email" className="text-xs font-semibold text-gray-700">
+            Email
+          </Label>
+          <div className="relative">
+            <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            <Input
+              id="email"
+              type="email"
+              autoComplete="email"
+              placeholder="you@example.com"
+              className="pl-10 h-11 sm:h-12 bg-white border-gray-200 focus-visible:border-[#9747FF] focus-visible:ring-[#9747FF]/20 rounded-xl text-sm"
+              {...register('email')}
+            />
+          </div>
+          {errors.email && (
+            <p className="text-[11px] text-red-500 font-medium">{errors.email.message}</p>
+          )}
+        </div>
+
+        {/* 7. Password Input with functional show/hide control */}
+        <div className="space-y-1.5">
+          <Label htmlFor="password" className="text-xs font-semibold text-gray-700">
+            Password
+          </Label>
+          <PasswordInput
+            id="password"
+            autoComplete="new-password"
+            placeholder="At least 8 characters (1 uppercase, 1 lowercase)"
+            leftIcon={<Lock className="w-4 h-4" />}
+            className="h-11 sm:h-12 bg-white border-gray-200 focus-visible:border-[#9747FF] focus-visible:ring-[#9747FF]/20 rounded-xl text-sm"
+            {...register('password')}
+          />
+          {errors.password && (
+            <p className="text-[11px] text-red-500 font-medium">{errors.password.message}</p>
+          )}
+        </div>
+
+        {/* 8. Full-width purple Create account button */}
+        <button
+          type="submit"
+          disabled={isLoading}
+          className="w-full h-11 sm:h-12 bg-[#9747FF] hover:bg-[#8534f0] active:bg-[#7427dc] text-white font-semibold text-sm sm:text-base rounded-xl transition-all shadow-2xs hover:shadow-xs disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer mt-1"
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin text-white" />
+              <span>Creating account...</span>
+            </>
+          ) : (
+            <span>Create account</span>
+          )}
+        </button>
+
+        {/* 9. Subtle divider labelled "or" */}
+        <div className="relative my-3 sm:my-4">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-200" />
+          </div>
+          <div className="relative flex justify-center text-xs">
+            <span className="bg-white px-3 text-gray-400 font-medium">or</span>
+          </div>
+        </div>
+
+        {/* 10. Full-width Continue with Google button */}
+        <GoogleAuthButton text="Continue with Google" disabled={isLoading} />
+
+        {/* 11. Account navigation link */}
+        <p className="text-center text-xs sm:text-sm text-gray-500 pt-2 sm:pt-3">
+          Already have an account?{' '}
+          <Link
+            to="/login"
+            className="text-[#9747FF] hover:text-[#8534f0] font-semibold hover:underline transition-colors ml-0.5"
+          >
+            Log in
+          </Link>
+        </p>
+      </form>
+
       {/* Email Verification Modal */}
       <Dialog open={showVerifyModal} onOpenChange={() => {}}>
-        <DialogContent className="sm:max-w-md" showCloseButton={false}>
+        <DialogContent className="sm:max-w-md rounded-2xl" showCloseButton={false}>
           <DialogHeader>
-            <DialogTitle className="text-center text-2xl">Verify Your Email</DialogTitle>
+            <DialogTitle className="text-center text-xl font-bold text-gray-900">
+              Verify Your Email
+            </DialogTitle>
           </DialogHeader>
           
-          <div className="py-6">
+          <div className="py-4 sm:py-6">
             <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-[#8A2BE2]/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Mail className="w-8 h-8 text-[#8A2BE2]" />
+              <div className="w-14 h-14 bg-[#9747FF]/10 text-[#9747FF] rounded-2xl flex items-center justify-center mx-auto mb-3">
+                <Mail className="w-7 h-7" />
               </div>
-              <p className="text-gray-600">
-                Enter the 6-digit code sent to<br />
-                <span className="font-medium text-gray-900">{registeredEmail}</span>
+              <p className="text-xs sm:text-sm text-gray-600">
+                We sent a 6-digit confirmation code to<br />
+                <span className="font-semibold text-gray-900">{registeredEmail}</span>
               </p>
             </div>
 
@@ -703,7 +383,7 @@ export function Register() {
                   value={digit}
                   onChange={(e) => handleCodeChange(index, e.target.value)}
                   onKeyDown={(e) => handleKeyDown(index, e)}
-                  className="w-12 h-14 text-center text-2xl font-bold border-2 focus:border-[#8A2BE2]"
+                  className="w-11 sm:w-12 h-13 sm:h-14 text-center text-xl sm:text-2xl font-bold border-2 rounded-xl focus-visible:border-[#9747FF] focus-visible:ring-[#9747FF]/20"
                 />
               ))}
             </div>
@@ -711,7 +391,7 @@ export function Register() {
             <Button
               onClick={handleVerify}
               disabled={isVerifying}
-              className="w-full bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white h-12"
+              className="w-full bg-[#9747FF] hover:bg-[#8534f0] text-white h-11 sm:h-12 rounded-xl text-sm font-semibold cursor-pointer"
             >
               {isVerifying ? (
                 <>
@@ -723,13 +403,15 @@ export function Register() {
               )}
             </Button>
 
-            <p className="text-center text-sm text-gray-500 mt-4">
-              Didn't receive the code?{' '}
+            <p className="text-center text-xs sm:text-sm text-gray-500 mt-4">
+              Didn&apos;t receive the code?{' '}
               <button
+                type="button"
                 onClick={handleResend}
-                className="text-[#8A2BE2] hover:underline font-medium"
+                disabled={isResending}
+                className="text-[#9747FF] hover:text-[#8534f0] hover:underline font-semibold disabled:opacity-50 cursor-pointer ml-1"
               >
-                Resend
+                {isResending ? 'Sending...' : 'Resend'}
               </button>
             </p>
           </div>

@@ -1,15 +1,17 @@
 import { useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Link } from 'react-router-dom';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PasswordInput } from '@/components/shared/PasswordInput';
+import { GoogleAuthButton } from '@/components/auth/GoogleAuthButton';
 import { AuthLayout } from '@/layouts/AuthLayout';
 import { useAuth, api } from '@/contexts/AuthContext';
 import { loginSchema, type LoginFormData } from '@/lib/validations/authSchemas';
-import { Loader2, Mail } from 'lucide-react';
+import { Loader2, Mail, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 
 import {
@@ -116,86 +118,121 @@ export function Login() {
 
   return (
     <AuthLayout
-      title="Welcome Back"
-      subtitle="Sign in to your MyArteLab account"
-      illustration="/images/welcome.png"
+      title="Welcome back"
+      subtitle="Log in to continue to MyArteLab."
+      illustration="/images/auth-illustration.svg"
+      illustrationHeadline="Connect with Top African Creatives"
+      illustrationSubtext="Discover, collaborate, and book talented creative professionals."
       showBackButton={false}
     >
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 sm:space-y-5">
-        <div className="space-y-2">
-          <Label htmlFor="email" className="text-sm sm:text-base">Email Address</Label>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        {/* Email Input */}
+        <div className="space-y-1.5">
+          <Label htmlFor="email" className="text-xs font-semibold text-gray-700">
+            Email
+          </Label>
           <div className="relative">
-            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             <Input
               id="email"
               type="email"
+              autoComplete="email"
               placeholder="you@example.com"
-              className="pl-10 h-12 sm:h-11 text-base"
+              className="pl-10 h-11 sm:h-12 bg-white border-gray-200 focus-visible:border-[#9747FF] focus-visible:ring-[#9747FF]/20 rounded-xl text-sm"
               {...register('email')}
             />
           </div>
           {errors.email && (
-            <p className="text-sm text-red-500">{errors.email.message}</p>
+            <p className="text-xs text-red-500 font-medium">{errors.email.message}</p>
           )}
         </div>
 
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="password" className="text-sm sm:text-base">Password</Label>
-            <a
-              href="/forgot-password"
-              className="text-sm text-[#8A2BE2] hover:underline"
-            >
-              Forgot password?
-            </a>
-          </div>
+        {/* Password Input with show/hide control */}
+        <div className="space-y-1.5">
+          <Label htmlFor="password" className="text-xs font-semibold text-gray-700">
+            Password
+          </Label>
           <PasswordInput
             id="password"
+            autoComplete="current-password"
             placeholder="Enter your password"
-            error={errors.password?.message}
-            className="h-12 sm:h-11 text-base"
+            leftIcon={<Lock className="w-4 h-4" />}
+            className="h-11 sm:h-12 bg-white border-gray-200 focus-visible:border-[#9747FF] focus-visible:ring-[#9747FF]/20 rounded-xl text-sm"
             {...register('password')}
           />
+          {errors.password && (
+            <p className="text-xs text-red-500 font-medium">{errors.password.message}</p>
+          )}
+
+          {/* Forgot password link */}
+          <div className="flex justify-end pt-1">
+            <Link
+              to="/forgot-password"
+              className="text-xs font-medium text-[#9747FF] hover:text-[#8534f0] hover:underline transition-colors"
+            >
+              Forgot password?
+            </Link>
+          </div>
         </div>
 
-        <Button
+        {/* Full-width purple Login button */}
+        <button
           type="submit"
           disabled={isLoading}
-          className="w-full bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white h-12 sm:h-11 text-base mt-2"
+          className="w-full h-11 sm:h-12 bg-[#9747FF] hover:bg-[#8534f0] active:bg-[#7427dc] text-white font-semibold text-sm sm:text-base rounded-xl transition-all shadow-2xs hover:shadow-xs disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer mt-1"
         >
           {isLoading ? (
             <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Signing in...
+              <Loader2 className="w-4 h-4 animate-spin text-white" />
+              <span>Logging in...</span>
             </>
           ) : (
-            'Sign In'
+            <span>Log in</span>
           )}
-        </Button>
+        </button>
 
-        <p className="text-center text-sm text-gray-600 pt-2 sm:pt-4">
-          Don't have an account?{' '}
-          <a href="/register" className="text-[#8A2BE2] hover:underline font-medium">
+        {/* Subtle divider labelled "or" */}
+        <div className="relative my-4 sm:my-5">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-200" />
+          </div>
+          <div className="relative flex justify-center text-xs">
+            <span className="bg-white px-3 text-gray-400 font-medium">or</span>
+          </div>
+        </div>
+
+        {/* Full-width Continue with Google button */}
+        <GoogleAuthButton text="Continue with Google" disabled={isLoading} />
+
+        {/* Account navigation link */}
+        <p className="text-center text-xs sm:text-sm text-gray-500 pt-3 sm:pt-4">
+          Don&apos;t have an account?{' '}
+          <Link
+            to="/register"
+            className="text-[#9747FF] hover:text-[#8534f0] font-semibold hover:underline transition-colors ml-0.5"
+          >
             Sign up
-          </a>
+          </Link>
         </p>
       </form>
 
       {/* Email Verification Modal */}
       <Dialog open={showVerifyModal} onOpenChange={() => {}}>
-        <DialogContent className="sm:max-w-md" showCloseButton={false}>
+        <DialogContent className="sm:max-w-md rounded-2xl" showCloseButton={false}>
           <DialogHeader>
-            <DialogTitle className="text-center text-2xl">Verify Your Email</DialogTitle>
+            <DialogTitle className="text-center text-xl font-bold text-gray-900">
+              Verify Your Email
+            </DialogTitle>
           </DialogHeader>
           
-          <div className="py-6">
+          <div className="py-4 sm:py-6">
             <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-[#8A2BE2]/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Mail className="w-8 h-8 text-[#8A2BE2]" />
+              <div className="w-14 h-14 bg-[#9747FF]/10 text-[#9747FF] rounded-2xl flex items-center justify-center mx-auto mb-3">
+                <Mail className="w-7 h-7" />
               </div>
-              <p className="text-gray-600">
+              <p className="text-xs sm:text-sm text-gray-600">
                 Enter the 6-digit code sent to<br />
-                <span className="font-medium text-gray-900">{verifyEmail}</span>
+                <span className="font-semibold text-gray-900">{verifyEmail}</span>
               </p>
             </div>
 
@@ -211,7 +248,7 @@ export function Login() {
                   value={digit}
                   onChange={(e) => handleCodeChange(index, e.target.value)}
                   onKeyDown={(e) => handleKeyDown(index, e)}
-                  className="w-12 h-14 text-center text-2xl font-bold border-2 focus:border-[#8A2BE2]"
+                  className="w-11 sm:w-12 h-13 sm:h-14 text-center text-xl sm:text-2xl font-bold border-2 rounded-xl focus-visible:border-[#9747FF] focus-visible:ring-[#9747FF]/20"
                 />
               ))}
             </div>
@@ -219,7 +256,7 @@ export function Login() {
             <Button
               onClick={handleVerify}
               disabled={isVerifying}
-              className="w-full bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white h-12"
+              className="w-full bg-[#9747FF] hover:bg-[#8534f0] text-white h-11 sm:h-12 rounded-xl text-sm font-semibold cursor-pointer"
             >
               {isVerifying ? (
                 <>
@@ -231,12 +268,13 @@ export function Login() {
               )}
             </Button>
 
-            <p className="text-center text-sm text-gray-500 mt-4">
-              Didn't receive the code?{' '}
+            <p className="text-center text-xs sm:text-sm text-gray-500 mt-4">
+              Didn&apos;t receive the code?{' '}
               <button
+                type="button"
                 onClick={handleResend}
                 disabled={isResending}
-                className="text-[#8A2BE2] hover:underline font-medium disabled:opacity-50"
+                className="text-[#9747FF] hover:text-[#8534f0] hover:underline font-semibold disabled:opacity-50 cursor-pointer ml-1"
               >
                 {isResending ? 'Sending...' : 'Resend'}
               </button>

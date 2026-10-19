@@ -40,7 +40,7 @@ export function ForgotPassword() {
       <AuthLayout
         title="Check Your Email"
         subtitle="We've sent you a password reset link"
-        illustration="/images/welcome.png"
+        illustration="/images/auth-illustration.svg"
         showBackButton={false}
       >
         <div className="text-center space-y-6">
@@ -83,7 +83,7 @@ export function ForgotPassword() {
     <AuthLayout
       title="Forgot Password?"
       subtitle="Enter your email and we'll send you a reset link"
-      illustration="/images/welcome.png"
+      illustration="/images/auth-illustration.svg"
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
         <div className="space-y-2">
