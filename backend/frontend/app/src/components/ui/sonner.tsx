@@ -96,19 +96,8 @@ class ToastStore {
       isExiting: false,
     };
 
-    // If toast with this id already exists, update it in place
-    const existingIndex = this.toasts.findIndex((t) => t.id === id);
-    if (existingIndex !== -1) {
-      this.toasts = [
-        ...this.toasts.slice(0, existingIndex),
-        newItem,
-        ...this.toasts.slice(existingIndex + 1),
-      ];
-    } else {
-      // Keep most recent 5 toasts max
-      this.toasts = [...this.toasts.slice(-4), newItem];
-    }
-
+    // When a new notification happens, immediately clear any previous notification and show the new one
+    this.toasts = [newItem];
     this.notify();
     return id;
   }
@@ -307,7 +296,10 @@ const ToastCard = React.memo(function ToastCard({ toast: item, onDismiss }: Toas
   }, [item.isExiting, isExiting]);
 
   const handleDismiss = useCallback(() => {
-    if (timerRef.current) clearTimeout(timerRef.current);
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
     if (isExiting) return;
     setIsExiting(true);
     setTimeout(() => {
@@ -316,27 +308,38 @@ const ToastCard = React.memo(function ToastCard({ toast: item, onDismiss }: Toas
     }, 220);
   }, [isExiting, item, onDismiss]);
 
-  const startTimer = useCallback(
+  // When the progress line reaches 0%, onAnimationEnd fires.
+  // We ensure the line visibly clears before the card disappears.
+  const handleAnimationEnd = (e: React.AnimationEvent) => {
+    if (e.animationName !== 'toast-shrink') return;
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    // Give a 150ms pause showing the line completely cleared before starting the exit slide
+    setTimeout(() => {
+      handleDismiss();
+    }, 150);
+  };
+
+  const startFallbackTimer = useCallback(
     (durationMs: number) => {
       if (durationMs === Infinity || durationMs <= 0) return;
       startTimeRef.current = Date.now();
+      // Safety fallback in case animation events are suppressed
       timerRef.current = setTimeout(() => {
-        setIsExiting(true);
-        setTimeout(() => {
-          onDismiss(item.id);
-          item.onAutoClose?.(item);
-        }, 220);
-      }, durationMs);
+        handleDismiss();
+      }, durationMs + 800);
     },
-    [item, onDismiss]
+    [handleDismiss]
   );
 
   useEffect(() => {
-    startTimer(item.duration);
+    startFallbackTimer(item.duration);
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [item.duration, startTimer]);
+  }, [item.duration, startFallbackTimer]);
 
   const handleMouseEnter = () => {
     if (item.duration === Infinity) return;
@@ -352,7 +355,7 @@ const ToastCard = React.memo(function ToastCard({ toast: item, onDismiss }: Toas
   const handleMouseLeave = () => {
     if (item.duration === Infinity) return;
     setIsPaused(false);
-    startTimer(remainingTimeRef.current);
+    startFallbackTimer(remainingTimeRef.current);
   };
 
   // --------------------------------------------------------------------------
@@ -506,14 +509,16 @@ const ToastCard = React.memo(function ToastCard({ toast: item, onDismiss }: Toas
         <div className="w-full px-3 pb-1.5">
           <div className="w-full h-[3px] bg-black/[0.04] rounded-full overflow-hidden">
             <div
-              className={cn('h-full rounded-full origin-left', progressColor)}
+              className={cn('h-full rounded-full', progressColor)}
               style={{
+                width: '100%',
                 animationName: 'toast-shrink',
                 animationDuration: `${item.duration}ms`,
                 animationTimingFunction: 'linear',
                 animationFillMode: 'forwards',
                 animationPlayState: isPaused ? 'paused' : 'running',
               }}
+              onAnimationEnd={handleAnimationEnd}
             />
           </div>
         </div>
@@ -542,10 +547,10 @@ export function Toaster({
       style.textContent = `
         @keyframes toast-shrink {
           from {
-            transform: scaleX(1);
+            width: 100%;
           }
           to {
-            transform: scaleX(0);
+            width: 0%;
           }
         }
         @media (prefers-reduced-motion: reduce) {
