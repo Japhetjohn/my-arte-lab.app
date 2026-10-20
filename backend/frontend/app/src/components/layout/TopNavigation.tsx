@@ -8,8 +8,21 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { Bell, MessageSquare, Menu, User, Settings, LogOut, Wallet, Home, Compass, Calendar, FolderOpen, Users } from 'lucide-react';
+import { Sheet, SheetContent, SheetTitle, SheetDescription, SheetTrigger } from '@/components/ui/sheet';
+import { 
+  Bell, 
+  MessageSquare, 
+  Menu, 
+  User, 
+  Settings, 
+  LogOut, 
+  Wallet, 
+  Home, 
+  Compass, 
+  Calendar, 
+  FolderOpen, 
+  Users 
+} from 'lucide-react';
 import type { User as UserType } from '@/types';
 import { getAvatarUrl } from '@/lib/imageUrl';
 
@@ -21,20 +34,24 @@ interface TopNavigationProps {
   onNavigate?: (path: string) => void;
 }
 
-const mainNavItems = [
+interface NavItem {
+  path: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  authOnly?: boolean;
+}
+
+const allNavItems: NavItem[] = [
   { path: '/home', label: 'Home', icon: Home },
   { path: '/explore', label: 'Explore', icon: Compass },
-  { path: '/bookings', label: 'Bookings', icon: Calendar },
-  { path: '/projects', label: 'Projects', icon: FolderOpen },
-];
-
-const secondaryNavItems = [
-  { path: '/messages', label: 'Messages', icon: MessageSquare },
-  { path: '/notifications', label: 'Notifications', icon: Bell },
-  { path: '/wallet', label: 'Wallet', icon: Wallet },
+  { path: '/bookings', label: 'Bookings', icon: Calendar, authOnly: true },
+  { path: '/projects', label: 'Projects', icon: FolderOpen, authOnly: true },
+  { path: '/messages', label: 'Messages', icon: MessageSquare, authOnly: true },
+  { path: '/notifications', label: 'Notifications', icon: Bell, authOnly: true },
+  { path: '/wallet', label: 'Wallet', icon: Wallet, authOnly: true },
   { path: '/creators', label: 'Creators', icon: Users },
-  { path: '/profile', label: 'Profile', icon: User },
-  { path: '/settings', label: 'Settings', icon: Settings },
+  { path: '/profile', label: 'Profile', icon: User, authOnly: true },
+  { path: '/settings', label: 'Settings', icon: Settings, authOnly: true },
 ];
 
 export function TopNavigation({ 
@@ -55,109 +72,140 @@ export function TopNavigation({
     setMobileMenuOpen(false);
   };
 
+  const handleLogout = () => {
+    setMobileMenuOpen(false);
+    if (onLogout) {
+      onLogout();
+    }
+  };
+
+  const isCurrentActive = (path: string) => {
+    const currentPath = window.location.pathname;
+    if (path === '/home') {
+      return currentPath === '/' || currentPath === '/home';
+    }
+    return currentPath === path || currentPath.startsWith(path + '/');
+  };
+
+  // Filter items based on auth state
+  const visibleNavItems = allNavItems.filter(item => !item.authOnly || !!user);
+
   return (
     <header className="sticky top-0 z-50 w-full bg-white/90 backdrop-blur-md border-b border-gray-200">
       <div className="flex items-center justify-between h-14 sm:h-16 px-3 sm:px-4 lg:px-6">
-        {/* Left - Logo & Menu */}
+        {/* Left - Hamburger & Logo */}
         <div className="flex items-center gap-2 sm:gap-4">
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
-                className="lg:hidden h-9 w-9"
+                className="lg:hidden h-9 w-9 text-gray-700"
+                aria-label="Open mobile navigation"
               >
-                <Menu className="w-5 h-5" />
+                <Menu className="w-5 h-5 stroke-[1.75]" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-72 p-0 flex flex-col h-full">
-              <SheetHeader className="p-4 border-b border-gray-200 shrink-0">
-                <SheetTitle className="flex items-center gap-2">
-                  <img src="/images/logo.png?v=2" alt="MyArteLab" className="w-8 h-8 rounded-full" />
-                  <span className="font-bold text-xl">MyArteLab</span>
-                </SheetTitle>
-              </SheetHeader>
-              <div className="flex-1 overflow-y-auto w-full">
-                <nav className="p-3 space-y-1">
-                  {mainNavItems.map((item) => {
+            
+            {/* Minimal Mobile Drawer matching reference image */}
+            <SheetContent 
+              side="left" 
+              className="w-[82vw] max-w-xs sm:max-w-sm p-0 flex flex-col h-full bg-[#fafafa] border-r border-gray-200/80 [&>button:last-child]:hidden [&>[data-slot=sheet-close]]:hidden"
+            >
+              {/* Accessibility Titles (hidden) */}
+              <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+              <SheetDescription className="sr-only">MyArteLab mobile navigation drawer</SheetDescription>
+
+              {/* Top Section: Hamburger control at top-left with generous spacing */}
+              <div className="pt-7 pb-2 px-7 sm:px-8 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-1 -ml-1 text-gray-700 hover:text-gray-950 transition-colors cursor-pointer outline-none focus:outline-none"
+                  aria-label="Close menu"
+                >
+                  <Menu className="w-6 h-6 stroke-[1.75]" />
+                </button>
+              </div>
+
+              {/* Navigation Items: Single vertical column with generous whitespace */}
+              <div className="flex-1 overflow-y-auto px-7 sm:px-8 pt-8 sm:pt-10 pb-6">
+                <nav className="space-y-6 sm:space-y-7">
+                  {visibleNavItems.map((item) => {
                     const Icon = item.icon;
-                    const isActive = window.location.pathname === item.path || window.location.pathname.startsWith(item.path + '/');
+                    const active = isCurrentActive(item.path);
+
                     return (
                       <button
                         key={item.path}
+                        type="button"
                         onClick={() => handleNavClick(item.path)}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-left ${
-                          isActive 
-                            ? 'bg-[#8A2BE2]/10 text-[#8A2BE2]' 
-                            : 'text-gray-700 hover:bg-gray-100'
+                        className={`w-full flex items-center gap-5 sm:gap-6 text-left transition-colors cursor-pointer group py-0.5 outline-none focus:outline-none ${
+                          active 
+                            ? 'text-[#9747FF] font-semibold' 
+                            : 'text-gray-700 hover:text-gray-950 font-normal'
                         }`}
                       >
-                        <Icon className={`w-5 h-5 ${isActive ? 'fill-current' : ''}`} />
-                        {item.label}
+                        <Icon 
+                          className={`w-6 h-6 shrink-0 transition-colors stroke-[1.75] ${
+                            active 
+                              ? 'text-[#9747FF]' 
+                              : 'text-gray-600 group-hover:text-gray-900'
+                          }`} 
+                        />
+                        <span className="text-base sm:text-lg tracking-normal">
+                          {item.label}
+                        </span>
                       </button>
                     );
                   })}
                 </nav>
-                <div className="mt-2 px-3 pb-6">
-                  <p className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
-                    Account
-                  </p>
-                  <nav className="space-y-1">
-                    {secondaryNavItems.map((item) => {
-                      const Icon = item.icon;
-                      const isActive = window.location.pathname === item.path || window.location.pathname.startsWith(item.path + '/');
-                      return (
-                        <button
-                          key={item.path}
-                          onClick={() => handleNavClick(item.path)}
-                          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-left ${
-                            isActive 
-                              ? 'bg-[#8A2BE2]/10 text-[#8A2BE2]' 
-                              : 'text-gray-700 hover:bg-gray-100'
-                          }`}
-                        >
-                          <Icon className={`w-5 h-5 ${isActive ? 'fill-current' : ''}`} />
-                          {item.label}
-                        </button>
-                      );
-                    })}
-                  </nav>
-                </div>
               </div>
-              <div className="p-4 border-t border-gray-200 bg-white shrink-0">
-                <div className="bg-gradient-to-br from-[#8A2BE2]/10 to-[#8A2BE2]/5 rounded-lg p-4">
-                  <p className="text-sm font-medium text-gray-900">Become a Creator</p>
-                  <p className="text-xs text-gray-500 mt-1">Start earning on MyArteLab</p>
-                  <button 
-                    onClick={() => handleNavClick('/become-creator')}
-                    className="inline-flex items-center text-sm font-medium text-[#8A2BE2] mt-2 hover:underline"
+
+              {/* Bottom Section: Centered Logout in distinct subtle background */}
+              <div className="mt-auto shrink-0 bg-[#eeeeee] w-full border-t border-gray-200/60 pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] px-4 flex items-center justify-center">
+                {user ? (
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="w-full text-center text-base sm:text-lg font-medium text-gray-700 hover:text-gray-950 transition-colors cursor-pointer py-1 outline-none focus:outline-none"
                   >
-                    Learn more
+                    Logout
                   </button>
-                </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => handleNavClick('/login')}
+                    className="w-full text-center text-base sm:text-lg font-medium text-[#9747FF] hover:text-[#8534f0] transition-colors cursor-pointer py-1 outline-none focus:outline-none"
+                  >
+                    Log in
+                  </button>
+                )}
               </div>
             </SheetContent>
           </Sheet>
           
+          {/* Logo (Desktop & Header) */}
           <a href="/" className="flex items-center gap-2">
             <img src="/images/logo.png?v=2" alt="MyArteLab" className="w-7 h-7 sm:w-8 sm:h-8 rounded-full" />
             <span className="font-bold text-lg sm:text-xl hidden sm:block">MyArteLab</span>
           </a>
         </div>
 
-        {/* Right - Actions */}
+        {/* Right - Actions (Preserved Desktop Navigation) */}
         <div className="flex items-center gap-1 sm:gap-2 ml-auto">
           {user ? (
             <>
               <Button
                 variant="ghost"
                 size="icon"
-                className="relative h-9 w-9"
+                className="relative h-9 w-9 text-gray-700"
                 onClick={() => window.location.href = '/messages'}
+                aria-label="Messages"
               >
                 <MessageSquare className="w-5 h-5" />
                 {unreadMessages > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 sm:w-5 sm:h-5 bg-[#8A2BE2] text-white text-[10px] sm:text-xs rounded-full flex items-center justify-center">
+                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 sm:w-5 sm:h-5 bg-[#9747FF] text-white text-[10px] sm:text-xs rounded-full flex items-center justify-center font-bold">
                     {unreadMessages}
                   </span>
                 )}
@@ -166,12 +214,13 @@ export function TopNavigation({
               <Button
                 variant="ghost"
                 size="icon"
-                className="relative h-9 w-9"
+                className="relative h-9 w-9 text-gray-700"
                 onClick={() => window.location.href = '/notifications'}
+                aria-label="Notifications"
               >
                 <Bell className="w-5 h-5" />
                 {unreadNotifications > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 sm:w-5 sm:h-5 bg-red-500 text-white text-[10px] sm:text-xs rounded-full flex items-center justify-center">
+                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 sm:w-5 sm:h-5 bg-red-500 text-white text-[10px] sm:text-xs rounded-full flex items-center justify-center font-bold">
                     {unreadNotifications}
                   </span>
                 )}
@@ -224,7 +273,7 @@ export function TopNavigation({
               <Button
                 size="sm"
                 onClick={() => window.location.href = '/register'}
-                className="h-9 bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white"
+                className="h-9 bg-[#9747FF] hover:bg-[#8534f0] text-white rounded-full font-medium shadow-sm"
               >
                 Sign up
               </Button>
