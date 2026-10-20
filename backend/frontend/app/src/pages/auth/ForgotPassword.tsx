@@ -63,8 +63,9 @@ export function ForgotPassword() {
     return (
       <VerificationCodeScreen
         email={targetEmail}
-        heading={'Verification code has\nbeen sent'}
-        subheadingPrefix="Email: "
+        heading="Reset your password"
+        subheadingPrefix="We sent a 6-digit reset code to: "
+        illustration="/images/undraw_opened_47gd.svg"
         onVerify={handleVerifyResetCode}
         onResend={handleResendCode}
         onBack={() => setStep('request')}
@@ -78,7 +79,7 @@ export function ForgotPassword() {
     <AuthLayout
       title="Forgot Password?"
       subtitle="Enter your email to receive a 6-digit verification code"
-      illustration="/undraw_working-from-anywhere_33m9.svg"
+      illustration="/images/undraw_opened_47gd.svg"
     >
       <form onSubmit={handleSubmit(onRequestSubmit)} className="space-y-5">
         <div className="space-y-2">

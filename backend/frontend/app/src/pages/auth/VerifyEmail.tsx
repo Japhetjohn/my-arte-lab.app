@@ -38,8 +38,9 @@ export function VerifyEmail() {
     <>
       <VerificationCodeScreen
         email={targetEmail}
-        heading={'Verification code has\nbeen sent'}
-        subheadingPrefix="Email: "
+        heading="Verify your email address"
+        subheadingPrefix="We sent a 6-digit verification code to: "
+        illustration="/images/undraw_opened_47gd.svg"
         onVerify={handleVerify}
         onResend={handleResend}
         onBack={() => navigate('/login')}
@@ -53,7 +54,7 @@ export function VerifyEmail() {
         message="Your email has been successfully verified. You now have full access to all features of MyArteLab."
         actionLabel="Go to Dashboard"
         onAction={handleSuccessClose}
-        illustration="/images/email-verified.png"
+        illustration="/images/undraw_opened_47gd.svg"
       />
     </>
   );

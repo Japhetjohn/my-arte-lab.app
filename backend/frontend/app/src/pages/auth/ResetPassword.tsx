@@ -55,7 +55,7 @@ export function ResetPassword() {
       <AuthLayout
         title="Invalid Link"
         subtitle="This password reset session is invalid or has expired"
-        illustration="/undraw_working-from-anywhere_33m9.svg"
+        illustration="/images/undraw_opened_47gd.svg"
         showBackButton={false}
       >
         <div className="text-center space-y-6">
@@ -86,7 +86,7 @@ export function ResetPassword() {
       <AuthLayout
         title="Password Reset!"
         subtitle="Your password has been successfully reset"
-        illustration="/undraw_working-from-anywhere_33m9.svg"
+        illustration="/images/undraw_opened_47gd.svg"
         showBackButton={false}
       >
         <div className="text-center space-y-6">
@@ -118,7 +118,7 @@ export function ResetPassword() {
     <AuthLayout
       title="Reset Password"
       subtitle="Create a new password for your account"
-      illustration="/undraw_working-from-anywhere_33m9.svg"
+      illustration="/images/undraw_opened_47gd.svg"
       showBackButton={false}
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">

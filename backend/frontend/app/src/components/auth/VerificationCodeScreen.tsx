@@ -5,6 +5,7 @@ export interface VerificationCodeScreenProps {
   email: string;
   heading?: string;
   subheadingPrefix?: string;
+  illustration?: string;
   onVerify: (code: string) => Promise<void>;
   onResend: () => Promise<void>;
   onBack?: () => void;
@@ -14,8 +15,9 @@ export interface VerificationCodeScreenProps {
 
 export function VerificationCodeScreen({
   email,
-  heading = 'Verification code has\nbeen sent',
+  heading = 'Verify your email address',
   subheadingPrefix = 'Email: ',
+  illustration = '/images/undraw_opened_47gd.svg',
   onVerify,
   onResend,
   onBack,
@@ -133,7 +135,7 @@ export function VerificationCodeScreen({
       setHasError(true);
       const msg = err.response?.data?.message || err.response?.data?.error || err.message || 'Invalid verification code';
       setErrorMessage(msg);
-      // Keep entered digits but select first or shake
+      // Keep entered digits and focus first
       inputRefs.current[0]?.focus();
     } finally {
       setIsLoading(false);
@@ -162,7 +164,7 @@ export function VerificationCodeScreen({
 
   return (
     <div className="min-h-[100dvh] w-full bg-white sm:bg-gray-50 flex flex-col justify-between sm:justify-center sm:items-center sm:p-6 transition-colors">
-      <div className="w-full sm:max-w-md bg-white sm:rounded-3xl sm:shadow-sm sm:border sm:border-gray-100 flex flex-col flex-1 sm:flex-initial min-h-[100dvh] sm:min-h-[580px] justify-between p-6 sm:p-10">
+      <div className="w-full sm:max-w-md bg-white sm:rounded-3xl sm:shadow-sm sm:border sm:border-gray-100 flex flex-col flex-1 sm:flex-initial min-h-[100dvh] sm:min-h-[620px] justify-between p-6 sm:p-10">
         {/* Top Header Section */}
         <div>
           {/* Back button if supported */}
@@ -170,7 +172,7 @@ export function VerificationCodeScreen({
             <button
               type="button"
               onClick={onBack}
-              className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors mb-6 cursor-pointer -ml-1 group"
+              className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors mb-4 cursor-pointer -ml-1 group"
               aria-label="Go back"
             >
               <ArrowLeft className="w-4 h-4 mr-1.5 transition-transform group-hover:-translate-x-0.5" />
@@ -178,19 +180,30 @@ export function VerificationCodeScreen({
             </button>
           )}
 
+          {/* Centered Downloaded SVG Illustration */}
+          {illustration && (
+            <div className="flex justify-center mb-6">
+              <img
+                src={illustration}
+                alt="Confirmation Illustration"
+                className="h-28 sm:h-36 w-auto object-contain mx-auto drop-shadow-sm select-none"
+              />
+            </div>
+          )}
+
           {/* Heading */}
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-950 tracking-tight leading-[1.18] whitespace-pre-line">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-950 tracking-tight leading-[1.2] whitespace-pre-line text-center sm:text-left">
             {heading}
           </h1>
 
           {/* Subheading / Email */}
-          <p className="text-sm sm:text-base text-gray-600 font-normal mt-3.5 break-all">
+          <p className="text-sm sm:text-base text-gray-600 font-normal mt-2.5 break-all text-center sm:text-left">
             {subheadingPrefix}
             <span className="text-gray-900 font-semibold">{email || 'your email'}</span>
           </p>
 
           {/* Verification Code Inputs (6 boxes in a horizontal row) */}
-          <div className="mt-8 sm:mt-10">
+          <div className="mt-7 sm:mt-8">
             <div className="flex items-center justify-between gap-2 sm:gap-3">
               {code.map((digit, index) => {
                 return (
@@ -248,7 +261,7 @@ export function VerificationCodeScreen({
         </div>
 
         {/* Bottom Section: Submit Button with Mobile Safe Area */}
-        <div className="mt-auto pt-10 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:pb-0">
+        <div className="mt-auto pt-8 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:pb-0">
           <button
             type="button"
             onClick={() => triggerVerify(code.join(''))}

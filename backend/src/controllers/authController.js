@@ -544,13 +544,8 @@ exports.verifyEmail = catchAsync(async (req, res, next) => {
 
   emailConfig.sendEmail({
     to: user.email,
-    subject: 'Email Verified Successfully!',
-    html: `
-      <h1>Email Verified!</h1>
-      <p>Hi ${user.firstName || user.name || 'there'},</p>
-      <p>Your email has been verified successfully. You now have full access to all MyArteLab features!</p>
-      <p>Best regards,<br/>MyArteLab Team</p>
-    `
+    subject: 'Email Verified Successfully! 🎉',
+    html: emailTemplates.emailVerified(user.firstName || user.name)
   }).catch(err => console.error('Verification confirmation email failed:', err));
 
   successResponse(res, 200, 'Email verified successfully', {
