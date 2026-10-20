@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -8,8 +8,26 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { Bell, MessageSquare, Menu, User, Settings, LogOut, Wallet, Home, Compass, Calendar, FolderOpen, Users } from 'lucide-react';
+import { Sheet, SheetContent, SheetTitle, SheetDescription, SheetTrigger } from '@/components/ui/sheet';
+import { 
+  Bell, 
+  MessageSquare, 
+  Menu, 
+  User, 
+  Settings, 
+  LogOut, 
+  Wallet, 
+  Home, 
+  Compass, 
+  Calendar, 
+  FolderOpen, 
+  Users,
+  Search,
+  ShoppingBag,
+  Linkedin,
+  Facebook,
+  Twitter
+} from 'lucide-react';
 import type { User as UserType } from '@/types';
 import { getAvatarUrl } from '@/lib/imageUrl';
 
@@ -19,22 +37,27 @@ interface TopNavigationProps {
   unreadMessages: number;
   onLogout?: () => void;
   onNavigate?: (path: string) => void;
+  variantOverride?: 1 | 2 | 3 | 4 | 5;
 }
 
-const mainNavItems = [
+interface NavItem {
+  path: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  authOnly?: boolean;
+}
+
+const allNavItems: NavItem[] = [
   { path: '/home', label: 'Home', icon: Home },
   { path: '/explore', label: 'Explore', icon: Compass },
-  { path: '/bookings', label: 'Bookings', icon: Calendar },
-  { path: '/projects', label: 'Projects', icon: FolderOpen },
-];
-
-const secondaryNavItems = [
-  { path: '/messages', label: 'Messages', icon: MessageSquare },
-  { path: '/notifications', label: 'Notifications', icon: Bell },
-  { path: '/wallet', label: 'Wallet', icon: Wallet },
+  { path: '/bookings', label: 'Bookings', icon: Calendar, authOnly: true },
+  { path: '/projects', label: 'Projects', icon: FolderOpen, authOnly: true },
+  { path: '/messages', label: 'Messages', icon: MessageSquare, authOnly: true },
+  { path: '/notifications', label: 'Notifications', icon: Bell, authOnly: true },
+  { path: '/wallet', label: 'Wallet', icon: Wallet, authOnly: true },
   { path: '/creators', label: 'Creators', icon: Users },
-  { path: '/profile', label: 'Profile', icon: User },
-  { path: '/settings', label: 'Settings', icon: Settings },
+  { path: '/profile', label: 'Profile', icon: User, authOnly: true },
+  { path: '/settings', label: 'Settings', icon: Settings, authOnly: true },
 ];
 
 export function TopNavigation({ 
@@ -42,9 +65,11 @@ export function TopNavigation({
   unreadNotifications, 
   unreadMessages,
   onLogout,
-  onNavigate
+  onNavigate,
+  variantOverride
 }: TopNavigationProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const handleNavClick = (path: string) => {
     if (onNavigate) {
@@ -55,183 +80,738 @@ export function TopNavigation({
     setMobileMenuOpen(false);
   };
 
+  const handleLogout = () => {
+    setMobileMenuOpen(false);
+    if (onLogout) {
+      onLogout();
+    }
+  };
+
+  const isCurrentActive = (path: string) => {
+    const currentPath = window.location.pathname;
+    if (path === '/home') {
+      return currentPath === '/' || currentPath === '/home';
+    }
+    return currentPath === path || currentPath.startsWith(path + '/');
+  };
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+    const targetUrl = `/explore?search=${encodeURIComponent(searchQuery.trim())}`;
+    handleNavClick(targetUrl);
+  };
+
+  // Determine active desktop navigation design (1 to 5)
+  const activeVariant: 1 | 2 | 3 | 4 | 5 = useMemo(() => {
+    if (variantOverride) return variantOverride;
+    
+    // Check URL query param ?nav=1..5 or ?nav_variant=1..5
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const navParam = params.get('nav') || params.get('nav_variant');
+      if (navParam === '1') return 1;
+      if (navParam === '2') return 2;
+      if (navParam === '3') return 3;
+      if (navParam === '4') return 4;
+      if (navParam === '5') return 5;
+    }
+
+    // Contextual mapping based on authentication & page route
+    if (!user) {
+      return 5; // Design 5: Header with Login and Sign Up
+    }
+
+    const path = typeof window !== 'undefined' ? window.location.pathname : '/home';
+    if (path === '/explore' || path === '/creators' || path.startsWith('/creators/')) {
+      return 2; // Design 2: Header with search field
+    }
+    if (path === '/wallet' || path === '/bookings' || path.startsWith('/bookings/') || path === '/profile') {
+      return 3; // Design 3: Two-row navigation with utility actions
+    }
+    if (path === '/legal' || path === '/privacy-policy') {
+      return 4; // Design 4: Secondary row above main header with social icons
+    }
+    
+    // Default for /home, /projects, /messages, /notifications, /settings
+    return 1; // Design 1: Standard header with right-side action button
+  }, [user, variantOverride]);
+
+  // Filter items for mobile drawer based on auth state
+  const visibleNavItems = allNavItems.filter(item => !item.authOnly || !!user);
+
   return (
-    <header className="sticky top-0 z-50 w-full bg-white/90 backdrop-blur-md border-b border-gray-200">
-      <div className="flex items-center justify-between h-14 sm:h-16 px-3 sm:px-4 lg:px-6">
-        {/* Left - Logo & Menu */}
-        <div className="flex items-center gap-2 sm:gap-4">
+    <>
+      {/* =========================================================================
+          MOBILE VIEW: Fixed Minimal Header + Strict Reference Mobile Drawer (lg:hidden)
+          ========================================================================= */}
+      <div className="lg:hidden sticky top-0 z-50 w-full bg-white/95 backdrop-blur-md border-b border-gray-200/80">
+        <div className="flex items-center justify-between h-14 sm:h-16 px-4">
+          {/* Mobile Hamburger Drawer Trigger */}
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
-                className="lg:hidden h-9 w-9"
+                className="h-9 w-9 text-gray-700"
+                aria-label="Open mobile navigation"
               >
-                <Menu className="w-5 h-5" />
+                <Menu className="w-5 h-5 stroke-[1.75]" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-72 p-0 flex flex-col h-full">
-              <SheetHeader className="p-4 border-b border-gray-200 shrink-0">
-                <SheetTitle className="flex items-center gap-2">
-                  <img src="/images/logo.png?v=2" alt="MyArteLab" className="w-8 h-8 rounded-full" />
-                  <span className="font-bold text-xl">MyArteLab</span>
-                </SheetTitle>
-              </SheetHeader>
-              <div className="flex-1 overflow-y-auto w-full">
-                <nav className="p-3 space-y-1">
-                  {mainNavItems.map((item) => {
+
+            {/* Strict Reference Mobile Drawer Matching media_1792493149177_e612e1b2.png */}
+            <SheetContent 
+              side="left" 
+              className="w-[82vw] max-w-xs sm:max-w-sm p-0 flex flex-col h-full bg-[#fafafa] border-r border-gray-200/80 [&>button:last-child]:hidden [&>[data-slot=sheet-close]]:hidden"
+            >
+              {/* Accessibility Titles (hidden) */}
+              <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+              <SheetDescription className="sr-only">MyArteLab mobile navigation drawer</SheetDescription>
+
+              {/* Top Section: Hamburger close control at top-left with generous spacing. NO logo, NO avatar, NO name */}
+              <div className="pt-7 pb-2 px-7 sm:px-8 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-1 -ml-1 text-gray-700 hover:text-gray-950 transition-colors cursor-pointer outline-none focus:outline-none"
+                  aria-label="Close menu"
+                >
+                  <Menu className="w-6 h-6 stroke-[1.75]" />
+                </button>
+              </div>
+
+              {/* Navigation Items: Single vertical column with generous whitespace, outline icons, no cards */}
+              <div className="flex-1 overflow-y-auto px-7 sm:px-8 pt-8 sm:pt-10 pb-6">
+                <nav className="space-y-6 sm:space-y-7">
+                  {visibleNavItems.map((item) => {
                     const Icon = item.icon;
-                    const isActive = window.location.pathname === item.path || window.location.pathname.startsWith(item.path + '/');
+                    const active = isCurrentActive(item.path);
+
                     return (
                       <button
                         key={item.path}
+                        type="button"
                         onClick={() => handleNavClick(item.path)}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-left ${
-                          isActive 
-                            ? 'bg-[#8A2BE2]/10 text-[#8A2BE2]' 
-                            : 'text-gray-700 hover:bg-gray-100'
+                        className={`w-full flex items-center gap-5 sm:gap-6 text-left transition-colors cursor-pointer group py-0.5 outline-none focus:outline-none ${
+                          active 
+                            ? 'text-[#9747FF] font-semibold' 
+                            : 'text-gray-700 hover:text-gray-950 font-normal'
                         }`}
                       >
-                        <Icon className={`w-5 h-5 ${isActive ? 'fill-current' : ''}`} />
-                        {item.label}
+                        <Icon 
+                          className={`w-6 h-6 shrink-0 transition-colors stroke-[1.75] ${
+                            active 
+                              ? 'text-[#9747FF]' 
+                              : 'text-gray-600 group-hover:text-gray-900'
+                          }`} 
+                        />
+                        <span className="text-base sm:text-lg tracking-normal">
+                          {item.label}
+                        </span>
                       </button>
                     );
                   })}
                 </nav>
-                <div className="mt-2 px-3 pb-6">
-                  <p className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
-                    Account
-                  </p>
-                  <nav className="space-y-1">
-                    {secondaryNavItems.map((item) => {
-                      const Icon = item.icon;
-                      const isActive = window.location.pathname === item.path || window.location.pathname.startsWith(item.path + '/');
-                      return (
-                        <button
-                          key={item.path}
-                          onClick={() => handleNavClick(item.path)}
-                          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-left ${
-                            isActive 
-                              ? 'bg-[#8A2BE2]/10 text-[#8A2BE2]' 
-                              : 'text-gray-700 hover:bg-gray-100'
-                          }`}
-                        >
-                          <Icon className={`w-5 h-5 ${isActive ? 'fill-current' : ''}`} />
-                          {item.label}
-                        </button>
-                      );
-                    })}
-                  </nav>
-                </div>
               </div>
-              <div className="p-4 border-t border-gray-200 bg-white shrink-0">
-                <div className="bg-gradient-to-br from-[#8A2BE2]/10 to-[#8A2BE2]/5 rounded-lg p-4">
-                  <p className="text-sm font-medium text-gray-900">Become a Creator</p>
-                  <p className="text-xs text-gray-500 mt-1">Start earning on MyArteLab</p>
-                  <button 
-                    onClick={() => handleNavClick('/become-creator')}
-                    className="inline-flex items-center text-sm font-medium text-[#8A2BE2] mt-2 hover:underline"
+
+              {/* Bottom Section: Full-width subtle neutral grey (#eeeeee) container with centered Logout */}
+              <div className="mt-auto shrink-0 bg-[#eeeeee] w-full border-t border-gray-200/60 pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] px-4 flex items-center justify-center">
+                {user ? (
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="w-full text-center text-base sm:text-lg font-medium text-gray-700 hover:text-gray-950 transition-colors cursor-pointer py-1 outline-none focus:outline-none"
                   >
-                    Learn more
+                    Logout
                   </button>
-                </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => handleNavClick('/login')}
+                    className="w-full text-center text-base sm:text-lg font-medium text-[#9747FF] hover:text-[#8534f0] transition-colors cursor-pointer py-1 outline-none focus:outline-none"
+                  >
+                    Log in
+                  </button>
+                )}
               </div>
             </SheetContent>
           </Sheet>
-          
-          <a href="/" className="flex items-center gap-2">
-            <img src="/images/logo.png?v=2" alt="MyArteLab" className="w-7 h-7 sm:w-8 sm:h-8 rounded-full" />
-            <span className="font-bold text-lg sm:text-xl hidden sm:block">MyArteLab</span>
+
+          {/* Mobile Header Center Logo */}
+          <a href="/home" className="flex items-center gap-2">
+            <img src="/images/logo.png?v=2" alt="MyArteLab" className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover" />
+            <span className="font-bold text-lg sm:text-xl text-gray-900">MyArteLab</span>
           </a>
-        </div>
 
-        {/* Right - Actions */}
-        <div className="flex items-center gap-1 sm:gap-2 ml-auto">
-          {user ? (
-            <>
+          {/* Mobile Header Right Actions */}
+          <div className="flex items-center gap-1 sm:gap-2">
+            {user ? (
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="relative h-9 w-9 text-gray-700"
+                  onClick={() => handleNavClick('/messages')}
+                  aria-label="Messages"
+                >
+                  <MessageSquare className="w-5 h-5" />
+                  {unreadMessages > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-[#9747FF] text-white text-[10px] rounded-full flex items-center justify-center font-bold">
+                      {unreadMessages}
+                    </span>
+                  )}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="relative h-9 w-9 text-gray-700"
+                  onClick={() => handleNavClick('/notifications')}
+                  aria-label="Notifications"
+                >
+                  <Bell className="w-5 h-5" />
+                  {unreadNotifications > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold">
+                      {unreadNotifications}
+                    </span>
+                  )}
+                </Button>
+              </>
+            ) : (
               <Button
-                variant="ghost"
-                size="icon"
-                className="relative h-9 w-9"
-                onClick={() => window.location.href = '/messages'}
-              >
-                <MessageSquare className="w-5 h-5" />
-                {unreadMessages > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 sm:w-5 sm:h-5 bg-[#8A2BE2] text-white text-[10px] sm:text-xs rounded-full flex items-center justify-center">
-                    {unreadMessages}
-                  </span>
-                )}
-              </Button>
-
-              <Button
-                variant="ghost"
-                size="icon"
-                className="relative h-9 w-9"
-                onClick={() => window.location.href = '/notifications'}
-              >
-                <Bell className="w-5 h-5" />
-                {unreadNotifications > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 sm:w-5 sm:h-5 bg-red-500 text-white text-[10px] sm:text-xs rounded-full flex items-center justify-center">
-                    {unreadNotifications}
-                  </span>
-                )}
-              </Button>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="flex items-center gap-2 px-1.5 sm:px-2 h-9">
-                    <img
-                      src={getAvatarUrl(user?.avatar)}
-                      alt={user?.name || 'User'}
-                      className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover"
-                    />
-                    <span className="hidden sm:block font-medium text-sm">{user?.name || 'User'}</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-52">
-                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => window.location.href = '/profile'}>
-                    <User className="w-4 h-4 mr-2" />
-                    Profile
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => window.location.href = '/wallet'}>
-                    <Wallet className="w-4 h-4 mr-2" />
-                    Wallet
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => window.location.href = '/settings'}>
-                    <Settings className="w-4 h-4 mr-2" />
-                    Settings
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={onLogout} className="text-red-600">
-                    <LogOut className="w-4 h-4 mr-2" />
-                    Logout
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </>
-          ) : (
-            <>
-              <Button
-                variant="ghost"
                 size="sm"
-                onClick={() => window.location.href = '/login'}
-                className="h-9"
+                onClick={() => handleNavClick('/login')}
+                className="h-8 px-3 text-xs bg-[#9747FF] hover:bg-[#8534f0] text-white rounded-full font-medium"
               >
                 Log in
               </Button>
-              <Button
-                size="sm"
-                onClick={() => window.location.href = '/register'}
-                className="h-9 bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white"
-              >
-                Sign up
-              </Button>
-            </>
-          )}
+            )}
+          </div>
         </div>
       </div>
-    </header>
+
+      {/* =========================================================================
+          DESKTOP VIEW: 5 Distinct Navigation Bars Matching media_1792494187526_728aee29.png
+          ========================================================================= */}
+      <header className="hidden lg:block sticky top-0 z-50 w-full bg-gray-50/80 backdrop-blur-sm px-4 sm:px-6 lg:px-8 py-3">
+        <div className="max-w-7xl mx-auto">
+          {/* -------------------------------------------------------------------
+              DESIGN 1: Standard header with a right-side action button
+              ------------------------------------------------------------------- */}
+          {activeVariant === 1 && (
+            <div className="bg-white rounded-2xl border border-gray-200/90 shadow-sm px-6 lg:px-8 py-3.5 flex items-center justify-between transition-all">
+              {/* Left: Logo & Wordmark */}
+              <a href="/home" className="flex items-center gap-3 shrink-0">
+                <img src="/images/logo.png?v=2" alt="MyArteLab" className="w-8 h-8 rounded-full object-cover" />
+                <span className="font-bold text-xl tracking-tight text-gray-900">MyArteLab</span>
+              </a>
+
+              {/* Right: Navigation Links + Outlined Action Button */}
+              <div className="flex items-center gap-7 lg:gap-9">
+                <nav className="flex items-center gap-6 lg:gap-8 text-sm font-medium text-gray-700">
+                  <button 
+                    type="button" 
+                    onClick={() => handleNavClick('/home')} 
+                    className={`transition-colors hover:text-[#9747FF] ${isCurrentActive('/home') ? 'text-[#9747FF] font-semibold' : ''}`}
+                  >
+                    Home
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => handleNavClick('/explore')} 
+                    className={`transition-colors hover:text-[#9747FF] ${isCurrentActive('/explore') ? 'text-[#9747FF] font-semibold' : ''}`}
+                  >
+                    Explore
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => handleNavClick('/bookings')} 
+                    className={`transition-colors hover:text-[#9747FF] ${isCurrentActive('/bookings') ? 'text-[#9747FF] font-semibold' : ''}`}
+                  >
+                    Bookings
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => handleNavClick('/projects')} 
+                    className={`transition-colors hover:text-[#9747FF] ${isCurrentActive('/projects') ? 'text-[#9747FF] font-semibold' : ''}`}
+                  >
+                    Projects
+                  </button>
+                </nav>
+
+                {/* Reference Pill-shaped Outlined Action Button */}
+                <button
+                  type="button"
+                  onClick={() => handleNavClick('/explore')}
+                  className="rounded-full border border-gray-800 hover:border-black text-gray-900 hover:bg-gray-50 px-6 py-2 text-sm font-medium transition-colors cursor-pointer"
+                >
+                  Explore
+                </button>
+
+                {/* User Profile Avatar / Quick Menu */}
+                {user && (
+                  <DesktopUserMenu 
+                    user={user} 
+                    unreadNotifications={unreadNotifications} 
+                    unreadMessages={unreadMessages} 
+                    onLogout={handleLogout} 
+                    onNavigate={handleNavClick} 
+                  />
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* -------------------------------------------------------------------
+              DESIGN 2: Header with a search field
+              ------------------------------------------------------------------- */}
+          {activeVariant === 2 && (
+            <div className="bg-white rounded-2xl border border-gray-200/90 shadow-sm px-6 lg:px-8 py-3.5 flex items-center justify-between transition-all">
+              {/* Left: Logo & Wordmark */}
+              <a href="/home" className="flex items-center gap-3 shrink-0">
+                <img src="/images/logo.png?v=2" alt="MyArteLab" className="w-8 h-8 rounded-full object-cover" />
+                <span className="font-bold text-xl tracking-tight text-gray-900">MyArteLab</span>
+              </a>
+
+              {/* Right: Navigation Links + Pill Search Input */}
+              <div className="flex items-center gap-7 lg:gap-8">
+                <nav className="flex items-center gap-6 lg:gap-8 text-sm font-medium text-gray-700">
+                  <button 
+                    type="button" 
+                    onClick={() => handleNavClick('/home')} 
+                    className={`transition-colors hover:text-[#9747FF] ${isCurrentActive('/home') ? 'text-[#9747FF] font-semibold' : ''}`}
+                  >
+                    Home
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => handleNavClick('/explore')} 
+                    className={`transition-colors hover:text-[#9747FF] ${isCurrentActive('/explore') ? 'text-[#9747FF] font-semibold' : ''}`}
+                  >
+                    Explore
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => handleNavClick('/creators')} 
+                    className={`transition-colors hover:text-[#9747FF] ${isCurrentActive('/creators') ? 'text-[#9747FF] font-semibold' : ''}`}
+                  >
+                    Creators
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => handleNavClick('/bookings')} 
+                    className={`transition-colors hover:text-[#9747FF] ${isCurrentActive('/bookings') ? 'text-[#9747FF] font-semibold' : ''}`}
+                  >
+                    Bookings
+                  </button>
+                </nav>
+
+                {/* Pill Search Input matching reference Design 2 */}
+                <form onSubmit={handleSearchSubmit} className="relative flex items-center">
+                  <div className="flex items-center gap-2.5 rounded-full border border-gray-300 bg-white px-4 py-2 w-64 lg:w-72 focus-within:border-[#9747FF] focus-within:ring-1 focus-within:ring-[#9747FF] transition-all">
+                    <Search className="w-4 h-4 text-gray-400 shrink-0" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search your creators..."
+                      className="w-full bg-transparent text-sm text-gray-800 placeholder-gray-400 outline-none"
+                    />
+                  </div>
+                </form>
+
+                {/* User Profile Avatar / Quick Menu */}
+                {user && (
+                  <DesktopUserMenu 
+                    user={user} 
+                    unreadNotifications={unreadNotifications} 
+                    unreadMessages={unreadMessages} 
+                    onLogout={handleLogout} 
+                    onNavigate={handleNavClick} 
+                  />
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* -------------------------------------------------------------------
+              DESIGN 3: Two-row navigation (Upper row with utilities, Lower row with pipe links)
+              ------------------------------------------------------------------- */}
+          {activeVariant === 3 && (
+            <div className="bg-white rounded-2xl border border-gray-200/90 shadow-sm overflow-hidden transition-all">
+              {/* Upper Row: Secondary navigation + Utility Icons */}
+              <div className="px-6 lg:px-8 py-2.5 flex items-center justify-between text-xs sm:text-sm text-gray-600">
+                <div className="flex items-center gap-6">
+                  <button 
+                    type="button" 
+                    onClick={() => handleNavClick('/explore')} 
+                    className="hover:text-gray-950 transition-colors"
+                  >
+                    Explore
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => handleNavClick('/creators')} 
+                    className="hover:text-gray-950 transition-colors"
+                  >
+                    Creators
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => handleNavClick('/projects')} 
+                    className="hover:text-gray-950 transition-colors"
+                  >
+                    Projects
+                  </button>
+                </div>
+
+                {/* Right Utility Icons (Search, User, Shopping Bag/Wallet) */}
+                <div className="flex items-center gap-5 text-gray-600">
+                  <button
+                    type="button"
+                    onClick={() => handleNavClick('/explore')}
+                    aria-label="Search"
+                    className="hover:text-gray-950 transition-colors cursor-pointer"
+                  >
+                    <Search className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleNavClick('/profile')}
+                    aria-label="Account"
+                    className="hover:text-gray-950 transition-colors cursor-pointer"
+                  >
+                    <User className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleNavClick('/wallet')}
+                    aria-label="Wallet"
+                    className="hover:text-gray-950 transition-colors cursor-pointer"
+                  >
+                    <ShoppingBag className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Thin horizontal divider */}
+              <div className="w-full border-b border-gray-200/80" />
+
+              {/* Lower Row: Logo on left, Links separated by vertical pipes on right */}
+              <div className="px-6 lg:px-8 py-3.5 flex items-center justify-between">
+                <a href="/home" className="flex items-center gap-3 shrink-0">
+                  <img src="/images/logo.png?v=2" alt="MyArteLab" className="w-8 h-8 rounded-full object-cover" />
+                  <span className="font-bold text-xl tracking-tight text-gray-900">MyArteLab</span>
+                </a>
+
+                {/* Primary Links with Vertical Separators '|' */}
+                <nav className="flex items-center gap-4 lg:gap-5 text-sm font-medium text-gray-700">
+                  <button 
+                    type="button" 
+                    onClick={() => handleNavClick('/home')} 
+                    className={`transition-colors hover:text-[#9747FF] ${isCurrentActive('/home') ? 'text-[#9747FF] font-semibold' : ''}`}
+                  >
+                    Home
+                  </button>
+                  <span className="text-gray-300 select-none">|</span>
+                  <button 
+                    type="button" 
+                    onClick={() => handleNavClick('/explore')} 
+                    className={`transition-colors hover:text-[#9747FF] ${isCurrentActive('/explore') ? 'text-[#9747FF] font-semibold' : ''}`}
+                  >
+                    Explore
+                  </button>
+                  <span className="text-gray-300 select-none">|</span>
+                  <button 
+                    type="button" 
+                    onClick={() => handleNavClick('/bookings')} 
+                    className={`transition-colors hover:text-[#9747FF] ${isCurrentActive('/bookings') ? 'text-[#9747FF] font-semibold' : ''}`}
+                  >
+                    Bookings
+                  </button>
+                  <span className="text-gray-300 select-none">|</span>
+                  <button 
+                    type="button" 
+                    onClick={() => handleNavClick('/wallet')} 
+                    className={`transition-colors hover:text-[#9747FF] ${isCurrentActive('/wallet') ? 'text-[#9747FF] font-semibold' : ''}`}
+                  >
+                    Wallet
+                  </button>
+                </nav>
+              </div>
+            </div>
+          )}
+
+          {/* -------------------------------------------------------------------
+              DESIGN 4: Secondary row above main header with social icons
+              ------------------------------------------------------------------- */}
+          {activeVariant === 4 && (
+            <div className="bg-white rounded-2xl border border-gray-200/90 shadow-sm overflow-hidden transition-all">
+              {/* Upper Row: Secondary links on left, Social Media Icons on right */}
+              <div className="px-6 lg:px-8 py-2.5 flex items-center justify-between text-xs sm:text-sm text-gray-600">
+                <div className="flex items-center gap-6">
+                  <button 
+                    type="button" 
+                    onClick={() => handleNavClick('/creators')} 
+                    className="hover:text-gray-950 transition-colors"
+                  >
+                    Creators
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => handleNavClick('/legal')} 
+                    className="hover:text-gray-950 transition-colors"
+                  >
+                    About us
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => handleNavClick('/privacy-policy')} 
+                    className="hover:text-gray-950 transition-colors"
+                  >
+                    Privacy Policy
+                  </button>
+                </div>
+
+                {/* Right: Social icons (LinkedIn, Facebook, Twitter) */}
+                <div className="flex items-center gap-4 text-gray-500">
+                  <a 
+                    href="https://linkedin.com" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    aria-label="LinkedIn"
+                    className="hover:text-[#0077b5] transition-colors"
+                  >
+                    <Linkedin className="w-4 h-4" />
+                  </a>
+                  <a 
+                    href="https://facebook.com" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    aria-label="Facebook"
+                    className="hover:text-[#1877f2] transition-colors"
+                  >
+                    <Facebook className="w-4 h-4" />
+                  </a>
+                  <a 
+                    href="https://twitter.com" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    aria-label="Twitter"
+                    className="hover:text-gray-900 transition-colors"
+                  >
+                    <Twitter className="w-4 h-4" />
+                  </a>
+                </div>
+              </div>
+
+              {/* Thin horizontal divider */}
+              <div className="w-full border-b border-gray-200/80" />
+
+              {/* Lower Row: Logo on left, Links + Search Icon on right */}
+              <div className="px-6 lg:px-8 py-3.5 flex items-center justify-between">
+                <a href="/home" className="flex items-center gap-3 shrink-0">
+                  <img src="/images/logo.png?v=2" alt="MyArteLab" className="w-8 h-8 rounded-full object-cover" />
+                  <span className="font-bold text-xl tracking-tight text-gray-900">MyArteLab</span>
+                </a>
+
+                <div className="flex items-center gap-6 lg:gap-8">
+                  <nav className="flex items-center gap-6 lg:gap-8 text-sm font-medium text-gray-700">
+                    <button 
+                      type="button" 
+                      onClick={() => handleNavClick('/explore')} 
+                      className={`transition-colors hover:text-[#9747FF] ${isCurrentActive('/explore') ? 'text-[#9747FF] font-semibold' : ''}`}
+                    >
+                      Explore
+                    </button>
+                    <button 
+                      type="button" 
+                      onClick={() => handleNavClick('/creators')} 
+                      className={`transition-colors hover:text-[#9747FF] ${isCurrentActive('/creators') ? 'text-[#9747FF] font-semibold' : ''}`}
+                    >
+                      Creators
+                    </button>
+                    <button 
+                      type="button" 
+                      onClick={() => handleNavClick('/projects')} 
+                      className={`transition-colors hover:text-[#9747FF] ${isCurrentActive('/projects') ? 'text-[#9747FF] font-semibold' : ''}`}
+                    >
+                      Projects
+                    </button>
+                    <button 
+                      type="button" 
+                      onClick={() => handleNavClick('/home')} 
+                      className={`transition-colors hover:text-[#9747FF] ${isCurrentActive('/home') ? 'text-[#9747FF] font-semibold' : ''}`}
+                    >
+                      Home
+                    </button>
+                  </nav>
+
+                  {/* Search Icon button at far right */}
+                  <button
+                    type="button"
+                    onClick={() => handleNavClick('/explore')}
+                    aria-label="Search"
+                    className="p-1 text-gray-700 hover:text-[#9747FF] transition-colors cursor-pointer"
+                  >
+                    <Search className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* -------------------------------------------------------------------
+              DESIGN 5: Header with Login and Sign Up
+              ------------------------------------------------------------------- */}
+          {activeVariant === 5 && (
+            <div className="bg-white rounded-2xl border border-gray-200/90 shadow-sm px-6 lg:px-8 py-3.5 flex items-center justify-between transition-all">
+              {/* Left: Logo & Wordmark */}
+              <a href="/home" className="flex items-center gap-3 shrink-0">
+                <img src="/images/logo.png?v=2" alt="MyArteLab" className="w-8 h-8 rounded-full object-cover" />
+                <span className="font-bold text-xl tracking-tight text-gray-900">MyArteLab</span>
+              </a>
+
+              {/* Right: Navigation Links + Outlined Login & Sign Up Buttons */}
+              <div className="flex items-center gap-7 lg:gap-9">
+                <nav className="flex items-center gap-6 lg:gap-8 text-sm font-medium text-gray-700">
+                  <button 
+                    type="button" 
+                    onClick={() => handleNavClick('/home')} 
+                    className={`transition-colors hover:text-[#9747FF] ${isCurrentActive('/home') ? 'text-[#9747FF] font-semibold' : ''}`}
+                  >
+                    Home
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => handleNavClick('/explore')} 
+                    className={`transition-colors hover:text-[#9747FF] ${isCurrentActive('/explore') ? 'text-[#9747FF] font-semibold' : ''}`}
+                  >
+                    Explore
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => handleNavClick('/creators')} 
+                    className={`transition-colors hover:text-[#9747FF] ${isCurrentActive('/creators') ? 'text-[#9747FF] font-semibold' : ''}`}
+                  >
+                    Creators
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => handleNavClick('/legal')} 
+                    className={`transition-colors hover:text-[#9747FF] ${isCurrentActive('/legal') ? 'text-[#9747FF] font-semibold' : ''}`}
+                  >
+                    Contacts
+                  </button>
+                </nav>
+
+                {/* Separate Outlined Buttons matching reference Design 5 */}
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => handleNavClick('/login')}
+                    className="rounded-full border border-gray-300 hover:border-gray-800 text-gray-700 hover:text-gray-900 px-5 py-1.5 text-sm font-medium transition-colors cursor-pointer"
+                  >
+                    Login
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleNavClick('/register')}
+                    className="rounded-full border border-gray-800 hover:border-black text-gray-900 hover:bg-gray-50 px-5 py-1.5 text-sm font-medium transition-colors cursor-pointer"
+                  >
+                    Sign up
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </header>
+    </>
+  );
+}
+
+/**
+ * Desktop User Menu Helper Component
+ */
+function DesktopUserMenu({
+  user,
+  unreadNotifications,
+  unreadMessages,
+  onLogout,
+  onNavigate
+}: {
+  user: UserType;
+  unreadNotifications: number;
+  unreadMessages: number;
+  onLogout: () => void;
+  onNavigate: (path: string) => void;
+}) {
+  return (
+    <div className="flex items-center gap-1 sm:gap-2 pl-3 border-l border-gray-200">
+      <Button
+        variant="ghost"
+        size="icon"
+        className="relative h-9 w-9 text-gray-700"
+        onClick={() => onNavigate('/messages')}
+        aria-label="Messages"
+      >
+        <MessageSquare className="w-5 h-5" />
+        {unreadMessages > 0 && (
+          <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-[#9747FF] text-white text-[10px] rounded-full flex items-center justify-center font-bold">
+            {unreadMessages}
+          </span>
+        )}
+      </Button>
+
+      <Button
+        variant="ghost"
+        size="icon"
+        className="relative h-9 w-9 text-gray-700"
+        onClick={() => onNavigate('/notifications')}
+        aria-label="Notifications"
+      >
+        <Bell className="w-5 h-5" />
+        {unreadNotifications > 0 && (
+          <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold">
+            {unreadNotifications}
+          </span>
+        )}
+      </Button>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="flex items-center gap-2 px-1.5 h-9 rounded-full">
+            <img
+              src={getAvatarUrl(user?.avatar)}
+              alt={user?.name || 'User'}
+              className="w-7 h-7 rounded-full object-cover border border-gray-200"
+            />
+            <span className="font-medium text-sm text-gray-800">{user?.name || 'User'}</span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-52">
+          <DropdownMenuLabel>My Account</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => onNavigate('/profile')}>
+            <User className="w-4 h-4 mr-2" />
+            Profile
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onNavigate('/wallet')}>
+            <Wallet className="w-4 h-4 mr-2" />
+            Wallet
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onNavigate('/settings')}>
+            <Settings className="w-4 h-4 mr-2" />
+            Settings
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={onLogout} className="text-red-600">
+            <LogOut className="w-4 h-4 mr-2" />
+            Logout
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   );
 }

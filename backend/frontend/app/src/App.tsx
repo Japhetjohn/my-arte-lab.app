@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import { TopNavigation } from '@/components/layout/TopNavigation';
-import { Sidebar } from '@/components/layout/Sidebar';
 import { BottomNavigation } from '@/components/layout/BottomNavigation';
 import { AuthProvider, useAuth, api } from '@/contexts/AuthContext';
 
@@ -262,15 +261,11 @@ function AppContent() {
         onNavigate={navigate}
       />
       
-      <div className="flex">
-        <Sidebar currentPath={currentPath} />
-        
-        <main className="flex-1 min-h-[calc(100vh-4rem)] p-3 sm:p-4 lg:p-6 xl:p-8 pb-24 lg:pb-8">
-          <div className="max-w-7xl mx-auto">
-            {renderPage()}
-          </div>
-        </main>
-      </div>
+      <main className="min-h-[calc(100vh-4rem)] p-3 sm:p-4 lg:p-6 xl:p-8 pb-24 lg:pb-8">
+        <div className="max-w-7xl mx-auto">
+          {renderPage()}
+        </div>
+      </main>
       
       <BottomNavigation currentPath={currentPath} />
     </div>
