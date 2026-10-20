@@ -119,7 +119,7 @@ export function TopNavigation({
 
     // Contextual mapping based on authentication & page route
     if (!user) {
-      return 5; // Design 5: Header with Login and Sign Up
+      return 5; // Design 5: Header with simplified Login action
     }
 
     const path = typeof window !== 'undefined' ? window.location.pathname : '/home';
@@ -130,7 +130,7 @@ export function TopNavigation({
       return 3; // Design 3: Two-row navigation with utility actions
     }
     if (path === '/legal' || path === '/privacy-policy') {
-      return 4; // Design 4: Secondary row above main header with social icons
+      return 4; // Design 4: Secondary row with social icons
     }
     
     // Default for /home, /projects, /messages, /notifications, /settings
@@ -143,10 +143,10 @@ export function TopNavigation({
   return (
     <>
       {/* =========================================================================
-          MOBILE VIEW: Fixed Minimal Header + Strict Reference Mobile Drawer (lg:hidden)
+          MOBILE VIEW: Clean Mobile Header + Strict Minimal Reference Drawer (lg:hidden)
           ========================================================================= */}
       <div className="lg:hidden sticky top-0 z-50 w-full bg-white/95 backdrop-blur-md border-b border-gray-200/80">
-        <div className="flex items-center justify-between h-14 sm:h-16 px-4">
+        <div className="flex items-center justify-between h-14 px-4">
           {/* Mobile Hamburger Drawer Trigger */}
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger asChild>
@@ -169,7 +169,7 @@ export function TopNavigation({
               <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
               <SheetDescription className="sr-only">MyArteLab mobile navigation drawer</SheetDescription>
 
-              {/* Top Section: Hamburger close control at top-left with generous spacing. NO logo, NO avatar, NO name */}
+              {/* Top Section: Hamburger close control at top-left. NO logo, NO avatar, NO name */}
               <div className="pt-7 pb-2 px-7 sm:px-8 shrink-0">
                 <button
                   type="button"
@@ -238,10 +238,14 @@ export function TopNavigation({
             </SheetContent>
           </Sheet>
 
-          {/* Mobile Header Center Logo */}
+          {/* Mobile Header Center Logo & Refined Wordmark */}
           <a href="/home" className="flex items-center gap-2">
-            <img src="/images/logo.png?v=2" alt="MyArteLab" className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover" />
-            <span className="font-bold text-lg sm:text-xl text-gray-900">MyArteLab</span>
+            <img 
+              src="/images/logo.png" 
+              alt="MyArteLab" 
+              className="h-7 w-7 object-contain shrink-0" 
+            />
+            <span className="font-semibold text-lg tracking-tight text-gray-900">MyArteLab</span>
           </a>
 
           {/* Mobile Header Right Actions */}
@@ -281,7 +285,7 @@ export function TopNavigation({
               <Button
                 size="sm"
                 onClick={() => handleNavClick('/login')}
-                className="h-8 px-3 text-xs bg-[#9747FF] hover:bg-[#8534f0] text-white rounded-full font-medium"
+                className="h-8 px-4 text-xs border border-gray-800 hover:border-black text-gray-900 hover:bg-gray-50 rounded-full font-medium"
               >
                 Log in
               </Button>
@@ -291,24 +295,22 @@ export function TopNavigation({
       </div>
 
       {/* =========================================================================
-          DESKTOP VIEW: 5 Distinct Navigation Bars Matching media_1792494187526_728aee29.png
+          DESKTOP VIEW: Seamless, Integrated Persistent Navigation Strip (hidden lg:block)
+          Blends into the page background without detached cards, floating boxes, or heavy shadows.
           ========================================================================= */}
-      <header className="hidden lg:block sticky top-0 z-50 w-full bg-gray-50/80 backdrop-blur-sm px-4 sm:px-6 lg:px-8 py-3">
-        <div className="max-w-7xl mx-auto">
+      <header className="hidden lg:block sticky top-0 z-50 w-full bg-white/90 backdrop-blur-md border-b border-gray-200/70 transition-all">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8">
           {/* -------------------------------------------------------------------
-              DESIGN 1: Standard header with a right-side action button
+              DESIGN 1: Standard header with right-side action button
               ------------------------------------------------------------------- */}
           {activeVariant === 1 && (
-            <div className="bg-white rounded-2xl border border-gray-200/90 shadow-sm px-6 lg:px-8 py-3.5 flex items-center justify-between transition-all">
-              {/* Left: Logo & Wordmark */}
-              <a href="/home" className="flex items-center gap-3 shrink-0">
-                <img src="/images/logo.png?v=2" alt="MyArteLab" className="w-8 h-8 rounded-full object-cover" />
-                <span className="font-bold text-xl tracking-tight text-gray-900">MyArteLab</span>
-              </a>
+            <div className="h-16 flex items-center justify-between">
+              {/* Left: Transparent Logo & Modern Wordmark */}
+              <BrandLogo onNavigate={handleNavClick} />
 
               {/* Right: Navigation Links + Outlined Action Button */}
-              <div className="flex items-center gap-7 lg:gap-9">
-                <nav className="flex items-center gap-6 lg:gap-8 text-sm font-medium text-gray-700">
+              <div className="flex items-center gap-7 lg:gap-8">
+                <nav className="flex items-center gap-6 lg:gap-7 text-sm font-medium text-gray-700">
                   <button 
                     type="button" 
                     onClick={() => handleNavClick('/home')} 
@@ -339,11 +341,11 @@ export function TopNavigation({
                   </button>
                 </nav>
 
-                {/* Reference Pill-shaped Outlined Action Button */}
+                {/* Pill-shaped Outlined Action Button matching reference */}
                 <button
                   type="button"
                   onClick={() => handleNavClick('/explore')}
-                  className="rounded-full border border-gray-800 hover:border-black text-gray-900 hover:bg-gray-50 px-6 py-2 text-sm font-medium transition-colors cursor-pointer"
+                  className="rounded-full border border-gray-800 hover:border-black text-gray-900 hover:bg-gray-50 px-5 py-1.5 text-sm font-medium transition-colors cursor-pointer"
                 >
                   Explore
                 </button>
@@ -366,16 +368,13 @@ export function TopNavigation({
               DESIGN 2: Header with a search field
               ------------------------------------------------------------------- */}
           {activeVariant === 2 && (
-            <div className="bg-white rounded-2xl border border-gray-200/90 shadow-sm px-6 lg:px-8 py-3.5 flex items-center justify-between transition-all">
-              {/* Left: Logo & Wordmark */}
-              <a href="/home" className="flex items-center gap-3 shrink-0">
-                <img src="/images/logo.png?v=2" alt="MyArteLab" className="w-8 h-8 rounded-full object-cover" />
-                <span className="font-bold text-xl tracking-tight text-gray-900">MyArteLab</span>
-              </a>
+            <div className="h-16 flex items-center justify-between">
+              {/* Left: Transparent Logo & Modern Wordmark */}
+              <BrandLogo onNavigate={handleNavClick} />
 
               {/* Right: Navigation Links + Pill Search Input */}
-              <div className="flex items-center gap-7 lg:gap-8">
-                <nav className="flex items-center gap-6 lg:gap-8 text-sm font-medium text-gray-700">
+              <div className="flex items-center gap-6 lg:gap-7">
+                <nav className="flex items-center gap-6 lg:gap-7 text-sm font-medium text-gray-700">
                   <button 
                     type="button" 
                     onClick={() => handleNavClick('/home')} 
@@ -408,7 +407,7 @@ export function TopNavigation({
 
                 {/* Pill Search Input matching reference Design 2 */}
                 <form onSubmit={handleSearchSubmit} className="relative flex items-center">
-                  <div className="flex items-center gap-2.5 rounded-full border border-gray-300 bg-white px-4 py-2 w-64 lg:w-72 focus-within:border-[#9747FF] focus-within:ring-1 focus-within:ring-[#9747FF] transition-all">
+                  <div className="flex items-center gap-2 rounded-full border border-gray-300 bg-white px-3.5 py-1.5 w-56 lg:w-64 focus-within:border-[#9747FF] focus-within:ring-1 focus-within:ring-[#9747FF] transition-all">
                     <Search className="w-4 h-4 text-gray-400 shrink-0" />
                     <input
                       type="text"
@@ -438,9 +437,9 @@ export function TopNavigation({
               DESIGN 3: Two-row navigation (Upper row with utilities, Lower row with pipe links)
               ------------------------------------------------------------------- */}
           {activeVariant === 3 && (
-            <div className="bg-white rounded-2xl border border-gray-200/90 shadow-sm overflow-hidden transition-all">
+            <div className="flex flex-col">
               {/* Upper Row: Secondary navigation + Utility Icons */}
-              <div className="px-6 lg:px-8 py-2.5 flex items-center justify-between text-xs sm:text-sm text-gray-600">
+              <div className="h-9 flex items-center justify-between text-xs text-gray-600">
                 <div className="flex items-center gap-6">
                   <button 
                     type="button" 
@@ -495,14 +494,11 @@ export function TopNavigation({
               </div>
 
               {/* Thin horizontal divider */}
-              <div className="w-full border-b border-gray-200/80" />
+              <div className="w-full border-b border-gray-200/60" />
 
               {/* Lower Row: Logo on left, Links separated by vertical pipes on right */}
-              <div className="px-6 lg:px-8 py-3.5 flex items-center justify-between">
-                <a href="/home" className="flex items-center gap-3 shrink-0">
-                  <img src="/images/logo.png?v=2" alt="MyArteLab" className="w-8 h-8 rounded-full object-cover" />
-                  <span className="font-bold text-xl tracking-tight text-gray-900">MyArteLab</span>
-                </a>
+              <div className="h-14 flex items-center justify-between">
+                <BrandLogo onNavigate={handleNavClick} />
 
                 {/* Primary Links with Vertical Separators '|' */}
                 <nav className="flex items-center gap-4 lg:gap-5 text-sm font-medium text-gray-700">
@@ -546,9 +542,9 @@ export function TopNavigation({
               DESIGN 4: Secondary row above main header with social icons
               ------------------------------------------------------------------- */}
           {activeVariant === 4 && (
-            <div className="bg-white rounded-2xl border border-gray-200/90 shadow-sm overflow-hidden transition-all">
+            <div className="flex flex-col">
               {/* Upper Row: Secondary links on left, Social Media Icons on right */}
-              <div className="px-6 lg:px-8 py-2.5 flex items-center justify-between text-xs sm:text-sm text-gray-600">
+              <div className="h-9 flex items-center justify-between text-xs text-gray-600">
                 <div className="flex items-center gap-6">
                   <button 
                     type="button" 
@@ -582,7 +578,7 @@ export function TopNavigation({
                     aria-label="LinkedIn"
                     className="hover:text-[#0077b5] transition-colors"
                   >
-                    <Linkedin className="w-4 h-4" />
+                    <Linkedin className="w-3.5 h-3.5" />
                   </a>
                   <a 
                     href="https://facebook.com" 
@@ -591,7 +587,7 @@ export function TopNavigation({
                     aria-label="Facebook"
                     className="hover:text-[#1877f2] transition-colors"
                   >
-                    <Facebook className="w-4 h-4" />
+                    <Facebook className="w-3.5 h-3.5" />
                   </a>
                   <a 
                     href="https://twitter.com" 
@@ -600,23 +596,20 @@ export function TopNavigation({
                     aria-label="Twitter"
                     className="hover:text-gray-900 transition-colors"
                   >
-                    <Twitter className="w-4 h-4" />
+                    <Twitter className="w-3.5 h-3.5" />
                   </a>
                 </div>
               </div>
 
               {/* Thin horizontal divider */}
-              <div className="w-full border-b border-gray-200/80" />
+              <div className="w-full border-b border-gray-200/60" />
 
               {/* Lower Row: Logo on left, Links + Search Icon on right */}
-              <div className="px-6 lg:px-8 py-3.5 flex items-center justify-between">
-                <a href="/home" className="flex items-center gap-3 shrink-0">
-                  <img src="/images/logo.png?v=2" alt="MyArteLab" className="w-8 h-8 rounded-full object-cover" />
-                  <span className="font-bold text-xl tracking-tight text-gray-900">MyArteLab</span>
-                </a>
+              <div className="h-14 flex items-center justify-between">
+                <BrandLogo onNavigate={handleNavClick} />
 
-                <div className="flex items-center gap-6 lg:gap-8">
-                  <nav className="flex items-center gap-6 lg:gap-8 text-sm font-medium text-gray-700">
+                <div className="flex items-center gap-6 lg:gap-7">
+                  <nav className="flex items-center gap-6 lg:gap-7 text-sm font-medium text-gray-700">
                     <button 
                       type="button" 
                       onClick={() => handleNavClick('/explore')} 
@@ -654,7 +647,7 @@ export function TopNavigation({
                     aria-label="Search"
                     className="p-1 text-gray-700 hover:text-[#9747FF] transition-colors cursor-pointer"
                   >
-                    <Search className="w-5 h-5" />
+                    <Search className="w-4 h-4" />
                   </button>
                 </div>
               </div>
@@ -662,19 +655,16 @@ export function TopNavigation({
           )}
 
           {/* -------------------------------------------------------------------
-              DESIGN 5: Header with Login and Sign Up
+              DESIGN 5: Header with Single Clean Login Action (Simplified Auth)
               ------------------------------------------------------------------- */}
           {activeVariant === 5 && (
-            <div className="bg-white rounded-2xl border border-gray-200/90 shadow-sm px-6 lg:px-8 py-3.5 flex items-center justify-between transition-all">
-              {/* Left: Logo & Wordmark */}
-              <a href="/home" className="flex items-center gap-3 shrink-0">
-                <img src="/images/logo.png?v=2" alt="MyArteLab" className="w-8 h-8 rounded-full object-cover" />
-                <span className="font-bold text-xl tracking-tight text-gray-900">MyArteLab</span>
-              </a>
+            <div className="h-16 flex items-center justify-between">
+              {/* Left: Transparent Logo & Modern Wordmark */}
+              <BrandLogo onNavigate={handleNavClick} />
 
-              {/* Right: Navigation Links + Outlined Login & Sign Up Buttons */}
-              <div className="flex items-center gap-7 lg:gap-9">
-                <nav className="flex items-center gap-6 lg:gap-8 text-sm font-medium text-gray-700">
+              {/* Right: Navigation Links + Single Login Button */}
+              <div className="flex items-center gap-7 lg:gap-8">
+                <nav className="flex items-center gap-6 lg:gap-7 text-sm font-medium text-gray-700">
                   <button 
                     type="button" 
                     onClick={() => handleNavClick('/home')} 
@@ -705,29 +695,43 @@ export function TopNavigation({
                   </button>
                 </nav>
 
-                {/* Separate Outlined Buttons matching reference Design 5 */}
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => handleNavClick('/login')}
-                    className="rounded-full border border-gray-300 hover:border-gray-800 text-gray-700 hover:text-gray-900 px-5 py-1.5 text-sm font-medium transition-colors cursor-pointer"
-                  >
-                    Login
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleNavClick('/register')}
-                    className="rounded-full border border-gray-800 hover:border-black text-gray-900 hover:bg-gray-50 px-5 py-1.5 text-sm font-medium transition-colors cursor-pointer"
-                  >
-                    Sign up
-                  </button>
-                </div>
+                {/* Single Outlined Login Button (Sign up accessed via Login screen) */}
+                <button
+                  type="button"
+                  onClick={() => handleNavClick('/login')}
+                  className="rounded-full border border-gray-800 hover:border-black text-gray-900 hover:bg-gray-50 px-6 py-1.5 text-sm font-medium transition-colors cursor-pointer"
+                >
+                  Login
+                </button>
               </div>
             </div>
           )}
         </div>
       </header>
     </>
+  );
+}
+
+/**
+ * Brand Logo & Refined Wordmark Helper
+ * Transparent logo with no badge/container, paired with clean, modern typography.
+ */
+function BrandLogo({ onNavigate }: { onNavigate: (path: string) => void }) {
+  return (
+    <a 
+      href="/home" 
+      onClick={(e) => { e.preventDefault(); onNavigate('/home'); }}
+      className="flex items-center gap-2.5 shrink-0 group select-none"
+    >
+      <img 
+        src="/images/logo.png" 
+        alt="MyArteLab Logo" 
+        className="h-7 w-7 object-contain shrink-0 transition-transform group-hover:scale-105" 
+      />
+      <span className="font-semibold text-[17px] tracking-[-0.02em] text-gray-900 antialiased leading-none">
+        MyArteLab
+      </span>
+    </a>
   );
 }
 
