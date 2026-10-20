@@ -686,13 +686,6 @@ export function TopNavigation({
                   >
                     Creators
                   </button>
-                  <button 
-                    type="button" 
-                    onClick={() => handleNavClick('/legal')} 
-                    className={`transition-colors hover:text-[#9747FF] ${isCurrentActive('/legal') ? 'text-[#9747FF] font-semibold' : ''}`}
-                  >
-                    Contacts
-                  </button>
                 </nav>
 
                 {/* Single Outlined Login Button (Sign up accessed via Login screen) */}
