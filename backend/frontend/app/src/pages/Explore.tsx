@@ -284,7 +284,7 @@ export function Explore() {
 
         <TabsContent value={activeTab} className="mt-6">
           {creators.length > 0 ? (
-            <div className={`grid ${viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6' : 'grid-cols-1 gap-4'}`}>
+            <div className={`grid ${viewMode === 'grid' ? 'grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4' : 'grid-cols-1 gap-4'}`}>
               {creators.map((creator) => (
                 <CreatorCard key={creator.id} creator={creator} onViewProfile={(c) => window.location.href = getCreatorProfileUrl(c)} onBook={(c) => window.location.href = `/bookings?creator=${c.id || (c as any)._id}`} />
               ))}
