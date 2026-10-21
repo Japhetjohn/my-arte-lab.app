@@ -9,20 +9,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Sheet, SheetContent, SheetTitle, SheetDescription, SheetTrigger } from '@/components/ui/sheet';
 import { 
   Bell, 
   MessageSquare, 
-  Menu, 
   User, 
   Settings, 
-  LogOut, 
   Wallet, 
-  Home, 
-  Compass, 
-  Calendar, 
-  FolderOpen, 
-  Users,
   Search,
   X,
   Clock
@@ -38,27 +30,6 @@ interface TopNavigationProps {
   onNavigate?: (path: string) => void;
 }
 
-interface NavItem {
-  path: string;
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-  authOnly?: boolean;
-}
-
-// All available navigation items for mobile drawer
-const mobileNavItems: NavItem[] = [
-  { path: '/home', label: 'Home', icon: Home },
-  { path: '/explore', label: 'Explore', icon: Compass },
-  { path: '/creators', label: 'Creators', icon: Users },
-  { path: '/bookings', label: 'Bookings', icon: Calendar, authOnly: true },
-  { path: '/projects', label: 'Projects', icon: FolderOpen, authOnly: true },
-  { path: '/messages', label: 'Messages', icon: MessageSquare, authOnly: true },
-  { path: '/notifications', label: 'Notifications', icon: Bell, authOnly: true },
-  { path: '/wallet', label: 'Wallet', icon: Wallet, authOnly: true },
-  { path: '/profile', label: 'Profile', icon: User, authOnly: true },
-  { path: '/settings', label: 'Settings', icon: Settings, authOnly: true },
-];
-
 export function TopNavigation({ 
   user, 
   unreadNotifications, 
@@ -66,7 +37,6 @@ export function TopNavigation({
   onLogout,
   onNavigate,
 }: TopNavigationProps) {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [mobileSearchQuery, setMobileSearchQuery] = useState('');
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
@@ -130,11 +100,9 @@ export function TopNavigation({
     } else {
       window.location.href = path;
     }
-    setMobileMenuOpen(false);
   };
 
   const handleLogout = () => {
-    setMobileMenuOpen(false);
     if (onLogout) {
       onLogout();
     }
@@ -145,22 +113,35 @@ export function TopNavigation({
     if (path === '/home') {
       return currentPath === '/' || currentPath === '/home';
     }
+    if (path === '/creators') {
+      return currentPath === '/creators' || currentPath.startsWith('/creators/') || currentPath.startsWith('/creator/');
+    }
     return currentPath === path || currentPath.startsWith(path + '/');
   };
 
-  // Filter items for mobile drawer based on auth state
-  const visibleMobileNavItems = mobileNavItems.filter(item => !item.authOnly || !!user);
+  const mobileCapsuleItems = [
+    { path: '/home', label: 'HOME' },
+    { path: '/explore', label: 'EXPLORE' },
+    { path: '/creators', label: 'CREATORS' },
+  ];
 
   return (
     <>
       {/* =========================================================================
-          MOBILE VIEW: Nike-Inspired Compact Minimal Mobile Header (lg:hidden)
-          Layout matching media_1792622837527_27e4f6d5.png (Nike row):
-          - Left: MyArteLab brand logo
-          - Right: Search icon, Login/Profile icon, Hamburger menu
+          MOBILE VIEW: Capsule Navigation Header (lg:hidden)
+          Strict reference specification of media_1792623665365_81b0be64.png
+          - Single horizontal capsule outer container with fully rounded ends (rounded-full)
+          - Thin MyArteLab purple outline (border border-[#9747FF])
+          - White background (bg-white)
+          - Centered in available mobile header area
+          - Active item: fully rounded purple pill (bg-[#9747FF] text-white)
+          - Inactive items: dark text (text-gray-900) directly on container background
+          - Visible inset: active pill does not touch or overlap outer border
+          - Clean uppercase sans-serif typography, no unnecessary icons or cards
+          - No hamburger menu at widths where the capsule fits comfortably
           ========================================================================= */}
       <div className="lg:hidden sticky top-0 z-50 w-full bg-white border-b border-gray-200/80">
-        <div className="flex items-center justify-between h-14 sm:h-16 px-4 sm:px-6">
+        <div className="flex items-center justify-between h-14 sm:h-16 px-3 sm:px-5 gap-2">
           {/* Left: MyArteLab Brand Logo */}
           <a 
             href="/home" 
@@ -175,9 +156,36 @@ export function TopNavigation({
             />
           </a>
 
-          {/* Right: Search icon, Login/Profile icon, Hamburger menu in a clean horizontal row */}
-          <div className="flex items-center gap-3.5 sm:gap-4.5">
-            {/* 1. Search Icon */}
+          {/* Center: Reference Capsule Navigation Bar */}
+          <div className="flex-1 flex items-center justify-center min-w-0 px-1">
+            <nav 
+              className="inline-flex items-center rounded-full border border-[#9747FF] bg-white p-1 shadow-2xs max-w-full"
+              aria-label="Mobile Navigation"
+            >
+              {mobileCapsuleItems.map((item) => {
+                const active = isCurrentActive(item.path);
+                return (
+                  <button
+                    key={item.path}
+                    type="button"
+                    onClick={() => handleNavClick(item.path)}
+                    aria-current={active ? 'page' : undefined}
+                    className={`shrink-0 rounded-full text-[11px] sm:text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer outline-none focus:outline-none whitespace-nowrap ${
+                      active
+                        ? 'bg-[#9747FF] text-white px-3 sm:px-4 py-1.5 shadow-xs'
+                        : 'text-gray-900 hover:text-[#9747FF] px-2.5 sm:px-3.5 py-1.5'
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+
+          {/* Right: Search & Profile / Login (No hamburger menu, no duplicate Wallet/Logout in dropdown) */}
+          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+            {/* Search Icon */}
             <button
               type="button"
               onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
@@ -186,71 +194,22 @@ export function TopNavigation({
               }`}
               aria-label="Search"
             >
-              <Search className="w-5 h-5 sm:w-6 sm:h-6 stroke-[1.75]" />
+              <Search className="w-5 h-5 stroke-[1.75]" />
             </button>
 
-            {/* 2. Login / Profile Icon */}
+            {/* Profile / Login Icon */}
             {user ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    type="button"
-                    className="relative p-1.5 text-gray-800 hover:text-gray-950 transition-colors cursor-pointer outline-none focus:outline-none"
-                    aria-label="Account menu"
-                  >
-                    <User className="w-5 h-5 sm:w-6 sm:h-6 stroke-[1.75]" />
-                    {(unreadNotifications > 0 || unreadMessages > 0) && (
-                      <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-[#9747FF]" />
-                    )}
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 mt-2">
-                  <DropdownMenuLabel>
-                    <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none text-gray-900">{user?.name || 'My Account'}</p>
-                      {user?.email && (
-                        <p className="text-xs leading-none text-gray-500 truncate">{user.email}</p>
-                      )}
-                    </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => handleNavClick('/profile')} className="cursor-pointer">
-                    <User className="w-4 h-4 mr-2" />
-                    Profile
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleNavClick('/wallet')} className="cursor-pointer">
-                    <Wallet className="w-4 h-4 mr-2" />
-                    Wallet
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleNavClick('/messages')} className="cursor-pointer">
-                    <MessageSquare className="w-4 h-4 mr-2" />
-                    Messages
-                    {unreadMessages > 0 && (
-                      <span className="ml-auto text-xs bg-[#9747FF] text-white px-1.5 py-0.5 rounded-full font-bold">
-                        {unreadMessages}
-                      </span>
-                    )}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleNavClick('/notifications')} className="cursor-pointer">
-                    <Bell className="w-4 h-4 mr-2" />
-                    Notifications
-                    {unreadNotifications > 0 && (
-                      <span className="ml-auto text-xs bg-red-500 text-white px-1.5 py-0.5 rounded-full font-bold">
-                        {unreadNotifications}
-                      </span>
-                    )}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleNavClick('/settings')} className="cursor-pointer">
-                    <Settings className="w-4 h-4 mr-2" />
-                    Settings
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer">
-                    <LogOut className="w-4 h-4 mr-2" />
-                    Logout
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <button
+                type="button"
+                onClick={() => handleNavClick('/profile')}
+                className="p-1.5 text-gray-800 hover:text-gray-950 transition-colors cursor-pointer outline-none focus:outline-none relative"
+                aria-label="Profile"
+              >
+                <User className="w-5 h-5 stroke-[1.75]" />
+                {(unreadNotifications > 0 || unreadMessages > 0) && (
+                  <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-[#9747FF]" />
+                )}
+              </button>
             ) : (
               <button
                 type="button"
@@ -258,99 +217,9 @@ export function TopNavigation({
                 className="p-1.5 text-gray-800 hover:text-gray-950 transition-colors cursor-pointer outline-none focus:outline-none"
                 aria-label="Log in"
               >
-                <User className="w-5 h-5 sm:w-6 sm:h-6 stroke-[1.75]" />
+                <User className="w-5 h-5 stroke-[1.75]" />
               </button>
             )}
-
-            {/* 3. Hamburger Menu Trigger & Drawer */}
-            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-              <SheetTrigger asChild>
-                <button
-                  type="button"
-                  className="p-1.5 text-gray-800 hover:text-gray-950 transition-colors cursor-pointer outline-none focus:outline-none"
-                  aria-label="Open navigation menu"
-                >
-                  <Menu className="w-5 h-5 sm:w-6 sm:h-6 stroke-[1.75]" />
-                </button>
-              </SheetTrigger>
-
-              {/* Mobile Drawer (sliding in from right where hamburger is placed) */}
-              <SheetContent 
-                side="right" 
-                className="w-[82vw] max-w-xs sm:max-w-sm p-0 flex flex-col h-full bg-[#fafafa] border-l border-gray-200/80 [&>button:last-child]:hidden [&>[data-slot=sheet-close]]:hidden"
-              >
-                {/* Accessibility Titles (hidden) */}
-                <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
-                <SheetDescription className="sr-only">MyArteLab mobile navigation drawer</SheetDescription>
-
-                {/* Top Section: Close control. NO logo, NO avatar, NO name */}
-                <div className="pt-7 pb-2 px-7 sm:px-8 shrink-0 flex items-center justify-between">
-                  <button
-                    type="button"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="p-1 -ml-1 text-gray-700 hover:text-gray-950 transition-colors cursor-pointer outline-none focus:outline-none"
-                    aria-label="Close menu"
-                  >
-                    <Menu className="w-6 h-6 stroke-[1.75]" />
-                  </button>
-                </div>
-
-                {/* Navigation Items: Single vertical column with generous whitespace, outline icons, no cards */}
-                <div className="flex-1 overflow-y-auto px-7 sm:px-8 pt-8 sm:pt-10 pb-6">
-                  <nav className="space-y-6 sm:space-y-7">
-                    {visibleMobileNavItems.map((item) => {
-                      const Icon = item.icon;
-                      const active = isCurrentActive(item.path);
-
-                      return (
-                        <button
-                          key={item.path}
-                          type="button"
-                          onClick={() => handleNavClick(item.path)}
-                          className={`w-full flex items-center gap-5 sm:gap-6 text-left transition-colors cursor-pointer group py-0.5 outline-none focus:outline-none ${
-                            active 
-                              ? 'text-[#9747FF] font-semibold' 
-                              : 'text-gray-700 hover:text-gray-950 font-normal'
-                          }`}
-                        >
-                          <Icon 
-                            className={`w-6 h-6 shrink-0 transition-colors stroke-[1.75] ${
-                              active 
-                                ? 'text-[#9747FF]' 
-                                : 'text-gray-600 group-hover:text-gray-900'
-                            }`} 
-                          />
-                          <span className="text-base sm:text-lg tracking-normal">
-                            {item.label}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </nav>
-                </div>
-
-                {/* Bottom Section: Full-width subtle neutral grey (#eeeeee) container with centered Logout / Login */}
-                <div className="mt-auto shrink-0 bg-[#eeeeee] w-full border-t border-gray-200/60 pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] px-4 flex items-center justify-center">
-                  {user ? (
-                    <button
-                      type="button"
-                      onClick={handleLogout}
-                      className="w-full text-center text-base sm:text-lg font-medium text-gray-700 hover:text-gray-950 transition-colors cursor-pointer py-1 outline-none focus:outline-none"
-                    >
-                      Logout
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => handleNavClick('/login')}
-                      className="w-full text-center text-base sm:text-lg font-medium text-[#9747FF] hover:text-[#8534f0] transition-colors cursor-pointer py-1 outline-none focus:outline-none"
-                    >
-                      Log in
-                    </button>
-                  )}
-                </div>
-              </SheetContent>
-            </Sheet>
           </div>
         </div>
 
@@ -555,22 +424,13 @@ export function TopNavigation({
                   <DropdownMenuContent align="end" className="w-52">
                     <DropdownMenuLabel>My Account</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => handleNavClick('/profile')}>
+                    <DropdownMenuItem onClick={() => handleNavClick('/profile')} className="cursor-pointer">
                       <User className="w-4 h-4 mr-2" />
                       Profile
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleNavClick('/wallet')}>
-                      <Wallet className="w-4 h-4 mr-2" />
-                      Wallet
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleNavClick('/settings')}>
+                    <DropdownMenuItem onClick={() => handleNavClick('/settings')} className="cursor-pointer">
                       <Settings className="w-4 h-4 mr-2" />
                       Settings
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleLogout} className="text-red-600">
-                      <LogOut className="w-4 h-4 mr-2" />
-                      Logout
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
