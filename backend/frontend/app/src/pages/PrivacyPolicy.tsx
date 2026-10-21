@@ -6,48 +6,18 @@ export function PrivacyPolicy() {
 
   return (
     <div className="min-h-screen bg-gray-50/60 text-gray-800">
-      {/* Top Header Bar */}
-      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-150">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => navigate(-1)}
-              className="w-9 h-9 rounded-xl border border-gray-200 hover:bg-gray-100 flex items-center justify-center text-gray-600 transition-colors cursor-pointer"
-              aria-label="Go back"
-            >
-              <ArrowLeft className="w-4 h-4" />
-            </button>
-            <Link to="/" className="flex items-center gap-2 group">
-              <img src="/images/logo.png" alt="MyArteLab" className="w-7 h-7 rounded-lg object-contain" />
-              <span className="font-bold text-gray-900 text-base sm:text-lg tracking-tight group-hover:text-[#9747FF] transition-colors">
-                MyArteLab
-              </span>
-            </Link>
-          </div>
-
-          <div className="flex items-center gap-2 sm:gap-4">
-            <Link
-              to="/legal"
-              className="text-xs sm:text-sm font-semibold text-gray-600 hover:text-[#9747FF] transition-colors"
-            >
-              Terms of Service
-            </Link>
-            <Link
-              to="/login"
-              className="hidden sm:inline-flex text-xs sm:text-sm font-semibold text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              Log in
-            </Link>
-            <Link
-              to="/register"
-              className="h-9 px-3.5 sm:px-4 rounded-xl bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs sm:text-sm font-semibold flex items-center justify-center transition-all shadow-2xs"
-            >
-              Get Started
-            </Link>
-          </div>
-        </div>
-      </header>
+      {/* Top Back Action */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-2">
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors cursor-pointer"
+          aria-label="Go back"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Back</span>
+        </button>
+      </div>
 
       {/* Hero Banner */}
       <div className="bg-white border-b border-gray-150 py-10 sm:py-14">

@@ -183,25 +183,20 @@ export function Legal() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
-        <div className="flex items-center justify-between h-14 px-4 max-w-7xl mx-auto">
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate(-1)}
-              className="h-9 w-9"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <h1 className="font-bold text-lg">Legal Documents</h1>
-          </div>
-        </div>
-      </header>
-
       {/* Content */}
-      <main className="max-w-4xl mx-auto p-4 py-8">
+      <main className="max-w-4xl mx-auto p-4 py-6">
+        <div className="flex items-center gap-3 mb-6">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate(-1)}
+            className="h-9 w-9 text-gray-700 hover:text-gray-900"
+            aria-label="Go back"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          <h1 className="font-bold text-2xl text-gray-900">Legal Documents</h1>
+        </div>
         {/* Tabs */}
         <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
           <button
