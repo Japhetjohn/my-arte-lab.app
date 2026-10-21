@@ -14,7 +14,6 @@ import {
   MessageSquare, 
   User, 
   Settings, 
-  Wallet, 
   Search,
   X,
   Clock
