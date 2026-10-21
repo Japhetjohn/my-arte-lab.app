@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,7 +22,10 @@ import {
   Compass, 
   Calendar, 
   FolderOpen, 
-  Users 
+  Users,
+  Search,
+  X,
+  Clock
 } from 'lucide-react';
 import type { User as UserType } from '@/types';
 import { getAvatarUrl } from '@/lib/imageUrl';
@@ -63,6 +67,62 @@ export function TopNavigation({
   onNavigate,
 }: TopNavigationProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [mobileSearchQuery, setMobileSearchQuery] = useState('');
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Load recent searches from localStorage on mount or search toggle
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('myartelab_search_history');
+      if (stored) {
+        setRecentSearches(JSON.parse(stored));
+      }
+    } catch {
+      setRecentSearches([]);
+    }
+  }, [mobileSearchOpen]);
+
+  // Focus input when search bar opens
+  useEffect(() => {
+    if (mobileSearchOpen) {
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 50);
+    }
+  }, [mobileSearchOpen]);
+
+  const executeSearch = (query: string) => {
+    const trimmed = query.trim();
+    if (!trimmed) return;
+
+    // Save to history using same key as Explore.tsx
+    try {
+      const stored = localStorage.getItem('myartelab_search_history');
+      const history = stored ? JSON.parse(stored) : [];
+      const filtered = history.filter((h: string) => h.toLowerCase() !== trimmed.toLowerCase());
+      localStorage.setItem('myartelab_search_history', JSON.stringify([trimmed, ...filtered].slice(0, 8)));
+    } catch {}
+
+    setMobileSearchOpen(false);
+
+    const targetUrl = `/explore?q=${encodeURIComponent(trimmed)}`;
+    if (window.location.pathname === '/explore') {
+      window.location.search = `?q=${encodeURIComponent(trimmed)}`;
+    } else {
+      if (onNavigate) {
+        onNavigate(targetUrl);
+      } else {
+        window.location.href = targetUrl;
+      }
+    }
+  };
+
+  const handleMobileSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    executeSearch(mobileSearchQuery);
+  };
 
   const handleNavClick = (path: string) => {
     if (onNavigate) {
@@ -94,155 +154,270 @@ export function TopNavigation({
   return (
     <>
       {/* =========================================================================
-          MOBILE VIEW: Header + Reference Minimal Mobile Drawer (lg:hidden)
+          MOBILE VIEW: Nike-Inspired Compact Minimal Mobile Header (lg:hidden)
+          Layout matching media_1792622837527_27e4f6d5.png (Nike row):
+          - Left: MyArteLab brand logo
+          - Right: Search icon, Login/Profile icon, Hamburger menu
           ========================================================================= */}
       <div className="lg:hidden sticky top-0 z-50 w-full bg-white border-b border-gray-200/80">
-        <div className="flex items-center justify-between h-14 sm:h-16 px-4">
-          {/* Mobile Hamburger Drawer Trigger */}
-          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-            <SheetTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 text-gray-700"
-                aria-label="Open mobile navigation"
-              >
-                <Menu className="w-5 h-5 stroke-[1.75]" />
-              </Button>
-            </SheetTrigger>
-
-            {/* Strict Reference Mobile Drawer Matching media_1792493149177_e612e1b2.png */}
-            <SheetContent 
-              side="left" 
-              className="w-[82vw] max-w-xs sm:max-w-sm p-0 flex flex-col h-full bg-[#fafafa] border-r border-gray-200/80 [&>button:last-child]:hidden [&>[data-slot=sheet-close]]:hidden"
-            >
-              {/* Accessibility Titles (hidden) */}
-              <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
-              <SheetDescription className="sr-only">MyArteLab mobile navigation drawer</SheetDescription>
-
-              {/* Top Section: Hamburger close control at top-left. NO logo, NO avatar, NO name */}
-              <div className="pt-7 pb-2 px-7 sm:px-8 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="p-1 -ml-1 text-gray-700 hover:text-gray-950 transition-colors cursor-pointer outline-none focus:outline-none"
-                  aria-label="Close menu"
-                >
-                  <Menu className="w-6 h-6 stroke-[1.75]" />
-                </button>
-              </div>
-
-              {/* Navigation Items: Single vertical column with generous whitespace, outline icons, no cards */}
-              <div className="flex-1 overflow-y-auto px-7 sm:px-8 pt-8 sm:pt-10 pb-6">
-                <nav className="space-y-6 sm:space-y-7">
-                  {visibleMobileNavItems.map((item) => {
-                    const Icon = item.icon;
-                    const active = isCurrentActive(item.path);
-
-                    return (
-                      <button
-                        key={item.path}
-                        type="button"
-                        onClick={() => handleNavClick(item.path)}
-                        className={`w-full flex items-center gap-5 sm:gap-6 text-left transition-colors cursor-pointer group py-0.5 outline-none focus:outline-none ${
-                          active 
-                            ? 'text-[#9747FF] font-semibold' 
-                            : 'text-gray-700 hover:text-gray-950 font-normal'
-                        }`}
-                      >
-                        <Icon 
-                          className={`w-6 h-6 shrink-0 transition-colors stroke-[1.75] ${
-                            active 
-                              ? 'text-[#9747FF]' 
-                              : 'text-gray-600 group-hover:text-gray-900'
-                          }`} 
-                        />
-                        <span className="text-base sm:text-lg tracking-normal">
-                          {item.label}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </nav>
-              </div>
-
-              {/* Bottom Section: Full-width subtle neutral grey (#eeeeee) container with centered Logout / Login */}
-              <div className="mt-auto shrink-0 bg-[#eeeeee] w-full border-t border-gray-200/60 pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] px-4 flex items-center justify-center">
-                {user ? (
-                  <button
-                    type="button"
-                    onClick={handleLogout}
-                    className="w-full text-center text-base sm:text-lg font-medium text-gray-700 hover:text-gray-950 transition-colors cursor-pointer py-1 outline-none focus:outline-none"
-                  >
-                    Logout
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => handleNavClick('/login')}
-                    className="w-full text-center text-base sm:text-lg font-medium text-[#9747FF] hover:text-[#8534f0] transition-colors cursor-pointer py-1 outline-none focus:outline-none"
-                  >
-                    Log in
-                  </button>
-                )}
-              </div>
-            </SheetContent>
-          </Sheet>
-
-          {/* Mobile Header Center Logo & Wordmark */}
-          <a href="/home" className="flex items-center gap-2">
+        <div className="flex items-center justify-between h-14 sm:h-16 px-4 sm:px-6">
+          {/* Left: MyArteLab Brand Logo */}
+          <a 
+            href="/home" 
+            onClick={(e) => { e.preventDefault(); handleNavClick('/home'); }}
+            className="flex items-center shrink-0 cursor-pointer outline-none focus:outline-none"
+            aria-label="MyArteLab Home"
+          >
             <img 
               src="/images/logo.png" 
               alt="MyArteLab" 
-              className="h-7 w-7 object-contain shrink-0" 
+              className="h-7 w-7 sm:h-8 sm:w-8 object-contain" 
             />
-            <span className="font-semibold text-lg tracking-tight text-gray-900">MyArteLab</span>
           </a>
 
-          {/* Mobile Header Right Actions */}
-          <div className="flex items-center gap-1 sm:gap-2">
+          {/* Right: Search icon, Login/Profile icon, Hamburger menu in a clean horizontal row */}
+          <div className="flex items-center gap-3.5 sm:gap-4.5">
+            {/* 1. Search Icon */}
+            <button
+              type="button"
+              onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
+              className={`p-1.5 transition-colors cursor-pointer outline-none focus:outline-none ${
+                mobileSearchOpen ? 'text-[#9747FF]' : 'text-gray-800 hover:text-gray-950'
+              }`}
+              aria-label="Search"
+            >
+              <Search className="w-5 h-5 sm:w-6 sm:h-6 stroke-[1.75]" />
+            </button>
+
+            {/* 2. Login / Profile Icon */}
             {user ? (
-              <>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="relative h-9 w-9 text-gray-700"
-                  onClick={() => handleNavClick('/messages')}
-                  aria-label="Messages"
-                >
-                  <MessageSquare className="w-5 h-5" />
-                  {unreadMessages > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-[#9747FF] text-white text-[10px] rounded-full flex items-center justify-center font-bold">
-                      {unreadMessages}
-                    </span>
-                  )}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="relative h-9 w-9 text-gray-700"
-                  onClick={() => handleNavClick('/notifications')}
-                  aria-label="Notifications"
-                >
-                  <Bell className="w-5 h-5" />
-                  {unreadNotifications > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold">
-                      {unreadNotifications}
-                    </span>
-                  )}
-                </Button>
-              </>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    className="relative p-1.5 text-gray-800 hover:text-gray-950 transition-colors cursor-pointer outline-none focus:outline-none"
+                    aria-label="Account menu"
+                  >
+                    <User className="w-5 h-5 sm:w-6 sm:h-6 stroke-[1.75]" />
+                    {(unreadNotifications > 0 || unreadMessages > 0) && (
+                      <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-[#9747FF]" />
+                    )}
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 mt-2">
+                  <DropdownMenuLabel>
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none text-gray-900">{user?.name || 'My Account'}</p>
+                      {user?.email && (
+                        <p className="text-xs leading-none text-gray-500 truncate">{user.email}</p>
+                      )}
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => handleNavClick('/profile')} className="cursor-pointer">
+                    <User className="w-4 h-4 mr-2" />
+                    Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleNavClick('/wallet')} className="cursor-pointer">
+                    <Wallet className="w-4 h-4 mr-2" />
+                    Wallet
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleNavClick('/messages')} className="cursor-pointer">
+                    <MessageSquare className="w-4 h-4 mr-2" />
+                    Messages
+                    {unreadMessages > 0 && (
+                      <span className="ml-auto text-xs bg-[#9747FF] text-white px-1.5 py-0.5 rounded-full font-bold">
+                        {unreadMessages}
+                      </span>
+                    )}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleNavClick('/notifications')} className="cursor-pointer">
+                    <Bell className="w-4 h-4 mr-2" />
+                    Notifications
+                    {unreadNotifications > 0 && (
+                      <span className="ml-auto text-xs bg-red-500 text-white px-1.5 py-0.5 rounded-full font-bold">
+                        {unreadNotifications}
+                      </span>
+                    )}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleNavClick('/settings')} className="cursor-pointer">
+                    <Settings className="w-4 h-4 mr-2" />
+                    Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer">
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             ) : (
               <button
                 type="button"
                 onClick={() => handleNavClick('/login')}
-                className="rounded-full border border-gray-800 text-gray-900 hover:bg-gray-50 px-4 py-1 text-xs font-medium transition-colors cursor-pointer"
+                className="p-1.5 text-gray-800 hover:text-gray-950 transition-colors cursor-pointer outline-none focus:outline-none"
+                aria-label="Log in"
               >
-                Login
+                <User className="w-5 h-5 sm:w-6 sm:h-6 stroke-[1.75]" />
               </button>
             )}
+
+            {/* 3. Hamburger Menu Trigger & Drawer */}
+            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <button
+                  type="button"
+                  className="p-1.5 text-gray-800 hover:text-gray-950 transition-colors cursor-pointer outline-none focus:outline-none"
+                  aria-label="Open navigation menu"
+                >
+                  <Menu className="w-5 h-5 sm:w-6 sm:h-6 stroke-[1.75]" />
+                </button>
+              </SheetTrigger>
+
+              {/* Mobile Drawer (sliding in from right where hamburger is placed) */}
+              <SheetContent 
+                side="right" 
+                className="w-[82vw] max-w-xs sm:max-w-sm p-0 flex flex-col h-full bg-[#fafafa] border-l border-gray-200/80 [&>button:last-child]:hidden [&>[data-slot=sheet-close]]:hidden"
+              >
+                {/* Accessibility Titles (hidden) */}
+                <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+                <SheetDescription className="sr-only">MyArteLab mobile navigation drawer</SheetDescription>
+
+                {/* Top Section: Close control. NO logo, NO avatar, NO name */}
+                <div className="pt-7 pb-2 px-7 sm:px-8 shrink-0 flex items-center justify-between">
+                  <button
+                    type="button"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="p-1 -ml-1 text-gray-700 hover:text-gray-950 transition-colors cursor-pointer outline-none focus:outline-none"
+                    aria-label="Close menu"
+                  >
+                    <Menu className="w-6 h-6 stroke-[1.75]" />
+                  </button>
+                </div>
+
+                {/* Navigation Items: Single vertical column with generous whitespace, outline icons, no cards */}
+                <div className="flex-1 overflow-y-auto px-7 sm:px-8 pt-8 sm:pt-10 pb-6">
+                  <nav className="space-y-6 sm:space-y-7">
+                    {visibleMobileNavItems.map((item) => {
+                      const Icon = item.icon;
+                      const active = isCurrentActive(item.path);
+
+                      return (
+                        <button
+                          key={item.path}
+                          type="button"
+                          onClick={() => handleNavClick(item.path)}
+                          className={`w-full flex items-center gap-5 sm:gap-6 text-left transition-colors cursor-pointer group py-0.5 outline-none focus:outline-none ${
+                            active 
+                              ? 'text-[#9747FF] font-semibold' 
+                              : 'text-gray-700 hover:text-gray-950 font-normal'
+                          }`}
+                        >
+                          <Icon 
+                            className={`w-6 h-6 shrink-0 transition-colors stroke-[1.75] ${
+                              active 
+                                ? 'text-[#9747FF]' 
+                                : 'text-gray-600 group-hover:text-gray-900'
+                            }`} 
+                          />
+                          <span className="text-base sm:text-lg tracking-normal">
+                            {item.label}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </nav>
+                </div>
+
+                {/* Bottom Section: Full-width subtle neutral grey (#eeeeee) container with centered Logout / Login */}
+                <div className="mt-auto shrink-0 bg-[#eeeeee] w-full border-t border-gray-200/60 pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] px-4 flex items-center justify-center">
+                  {user ? (
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      className="w-full text-center text-base sm:text-lg font-medium text-gray-700 hover:text-gray-950 transition-colors cursor-pointer py-1 outline-none focus:outline-none"
+                    >
+                      Logout
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleNavClick('/login')}
+                      className="w-full text-center text-base sm:text-lg font-medium text-[#9747FF] hover:text-[#8534f0] transition-colors cursor-pointer py-1 outline-none focus:outline-none"
+                    >
+                      Log in
+                    </button>
+                  )}
+                </div>
+              </SheetContent>
+            </Sheet>
           </div>
         </div>
+
+        {/* Expandable Mobile Search Interface */}
+        {mobileSearchOpen && (
+          <div className="border-t border-gray-150 bg-white px-4 py-3 shadow-xs animate-in slide-in-from-top duration-200">
+            <form onSubmit={handleMobileSearchSubmit} className="relative flex items-center gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input
+                  ref={searchInputRef}
+                  type="text"
+                  placeholder="Search creators, skills, city, country..."
+                  className="pl-10 pr-9 h-10 bg-gray-50/90 border border-gray-200 text-gray-900 placeholder:text-gray-400 rounded-xl text-sm focus-visible:ring-1 focus-visible:ring-[#9747FF] focus-visible:border-[#9747FF]"
+                  value={mobileSearchQuery}
+                  onChange={(e) => setMobileSearchQuery(e.target.value)}
+                  autoFocus
+                />
+                {mobileSearchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setMobileSearchQuery('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-0.5 cursor-pointer"
+                    aria-label="Clear search input"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+              <Button
+                type="submit"
+                size="sm"
+                className="h-10 px-4 rounded-xl bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold shadow-none cursor-pointer shrink-0"
+              >
+                Search
+              </Button>
+              <button
+                type="button"
+                onClick={() => setMobileSearchOpen(false)}
+                className="p-2 text-gray-400 hover:text-gray-700 transition-colors cursor-pointer shrink-0"
+                aria-label="Close search"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </form>
+            {recentSearches.length > 0 && (
+              <div className="mt-2.5 pt-2 border-t border-gray-100 flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
+                <span className="text-[11px] font-medium text-gray-400 uppercase tracking-wider shrink-0 mr-1 flex items-center gap-1">
+                  <Clock className="w-3 h-3" /> Recent:
+                </span>
+                {recentSearches.slice(0, 4).map((term) => (
+                  <button
+                    key={term}
+                    type="button"
+                    onClick={() => {
+                      setMobileSearchQuery(term);
+                      executeSearch(term);
+                    }}
+                    className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-2.5 py-1 rounded-full shrink-0 transition-colors cursor-pointer"
+                  >
+                    {term}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* =========================================================================

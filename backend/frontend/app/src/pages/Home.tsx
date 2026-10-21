@@ -122,8 +122,8 @@ export function Home() {
         />
       </section>
 
-      {/* Search Bar */}
-      <section className="-mt-4 sm:-mt-6 relative z-10 px-4 sm:px-0">
+      {/* Search Bar - Desktop Only (On mobile, search is placed in the Nike-style mobile header) */}
+      <section className="hidden lg:block -mt-4 sm:-mt-6 relative z-10 px-4 sm:px-0">
         <form onSubmit={handleSearch} className="max-w-2xl mx-auto">
           <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
