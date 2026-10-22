@@ -178,11 +178,96 @@ export function Home() {
     loadFeed(true, selectedCategory, activeTab);
   }, [selectedCategory]);
 
-  const handleRefresh = () => {
+  const handleRefresh = useCallback(() => {
     if (isRefreshing) return;
     setIsRefreshing(true);
     loadFeed(true, selectedCategory, activeTab);
-  };
+  }, [isRefreshing, loadFeed, selectedCategory, activeTab]);
+
+  // Pull-to-refresh & Natural Overscroll Refresh Logic
+  const [pullDistance, setPullDistance] = useState(0);
+  const touchStartYRef = useRef(0);
+  const isPullingRef = useRef(false);
+  const wheelDeltaAccumulatorRef = useRef(0);
+  const wheelResetTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    // Mobile Touch Pull-to-Refresh
+    const handleTouchStart = (e: TouchEvent) => {
+      if (window.scrollY <= 2 && e.touches.length === 1) {
+        touchStartYRef.current = e.touches[0].clientY;
+        isPullingRef.current = true;
+      } else {
+        isPullingRef.current = false;
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!isPullingRef.current || isRefreshing || e.touches.length !== 1) return;
+
+      const currentY = e.touches[0].clientY;
+      const diffY = currentY - touchStartYRef.current;
+
+      if (diffY > 0 && window.scrollY <= 2) {
+        const distance = Math.min(80, diffY * 0.45);
+        setPullDistance(distance);
+      } else {
+        setPullDistance(0);
+      }
+    };
+
+    const handleTouchEnd = () => {
+      if (!isPullingRef.current) return;
+      isPullingRef.current = false;
+
+      setPullDistance((prev) => {
+        if (prev >= 50 && !isRefreshing) {
+          handleRefresh();
+        }
+        return 0;
+      });
+    };
+
+    // Desktop Natural Overscroll Refresh on upward wheel at top of page
+    const handleWheel = (e: WheelEvent) => {
+      if (window.scrollY > 2 || isRefreshing) {
+        wheelDeltaAccumulatorRef.current = 0;
+        return;
+      }
+
+      if (e.deltaY < -15) {
+        wheelDeltaAccumulatorRef.current += Math.abs(e.deltaY);
+
+        if (wheelResetTimeoutRef.current) {
+          clearTimeout(wheelResetTimeoutRef.current);
+        }
+
+        wheelResetTimeoutRef.current = setTimeout(() => {
+          wheelDeltaAccumulatorRef.current = 0;
+        }, 400);
+
+        if (wheelDeltaAccumulatorRef.current > 75) {
+          wheelDeltaAccumulatorRef.current = 0;
+          handleRefresh();
+        }
+      }
+    };
+
+    window.addEventListener('touchstart', handleTouchStart, { passive: true });
+    window.addEventListener('touchmove', handleTouchMove, { passive: true });
+    window.addEventListener('touchend', handleTouchEnd, { passive: true });
+    window.addEventListener('wheel', handleWheel, { passive: true });
+
+    return () => {
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleTouchEnd);
+      window.removeEventListener('wheel', handleWheel);
+      if (wheelResetTimeoutRef.current) {
+        clearTimeout(wheelResetTimeoutRef.current);
+      }
+    };
+  }, [handleRefresh, isRefreshing]);
 
   const handleLoadMore = () => {
     if (!isLoadingMore && hasMore) {
@@ -306,6 +391,34 @@ export function Home() {
             Feed Tabs, Post Composer (X-inspired), and Post Cards
            ========================================================================= */}
         <section className="col-span-1 lg:col-span-6 flex flex-col gap-4">
+          {/* Subtle Pull-to-Refresh & Natural Refresh Indicator */}
+          {pullDistance > 0 && !isRefreshing && (
+            <div
+              className="flex items-center justify-center overflow-hidden transition-all duration-75"
+              style={{ height: `${pullDistance}px`, opacity: Math.min(1, pullDistance / 40) }}
+            >
+              <div className="flex items-center gap-2 py-1 px-3.5 bg-white/95 backdrop-blur rounded-full shadow-2xs border border-gray-200/80 text-xs text-gray-600 font-medium">
+                <RefreshCw
+                  className={cn(
+                    'w-3.5 h-3.5 text-[#9747FF] transition-transform duration-100',
+                    pullDistance >= 50 && 'rotate-180'
+                  )}
+                  style={{ transform: `rotate(${pullDistance * 3.6}deg)` }}
+                />
+                <span>{pullDistance >= 50 ? 'Release to refresh' : 'Pull down to refresh'}</span>
+              </div>
+            </div>
+          )}
+
+          {isRefreshing && (
+            <div className="flex items-center justify-center py-1 animate-in fade-in slide-in-from-top-1 duration-200">
+              <div className="flex items-center gap-2 py-1 px-4 bg-purple-50 text-[#9747FF] rounded-full border border-purple-200/60 shadow-2xs text-xs font-semibold">
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-[#9747FF]" />
+                <span>Refreshing creative feed...</span>
+              </div>
+            </div>
+          )}
+
           {/* New Posts Notification Banner (Non-disruptive) */}
           {newPostsCount > 0 && (
             <div className="flex justify-center sticky top-20 lg:top-4 z-20 animate-in fade-in slide-in-from-top-2">
@@ -376,37 +489,23 @@ export function Home() {
             </button>
           </div>
 
-          {/* Desktop Category Filter Pills & Preserved Refresh Action (hidden on mobile) */}
-          <div className="hidden sm:flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar flex-1 min-w-0">
-              {CATEGORIES.map((cat) => (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => setSelectedCategory(cat)}
-                  className={cn(
-                    'px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer shrink-0 shadow-2xs',
-                    selectedCategory === cat
-                      ? 'bg-gray-900 text-white'
-                      : 'bg-white text-gray-600 hover:text-gray-900 border border-gray-200/80 hover:border-gray-300'
-                  )}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
-
-            {/* Preserved Refresh Control */}
-            <button
-              type="button"
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-              className="p-2 text-gray-500 hover:text-[#9747FF] hover:bg-purple-50 rounded-full border border-gray-200/80 bg-white shadow-2xs transition-colors cursor-pointer shrink-0"
-              aria-label="Refresh creative feed"
-              title="Refresh Feed"
-            >
-              <RefreshCw className={cn('w-4 h-4', isRefreshing && 'animate-spin text-[#9747FF]')} />
-            </button>
+          {/* Desktop Category Filter Pills (hidden on mobile, zero permanent refresh button) */}
+          <div className="hidden sm:flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar w-full">
+            {CATEGORIES.map((cat) => (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => setSelectedCategory(cat)}
+                className={cn(
+                  'px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer shrink-0 shadow-2xs',
+                  selectedCategory === cat
+                    ? 'bg-gray-900 text-white'
+                    : 'bg-white text-gray-600 hover:text-gray-900 border border-gray-200/80 hover:border-gray-300'
+                )}
+              >
+                {cat}
+              </button>
+            ))}
           </div>
 
           {/* Desktop Post Composer (X-inspired with character limit ring & inline image uploader) */}

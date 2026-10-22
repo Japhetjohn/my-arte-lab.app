@@ -153,6 +153,18 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
     }
   };
 
+  // Direct dot navigation for multi-image gallery
+  const scrollToIndex = (index: number) => {
+    const container = galleryScrollRef.current;
+    if (!container) return;
+    const width = container.clientWidth;
+    container.scrollTo({
+      left: width * index,
+      behavior: 'smooth',
+    });
+    setActiveGalleryIndex(index);
+  };
+
   const handleToggleLike = async () => {
     if (!user) {
       toast.error('Please log in to like this post');
@@ -312,7 +324,7 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
 
       {/* 2. Caption and Description */}
       {descriptionText && (
-        <div className="px-4 pt-1 pb-2.5">
+        <div className={cn('px-4 pt-1', hasImages ? 'pb-2.5' : 'pb-4')}>
           <p
             className={cn(
               'text-[15px] sm:text-base text-gray-900 leading-relaxed whitespace-pre-line break-words',
@@ -398,15 +410,17 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
               {/* Small Pagination Dots (active: #9747FF, inactive: gray-300) */}
               <div className="flex items-center justify-center gap-1.5 py-2.5">
                 {images.map((_, dotIdx) => (
-                  <span
+                  <button
                     key={dotIdx}
+                    type="button"
+                    onClick={() => scrollToIndex(dotIdx)}
                     className={cn(
-                      'transition-all duration-200 rounded-full',
+                      'transition-all duration-200 rounded-full cursor-pointer focus:outline-none',
                       activeGalleryIndex === dotIdx
-                        ? 'w-2 h-2 bg-[#9747FF]'
-                        : 'w-1.5 h-1.5 bg-gray-300'
+                        ? 'w-2.5 h-2.5 bg-[#9747FF]'
+                        : 'w-1.5 h-1.5 bg-gray-300 hover:bg-gray-400'
                     )}
-                    aria-label={`Slide ${dotIdx + 1} of ${images.length}`}
+                    aria-label={`Go to slide ${dotIdx + 1} of ${images.length}`}
                   />
                 ))}
               </div>
