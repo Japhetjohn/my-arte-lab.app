@@ -435,32 +435,25 @@ export function Home() {
 
           {/* =========================================================================
               MOBILE FACEBOOK-INSPIRED POST COMPOSER (sm:hidden)
-              Layout matching reference screenshot media_1792682134439_8102f34f.png:
-              - Left: Creator circular avatar with active online badge
-              - Center: Rounded pill-shaped "Share your latest work..." input trigger
-              - Right: Compact "Artwork" shortcut with gallery icon
+              - Horizontal separators only: thin top & bottom divider lines across content width
+              - Zero vertical borders, zero rounded container corners, zero card shadow
+              - Left: Creator circular avatar without active-status dot
+              - Center: Rounded pill "What's on your mind?" input trigger
+              - Right: Compact "Photo" shortcut with emerald gallery icon
               ========================================================================= */}
-          <div className="sm:hidden bg-white rounded-2xl border border-gray-200/80 p-3 sm:p-3.5 shadow-2xs flex items-center gap-3">
-            {/* Left: Creator Avatar */}
-            <div className="relative shrink-0">
-              <div className="w-10 h-10 rounded-full overflow-hidden bg-purple-50 border border-gray-200 flex items-center justify-center">
-                {user?.avatar ? (
-                  <img
-                    src={getAvatarUrl(user.avatar)}
-                    alt={user.name || 'Creator'}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <span className="text-sm font-bold text-[#9747FF]">
-                    {(user?.name || user?.firstName || 'C')[0].toUpperCase()}
-                  </span>
-                )}
-              </div>
-              {user && (
-                <span
-                  className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white ring-1 ring-emerald-500/20"
-                  title="Online"
+          <div className="sm:hidden -mx-3 sm:mx-0 bg-white border-t border-b border-gray-200/80 px-4 py-3 flex items-center gap-3">
+            {/* Left: Creator Avatar (clean circular avatar, no active-status indicator) */}
+            <div className="w-10 h-10 rounded-full overflow-hidden bg-purple-50 border border-gray-200 flex items-center justify-center shrink-0">
+              {user?.avatar ? (
+                <img
+                  src={getAvatarUrl(user.avatar)}
+                  alt={user.name || 'Creator'}
+                  className="w-full h-full object-cover"
                 />
+              ) : (
+                <span className="text-sm font-bold text-[#9747FF]">
+                  {(user?.name || user?.firstName || 'C')[0].toUpperCase()}
+                </span>
               )}
             </div>
 
@@ -469,22 +462,22 @@ export function Home() {
               type="button"
               onClick={() => handleOpenMobileComposer(false)}
               className="flex-1 min-w-0 bg-gray-100/90 hover:bg-gray-200/70 active:bg-gray-200 text-left px-4 py-2.5 rounded-full text-xs sm:text-sm text-gray-500 transition-colors cursor-pointer select-none truncate focus:outline-none focus:ring-1 focus:ring-[#9747FF]"
-              aria-label="Share your latest work"
+              aria-label="What's on your mind?"
             >
-              Share your latest work...
+              What's on your mind?
             </button>
 
-            {/* Right: Artwork Attachment Shortcut */}
+            {/* Right: Photo Attachment Shortcut */}
             <button
               type="button"
               onClick={() => handleOpenMobileComposer(true)}
               className="flex flex-col items-center justify-center gap-0.5 px-1.5 py-0.5 text-gray-700 hover:text-[#9747FF] transition-colors cursor-pointer shrink-0 outline-none focus:outline-none group"
-              aria-label="Attach artwork"
-              title="Attach artwork"
+              aria-label="Attach photo"
+              title="Photo"
             >
               <ImageIcon className="w-5 h-5 text-emerald-500 group-hover:scale-105 transition-transform" />
               <span className="text-[11px] font-medium text-gray-600 group-hover:text-[#9747FF] leading-none">
-                Artwork
+                Photo
               </span>
             </button>
           </div>
