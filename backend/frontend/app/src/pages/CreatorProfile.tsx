@@ -27,6 +27,7 @@ import {
   Compass,
   Users,
   Wallet,
+  Briefcase,
 } from 'lucide-react';
 import { toast } from '@/components/ui/sonner';
 import type { Creator } from '@/types';
@@ -70,9 +71,9 @@ interface Review {
 export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: CreatorProfileProps) {
   const { user: currentUser } = useAuth();
   const [creator, setCreator] = useState<Creator | null>(null);
-  const [, setPortfolio] = useState<PortfolioItem[]>([]);
+  const [portfolio, setPortfolio] = useState<PortfolioItem[]>([]);
   const [selectedItem, setSelectedItem] = useState<PortfolioItem | null>(null);
-  const [, setReviews] = useState<Review[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [notFound, setNotFound] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isFavorited, setIsFavorited] = useState(false);
@@ -346,13 +347,13 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
 
   return (
     <div className="w-full">
-      {/* 2-Column Layout on Desktop, Fluid & Borderless on Mobile */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      {/* 3-Column Layout on Desktop, Fluid & Borderless on Mobile */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* =========================================================================
-            LEFT COLUMN (lg:col-span-4, hidden on mobile/tablet)
+            LEFT COLUMN (lg:col-span-3, hidden on mobile/tablet)
             Platform Quick Navigation and Complete Creator Summary & Actions
            ========================================================================= */}
-        <aside className="hidden lg:flex flex-col gap-6 lg:col-span-4 sticky top-20">
+        <aside className="hidden lg:flex flex-col gap-6 lg:col-span-3 sticky top-20">
           {/* Creator Identity Card */}
           <div className="pb-5 border-b border-[#DADDE1] dark:border-[#2f3032]">
             <div className="flex flex-col items-center text-center">
@@ -566,11 +567,11 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
         </aside>
 
         {/* =========================================================================
-            CENTER COLUMN (lg:col-span-8, full width on mobile)
+            CENTER COLUMN (lg:col-span-6, full width on mobile)
             Starts directly from the feed section (Creative Work) on desktop!
             On mobile, shows clean mobile header card since sidebar is hidden.
            ========================================================================= */}
-        <main className="col-span-1 lg:col-span-8 w-full max-w-xl mx-auto flex flex-col pb-16">
+        <main className="col-span-1 lg:col-span-6 w-full max-w-xl mx-auto flex flex-col pb-16">
           {/* Mobile-Only Creator Header Card (Hidden on Desktop) */}
           <section className="lg:hidden pt-2 pb-5 border-b border-[#DADDE1] dark:border-[#2f3032]">
             <div className="flex flex-col items-center text-center">
@@ -694,6 +695,116 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
             )}
           </section>
         </main>
+
+        {/* =========================================================================
+            RIGHT COLUMN (lg:col-span-3, hidden on mobile/tablet)
+            Creator Services & Supporting Sidebar (Quiet, borderless, ash-gray dividers)
+           ========================================================================= */}
+        <aside className="hidden lg:flex flex-col gap-6 lg:col-span-3 sticky top-20">
+          {/* Rate card & Booking card */}
+          <div className="pb-4 border-b border-[#DADDE1] dark:border-[#2f3032]">
+            <div className="pb-2.5 mb-3">
+              <h4 className="font-bold text-sm text-gray-900 dark:text-gray-100 tracking-tight flex items-center gap-2">
+                <Briefcase className="w-4 h-4 text-[#9747FF]" />
+                <span>Services &amp; Pricing</span>
+              </h4>
+            </div>
+
+            <div className="space-y-3 text-xs text-gray-600 dark:text-gray-400">
+              <div className="flex items-center justify-between py-1">
+                <span className="text-gray-500 dark:text-gray-400">Starting Price</span>
+                <span className="font-bold text-gray-950 dark:text-gray-100 text-sm">
+                  ${creator.startingPrice || 50} USDC
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between py-1">
+                <span className="text-gray-500 dark:text-gray-400">Category</span>
+                <span className="font-semibold text-gray-900 dark:text-gray-100 capitalize">
+                  {categoryLabel || 'General'}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between py-1">
+                <span className="text-gray-500 dark:text-gray-400">Completed Orders</span>
+                <span className="font-semibold text-gray-900 dark:text-gray-100">
+                  {(creator as any).completedBookings || 0}
+                </span>
+              </div>
+
+              <div className="pt-2">
+                {!isOwner ? (
+                  <Button
+                    onClick={() => (window.location.href = `/bookings?creator=${creator.id}`)}
+                    className="w-full bg-[#9747FF] hover:bg-[#8534f0] text-white font-semibold rounded-xl text-xs py-2 shadow-xs cursor-pointer"
+                  >
+                    Book This Creator
+                  </Button>
+                ) : (
+                  <div className="text-xs text-gray-400 dark:text-gray-500 italic text-center py-1">
+                    Your public rate card
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Portfolio highlights if any */}
+          {portfolio.length > 0 && (
+            <div className="pb-4 border-b border-[#DADDE1] dark:border-[#2f3032]">
+              <div className="flex items-center justify-between pb-2 mb-2">
+                <h4 className="font-bold text-sm text-gray-900 dark:text-gray-100 tracking-tight">Portfolio</h4>
+                <span className="text-xs text-gray-400 dark:text-gray-500">{portfolio.length} items</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {portfolio.slice(0, 6).map((item, idx) => (
+                  <button
+                    key={item._id || idx}
+                    type="button"
+                    onClick={() => setSelectedItem(item)}
+                    className="aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800 hover:opacity-90 transition-opacity cursor-pointer"
+                  >
+                    <img
+                      src={getImageUrl(item.image)}
+                      alt={item.title}
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Client Reviews Overview */}
+          {reviews.length > 0 && (
+            <div className="pb-4">
+              <div className="flex items-center justify-between pb-2 mb-2.5">
+                <h4 className="font-bold text-sm text-gray-900 dark:text-gray-100 tracking-tight">Recent Feedback</h4>
+                <div className="flex items-center gap-1 text-xs font-semibold text-amber-500">
+                  <Star className="w-3.5 h-3.5 fill-current" />
+                  <span>{ratingAverage.toFixed(1)}</span>
+                </div>
+              </div>
+              <div className="space-y-2.5">
+                {reviews.slice(0, 3).map((rev) => (
+                  <div key={rev._id} className="text-xs border-b border-gray-100 dark:border-gray-800 pb-2">
+                    <div className="flex items-center justify-between font-medium text-gray-800 dark:text-gray-200">
+                      <span>{rev.reviewer?.name || 'Client'}</span>
+                      <div className="flex items-center text-amber-400 text-[10px]">
+                        {Array.from({ length: rev.rating || 5 }).map((_, i) => (
+                          <Star key={i} className="w-2.5 h-2.5 fill-current" />
+                        ))}
+                      </div>
+                    </div>
+                    <p className="text-gray-500 dark:text-gray-400 mt-1 line-clamp-2 leading-relaxed">
+                      "{rev.comment}"
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </aside>
       </div>
 
       {/* =========================================================================
