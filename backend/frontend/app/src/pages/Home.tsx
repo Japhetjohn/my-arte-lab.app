@@ -9,7 +9,6 @@ import {
   CheckCircle2,
   Loader2,
   RefreshCw,
-  ArrowRight,
   Plus,
   ArrowUp,
   Image as ImageIcon,
@@ -28,21 +27,9 @@ import { getAvatarUrl } from '@/lib/imageUrl';
 import { cn } from '@/lib/utils';
 import type { Creator } from '@/types';
 
-const CATEGORIES = [
-  'All',
-  'Digital Art',
-  'Photography',
-  'Graphic Design',
-  'Music & Audio',
-  'Writing',
-  'Fashion & Styling',
-  'Video & Animation',
-];
-
 export function Home() {
   const { user } = useAuth();
   const activeTab = 'for-you';
-  const [selectedCategory, setSelectedCategory] = useState('All');
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [suggestedCreators, setSuggestedCreators] = useState<Creator[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -67,7 +54,7 @@ export function Home() {
 
   // Fetch feed posts with deduplication
   const loadFeed = useCallback(
-    async (resetPage = false, currentCategory = selectedCategory, currentTab = activeTab) => {
+    async (resetPage = false) => {
       try {
         if (resetPage) {
           setIsLoading(true);
@@ -75,8 +62,7 @@ export function Home() {
 
         const currentPage = resetPage ? 1 : page;
         const res = await socialService.getFeed({
-          tab: currentTab,
-          category: currentCategory !== 'All' ? currentCategory : undefined,
+          tab: activeTab,
           page: currentPage,
           limit: 15,
         });
@@ -115,7 +101,7 @@ export function Home() {
         setIsLoadingMore(false);
       }
     },
-    [activeTab, selectedCategory, page]
+    [activeTab, page]
   );
 
   // Background check for newly published posts (Part 6.3)
@@ -138,7 +124,7 @@ export function Home() {
     }, 45000); // Check every 45s
 
     return () => clearInterval(interval);
-  }, [selectedCategory]);
+  }, []);
 
   // Insert new posts smoothly when user clicks the banner
   const handleLoadNewPosts = () => {
@@ -152,7 +138,7 @@ export function Home() {
         latestPostDateRef.current = new Date(pendingNewPosts[0].createdAt).toISOString();
       }
     } else {
-      loadFeed(true, selectedCategory, activeTab);
+      loadFeed(true);
     }
     setNewPostsCount(0);
     setPendingNewPosts([]);
@@ -173,16 +159,16 @@ export function Home() {
     fetchSuggested();
   }, []);
 
-  // Reload on category change
+  // Initial load
   useEffect(() => {
-    loadFeed(true, selectedCategory, activeTab);
-  }, [selectedCategory]);
+    loadFeed(true);
+  }, []);
 
   const handleRefresh = useCallback(() => {
     if (isRefreshing) return;
     setIsRefreshing(true);
-    loadFeed(true, selectedCategory, activeTab);
-  }, [isRefreshing, loadFeed, selectedCategory, activeTab]);
+    loadFeed(true);
+  }, [isRefreshing, loadFeed]);
 
   // Pull-to-refresh & Natural Overscroll Refresh Logic
   const [pullDistance, setPullDistance] = useState(0);
@@ -272,7 +258,7 @@ export function Home() {
   const handleLoadMore = () => {
     if (!isLoadingMore && hasMore) {
       setIsLoadingMore(true);
-      loadFeed(false, selectedCategory, activeTab);
+      loadFeed(false);
     }
   };
 
@@ -284,21 +270,21 @@ export function Home() {
 
   return (
     <div className="w-full relative">
-      {/* 3-Column Social Media Feed Layout (Desktop Momspace style / Responsive Mobile) */}
+      {/* 3-Column Social Media Feed Layout (Continuous Borderless Social Design) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
         {/* =========================================================================
             LEFT COLUMN (lg:col-span-3, hidden on mobile/tablet)
             Creator profile summary, quick navigation, and platform shortcuts
            ========================================================================= */}
-        <aside className="hidden lg:flex flex-col gap-5 lg:col-span-3 sticky top-20">
-          {/* User Profile Card */}
-          <div className="bg-white rounded-2xl border border-gray-200/80 p-5 shadow-xs">
+        <aside className="hidden lg:flex flex-col gap-6 lg:col-span-3 sticky top-20">
+          {/* User Profile Section */}
+          <div className="pb-5 border-b border-[#DADDE1]">
             {user ? (
               <div className="flex flex-col items-center text-center">
-                <div className="w-16 h-16 rounded-full overflow-hidden bg-purple-100 flex items-center justify-center border-2 border-[#9747FF]/20 shadow-xs mb-3">
+                <div className="w-16 h-16 rounded-full overflow-hidden bg-purple-100 flex items-center justify-center border-2 border-[#9747FF]/20 mb-3">
                   {user.avatar ? (
-                    <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                    <img src={getAvatarUrl(user.avatar)} alt={user.name} className="w-full h-full object-cover" />
                   ) : (
                     <span className="text-[#9747FF] font-bold text-xl">
                       {(user.name || user.firstName || 'C')[0].toUpperCase()}
@@ -337,11 +323,11 @@ export function Home() {
           </div>
 
           {/* Quick Navigation Menu */}
-          <div className="bg-white rounded-2xl border border-gray-200/80 p-3 shadow-xs">
+          <div className="pb-2">
             <nav className="space-y-1">
               <a
                 href="/home"
-                className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-semibold text-sm bg-purple-50 text-[#9747FF] transition-colors"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-sm bg-purple-50 text-[#9747FF] transition-colors"
               >
                 <Sparkles className="w-4 h-4 text-[#9747FF]" />
                 <span>Creative Feed</span>
@@ -349,7 +335,7 @@ export function Home() {
 
               <a
                 href="/discover"
-                className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-medium text-sm text-gray-700 hover:text-[#9747FF] hover:bg-gray-50 transition-colors"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 hover:text-[#9747FF] hover:bg-gray-100/70 transition-colors"
               >
                 <Compass className="w-4 h-4 text-gray-500" />
                 <span>Discover Creators</span>
@@ -357,7 +343,7 @@ export function Home() {
 
               <a
                 href="/creators"
-                className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-medium text-sm text-gray-700 hover:text-[#9747FF] hover:bg-gray-50 transition-colors"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 hover:text-[#9747FF] hover:bg-gray-100/70 transition-colors"
               >
                 <Users className="w-4 h-4 text-gray-500" />
                 <span>Browse All</span>
@@ -367,7 +353,7 @@ export function Home() {
                 <>
                   <a
                     href="/bookings"
-                    className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-medium text-sm text-gray-700 hover:text-[#9747FF] hover:bg-gray-50 transition-colors"
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 hover:text-[#9747FF] hover:bg-gray-100/70 transition-colors"
                   >
                     <Calendar className="w-4 h-4 text-gray-500" />
                     <span>My Bookings</span>
@@ -375,7 +361,7 @@ export function Home() {
 
                   <a
                     href="/wallet"
-                    className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-medium text-sm text-gray-700 hover:text-[#9747FF] hover:bg-gray-50 transition-colors"
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 hover:text-[#9747FF] hover:bg-gray-100/70 transition-colors"
                   >
                     <Wallet className="w-4 h-4 text-gray-500" />
                     <span>Wallet &amp; Earnings</span>
@@ -388,9 +374,9 @@ export function Home() {
 
         {/* =========================================================================
             CENTER COLUMN (lg:col-span-6, full width on mobile)
-            Feed Tabs, Post Composer (X-inspired), and Post Cards
+            Post Composer and Continuous Social Feed Stream (Border-to-border continuous)
            ========================================================================= */}
-        <section className="col-span-1 lg:col-span-6 flex flex-col gap-4">
+        <section className="col-span-1 lg:col-span-6 flex flex-col gap-0">
           {/* Subtle Pull-to-Refresh & Natural Refresh Indicator */}
           {pullDistance > 0 && !isRefreshing && (
             <div
@@ -421,7 +407,7 @@ export function Home() {
 
           {/* New Posts Notification Banner (Non-disruptive) */}
           {newPostsCount > 0 && (
-            <div className="flex justify-center sticky top-20 lg:top-4 z-20 animate-in fade-in slide-in-from-top-2">
+            <div className="flex justify-center sticky top-20 lg:top-4 z-20 animate-in fade-in slide-in-from-top-2 py-2">
               <button
                 type="button"
                 onClick={handleLoadNewPosts}
@@ -433,16 +419,9 @@ export function Home() {
             </div>
           )}
 
-          {/* =========================================================================
-              MOBILE FACEBOOK-INSPIRED POST COMPOSER (sm:hidden)
-              - Horizontal separators only: thin top & bottom divider lines across content width
-              - Zero vertical borders, zero rounded container corners, zero card shadow
-              - Left: Creator circular avatar without active-status dot
-              - Center: Rounded pill "What's on your mind?" input trigger
-              - Right: Compact "Photo" shortcut with emerald gallery icon
-              ========================================================================= */}
+          {/* MOBILE FACEBOOK-INSPIRED POST COMPOSER (sm:hidden) */}
           <div className="sm:hidden -mx-3 sm:mx-0 bg-white border-t border-b border-[#DADDE1] px-4 py-3 flex items-center gap-3">
-            {/* Left: Creator Avatar (clean circular avatar, no active-status indicator) */}
+            {/* Left: Creator Avatar */}
             <div className="w-10 h-10 rounded-full overflow-hidden bg-purple-50 border border-gray-200 flex items-center justify-center shrink-0">
               {user?.avatar ? (
                 <img
@@ -482,38 +461,19 @@ export function Home() {
             </button>
           </div>
 
-          {/* Desktop Category Filter Pills (hidden on mobile, zero permanent refresh button) */}
-          <div className="hidden sm:flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar w-full">
-            {CATEGORIES.map((cat) => (
-              <button
-                key={cat}
-                type="button"
-                onClick={() => setSelectedCategory(cat)}
-                className={cn(
-                  'px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer shrink-0 shadow-2xs',
-                  selectedCategory === cat
-                    ? 'bg-gray-900 text-white'
-                    : 'bg-white text-gray-600 hover:text-gray-900 border border-gray-200/80 hover:border-gray-300'
-                )}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-
-          {/* Desktop Post Composer (X-inspired with character limit ring & inline image uploader) */}
+          {/* Desktop Post Composer (Border-bottom divider connects directly to feed) */}
           <div className="hidden sm:block">
             <PostComposer onPostCreated={handlePostCreated} />
           </div>
 
           {/* Social Feed Post Stream — Clean Continuous Stream (No Rectangular Cards) */}
           {isLoading ? (
-            <div className="bg-white border-y sm:border sm:border-[#DADDE1] p-12 flex flex-col items-center justify-center gap-3">
+            <div className="bg-white border-b border-[#DADDE1] p-12 flex flex-col items-center justify-center gap-3">
               <Loader2 className="w-6 h-6 animate-spin text-[#9747FF]" />
               <p className="text-sm font-medium text-gray-500">Loading creative artwork feed...</p>
             </div>
           ) : posts.length === 0 ? (
-            <div className="bg-white border-y sm:border sm:border-[#DADDE1] p-12 text-center flex flex-col items-center">
+            <div className="bg-white border-b border-[#DADDE1] p-12 text-center flex flex-col items-center">
               <div className="w-14 h-14 rounded-full bg-purple-50 text-[#9747FF] flex items-center justify-center mb-3">
                 <Sparkles className="w-7 h-7" />
               </div>
@@ -530,7 +490,7 @@ export function Home() {
               </Button>
             </div>
           ) : (
-            <div className="flex flex-col gap-0 -mx-3 sm:mx-0 bg-white sm:border-t sm:border-[#DADDE1]">
+            <div className="flex flex-col gap-0 -mx-3 sm:mx-0 bg-white">
               {posts.map((post) => (
                 <SocialFeedCard key={post._id} post={post} />
               ))}
@@ -562,12 +522,12 @@ export function Home() {
 
         {/* =========================================================================
             RIGHT COLUMN (lg:col-span-3, hidden on mobile/tablet)
-            Top Creators, Categories, and Community
+            Top Creators
            ========================================================================= */}
-        <aside className="hidden lg:flex flex-col gap-5 lg:col-span-3 sticky top-20">
-          {/* Top Creators Card */}
-          <div className="bg-white rounded-2xl border border-gray-200/80 p-5 shadow-xs">
-            <div className="flex items-center justify-between pb-3 border-b border-gray-100 mb-4">
+        <aside className="hidden lg:flex flex-col gap-6 lg:col-span-3 sticky top-20">
+          {/* Top Creators */}
+          <div className="pb-4">
+            <div className="flex items-center justify-between pb-2.5 border-b border-[#DADDE1] mb-3.5">
               <h4 className="font-bold text-sm text-gray-900 tracking-tight">Top Creators</h4>
               <a href="/discover" className="text-xs font-semibold text-[#9747FF] hover:underline">
                 View all
@@ -583,7 +543,7 @@ export function Home() {
                   >
                     <div className="w-9 h-9 rounded-full overflow-hidden bg-purple-100 flex items-center justify-center shrink-0 border border-purple-200">
                       {creator.avatar ? (
-                        <img src={creator.avatar} alt={creator.name || 'Creator'} className="w-full h-full object-cover" />
+                        <img src={getAvatarUrl(creator.avatar)} alt={creator.name || 'Creator'} className="w-full h-full object-cover" />
                       ) : (
                         <span className="text-[#9747FF] font-bold text-xs">
                           {(creator.name || 'C')[0]?.toUpperCase() || 'C'}
@@ -614,21 +574,6 @@ export function Home() {
                 </div>
               ))}
             </div>
-          </div>
-
-          {/* Quick Platform Info */}
-          <div className="bg-gradient-to-br from-purple-50 to-white rounded-2xl border border-purple-100 p-5 text-center">
-            <h5 className="font-bold text-sm text-gray-900 mb-1">Empowering African Creators</h5>
-            <p className="text-xs text-gray-600 leading-relaxed mb-3">
-              Discover unique talent, collaborate, and bring creative visions to life with escrow-protected bookings.
-            </p>
-            <a
-              href="/creators"
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#9747FF] hover:underline"
-            >
-              <span>Explore the marketplace</span>
-              <ArrowRight className="w-3 h-3" />
-            </a>
           </div>
         </aside>
       </div>

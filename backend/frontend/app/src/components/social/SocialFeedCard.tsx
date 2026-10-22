@@ -104,6 +104,11 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
   const [activeGalleryIndex, setActiveGalleryIndex] = useState(0);
   const galleryScrollRef = useRef<HTMLDivElement>(null);
 
+  // Touch gesture tracking for reliable mobile swiping
+  const touchStartXRef = useRef<number | null>(null);
+  const touchStartYRef = useRef<number | null>(null);
+  const isSwipingHorizontalRef = useRef(false);
+
   // Authoritative Viewport Impression Tracking (1 second dwell time)
   const cardRef = useRef<HTMLElement>(null);
   const impressionRecorded = useRef(false);
@@ -171,7 +176,9 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
     setActiveGalleryIndex(clamped);
   };
 
+  // Mouse drag handlers for desktop trackpad/drag
   const handleMouseDown = (e: React.MouseEvent) => {
+    if (e.button !== 0) return;
     const container = galleryScrollRef.current;
     if (!container) return;
     isDraggingRef.current = true;
@@ -199,6 +206,50 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
       const targetIndex = Math.round(container.scrollLeft / width);
       scrollToIndex(targetIndex);
     }
+  };
+
+  // Touch handlers for mobile swipe gesture detection
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      touchStartXRef.current = e.touches[0].clientX;
+      touchStartYRef.current = e.touches[0].clientY;
+      isSwipingHorizontalRef.current = false;
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartXRef.current === null || touchStartYRef.current === null) return;
+    const deltaX = e.touches[0].clientX - touchStartXRef.current;
+    const deltaY = e.touches[0].clientY - touchStartYRef.current;
+
+    if (!isSwipingHorizontalRef.current && Math.abs(deltaX) > 8 && Math.abs(deltaX) > Math.abs(deltaY)) {
+      isSwipingHorizontalRef.current = true;
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartXRef.current === null || !isSwipingHorizontalRef.current) {
+      touchStartXRef.current = null;
+      touchStartYRef.current = null;
+      isSwipingHorizontalRef.current = false;
+      return;
+    }
+
+    const deltaX = e.changedTouches[0].clientX - touchStartXRef.current;
+    const swipeThreshold = 35;
+    const imagesCount = (post.images || []).length;
+
+    if (deltaX < -swipeThreshold && activeGalleryIndex < imagesCount - 1) {
+      scrollToIndex(activeGalleryIndex + 1);
+    } else if (deltaX > swipeThreshold && activeGalleryIndex > 0) {
+      scrollToIndex(activeGalleryIndex - 1);
+    } else {
+      scrollToIndex(activeGalleryIndex);
+    }
+
+    touchStartXRef.current = null;
+    touchStartYRef.current = null;
+    isSwipingHorizontalRef.current = false;
   };
 
   const handleToggleLike = async () => {
@@ -429,19 +480,22 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUpOrLeave}
                 onMouseLeave={handleMouseUpOrLeave}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
                 className="w-full flex overflow-x-auto snap-x snap-mandatory no-scrollbar cursor-grab active:cursor-grabbing select-none"
                 style={{
                   scrollbarWidth: 'none',
                   msOverflowStyle: 'none',
                   WebkitOverflowScrolling: 'touch',
                   overscrollBehaviorX: 'contain',
-                  touchAction: 'pan-y',
+                  touchAction: 'manipulation',
                 }}
               >
                 {images.map((imgUrl, idx) => (
                   <div
                     key={idx}
-                    className="w-full flex-shrink-0 snap-center flex items-center justify-center max-h-[620px] overflow-hidden bg-black/5"
+                    className="min-w-full w-full flex-shrink-0 snap-center snap-always flex items-center justify-center max-h-[620px] overflow-hidden bg-black/5"
                   >
                     <img
                       src={getImageUrl(imgUrl)}
@@ -454,8 +508,8 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
                 ))}
               </div>
 
-              {/* Extremely Small Pagination Dots (4-5px diameter, active: #9747FF, inactive: gray-300) */}
-              <div className="flex items-center justify-center gap-1.5 py-1.5">
+              {/* Extremely Small Pagination Dots (3-4px mobile, 4-5px desktop, active: #9747FF, inactive: #DADDE1) */}
+              <div className="w-full flex items-center justify-center gap-1 sm:gap-1.5 py-1 bg-white">
                 {images.map((_, dotIdx) => (
                   <button
                     key={dotIdx}
@@ -464,8 +518,8 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
                     className={cn(
                       'rounded-full transition-all duration-200 cursor-pointer focus:outline-none p-0 shrink-0',
                       activeGalleryIndex === dotIdx
-                        ? 'w-[5px] h-[5px] bg-[#9747FF]'
-                        : 'w-[4px] h-[4px] bg-gray-300 hover:bg-gray-400'
+                        ? 'w-[4px] h-[4px] sm:w-[5px] sm:h-[5px] bg-[#9747FF]'
+                        : 'w-[3px] h-[3px] sm:w-[4px] sm:h-[4px] bg-[#DADDE1] hover:bg-gray-400'
                     )}
                     aria-label={`View artwork image ${dotIdx + 1} of ${images.length}`}
                   />
