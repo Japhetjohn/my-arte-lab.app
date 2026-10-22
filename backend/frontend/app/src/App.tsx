@@ -225,6 +225,7 @@ function AppContent() {
       case '/notifications':
         return <Notifications />;
       case '/settings':
+      case '/profile':
         return <Settings />;
       case '/projects':
         return <Projects />;
@@ -236,8 +237,6 @@ function AppContent() {
         return <Legal />;
       case '/privacy-policy':
         return <PrivacyPolicy />;
-      case '/profile':
-        return user ? <CreatorProfile creatorId={user.id} isOwnProfile={true} /> : <Settings />;
       default:
         return (
           <EmptyState

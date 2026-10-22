@@ -13,7 +13,6 @@ import {
   Bell, 
   MessageSquare, 
   User, 
-  Settings, 
   Search,
   X,
   Clock,
@@ -54,7 +53,6 @@ const mobileNavItems: NavItem[] = [
   { path: '/notifications', label: 'Notifications', icon: Bell, authOnly: true },
   { path: '/wallet', label: 'Wallet', icon: Wallet, authOnly: true },
   { path: '/profile', label: 'Profile', icon: User, authOnly: true },
-  { path: '/settings', label: 'Settings', icon: Settings, authOnly: true },
 ];
 
 interface TopNavigationProps {
@@ -538,11 +536,7 @@ export function TopNavigation({
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => handleNavClick('/profile')} className="cursor-pointer">
                       <User className="w-4 h-4 mr-2" />
-                      Profile
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleNavClick('/settings')} className="cursor-pointer">
-                      <Settings className="w-4 h-4 mr-2" />
-                      Settings
+                      Profile &amp; Settings
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
