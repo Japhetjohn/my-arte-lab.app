@@ -3,10 +3,17 @@
 
 VPS_IP="72.61.97.210"
 VPS_USER="root"
+SSH_PASS="${SSHPASS:-@Kuulsinim45}"
+SSHPASS_BIN="$(which sshpass 2>/dev/null || echo "$HOME/.local/bin/sshpass")"
 
 echo "🚀 Deploying MyArteLab to VPS..."
 
-ssh ${VPS_USER}@${VPS_IP} << 'REMOTE_SCRIPT'
+SSH_CMD="ssh"
+if [ -x "$SSHPASS_BIN" ]; then
+  SSH_CMD="$SSHPASS_BIN -p $SSH_PASS ssh -o StrictHostKeyChecking=no"
+fi
+
+$SSH_CMD ${VPS_USER}@${VPS_IP} << 'REMOTE_SCRIPT'
   set -e
   
   echo "📥 Pulling latest code from git..."
@@ -42,3 +49,4 @@ REMOTE_SCRIPT
 
 echo ""
 echo "🎉 Deployment finished!"
+
