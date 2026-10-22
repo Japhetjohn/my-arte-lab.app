@@ -5,19 +5,24 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useAuth, api } from '@/contexts/AuthContext';
-import { walletService, socialService } from '@/lib/api';
+import { socialService } from '@/lib/api';
 import { SocialFeedCard, type FeedPost } from '@/components/social/SocialFeedCard';
 import { getAvatarUrl } from '@/lib/imageUrl';
 import { toast } from '@/components/ui/sonner';
 import { VerifiedBadge } from '@/components/shared/VerifiedBadge';
-import { RescueTokenModal } from '@/components/wallet/RescueTokenModal';
+import { useIsMobile } from '@/hooks/use-mobile';
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerTitle,
+  DrawerDescription,
+} from '@/components/ui/drawer';
 import {
   User,
   Bell,
@@ -28,7 +33,6 @@ import {
   Loader2,
   Lock,
   Wallet,
-  Copy,
   Check,
   ChevronRight,
   Sparkles,
@@ -38,10 +42,100 @@ import {
   LogOut,
   HelpCircle,
   ExternalLink,
-  ChevronDown,
   CheckCircle2,
+  X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+// Reusable responsive settings popup component
+// Adapts between a mobile bottom drawer and a desktop centered modal
+interface SettingsSheetModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  description?: string;
+  maxWidth?: string;
+  children: React.ReactNode;
+  footer?: React.ReactNode;
+}
+
+function SettingsSheetModal({
+  isOpen,
+  onClose,
+  title,
+  description,
+  maxWidth = 'sm:max-w-md',
+  children,
+  footer,
+}: SettingsSheetModalProps) {
+  const isMobile = useIsMobile();
+
+  const bodyContent = (
+    <div className="flex flex-col h-full max-h-[85vh]">
+      {/* Modal / Drawer Header with Title, Description, and Close Icon */}
+      <div className="shrink-0 flex items-start justify-between pb-3.5 border-b border-[#DADDE1]">
+        <div className="pr-4">
+          <h3 className="text-base sm:text-lg font-bold text-gray-900 tracking-tight leading-tight">
+            {title}
+          </h3>
+          {description && (
+            <p className="text-xs text-gray-500 mt-1 leading-normal">
+              {description}
+            </p>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700 flex items-center justify-center transition-colors cursor-pointer shrink-0 -mt-1 -mr-1"
+          aria-label="Close"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Scrollable Form Body */}
+      <div className="flex-1 overflow-y-auto overscroll-contain py-4 focus:outline-none">
+        {children}
+      </div>
+
+      {/* Fixed Action Footer */}
+      {footer && (
+        <div className="shrink-0 bg-white border-t border-[#DADDE1] pt-3 pb-[max(env(safe-area-inset-bottom,0px),16px)] sm:pb-3">
+          {footer}
+        </div>
+      )}
+    </div>
+  );
+
+  if (isMobile) {
+    return (
+      <Drawer open={isOpen} onOpenChange={(open) => !open && onClose()} repositionInputs={false}>
+        <DrawerContent className="bg-white rounded-t-3xl max-h-[90dvh] flex flex-col p-5 pb-0 border-none shadow-2xl focus:outline-none z-[150]">
+          <DrawerTitle className="sr-only">{title}</DrawerTitle>
+          <DrawerDescription className="sr-only">{description || title}</DrawerDescription>
+          {bodyContent}
+        </DrawerContent>
+      </Drawer>
+    );
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent
+        showCloseButton={false}
+        className={cn(
+          'bg-white rounded-2xl max-h-[85vh] flex flex-col p-6 pb-0 border border-gray-100 shadow-xl focus:outline-none z-[150]',
+          maxWidth
+        )}
+      >
+        <DialogTitle className="sr-only">{title}</DialogTitle>
+        <DialogDescription className="sr-only">{description || title}</DialogDescription>
+        {bodyContent}
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 export function Settings() {
   const { user: currentUser, updateUser, logout } = useAuth();
@@ -52,7 +146,7 @@ export function Settings() {
   const [isSaving, setIsSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Dialog states for interactive settings
+  // Dialog & Drawer states for interactive settings
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [isNotificationsModalOpen, setIsNotificationsModalOpen] = useState(false);
@@ -60,24 +154,6 @@ export function Settings() {
   const [isLanguageModalOpen, setIsLanguageModalOpen] = useState(false);
   const [isBecomeCreatorOpen, setIsBecomeCreatorOpen] = useState(false);
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
-
-  // Deposit addresses expandable toggle
-  const [showDepositAddresses, setShowDepositAddresses] = useState(false);
-
-  // Wallet and Token Recovery state
-  const [isRescueModalOpen, setIsRescueModalOpen] = useState(false);
-  const [walletDetails, setWalletDetails] = useState<{
-    solanaAddress: string | null;
-    evmAddress: string | null;
-    switchWalletId: string | null;
-    isLoading: boolean;
-  }>({
-    solanaAddress: null,
-    evmAddress: null,
-    switchWalletId: null,
-    isLoading: false,
-  });
-  const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
 
   // User's own posts state
   const [myPosts, setMyPosts] = useState<FeedPost[]>([]);
@@ -125,7 +201,6 @@ export function Settings() {
   useEffect(() => {
     if (!tabParam) return;
     if (tabParam === 'wallet') {
-      setShowDepositAddresses(true);
       const el = document.getElementById('section-payment');
       if (el) el.scrollIntoView({ behavior: 'smooth' });
     } else if (tabParam === 'profile') {
@@ -136,34 +211,6 @@ export function Settings() {
       setIsPrivacyModalOpen(true);
     }
   }, [tabParam]);
-
-  // Load wallet data
-  useEffect(() => {
-    let isMounted = true;
-    const loadWallet = async () => {
-      try {
-        setWalletDetails((prev) => ({ ...prev, isLoading: true }));
-        const res = await walletService.getWallet();
-        const w = res.data?.data?.wallet;
-        if (isMounted && w) {
-          setWalletDetails({
-            solanaAddress: w.solanaAddress || null,
-            evmAddress: w.evmAddress || null,
-            switchWalletId: w.switchWalletId || null,
-            isLoading: false,
-          });
-        }
-      } catch {
-        if (isMounted) {
-          setWalletDetails((prev) => ({ ...prev, isLoading: false }));
-        }
-      }
-    };
-    loadWallet();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
 
   // Fetch current user's own posts
   useEffect(() => {
@@ -191,14 +238,6 @@ export function Settings() {
 
   const handlePostUpdated = (updatedPost: FeedPost) => {
     setMyPosts((prev) => prev.map((p) => (p._id === updatedPost._id ? updatedPost : p)));
-  };
-
-  const copyToClipboard = (text: string, label: string) => {
-    if (!text) return;
-    navigator.clipboard.writeText(text);
-    setCopiedAddress(label);
-    toast.success(`${label} copied to clipboard`);
-    setTimeout(() => setCopiedAddress(null), 2000);
   };
 
   // Load user data into form
@@ -538,13 +577,13 @@ export function Settings() {
             </button>
           </div>
 
-          {/* SECTION B: Payment Info */}
+          {/* SECTION B: Payment Info (Clean, No deposit addresses or token rescue) */}
           <section id="section-payment" className="py-5 border-b border-[#DADDE1]">
             <h2 className="text-sm font-bold text-gray-900 tracking-tight mb-2 px-1">
               Payment info
             </h2>
 
-            <div className="divide-y divide-gray-100">
+            <div className="divide-y divide-[#DADDE1]">
               {/* Wallet & Balance Row */}
               <a
                 href="/wallet"
@@ -565,127 +604,6 @@ export function Settings() {
                 </div>
                 <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-700 transition-colors shrink-0 ml-2" />
               </a>
-
-              {/* Deposit Addresses & Tokens Accordion Row */}
-              <div className="py-2 px-2">
-                <button
-                  type="button"
-                  onClick={() => setShowDepositAddresses(!showDepositAddresses)}
-                  className="w-full flex items-center justify-between py-2 text-left hover:text-[#9747FF] transition-colors cursor-pointer group"
-                >
-                  <div className="flex items-center gap-3.5 min-w-0">
-                    <div className="w-9 h-9 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                      <Copy className="w-4 h-4" />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-sm font-medium text-gray-900 group-hover:text-[#9747FF] transition-colors">
-                        Deposit Addresses
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        Non-custodial Solana &amp; EVM addresses
-                      </div>
-                    </div>
-                  </div>
-                  <ChevronDown
-                    className={cn(
-                      'w-4 h-4 text-gray-400 group-hover:text-gray-700 transition-transform duration-200 shrink-0 ml-2',
-                      showDepositAddresses && 'rotate-180'
-                    )}
-                  />
-                </button>
-
-                {/* Expanded Deposit Addresses */}
-                {showDepositAddresses && (
-                  <div className="mt-3 space-y-2.5 pl-12 pr-1 animate-in fade-in duration-150">
-                    {/* Solana Address */}
-                    <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg space-y-1">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-semibold text-gray-700">Solana Address</span>
-                        {walletDetails.solanaAddress && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              copyToClipboard(walletDetails.solanaAddress!, 'Solana Address')
-                            }
-                            className="inline-flex items-center gap-1 text-[#9747FF] hover:text-[#8534f0] font-medium transition-colors cursor-pointer"
-                          >
-                            {copiedAddress === 'Solana Address' ? (
-                              <>
-                                <Check className="w-3 h-3 text-emerald-600" />
-                                <span className="text-emerald-600">Copied</span>
-                              </>
-                            ) : (
-                              <>
-                                <Copy className="w-3 h-3" />
-                                <span>Copy</span>
-                              </>
-                            )}
-                          </button>
-                        )}
-                      </div>
-                      <p className="font-mono text-xs text-gray-600 break-all select-all">
-                        {walletDetails.solanaAddress ||
-                          (walletDetails.isLoading ? 'Loading address...' : 'Generating address...')}
-                      </p>
-                    </div>
-
-                    {/* EVM Address */}
-                    {walletDetails.evmAddress && (
-                      <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg space-y-1">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="font-semibold text-gray-700">EVM Address (Base / Polygon)</span>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              copyToClipboard(walletDetails.evmAddress!, 'EVM Address')
-                            }
-                            className="inline-flex items-center gap-1 text-[#9747FF] hover:text-[#8534f0] font-medium transition-colors cursor-pointer"
-                          >
-                            {copiedAddress === 'EVM Address' ? (
-                              <>
-                                <Check className="w-3 h-3 text-emerald-600" />
-                                <span className="text-emerald-600">Copied</span>
-                              </>
-                            ) : (
-                              <>
-                                <Copy className="w-3 h-3" />
-                                <span>Copy</span>
-                              </>
-                            )}
-                          </button>
-                        </div>
-                        <p className="font-mono text-xs text-gray-600 break-all select-all">
-                          {walletDetails.evmAddress}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Unsupported Token Recovery Row */}
-              <button
-                type="button"
-                onClick={() => setIsRescueModalOpen(true)}
-                className="w-full flex items-center justify-between py-3.5 px-2 hover:bg-gray-100/60 rounded-xl transition-colors cursor-pointer text-left group"
-              >
-                <div className="flex items-center gap-3.5 min-w-0">
-                  <div className="w-9 h-9 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-                    <Shield className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-sm font-medium text-gray-900 group-hover:text-[#9747FF] transition-colors truncate">
-                      Unsupported Token Recovery
-                    </div>
-                    <div className="text-xs text-gray-500 truncate">
-                      Rescue non-USDC assets sent to deposit addresses
-                    </div>
-                  </div>
-                </div>
-                <span className="text-xs font-semibold text-[#9747FF] group-hover:underline shrink-0 ml-2">
-                  Recover
-                </span>
-              </button>
             </div>
           </section>
 
@@ -695,7 +613,7 @@ export function Settings() {
               Settings
             </h2>
 
-            <div className="divide-y divide-gray-100">
+            <div className="divide-y divide-[#DADDE1]">
               {/* Language Row */}
               <button
                 type="button"
@@ -826,7 +744,7 @@ export function Settings() {
               {isCreator ? 'Creator Studio' : 'Client Account'}
             </h2>
 
-            <div className="divide-y divide-gray-100">
+            <div className="divide-y divide-[#DADDE1]">
               {isCreator ? (
                 <>
                   {/* View Public Creator Profile */}
@@ -1104,397 +1022,371 @@ export function Settings() {
       </div>
 
       {/* =========================================================================
-          INTERACTIVE DIALOGS & MODALS
+          INTERACTIVE SETTINGS POPUPS
+          Responsive: Mobile Bottom Drawer (Drawer) vs Desktop Modal (Dialog)
+          No rectangular cards: subtle ash-gray horizontal dividers (#DADDE1)
          ========================================================================= */}
 
-      {/* 1. Edit Profile Modal */}
-      <Dialog open={isEditProfileOpen} onOpenChange={setIsEditProfileOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-bold text-gray-900">Edit Profile</DialogTitle>
-            <DialogDescription className="text-xs text-gray-500">
-              Update your public display name, personal bio, skills, and contact details.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 pt-2">
-            {/* Avatar Row */}
-            <div className="flex items-center gap-4 pb-3 border-b border-gray-100">
-              <div className="relative">
-                <div className="w-16 h-16 rounded-full overflow-hidden bg-purple-50 border border-gray-200">
-                  <img
-                    src={getAvatarUrl(profileForm.avatar)}
-                    alt="Preview"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isLoading}
-                  className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-[#9747FF] text-white flex items-center justify-center border border-white hover:bg-[#8534f0] transition-colors cursor-pointer"
-                >
-                  {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Camera className="w-3 h-3" />}
-                </button>
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-gray-900">Profile Picture</p>
-                <p className="text-xs text-gray-500">JPG, PNG or GIF. Max 2MB.</p>
-              </div>
-            </div>
-
-            {/* Names */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="edit-firstName" className="text-xs font-medium text-gray-700">
-                  First Name
-                </Label>
-                <Input
-                  id="edit-firstName"
-                  value={profileForm.firstName}
-                  onChange={(e) => setProfileForm((prev) => ({ ...prev, firstName: e.target.value }))}
-                  placeholder="First name"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="edit-lastName" className="text-xs font-medium text-gray-700">
-                  Last Name
-                </Label>
-                <Input
-                  id="edit-lastName"
-                  value={profileForm.lastName}
-                  onChange={(e) => setProfileForm((prev) => ({ ...prev, lastName: e.target.value }))}
-                  placeholder="Last name"
-                />
-              </div>
-            </div>
-
-            {/* Email (Read only) & Phone */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="edit-email" className="text-xs font-medium text-gray-700">
-                  Email
-                </Label>
-                <Input
-                  id="edit-email"
-                  value={profileForm.email}
-                  disabled
-                  className="bg-gray-50 text-gray-500 cursor-not-allowed"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="edit-phone" className="text-xs font-medium text-gray-700">
-                  Phone Number
-                </Label>
-                <Input
-                  id="edit-phone"
-                  value={profileForm.phoneNumber}
-                  onChange={(e) => setProfileForm((prev) => ({ ...prev, phoneNumber: e.target.value }))}
-                  placeholder="+1 (555) 000-0000"
-                />
-              </div>
-            </div>
-
-            {/* Location */}
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-gray-700">Location</Label>
-              <div className="grid grid-cols-3 gap-2">
-                <Input
-                  placeholder="City / Area"
-                  value={profileForm.localArea}
-                  onChange={(e) => setProfileForm((prev) => ({ ...prev, localArea: e.target.value }))}
-                />
-                <Input
-                  placeholder="State"
-                  value={profileForm.state}
-                  onChange={(e) => setProfileForm((prev) => ({ ...prev, state: e.target.value }))}
-                />
-                <Input
-                  placeholder="Country"
-                  value={profileForm.country}
-                  onChange={(e) => setProfileForm((prev) => ({ ...prev, country: e.target.value }))}
-                />
-              </div>
-            </div>
-
-            {/* Bio */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="edit-bio" className="text-xs font-medium text-gray-700">
-                  Bio
-                </Label>
-                <span className="text-[11px] text-gray-400">{profileForm.bio.length}/500</span>
-              </div>
-              <textarea
-                id="edit-bio"
-                value={profileForm.bio}
-                onChange={(e) => setProfileForm((prev) => ({ ...prev, bio: e.target.value }))}
-                className="w-full min-h-[90px] px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#9747FF] focus:border-transparent"
-                placeholder="Share a short bio about your creative expertise and background..."
-                maxLength={500}
-              />
-            </div>
-
-            {/* Skills */}
-            <div className="space-y-1.5">
-              <Label htmlFor="edit-skills" className="text-xs font-medium text-gray-700">
-                Skills (comma separated)
-              </Label>
-              <Input
-                id="edit-skills"
-                value={profileForm.skills.join(', ')}
-                onChange={(e) => handleSkillsChange(e.target.value)}
-                placeholder="e.g. Digital Art, Branding, 3D Design, Photography"
-              />
-            </div>
-
-            {/* Action buttons */}
-            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-gray-100">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsEditProfileOpen(false)}
-                className="text-xs h-9 px-4 rounded-xl"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                onClick={handleSaveProfile}
-                disabled={isSaving}
-                className="bg-[#9747FF] hover:bg-[#8534f0] text-white font-semibold text-xs h-9 px-5 rounded-xl shadow-xs"
-              >
-                {isSaving ? (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  'Save Changes'
-                )}
-              </Button>
-            </div>
+      {/* 1. Edit Profile Popup */}
+      <SettingsSheetModal
+        isOpen={isEditProfileOpen}
+        onClose={() => setIsEditProfileOpen(false)}
+        title="Edit Profile"
+        description="Update your public display name, personal bio, skills, and contact details."
+        maxWidth="sm:max-w-lg"
+        footer={
+          <div className="flex items-center justify-end gap-2.5">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsEditProfileOpen(false)}
+              className="text-xs h-9 px-4 rounded-xl cursor-pointer"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleSaveProfile}
+              disabled={isSaving}
+              className="bg-[#9747FF] hover:bg-[#8534f0] text-white font-semibold text-xs h-9 px-5 rounded-xl shadow-xs cursor-pointer"
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save Changes'
+              )}
+            </Button>
           </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* 2. Change Password Dialog */}
-      <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-bold text-gray-900">Change Password</DialogTitle>
-            <DialogDescription className="text-xs text-gray-500">
-              Ensure your account is using a strong password with letters, numbers, and symbols.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-3.5 pt-2">
-            <div className="space-y-1">
-              <Label className="text-xs font-medium text-gray-700">Current Password</Label>
-              <Input
-                type="password"
-                value={passwordForm.currentPassword}
-                onChange={(e) =>
-                  setPasswordForm((prev) => ({ ...prev, currentPassword: e.target.value }))
-                }
-                placeholder="Enter current password"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <Label className="text-xs font-medium text-gray-700">New Password</Label>
-              <Input
-                type="password"
-                value={passwordForm.newPassword}
-                onChange={(e) =>
-                  setPasswordForm((prev) => ({ ...prev, newPassword: e.target.value }))
-                }
-                placeholder="Enter new password"
-              />
-              <p className="text-[11px] text-gray-500">
-                Minimum 8 characters with at least one uppercase and one lowercase letter.
-              </p>
-            </div>
-
-            <div className="space-y-1">
-              <Label className="text-xs font-medium text-gray-700">Confirm New Password</Label>
-              <Input
-                type="password"
-                value={passwordForm.confirmPassword}
-                onChange={(e) =>
-                  setPasswordForm((prev) => ({ ...prev, confirmPassword: e.target.value }))
-                }
-                placeholder="Confirm new password"
-              />
-            </div>
-
-            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-gray-100">
-              <Button
+        }
+      >
+        <div className="space-y-4">
+          {/* Avatar Row */}
+          <div className="flex items-center gap-4 pb-4 border-b border-[#DADDE1]">
+            <div className="relative">
+              <div className="w-16 h-16 rounded-full overflow-hidden bg-purple-50 border border-gray-200">
+                <img
+                  src={getAvatarUrl(profileForm.avatar)}
+                  alt="Preview"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <button
                 type="button"
-                variant="outline"
-                onClick={() => setIsPasswordDialogOpen(false)}
-                className="text-xs h-9 px-4 rounded-xl"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                onClick={handleChangePassword}
+                onClick={() => fileInputRef.current?.click()}
                 disabled={isLoading}
-                className="bg-[#9747FF] hover:bg-[#8534f0] text-white font-semibold text-xs h-9 px-5 rounded-xl shadow-xs"
+                className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-[#9747FF] text-white flex items-center justify-center border border-white hover:bg-[#8534f0] transition-colors cursor-pointer"
               >
                 {isLoading ? (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
-                    Updating...
-                  </>
+                  <Loader2 className="w-3 h-3 animate-spin" />
                 ) : (
-                  'Change Password'
+                  <Camera className="w-3 h-3" />
                 )}
-              </Button>
+              </button>
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-gray-900">Profile Picture</p>
+              <p className="text-xs text-gray-500">JPG, PNG or GIF. Max 2MB.</p>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
 
-      {/* 3. Notification Preferences Dialog */}
-      <Dialog open={isNotificationsModalOpen} onOpenChange={setIsNotificationsModalOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-bold text-gray-900">
-              Notification Preferences
-            </DialogTitle>
-            <DialogDescription className="text-xs text-gray-500">
-              Select how and when you want to receive updates from MyArteLab.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="divide-y divide-gray-100 pt-2">
-            <div className="flex items-center justify-between py-3">
-              <div>
-                <p className="text-sm font-medium text-gray-900">Email Notifications</p>
-                <p className="text-xs text-gray-500">Get booking updates &amp; messages via email</p>
-              </div>
-              <Switch
-                checked={notifications.email}
-                onCheckedChange={(checked) =>
-                  setNotifications((prev) => ({ ...prev, email: checked }))
+          {/* Names */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-firstName" className="text-xs font-medium text-gray-700">
+                First Name
+              </Label>
+              <Input
+                id="edit-firstName"
+                value={profileForm.firstName}
+                onChange={(e) =>
+                  setProfileForm((prev) => ({ ...prev, firstName: e.target.value }))
                 }
+                placeholder="First name"
+                className="focus-visible:ring-[#9747FF]"
               />
             </div>
-
-            <div className="flex items-center justify-between py-3">
-              <div>
-                <p className="text-sm font-medium text-gray-900">Push Notifications</p>
-                <p className="text-xs text-gray-500">Real-time alerts on your device</p>
-              </div>
-              <Switch
-                checked={notifications.push}
-                onCheckedChange={(checked) =>
-                  setNotifications((prev) => ({ ...prev, push: checked }))
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-lastName" className="text-xs font-medium text-gray-700">
+                Last Name
+              </Label>
+              <Input
+                id="edit-lastName"
+                value={profileForm.lastName}
+                onChange={(e) =>
+                  setProfileForm((prev) => ({ ...prev, lastName: e.target.value }))
                 }
-              />
-            </div>
-
-            <div className="flex items-center justify-between py-3">
-              <div>
-                <p className="text-sm font-medium text-gray-900">SMS Alerts</p>
-                <p className="text-xs text-gray-500">Important security &amp; payment alerts</p>
-              </div>
-              <Switch
-                checked={notifications.sms}
-                onCheckedChange={(checked) =>
-                  setNotifications((prev) => ({ ...prev, sms: checked }))
-                }
-              />
-            </div>
-
-            <div className="flex items-center justify-between py-3">
-              <div>
-                <p className="text-sm font-medium text-gray-900">Marketing &amp; Discoveries</p>
-                <p className="text-xs text-gray-500">Promotional creator spotlights &amp; newsletters</p>
-              </div>
-              <Switch
-                checked={notifications.marketing}
-                onCheckedChange={(checked) =>
-                  setNotifications((prev) => ({ ...prev, marketing: checked }))
-                }
+                placeholder="Last name"
+                className="focus-visible:ring-[#9747FF]"
               />
             </div>
           </div>
 
-          <div className="flex justify-end pt-3 border-t border-gray-100">
+          {/* Email (Read only) & Phone */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-email" className="text-xs font-medium text-gray-700">
+                Email
+              </Label>
+              <Input
+                id="edit-email"
+                value={profileForm.email}
+                disabled
+                className="bg-gray-50 text-gray-500 cursor-not-allowed"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-phone" className="text-xs font-medium text-gray-700">
+                Phone Number
+              </Label>
+              <Input
+                id="edit-phone"
+                value={profileForm.phoneNumber}
+                onChange={(e) =>
+                  setProfileForm((prev) => ({ ...prev, phoneNumber: e.target.value }))
+                }
+                placeholder="+1 (555) 000-0000"
+                className="focus-visible:ring-[#9747FF]"
+              />
+            </div>
+          </div>
+
+          {/* Location */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium text-gray-700">Location</Label>
+            <div className="grid grid-cols-3 gap-2">
+              <Input
+                placeholder="City / Area"
+                value={profileForm.localArea}
+                onChange={(e) =>
+                  setProfileForm((prev) => ({ ...prev, localArea: e.target.value }))
+                }
+                className="focus-visible:ring-[#9747FF]"
+              />
+              <Input
+                placeholder="State"
+                value={profileForm.state}
+                onChange={(e) => setProfileForm((prev) => ({ ...prev, state: e.target.value }))}
+                className="focus-visible:ring-[#9747FF]"
+              />
+              <Input
+                placeholder="Country"
+                value={profileForm.country}
+                onChange={(e) =>
+                  setProfileForm((prev) => ({ ...prev, country: e.target.value }))
+                }
+                className="focus-visible:ring-[#9747FF]"
+              />
+            </div>
+          </div>
+
+          {/* Bio */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="edit-bio" className="text-xs font-medium text-gray-700">
+                Bio
+              </Label>
+              <span className="text-[11px] text-gray-400">{profileForm.bio.length}/500</span>
+            </div>
+            <textarea
+              id="edit-bio"
+              value={profileForm.bio}
+              onChange={(e) => setProfileForm((prev) => ({ ...prev, bio: e.target.value }))}
+              className="w-full min-h-[90px] px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#9747FF]/20 focus:border-[#9747FF] transition-all"
+              placeholder="Share a short bio about your creative expertise and background..."
+              maxLength={500}
+            />
+          </div>
+
+          {/* Skills */}
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-skills" className="text-xs font-medium text-gray-700">
+              Skills (comma separated)
+            </Label>
+            <Input
+              id="edit-skills"
+              value={profileForm.skills.join(', ')}
+              onChange={(e) => handleSkillsChange(e.target.value)}
+              placeholder="e.g. Digital Art, Branding, 3D Design, Photography"
+              className="focus-visible:ring-[#9747FF]"
+            />
+          </div>
+        </div>
+      </SettingsSheetModal>
+
+      {/* 2. Change Password Popup */}
+      <SettingsSheetModal
+        isOpen={isPasswordDialogOpen}
+        onClose={() => setIsPasswordDialogOpen(false)}
+        title="Change Password"
+        description="Ensure your account is using a strong password with letters, numbers, and symbols."
+        maxWidth="sm:max-w-md"
+        footer={
+          <div className="flex items-center justify-end gap-2.5">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsPasswordDialogOpen(false)}
+              className="text-xs h-9 px-4 rounded-xl cursor-pointer"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleChangePassword}
+              disabled={isLoading}
+              className="bg-[#9747FF] hover:bg-[#8534f0] text-white font-semibold text-xs h-9 px-5 rounded-xl shadow-xs cursor-pointer"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                'Change Password'
+              )}
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-3.5">
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium text-gray-700">Current Password</Label>
+            <Input
+              type="password"
+              value={passwordForm.currentPassword}
+              onChange={(e) =>
+                setPasswordForm((prev) => ({ ...prev, currentPassword: e.target.value }))
+              }
+              placeholder="Enter current password"
+              className="focus-visible:ring-[#9747FF]"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium text-gray-700">New Password</Label>
+            <Input
+              type="password"
+              value={passwordForm.newPassword}
+              onChange={(e) =>
+                setPasswordForm((prev) => ({ ...prev, newPassword: e.target.value }))
+              }
+              placeholder="Enter new password"
+              className="focus-visible:ring-[#9747FF]"
+            />
+            <p className="text-[11px] text-gray-500">
+              Minimum 8 characters with at least one uppercase and one lowercase letter.
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium text-gray-700">Confirm New Password</Label>
+            <Input
+              type="password"
+              value={passwordForm.confirmPassword}
+              onChange={(e) =>
+                setPasswordForm((prev) => ({ ...prev, confirmPassword: e.target.value }))
+              }
+              placeholder="Confirm new password"
+              className="focus-visible:ring-[#9747FF]"
+            />
+          </div>
+        </div>
+      </SettingsSheetModal>
+
+      {/* 3. Notification Preferences Popup */}
+      <SettingsSheetModal
+        isOpen={isNotificationsModalOpen}
+        onClose={() => setIsNotificationsModalOpen(false)}
+        title="Notification Preferences"
+        description="Select how and when you want to receive updates from MyArteLab."
+        maxWidth="sm:max-w-md"
+        footer={
+          <div className="flex justify-end">
             <Button
               type="button"
               onClick={() => {
                 toast.success('Notification preferences updated');
                 setIsNotificationsModalOpen(false);
               }}
-              className="bg-[#9747FF] hover:bg-[#8534f0] text-white font-semibold text-xs h-9 px-5 rounded-xl shadow-xs"
+              className="bg-[#9747FF] hover:bg-[#8534f0] text-white font-semibold text-xs h-9 px-5 rounded-xl shadow-xs cursor-pointer"
             >
               Done
             </Button>
           </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* 4. Privacy Preferences Dialog */}
-      <Dialog open={isPrivacyModalOpen} onOpenChange={setIsPrivacyModalOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-bold text-gray-900">Privacy Preferences</DialogTitle>
-            <DialogDescription className="text-xs text-gray-500">
-              Manage your visibility and messaging access across the creative marketplace.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="divide-y divide-gray-100 pt-2">
-            <div className="flex items-center justify-between py-3">
-              <div>
-                <p className="text-sm font-medium text-gray-900">Public Profile</p>
-                <p className="text-xs text-gray-500">Make your profile visible in search &amp; discovery</p>
-              </div>
-              <Switch
-                checked={privacy.publicProfile}
-                onCheckedChange={(checked) =>
-                  setPrivacy((prev) => ({ ...prev, publicProfile: checked }))
-                }
-              />
+        }
+      >
+        <div className="divide-y divide-[#DADDE1]">
+          <div className="flex items-center justify-between py-3">
+            <div>
+              <p className="text-sm font-medium text-gray-900">Email Notifications</p>
+              <p className="text-xs text-gray-500">Get booking updates &amp; messages via email</p>
             </div>
-
-            <div className="flex items-center justify-between py-3">
-              <div>
-                <p className="text-sm font-medium text-gray-900">Activity Status</p>
-                <p className="text-xs text-gray-500">Show when you are actively on MyArteLab</p>
-              </div>
-              <Switch
-                checked={privacy.showActivity}
-                onCheckedChange={(checked) =>
-                  setPrivacy((prev) => ({ ...prev, showActivity: checked }))
-                }
-              />
-            </div>
-
-            <div className="flex items-center justify-between py-3">
-              <div>
-                <p className="text-sm font-medium text-gray-900">Direct Messages</p>
-                <p className="text-xs text-gray-500">Allow other verified users to message you</p>
-              </div>
-              <Switch
-                checked={privacy.allowMessages}
-                onCheckedChange={(checked) =>
-                  setPrivacy((prev) => ({ ...prev, allowMessages: checked }))
-                }
-              />
-            </div>
+            <Switch
+              checked={notifications.email}
+              onCheckedChange={(checked) =>
+                setNotifications((prev) => ({ ...prev, email: checked }))
+              }
+            />
           </div>
 
-          <div className="flex justify-end gap-2.5 pt-3 border-t border-gray-100">
+          <div className="flex items-center justify-between py-3">
+            <div>
+              <p className="text-sm font-medium text-gray-900">Push Notifications</p>
+              <p className="text-xs text-gray-500">Real-time alerts on your device</p>
+            </div>
+            <Switch
+              checked={notifications.push}
+              onCheckedChange={(checked) =>
+                setNotifications((prev) => ({ ...prev, push: checked }))
+              }
+            />
+          </div>
+
+          <div className="flex items-center justify-between py-3">
+            <div>
+              <p className="text-sm font-medium text-gray-900">SMS Alerts</p>
+              <p className="text-xs text-gray-500">Important security &amp; payment alerts</p>
+            </div>
+            <Switch
+              checked={notifications.sms}
+              onCheckedChange={(checked) =>
+                setNotifications((prev) => ({ ...prev, sms: checked }))
+              }
+            />
+          </div>
+
+          <div className="flex items-center justify-between py-3">
+            <div>
+              <p className="text-sm font-medium text-gray-900">Marketing &amp; Discoveries</p>
+              <p className="text-xs text-gray-500">Promotional creator spotlights &amp; newsletters</p>
+            </div>
+            <Switch
+              checked={notifications.marketing}
+              onCheckedChange={(checked) =>
+                setNotifications((prev) => ({ ...prev, marketing: checked }))
+              }
+            />
+          </div>
+        </div>
+      </SettingsSheetModal>
+
+      {/* 4. Privacy Preferences Popup */}
+      <SettingsSheetModal
+        isOpen={isPrivacyModalOpen}
+        onClose={() => setIsPrivacyModalOpen(false)}
+        title="Privacy Preferences"
+        description="Manage your visibility and messaging access across the creative marketplace."
+        maxWidth="sm:max-w-md"
+        footer={
+          <div className="flex items-center justify-end gap-2.5">
             <Button
               type="button"
               variant="outline"
               onClick={() => setIsPrivacyModalOpen(false)}
-              className="text-xs h-9 px-4 rounded-xl"
+              className="text-xs h-9 px-4 rounded-xl cursor-pointer"
             >
               Cancel
             </Button>
@@ -1502,7 +1394,7 @@ export function Settings() {
               type="button"
               onClick={handleSavePrivacy}
               disabled={isSaving}
-              className="bg-[#9747FF] hover:bg-[#8534f0] text-white font-semibold text-xs h-9 px-5 rounded-xl shadow-xs"
+              className="bg-[#9747FF] hover:bg-[#8534f0] text-white font-semibold text-xs h-9 px-5 rounded-xl shadow-xs cursor-pointer"
             >
               {isSaving ? (
                 <>
@@ -1514,77 +1406,98 @@ export function Settings() {
               )}
             </Button>
           </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* 5. Language Selector Dialog */}
-      <Dialog open={isLanguageModalOpen} onOpenChange={setIsLanguageModalOpen}>
-        <DialogContent className="max-w-xs">
-          <DialogHeader>
-            <DialogTitle className="text-base font-bold text-gray-900">Select Language</DialogTitle>
-          </DialogHeader>
-
-          <div className="divide-y divide-gray-100 pt-2">
-            {[
-              { code: 'en', name: 'English (US)' },
-              { code: 'fr', name: 'Français' },
-              { code: 'es', name: 'Español' },
-              { code: 'sw', name: 'Kiswahili' },
-            ].map((lang) => (
-              <button
-                key={lang.code}
-                type="button"
-                onClick={() => {
-                  setSelectedLanguage(lang.name.split(' ')[0]);
-                  toast.success(`Language set to ${lang.name}`);
-                  setIsLanguageModalOpen(false);
-                }}
-                className="w-full flex items-center justify-between py-2.5 px-2 hover:bg-gray-50 rounded-lg text-left transition-colors cursor-pointer"
-              >
-                <span className="text-sm font-medium text-gray-800">{lang.name}</span>
-                {selectedLanguage.startsWith(lang.name.split(' ')[0]) && (
-                  <Check className="w-4 h-4 text-[#9747FF]" />
-                )}
-              </button>
-            ))}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* 6. Become a Creator Dialog (For Clients) */}
-      <Dialog open={isBecomeCreatorOpen} onOpenChange={setIsBecomeCreatorOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-bold text-gray-900 flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-[#9747FF]" />
-              Become a Verified Creator
-            </DialogTitle>
-            <DialogDescription className="text-xs text-gray-500">
-              Join Africa's leading creative marketplace to showcase your portfolio, reach clients, and get paid securely.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-3 py-3 text-xs text-gray-600">
-            <div className="flex items-start gap-2.5">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-              <span>Publish artwork and stories directly to the community feed.</span>
+        }
+      >
+        <div className="divide-y divide-[#DADDE1]">
+          <div className="flex items-center justify-between py-3">
+            <div>
+              <p className="text-sm font-medium text-gray-900">Public Profile</p>
+              <p className="text-xs text-gray-500">Make your profile visible in search &amp; discovery</p>
             </div>
-            <div className="flex items-start gap-2.5">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-              <span>Offer custom creative packages and receive client booking requests.</span>
-            </div>
-            <div className="flex items-start gap-2.5">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-              <span>Non-custodial instant payouts in USDC / USDT directly to your wallet.</span>
-            </div>
+            <Switch
+              checked={privacy.publicProfile}
+              onCheckedChange={(checked) =>
+                setPrivacy((prev) => ({ ...prev, publicProfile: checked }))
+              }
+            />
           </div>
 
-          <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-gray-100">
+          <div className="flex items-center justify-between py-3">
+            <div>
+              <p className="text-sm font-medium text-gray-900">Activity Status</p>
+              <p className="text-xs text-gray-500">Show when you are actively on MyArteLab</p>
+            </div>
+            <Switch
+              checked={privacy.showActivity}
+              onCheckedChange={(checked) =>
+                setPrivacy((prev) => ({ ...prev, showActivity: checked }))
+              }
+            />
+          </div>
+
+          <div className="flex items-center justify-between py-3">
+            <div>
+              <p className="text-sm font-medium text-gray-900">Direct Messages</p>
+              <p className="text-xs text-gray-500">Allow other verified users to message you</p>
+            </div>
+            <Switch
+              checked={privacy.allowMessages}
+              onCheckedChange={(checked) =>
+                setPrivacy((prev) => ({ ...prev, allowMessages: checked }))
+              }
+            />
+          </div>
+        </div>
+      </SettingsSheetModal>
+
+      {/* 5. Language Selector Popup */}
+      <SettingsSheetModal
+        isOpen={isLanguageModalOpen}
+        onClose={() => setIsLanguageModalOpen(false)}
+        title="Select Language"
+        description="Choose your preferred display language for MyArteLab."
+        maxWidth="sm:max-w-sm"
+      >
+        <div className="divide-y divide-[#DADDE1]">
+          {[
+            { code: 'en', name: 'English (US)' },
+            { code: 'fr', name: 'Français' },
+            { code: 'es', name: 'Español' },
+            { code: 'sw', name: 'Kiswahili' },
+          ].map((lang) => (
+            <button
+              key={lang.code}
+              type="button"
+              onClick={() => {
+                setSelectedLanguage(lang.name.split(' ')[0]);
+                toast.success(`Language set to ${lang.name}`);
+                setIsLanguageModalOpen(false);
+              }}
+              className="w-full flex items-center justify-between py-3 px-2 hover:bg-gray-50 rounded-lg text-left transition-colors cursor-pointer"
+            >
+              <span className="text-sm font-medium text-gray-800">{lang.name}</span>
+              {selectedLanguage.startsWith(lang.name.split(' ')[0]) && (
+                <Check className="w-4 h-4 text-[#9747FF]" />
+              )}
+            </button>
+          ))}
+        </div>
+      </SettingsSheetModal>
+
+      {/* 6. Become a Creator Popup (For Clients) */}
+      <SettingsSheetModal
+        isOpen={isBecomeCreatorOpen}
+        onClose={() => setIsBecomeCreatorOpen(false)}
+        title="Become a Verified Creator"
+        description="Join Africa's leading creative marketplace to showcase your portfolio, reach clients, and get paid securely."
+        maxWidth="sm:max-w-md"
+        footer={
+          <div className="flex items-center justify-end gap-2.5">
             <Button
               type="button"
               variant="outline"
               onClick={() => setIsBecomeCreatorOpen(false)}
-              className="text-xs h-9 px-4 rounded-xl"
+              className="text-xs h-9 px-4 rounded-xl cursor-pointer"
             >
               Later
             </Button>
@@ -1594,50 +1507,66 @@ export function Settings() {
                 setIsBecomeCreatorOpen(false);
                 window.location.href = '/register?role=creator';
               }}
-              className="bg-[#9747FF] hover:bg-[#8534f0] text-white font-semibold text-xs h-9 px-5 rounded-xl shadow-xs"
+              className="bg-[#9747FF] hover:bg-[#8534f0] text-white font-semibold text-xs h-9 px-5 rounded-xl shadow-xs cursor-pointer"
             >
               Apply as Creator
             </Button>
           </div>
-        </DialogContent>
-      </Dialog>
+        }
+      >
+        <div className="space-y-3.5 py-1 text-xs text-gray-600">
+          <div className="flex items-start gap-3">
+            <CheckCircle2 className="w-4 h-4 text-[#9747FF] shrink-0 mt-0.5" />
+            <span className="leading-relaxed">
+              Publish artwork, audio, and stories directly to the community feed.
+            </span>
+          </div>
+          <div className="flex items-start gap-3">
+            <CheckCircle2 className="w-4 h-4 text-[#9747FF] shrink-0 mt-0.5" />
+            <span className="leading-relaxed">
+              Offer custom creative packages and receive client booking requests.
+            </span>
+          </div>
+          <div className="flex items-start gap-3">
+            <CheckCircle2 className="w-4 h-4 text-[#9747FF] shrink-0 mt-0.5" />
+            <span className="leading-relaxed">
+              Non-custodial instant payouts in USDC / USDT directly to your wallet.
+            </span>
+          </div>
+        </div>
+      </SettingsSheetModal>
 
-      {/* 7. Confirm Logout Dialog */}
-      <Dialog open={isLogoutDialogOpen} onOpenChange={setIsLogoutDialogOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="text-base font-bold text-gray-900">Sign Out</DialogTitle>
-            <DialogDescription className="text-xs text-gray-500">
-              Are you sure you want to log out of your MyArteLab account?
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="flex items-center justify-end gap-2.5 pt-4">
+      {/* 7. Confirm Logout Popup */}
+      <SettingsSheetModal
+        isOpen={isLogoutDialogOpen}
+        onClose={() => setIsLogoutDialogOpen(false)}
+        title="Sign Out"
+        description="Are you sure you want to log out of your MyArteLab account?"
+        maxWidth="sm:max-w-sm"
+        footer={
+          <div className="flex items-center justify-end gap-2.5">
             <Button
               type="button"
               variant="outline"
               onClick={() => setIsLogoutDialogOpen(false)}
-              className="text-xs h-9 px-4 rounded-xl"
+              className="text-xs h-9 px-4 rounded-xl cursor-pointer"
             >
               Cancel
             </Button>
             <Button
               type="button"
               onClick={handleLogout}
-              className="bg-red-600 hover:bg-red-700 text-white font-semibold text-xs h-9 px-5 rounded-xl shadow-xs"
+              className="bg-red-600 hover:bg-red-700 text-white font-semibold text-xs h-9 px-5 rounded-xl shadow-xs cursor-pointer"
             >
               Log Out
             </Button>
           </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* 8. Unsupported Token Recovery Modal */}
-      <RescueTokenModal
-        isOpen={isRescueModalOpen}
-        onClose={() => setIsRescueModalOpen(false)}
-        userSolanaAddress={walletDetails.solanaAddress}
-      />
+        }
+      >
+        <div className="py-2 text-xs text-gray-500 leading-relaxed">
+          You will need to sign in again to access your account, creator dashboard, and messages.
+        </div>
+      </SettingsSheetModal>
     </div>
   );
 }
