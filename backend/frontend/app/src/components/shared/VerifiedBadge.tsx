@@ -24,17 +24,20 @@ export function VerifiedBadge({ className, expiresAt, showTooltip = true, onClic
     ? `Verified until ${formatExpiry(expiresAt)}`
     : 'Verified Creator';
 
+  const sizePixels = size === 'sm' ? 14 : size === 'lg' ? 18 : 16;
+
   const sizeClasses = {
-    sm: 'w-4 h-4',
-    md: 'w-4.5 h-4.5',
-    lg: 'w-6 h-6 sm:w-6.5 sm:h-6.5',
+    sm: 'w-3.5 h-3.5 max-w-[14px] max-h-[14px]',
+    md: 'w-4 h-4 max-w-[16px] max-h-[16px]',
+    lg: 'w-[18px] h-[18px] max-w-[18px] max-h-[18px]',
   };
 
   const img = (
     <img 
       src="/images/verified-badge.png" 
       alt="Verified" 
-      className={cn('inline-block cursor-pointer shrink-0 align-middle', sizeClasses[size], className)}
+      style={{ width: `${sizePixels}px`, height: `${sizePixels}px`, minWidth: `${sizePixels}px`, minHeight: `${sizePixels}px` }}
+      className={cn('inline-block cursor-pointer shrink-0 align-middle object-contain', sizeClasses[size], className)}
       onClick={onClick}
     />
   );
