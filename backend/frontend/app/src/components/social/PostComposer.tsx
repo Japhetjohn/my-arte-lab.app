@@ -173,7 +173,7 @@ export function PostComposer({ onPostCreated, className, autoOpenImageUploader }
   return (
     <div
       className={cn(
-        'bg-white rounded-2xl border border-gray-200/80 p-4 sm:p-5 shadow-xs transition-shadow hover:shadow-sm',
+        'bg-white border-b border-[#DADDE1] p-4 sm:p-5',
         className
       )}
     >

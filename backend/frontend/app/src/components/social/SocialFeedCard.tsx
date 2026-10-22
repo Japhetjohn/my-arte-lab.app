@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   ThumbsUp,
-  Heart,
   MessageCircle,
   Forward,
   Globe,
@@ -135,6 +134,11 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
     };
   }, [serviceId]);
 
+  // Mouse drag state for desktop gallery navigation
+  const isDraggingRef = useRef(false);
+  const startXRef = useRef(0);
+  const startScrollLeftRef = useRef(0);
+
   // Gallery scroll listener to update active pagination dot
   const handleGalleryScroll = () => {
     const container = galleryScrollRef.current;
@@ -157,12 +161,44 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
   const scrollToIndex = (index: number) => {
     const container = galleryScrollRef.current;
     if (!container) return;
+    const imagesCount = (post.images || []).length;
+    const clamped = Math.max(0, Math.min(imagesCount - 1, index));
     const width = container.clientWidth;
     container.scrollTo({
-      left: width * index,
+      left: width * clamped,
       behavior: 'smooth',
     });
-    setActiveGalleryIndex(index);
+    setActiveGalleryIndex(clamped);
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    const container = galleryScrollRef.current;
+    if (!container) return;
+    isDraggingRef.current = true;
+    startXRef.current = e.pageX - container.offsetLeft;
+    startScrollLeftRef.current = container.scrollLeft;
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDraggingRef.current) return;
+    const container = galleryScrollRef.current;
+    if (!container) return;
+    e.preventDefault();
+    const x = e.pageX - container.offsetLeft;
+    const walk = (x - startXRef.current) * 1.2;
+    container.scrollLeft = startScrollLeftRef.current - walk;
+  };
+
+  const handleMouseUpOrLeave = () => {
+    if (!isDraggingRef.current) return;
+    isDraggingRef.current = false;
+    const container = galleryScrollRef.current;
+    if (!container) return;
+    const width = container.clientWidth;
+    if (width > 0) {
+      const targetIndex = Math.round(container.scrollLeft / width);
+      scrollToIndex(targetIndex);
+    }
   };
 
   const handleToggleLike = async () => {
@@ -272,7 +308,7 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
             <div className="flex items-center gap-1.5 text-xs text-gray-500 leading-none mt-1">
               <span>{formatTimestamp(post.createdAt)}</span>
               <span>•</span>
-              <Globe className="w-3 h-3 text-gray-400 shrink-0" aria-label="Public post" />
+              <Globe className="w-3 h-3 text-gray-400 shrink-0" aria-label="Public artwork" />
             </div>
           </div>
         </a>
@@ -284,7 +320,7 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
               <button
                 type="button"
                 className="p-1.5 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors cursor-pointer outline-none focus:outline-none"
-                aria-label="Post options"
+                aria-label="Artwork options"
               >
                 <MoreHorizontal className="w-5 h-5 stroke-[2]" />
               </button>
@@ -292,7 +328,7 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuItem onClick={handleShare} className="cursor-pointer">
                 <Copy className="w-4 h-4 mr-2 text-gray-500" />
-                <span>Copy link</span>
+                <span>Copy artwork link</span>
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => (window.location.href = `/creators/${post.creator._id}`)}
@@ -384,13 +420,23 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
               />
             </div>
           ) : (
-            // Multiple-Image Post: Horizontal swipeable gallery with pagination dots (NO arrows)
+            // Multiple-Image Post: Horizontal swipeable gallery with tiny dots (NO arrows)
             <div className="w-full relative overflow-hidden bg-black/5">
               <div
                 ref={galleryScrollRef}
                 onScroll={handleGalleryScroll}
-                className="w-full flex overflow-x-auto snap-x snap-mandatory no-scrollbar touch-pan-x"
-                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUpOrLeave}
+                onMouseLeave={handleMouseUpOrLeave}
+                className="w-full flex overflow-x-auto snap-x snap-mandatory no-scrollbar cursor-grab active:cursor-grabbing select-none"
+                style={{
+                  scrollbarWidth: 'none',
+                  msOverflowStyle: 'none',
+                  WebkitOverflowScrolling: 'touch',
+                  overscrollBehaviorX: 'contain',
+                  touchAction: 'pan-y',
+                }}
               >
                 {images.map((imgUrl, idx) => (
                   <div
@@ -400,27 +446,28 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
                     <img
                       src={getImageUrl(imgUrl)}
                       alt={post.title || `Artwork ${idx + 1}`}
-                      className="w-full h-auto max-h-[620px] object-cover sm:object-contain"
+                      className="w-full h-auto max-h-[620px] object-cover sm:object-contain pointer-events-none select-none"
+                      draggable={false}
                       loading={idx === 0 ? 'eager' : 'lazy'}
                     />
                   </div>
                 ))}
               </div>
 
-              {/* Small Pagination Dots (active: #9747FF, inactive: gray-300) */}
-              <div className="flex items-center justify-center gap-1.5 py-2.5">
+              {/* Extremely Small Pagination Dots (4-5px diameter, active: #9747FF, inactive: gray-300) */}
+              <div className="flex items-center justify-center gap-1.5 py-1.5">
                 {images.map((_, dotIdx) => (
                   <button
                     key={dotIdx}
                     type="button"
                     onClick={() => scrollToIndex(dotIdx)}
                     className={cn(
-                      'transition-all duration-200 rounded-full cursor-pointer focus:outline-none',
+                      'rounded-full transition-all duration-200 cursor-pointer focus:outline-none p-0 shrink-0',
                       activeGalleryIndex === dotIdx
-                        ? 'w-2.5 h-2.5 bg-[#9747FF]'
-                        : 'w-1.5 h-1.5 bg-gray-300 hover:bg-gray-400'
+                        ? 'w-[5px] h-[5px] bg-[#9747FF]'
+                        : 'w-[4px] h-[4px] bg-gray-300 hover:bg-gray-400'
                     )}
-                    aria-label={`Go to slide ${dotIdx + 1} of ${images.length}`}
+                    aria-label={`View artwork image ${dotIdx + 1} of ${images.length}`}
                   />
                 ))}
               </div>
@@ -429,22 +476,12 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
         </div>
       )}
 
-      {/* 4. Engagement Summary Row (Reactions & Comments count) */}
-      <div className="px-4 py-2 flex items-center justify-between text-xs sm:text-[13px] text-gray-500 border-b border-[#DADDE1]/70">
-        {/* Left: Reaction Indicators & Aggregate Count */}
-        <div className="flex items-center gap-1.5">
-          <div className="flex items-center -space-x-1">
-            <span className="w-4.5 h-4.5 rounded-full bg-[#9747FF] text-white flex items-center justify-center shadow-xs">
-              <ThumbsUp className="w-2.5 h-2.5 fill-white text-white" />
-            </span>
-            <span className="w-4.5 h-4.5 rounded-full bg-rose-500 text-white flex items-center justify-center shadow-xs">
-              <Heart className="w-2.5 h-2.5 fill-white text-white" />
-            </span>
-          </div>
-          <span className="font-medium text-gray-600">
-            {formatCount(likesCount)}
-          </span>
-        </div>
+      {/* 4. Engagement Summary Row (Likes & Comments count, no decorative reaction circles) */}
+      <div className="px-4 py-2 flex items-center justify-between text-xs text-gray-500 border-b border-[#DADDE1]/70">
+        {/* Left: Clean Like Count without decorative circles */}
+        <span className="font-medium text-gray-600">
+          {formatCount(likesCount)} {likesCount === 1 ? 'like' : 'likes'}
+        </span>
 
         {/* Right: Comment Count */}
         <button
@@ -458,7 +495,7 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
         </button>
       </div>
 
-      {/* 5. Like, Comment, and Share Action Row (Clean Facebook-Style, no card pills) */}
+      {/* 5. Like, Comment, and Share Action Row */}
       <div className="px-2 sm:px-4 py-1 flex items-center justify-between">
         {/* Like Button */}
         <button
@@ -471,7 +508,7 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
               ? 'text-[#9747FF] hover:bg-purple-50/70 font-semibold'
               : 'text-gray-600 hover:bg-gray-100/70 hover:text-gray-900 active:bg-gray-200/60'
           )}
-          aria-label={isLiked ? 'Unlike post' : 'Like post'}
+          aria-label={isLiked ? 'Unlike artwork' : 'Like artwork'}
         >
           <ThumbsUp
             className={cn(

@@ -462,22 +462,22 @@ export function Home() {
               type="button"
               onClick={() => handleOpenMobileComposer(false)}
               className="flex-1 min-w-0 bg-gray-100/90 hover:bg-gray-200/70 active:bg-gray-200 text-left px-4 py-2.5 rounded-full text-xs sm:text-sm text-gray-500 transition-colors cursor-pointer select-none truncate focus:outline-none focus:ring-1 focus:ring-[#9747FF]"
-              aria-label="What's on your mind?"
+              aria-label="Share your latest work"
             >
-              What's on your mind?
+              Share your latest work...
             </button>
 
-            {/* Right: Photo Attachment Shortcut */}
+            {/* Right: Artwork Attachment Shortcut */}
             <button
               type="button"
               onClick={() => handleOpenMobileComposer(true)}
               className="flex flex-col items-center justify-center gap-0.5 px-1.5 py-0.5 text-gray-700 hover:text-[#9747FF] transition-colors cursor-pointer shrink-0 outline-none focus:outline-none group"
-              aria-label="Attach photo"
-              title="Photo"
+              aria-label="Attach artwork"
+              title="Artwork"
             >
               <ImageIcon className="w-5 h-5 text-emerald-500 group-hover:scale-105 transition-transform" />
               <span className="text-[11px] font-medium text-gray-600 group-hover:text-[#9747FF] leading-none">
-                Photo
+                Artwork
               </span>
             </button>
           </div>
