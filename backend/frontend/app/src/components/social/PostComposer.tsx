@@ -7,14 +7,16 @@ import { ImageUploader, type ImageUploadItem } from './ImageUploader';
 import { ImageUploadDrawer } from './ImageUploadDrawer';
 import { uploadService, socialService } from '@/lib/api';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { getAvatarUrl } from '@/lib/imageUrl';
 import { cn } from '@/lib/utils';
 
 interface PostComposerProps {
   onPostCreated?: (post: any) => void;
   className?: string;
+  autoOpenImageUploader?: boolean;
 }
 
-export function PostComposer({ onPostCreated, className }: PostComposerProps) {
+export function PostComposer({ onPostCreated, className, autoOpenImageUploader }: PostComposerProps) {
   const { user } = useAuth();
   const isMobile = useIsMobile();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -26,6 +28,27 @@ export function PostComposer({ onPostCreated, className }: PostComposerProps) {
   const [showInlineUploader, setShowInlineUploader] = useState(false);
   const [showMobileDrawer, setShowMobileDrawer] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // If requested to auto-open image uploader (e.g. from Artwork shortcut button)
+  useEffect(() => {
+    if (autoOpenImageUploader) {
+      if (isMobile) {
+        setShowMobileDrawer(true);
+      } else {
+        setShowInlineUploader(true);
+      }
+    }
+  }, [autoOpenImageUploader, isMobile]);
+
+  // Auto-focus textarea when opening without image shortcut
+  useEffect(() => {
+    if (!autoOpenImageUploader && textareaRef.current) {
+      const timer = setTimeout(() => {
+        textareaRef.current?.focus();
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [autoOpenImageUploader]);
 
   // Character limit settings inspired by Twitter / X
   const MAX_CHARS = 280;
@@ -160,7 +183,7 @@ export function PostComposer({ onPostCreated, className }: PostComposerProps) {
           <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full overflow-hidden bg-purple-100 flex items-center justify-center shrink-0 border border-purple-200/60 shadow-xs">
             {user?.avatar ? (
               <img
-                src={user.avatar}
+                src={getAvatarUrl(user.avatar)}
                 alt={user.name || 'User'}
                 className="w-full h-full object-cover"
               />

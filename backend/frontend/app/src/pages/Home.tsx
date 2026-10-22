@@ -12,6 +12,7 @@ import {
   ArrowRight,
   Plus,
   ArrowUp,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PostComposer } from '@/components/social/PostComposer';
@@ -23,6 +24,7 @@ import {
   DrawerDescription,
 } from '@/components/ui/drawer';
 import { socialService, creatorService } from '@/lib/api';
+import { getAvatarUrl } from '@/lib/imageUrl';
 import { cn } from '@/lib/utils';
 import type { Creator } from '@/types';
 
@@ -51,6 +53,12 @@ export function Home() {
   
   // Mobile Floating Post Creation Drawer State
   const [isMobileComposerOpen, setIsMobileComposerOpen] = useState(false);
+  const [composerAutoOpenImage, setComposerAutoOpenImage] = useState(false);
+
+  const handleOpenMobileComposer = (openImagePicker = false) => {
+    setComposerAutoOpenImage(openImagePicker);
+    setIsMobileComposerOpen(true);
+  };
 
   // New Posts Detection (Part 6)
   const [newPostsCount, setNewPostsCount] = useState(0);
@@ -312,8 +320,64 @@ export function Home() {
             </div>
           )}
 
-          {/* Category Filter Pills & Preserved Refresh Action */}
-          <div className="flex items-center justify-between gap-2">
+          {/* =========================================================================
+              MOBILE FACEBOOK-INSPIRED POST COMPOSER (sm:hidden)
+              Layout matching reference screenshot media_1792682134439_8102f34f.png:
+              - Left: Creator circular avatar with active online badge
+              - Center: Rounded pill-shaped "Share your latest work..." input trigger
+              - Right: Compact "Artwork" shortcut with gallery icon
+              ========================================================================= */}
+          <div className="sm:hidden bg-white rounded-2xl border border-gray-200/80 p-3 sm:p-3.5 shadow-2xs flex items-center gap-3">
+            {/* Left: Creator Avatar */}
+            <div className="relative shrink-0">
+              <div className="w-10 h-10 rounded-full overflow-hidden bg-purple-50 border border-gray-200 flex items-center justify-center">
+                {user?.avatar ? (
+                  <img
+                    src={getAvatarUrl(user.avatar)}
+                    alt={user.name || 'Creator'}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-sm font-bold text-[#9747FF]">
+                    {(user?.name || user?.firstName || 'C')[0].toUpperCase()}
+                  </span>
+                )}
+              </div>
+              {user && (
+                <span
+                  className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white ring-1 ring-emerald-500/20"
+                  title="Online"
+                />
+              )}
+            </div>
+
+            {/* Center: Rounded Pill Input Trigger */}
+            <button
+              type="button"
+              onClick={() => handleOpenMobileComposer(false)}
+              className="flex-1 min-w-0 bg-gray-100/90 hover:bg-gray-200/70 active:bg-gray-200 text-left px-4 py-2.5 rounded-full text-xs sm:text-sm text-gray-500 transition-colors cursor-pointer select-none truncate focus:outline-none focus:ring-1 focus:ring-[#9747FF]"
+              aria-label="Share your latest work"
+            >
+              Share your latest work...
+            </button>
+
+            {/* Right: Artwork Attachment Shortcut */}
+            <button
+              type="button"
+              onClick={() => handleOpenMobileComposer(true)}
+              className="flex flex-col items-center justify-center gap-0.5 px-1.5 py-0.5 text-gray-700 hover:text-[#9747FF] transition-colors cursor-pointer shrink-0 outline-none focus:outline-none group"
+              aria-label="Attach artwork"
+              title="Attach artwork"
+            >
+              <ImageIcon className="w-5 h-5 text-emerald-500 group-hover:scale-105 transition-transform" />
+              <span className="text-[11px] font-medium text-gray-600 group-hover:text-[#9747FF] leading-none">
+                Artwork
+              </span>
+            </button>
+          </div>
+
+          {/* Desktop Category Filter Pills & Preserved Refresh Action (hidden on mobile) */}
+          <div className="hidden sm:flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar flex-1 min-w-0">
               {CATEGORIES.map((cat) => (
                 <button
@@ -345,7 +409,7 @@ export function Home() {
             </button>
           </div>
 
-          {/* X-Inspired Post Composer (with Character limit ring & Reference 1 Image Uploader) */}
+          {/* Desktop Post Composer (X-inspired with character limit ring & inline image uploader) */}
           <div className="hidden sm:block">
             <PostComposer onPostCreated={handlePostCreated} />
           </div>
@@ -485,7 +549,7 @@ export function Home() {
       <div className="sm:hidden fixed bottom-20 right-5 z-40">
         <button
           type="button"
-          onClick={() => setIsMobileComposerOpen(true)}
+          onClick={() => handleOpenMobileComposer(false)}
           className="w-13 h-13 rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white flex items-center justify-center shadow-lg shadow-purple-600/35 transition-transform active:scale-90 cursor-pointer focus:outline-none"
           aria-label="Create new creative post"
         >
@@ -496,7 +560,12 @@ export function Home() {
       {/* Mobile Post Creation Drawer (Wallet drawer animation pattern) */}
       <Drawer
         open={isMobileComposerOpen}
-        onOpenChange={(open) => setIsMobileComposerOpen(open)}
+        onOpenChange={(open) => {
+          setIsMobileComposerOpen(open);
+          if (!open) {
+            setComposerAutoOpenImage(false);
+          }
+        }}
       >
         <DrawerContent className="bg-white rounded-t-3xl max-h-[92dvh] flex flex-col p-4 pb-8 border-none shadow-2xl focus:outline-none z-[150]">
           <DrawerTitle className="sr-only">Create New Post</DrawerTitle>
@@ -504,7 +573,10 @@ export function Home() {
             Publish artwork and updates to the creative feed
           </DrawerDescription>
           <div className="flex-1 overflow-y-auto pt-2">
-            <PostComposer onPostCreated={handlePostCreated} />
+            <PostComposer 
+              onPostCreated={handlePostCreated} 
+              autoOpenImageUploader={composerAutoOpenImage}
+            />
           </div>
         </DrawerContent>
       </Drawer>
