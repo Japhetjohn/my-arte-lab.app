@@ -3,6 +3,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { TopNavigation } from '@/components/layout/TopNavigation';
 import { BottomNavigation } from '@/components/layout/BottomNavigation';
 import { AuthProvider, useAuth, api } from '@/contexts/AuthContext';
+import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
 
 import { Login } from '@/pages/auth/Login';
 import { Register } from '@/pages/auth/Register';
@@ -251,8 +252,10 @@ function AppContent() {
     }
   };
 
+  const { isDark } = useTheme();
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#121212] text-gray-900 dark:text-gray-100 transition-colors duration-150">
       <TopNavigation
         user={user}
         unreadNotifications={unreadNotifications}
@@ -268,6 +271,7 @@ function AppContent() {
       </main>
       
       <BottomNavigation currentPath={currentPath} />
+      <Toaster theme={isDark ? 'dark' : 'light'} />
     </div>
   );
 }
@@ -280,10 +284,11 @@ function NavigateToHome() {
 function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <AppContent />
-        <Toaster />
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   );
 }

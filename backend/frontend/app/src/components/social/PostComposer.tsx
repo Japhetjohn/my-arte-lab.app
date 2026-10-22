@@ -173,14 +173,14 @@ export function PostComposer({ onPostCreated, className, autoOpenImageUploader }
   return (
     <div
       className={cn(
-        'bg-white border-b border-[#DADDE1] p-4 sm:p-5',
+        'bg-white dark:bg-[#18191a] border-b border-[#DADDE1] dark:border-[#2f3032] p-4 sm:p-5 transition-colors',
         className
       )}
     >
       <form onSubmit={handleSubmit}>
         <div className="flex gap-3 sm:gap-4 items-start">
           {/* User Avatar */}
-          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full overflow-hidden bg-purple-100 flex items-center justify-center shrink-0 border border-purple-200/60 shadow-xs">
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full overflow-hidden bg-purple-100 dark:bg-purple-950/40 flex items-center justify-center shrink-0 border border-purple-200/60 dark:border-purple-800/40 shadow-xs">
             {user?.avatar ? (
               <img
                 src={getAvatarUrl(user.avatar)}
@@ -202,19 +202,19 @@ export function PostComposer({ onPostCreated, className, autoOpenImageUploader }
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Share your latest creative work..."
               rows={2}
-              className="w-full resize-none border-none bg-transparent text-gray-900 placeholder-gray-400 text-sm sm:text-base leading-relaxed focus:outline-none focus:ring-0 p-0"
+              className="w-full resize-none border-none bg-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 text-sm sm:text-base leading-relaxed focus:outline-none focus:ring-0 p-0"
             />
 
             {/* Optional booking or portfolio direct link field */}
             {showDirectLink && (
-              <div className="mt-2.5 flex items-center gap-2 p-2 rounded-xl bg-gray-50 border border-gray-200/70 animate-in fade-in">
+              <div className="mt-2.5 flex items-center gap-2 p-2 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200/70 dark:border-gray-700 animate-in fade-in">
                 <Link2 className="w-4 h-4 text-gray-400 shrink-0 ml-1" />
                 <input
                   type="url"
                   value={directLink}
                   onChange={(e) => setDirectLink(e.target.value)}
                   placeholder="https://yourportfolio.com or booking link"
-                  className="flex-1 bg-transparent border-none text-xs sm:text-sm text-gray-800 focus:outline-none placeholder-gray-400"
+                  className="flex-1 bg-transparent border-none text-xs sm:text-sm text-gray-800 dark:text-gray-200 focus:outline-none placeholder-gray-400 dark:placeholder-gray-500"
                 />
               </div>
             )}
@@ -223,7 +223,7 @@ export function PostComposer({ onPostCreated, className, autoOpenImageUploader }
 
         {/* Desktop Inline Image Uploader - Matches Reference Image 1 */}
         {!isMobile && showInlineUploader && (
-          <div className="mt-4 pt-4 border-t border-gray-100 animate-in fade-in duration-200">
+          <div className="mt-4 pt-4 border-t border-gray-100 dark:border-[#2f3032] animate-in fade-in duration-200">
             <ImageUploader
               images={images}
               onImagesChange={setImages}
@@ -239,7 +239,7 @@ export function PostComposer({ onPostCreated, className, autoOpenImageUploader }
             {images.map((item) => (
               <div
                 key={item.id}
-                className="relative w-14 h-14 rounded-lg overflow-hidden border border-gray-200 shrink-0 group"
+                className="relative w-14 h-14 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 shrink-0 group"
               >
                 <img
                   src={item.url}
@@ -259,7 +259,7 @@ export function PostComposer({ onPostCreated, className, autoOpenImageUploader }
         )}
 
         {/* Toolbar & Action Bar */}
-        <div className="flex items-center justify-between mt-3.5 pt-3 border-t border-gray-100">
+        <div className="flex items-center justify-between mt-3.5 pt-3 border-t border-gray-100 dark:border-[#2f3032]">
           {/* Left Media Actions */}
           <div className="flex items-center gap-1 sm:gap-2">
             <button
@@ -268,8 +268,8 @@ export function PostComposer({ onPostCreated, className, autoOpenImageUploader }
               className={cn(
                 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium transition-colors cursor-pointer',
                 images.length > 0
-                  ? 'bg-purple-100 text-[#9747FF]'
-                  : 'text-gray-600 hover:text-[#9747FF] hover:bg-purple-50/70'
+                  ? 'bg-purple-100 dark:bg-purple-950/60 text-[#9747FF]'
+                  : 'text-gray-600 dark:text-gray-300 hover:text-[#9747FF] hover:bg-purple-50/70 dark:hover:bg-purple-950/40'
               )}
               title="Attach Images"
             >
@@ -283,8 +283,8 @@ export function PostComposer({ onPostCreated, className, autoOpenImageUploader }
               className={cn(
                 'inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs sm:text-sm font-medium transition-colors cursor-pointer',
                 showDirectLink || directLink
-                  ? 'bg-purple-100 text-[#9747FF]'
-                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                  ? 'bg-purple-100 dark:bg-purple-950/60 text-[#9747FF]'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
               )}
               title="Add Direct Link"
             >

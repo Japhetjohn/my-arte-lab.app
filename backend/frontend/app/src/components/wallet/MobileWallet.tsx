@@ -223,7 +223,7 @@ export function MobileWallet({
   const hasEscrowActivity = escrowBalance > 0 || incomingEarnings > 0;
 
   return (
-    <div className="bg-white min-h-[calc(100vh-4rem)] -mx-3 sm:-mx-4 -mt-3 sm:-mt-4 p-4 sm:p-6 pb-32 text-gray-900 selection:bg-purple-100 selection:text-purple-900">
+    <div className="bg-white dark:bg-[#121212] min-h-[calc(100vh-4rem)] -mx-3 sm:-mx-4 -mt-3 sm:-mt-4 p-4 sm:p-6 pb-32 text-gray-900 dark:text-gray-100 selection:bg-purple-100 selection:text-purple-900">
       {/* 1. Header: Quick Actions (Refresh) */}
       {onRefresh && (
         <header className="flex items-center justify-end pt-1 pb-1">
@@ -231,7 +231,7 @@ export function MobileWallet({
             type="button"
             onClick={handleRefresh}
             disabled={isRefreshing}
-            className="w-8 h-8 rounded-full bg-gray-50 hover:bg-gray-100 active:scale-95 text-gray-500 hover:text-gray-900 flex items-center justify-center transition-all cursor-pointer"
+            className="w-8 h-8 rounded-full bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 active:scale-95 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 flex items-center justify-center transition-all cursor-pointer"
             aria-label="Refresh wallet"
             title="Refresh wallet"
           >
@@ -243,32 +243,32 @@ export function MobileWallet({
       {/* 2. Available Balance Section */}
       <section className="text-center pt-2 pb-2">
         <div className="flex items-center justify-center gap-1.5 mb-1.5">
-          <p className="text-sm font-medium text-gray-500">Available balance</p>
+          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Available balance</p>
           {isWalletLoading && <Loader2 className="w-3.5 h-3.5 animate-spin text-[#9747FF]" />}
         </div>
         <div className="flex items-baseline justify-center">
-          <span className="text-2xl sm:text-3xl font-light text-gray-400 mr-0.5 align-baseline">$</span>
-          <span className="text-5xl sm:text-6xl font-bold tracking-tight text-gray-900">{wholePart}</span>
-          <span className="text-2xl sm:text-3xl font-semibold tracking-tight text-gray-900">.{decimalPart}</span>
-          <span className="text-xs font-semibold text-[#9747FF] bg-purple-50 border border-purple-200/60 px-2 py-0.5 rounded-md ml-1.5 align-baseline">
+          <span className="text-2xl sm:text-3xl font-light text-gray-400 dark:text-gray-500 mr-0.5 align-baseline">$</span>
+          <span className="text-5xl sm:text-6xl font-bold tracking-tight text-gray-900 dark:text-gray-100">{wholePart}</span>
+          <span className="text-2xl sm:text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">.{decimalPart}</span>
+          <span className="text-xs font-semibold text-[#9747FF] bg-purple-50 dark:bg-[#9747FF]/15 border border-purple-200/60 dark:border-purple-800/60 px-2 py-0.5 rounded-md ml-1.5 align-baseline">
             USDC
           </span>
         </div>
 
         {/* Recoverable Wallet Error Banner */}
         {walletError && (
-          <div className="mt-3 p-3 rounded-xl bg-red-50/90 border border-red-200/80 text-center max-w-sm mx-auto">
-            <div className="flex items-center justify-center gap-1.5 text-red-700 text-xs sm:text-sm font-semibold mb-1">
+          <div className="mt-3 p-3 rounded-xl bg-red-50/90 dark:bg-red-950/40 border border-red-200/80 dark:border-red-900/50 text-center max-w-sm mx-auto">
+            <div className="flex items-center justify-center gap-1.5 text-red-700 dark:text-red-400 text-xs sm:text-sm font-semibold mb-1">
               <AlertCircle className="w-3.5 h-3.5 shrink-0" />
               <span>Failed to load wallet data</span>
             </div>
-            <p className="text-xs text-red-600 mb-2">{walletError}</p>
+            <p className="text-xs text-red-600 dark:text-red-300 mb-2">{walletError}</p>
             {onRefresh && (
               <button
                 type="button"
                 onClick={handleRefresh}
                 disabled={isRefreshing}
-                className="px-3 py-1 bg-white border border-red-200 text-red-700 rounded-lg text-xs font-medium hover:bg-red-50/50 inline-flex items-center gap-1.5 cursor-pointer"
+                className="px-3 py-1 bg-white dark:bg-gray-800 border border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-300 rounded-lg text-xs font-medium hover:bg-red-50/50 dark:hover:bg-gray-700 inline-flex items-center gap-1.5 cursor-pointer"
               >
                 <RefreshCw className={cn('w-3 h-3', isRefreshing && 'animate-spin')} />
                 <span>Retry</span>
@@ -279,7 +279,7 @@ export function MobileWallet({
 
         {/* Pending Withdrawal Reservation Notice */}
         {hasPendingWithdrawal && (
-          <div className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50/90 border border-amber-200/70 rounded-full text-xs font-medium text-amber-800">
+          <div className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200/70 dark:border-amber-800/60 rounded-full text-xs font-medium text-amber-800 dark:text-amber-300">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse shrink-0" />
             <span>
               ${pendingWithdrawal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDC reserved for pending withdrawal
@@ -293,18 +293,18 @@ export function MobileWallet({
         <button
           type="button"
           onClick={onAddFunds}
-          className="h-12 px-4 rounded-xl bg-gray-100 hover:bg-gray-200/80 active:scale-[0.98] border border-gray-200/70 text-gray-900 font-semibold text-sm sm:text-base flex items-center justify-center gap-2 shadow-2xs transition-all cursor-pointer"
+          className="h-12 px-4 rounded-xl bg-gray-100 hover:bg-gray-200/80 dark:bg-[#1e1f20] dark:hover:bg-[#252627] active:scale-[0.98] border border-gray-200/70 dark:border-gray-800 text-gray-900 dark:text-gray-100 font-semibold text-sm sm:text-base flex items-center justify-center gap-2 shadow-2xs transition-all cursor-pointer"
         >
-          <ArrowDownLeft className="w-4 h-4 text-gray-700" />
+          <ArrowDownLeft className="w-4 h-4 text-gray-700 dark:text-gray-300" />
           <span>Add Funds</span>
         </button>
 
         <button
           type="button"
           onClick={onWithdraw}
-          className="h-12 px-4 rounded-xl bg-gray-100 hover:bg-gray-200/80 active:scale-[0.98] border border-gray-200/70 text-gray-900 font-semibold text-sm sm:text-base flex items-center justify-center gap-2 shadow-2xs transition-all cursor-pointer"
+          className="h-12 px-4 rounded-xl bg-gray-100 hover:bg-gray-200/80 dark:bg-[#1e1f20] dark:hover:bg-[#252627] active:scale-[0.98] border border-gray-200/70 dark:border-gray-800 text-gray-900 dark:text-gray-100 font-semibold text-sm sm:text-base flex items-center justify-center gap-2 shadow-2xs transition-all cursor-pointer"
         >
-          <ArrowUpRight className="w-4 h-4 text-gray-700" />
+          <ArrowUpRight className="w-4 h-4 text-gray-700 dark:text-gray-300" />
           <span>Withdraw</span>
         </button>
       </section>
@@ -314,33 +314,33 @@ export function MobileWallet({
         <div className="flex items-center justify-between mb-2.5 px-1">
           <div className="flex items-center gap-1.5">
             <ShieldCheck className="w-4 h-4 text-[#9747FF]" />
-            <h2 className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-gray-600">
+            <h2 className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400">
               Escrow Activity
             </h2>
           </div>
-          <span className="text-xs font-medium text-gray-400">Protected Funds</span>
+          <span className="text-xs font-medium text-gray-400 dark:text-gray-500">Protected Funds</span>
         </div>
 
         {hasEscrowActivity ? (
           <div className="space-y-2.5">
             {/* Client Escrow */}
             {escrowBalance > 0 && (
-              <div className="bg-white border border-gray-150 rounded-xl p-3.5 shadow-xs flex items-center justify-between">
+              <div className="bg-white dark:bg-[#18191a] border border-gray-150 dark:border-[#2f3032] rounded-xl p-3.5 shadow-xs flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-purple-50 text-[#9747FF] flex items-center justify-center shrink-0">
+                  <div className="w-9 h-9 rounded-full bg-purple-50 dark:bg-[#9747FF]/15 text-[#9747FF] flex items-center justify-center shrink-0">
                     <Lock className="w-4 h-4" />
                   </div>
                   <div>
-                    <p className="font-semibold text-sm text-gray-900">Held in Escrow</p>
-                    <p className="text-xs text-gray-500 mt-0.5">Released to creator upon delivery</p>
+                    <p className="font-semibold text-sm text-gray-900 dark:text-gray-100">Held in Escrow</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Released to creator upon delivery</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="font-bold text-sm sm:text-base text-gray-900">
+                  <p className="font-bold text-sm sm:text-base text-gray-900 dark:text-gray-100">
                     ${escrowBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{' '}
-                    <span className="text-xs text-gray-400 font-normal">USDC</span>
+                    <span className="text-xs text-gray-400 dark:text-gray-500 font-normal">USDC</span>
                   </p>
-                  <span className="inline-block text-xs text-purple-700 font-semibold bg-purple-50 border border-purple-200/60 px-2 py-0.5 rounded-md mt-0.5">
+                  <span className="inline-block text-xs text-purple-700 dark:text-purple-300 font-semibold bg-purple-50 dark:bg-[#9747FF]/20 border border-purple-200/60 dark:border-purple-800/60 px-2 py-0.5 rounded-md mt-0.5">
                     In Escrow
                   </span>
                 </div>
@@ -349,22 +349,22 @@ export function MobileWallet({
 
             {/* Creator Incoming Earnings */}
             {incomingEarnings > 0 && (
-              <div className="bg-white border border-gray-150 rounded-xl p-3.5 shadow-xs flex items-center justify-between">
+              <div className="bg-white dark:bg-[#18191a] border border-gray-150 dark:border-[#2f3032] rounded-xl p-3.5 shadow-xs flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                  <div className="w-9 h-9 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 flex items-center justify-center shrink-0">
                     <TrendingUp className="w-4 h-4" />
                   </div>
                   <div>
-                    <p className="font-semibold text-sm text-gray-900">Incoming Earnings</p>
-                    <p className="text-xs text-gray-500 mt-0.5">Paid out when client approves work</p>
+                    <p className="font-semibold text-sm text-gray-900 dark:text-gray-100">Incoming Earnings</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Paid out when client approves work</p>
                   </div>
                 </div>
                 <div className="text-right">
                   <p className="font-bold text-sm sm:text-base text-emerald-600">
                     ${incomingEarnings.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{' '}
-                    <span className="text-xs text-gray-400 font-normal">USDC</span>
+                    <span className="text-xs text-gray-400 dark:text-gray-500 font-normal">USDC</span>
                   </p>
-                  <span className="inline-block text-xs text-emerald-700 font-semibold bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded-md mt-0.5">
+                  <span className="inline-block text-xs text-emerald-700 dark:text-emerald-300 font-semibold bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/60 px-2 py-0.5 rounded-md mt-0.5">
                     Pending
                   </span>
                 </div>
@@ -372,9 +372,9 @@ export function MobileWallet({
             )}
           </div>
         ) : (
-          <div className="bg-gray-50/70 border border-dashed border-gray-200/80 rounded-xl p-3.5 text-center">
-            <p className="text-sm font-semibold text-gray-700">No active escrow funds</p>
-            <p className="text-xs sm:text-sm text-gray-500 mt-1">
+          <div className="bg-gray-50/70 dark:bg-[#18191a]/70 border border-dashed border-gray-200/80 dark:border-gray-800 rounded-xl p-3.5 text-center">
+            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">No active escrow funds</p>
+            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
               Funds for booked projects are securely held in escrow until milestones are completed.
             </p>
             <a
@@ -392,7 +392,7 @@ export function MobileWallet({
       <section className="max-w-md mx-auto">
         <div className="flex items-center justify-between mb-3 px-1">
           <div className="flex items-center gap-2">
-            <h2 className="text-base sm:text-lg font-bold text-gray-900 tracking-tight">Recent Transactions</h2>
+            <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 tracking-tight">Recent Transactions</h2>
             {isTransactionsLoading && (
               <Loader2 className="w-3.5 h-3.5 animate-spin text-[#9747FF]" />
             )}
@@ -401,18 +401,18 @@ export function MobileWallet({
 
         {/* Recoverable Transactions Error Banner */}
         {transactionsError && (
-          <div className="mb-3 p-3 rounded-xl bg-red-50/90 border border-red-200/80 text-center">
-            <div className="flex items-center justify-center gap-1.5 text-red-700 text-xs sm:text-sm font-semibold mb-1">
+          <div className="mb-3 p-3 rounded-xl bg-red-50/90 dark:bg-red-950/40 border border-red-200/80 dark:border-red-900/50 text-center">
+            <div className="flex items-center justify-center gap-1.5 text-red-700 dark:text-red-400 text-xs sm:text-sm font-semibold mb-1">
               <AlertCircle className="w-3.5 h-3.5 shrink-0" />
               <span>Failed to load transactions</span>
             </div>
-            <p className="text-xs text-red-600 mb-2">{transactionsError}</p>
+            <p className="text-xs text-red-600 dark:text-red-300 mb-2">{transactionsError}</p>
             {onRefresh && (
               <button
                 type="button"
                 onClick={handleRefresh}
                 disabled={isRefreshing}
-                className="px-3 py-1 bg-white border border-red-200 text-red-700 rounded-lg text-xs font-medium hover:bg-red-50/50 inline-flex items-center gap-1.5 cursor-pointer"
+                className="px-3 py-1 bg-white dark:bg-gray-800 border border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-300 rounded-lg text-xs font-medium hover:bg-red-50/50 dark:hover:bg-gray-700 inline-flex items-center gap-1.5 cursor-pointer"
               >
                 <RefreshCw className={cn('w-3 h-3', isRefreshing && 'animate-spin')} />
                 <span>Retry</span>
@@ -425,7 +425,7 @@ export function MobileWallet({
         {isTransactionsLoading && transactions.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12">
             <Loader2 className="w-6 h-6 animate-spin text-[#9747FF] mb-2" />
-            <p className="text-sm text-gray-500">Loading transactions...</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Loading transactions...</p>
           </div>
         ) : groupedTransactions.length > 0 ? (
           <div className="space-y-4">
@@ -433,14 +433,14 @@ export function MobileWallet({
               <div key={groupIdx} className="space-y-1">
                 {/* Group Header: Date on left, subtotal on right */}
                 <div className="flex items-center justify-between py-1 px-1">
-                  <span className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-gray-500">{group.label}</span>
-                  <span className="text-xs sm:text-sm font-medium text-gray-500">
+                  <span className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">{group.label}</span>
+                  <span className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">
                     ${group.subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
 
                 {/* Rows in this date group */}
-                <div className="bg-white">
+                <div className="bg-white dark:bg-[#121212]">
                   {group.items.map((tx) => {
                     const txId = tx.id || (tx as any)._id || `tx-${Math.random()}`;
                     const meta = getCategoryMeta(tx);
@@ -464,31 +464,31 @@ export function MobileWallet({
                             onSelectTransaction?.(tx);
                           }
                         }}
-                        className="flex items-center justify-between py-3 px-1.5 border-b border-gray-100 last:border-0 hover:bg-purple-50/40 active:bg-purple-50/70 active:scale-[0.99] rounded-xl transition-all cursor-pointer group"
+                        className="flex items-center justify-between py-3 px-1.5 border-b border-gray-100 dark:border-gray-800/80 last:border-0 hover:bg-purple-50/40 dark:hover:bg-purple-950/20 active:bg-purple-50/70 dark:active:bg-purple-950/30 active:scale-[0.99] rounded-xl transition-all cursor-pointer group"
                         aria-label={`View details for ${meta.categoryName} of ${formatted.text}`}
                       >
                         {/* Left: Monochrome vector icon & Description (NO EMOJIS) */}
                         <div className="flex items-center gap-3 min-w-0 flex-1">
-                          <div className="w-9 h-9 rounded-full bg-gray-100 group-hover:bg-purple-100/60 border border-gray-200/60 group-hover:border-purple-200 flex items-center justify-center shrink-0 transition-colors">
+                          <div className="w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-800 group-hover:bg-purple-100/60 dark:group-hover:bg-purple-950/40 border border-gray-200/60 dark:border-gray-700/60 group-hover:border-purple-200 flex items-center justify-center shrink-0 transition-colors">
                             {meta.isEscrow ? (
-                              <Lock className="w-4 h-4 text-purple-600" />
+                              <Lock className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                             ) : meta.isRefund ? (
-                              <RefreshCw className="w-4 h-4 text-emerald-600" />
+                              <RefreshCw className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                             ) : isCredit ? (
-                              <ArrowDownLeft className="w-4 h-4 text-emerald-600" />
+                              <ArrowDownLeft className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                             ) : (
-                              <ArrowUpRight className="w-4 h-4 text-gray-600" />
+                              <ArrowUpRight className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                             )}
                           </div>
 
                           <div className="min-w-0 flex-1">
                             <p
-                              className="font-semibold text-gray-900 group-hover:text-[#9747FF] text-sm sm:text-base truncate transition-colors"
+                              className="font-semibold text-gray-900 dark:text-gray-100 group-hover:text-[#9747FF] text-sm sm:text-base truncate transition-colors"
                               title={tx.description || meta.categoryName}
                             >
                               {meta.categoryName}
                             </p>
-                            <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
+                            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">
                               {formattedDateTime}
                             </p>
                           </div>
@@ -500,21 +500,21 @@ export function MobileWallet({
                             <p
                               className={cn(
                                 'text-sm sm:text-base font-bold tracking-tight',
-                                isCredit ? 'text-emerald-600' : 'text-gray-900'
+                                isCredit ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-900 dark:text-gray-100'
                               )}
                             >
                               {isCredit ? '+' : '−'}
                               {formatted.text}
                             </p>
-                            <p className="text-xs text-gray-500 capitalize mt-0.5">
+                            <p className="text-xs text-gray-500 dark:text-gray-400 capitalize mt-0.5">
                               {status === 'completed' ? (
-                                <span className="font-medium text-gray-500">{formatted.currencyBadge}</span>
+                                <span className="font-medium text-gray-500 dark:text-gray-400">{formatted.currencyBadge}</span>
                               ) : (
                                 <span
                                   className={cn(
                                     'font-semibold',
                                     status === 'pending' || status === 'processing'
-                                      ? 'text-amber-600'
+                                      ? 'text-amber-600 dark:text-amber-400'
                                       : 'text-red-500'
                                   )}
                                 >
@@ -523,7 +523,7 @@ export function MobileWallet({
                               )}
                             </p>
                           </div>
-                          <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-[#9747FF] group-hover:translate-x-0.5 transition-all shrink-0" />
+                          <ChevronRight className="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-[#9747FF] group-hover:translate-x-0.5 transition-all shrink-0" />
                         </div>
                       </div>
                     );
@@ -539,7 +539,7 @@ export function MobileWallet({
                   type="button"
                   onClick={onLoadMore}
                   disabled={isLoadingMore}
-                  className="px-4 py-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-xl text-xs sm:text-sm font-medium transition-all inline-flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                  className="px-4 py-2 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 rounded-xl text-xs sm:text-sm font-medium transition-all inline-flex items-center gap-2 cursor-pointer disabled:opacity-50"
                 >
                   {isLoadingMore && <Loader2 className="w-3.5 h-3.5 animate-spin text-[#9747FF]" />}
                   <span>{isLoadingMore ? 'Loading older transactions...' : 'Load older transactions'}</span>
@@ -548,12 +548,12 @@ export function MobileWallet({
             )}
           </div>
         ) : (
-          <div className="text-center py-12 px-4 bg-gray-50/50 rounded-2xl border border-gray-100 mt-2">
-            <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center mx-auto mb-2.5 text-gray-400 shadow-2xs border border-gray-100">
+          <div className="text-center py-12 px-4 bg-gray-50/50 dark:bg-[#18191a] rounded-2xl border border-gray-100 dark:border-[#2f3032] mt-2">
+            <div className="w-10 h-10 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center mx-auto mb-2.5 text-gray-400 dark:text-gray-300 shadow-2xs border border-gray-100 dark:border-gray-700">
               <FolderOpen className="w-5 h-5 stroke-[1.5]" />
             </div>
-            <p className="font-semibold text-gray-900 text-base">No transactions found</p>
-            <p className="text-xs sm:text-sm text-gray-500 mt-1 max-w-xs mx-auto">
+            <p className="font-semibold text-gray-900 dark:text-gray-100 text-base">No transactions found</p>
+            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-xs mx-auto">
               Your transaction history will appear here
             </p>
           </div>

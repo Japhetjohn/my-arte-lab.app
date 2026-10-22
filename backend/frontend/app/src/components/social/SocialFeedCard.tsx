@@ -384,7 +384,7 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
     <article
       ref={cardRef}
       className={cn(
-        'w-full bg-white border-b border-[#DADDE1] transition-colors',
+        'w-full bg-white dark:bg-[#18191a] border-b border-[#DADDE1] dark:border-[#2f3032] transition-colors',
         className
       )}
     >
@@ -395,7 +395,7 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
           className="flex items-center gap-2.5 sm:gap-3 group cursor-pointer min-w-0"
         >
           {/* Creator Avatar */}
-          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full overflow-hidden bg-purple-50 flex items-center justify-center shrink-0 border border-gray-200/80 group-hover:ring-2 group-hover:ring-[#9747FF]/30 transition-all">
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full overflow-hidden bg-purple-50 dark:bg-purple-950/40 flex items-center justify-center shrink-0 border border-gray-200/80 dark:border-gray-700 group-hover:ring-2 group-hover:ring-[#9747FF]/30 transition-all">
             {post.creator.avatar ? (
               <img
                 src={getAvatarUrl(post.creator.avatar)}
@@ -412,7 +412,7 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
           {/* Creator Name, Verification, Timestamp */}
           <div className="flex flex-col min-w-0">
             <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="font-bold text-[15px] sm:text-base text-gray-900 group-hover:text-[#9747FF] transition-colors leading-tight truncate">
+              <span className="font-bold text-[15px] sm:text-base text-gray-900 dark:text-gray-100 group-hover:text-[#9747FF] transition-colors leading-tight truncate">
                 {creatorDisplayName}
               </span>
               {post.creator.isVerified && (
@@ -421,7 +421,7 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
             </div>
 
             {/* Timestamp & Public Visibility Globe */}
-            <div className="flex items-center gap-1.5 text-xs text-gray-500 leading-none mt-1">
+            <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 leading-none mt-1">
               <span>{formatTimestamp(post.createdAt)}</span>
               <span>•</span>
               <Globe className="w-3 h-3 text-gray-400 shrink-0" aria-label="Public artwork" />
@@ -435,28 +435,28 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className="p-1.5 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors cursor-pointer outline-none focus:outline-none"
+                className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors cursor-pointer outline-none focus:outline-none"
                 aria-label="Artwork options"
               >
                 <MoreHorizontal className="w-5 h-5 stroke-[2]" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48 bg-white border border-[#DADDE1] rounded-xl shadow-md p-1 divide-y divide-[#DADDE1]/50">
+            <DropdownMenuContent align="end" className="w-48 bg-white dark:bg-[#1e1f20] border border-[#DADDE1] dark:border-[#2f3032] rounded-xl shadow-md p-1 divide-y divide-[#DADDE1]/50 dark:divide-[#2f3032]">
               <div className="py-1">
-                <DropdownMenuItem onClick={handleShare} className="cursor-pointer text-xs">
+                <DropdownMenuItem onClick={handleShare} className="cursor-pointer text-xs dark:text-gray-200 dark:focus:bg-gray-800">
                   <Copy className="w-3.5 h-3.5 mr-2 text-gray-500" />
                   <span>Copy artwork link</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => (window.location.href = `/creators/${post.creator._id}`)}
-                  className="cursor-pointer text-xs"
+                  className="cursor-pointer text-xs dark:text-gray-200 dark:focus:bg-gray-800"
                 >
                   <Users className="w-3.5 h-3.5 mr-2 text-gray-500" />
                   <span>View creator profile</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => (window.location.href = `/creators/${post.creator._id}`)}
-                  className="cursor-pointer text-xs"
+                  className="cursor-pointer text-xs dark:text-gray-200 dark:focus:bg-gray-800"
                 >
                   <Calendar className="w-3.5 h-3.5 mr-2 text-gray-500" />
                   <span>Book creator</span>
@@ -466,7 +466,7 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
                 <div className="py-1">
                   <DropdownMenuItem
                     onClick={() => window.open(post.directLink, '_blank')}
-                    className="cursor-pointer text-xs text-[#9747FF]"
+                    className="cursor-pointer text-xs text-[#9747FF] dark:focus:bg-gray-800"
                   >
                     <span>Visit website link</span>
                   </DropdownMenuItem>
@@ -482,7 +482,7 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
         <div className={cn('px-4 pt-1', hasImages ? 'pb-2.5' : 'pb-4')}>
           <p
             className={cn(
-              'text-[15px] sm:text-base text-gray-900 leading-relaxed whitespace-pre-line break-words',
+              'text-[15px] sm:text-base text-gray-900 dark:text-gray-100 leading-relaxed whitespace-pre-line break-words',
               !isCaptionExpanded && (hasImages ? 'line-clamp-3' : 'line-clamp-5')
             )}
           >
@@ -494,7 +494,7 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
             <button
               type="button"
               onClick={() => setIsCaptionExpanded(true)}
-              className="text-[14px] sm:text-[15px] font-semibold text-gray-500 hover:text-[#9747FF] cursor-pointer mt-0.5 inline-block"
+              className="text-[14px] sm:text-[15px] font-semibold text-gray-500 dark:text-gray-400 hover:text-[#9747FF] cursor-pointer mt-0.5 inline-block"
             >
               {hasImages ? '...see more' : 'Read more'}
             </button>
@@ -504,7 +504,7 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
             <button
               type="button"
               onClick={() => setIsCaptionExpanded(false)}
-              className="text-xs font-medium text-gray-400 hover:text-gray-600 cursor-pointer mt-1 block"
+              className="text-xs font-medium text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer mt-1 block"
             >
               Show less
             </button>
@@ -529,10 +529,10 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
 
       {/* 3. Artwork Presentation — Full Width Edge-to-Edge */}
       {hasImages && (
-        <div className="w-full bg-black/5">
+        <div className="w-full bg-black/5 dark:bg-black/20">
           {images.length === 1 ? (
             // Single-Image Post: Full available width, preserved aspect ratio, NO arrows, NO dots
-            <div className="w-full flex items-center justify-center max-h-[620px] overflow-hidden bg-black/5">
+            <div className="w-full flex items-center justify-center max-h-[620px] overflow-hidden bg-black/5 dark:bg-black/20">
               <img
                 src={getImageUrl(images[0])}
                 alt={post.title || 'Artwork'}
@@ -542,7 +542,7 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
             </div>
           ) : (
             // Multiple-Image Post: Horizontal swipeable gallery with mobile-only arrows & desktop dots
-            <div className="w-full relative overflow-hidden bg-black/5">
+            <div className="w-full relative overflow-hidden bg-black/5 dark:bg-black/20">
               {/* Mobile-Only Subtle Left/Right Navigation Arrows (sm:hidden) */}
               <button
                 type="button"
@@ -596,7 +596,7 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
                 {images.map((imgUrl, idx) => (
                   <div
                     key={idx}
-                    className="min-w-full w-full flex-shrink-0 snap-center snap-always flex items-center justify-center max-h-[620px] overflow-hidden bg-black/5"
+                    className="min-w-full w-full flex-shrink-0 snap-center snap-always flex items-center justify-center max-h-[620px] overflow-hidden bg-black/5 dark:bg-black/20"
                   >
                     <img
                       src={getImageUrl(imgUrl)}
@@ -610,7 +610,7 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
               </div>
 
               {/* Desktop-Only Pagination Dots (Hidden on mobile, preserved on desktop) */}
-              <div className="hidden sm:flex w-full items-center justify-center gap-1.5 py-1 bg-white">
+              <div className="hidden sm:flex w-full items-center justify-center gap-1.5 py-1 bg-white dark:bg-[#18191a]">
                 {images.map((_, dotIdx) => (
                   <button
                     key={dotIdx}
@@ -620,7 +620,7 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
                       'rounded-full transition-all duration-200 cursor-pointer focus:outline-none p-0 shrink-0',
                       activeGalleryIndex === dotIdx
                         ? 'w-[5px] h-[5px] bg-[#9747FF]'
-                        : 'w-[4px] h-[4px] bg-[#DADDE1] hover:bg-gray-400'
+                        : 'w-[4px] h-[4px] bg-[#DADDE1] dark:bg-[#3e4042] hover:bg-gray-400'
                     )}
                     aria-label={`View artwork image ${dotIdx + 1} of ${images.length}`}
                   />
@@ -632,9 +632,9 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
       )}
 
       {/* 4. Engagement Summary Row (Likes & Comments count, no decorative reaction circles) */}
-      <div className="px-4 py-2 flex items-center justify-between text-xs text-gray-500 border-b border-[#DADDE1]/70">
+      <div className="px-4 py-2 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 border-b border-[#DADDE1]/70 dark:border-[#2f3032]">
         {/* Left: Clean Like Count without decorative circles */}
-        <span className="font-medium text-gray-600">
+        <span className="font-medium text-gray-600 dark:text-gray-300">
           {formatCount(likesCount)} {likesCount === 1 ? 'like' : 'likes'}
         </span>
 
@@ -642,7 +642,7 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
         <button
           type="button"
           onClick={() => setShowComments((prev) => !prev)}
-          className="font-medium text-gray-500 hover:text-gray-800 transition-colors cursor-pointer"
+          className="font-medium text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors cursor-pointer"
         >
           {commentsCount > 0
             ? `${formatCount(commentsCount)} ${commentsCount === 1 ? 'comment' : 'comments'}`
@@ -660,15 +660,15 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
           className={cn(
             'flex-1 flex items-center justify-center gap-2 py-2 px-2 rounded-lg text-xs sm:text-sm font-medium transition-colors cursor-pointer select-none active:scale-95',
             isLiked
-              ? 'text-[#9747FF] hover:bg-purple-50/70 font-semibold'
-              : 'text-gray-600 hover:bg-gray-100/70 hover:text-gray-900 active:bg-gray-200/60'
+              ? 'text-[#9747FF] hover:bg-purple-50/70 dark:hover:bg-purple-950/40 font-semibold'
+              : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100/70 dark:hover:bg-white/[0.06] hover:text-gray-900 dark:hover:text-gray-100 active:bg-gray-200/60'
           )}
           aria-label={isLiked ? 'Unlike artwork' : 'Like artwork'}
         >
           <ThumbsUp
             className={cn(
               'w-4 h-4 sm:w-4.5 sm:h-4.5 transition-transform duration-200',
-              isLiked ? 'fill-[#9747FF] text-[#9747FF] scale-110' : 'text-gray-500'
+              isLiked ? 'fill-[#9747FF] text-[#9747FF] scale-110' : 'text-gray-500 dark:text-gray-400'
             )}
           />
           <span>{likesCount > 0 ? formatCount(likesCount) : 'Like'}</span>
@@ -681,12 +681,12 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
           className={cn(
             'flex-1 flex items-center justify-center gap-2 py-2 px-2 rounded-lg text-xs sm:text-sm font-medium transition-colors cursor-pointer select-none active:scale-95',
             showComments
-              ? 'text-[#9747FF] bg-purple-50/60 font-semibold'
-              : 'text-gray-600 hover:bg-gray-100/70 hover:text-gray-900 active:bg-gray-200/60'
+              ? 'text-[#9747FF] bg-purple-50/60 dark:bg-purple-950/40 font-semibold'
+              : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100/70 dark:hover:bg-white/[0.06] hover:text-gray-900 dark:hover:text-gray-100 active:bg-gray-200/60'
           )}
           aria-label="View comments"
         >
-          <MessageCircle className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-gray-500" />
+          <MessageCircle className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-gray-500 dark:text-gray-400" />
           <span>{commentsCount > 0 ? formatCount(commentsCount) : 'Comment'}</span>
         </button>
 
@@ -694,17 +694,17 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
         <button
           type="button"
           onClick={handleShare}
-          className="flex-1 flex items-center justify-center gap-2 py-2 px-2 rounded-lg text-xs sm:text-sm font-medium text-gray-600 hover:bg-gray-100/70 hover:text-gray-900 active:bg-gray-200/60 transition-colors cursor-pointer select-none active:scale-95"
+          className="flex-1 flex items-center justify-center gap-2 py-2 px-2 rounded-lg text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100/70 dark:hover:bg-white/[0.06] hover:text-gray-900 dark:hover:text-gray-100 active:bg-gray-200/60 transition-colors cursor-pointer select-none active:scale-95"
           aria-label="Share post"
         >
-          <Forward className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-gray-500" />
+          <Forward className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-gray-500 dark:text-gray-400" />
           <span>Share</span>
         </button>
       </div>
 
       {/* 6. Expandable Comments Section */}
       {showComments && (
-        <div className="px-4 pb-4 pt-1 border-t border-[#DADDE1]/70 animate-in fade-in duration-200">
+        <div className="px-4 pb-4 pt-1 border-t border-[#DADDE1]/70 dark:border-[#2f3032] animate-in fade-in duration-200">
           <CommentsSection
             serviceId={serviceId}
             initialCommentsCount={commentsCount}

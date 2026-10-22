@@ -163,18 +163,18 @@ export function TransactionDetailsModal({
 
   // Structured content matching AddFundsModal layout
   const content = (
-    <div className="flex flex-col h-full max-h-[90dvh] sm:max-h-[85vh] overflow-hidden">
+    <div className="flex flex-col h-full max-h-[90dvh] sm:max-h-[85vh] overflow-hidden text-gray-900 dark:text-gray-100">
       {/* 1. Header Bar: Title and Close Button */}
-      <div className="shrink-0 flex items-center justify-between pb-3.5 pt-1 border-b border-gray-100 bg-white">
+      <div className="shrink-0 flex items-center justify-between pb-3.5 pt-1 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-[#1a1b1c]">
         <div className="flex items-center gap-2">
-          <h2 className="text-lg sm:text-xl font-semibold text-gray-900 tracking-tight">
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100 tracking-tight">
             Transaction Details
           </h2>
         </div>
         <button
           type="button"
           onClick={onClose}
-          className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
+          className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
           aria-label="Close"
         >
           <X className="w-4 h-4" />
@@ -184,16 +184,16 @@ export function TransactionDetailsModal({
       {/* 2. Scrollable Body: Content scrolls freely while Header & Footer stay fixed */}
       <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain py-4 px-0.5 space-y-4">
         {/* Top Summary Card (Reusing AddFundsModal quote card styling) */}
-        <div className="text-center py-4 bg-gray-50/60 rounded-2xl border border-gray-100 space-y-1.5">
-          <p className="text-xs text-gray-400 uppercase tracking-wider font-medium">
+        <div className="text-center py-4 bg-gray-50/60 dark:bg-[#121212] rounded-2xl border border-gray-100 dark:border-gray-800 space-y-1.5">
+          <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wider font-medium">
             {getTypeLabel()}
           </p>
 
           <div className="flex items-baseline justify-center mt-1">
-            <span className="text-3xl sm:text-4xl font-bold text-gray-900 tracking-tight">
+            <span className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
               {formatAmountString()}
             </span>
-            <span className="text-xs font-semibold text-[#9747FF] bg-purple-50 border border-purple-200/60 px-2 py-0.5 rounded-md ml-2">
+            <span className="text-xs font-semibold text-[#9747FF] bg-purple-50 dark:bg-[#9747FF]/15 border border-purple-200/60 dark:border-purple-800/60 px-2 py-0.5 rounded-md ml-2">
               {currency}
             </span>
           </div>
@@ -230,13 +230,13 @@ export function TransactionDetailsModal({
         </div>
 
         {/* Structured Details Card (Reusing AddFundsModal recipient details card styling) */}
-        <div className="bg-white border border-gray-150 rounded-2xl shadow-2xs divide-y divide-gray-100 overflow-hidden text-sm">
+        <div className="bg-white dark:bg-[#121212] border border-gray-150 dark:border-gray-800 rounded-2xl shadow-2xs divide-y divide-gray-100 dark:divide-gray-800 overflow-hidden text-sm">
           {/* Reference */}
           {(currentTx.reference || currentTx.transactionId) && (
             <div className="flex items-center justify-between px-4 py-3.5 gap-2">
-              <span className="text-gray-500 font-medium shrink-0">Reference</span>
+              <span className="text-gray-500 dark:text-gray-400 font-medium shrink-0">Reference</span>
               <div className="flex items-center gap-2 min-w-0">
-                <span className="font-mono text-xs sm:text-sm font-semibold text-gray-900 truncate max-w-[150px] sm:max-w-[200px]" title={currentTx.reference || currentTx.transactionId}>
+                <span className="font-mono text-xs sm:text-sm font-semibold text-gray-900 dark:text-gray-100 truncate max-w-[150px] sm:max-w-[200px]" title={currentTx.reference || currentTx.transactionId}>
                   {currentTx.reference || currentTx.transactionId}
                 </span>
                 <button
@@ -404,7 +404,7 @@ export function TransactionDetailsModal({
         onOpenChange={(open) => !open && onClose()}
         repositionInputs={false}
       >
-        <DrawerContent className="bg-white rounded-t-3xl max-h-[90dvh] flex flex-col p-5 pb-0 border-none shadow-2xl focus:outline-none z-[150]">
+        <DrawerContent className="bg-white dark:bg-[#1a1b1c] text-gray-900 dark:text-gray-100 rounded-t-3xl max-h-[90dvh] flex flex-col p-5 pb-0 border-none shadow-2xl focus:outline-none z-[150]">
           <DrawerTitle className="sr-only">Transaction Details</DrawerTitle>
           <DrawerDescription className="sr-only">
             View transaction details and receipt
@@ -419,7 +419,7 @@ export function TransactionDetailsModal({
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
         showCloseButton={false}
-        className="bg-white rounded-2xl max-h-[85vh] sm:max-w-[460px] flex flex-col p-6 pb-0 border border-gray-100 shadow-xl focus:outline-none z-[150]"
+        className="bg-white dark:bg-[#1a1b1c] text-gray-900 dark:text-gray-100 rounded-2xl max-h-[85vh] sm:max-w-[460px] flex flex-col p-6 pb-0 border border-gray-100 dark:border-[#2f3032] shadow-xl focus:outline-none z-[150]"
       >
         <DialogTitle className="sr-only">Transaction Details</DialogTitle>
         <DialogDescription className="sr-only">

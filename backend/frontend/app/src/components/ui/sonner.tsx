@@ -413,30 +413,31 @@ const ToastCard = React.memo(function ToastCard({ toast: item, onDismiss }: Toas
   };
 
   // Card background and border treatments
-  let cardStyles = 'bg-white border-gray-200/80 shadow-[0_10px_25px_-5px_rgba(0,0,0,0.08),0_4px_10px_-2px_rgba(0,0,0,0.03)]';
+  let cardStyles = 'bg-white dark:bg-[#1e1f20] border-gray-200/80 dark:border-[#2f3032] shadow-[0_10px_25px_-5px_rgba(0,0,0,0.1),0_4px_10px_-2px_rgba(0,0,0,0.04)]';
   let progressColor = 'bg-[#9747FF]';
-  let titleColor = 'text-gray-900';
+  let titleColor = 'text-gray-900 dark:text-gray-100';
 
   if (item.type === 'error') {
     // Subtle red surface per reference Card 1
-    cardStyles = 'bg-[#FEF2F2] border-red-200/70 shadow-[0_10px_25px_-5px_rgba(239,68,68,0.1),0_4px_10px_-2px_rgba(239,68,68,0.04)]';
+    cardStyles = 'bg-[#FEF2F2] dark:bg-[#2c1517] border-red-200/70 dark:border-red-900/60 shadow-[0_10px_25px_-5px_rgba(239,68,68,0.1),0_4px_10px_-2px_rgba(239,68,68,0.04)]';
     progressColor = 'bg-[#EF4444]';
-    titleColor = 'text-gray-950 font-bold';
+    titleColor = 'text-gray-950 dark:text-red-100 font-bold';
   } else if (item.type === 'success') {
     // Clean light surface per reference Card 2
-    cardStyles = 'bg-white border-gray-200/80 shadow-[0_10px_25px_-5px_rgba(16,185,129,0.08),0_4px_10px_-2px_rgba(0,0,0,0.03)]';
+    cardStyles = 'bg-white dark:bg-[#1e1f20] border-gray-200/80 dark:border-[#2f3032] shadow-[0_10px_25px_-5px_rgba(16,185,129,0.08),0_4px_10px_-2px_rgba(0,0,0,0.03)]';
     progressColor = 'bg-[#10B981]';
   } else if (item.type === 'update') {
     // Subtle purple accent for update per reference Card 4
-    cardStyles = 'bg-white border-purple-200/70 shadow-[0_10px_25px_-5px_rgba(151,71,255,0.08),0_4px_10px_-2px_rgba(0,0,0,0.03)]';
+    cardStyles = 'bg-white dark:bg-[#1e1f20] border-purple-200/70 dark:border-purple-900/40 shadow-[0_10px_25px_-5px_rgba(151,71,255,0.08),0_4px_10px_-2px_rgba(0,0,0,0.03)]';
     progressColor = 'bg-[#9747FF]';
-    titleColor = 'text-[#6D28D9] sm:text-gray-950';
+    titleColor = 'text-[#6D28D9] dark:text-[#c084fc] sm:text-gray-950 sm:dark:text-gray-100';
   } else if (item.type === 'info') {
-    cardStyles = 'bg-white border-purple-200/70 shadow-[0_10px_25px_-5px_rgba(151,71,255,0.08),0_4px_10px_-2px_rgba(0,0,0,0.03)]';
+    cardStyles = 'bg-white dark:bg-[#1e1f20] border-purple-200/70 dark:border-purple-900/40 shadow-[0_10px_25px_-5px_rgba(151,71,255,0.08),0_4px_10px_-2px_rgba(0,0,0,0.03)]';
     progressColor = 'bg-[#9747FF]';
   } else if (item.type === 'warning') {
-    cardStyles = 'bg-[#FFFBEB] border-amber-200/80 shadow-[0_10px_25px_-5px_rgba(245,158,11,0.08),0_4px_10px_-2px_rgba(0,0,0,0.03)]';
+    cardStyles = 'bg-[#FFFBEB] dark:bg-[#2d230e] border-amber-200/80 dark:border-amber-900/60 shadow-[0_10px_25px_-5px_rgba(245,158,11,0.08),0_4px_10px_-2px_rgba(0,0,0,0.03)]';
     progressColor = 'bg-[#F59E0B]';
+    titleColor = 'text-amber-950 dark:text-amber-100';
   }
 
   const hasDescription = Boolean(item.description);
@@ -470,7 +471,7 @@ const ToastCard = React.memo(function ToastCard({ toast: item, onDismiss }: Toas
             {item.title}
           </div>
           {hasDescription && (
-            <div className="text-xs text-gray-500 mt-0.5 leading-relaxed break-words">
+            <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed break-words">
               {item.description}
             </div>
           )}
@@ -485,7 +486,7 @@ const ToastCard = React.memo(function ToastCard({ toast: item, onDismiss }: Toas
                 item.action?.onClick(e);
                 handleDismiss();
               }}
-              className="px-2.5 py-1 text-xs font-semibold text-gray-700 bg-white hover:bg-gray-50 active:bg-gray-100 border border-gray-200 rounded-lg shadow-2xs transition-colors shrink-0 cursor-pointer"
+              className="px-2.5 py-1 text-xs font-semibold text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600 border border-gray-200 dark:border-gray-700 rounded-lg shadow-2xs transition-colors shrink-0 cursor-pointer"
             >
               {item.action.label}
             </button>
@@ -496,7 +497,7 @@ const ToastCard = React.memo(function ToastCard({ toast: item, onDismiss }: Toas
               type="button"
               onClick={handleDismiss}
               aria-label="Dismiss notification"
-              className="w-6 h-6 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-black/5 active:bg-black/10 transition-colors shrink-0 cursor-pointer -mr-1"
+              className="w-6 h-6 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-black/5 dark:hover:bg-white/10 active:bg-black/10 dark:active:bg-white/20 transition-colors shrink-0 cursor-pointer -mr-1"
             >
               <X className="w-3.5 h-3.5" />
             </button>

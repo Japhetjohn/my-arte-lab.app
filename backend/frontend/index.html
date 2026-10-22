@@ -30,10 +30,25 @@
     <!-- Theme Color -->
     <meta name="theme-color" content="#8A2BE2">
 
+    <!-- Anti-FOUC Theme Initialization Script -->
+    <script>
+      (function() {
+        try {
+          var saved = localStorage.getItem('myartelab_theme');
+          var isDark = saved === 'dark' || ((!saved || saved === 'system') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          if (isDark) {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
+
     <!-- Google Identity Services -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script type="module" crossorigin src="/assets/index-C-Vn96Fz.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-OUQdT7e-.css">
+    <script type="module" crossorigin src="/assets/index-CMA5N4jT.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-Bztrr979.css">
   </head>
   <body>
     <div id="root"></div>

@@ -279,10 +279,10 @@ export function Home() {
            ========================================================================= */}
         <aside className="hidden lg:flex flex-col gap-6 lg:col-span-3 sticky top-20">
           {/* User Profile Section */}
-          <div className="pb-5 border-b border-[#DADDE1]">
+          <div className="pb-5 border-b border-[#DADDE1] dark:border-[#2f3032]">
             {user ? (
               <div className="flex flex-col items-center text-center">
-                <div className="w-16 h-16 rounded-full overflow-hidden bg-purple-100 flex items-center justify-center border-2 border-[#9747FF]/20 mb-3">
+                <div className="w-16 h-16 rounded-full overflow-hidden bg-purple-100 dark:bg-purple-950/40 flex items-center justify-center border-2 border-[#9747FF]/20 mb-3">
                   {user.avatar ? (
                     <img src={getAvatarUrl(user.avatar)} alt={user.name} className="w-full h-full object-cover" />
                   ) : (
@@ -291,24 +291,24 @@ export function Home() {
                     </span>
                   )}
                 </div>
-                <h3 className="font-bold text-gray-900 text-base leading-tight">
+                <h3 className="font-bold text-gray-900 dark:text-gray-100 text-base leading-tight">
                   {user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Creator'}
                 </h3>
-                <p className="text-xs text-gray-600 mt-0.5">
+                <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
                   @{user.email.split('@')[0]}
                 </p>
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-purple-50 text-[#9747FF] text-xs font-semibold mt-2.5">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/50 text-[#9747FF] text-xs font-semibold mt-2.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#9747FF]"></span>
                   {user.role === 'creator' ? 'Verified Creator' : 'Creative Member'}
                 </div>
               </div>
             ) : (
               <div className="text-center py-2">
-                <div className="w-12 h-12 rounded-full bg-purple-100 text-[#9747FF] flex items-center justify-center mx-auto mb-3">
+                <div className="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-950/40 text-[#9747FF] flex items-center justify-center mx-auto mb-3">
                   <Sparkles className="w-6 h-6" />
                 </div>
-                <h3 className="font-bold text-gray-900 text-base">Join the Creative Space</h3>
-                <p className="text-xs text-gray-600 mt-1 mb-4 leading-relaxed">
+                <h3 className="font-bold text-gray-900 dark:text-gray-100 text-base">Join the Creative Space</h3>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 mb-4 leading-relaxed">
                   Publish artwork, connect with top African creators, and book services.
                 </p>
                 <Button
@@ -327,7 +327,7 @@ export function Home() {
             <nav className="space-y-1">
               <a
                 href="/home"
-                className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-sm bg-purple-50 text-[#9747FF] transition-colors"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-sm bg-purple-50 dark:bg-purple-950/50 text-[#9747FF] transition-colors"
               >
                 <Sparkles className="w-4 h-4 text-[#9747FF]" />
                 <span>Creative Feed</span>
@@ -335,17 +335,17 @@ export function Home() {
 
               <a
                 href="/discover"
-                className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 hover:text-[#9747FF] hover:bg-gray-100/70 transition-colors"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] dark:hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-white/[0.04] transition-colors"
               >
-                <Compass className="w-4 h-4 text-gray-500" />
+                <Compass className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                 <span>Discover Creators</span>
               </a>
 
               <a
                 href="/creators"
-                className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 hover:text-[#9747FF] hover:bg-gray-100/70 transition-colors"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] dark:hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-white/[0.04] transition-colors"
               >
-                <Users className="w-4 h-4 text-gray-500" />
+                <Users className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                 <span>Browse All</span>
               </a>
 
@@ -353,17 +353,17 @@ export function Home() {
                 <>
                   <a
                     href="/bookings"
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 hover:text-[#9747FF] hover:bg-gray-100/70 transition-colors"
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] dark:hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-white/[0.04] transition-colors"
                   >
-                    <Calendar className="w-4 h-4 text-gray-500" />
+                    <Calendar className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                     <span>My Bookings</span>
                   </a>
 
                   <a
                     href="/wallet"
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 hover:text-[#9747FF] hover:bg-gray-100/70 transition-colors"
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] dark:hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-white/[0.04] transition-colors"
                   >
-                    <Wallet className="w-4 h-4 text-gray-500" />
+                    <Wallet className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                     <span>Wallet &amp; Earnings</span>
                   </a>
                 </>
@@ -383,7 +383,7 @@ export function Home() {
               className="flex items-center justify-center overflow-hidden transition-all duration-75"
               style={{ height: `${pullDistance}px`, opacity: Math.min(1, pullDistance / 40) }}
             >
-              <div className="flex items-center gap-2 py-1 px-3.5 bg-white/95 backdrop-blur rounded-full shadow-2xs border border-gray-200/80 text-xs text-gray-600 font-medium">
+              <div className="flex items-center gap-2 py-1 px-3.5 bg-white/95 dark:bg-[#1a1b1c]/95 backdrop-blur rounded-full shadow-2xs border border-gray-200/80 dark:border-gray-700 text-xs text-gray-600 dark:text-gray-300 font-medium">
                 <RefreshCw
                   className={cn(
                     'w-3.5 h-3.5 text-[#9747FF] transition-transform duration-100',
@@ -398,7 +398,7 @@ export function Home() {
 
           {isRefreshing && (
             <div className="flex items-center justify-center py-1 animate-in fade-in slide-in-from-top-1 duration-200">
-              <div className="flex items-center gap-2 py-1 px-4 bg-purple-50 text-[#9747FF] rounded-full border border-purple-200/60 shadow-2xs text-xs font-semibold">
+              <div className="flex items-center gap-2 py-1 px-4 bg-purple-50 dark:bg-purple-950/50 text-[#9747FF] rounded-full border border-purple-200/60 dark:border-purple-800/40 shadow-2xs text-xs font-semibold">
                 <Loader2 className="w-3.5 h-3.5 animate-spin text-[#9747FF]" />
                 <span>Refreshing creative feed...</span>
               </div>
@@ -420,9 +420,9 @@ export function Home() {
           )}
 
           {/* MOBILE FACEBOOK-INSPIRED POST COMPOSER (sm:hidden) */}
-          <div className="sm:hidden -mx-3 sm:mx-0 bg-white border-t border-b border-[#DADDE1] px-4 py-3 flex items-center gap-3">
+          <div className="sm:hidden -mx-3 sm:mx-0 bg-white dark:bg-[#18191a] border-t border-b border-[#DADDE1] dark:border-[#2f3032] px-4 py-3 flex items-center gap-3">
             {/* Left: Creator Avatar */}
-            <div className="w-10 h-10 rounded-full overflow-hidden bg-purple-50 border border-gray-200 flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-full overflow-hidden bg-purple-50 dark:bg-purple-950/40 border border-gray-200 dark:border-gray-700 flex items-center justify-center shrink-0">
               {user?.avatar ? (
                 <img
                   src={getAvatarUrl(user.avatar)}
@@ -440,7 +440,7 @@ export function Home() {
             <button
               type="button"
               onClick={() => handleOpenMobileComposer(false)}
-              className="flex-1 min-w-0 bg-gray-100/90 hover:bg-gray-200/70 active:bg-gray-200 text-left px-4 py-2.5 rounded-full text-xs sm:text-sm text-gray-500 transition-colors cursor-pointer select-none truncate focus:outline-none focus:ring-1 focus:ring-[#9747FF]"
+              className="flex-1 min-w-0 bg-gray-100/90 dark:bg-gray-800 hover:bg-gray-200/70 dark:hover:bg-gray-700 active:bg-gray-200 text-left px-4 py-2.5 rounded-full text-xs sm:text-sm text-gray-500 dark:text-gray-400 transition-colors cursor-pointer select-none truncate focus:outline-none focus:ring-1 focus:ring-[#9747FF]"
               aria-label="Share your latest work"
             >
               Share your latest work...
@@ -450,12 +450,12 @@ export function Home() {
             <button
               type="button"
               onClick={() => handleOpenMobileComposer(true)}
-              className="flex flex-col items-center justify-center gap-0.5 px-1.5 py-0.5 text-gray-700 hover:text-[#9747FF] transition-colors cursor-pointer shrink-0 outline-none focus:outline-none group"
+              className="flex flex-col items-center justify-center gap-0.5 px-1.5 py-0.5 text-gray-700 dark:text-gray-300 hover:text-[#9747FF] transition-colors cursor-pointer shrink-0 outline-none focus:outline-none group"
               aria-label="Attach artwork"
               title="Artwork"
             >
               <ImageIcon className="w-5 h-5 text-emerald-500 group-hover:scale-105 transition-transform" />
-              <span className="text-[11px] font-medium text-gray-600 group-hover:text-[#9747FF] leading-none">
+              <span className="text-[11px] font-medium text-gray-600 dark:text-gray-400 group-hover:text-[#9747FF] leading-none">
                 Artwork
               </span>
             </button>
@@ -468,17 +468,17 @@ export function Home() {
 
           {/* Social Feed Post Stream — Clean Continuous Stream (No Rectangular Cards) */}
           {isLoading ? (
-            <div className="bg-white border-b border-[#DADDE1] p-12 flex flex-col items-center justify-center gap-3">
+            <div className="bg-white dark:bg-[#18191a] border-b border-[#DADDE1] dark:border-[#2f3032] p-12 flex flex-col items-center justify-center gap-3">
               <Loader2 className="w-6 h-6 animate-spin text-[#9747FF]" />
-              <p className="text-sm font-medium text-gray-500">Loading creative artwork feed...</p>
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Loading creative artwork feed...</p>
             </div>
           ) : posts.length === 0 ? (
-            <div className="bg-white border-b border-[#DADDE1] p-12 text-center flex flex-col items-center">
-              <div className="w-14 h-14 rounded-full bg-purple-50 text-[#9747FF] flex items-center justify-center mb-3">
+            <div className="bg-white dark:bg-[#18191a] border-b border-[#DADDE1] dark:border-[#2f3032] p-12 text-center flex flex-col items-center">
+              <div className="w-14 h-14 rounded-full bg-purple-50 dark:bg-purple-950/40 text-[#9747FF] flex items-center justify-center mb-3">
                 <Sparkles className="w-7 h-7" />
               </div>
-              <h3 className="font-bold text-gray-900 text-base mb-1">No artwork yet</h3>
-              <p className="text-xs sm:text-sm text-gray-500 max-w-sm mb-4">
+              <h3 className="font-bold text-gray-900 dark:text-gray-100 text-base mb-1">No artwork yet</h3>
+              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 max-w-sm mb-4">
                 Be the first creator to share your work with the MyArteLab community!
               </p>
               <Button
@@ -490,20 +490,20 @@ export function Home() {
               </Button>
             </div>
           ) : (
-            <div className="flex flex-col gap-0 -mx-3 sm:mx-0 bg-white">
+            <div className="flex flex-col gap-0 -mx-3 sm:mx-0 bg-white dark:bg-[#18191a]">
               {posts.map((post) => (
                 <SocialFeedCard key={post._id} post={post} />
               ))}
 
               {/* Load More Pagination */}
               {hasMore && (
-                <div className="pt-4 pb-8 flex justify-center bg-white border-b border-[#DADDE1]">
+                <div className="pt-4 pb-8 flex justify-center bg-white dark:bg-[#18191a] border-b border-[#DADDE1] dark:border-[#2f3032]">
                   <Button
                     type="button"
                     onClick={handleLoadMore}
                     disabled={isLoadingMore}
                     variant="outline"
-                    className="border-gray-200 hover:border-[#9747FF] text-gray-700 hover:text-[#9747FF] rounded-xl px-6 py-2 text-xs font-semibold shadow-xs"
+                    className="border-gray-200 dark:border-gray-700 hover:border-[#9747FF] text-gray-700 dark:text-gray-300 hover:text-[#9747FF] rounded-xl px-6 py-2 text-xs font-semibold shadow-xs"
                   >
                     {isLoadingMore ? (
                       <>
@@ -527,8 +527,8 @@ export function Home() {
         <aside className="hidden lg:flex flex-col gap-6 lg:col-span-3 sticky top-20">
           {/* Top Creators */}
           <div className="pb-4">
-            <div className="flex items-center justify-between pb-2.5 border-b border-[#DADDE1] mb-3.5">
-              <h4 className="font-bold text-sm text-gray-900 tracking-tight">Top Creators</h4>
+            <div className="flex items-center justify-between pb-2.5 border-b border-[#DADDE1] dark:border-[#2f3032] mb-3.5">
+              <h4 className="font-bold text-sm text-gray-900 dark:text-gray-100 tracking-tight">Top Creators</h4>
               <a href="/discover" className="text-xs font-semibold text-[#9747FF] hover:underline">
                 View all
               </a>
@@ -541,7 +541,7 @@ export function Home() {
                     href={`/creators/${creator.id}`}
                     className="flex items-center gap-2.5 min-w-0 group cursor-pointer"
                   >
-                    <div className="w-9 h-9 rounded-full overflow-hidden bg-purple-100 flex items-center justify-center shrink-0 border border-purple-200">
+                    <div className="w-9 h-9 rounded-full overflow-hidden bg-purple-100 dark:bg-purple-950/40 flex items-center justify-center shrink-0 border border-purple-200 dark:border-purple-800/40">
                       {creator.avatar ? (
                         <img src={getAvatarUrl(creator.avatar)} alt={creator.name || 'Creator'} className="w-full h-full object-cover" />
                       ) : (
@@ -552,14 +552,14 @@ export function Home() {
                     </div>
                     <div className="min-w-0 flex flex-col">
                       <div className="flex items-center gap-1">
-                        <span className="font-bold text-xs text-gray-900 group-hover:text-[#9747FF] truncate">
+                        <span className="font-bold text-xs text-gray-900 dark:text-gray-100 group-hover:text-[#9747FF] truncate">
                           {creator.name || 'Creator'}
                         </span>
                         {creator.isVerified && (
                           <VerifiedBadge className="w-3.5 h-3.5 shrink-0 inline-block align-middle" showTooltip={false} />
                         )}
                       </div>
-                      <span className="text-[11px] text-gray-600 truncate">
+                      <span className="text-[11px] text-gray-600 dark:text-gray-400 truncate">
                         {Array.isArray(creator.category) ? creator.category[0] : creator.category || 'Creator'}
                       </span>
                     </div>
@@ -567,7 +567,7 @@ export function Home() {
 
                   <a
                     href={`/creators/${creator.id}`}
-                    className="shrink-0 text-xs font-semibold px-2.5 py-1 rounded-full bg-purple-50 text-[#9747FF] hover:bg-[#9747FF] hover:text-white transition-all"
+                    className="shrink-0 text-xs font-semibold px-2.5 py-1 rounded-full bg-purple-50 dark:bg-purple-950/50 text-[#9747FF] hover:bg-[#9747FF] hover:text-white transition-all"
                   >
                     Book
                   </a>
@@ -604,7 +604,7 @@ export function Home() {
           }
         }}
       >
-        <DrawerContent className="bg-white rounded-t-3xl max-h-[92dvh] flex flex-col p-4 pb-8 border-none shadow-2xl focus:outline-none z-[150]">
+        <DrawerContent className="bg-white dark:bg-[#1a1b1c] rounded-t-3xl max-h-[92dvh] flex flex-col p-4 pb-8 border-none shadow-2xl focus:outline-none z-[150]">
           <DrawerTitle className="sr-only">Create New Post</DrawerTitle>
           <DrawerDescription className="sr-only">
             Publish artwork and updates to the creative feed

@@ -1031,26 +1031,26 @@ export function WithdrawModal({
 
   // Structured content with separated Header, Scrollable Body, and Fixed Footer
   const content = (
-    <div className="flex flex-col h-full max-h-[90dvh] sm:max-h-[85vh] overflow-hidden text-gray-900">
+    <div className="flex flex-col h-full max-h-[90dvh] sm:max-h-[85vh] overflow-hidden text-gray-900 dark:text-gray-100">
       {/* 1. Header Bar: Back button, Title, Close button */}
-      <div className="shrink-0 flex items-center justify-between pb-3.5 pt-1 border-b border-gray-100 bg-white">
+      <div className="shrink-0 flex items-center justify-between pb-3.5 pt-1 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-[#1a1b1c]">
         <div className="flex items-center gap-2">
           {step !== 'select-method' && step !== 'bank-status' && (
             <button
               type="button"
               onClick={handleBack}
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors cursor-pointer"
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
               aria-label="Back"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
           )}
-          <h2 className="text-lg sm:text-xl font-semibold text-gray-900 tracking-tight">{getHeaderTitle()}</h2>
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100 tracking-tight">{getHeaderTitle()}</h2>
         </div>
         <button
           type="button"
           onClick={handleModalClose}
-          className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
+          className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
           aria-label="Close"
         >
           <X className="w-4 h-4" />
@@ -1895,7 +1895,7 @@ export function WithdrawModal({
         onOpenChange={(open) => !open && handleModalClose()}
         repositionInputs={false}
       >
-        <DrawerContent className="bg-white rounded-t-3xl max-h-[90dvh] flex flex-col p-5 pb-0 border-none shadow-2xl focus:outline-none z-[150]">
+        <DrawerContent className="bg-white dark:bg-[#1a1b1c] text-gray-900 dark:text-gray-100 rounded-t-3xl max-h-[90dvh] flex flex-col p-5 pb-0 border-none shadow-2xl focus:outline-none z-[150]">
           <DrawerTitle className="sr-only">Withdraw Funds</DrawerTitle>
           <DrawerDescription className="sr-only">
             Withdraw from your MyArteLab wallet
@@ -1910,7 +1910,7 @@ export function WithdrawModal({
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleModalClose()}>
       <DialogContent
         showCloseButton={false}
-        className="bg-white rounded-2xl max-h-[85vh] sm:max-w-[460px] flex flex-col p-6 pb-0 border border-gray-100 shadow-xl focus:outline-none z-[150]"
+        className="bg-white dark:bg-[#1a1b1c] text-gray-900 dark:text-gray-100 rounded-2xl max-h-[85vh] sm:max-w-[460px] flex flex-col p-6 pb-0 border border-gray-100 dark:border-[#2f3032] shadow-xl focus:outline-none z-[150]"
       >
         <DialogTitle className="sr-only">Withdraw Funds</DialogTitle>
         <DialogDescription className="sr-only">

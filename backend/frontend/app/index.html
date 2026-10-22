@@ -30,6 +30,21 @@
     <!-- Theme Color -->
     <meta name="theme-color" content="#8A2BE2">
 
+    <!-- Anti-FOUC Theme Initialization Script -->
+    <script>
+      (function() {
+        try {
+          var saved = localStorage.getItem('myartelab_theme');
+          var isDark = saved === 'dark' || ((!saved || saved === 'system') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          if (isDark) {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
+
     <!-- Google Identity Services -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
   </head>

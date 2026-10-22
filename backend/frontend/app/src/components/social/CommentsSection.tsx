@@ -142,15 +142,15 @@ export function CommentsSection({
         </div>
 
         {/* Sort Toggle: Latest | Popular */}
-        <div className="flex items-center rounded-lg bg-gray-100 p-0.5 text-xs font-medium text-gray-600">
+        <div className="flex items-center rounded-lg bg-gray-100 dark:bg-gray-800 p-0.5 text-xs font-medium text-gray-600 dark:text-gray-400">
           <button
             type="button"
             onClick={() => setSortOrder('latest')}
             className={cn(
               'px-2.5 py-0.5 rounded-md transition-all cursor-pointer',
               sortOrder === 'latest'
-                ? 'bg-white text-gray-900 shadow-2xs font-semibold'
-                : 'hover:text-gray-900'
+                ? 'bg-white dark:bg-[#1a1b1c] text-gray-900 dark:text-gray-100 shadow-2xs font-semibold'
+                : 'hover:text-gray-900 dark:hover:text-gray-200'
             )}
           >
             Latest
@@ -161,8 +161,8 @@ export function CommentsSection({
             className={cn(
               'px-2.5 py-0.5 rounded-md transition-all cursor-pointer',
               sortOrder === 'popular'
-                ? 'bg-white text-gray-900 shadow-2xs font-semibold'
-                : 'hover:text-gray-900'
+                ? 'bg-white dark:bg-[#1a1b1c] text-gray-900 dark:text-gray-100 shadow-2xs font-semibold'
+                : 'hover:text-gray-900 dark:hover:text-gray-200'
             )}
           >
             Popular
@@ -173,7 +173,7 @@ export function CommentsSection({
       {/* Comment Composer */}
       <form onSubmit={handleSubmit} className="mb-4">
         <div className="flex items-start gap-2.5 sm:gap-3">
-          <div className="w-8 h-8 rounded-full overflow-hidden bg-purple-50 text-[#9747FF] flex items-center justify-center shrink-0 font-bold text-xs border border-purple-200">
+          <div className="w-8 h-8 rounded-full overflow-hidden bg-purple-50 dark:bg-purple-950/40 text-[#9747FF] flex items-center justify-center shrink-0 font-bold text-xs border border-purple-200 dark:border-purple-800/40">
             {user?.avatar ? (
               <img src={getAvatarUrl(user.avatar)} alt="User" className="w-full h-full object-cover" />
             ) : (
@@ -181,14 +181,14 @@ export function CommentsSection({
             )}
           </div>
 
-          <div className="flex-1 bg-gray-100/80 rounded-2xl p-2.5 transition-colors focus-within:bg-gray-100 focus-within:ring-1 focus-within:ring-[#9747FF]/40">
+          <div className="flex-1 bg-gray-100/80 dark:bg-gray-800/60 rounded-2xl p-2.5 transition-colors focus-within:bg-gray-100 dark:focus-within:bg-gray-800 focus-within:ring-1 focus-within:ring-[#9747FF]/40">
             {replyingTo && (
-              <div className="flex items-center justify-between text-xs text-[#9747FF] font-medium mb-1.5 pb-1 border-b border-gray-200/60">
+              <div className="flex items-center justify-between text-xs text-[#9747FF] font-medium mb-1.5 pb-1 border-b border-gray-200/60 dark:border-gray-700">
                 <span>Replying to @{replyingTo}</span>
                 <button
                   type="button"
                   onClick={() => setReplyingTo(null)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
                 >
                   ✕
                 </button>
@@ -200,10 +200,10 @@ export function CommentsSection({
               onChange={(e) => setCommentText(e.target.value)}
               placeholder="Write a comment..."
               rows={2}
-              className="w-full resize-none border-none bg-transparent text-xs sm:text-sm text-gray-900 placeholder-gray-400 focus:outline-none p-0"
+              className="w-full resize-none border-none bg-transparent text-xs sm:text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none p-0"
             />
 
-            <div className="flex items-center justify-between pt-1.5 border-t border-gray-200/50 mt-1">
+            <div className="flex items-center justify-between pt-1.5 border-t border-gray-200/50 dark:border-gray-700/50 mt-1">
               <button
                 type="button"
                 onClick={handleInsertMention}
@@ -243,10 +243,10 @@ export function CommentsSection({
           No comments yet. Be the first to share your thoughts!
         </div>
       ) : (
-        <div className="divide-y divide-[#DADDE1]/60">
+        <div className="divide-y divide-[#DADDE1]/60 dark:divide-[#2f3032]">
           {comments.map((comment, index) => (
             <div key={comment._id || index} className="py-3 first:pt-0 last:pb-0 flex items-start gap-2.5 sm:gap-3 group">
-              <div className="w-8 h-8 rounded-full overflow-hidden bg-purple-50 flex items-center justify-center shrink-0 border border-gray-200/70">
+              <div className="w-8 h-8 rounded-full overflow-hidden bg-purple-50 dark:bg-purple-950/40 flex items-center justify-center shrink-0 border border-gray-200/70 dark:border-gray-700">
                 {comment.userAvatar ? (
                   <img
                     src={getAvatarUrl(comment.userAvatar)}
@@ -263,7 +263,7 @@ export function CommentsSection({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs sm:text-sm font-bold text-gray-900">
+                    <span className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">
                       {comment.userName || 'Creator Community Member'}
                     </span>
                     <span className="text-[11px] text-gray-400 font-normal">
@@ -273,14 +273,14 @@ export function CommentsSection({
 
                   <button
                     type="button"
-                    className="text-gray-300 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity p-0.5"
+                    className="text-gray-300 hover:text-gray-600 dark:hover:text-gray-200 opacity-0 group-hover:opacity-100 transition-opacity p-0.5"
                     title="Options"
                   >
                     <MoreHorizontal className="w-3.5 h-3.5" />
                   </button>
                 </div>
 
-                <p className="text-xs sm:text-sm text-gray-800 mt-1 leading-relaxed break-words">
+                <p className="text-xs sm:text-sm text-gray-800 dark:text-gray-200 mt-1 leading-relaxed break-words">
                   {renderFormattedText(comment.text)}
                 </p>
 
@@ -289,7 +289,7 @@ export function CommentsSection({
                   <button
                     type="button"
                     onClick={() => setReplyingTo(comment.userName || 'member')}
-                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-gray-500 hover:text-[#9747FF] transition-colors"
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-gray-500 dark:text-gray-400 hover:text-[#9747FF] transition-colors"
                   >
                     <Reply className="w-3 h-3" />
                     <span>Reply</span>

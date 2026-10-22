@@ -32,6 +32,10 @@
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+    --ash-divider: #DADDE1;
+    --surface-main: #FFFFFF;
+    --surface-secondary: #F9FAFB;
+    --surface-tertiary: #F3F4F6;
   }
 
   .dark {
@@ -62,6 +66,10 @@
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+    --ash-divider: #2f3032;
+    --surface-main: #18191a;
+    --surface-secondary: #242526;
+    --surface-tertiary: #2f3032;
   }
 }
 
@@ -70,6 +78,15 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground transition-colors duration-150;
+  }
+}
+
+@layer utilities {
+  .border-ash-divider {
+    border-color: var(--ash-divider);
+  }
+  .divide-ash-divider > :not([hidden]) ~ :not([hidden]) {
+    border-color: var(--ash-divider);
   }
 }

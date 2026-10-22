@@ -354,9 +354,9 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
            ========================================================================= */}
         <aside className="hidden lg:flex flex-col gap-6 lg:col-span-4 sticky top-20">
           {/* Creator Identity Card */}
-          <div className="pb-5 border-b border-[#DADDE1]">
+          <div className="pb-5 border-b border-[#DADDE1] dark:border-[#2f3032]">
             <div className="flex flex-col items-center text-center">
-              <div className="w-20 h-20 rounded-full overflow-hidden bg-purple-100 flex items-center justify-center border-2 border-[#9747FF]/20 mb-3 relative">
+              <div className="w-20 h-20 rounded-full overflow-hidden bg-purple-100 dark:bg-purple-950/40 flex items-center justify-center border-2 border-[#9747FF]/20 mb-3 relative">
                 <img
                   src={getAvatarUrl(creator.avatar)}
                   alt={creator.name}
@@ -364,7 +364,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                 />
                 {isOwner && (
                   <label
-                    className="absolute bottom-0 right-0 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border border-white bg-[#9747FF] text-white hover:bg-[#8534f0] shadow-xs transition-colors"
+                    className="absolute bottom-0 right-0 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border border-white dark:border-gray-900 bg-[#9747FF] text-white hover:bg-[#8534f0] shadow-xs transition-colors"
                     aria-label="Change avatar"
                     title="Change avatar"
                   >
@@ -389,7 +389,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                 )}
               </div>
 
-              <h3 className="font-bold text-gray-900 text-lg leading-tight flex items-center gap-1.5 justify-center">
+              <h3 className="font-bold text-gray-900 dark:text-gray-100 text-lg leading-tight flex items-center gap-1.5 justify-center">
                 <span>{creator.name}</span>
                 {isVerifiedLive && (
                   <VerifiedBadge
@@ -400,24 +400,24 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                 )}
               </h3>
 
-              <p className="text-xs text-gray-500 mt-0.5 truncate max-w-full">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate max-w-full">
                 @{(creator as any).username || creator.email?.split('@')[0] || 'creator'}
               </p>
 
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-purple-50 text-[#9747FF] text-xs font-semibold mt-2.5">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-purple-50 dark:bg-[#9747FF]/15 text-[#9747FF] text-xs font-semibold mt-2.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#9747FF]"></span>
                 {categoryLabel ? `${categoryLabel}` : 'Creative Specialist'}
               </div>
 
               {/* Rating & Location Meta */}
-              <div className="mt-3 flex items-center justify-center gap-3 text-xs text-gray-600">
-                <div className="flex items-center gap-1 font-semibold text-gray-900">
+              <div className="mt-3 flex items-center justify-center gap-3 text-xs text-gray-600 dark:text-gray-400">
+                <div className="flex items-center gap-1 font-semibold text-gray-900 dark:text-gray-100">
                   <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
                   <span>{ratingAverage.toFixed(1)}</span>
-                  <span className="text-gray-400 font-normal">({ratingCount})</span>
+                  <span className="text-gray-400 dark:text-gray-500 font-normal">({ratingCount})</span>
                 </div>
-                <span className="h-3 w-px bg-gray-300" aria-hidden="true" />
-                <div className="flex items-center gap-1 text-gray-500">
+                <span className="h-3 w-px bg-gray-300 dark:bg-gray-700" aria-hidden="true" />
+                <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
                   <MapPin className="h-3.5 w-3.5 text-gray-400 shrink-0" />
                   <span className="truncate max-w-[150px]">{locationString}</span>
                 </div>
@@ -425,7 +425,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
 
               {/* Bio */}
               {creator.bio && (
-                <p className="mt-3 text-xs text-gray-600 leading-relaxed text-center">
+                <p className="mt-3 text-xs text-gray-600 dark:text-gray-300 leading-relaxed text-center">
                   {creator.bio}
                 </p>
               )}
@@ -436,7 +436,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                   {(creator.skills || []).map((skill) => (
                     <span
                       key={skill}
-                      className="rounded-full bg-purple-50 text-[#9747FF] text-[11px] font-medium px-2.5 py-0.5"
+                      className="rounded-full bg-purple-50 dark:bg-[#9747FF]/15 text-[#9747FF] text-[11px] font-medium px-2.5 py-0.5"
                     >
                       {skill}
                     </span>
@@ -450,7 +450,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                   <>
                     <Button
                       onClick={() => setIsEditProfileOpen(true)}
-                      className="w-full h-8 rounded-full border border-[#9747FF] text-[#9747FF] bg-white hover:bg-[#9747FF]/10 text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
+                      className="w-full h-8 rounded-full border border-[#9747FF] text-[#9747FF] bg-white dark:bg-transparent hover:bg-[#9747FF]/10 text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
                     >
                       <Pencil className="mr-1.5 h-3.5 w-3.5 text-[#9747FF]" />
                       Edit Profile
@@ -478,10 +478,10 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                       <Button
                         variant="outline"
                         asChild
-                        className="flex-1 h-8 rounded-full border-gray-300 text-gray-800 hover:bg-gray-50 text-xs font-medium shadow-2xs cursor-pointer inline-flex items-center justify-center gap-1.5"
+                        className="flex-1 h-8 rounded-full border-gray-300 dark:border-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/60 text-xs font-medium shadow-2xs cursor-pointer inline-flex items-center justify-center gap-1.5"
                       >
                         <a href={`/messages?user=${creator.id}`}>
-                          <MessageSquare className="h-3.5 w-3.5 text-gray-600" />
+                          <MessageSquare className="h-3.5 w-3.5 text-gray-600 dark:text-gray-300" />
                           <span>Message</span>
                         </a>
                       </Button>
@@ -490,8 +490,8 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                         size="icon"
                         onClick={handleToggleFavorite}
                         title={isFavorited ? 'Remove bookmark' : 'Bookmark creator'}
-                        className={`h-8 w-8 rounded-full border-gray-200 text-gray-600 hover:text-[#9747FF] hover:border-[#9747FF] cursor-pointer shrink-0 ${
-                          isFavorited ? 'text-amber-500 border-amber-300' : ''
+                        className={`h-8 w-8 rounded-full border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:text-[#9747FF] hover:border-[#9747FF] dark:hover:border-[#9747FF] cursor-pointer shrink-0 ${
+                          isFavorited ? 'text-amber-500 border-amber-300 dark:border-amber-500/50' : ''
                         }`}
                       >
                         <Bookmark className={`h-3.5 w-3.5 ${isFavorited ? 'fill-current' : ''}`} />
@@ -501,7 +501,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                         size="icon"
                         onClick={handleShare}
                         title="Share profile"
-                        className="h-8 w-8 rounded-full border-gray-200 text-gray-600 hover:text-[#9747FF] hover:border-[#9747FF] cursor-pointer shrink-0"
+                        className="h-8 w-8 rounded-full border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:text-[#9747FF] hover:border-[#9747FF] dark:hover:border-[#9747FF] cursor-pointer shrink-0"
                       >
                         <Share2 className="h-3.5 w-3.5" />
                       </Button>
@@ -514,31 +514,31 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
 
           {/* Quick Platform Navigation Menu */}
           <div className="pb-2">
-            <div className="text-xs font-semibold uppercase tracking-wider text-gray-400 px-3 mb-2">
+            <div className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 px-3 mb-2">
               Explore
             </div>
             <nav className="space-y-1">
               <a
                 href="/home"
-                className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 hover:text-[#9747FF] hover:bg-gray-100/70 transition-colors"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] dark:hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-[#1e1f20] transition-colors"
               >
-                <Sparkles className="w-4 h-4 text-gray-500" />
+                <Sparkles className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                 <span>Creative Feed</span>
               </a>
 
               <a
                 href="/discover"
-                className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 hover:text-[#9747FF] hover:bg-gray-100/70 transition-colors"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] dark:hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-[#1e1f20] transition-colors"
               >
-                <Compass className="w-4 h-4 text-gray-500" />
+                <Compass className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                 <span>Discover Creators</span>
               </a>
 
               <a
                 href="/creators"
-                className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 hover:text-[#9747FF] hover:bg-gray-100/70 transition-colors"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] dark:hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-[#1e1f20] transition-colors"
               >
-                <Users className="w-4 h-4 text-gray-500" />
+                <Users className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                 <span>Browse All</span>
               </a>
 
@@ -546,17 +546,17 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                 <>
                   <a
                     href="/bookings"
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 hover:text-[#9747FF] hover:bg-gray-100/70 transition-colors"
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] dark:hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-[#1e1f20] transition-colors"
                   >
-                    <Calendar className="w-4 h-4 text-gray-500" />
+                    <Calendar className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                     <span>My Bookings</span>
                   </a>
 
                   <a
                     href="/wallet"
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 hover:text-[#9747FF] hover:bg-gray-100/70 transition-colors"
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] dark:hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-[#1e1f20] transition-colors"
                   >
-                    <Wallet className="w-4 h-4 text-gray-500" />
+                    <Wallet className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                     <span>Wallet &amp; Earnings</span>
                   </a>
                 </>
@@ -572,9 +572,9 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
            ========================================================================= */}
         <main className="col-span-1 lg:col-span-8 w-full max-w-xl mx-auto flex flex-col pb-16">
           {/* Mobile-Only Creator Header Card (Hidden on Desktop) */}
-          <section className="lg:hidden pt-2 pb-5 border-b border-[#DADDE1]">
+          <section className="lg:hidden pt-2 pb-5 border-b border-[#DADDE1] dark:border-[#2f3032]">
             <div className="flex flex-col items-center text-center">
-              <div className="w-20 h-20 rounded-full overflow-hidden bg-purple-50 border-2 border-gray-200/80 shadow-2xs flex items-center justify-center mb-2.5 relative">
+              <div className="w-20 h-20 rounded-full overflow-hidden bg-purple-50 dark:bg-purple-950/40 border-2 border-gray-200/80 dark:border-gray-800 shadow-2xs flex items-center justify-center mb-2.5 relative">
                 <img
                   src={getAvatarUrl(creator.avatar)}
                   alt={creator.name}
@@ -583,7 +583,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
               </div>
 
               <div className="flex items-center justify-center gap-1.5 flex-wrap">
-                <h1 className="text-xl font-bold text-gray-950 tracking-tight leading-tight">
+                <h1 className="text-xl font-bold text-gray-950 dark:text-gray-100 tracking-tight leading-tight">
                   {creator.name}
                 </h1>
                 {isVerifiedLive && (
@@ -595,12 +595,12 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                 )}
               </div>
 
-              <p className="text-xs text-gray-500 font-medium capitalize mt-0.5">
+              <p className="text-xs text-gray-500 dark:text-gray-400 font-medium capitalize mt-0.5">
                 {categoryLabel ? `${categoryLabel} Specialist` : 'Creative Specialist'}
               </p>
 
               {creator.bio && (
-                <p className="mt-2.5 text-xs text-gray-700 leading-relaxed max-w-md">
+                <p className="mt-2.5 text-xs text-gray-700 dark:text-gray-300 leading-relaxed max-w-md">
                   {creator.bio}
                 </p>
               )}
@@ -610,7 +610,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                 {isOwner ? (
                   <Button
                     onClick={() => setIsEditProfileOpen(true)}
-                    className="h-8 px-5 rounded-full border border-[#9747FF] text-[#9747FF] bg-white hover:bg-[#9747FF]/10 text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
+                    className="h-8 px-5 rounded-full border border-[#9747FF] text-[#9747FF] bg-white dark:bg-transparent hover:bg-[#9747FF]/10 text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
                   >
                     <Pencil className="mr-1.5 h-3.5 w-3.5 text-[#9747FF]" />
                     Edit Profile
@@ -627,10 +627,10 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                     <Button
                       variant="outline"
                       asChild
-                      className="h-8 px-4 rounded-full border-gray-300 text-gray-800 hover:bg-gray-50 text-xs font-medium shadow-2xs cursor-pointer inline-flex items-center gap-1.5"
+                      className="h-8 px-4 rounded-full border-gray-300 dark:border-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/60 text-xs font-medium shadow-2xs cursor-pointer inline-flex items-center gap-1.5"
                     >
                       <a href={`/messages?user=${creator.id}`}>
-                        <MessageSquare className="h-3.5 w-3.5 text-gray-600" />
+                        <MessageSquare className="h-3.5 w-3.5 text-gray-600 dark:text-gray-300" />
                         <span>Message</span>
                       </a>
                     </Button>
@@ -639,7 +639,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                       size="icon"
                       onClick={handleShare}
                       title="Share profile"
-                      className="h-8 w-8 rounded-full border-gray-200 text-gray-600 hover:text-[#9747FF] hover:border-[#9747FF] cursor-pointer"
+                      className="h-8 w-8 rounded-full border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:text-[#9747FF] hover:border-[#9747FF] dark:hover:border-[#9747FF] cursor-pointer"
                     >
                       <Share2 className="h-3.5 w-3.5" />
                     </Button>
@@ -652,10 +652,10 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
           {/* CREATIVE WORK (POSTS STREAM) - On desktop starts directly from here! */}
           <section className="pt-2 pb-4">
             <div className="flex items-center justify-between pb-3 px-1 sm:px-0">
-              <h2 className="text-base font-bold text-gray-950 tracking-tight">
+              <h2 className="text-base font-bold text-gray-950 dark:text-gray-100 tracking-tight">
                 Creative Work
               </h2>
-              <span className="text-xs text-gray-500 font-medium">
+              <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
                 {posts.length} {posts.length === 1 ? 'post' : 'posts'}
               </span>
             </div>
@@ -665,9 +665,9 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                 <Loader2 className="w-6 h-6 animate-spin text-[#9747FF]" />
               </div>
             ) : posts.length === 0 ? (
-              <div className="py-12 px-4 text-center text-gray-500 text-xs sm:text-sm">
-                <p className="font-semibold text-gray-800">No creative work shared yet.</p>
-                <p className="text-xs text-gray-400 mt-1">
+              <div className="py-12 px-4 text-center text-gray-500 dark:text-gray-400 text-xs sm:text-sm">
+                <p className="font-semibold text-gray-800 dark:text-gray-200">No creative work shared yet.</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                   {isOwner
                     ? 'Publish your first artwork or creative service to showcase your talent!'
                     : 'This creator has not published any posts to the feed yet.'}
@@ -682,7 +682,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                 )}
               </div>
             ) : (
-              <div className="divide-y divide-[#DADDE1] -mx-3 sm:mx-0">
+              <div className="divide-y divide-[#DADDE1] dark:divide-[#2f3032] -mx-3 sm:mx-0">
                 {posts.map((post) => (
                   <SocialFeedCard
                     key={post._id}
@@ -702,32 +702,32 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
 
       {/* 1. Edit Profile Modal */}
       <Dialog open={isEditProfileOpen} onOpenChange={setIsEditProfileOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md dark:bg-[#1a1b1c] dark:border-[#2f3032]">
           <DialogHeader>
-            <DialogTitle className="text-lg font-bold text-gray-900">Edit Creator Profile</DialogTitle>
+            <DialogTitle className="text-lg font-bold text-gray-900 dark:text-gray-100">Edit Creator Profile</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-2">
             <div>
-              <Label className="text-xs font-medium text-gray-700">Bio</Label>
+              <Label className="text-xs font-medium text-gray-700 dark:text-gray-300">Bio</Label>
               <Textarea
                 value={profileForm.bio}
                 onChange={(e) => setProfileForm((prev) => ({ ...prev, bio: e.target.value }))}
                 placeholder="Tell clients about your creative background..."
-                className="mt-1"
+                className="mt-1 dark:bg-[#121212] dark:border-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
                 rows={4}
               />
             </div>
             <div>
-              <Label className="text-xs font-medium text-gray-700">Category</Label>
+              <Label className="text-xs font-medium text-gray-700 dark:text-gray-300">Category</Label>
               <Input
                 value={profileForm.category}
                 onChange={(e) => setProfileForm((prev) => ({ ...prev, category: e.target.value }))}
                 placeholder="e.g., Digital Art, Graphic Design"
-                className="mt-1"
+                className="mt-1 dark:bg-[#121212] dark:border-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
               />
             </div>
             <div>
-              <Label className="text-xs font-medium text-gray-700">Skills (comma separated)</Label>
+              <Label className="text-xs font-medium text-gray-700 dark:text-gray-300">Skills (comma separated)</Label>
               <Input
                 value={profileForm.skills.join(', ')}
                 onChange={(e) =>
@@ -737,14 +737,14 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                   }))
                 }
                 placeholder="e.g., Photoshop, Blender, Figma"
-                className="mt-1"
+                className="mt-1 dark:bg-[#121212] dark:border-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
               />
             </div>
-            <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
+            <div className="flex justify-end gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
               <Button
                 variant="outline"
                 onClick={() => setIsEditProfileOpen(false)}
-                className="text-xs rounded-xl"
+                className="text-xs rounded-xl dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800/60"
               >
                 Cancel
               </Button>
@@ -761,33 +761,33 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
 
       {/* 2. Verification Dialog */}
       <Dialog open={showVerifyDialog} onOpenChange={setShowVerifyDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md dark:bg-[#1a1b1c] dark:border-[#2f3032]">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-lg font-bold text-gray-900">
+            <DialogTitle className="flex items-center gap-2 text-lg font-bold text-gray-900 dark:text-gray-100">
               <BadgeCheck className="w-6 h-6 text-[#9747FF]" />
               Get Verified Creator Badge
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 mt-2 text-xs text-gray-600">
-            <div className="bg-purple-50/60 p-4 rounded-xl border border-purple-100 space-y-2">
-              <p className="font-semibold text-gray-900 text-sm">Verified Creator Benefits</p>
-              <ul className="space-y-1.5 text-gray-600 list-disc list-inside">
+          <div className="space-y-4 mt-2 text-xs text-gray-600 dark:text-gray-300">
+            <div className="bg-purple-50/60 dark:bg-purple-950/30 p-4 rounded-xl border border-purple-100 dark:border-purple-900/50 space-y-2">
+              <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">Verified Creator Benefits</p>
+              <ul className="space-y-1.5 text-gray-600 dark:text-gray-300 list-disc list-inside">
                 <li>Distinct verification badge next to your name</li>
                 <li>Increased visibility and ranking across the platform</li>
                 <li>Priority placement in creative searches &amp; feed</li>
               </ul>
             </div>
-            <div className="p-3 bg-gray-50 rounded-xl space-y-1">
+            <div className="p-3 bg-gray-50 dark:bg-[#121212] rounded-xl space-y-1 border border-transparent dark:border-gray-800">
               <div className="flex justify-between">
-                <span className="text-gray-500">Monthly Subscription</span>
-                <span className="font-bold text-gray-900">$1.00 USDC / month</span>
+                <span className="text-gray-500 dark:text-gray-400">Monthly Subscription</span>
+                <span className="font-bold text-gray-900 dark:text-gray-100">$1.00 USDC / month</span>
               </div>
             </div>
-            <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
+            <div className="flex justify-end gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
               <Button
                 variant="outline"
                 onClick={() => setShowVerifyDialog(false)}
-                className="text-xs rounded-xl"
+                className="text-xs rounded-xl dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800/60"
               >
                 Cancel
               </Button>
@@ -835,25 +835,25 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
 
       {/* 3. Cancel Verification Dialog */}
       <Dialog open={showCancelVerifyDialog} onOpenChange={setShowCancelVerifyDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md dark:bg-[#1a1b1c] dark:border-[#2f3032]">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-lg font-bold text-gray-900">
+            <DialogTitle className="flex items-center gap-2 text-lg font-bold text-gray-900 dark:text-gray-100">
               <BadgeCheck className="w-6 h-6 text-red-500" />
               Cancel Verification
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-2 text-xs">
-            <div className="bg-red-50 p-4 rounded-xl border border-red-200">
-              <h3 className="font-semibold text-red-700">Remove Verified Badge?</h3>
-              <p className="text-red-600/80 mt-1">
+            <div className="bg-red-50 dark:bg-red-950/30 p-4 rounded-xl border border-red-200 dark:border-red-900/50">
+              <h3 className="font-semibold text-red-700 dark:text-red-400">Remove Verified Badge?</h3>
+              <p className="text-red-600/80 dark:text-red-300/80 mt-1">
                 Your verified badge will be removed upon cancellation. You can re-subscribe anytime.
               </p>
             </div>
-            <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
+            <div className="flex justify-end gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
               <Button
                 variant="outline"
                 onClick={() => setShowCancelVerifyDialog(false)}
-                className="text-xs rounded-xl"
+                className="text-xs rounded-xl dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800/60"
               >
                 Keep Badge
               </Button>
