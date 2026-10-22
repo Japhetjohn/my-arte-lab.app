@@ -1,16 +1,26 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import {
+  ThumbsUp,
   Heart,
   MessageCircle,
-  Share2,
-  ExternalLink,
-  CheckCircle2,
+  Forward,
+  Globe,
   MoreHorizontal,
+  Copy,
+  ExternalLink,
   Calendar,
 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { toast } from '@/components/ui/sonner';
 import { socialService } from '@/lib/api';
+import { getAvatarUrl, getImageUrl } from '@/lib/imageUrl';
+import { VerifiedBadge } from '@/components/shared/VerifiedBadge';
 import { CommentsSection } from './CommentsSection';
 import { cn } from '@/lib/utils';
 
@@ -47,6 +57,37 @@ interface SocialFeedCardProps {
   className?: string;
 }
 
+/**
+ * Format numeric counts into human-readable shorthand (e.g. 152K, 4.6K, 438)
+ */
+function formatCount(count: number): string {
+  if (!count || count <= 0) return '0';
+  if (count < 1000) return count.toString();
+  if (count < 1000000) {
+    const k = count / 1000;
+    return k >= 10 ? `${Math.round(k)}K` : `${k.toFixed(1).replace(/\.0$/, '')}K`;
+  }
+  const m = count / 1000000;
+  return m >= 10 ? `${Math.round(m)}M` : `${m.toFixed(1).replace(/\.0$/, '')}M`;
+}
+
+/**
+ * Concise human-readable relative timestamp matching Facebook mobile reference (e.g. 5m, 2h, 5d)
+ */
+function formatTimestamp(dateInput?: string | Date): string {
+  if (!dateInput) return 'Recently';
+  const date = new Date(dateInput);
+  const now = new Date();
+  const diffSec = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+  if (diffSec < 60) return 'Just now';
+  if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m`;
+  if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h`;
+  if (diffSec < 604800) return `${Math.floor(diffSec / 86400)}d`;
+  if (diffSec < 31536000) return `${Math.floor(diffSec / 604800)}w`;
+  return `${Math.floor(diffSec / 31536000)}y`;
+}
+
 export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
   const { user } = useAuth();
   const serviceId = post.serviceId || post._id;
@@ -57,8 +98,14 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
   const [showComments, setShowComments] = useState(false);
   const [commentsCount, setCommentsCount] = useState(post.commentsCount || 0);
 
-  // Authoritative Viewport Impression Tracking (Part 7.4)
-  // Requires post to be visible in viewport for at least 1s, deduplicated per card instance
+  // Caption expansion state
+  const [isCaptionExpanded, setIsCaptionExpanded] = useState(false);
+
+  // Horizontal Swipeable Gallery Index (no arrows)
+  const [activeGalleryIndex, setActiveGalleryIndex] = useState(0);
+  const galleryScrollRef = useRef<HTMLDivElement>(null);
+
+  // Authoritative Viewport Impression Tracking (1 second dwell time)
   const cardRef = useRef<HTMLElement>(null);
   const impressionRecorded = useRef(false);
 
@@ -87,6 +134,24 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
       observer.disconnect();
     };
   }, [serviceId]);
+
+  // Gallery scroll listener to update active pagination dot
+  const handleGalleryScroll = () => {
+    const container = galleryScrollRef.current;
+    if (!container) return;
+    const scrollLeft = container.scrollLeft;
+    const width = container.clientWidth;
+    if (width > 0) {
+      const imagesCount = (post.images || []).length;
+      const nextIndex = Math.min(
+        imagesCount - 1,
+        Math.max(0, Math.round(scrollLeft / width))
+      );
+      if (nextIndex !== activeGalleryIndex) {
+        setActiveGalleryIndex(nextIndex);
+      }
+    }
+  };
 
   const handleToggleLike = async () => {
     if (!user) {
@@ -123,240 +188,317 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
 
   const handleShare = async () => {
     const postUrl = `${window.location.origin}/creators/${post.creator._id}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: post.title || post.creator.name,
+          text: post.description || 'Check out this creative artwork on MyArteLab',
+          url: postUrl,
+        });
+        return;
+      } catch {}
+    }
+
     if (navigator.clipboard) {
       await navigator.clipboard.writeText(postUrl);
-      toast.success('Creator link copied to clipboard');
+      toast.success('Post link copied to clipboard');
     }
   };
 
-  const formatTimestamp = (dateInput?: string | Date) => {
-    if (!dateInput) return 'Recently';
-    const date = new Date(dateInput);
-    const now = new Date();
-    const diffSec = Math.floor((now.getTime() - date.getTime()) / 1000);
-
-    if (diffSec < 60) return 'Just now';
-    if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`;
-    if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`;
-    if (diffSec < 604800) return `${Math.floor(diffSec / 86400)}d ago`;
-    return date.toLocaleDateString();
-  };
-
   const images = post.images || [];
+  const hasImages = images.length > 0;
+  const descriptionText = post.description || post.title || '';
+
+  // Calculate if caption requires truncation
+  // Text-only: first 5 lines visible + "Read more"
+  // With images: first 3 lines visible + "...see more"
+  const isLongCaption = hasImages
+    ? descriptionText.length > 140 || descriptionText.split('\n').length > 3
+    : descriptionText.length > 280 || descriptionText.split('\n').length > 5;
 
   return (
     <article
       ref={cardRef}
       className={cn(
-        'bg-white rounded-2xl border border-gray-200/80 overflow-hidden shadow-xs hover:shadow-sm transition-shadow',
+        'bg-white border-b-[8px] sm:border-b-0 border-gray-100 sm:rounded-2xl sm:border sm:border-gray-200/80 sm:shadow-xs overflow-hidden transition-shadow',
         className
       )}
     >
-      {/* Post Author Header */}
-      <div className="p-4 sm:p-5 flex items-center justify-between">
+      {/* 1. Creator Identity and Post Controls Row */}
+      <div className="px-4 pt-3.5 pb-2 flex items-center justify-between">
         <a
           href={`/creators/${post.creator._id}`}
-          className="flex items-center gap-3 group cursor-pointer"
+          className="flex items-center gap-2.5 sm:gap-3 group cursor-pointer min-w-0"
         >
-          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full overflow-hidden bg-purple-100 flex items-center justify-center shrink-0 border border-purple-200 group-hover:ring-2 group-hover:ring-[#9747FF]/40 transition-all">
+          {/* Creator Avatar */}
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full overflow-hidden bg-purple-50 flex items-center justify-center shrink-0 border border-gray-200/80 group-hover:ring-2 group-hover:ring-[#9747FF]/30 transition-all">
             {post.creator.avatar ? (
               <img
-                src={post.creator.avatar}
+                src={getAvatarUrl(post.creator.avatar)}
                 alt={post.creator.name}
                 className="w-full h-full object-cover"
               />
             ) : (
-              <span className="text-[#9747FF] font-bold text-sm">
+              <span className="text-[#9747FF] font-bold text-sm sm:text-base">
                 {(post.creator.name || 'C')[0].toUpperCase()}
               </span>
             )}
           </div>
 
-          <div className="flex flex-col">
-            <div className="flex items-center gap-1.5">
-              <span className="font-bold text-sm sm:text-base text-gray-900 group-hover:text-[#9747FF] transition-colors leading-tight">
+          {/* Creator Name, Verification, Timestamp */}
+          <div className="flex flex-col min-w-0">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="font-bold text-[15px] sm:text-base text-gray-900 group-hover:text-[#9747FF] transition-colors leading-tight truncate">
                 {post.creator.name}
               </span>
               {post.creator.isVerified && (
-                <CheckCircle2 className="w-4 h-4 text-[#9747FF] fill-purple-100 shrink-0" />
+                <VerifiedBadge className="w-4 h-4 shrink-0 inline-block" />
               )}
             </div>
-            <div className="flex items-center gap-2 text-xs text-gray-600">
-              {post.creator.username && <span>@{post.creator.username}</span>}
-              <span>•</span>
+
+            {/* Timestamp & Public Visibility Globe */}
+            <div className="flex items-center gap-1.5 text-xs text-gray-500 leading-none mt-1">
               <span>{formatTimestamp(post.createdAt)}</span>
+              <span>•</span>
+              <Globe className="w-3 h-3 text-gray-400 shrink-0" aria-label="Public post" />
             </div>
           </div>
         </a>
 
-        {/* Action: Book Service / More */}
-        <div className="flex items-center gap-2">
-          <a
-            href={`/creators/${post.creator._id}`}
-            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-purple-50 text-[#9747FF] hover:bg-[#9747FF] hover:text-white transition-all shadow-xs"
-          >
-            <Calendar className="w-3.5 h-3.5" />
-            <span>Book</span>
-          </a>
-
-          <button
-            type="button"
-            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-            title="Options"
-          >
-            <MoreHorizontal className="w-4 h-4" />
-          </button>
+        {/* Post Options Menu */}
+        <div className="flex items-center gap-1 shrink-0">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="p-1.5 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors cursor-pointer outline-none focus:outline-none"
+                aria-label="Post options"
+              >
+                <MoreHorizontal className="w-5 h-5 stroke-[2]" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={handleShare} className="cursor-pointer">
+                <Copy className="w-4 h-4 mr-2 text-gray-500" />
+                <span>Copy link</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => (window.location.href = `/creators/${post.creator._id}`)}
+                className="cursor-pointer"
+              >
+                <ExternalLink className="w-4 h-4 mr-2 text-gray-500" />
+                <span>View creator profile</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => (window.location.href = `/creators/${post.creator._id}`)}
+                className="cursor-pointer"
+              >
+                <Calendar className="w-4 h-4 mr-2 text-gray-500" />
+                <span>Book creator</span>
+              </DropdownMenuItem>
+              {post.directLink && (
+                <DropdownMenuItem
+                  onClick={() => window.open(post.directLink, '_blank')}
+                  className="cursor-pointer"
+                >
+                  <ExternalLink className="w-4 h-4 mr-2 text-gray-500" />
+                  <span>Open external link</span>
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
-      {/* Post Text Description */}
-      <div className="px-4 sm:px-5 pb-3">
-        {post.title && post.title !== post.description && (
-          <h3 className="font-bold text-sm sm:text-base text-gray-900 mb-1.5">
-            {post.title}
-          </h3>
-        )}
-        <p className="text-sm sm:text-[15px] text-gray-800 leading-relaxed whitespace-pre-line">
-          {post.description}
-        </p>
-
-        {/* Direct link if present */}
-        {post.directLink && (
-          <a
-            href={post.directLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-2.5 inline-flex items-center gap-1.5 text-xs font-medium text-[#9747FF] hover:underline"
+      {/* 2. Caption and Description */}
+      {descriptionText && (
+        <div className="px-4 pt-1 pb-2.5">
+          <p
+            className={cn(
+              'text-[15px] sm:text-base text-gray-900 leading-relaxed whitespace-pre-line break-words',
+              !isCaptionExpanded && (hasImages ? 'line-clamp-3' : 'line-clamp-5')
+            )}
           >
-            <ExternalLink className="w-3.5 h-3.5" />
-            <span className="truncate max-w-xs">{post.directLink}</span>
-          </a>
-        )}
-      </div>
+            {descriptionText}
+          </p>
 
-      {/* Post Artwork / Image Gallery */}
-      {images.length > 0 && (
-        <div className="mt-1 bg-gray-950/5">
+          {/* "...see more" (with images) or "Read more" (text-only 5-line limit) */}
+          {isLongCaption && !isCaptionExpanded && (
+            <button
+              type="button"
+              onClick={() => setIsCaptionExpanded(true)}
+              className="text-[14px] sm:text-[15px] font-semibold text-gray-500 hover:text-[#9747FF] cursor-pointer mt-0.5 inline-block"
+            >
+              {hasImages ? '...see more' : 'Read more'}
+            </button>
+          )}
+
+          {isLongCaption && isCaptionExpanded && (
+            <button
+              type="button"
+              onClick={() => setIsCaptionExpanded(false)}
+              className="text-xs font-medium text-gray-400 hover:text-gray-600 cursor-pointer mt-1 block"
+            >
+              Show less
+            </button>
+          )}
+
+          {/* Optional external link */}
+          {post.directLink && (
+            <a
+              href={post.directLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-[#9747FF] hover:underline"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              <span className="truncate max-w-xs">{post.directLink}</span>
+            </a>
+          )}
+        </div>
+      )}
+
+      {/* 3. Artwork Presentation — Full Width Edge-to-Edge */}
+      {hasImages && (
+        <div className="w-full bg-black/5">
           {images.length === 1 ? (
-            <div className="max-h-[540px] overflow-hidden flex items-center justify-center bg-gray-900/5">
+            // Single-Image Post: Full available width, preserved aspect ratio, NO arrows, NO dots
+            <div className="w-full flex items-center justify-center max-h-[620px] overflow-hidden bg-black/5">
               <img
-                src={images[0]}
+                src={getImageUrl(images[0])}
                 alt={post.title || 'Artwork'}
-                className="w-full object-cover max-h-[540px]"
+                className="w-full h-auto max-h-[620px] object-cover sm:object-contain"
                 loading="lazy"
               />
             </div>
-          ) : images.length === 2 ? (
-            <div className="grid grid-cols-2 gap-1 max-h-[440px] overflow-hidden">
-              {images.map((imgUrl, i) => (
-                <div key={i} className="aspect-square overflow-hidden bg-gray-100">
-                  <img
-                    src={imgUrl}
-                    alt={`Artwork ${i + 1}`}
-                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                    loading="lazy"
-                  />
-                </div>
-              ))}
-            </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-1 max-h-[460px] overflow-hidden">
-              {images.slice(0, 5).map((imgUrl, i) => (
-                <div
-                  key={i}
-                  className={cn(
-                    'overflow-hidden bg-gray-100 relative aspect-square',
-                    i === 0 && images.length === 3 ? 'col-span-2 row-span-2 aspect-auto max-h-[300px]' : ''
-                  )}
-                >
-                  <img
-                    src={imgUrl}
-                    alt={`Artwork ${i + 1}`}
-                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                    loading="lazy"
+            // Multiple-Image Post: Horizontal swipeable gallery with pagination dots (NO arrows)
+            <div className="w-full relative overflow-hidden bg-black/5">
+              <div
+                ref={galleryScrollRef}
+                onScroll={handleGalleryScroll}
+                className="w-full flex overflow-x-auto snap-x snap-mandatory no-scrollbar touch-pan-x"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              >
+                {images.map((imgUrl, idx) => (
+                  <div
+                    key={idx}
+                    className="w-full flex-shrink-0 snap-center flex items-center justify-center max-h-[620px] overflow-hidden bg-black/5"
+                  >
+                    <img
+                      src={getImageUrl(imgUrl)}
+                      alt={post.title || `Artwork ${idx + 1}`}
+                      className="w-full h-auto max-h-[620px] object-cover sm:object-contain"
+                      loading={idx === 0 ? 'eager' : 'lazy'}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {/* Small Pagination Dots (active: #9747FF, inactive: gray-300) */}
+              <div className="flex items-center justify-center gap-1.5 py-2.5">
+                {images.map((_, dotIdx) => (
+                  <span
+                    key={dotIdx}
+                    className={cn(
+                      'transition-all duration-200 rounded-full',
+                      activeGalleryIndex === dotIdx
+                        ? 'w-2 h-2 bg-[#9747FF]'
+                        : 'w-1.5 h-1.5 bg-gray-300'
+                    )}
+                    aria-label={`Slide ${dotIdx + 1} of ${images.length}`}
                   />
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )}
         </div>
       )}
 
-      {/* Engagement Actions Row */}
-      <div className="px-4 sm:px-5 py-3 flex items-center justify-between border-t border-gray-100 mt-2">
-        <div className="flex items-center gap-6">
-          {/* Like Button */}
-          <button
-            type="button"
-            onClick={handleToggleLike}
-            disabled={isLiking}
-            className={cn(
-              'inline-flex items-center gap-2 text-xs sm:text-sm font-semibold transition-all cursor-pointer group',
-              isLiked ? 'text-[#9747FF]' : 'text-gray-500 hover:text-[#9747FF]'
-            )}
-            title={isLiked ? 'Unlike' : 'Like'}
-          >
-            <div
-              className={cn(
-                'p-1.5 rounded-full transition-transform duration-200',
-                isLiked
-                  ? 'bg-purple-100 scale-110 text-[#9747FF]'
-                  : 'group-hover:bg-purple-50 group-hover:scale-105'
-              )}
-            >
-              <Heart
-                className={cn(
-                  'w-4 h-4 sm:w-5 sm:h-5 transition-colors',
-                  isLiked ? 'fill-[#9747FF] text-[#9747FF]' : 'text-current'
-                )}
-              />
-            </div>
-            <span>{likesCount}</span>
-          </button>
-
-          {/* Comment Button */}
-          <button
-            type="button"
-            onClick={() => setShowComments((prev) => !prev)}
-            className={cn(
-              'inline-flex items-center gap-2 text-xs sm:text-sm font-semibold transition-colors cursor-pointer group',
-              showComments ? 'text-[#9747FF]' : 'text-gray-500 hover:text-gray-900'
-            )}
-            title="Comments"
-          >
-            <div className="p-1.5 rounded-full group-hover:bg-gray-100 transition-colors">
-              <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5 text-current" />
-            </div>
-            <span>{commentsCount}</span>
-          </button>
-
-          {/* Share Button */}
-          <button
-            type="button"
-            onClick={handleShare}
-            className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors cursor-pointer"
-            title="Share"
-          >
-            <div className="p-1.5 rounded-full hover:bg-gray-100 transition-colors">
-              <Share2 className="w-4 h-4 sm:w-5 sm:h-5 text-current" />
-            </div>
-          </button>
+      {/* 4. Engagement Summary Row (Reactions & Comments count) */}
+      <div className="px-4 py-2 flex items-center justify-between text-xs sm:text-[13px] text-gray-500 border-b border-gray-100">
+        {/* Left: Reaction Indicators & Aggregate Count */}
+        <div className="flex items-center gap-1.5">
+          <div className="flex items-center -space-x-1">
+            <span className="w-4.5 h-4.5 rounded-full bg-[#9747FF] text-white flex items-center justify-center shadow-xs">
+              <ThumbsUp className="w-2.5 h-2.5 fill-white text-white" />
+            </span>
+            <span className="w-4.5 h-4.5 rounded-full bg-rose-500 text-white flex items-center justify-center shadow-xs">
+              <Heart className="w-2.5 h-2.5 fill-white text-white" />
+            </span>
+          </div>
+          <span className="font-medium text-gray-600">
+            {formatCount(likesCount)}
+          </span>
         </div>
 
-        {/* Mobile quick book shortcut */}
-        <div className="sm:hidden">
-          <a
-            href={`/creators/${post.creator._id}`}
-            className="text-xs font-semibold text-[#9747FF] hover:underline"
-          >
-            Book creator
-          </a>
-        </div>
+        {/* Right: Comment Count */}
+        <button
+          type="button"
+          onClick={() => setShowComments((prev) => !prev)}
+          className="font-medium text-gray-500 hover:text-gray-800 transition-colors cursor-pointer"
+        >
+          {commentsCount > 0
+            ? `${formatCount(commentsCount)} ${commentsCount === 1 ? 'comment' : 'comments'}`
+            : '0 comments'}
+        </button>
       </div>
 
-      {/* Accordion / Expandable Comments Section - Matches Reference Image 2 */}
+      {/* 5. Like, Comment, and Share Action Row (Facebook-Style Pill Buttons) */}
+      <div className="px-3 sm:px-4 py-2.5 flex items-center gap-2 sm:gap-2.5">
+        {/* Like Button */}
+        <button
+          type="button"
+          onClick={handleToggleLike}
+          disabled={isLiking}
+          className={cn(
+            'flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 sm:px-3 rounded-full text-xs sm:text-sm font-semibold transition-all cursor-pointer active:scale-95 select-none',
+            isLiked
+              ? 'bg-purple-100/90 text-[#9747FF]'
+              : 'bg-gray-100 hover:bg-gray-200/80 active:bg-gray-200 text-gray-700'
+          )}
+          aria-label={isLiked ? 'Unlike post' : 'Like post'}
+        >
+          <ThumbsUp
+            className={cn(
+              'w-4 h-4 sm:w-4.5 sm:h-4.5 transition-transform duration-200',
+              isLiked ? 'fill-[#9747FF] text-[#9747FF] scale-110' : 'text-gray-600'
+            )}
+          />
+          <span>{formatCount(likesCount)}</span>
+        </button>
+
+        {/* Comment Button */}
+        <button
+          type="button"
+          onClick={() => setShowComments((prev) => !prev)}
+          className={cn(
+            'flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 sm:px-3 rounded-full text-xs sm:text-sm font-semibold transition-all cursor-pointer active:scale-95 select-none',
+            showComments
+              ? 'bg-purple-50 text-[#9747FF]'
+              : 'bg-gray-100 hover:bg-gray-200/80 active:bg-gray-200 text-gray-700'
+          )}
+          aria-label="View comments"
+        >
+          <MessageCircle className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-gray-600" />
+          <span>{formatCount(commentsCount)}</span>
+        </button>
+
+        {/* Share Button (Curved arrow matching Facebook reference) */}
+        <button
+          type="button"
+          onClick={handleShare}
+          className="flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 sm:px-3 rounded-full text-xs sm:text-sm font-semibold bg-gray-100 hover:bg-gray-200/80 active:bg-gray-200 text-gray-700 transition-all cursor-pointer active:scale-95 select-none"
+          aria-label="Share post"
+        >
+          <Forward className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-gray-600" />
+          <span>Share</span>
+        </button>
+      </div>
+
+      {/* 6. Expandable Comments Section */}
       {showComments && (
-        <div className="px-4 sm:px-5 pb-5">
+        <div className="px-4 pb-4 pt-1 border-t border-gray-100 animate-in fade-in duration-200">
           <CommentsSection
             serviceId={serviceId}
             initialCommentsCount={commentsCount}

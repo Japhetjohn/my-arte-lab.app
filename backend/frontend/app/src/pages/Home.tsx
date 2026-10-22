@@ -438,7 +438,7 @@ export function Home() {
               </Button>
             </div>
           ) : (
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-0 sm:gap-4 -mx-3 sm:mx-0">
               {posts.map((post) => (
                 <SocialFeedCard key={post._id} post={post} />
               ))}
