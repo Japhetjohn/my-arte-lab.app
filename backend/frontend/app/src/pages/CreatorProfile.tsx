@@ -1,12 +1,34 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Dialog as ImageDialog, DialogContent as ImageDialogContent, DialogTitle as ImageDialogTitle, DialogDescription as ImageDialogDescription } from '@/components/ui/dialog';
+import {
+  Dialog as ImageDialog,
+  DialogContent as ImageDialogContent,
+  DialogTitle as ImageDialogTitle,
+  DialogDescription as ImageDialogDescription,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { StatusBadge } from '@/components/shared/StatusBadge';
 import { VerifiedBadge } from '@/components/shared/VerifiedBadge';
 import { EmptyState } from '@/components/shared/EmptyState';
-import { api } from '@/contexts/AuthContext';
-import { Star, MapPin, MessageSquare, Bookmark, Share2, ArrowLeft, ArrowRight, Plus, Trash2, BadgeCheck, ShieldCheck, Pencil, Calendar, ChevronDown, Loader2 } from 'lucide-react';
+import { api, useAuth } from '@/contexts/AuthContext';
+import { socialService } from '@/lib/api';
+import { SocialFeedCard, type FeedPost } from '@/components/social/SocialFeedCard';
+import {
+  Star,
+  MapPin,
+  MessageSquare,
+  Bookmark,
+  Share2,
+  Plus,
+  BadgeCheck,
+  ShieldCheck,
+  Pencil,
+  Calendar,
+  Loader2,
+  Sparkles,
+  Compass,
+  Users,
+  Wallet,
+  Briefcase,
+} from 'lucide-react';
 import { toast } from '@/components/ui/sonner';
 import type { Creator } from '@/types';
 import {
@@ -14,28 +36,17 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { useAuth } from '@/contexts/AuthContext';
-import { getImageUrl } from '@/lib/imageUrl';
+import { getAvatarUrl, getImageUrl } from '@/lib/imageUrl';
 import { getCreatorProfileUrl } from '@/lib/utils';
 import { verificationService } from '@/lib/verificationApi';
 
 interface CreatorProfileProps {
   creatorId?: string;
   isOwnProfile?: boolean;
-}
-
-interface Service {
-  _id: string;
-  title: string;
-  description: string;
-  images: string[];
-  directLink?: string;
-  createdAt: string;
 }
 
 interface PortfolioItem {
@@ -60,36 +71,26 @@ interface Review {
 export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: CreatorProfileProps) {
   const { user: currentUser } = useAuth();
   const [creator, setCreator] = useState<Creator | null>(null);
-  const [services, setServices] = useState<Service[]>([]);
   const [portfolio, setPortfolio] = useState<PortfolioItem[]>([]);
   const [selectedItem, setSelectedItem] = useState<PortfolioItem | null>(null);
-  const [showAllPortfolio, setShowAllPortfolio] = useState(false);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [notFound, setNotFound] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isFavorited, setIsFavorited] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
 
-  // Edit modals state
+  // Social feed posts state for this creator only
+  const [posts, setPosts] = useState<FeedPost[]>([]);
+  const [isLoadingPosts, setIsLoadingPosts] = useState(true);
+
+  // Modals state
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
-  const [isAddServiceOpen, setIsAddServiceOpen] = useState(false);
-  const [isAddPortfolioOpen, setIsAddPortfolioOpen] = useState(false);
 
   // Form states
   const [profileForm, setProfileForm] = useState({
     bio: '',
     skills: [] as string[],
     category: '',
-  });
-  const [serviceForm, setServiceForm] = useState({
-    title: '',
-    description: '',
-    directLink: '',
-  });
-  const [portfolioForm, setPortfolioForm] = useState({
-    title: '',
-    description: '',
-    image: '',
   });
 
   // Verification state
@@ -99,73 +100,82 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
 
   // Compute isVerified on-the-fly (client-side grace period check)
   const isVerifiedLive = (() => {
-    if (!creator?.verificationSubscription?.expiresAt) return false;
+    if (!creator?.verificationSubscription?.expiresAt) return !!creator?.isVerified;
     const GRACE_PERIOD_MS = 48 * 60 * 60 * 1000;
     const graceEnd = new Date(creator.verificationSubscription.expiresAt).getTime() + GRACE_PERIOD_MS;
     return graceEnd > Date.now();
   })();
 
-  // Fetch creator data
+  // Fetch creator's posts
+  const fetchCreatorPosts = useCallback(async (targetId: string) => {
+    try {
+      setIsLoadingPosts(true);
+      const res = await socialService.getFeed({ creatorId: targetId, limit: 30 });
+      setPosts(res.data?.data?.posts || []);
+    } catch (err) {
+      console.error('Error fetching creator posts:', err);
+      setPosts([]);
+    } finally {
+      setIsLoadingPosts(false);
+    }
+  }, []);
+
+  // Fetch creator profile data
   const fetchCreatorData = useCallback(async (id: string) => {
     try {
       setIsLoading(true);
-      
+
       // If isOwnProfile is passed as prop, use current user's data directly
       if (propIsOwnProfile && currentUser) {
-        // Fetch current user's full profile
         const response = await api.get('/auth/me');
         const userData = response.data.data.user;
-        
+
         setCreator(userData);
         setPortfolio(userData.portfolio || []);
-        setServices(userData.services || []);
-        setReviews([]); // Reviews come from separate endpoint
+        setReviews([]);
         setIsOwner(true);
 
-        // Set profile form
         setProfileForm({
           bio: userData.bio || '',
           skills: userData.skills || [],
           category: userData.category || '',
         });
-        
-        // Fetch user's reviews if they are a creator
+
         if (userData.role === 'creator') {
           try {
             const reviewsResponse = await api.get(`/reviews/creator/${userData.id}`);
             setReviews(reviewsResponse.data.data?.reviews || []);
           } catch {
-            // Ignore error - just no reviews
+            // Ignore error
           }
         }
+
+        fetchCreatorPosts(userData.id);
       } else {
-        // Normal creator profile fetch (supports both MongoDB id and seo slug)
         const isMongoId = /^[0-9a-fA-F]{24}$/.test(id);
         const endpoint = isMongoId ? `/creators/${id}` : `/creators/slug/${id}`;
         const response = await api.get(endpoint);
         const { creator: creatorData, reviews: reviewsData } = response.data.data;
-        
+
         setCreator(creatorData);
         setPortfolio(creatorData.portfolio || []);
-        setServices(creatorData.services || []);
         setReviews(reviewsData || []);
-        
-        // Check if current user is the owner
-        if (currentUser && currentUser.id === creatorData.id) {
+
+        if (currentUser && (currentUser.id === creatorData.id || (currentUser as any)._id === creatorData.id)) {
           setIsOwner(true);
         }
 
-        // Set profile form
         setProfileForm({
           bio: creatorData.bio || '',
           skills: creatorData.skills || [],
           category: creatorData.category || '',
         });
 
-        // Check favorite status if user is logged in
         if (currentUser) {
-          checkFavoriteStatus(id);
+          checkFavoriteStatus(creatorData.id);
         }
+
+        fetchCreatorPosts(creatorData.id);
       }
     } catch (error: any) {
       console.error('Error fetching creator:', error);
@@ -177,15 +187,15 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
     } finally {
       setIsLoading(false);
     }
-  }, [currentUser, propIsOwnProfile]);
+  }, [currentUser, propIsOwnProfile, fetchCreatorPosts]);
 
   // Check if creator is favorited
   const checkFavoriteStatus = async (id: string) => {
     try {
       const response = await api.get(`/favorites/${id}/status`);
       setIsFavorited(response.data.data.isFavorited);
-    } catch (error) {
-      console.error('Error checking favorite status:', error);
+    } catch {
+      // Ignore
     }
   };
 
@@ -193,10 +203,10 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
     let id: string | undefined = creatorId;
     if (!id) {
       const path = window.location.pathname;
-      const match = path.match(/\/creator\/(.+)/);
+      const match = path.match(/\/creators?\/(.+)/);
       id = match ? match[1] : undefined;
     }
-    
+
     if (id) {
       fetchCreatorData(id);
     } else {
@@ -204,6 +214,11 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
       setIsLoading(false);
     }
   }, [creatorId, fetchCreatorData]);
+
+  // Handle post updates (likes, comments, etc.)
+  const handlePostUpdated = (updatedPost: FeedPost) => {
+    setPosts(prev => prev.map(p => p._id === updatedPost._id ? updatedPost : p));
+  };
 
   // Toggle favorite/bookmark
   const handleToggleFavorite = async () => {
@@ -234,7 +249,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
     if (!creator) return;
 
     const shareUrl = `${window.location.origin}${getCreatorProfileUrl(creator)}`;
-    
+
     if (navigator.share) {
       try {
         await navigator.share({
@@ -248,11 +263,10 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
         }
       }
     } else {
-      // Fallback to clipboard
       try {
         await navigator.clipboard.writeText(shareUrl);
         toast.success('Profile link copied to clipboard');
-      } catch (error) {
+      } catch {
         toast.error('Failed to copy link');
       }
     }
@@ -270,70 +284,16 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
     }
   };
 
-  // Add service
-  const handleAddService = async () => {
-    try {
-      const serviceResponse = await api.post('/services', serviceForm);
-      setServices(prev => [...prev, serviceResponse.data.data.service]);
-      setServiceForm({ title: '', description: '', directLink: '' });
-      setIsAddServiceOpen(false);
-      toast.success('Service added successfully');
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Failed to add service');
-    }
-  };
-
-  // Delete service
-  const handleDeleteService = async (serviceId: string) => {
-    if (!confirm('Are you sure you want to delete this service?')) return;
-    
-    try {
-      await api.delete(`/services/${serviceId}`);
-      setServices(prev => prev.filter(s => s._id !== serviceId));
-      toast.success('Service deleted successfully');
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Failed to delete service');
-    }
-  };
-
-  // Add portfolio item
-  const handleAddPortfolio = async () => {
-    try {
-      const currentPortfolio = [...portfolio, portfolioForm];
-      await api.put('/auth/update-profile', { portfolio: currentPortfolio });
-      setPortfolio(currentPortfolio);
-      setPortfolioForm({ title: '', description: '', image: '' });
-      setIsAddPortfolioOpen(false);
-      toast.success('Portfolio item added successfully');
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Failed to add portfolio item');
-    }
-  };
-
-  // Delete portfolio item
-  const handleDeletePortfolio = async (index: number) => {
-    if (!confirm('Are you sure you want to delete this portfolio item?')) return;
-    
-    try {
-      const newPortfolio = portfolio.filter((_, i) => i !== index);
-      await api.put('/auth/update-profile', { portfolio: newPortfolio });
-      setPortfolio(newPortfolio);
-      toast.success('Portfolio item deleted successfully');
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Failed to delete portfolio item');
-    }
-  };
-
   // Upload image helper
-  const handleImageUpload = async (file: File, _type: 'avatar' | 'cover' | 'portfolio' | 'service') => {
+  const handleImageUpload = async (file: File) => {
     try {
       const formData = new FormData();
       formData.append('image', file);
-      
+
       const response = await api.post('/upload/image', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      
+
       return response.data.data.url;
     } catch (error: any) {
       toast.error(error.response?.data?.error || 'Failed to upload image');
@@ -348,32 +308,36 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
         title="Creator Not Found"
         description="The creator you are looking for does not exist"
         actionLabel="Browse Creators"
-        onAction={() => window.location.href = '/creators'}
+        onAction={() => (window.location.href = '/creators')}
       />
     );
   }
 
   if (isLoading || !creator) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="animate-spin w-8 h-8 border-4 border-[#8A2BE2] border-t-transparent rounded-full"></div>
+      <div className="flex items-center justify-center py-24">
+        <Loader2 className="w-8 h-8 animate-spin text-[#9747FF]" />
       </div>
     );
   }
 
-  const locationString = creator.location 
-    ? `${creator.location.localArea || ''}, ${creator.location.state || ''}, ${creator.location.country || ''}`.replace(/^,\s*|,\s*$/g, '').replace(/,\s*,/g, ',')
-    : 'No location set';
+  const locationString = creator.location
+    ? `${creator.location.localArea || ''}, ${creator.location.state || ''}, ${creator.location.country || ''}`
+        .replace(/^,\s*|,\s*$/g, '')
+        .replace(/,\s*,/g, ',')
+    : 'Africa';
 
-  const ratingAverage: number = typeof creator.rating === 'object' && creator.rating !== null
-    ? ((creator.rating as any).average || 0)
-    : typeof creator.rating === 'number'
+  const ratingAverage: number =
+    typeof creator.rating === 'object' && creator.rating !== null
+      ? ((creator.rating as any).average || 0)
+      : typeof creator.rating === 'number'
       ? creator.rating
-      : 0;
+      : 5.0;
 
-  const ratingCount: number = typeof creator.rating === 'object' && creator.rating !== null
-    ? ((creator.rating as any).count || 0)
-    : (creator.reviewCount || 0);
+  const ratingCount: number =
+    typeof creator.rating === 'object' && creator.rating !== null
+      ? ((creator.rating as any).count || 0)
+      : (creator.reviewCount || 0);
 
   const categoryLabel = (
     Array.isArray(creator.category)
@@ -381,678 +345,562 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
       : String(creator.category ?? '')
   ).replace(/_/g, ' ');
 
-  const isAvailable = (creator.availability || 'available') === 'available';
-
-  const handleToggleAvailability = async () => {
-    const next = isAvailable ? 'busy' : 'available';
-    try {
-      await api.post('/creators/availability', { availability: next });
-      setCreator(prev => prev ? { ...prev, availability: next } : null);
-      toast.success(next === 'available' ? 'You are now available' : 'You are now busy');
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Failed to update status');
-    }
-  };
-
-  const PORTFOLIO_PREVIEW_COUNT = 4;
-  const visiblePortfolio = showAllPortfolio ? portfolio : portfolio.slice(0, PORTFOLIO_PREVIEW_COUNT);
-
   return (
-    <div className="space-y-6 pb-20 lg:pb-8">
-      {/* Header */}
-      <section className="relative overflow-hidden rounded-3xl border border-[#8A2BE2]/10 bg-white shadow-sm">
-        {/* Lavender band with wave edge */}
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-[#EFE8FC]" aria-hidden="true">
-          <svg
-            viewBox="0 0 400 48"
-            preserveAspectRatio="none"
-            className="absolute -bottom-px left-0 h-10 w-full fill-white"
-          >
-            <path d="M0 48V26C70 10 150 2 230 10C300 17 355 26 400 16V48Z" />
-          </svg>
-        </div>
-
-        <div className="relative p-4 sm:p-6">
-          {/* Top row: back (mobile) + availability */}
-          <div className="flex items-center justify-between">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="-ml-2 lg:hidden"
-              onClick={() => window.history.back()}
-              aria-label="Go back"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div className="ml-auto">
-              {isOwner ? (
-                <button
-                  type="button"
-                  onClick={handleToggleAvailability}
-                  className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-900 shadow-sm"
-                >
-                  <span className={`h-2.5 w-2.5 rounded-full ${isAvailable ? 'bg-green-500' : 'bg-amber-500'}`} />
-                  {isAvailable ? 'Available' : 'Busy'}
-                  <ChevronDown className="h-4 w-4 text-gray-500" />
-                </button>
-              ) : (
-                <StatusBadge status={creator.availability || 'available'} />
-              )}
+    <div className="w-full">
+      {/* 3-Column Layout on Desktop, Fluid & Borderless on Mobile */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* =========================================================================
+            LEFT COLUMN (lg:col-span-3, hidden on mobile/tablet)
+            Platform Quick Navigation and Creator Summary
+           ========================================================================= */}
+        <aside className="hidden lg:flex flex-col gap-6 lg:col-span-3 sticky top-20">
+          {/* Creator Mini Identity Card */}
+          <div className="pb-5 border-b border-[#DADDE1]">
+            <div className="flex flex-col items-center text-center">
+              <div className="w-16 h-16 rounded-full overflow-hidden bg-purple-100 flex items-center justify-center border-2 border-[#9747FF]/20 mb-3">
+                <img
+                  src={getAvatarUrl(creator.avatar)}
+                  alt={creator.name}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <h3 className="font-bold text-gray-900 text-base leading-tight flex items-center gap-1.5 justify-center">
+                <span>{creator.name}</span>
+                {isVerifiedLive && (
+                  <VerifiedBadge
+                    size="md"
+                    expiresAt={creator.verificationSubscription?.expiresAt}
+                    showTooltip={false}
+                  />
+                )}
+              </h3>
+              <p className="text-xs text-gray-500 mt-0.5 truncate max-w-full">
+                @{(creator as any).username || creator.email?.split('@')[0] || 'creator'}
+              </p>
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-purple-50 text-[#9747FF] text-xs font-semibold mt-2.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#9747FF]"></span>
+                {categoryLabel ? `${categoryLabel}` : 'Creative Specialist'}
+              </div>
             </div>
           </div>
 
-          {/* Avatar + identity */}
-          <div className="mt-3 flex items-center gap-4">
-            <div className="relative flex-shrink-0">
-              <img
-                src={getImageUrl(creator.avatar) || '/images/avatar-1.png'}
-                alt={creator.name}
-                className="h-20 w-20 rounded-full border-4 border-white object-cover shadow-md sm:h-24 sm:w-24"
-              />
-              {isOwner && (
-                <label
-                  className="absolute bottom-0 right-0 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border-2 border-white bg-[#8A2BE2] text-white hover:bg-[#7B1FD1]"
-                  aria-label="Change avatar"
-                >
-                  <Plus className="h-4 w-4" />
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        const url = await handleImageUpload(file, 'avatar');
-                        if (url) {
-                          await api.put('/auth/update-profile', { avatar: url });
-                          setCreator(prev => prev ? { ...prev, avatar: url } : null);
-                          toast.success('Avatar updated');
-                        }
-                      }
-                    }}
-                  />
-                </label>
-              )}
+          {/* Quick Platform Navigation Menu */}
+          <div className="pb-2">
+            <div className="text-xs font-semibold uppercase tracking-wider text-gray-400 px-3 mb-2">
+              Explore
             </div>
+            <nav className="space-y-1">
+              <a
+                href="/home"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 hover:text-[#9747FF] hover:bg-gray-100/70 transition-colors"
+              >
+                <Sparkles className="w-4 h-4 text-gray-500" />
+                <span>Creative Feed</span>
+              </a>
 
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <h1 className="min-w-0 truncate text-xl font-bold text-gray-900 sm:text-2xl">{creator.name}</h1>
-                {isVerifiedLive && (
-                  <span className="flex-shrink-0">
+              <a
+                href="/discover"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 hover:text-[#9747FF] hover:bg-gray-100/70 transition-colors"
+              >
+                <Compass className="w-4 h-4 text-gray-500" />
+                <span>Discover Creators</span>
+              </a>
+
+              <a
+                href="/creators"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 hover:text-[#9747FF] hover:bg-gray-100/70 transition-colors"
+              >
+                <Users className="w-4 h-4 text-gray-500" />
+                <span>Browse All</span>
+              </a>
+
+              {currentUser && (
+                <>
+                  <a
+                    href="/bookings"
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 hover:text-[#9747FF] hover:bg-gray-100/70 transition-colors"
+                  >
+                    <Calendar className="w-4 h-4 text-gray-500" />
+                    <span>My Bookings</span>
+                  </a>
+
+                  <a
+                    href="/wallet"
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 hover:text-[#9747FF] hover:bg-gray-100/70 transition-colors"
+                  >
+                    <Wallet className="w-4 h-4 text-gray-500" />
+                    <span>Wallet &amp; Earnings</span>
+                  </a>
+                </>
+              )}
+            </nav>
+          </div>
+        </aside>
+
+        {/* =========================================================================
+            CENTER COLUMN (lg:col-span-6, full width on mobile)
+            Public Creator Profile Header + Continuous Creative Work Posts Stream
+            ZERO RECTANGULAR CARDS: Continuous feed with ash-gray horizontal dividers
+           ========================================================================= */}
+        <main className="col-span-1 lg:col-span-6 w-full max-w-xl mx-auto flex flex-col pb-16">
+          {/* CREATOR PROFILE HEADER (Borderless, No Cards, No Availability Toggle) */}
+          <section className="pt-2 pb-6 border-b border-[#DADDE1]">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-4">
+              {/* Creator Avatar with optional upload trigger for owner */}
+              <div className="relative flex-shrink-0">
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden bg-purple-50 border-2 border-gray-200/80 shadow-2xs flex items-center justify-center">
+                  <img
+                    src={getAvatarUrl(creator.avatar)}
+                    alt={creator.name}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                {isOwner && (
+                  <label
+                    className="absolute bottom-0 right-0 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border-2 border-white bg-[#9747FF] text-white hover:bg-[#8534f0] shadow-xs transition-colors"
+                    aria-label="Change avatar"
+                    title="Change avatar"
+                  >
+                    <Plus className="h-4 w-4" />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const url = await handleImageUpload(file);
+                          if (url) {
+                            await api.put('/auth/update-profile', { avatar: url });
+                            setCreator((prev) => (prev ? { ...prev, avatar: url } : null));
+                            toast.success('Avatar updated successfully');
+                          }
+                        }
+                      }}
+                    />
+                  </label>
+                )}
+              </div>
+
+              {/* Identity & Details */}
+              <div className="min-w-0 flex-1">
+                {/* Creator Display Name + Prominently Visible Verification Badge */}
+                <div className="flex items-center justify-center sm:justify-start gap-1.5 flex-wrap">
+                  <h1 className="text-xl sm:text-2xl font-bold text-gray-950 tracking-tight leading-tight">
+                    {creator.name}
+                  </h1>
+                  {isVerifiedLive && (
                     <VerifiedBadge
+                      size="lg"
                       expiresAt={creator.verificationSubscription?.expiresAt}
                       onClick={() => isOwner && setShowCancelVerifyDialog(true)}
                     />
-                  </span>
-                )}
-              </div>
-              <p className="truncate text-sm capitalize text-gray-500">
-                {categoryLabel ? `${categoryLabel} Specialist` : 'Specialist'}
-              </p>
-              <div className="mt-1 flex min-w-0 items-center gap-2 text-sm text-gray-500">
-                <div className="flex flex-shrink-0 items-center gap-1">
-                  <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                  <span className="font-medium">{ratingAverage.toFixed(1)}</span>
-                  <span>({ratingCount})</span>
-                </div>
-                <span className="h-4 w-px flex-shrink-0 bg-gray-300" aria-hidden="true" />
-                <div className="flex min-w-0 items-center gap-1">
-                  <MapPin className="h-4 w-4 flex-shrink-0" />
-                  <span className="truncate">{locationString}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Primary actions */}
-          <div className="mt-4 flex gap-3 sm:max-w-md">
-            {isOwner ? (
-              <>
-                {!isVerifiedLive && (
-                  <Button
-                    className="h-11 flex-[1.6] rounded-xl bg-[#8A2BE2] text-white hover:bg-[#7B1FD1]"
-                    onClick={() => setShowVerifyDialog(true)}
-                  >
-                    <ShieldCheck className="mr-2 h-5 w-5" />
-                    Verify
-                  </Button>
-                )}
-                <Button
-                  variant="outline"
-                  className="h-11 flex-1 rounded-xl border-[#8A2BE2]/40 text-gray-900"
-                  onClick={() => setIsEditProfileOpen(true)}
-                >
-                  <Pencil className="mr-2 h-4 w-4 text-[#8A2BE2]" />
-                  Edit Profile
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button
-                  className="h-11 flex-[1.6] rounded-xl bg-[#8A2BE2] text-white hover:bg-[#7B1FD1]"
-                  onClick={() => window.location.href = `/bookings?creator=${creator.id}`}
-                >
-                  <Calendar className="mr-2 h-5 w-5" />
-                  Book Now
-                </Button>
-                <Button
-                  variant="outline"
-                  asChild
-                  className="h-11 flex-1 rounded-xl border-[#8A2BE2]/40 text-gray-900"
-                >
-                  <a href={`/messages?user=${creator.id}`}>
-                    <MessageSquare className="mr-2 h-4 w-4 text-[#8A2BE2]" />
-                    Message
-                  </a>
-                </Button>
-              </>
-            )}
-          </div>
-
-          {/* Bio */}
-          <p className="mt-4 text-sm text-gray-600 sm:text-base">{creator.bio || 'No bio available'}</p>
-
-          {/* Skills */}
-          {(creator.skills || []).length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {(creator.skills || []).map((skill) => (
-                <span
-                  key={skill}
-                  className="rounded-full bg-[#8A2BE2]/10 px-2 py-1 text-xs text-[#8A2BE2] sm:px-3 sm:text-sm"
-                >
-                  {skill}
-                </span>
-              ))}
-            </div>
-          )}
-
-          {/* Bookmark + share */}
-          <div className="mt-4 flex justify-end gap-3 border-t border-gray-200 pt-4">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={handleToggleFavorite}
-              aria-label={isFavorited ? 'Remove bookmark' : 'Bookmark creator'}
-              className={`h-11 w-11 rounded-xl ${isFavorited ? 'text-amber-500' : ''}`}
-            >
-              <Bookmark className={`h-5 w-5 ${isFavorited ? 'fill-current' : ''}`} />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={handleShare}
-              aria-label="Share profile"
-              className="h-11 w-11 rounded-xl"
-            >
-              <Share2 className="h-5 w-5" />
-            </Button>
-          </div>
-        </div>
-      </section>
-
-      {/* Tabs */}
-      <Tabs defaultValue="portfolio" className="w-full">
-        <TabsList className="grid h-auto w-full grid-cols-3 gap-1 rounded-2xl bg-[#F1ECFA] p-1 lg:max-w-lg">
-          {(['portfolio', 'services', 'reviews'] as const).map((tab) => (
-            <TabsTrigger
-              key={tab}
-              value={tab}
-              className="rounded-xl border-b-2 border-transparent py-2.5 text-sm font-semibold capitalize text-gray-500 data-[state=active]:border-[#8A2BE2] data-[state=active]:bg-white data-[state=active]:text-[#8A2BE2] data-[state=active]:shadow-sm"
-            >
-              {tab}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-
-        {/* Portfolio */}
-        <TabsContent value="portfolio" className="mt-6">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <h2 className="text-xl font-bold text-gray-900">{isOwner ? 'My Portfolio' : 'Portfolio'}</h2>
-            <div className="flex items-center gap-3">
-              {isOwner && (
-                <Dialog open={isAddPortfolioOpen} onOpenChange={setIsAddPortfolioOpen}>
-                  <DialogTrigger asChild>
-                    <Button size="sm" className="rounded-full bg-[#8A2BE2] text-white hover:bg-[#7B1FD1]">
-                      <Plus className="mr-1 h-4 w-4" />
-                      Add
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Add Portfolio Item</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4 mt-4">
-                      <div>
-                        <Label>Title</Label>
-                        <Input
-                          value={portfolioForm.title}
-                          onChange={(e) => setPortfolioForm(prev => ({ ...prev, title: e.target.value }))}
-                          placeholder="Project title"
-                        />
-                      </div>
-                      <div>
-                        <Label>Description</Label>
-                        <Textarea
-                          value={portfolioForm.description}
-                          onChange={(e) => setPortfolioForm(prev => ({ ...prev, description: e.target.value }))}
-                          placeholder="Describe your work..."
-                        />
-                      </div>
-                      <div>
-                        <Label>Image URL</Label>
-                        <Input
-                          value={portfolioForm.image}
-                          onChange={(e) => setPortfolioForm(prev => ({ ...prev, image: e.target.value }))}
-                          placeholder="https://example.com/image.jpg"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">Or upload an image:</p>
-                        <Input
-                          type="file"
-                          accept="image/*"
-                          className="mt-2"
-                          onChange={async (e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                              const url = await handleImageUpload(file, 'portfolio');
-                              if (url) {
-                                setPortfolioForm(prev => ({ ...prev, image: url }));
-                              }
-                            }
-                          }}
-                        />
-                      </div>
-                      <Button onClick={handleAddPortfolio} className="w-full bg-[#8A2BE2] hover:bg-[#7B1FD1]">
-                        Add Item
-                      </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              )}
-              {portfolio.length > PORTFOLIO_PREVIEW_COUNT && (
-                <button
-                  type="button"
-                  onClick={() => setShowAllPortfolio(prev => !prev)}
-                  className="inline-flex items-center gap-1 text-sm font-semibold text-[#8A2BE2]"
-                >
-                  {showAllPortfolio ? 'Show less' : 'View All'}
-                  {!showAllPortfolio && <ArrowRight className="h-4 w-4" />}
-                </button>
-              )}
-            </div>
-          </div>
-
-          {portfolio.length === 0 ? (
-            <EmptyState
-              image="/images/empty-projects.png"
-              title="No Portfolio Items"
-              description={isOwner ? "Add your best work to showcase your skills" : "This creator hasn't added any portfolio items yet"}
-            />
-          ) : (
-            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
-              {visiblePortfolio.map((item, index) => (
-                <div
-                  key={item._id || index}
-                  className="group relative aspect-[3/2] overflow-hidden rounded-2xl bg-gray-100"
-                >
-                  <button
-                    type="button"
-                    className="absolute inset-0 h-full w-full"
-                    onClick={() => item.image && setSelectedItem(item)}
-                    aria-label={`View ${item.title}`}
-                  >
-                    <img
-                      src={getImageUrl(item.image) || '/images/placeholder.png'}
-                      alt={item.title}
-                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = '/images/placeholder.png';
-                      }}
-                    />
-                  </button>
-                  <span className="pointer-events-none absolute bottom-2 left-2 max-w-[calc(100%-1rem)] truncate rounded-full bg-black/50 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm">
-                    {item.title}
-                  </span>
-                  {isOwner && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-2 top-2 h-8 w-8 rounded-full bg-white/90 text-red-500 hover:bg-white"
-                      onClick={() => handleDeletePortfolio(index)}
-                      aria-label={`Delete ${item.title}`}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
                   )}
                 </div>
-              ))}
-            </div>
-          )}
-        </TabsContent>
 
-        {/* Services */}
-        <TabsContent value="services" className="mt-6">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <h2 className="text-xl font-bold text-gray-900">{isOwner ? 'My Services' : 'Services'}</h2>
-            {isOwner && (
-              <Dialog open={isAddServiceOpen} onOpenChange={setIsAddServiceOpen}>
-                <DialogTrigger asChild>
-                  <Button size="sm" className="rounded-full bg-[#8A2BE2] text-white hover:bg-[#7B1FD1]">
-                    <Plus className="mr-1 h-4 w-4" />
-                    Add
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Add New Service</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4 mt-4">
-                    <div>
-                      <Label>Title</Label>
-                      <Input
-                        value={serviceForm.title}
-                        onChange={(e) => setServiceForm(prev => ({ ...prev, title: e.target.value }))}
-                        placeholder="Service title"
-                      />
-                    </div>
-                    <div>
-                      <Label>Description</Label>
-                      <Textarea
-                        value={serviceForm.description}
-                        onChange={(e) => setServiceForm(prev => ({ ...prev, description: e.target.value }))}
-                        placeholder="Describe your service..."
-                      />
-                    </div>
-                    <div>
-                      <Label>Direct Link (Optional)</Label>
-                      <Input
-                        value={serviceForm.directLink}
-                        onChange={(e) => setServiceForm(prev => ({ ...prev, directLink: e.target.value }))}
-                        placeholder="https://example.com/service"
-                      />
-                    </div>
-                    <Button onClick={handleAddService} className="w-full bg-[#8A2BE2] hover:bg-[#7B1FD1]">
-                      Add Service
-                    </Button>
+                {/* Subtitle / Category & Handle */}
+                <p className="text-xs sm:text-sm text-gray-500 font-medium capitalize mt-0.5">
+                  {categoryLabel ? `${categoryLabel} Specialist` : 'Creative Specialist'}
+                  {(creator as any).username && (
+                    <span className="text-gray-400 font-normal ml-1.5">@{(creator as any).username}</span>
+                  )}
+                </p>
+
+                {/* Rating & Location Meta */}
+                <div className="mt-2 flex flex-wrap items-center justify-center sm:justify-start gap-3 text-xs text-gray-600">
+                  <div className="flex items-center gap-1 font-semibold text-gray-900">
+                    <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                    <span>{ratingAverage.toFixed(1)}</span>
+                    <span className="text-gray-400 font-normal">({ratingCount} reviews)</span>
                   </div>
-                </DialogContent>
-              </Dialog>
-            )}
-          </div>
 
-          {services.length === 0 ? (
-            <EmptyState
-              image="/images/empty-projects.png"
-              title="No Services"
-              description={isOwner ? "Add services to start receiving bookings" : "This creator hasn't added any services yet"}
-            />
-          ) : (
-            <div className="space-y-3">
-              {services.map((service) => {
-                const [coverImage, ...extraImages] = service.images || [];
-                return (
-                  <div
-                    key={service._id}
-                    className="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm"
-                  >
-                    <div className="flex gap-3">
-                      <img
-                        src={getImageUrl(coverImage) || '/images/placeholder.png'}
-                        alt={service.title}
-                        className="h-24 w-28 flex-shrink-0 rounded-xl bg-gray-100 object-cover"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = '/images/placeholder.png';
-                        }}
-                      />
-                      <div className="flex min-w-0 flex-1 flex-col">
-                        <div className="flex items-start justify-between gap-2">
-                          <h3 className="truncate text-base font-semibold text-gray-900">{service.title}</h3>
-                          {isOwner && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="-mr-1 -mt-1 h-8 w-8 flex-shrink-0 text-red-500"
-                              onClick={() => handleDeleteService(service._id)}
-                              aria-label={`Delete ${service.title}`}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                        <p className="mt-1 line-clamp-2 text-sm text-gray-500">{service.description}</p>
-                        <div className="mt-auto flex items-center justify-between gap-2 pt-2">
-                          {!isOwner ? (
-                            <Button
-                              size="sm"
-                              className="rounded-full bg-[#8A2BE2] text-white hover:bg-[#7B1FD1]"
-                              onClick={() => window.location.href = `/bookings?creator=${creator.id}&service=${service._id}`}
-                            >
-                              Book Now
-                            </Button>
-                          ) : (
-                            <span />
-                          )}
-                          {service.directLink && (
-                            <a
-                              href={service.directLink}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-sm font-semibold text-[#8A2BE2] hover:underline"
-                            >
-                              View service
-                              <ArrowRight className="h-4 w-4" />
-                            </a>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    {extraImages.length > 0 && (
-                      <div className="mt-3 flex gap-2 overflow-x-auto">
-                        {extraImages.map((img, idx) => (
-                          <img
-                            key={idx}
-                            src={getImageUrl(img)}
-                            alt={`${service.title} ${idx + 2}`}
-                            className="h-14 w-14 flex-shrink-0 rounded-lg object-cover"
-                          />
-                        ))}
-                      </div>
-                    )}
+                  <span className="h-3 w-px bg-gray-300" aria-hidden="true" />
+
+                  <div className="flex items-center gap-1 text-gray-500">
+                    <MapPin className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+                    <span className="truncate max-w-[200px]">{locationString}</span>
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </TabsContent>
-
-        {/* Reviews */}
-        <TabsContent value="reviews" className="mt-6">
-          <div className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-6">
-            {reviews.length === 0 && (
-              <div className="flex flex-col items-center py-8 text-center">
-                <div className="relative flex h-24 w-24 items-center justify-center rounded-full bg-[#8A2BE2]/10">
-                  <MessageSquare className="h-10 w-10 text-[#8A2BE2]" strokeWidth={1.5} />
-                  <Star className="absolute -mt-1 h-4 w-4 text-[#8A2BE2]" />
                 </div>
-                <h3 className="mt-4 text-xl font-bold text-gray-900">No reviews yet</h3>
-                <p className="mt-1 text-gray-500">Reviews will appear here.</p>
+              </div>
+            </div>
+
+            {/* Creator Bio */}
+            {creator.bio && (
+              <p className="mt-4 text-xs sm:text-sm text-gray-700 leading-relaxed text-center sm:text-left">
+                {creator.bio}
+              </p>
+            )}
+
+            {/* Skills Chips */}
+            {(creator.skills || []).length > 0 && (
+              <div className="mt-3.5 flex flex-wrap gap-1.5 justify-center sm:justify-start">
+                {(creator.skills || []).map((skill) => (
+                  <span
+                    key={skill}
+                    className="rounded-full bg-purple-50 text-[#9747FF] text-xs font-medium px-3 py-1"
+                  >
+                    {skill}
+                  </span>
+                ))}
               </div>
             )}
 
-            <div
-              className={`flex flex-col items-center text-center ${
-                reviews.length === 0 ? 'mt-2 border-t border-gray-200 pt-6' : 'py-2'
-              }`}
-            >
-              <span className="text-4xl font-bold text-gray-900">{ratingAverage.toFixed(1)}</span>
-              <div className="mt-2 flex items-center gap-1" aria-label={`Rated ${ratingAverage.toFixed(1)} out of 5`}>
-                {[1, 2, 3, 4, 5].map((n) => (
-                  <Star
-                    key={n}
-                    className={`h-5 w-5 ${
-                      n <= Math.round(ratingAverage) ? 'fill-amber-400 text-amber-400' : 'text-[#8A2BE2]/60'
+            {/* Primary Action Buttons (NO Availability Toggle) */}
+            <div className="mt-5 flex items-center justify-center sm:justify-start gap-2.5 flex-wrap">
+              {isOwner ? (
+                <>
+                  <Button
+                    onClick={() => setIsEditProfileOpen(true)}
+                    className="h-9 px-5 rounded-full border border-[#9747FF] text-[#9747FF] bg-white hover:bg-[#9747FF]/10 text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
+                  >
+                    <Pencil className="mr-1.5 h-3.5 w-3.5 text-[#9747FF]" />
+                    Edit Profile
+                  </Button>
+
+                  {!isVerifiedLive && (
+                    <Button
+                      onClick={() => setShowVerifyDialog(true)}
+                      className="h-9 px-5 rounded-full bg-[#9747FF] text-white hover:bg-[#8534f0] text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
+                    >
+                      <ShieldCheck className="mr-1.5 h-4 w-4" />
+                      Get Verified
+                    </Button>
+                  )}
+
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={handleShare}
+                    title="Share profile"
+                    aria-label="Share profile"
+                    className="h-9 w-9 rounded-full border-gray-200 text-gray-600 hover:text-[#9747FF] hover:border-[#9747FF] cursor-pointer"
+                  >
+                    <Share2 className="h-4 w-4" />
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    onClick={() => (window.location.href = `/bookings?creator=${creator.id}`)}
+                    className="h-9 px-6 rounded-full bg-[#9747FF] text-white hover:bg-[#8534f0] text-xs font-semibold shadow-2xs transition-colors cursor-pointer inline-flex items-center gap-1.5"
+                  >
+                    <Calendar className="h-3.5 w-3.5" />
+                    <span>Book Creator</span>
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    asChild
+                    className="h-9 px-5 rounded-full border-gray-300 text-gray-800 hover:bg-gray-50 text-xs font-medium shadow-2xs cursor-pointer inline-flex items-center gap-1.5"
+                  >
+                    <a href={`/messages?user=${creator.id}`}>
+                      <MessageSquare className="h-3.5 w-3.5 text-gray-600" />
+                      <span>Message</span>
+                    </a>
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={handleToggleFavorite}
+                    title={isFavorited ? 'Remove bookmark' : 'Bookmark creator'}
+                    aria-label={isFavorited ? 'Remove bookmark' : 'Bookmark creator'}
+                    className={`h-9 w-9 rounded-full border-gray-200 text-gray-600 hover:text-[#9747FF] hover:border-[#9747FF] cursor-pointer ${
+                      isFavorited ? 'text-amber-500 border-amber-300' : ''
                     }`}
+                  >
+                    <Bookmark className={`h-4 w-4 ${isFavorited ? 'fill-current' : ''}`} />
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={handleShare}
+                    title="Share profile"
+                    aria-label="Share profile"
+                    className="h-9 w-9 rounded-full border-gray-200 text-gray-600 hover:text-[#9747FF] hover:border-[#9747FF] cursor-pointer"
+                  >
+                    <Share2 className="h-4 w-4" />
+                  </Button>
+                </>
+              )}
+            </div>
+          </section>
+
+          {/* CREATIVE WORK (POSTS STREAM — Reusing SocialFeedCard Component) */}
+          <section className="py-4">
+            <div className="flex items-center justify-between pb-3 px-1 sm:px-0">
+              <h2 className="text-base font-bold text-gray-950 tracking-tight">
+                Creative Work
+              </h2>
+              <span className="text-xs text-gray-500 font-medium">
+                {posts.length} {posts.length === 1 ? 'post' : 'posts'}
+              </span>
+            </div>
+
+            {isLoadingPosts ? (
+              <div className="py-16 flex justify-center items-center">
+                <Loader2 className="w-6 h-6 animate-spin text-[#9747FF]" />
+              </div>
+            ) : posts.length === 0 ? (
+              <div className="py-12 px-4 text-center text-gray-500 text-xs sm:text-sm">
+                <p className="font-semibold text-gray-800">No creative work shared yet.</p>
+                <p className="text-xs text-gray-400 mt-1">
+                  {isOwner
+                    ? 'Publish your first artwork or creative service to showcase your talent!'
+                    : 'This creator has not published any posts to the feed yet.'}
+                </p>
+                {isOwner && (
+                  <Button
+                    onClick={() => (window.location.href = '/home')}
+                    className="mt-4 bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs rounded-full px-5 h-8 font-semibold shadow-2xs"
+                  >
+                    Create a Post on Home Feed
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="divide-y divide-[#DADDE1] -mx-3 sm:mx-0">
+                {posts.map((post) => (
+                  <SocialFeedCard
+                    key={post._id}
+                    post={post}
+                    onPostUpdated={handlePostUpdated}
                   />
                 ))}
               </div>
-              <p className="mt-2 text-sm text-gray-500">
-                {ratingCount} {ratingCount === 1 ? 'review' : 'reviews'}
-              </p>
+            )}
+          </section>
+        </main>
+
+        {/* =========================================================================
+            RIGHT COLUMN (lg:col-span-3, hidden on mobile/tablet)
+            Creator Services & Booking Details (Quiet, borderless, ash-gray dividers)
+           ========================================================================= */}
+        <aside className="hidden lg:flex flex-col gap-6 lg:col-span-3 sticky top-20">
+          {/* Rate card & Booking card */}
+          <div className="pb-4 border-b border-[#DADDE1]">
+            <div className="pb-2.5 mb-3">
+              <h4 className="font-bold text-sm text-gray-900 tracking-tight flex items-center gap-2">
+                <Briefcase className="w-4 h-4 text-[#9747FF]" />
+                <span>Services &amp; Pricing</span>
+              </h4>
             </div>
 
-            {reviews.length > 0 && (
-              <div className="mt-6 space-y-4">
-                {reviews.map((review) => (
-                  <div key={review._id} className="border-t pt-4">
-                    <div className="flex items-start gap-3">
-                      <img
-                        src={getImageUrl(review.reviewer.avatar) || '/images/avatar-1.png'}
-                        alt={review.reviewer.name}
-                        className="w-10 h-10 rounded-full object-cover"
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                          <p className="font-medium">{review.reviewer.name}</p>
-                          <div className="flex items-center gap-1">
-                            <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                            <span className="text-sm">{review.rating}</span>
-                          </div>
-                        </div>
-                        <p className="text-gray-600 text-sm mt-1">{review.comment}</p>
-                        <p className="text-gray-400 text-xs mt-2">
-                          {new Date(review.createdAt).toLocaleDateString()}
-                        </p>
+            <div className="space-y-3 text-xs text-gray-600">
+              <div className="flex items-center justify-between py-1">
+                <span className="text-gray-500">Starting Price</span>
+                <span className="font-bold text-gray-950 text-sm">
+                  ${creator.startingPrice || 50} USDC
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between py-1">
+                <span className="text-gray-500">Category</span>
+                <span className="font-semibold text-gray-900 capitalize">
+                  {categoryLabel || 'General'}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between py-1">
+                <span className="text-gray-500">Completed Orders</span>
+                <span className="font-semibold text-gray-900">
+                  {(creator as any).completedBookings || 0}
+                </span>
+              </div>
+
+              <div className="pt-2">
+                {!isOwner ? (
+                  <Button
+                    onClick={() => (window.location.href = `/bookings?creator=${creator.id}`)}
+                    className="w-full bg-[#9747FF] hover:bg-[#8534f0] text-white font-semibold rounded-xl text-xs py-2 shadow-xs cursor-pointer"
+                  >
+                    Book This Creator
+                  </Button>
+                ) : (
+                  <div className="text-xs text-gray-400 italic text-center py-1">
+                    Your public rate card
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Portfolio highlights if any */}
+          {portfolio.length > 0 && (
+            <div className="pb-4 border-b border-[#DADDE1]">
+              <div className="flex items-center justify-between pb-2 mb-2">
+                <h4 className="font-bold text-sm text-gray-900 tracking-tight">Portfolio</h4>
+                <span className="text-xs text-gray-400">{portfolio.length} items</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {portfolio.slice(0, 6).map((item, idx) => (
+                  <button
+                    key={item._id || idx}
+                    type="button"
+                    onClick={() => setSelectedItem(item)}
+                    className="aspect-square rounded-lg overflow-hidden bg-gray-100 hover:opacity-90 transition-opacity cursor-pointer"
+                  >
+                    <img
+                      src={getImageUrl(item.image)}
+                      alt={item.title}
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Client Reviews Overview */}
+          {reviews.length > 0 && (
+            <div className="pb-4">
+              <div className="flex items-center justify-between pb-2 mb-2.5">
+                <h4 className="font-bold text-sm text-gray-900 tracking-tight">Recent Feedback</h4>
+                <div className="flex items-center gap-1 text-xs font-semibold text-amber-500">
+                  <Star className="w-3.5 h-3.5 fill-current" />
+                  <span>{ratingAverage.toFixed(1)}</span>
+                </div>
+              </div>
+              <div className="space-y-2.5">
+                {reviews.slice(0, 3).map((rev) => (
+                  <div key={rev._id} className="text-xs border-b border-gray-100 pb-2">
+                    <div className="flex items-center justify-between font-medium text-gray-800">
+                      <span>{rev.reviewer?.name || 'Client'}</span>
+                      <div className="flex items-center text-amber-400 text-[10px]">
+                        {Array.from({ length: rev.rating || 5 }).map((_, i) => (
+                          <Star key={i} className="w-2.5 h-2.5 fill-current" />
+                        ))}
                       </div>
                     </div>
+                    <p className="text-gray-500 mt-1 line-clamp-2 leading-relaxed">
+                      "{rev.comment}"
+                    </p>
                   </div>
                 ))}
               </div>
-            )}
-          </div>
-        </TabsContent>
-      </Tabs>
+            </div>
+          )}
+        </aside>
+      </div>
 
-      {/* Edit Profile Dialog */}
+      {/* =========================================================================
+          MODALS & DIALOGS (Preserving all existing workflows)
+         ========================================================================= */}
+
+      {/* 1. Edit Profile Modal */}
       <Dialog open={isEditProfileOpen} onOpenChange={setIsEditProfileOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Edit Profile</DialogTitle>
+            <DialogTitle className="text-lg font-bold text-gray-900">Edit Creator Profile</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 mt-4">
+          <div className="space-y-4 mt-2">
             <div>
-              <Label>Bio</Label>
+              <Label className="text-xs font-medium text-gray-700">Bio</Label>
               <Textarea
                 value={profileForm.bio}
-                onChange={(e) => setProfileForm(prev => ({ ...prev, bio: e.target.value }))}
-                placeholder="Tell us about yourself..."
+                onChange={(e) => setProfileForm((prev) => ({ ...prev, bio: e.target.value }))}
+                placeholder="Tell clients about your creative background..."
+                className="mt-1"
+                rows={4}
               />
             </div>
             <div>
-              <Label>Category</Label>
+              <Label className="text-xs font-medium text-gray-700">Category</Label>
               <Input
                 value={profileForm.category}
-                onChange={(e) => setProfileForm(prev => ({ ...prev, category: e.target.value }))}
-                placeholder="Your category (e.g., Design, Writing)"
+                onChange={(e) => setProfileForm((prev) => ({ ...prev, category: e.target.value }))}
+                placeholder="e.g., Digital Art, Graphic Design"
+                className="mt-1"
               />
             </div>
             <div>
-              <Label>Skills (comma or space separated)</Label>
+              <Label className="text-xs font-medium text-gray-700">Skills (comma separated)</Label>
               <Input
                 value={profileForm.skills.join(', ')}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  // Split by comma, space, or both, then clean up
-                  const skills = value
-                    .split(/[,\s]+/)  // Split by comma or whitespace
-                    .map(s => s.trim())
-                    .filter(s => s.length > 0 && s !== ',');
-                  setProfileForm(prev => ({ ...prev, skills }));
-                }}
-                placeholder="e.g., Photoshop, Writing, Video Editing"
+                onChange={(e) =>
+                  setProfileForm((prev) => ({
+                    ...prev,
+                    skills: e.target.value.split(',').map((s) => s.trim()).filter(Boolean),
+                  }))
+                }
+                placeholder="e.g., Photoshop, Blender, Figma"
+                className="mt-1"
               />
-              <p className="text-xs text-gray-500 mt-1">
-                Separate skills with commas or spaces
-              </p>
-              {/* Preview of skills */}
-              {profileForm.skills.length > 0 && (
-                <div className="flex flex-wrap gap-1 mt-2">
-                  {profileForm.skills.map((skill, idx) => (
-                    <span key={idx} className="px-2 py-0.5 bg-[#8A2BE2]/10 text-[#8A2BE2] text-xs rounded-full">
-                      {skill}
-                    </span>
-                  ))}
-                </div>
-              )}
             </div>
-            <Button onClick={handleUpdateProfile} className="w-full bg-[#8A2BE2] hover:bg-[#7B1FD1]">
-              Save Changes
-            </Button>
+            <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
+              <Button
+                variant="outline"
+                onClick={() => setIsEditProfileOpen(false)}
+                className="text-xs rounded-xl"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleUpdateProfile}
+                className="bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold rounded-xl"
+              >
+                Save Changes
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Verification Dialog */}
+      {/* 2. Verification Dialog */}
       <Dialog open={showVerifyDialog} onOpenChange={setShowVerifyDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <BadgeCheck className="w-6 h-6 text-[#8A2BE2]" />
-              Get Verified
+            <DialogTitle className="flex items-center gap-2 text-lg font-bold text-gray-900">
+              <BadgeCheck className="w-6 h-6 text-[#9747FF]" />
+              Get Verified Creator Badge
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 mt-2">
-            <div className="bg-[#8A2BE2]/10 p-4 rounded-lg">
-              <h3 className="font-semibold text-[#8A2BE2]">Verification Badge</h3>
-              <p className="text-sm text-[#8A2BE2]/80 mt-1">
-                Stand out as a trusted creator with a verified badge on your profile.
-              </p>
+          <div className="space-y-4 mt-2 text-xs text-gray-600">
+            <div className="bg-purple-50/60 p-4 rounded-xl border border-purple-100 space-y-2">
+              <p className="font-semibold text-gray-900 text-sm">Verified Creator Benefits</p>
+              <ul className="space-y-1.5 text-gray-600 list-disc list-inside">
+                <li>Distinct verification badge next to your name</li>
+                <li>Increased visibility and ranking across the platform</li>
+                <li>Priority placement in creative searches &amp; feed</li>
+              </ul>
             </div>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Price</span>
-                <span className="font-semibold">1.00 USDC / month</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Duration</span>
-                <span className="font-semibold">30 days</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Auto-renew</span>
-                <span className="font-semibold">Enabled</span>
+            <div className="p-3 bg-gray-50 rounded-xl space-y-1">
+              <div className="flex justify-between">
+                <span className="text-gray-500">Monthly Subscription</span>
+                <span className="font-bold text-gray-900">$1.00 USDC / month</span>
               </div>
             </div>
-            <div className="border-t pt-4">
-              <p className="text-xs text-gray-500">
-                The amount will be deducted from your wallet balance. 
-                If you don't have enough balance, please deposit first.
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                className="flex-1"
+            <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
+              <Button
+                variant="outline"
                 onClick={() => setShowVerifyDialog(false)}
+                className="text-xs rounded-xl"
               >
                 Cancel
               </Button>
-              <Button 
-                className="flex-1 bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white"
+              <Button
+                className="bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold rounded-xl"
                 disabled={isVerifying}
                 onClick={async () => {
                   try {
                     setIsVerifying(true);
                     const result = await verificationService.subscribe();
-                    setCreator(prev => prev ? { 
-                      ...prev, 
-                      isVerified: true,
-                      verificationSubscription: {
-                        active: true,
-                        subscribedAt: new Date().toISOString(),
-                        expiresAt: result.expiresAt,
-                        lastRenewalAt: new Date().toISOString(),
-                        autoRenew: true
-                      }
-                    } : null);
+                    setCreator((prev) =>
+                      prev
+                        ? {
+                            ...prev,
+                            isVerified: true,
+                            verificationSubscription: {
+                              active: true,
+                              subscribedAt: new Date().toISOString(),
+                              expiresAt: result.expiresAt,
+                              lastRenewalAt: new Date().toISOString(),
+                              autoRenew: true,
+                            },
+                          }
+                        : null
+                    );
                     toast.success('You are now verified!');
                     setShowVerifyDialog(false);
                   } catch (error: any) {
@@ -1065,10 +913,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                 {isVerifying ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
-                  <>
-                    <BadgeCheck className="w-4 h-4 mr-1" />
-                    Pay 1.00 USDC & Verify
-                  </>
+                  'Pay 1.00 USDC & Verify'
                 )}
               </Button>
             </div>
@@ -1076,38 +921,40 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
         </DialogContent>
       </Dialog>
 
-      {/* Cancel Verification Dialog */}
+      {/* 3. Cancel Verification Dialog */}
       <Dialog open={showCancelVerifyDialog} onOpenChange={setShowCancelVerifyDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+            <DialogTitle className="flex items-center gap-2 text-lg font-bold text-gray-900">
               <BadgeCheck className="w-6 h-6 text-red-500" />
               Cancel Verification
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 mt-2">
-            <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+          <div className="space-y-4 mt-2 text-xs">
+            <div className="bg-red-50 p-4 rounded-xl border border-red-200">
               <h3 className="font-semibold text-red-700">Remove Verified Badge?</h3>
-              <p className="text-sm text-red-600/80 mt-1">
-                Your blue tick will be removed immediately. You can re-verify anytime.
+              <p className="text-red-600/80 mt-1">
+                Your verified badge will be removed upon cancellation. You can re-subscribe anytime.
               </p>
             </div>
-            <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                className="flex-1"
+            <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
+              <Button
+                variant="outline"
                 onClick={() => setShowCancelVerifyDialog(false)}
+                className="text-xs rounded-xl"
               >
                 Keep Badge
               </Button>
-              <Button 
-                className="flex-1 bg-red-500 hover:bg-red-600 text-white"
+              <Button
+                className="bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded-xl"
                 disabled={isVerifying}
                 onClick={async () => {
                   try {
                     setIsVerifying(true);
                     await verificationService.cancel();
-                    setCreator(prev => prev ? { ...prev, isVerified: false, verificationSubscription: undefined } : null);
+                    setCreator((prev) =>
+                      prev ? { ...prev, isVerified: false, verificationSubscription: undefined } : null
+                    );
                     toast.success('Verification cancelled');
                     setShowCancelVerifyDialog(false);
                   } catch (error: any) {
@@ -1117,47 +964,39 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                   }
                 }}
               >
-                {isVerifying ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  'Cancel Subscription'
-                )}
+                {isVerifying ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Cancel Subscription'}
               </Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Full Image Viewer */}
+      {/* 4. Full Image Lightbox */}
       <ImageDialog open={!!selectedItem} onOpenChange={() => setSelectedItem(null)}>
-        <ImageDialogContent className="max-w-none w-screen h-screen p-0 overflow-hidden bg-black/95 border-none rounded-none" showCloseButton={false}>
-          {/* Hidden title for accessibility */}
+        <ImageDialogContent
+          className="max-w-none w-screen h-screen p-0 overflow-hidden bg-black/95 border-none rounded-none"
+          showCloseButton={false}
+        >
           <ImageDialogTitle className="sr-only">Portfolio Image</ImageDialogTitle>
-          <ImageDialogDescription className="sr-only">Full size portfolio image viewer</ImageDialogDescription>
-          {/* Close button */}
+          <ImageDialogDescription className="sr-only">
+            Full size portfolio image viewer
+          </ImageDialogDescription>
           <button
             onClick={() => setSelectedItem(null)}
-            className="absolute top-4 right-4 z-50 w-10 h-10 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 text-white transition-colors"
+            className="absolute top-4 right-4 z-50 w-10 h-10 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 text-white transition-colors cursor-pointer"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            ✕
           </button>
           <div className="flex h-full w-full flex-col items-center justify-center gap-3 p-4">
             {selectedItem && (
               <>
                 <img
                   src={getImageUrl(selectedItem.image)}
-                  alt={selectedItem.title || 'Portfolio'}
-                  className="max-h-[80vh] max-w-full object-contain"
+                  alt={selectedItem.title}
+                  className="max-h-[85vh] max-w-[90vw] object-contain"
                 />
-                {(selectedItem.title || selectedItem.description) && (
-                  <div className="max-w-xl text-center text-white">
-                    {selectedItem.title && <p className="font-semibold">{selectedItem.title}</p>}
-                    {selectedItem.description && (
-                      <p className="mt-1 text-sm text-white/70">{selectedItem.description}</p>
-                    )}
-                  </div>
+                {selectedItem.title && (
+                  <p className="text-white text-sm font-medium">{selectedItem.title}</p>
                 )}
               </>
             )}
@@ -1167,3 +1006,5 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
     </div>
   );
 }
+
+export default CreatorProfile;

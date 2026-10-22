@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useAuth, api } from '@/contexts/AuthContext';
-import { walletService } from '@/lib/api';
+import { walletService, socialService } from '@/lib/api';
+import { SocialFeedCard, type FeedPost } from '@/components/social/SocialFeedCard';
 import { getAvatarUrl } from '@/lib/imageUrl';
 import { toast } from '@/components/ui/sonner';
 import { VerifiedBadge } from '@/components/shared/VerifiedBadge';
@@ -77,6 +78,10 @@ export function Settings() {
     isLoading: false,
   });
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
+
+  // User's own posts state
+  const [myPosts, setMyPosts] = useState<FeedPost[]>([]);
+  const [isLoadingPosts, setIsLoadingPosts] = useState(false);
 
   // Theme & Language state
   const [selectedLanguage, setSelectedLanguage] = useState('English');
@@ -159,6 +164,34 @@ export function Settings() {
       isMounted = false;
     };
   }, []);
+
+  // Fetch current user's own posts
+  useEffect(() => {
+    if (!currentUser?.id && !(currentUser as any)?._id) return;
+    const uid = currentUser?.id || (currentUser as any)?._id;
+    let isMounted = true;
+    const loadMyPosts = async () => {
+      try {
+        setIsLoadingPosts(true);
+        const res = await socialService.getFeed({ creatorId: uid, limit: 30 });
+        if (isMounted) {
+          setMyPosts(res.data?.data?.posts || []);
+        }
+      } catch {
+        if (isMounted) setMyPosts([]);
+      } finally {
+        if (isMounted) setIsLoadingPosts(false);
+      }
+    };
+    loadMyPosts();
+    return () => {
+      isMounted = false;
+    };
+  }, [currentUser?.id, (currentUser as any)?._id]);
+
+  const handlePostUpdated = (updatedPost: FeedPost) => {
+    setMyPosts((prev) => prev.map((p) => (p._id === updatedPost._id ? updatedPost : p)));
+  };
 
   const copyToClipboard = (text: string, label: string) => {
     if (!text) return;
@@ -956,6 +989,48 @@ export function Settings() {
               </div>
               <ChevronRight className="w-4 h-4 text-red-300 group-hover:text-red-500 transition-colors shrink-0 ml-2" />
             </button>
+          </section>
+
+          {/* SECTION F: User's Own Creative Work / Posts */}
+          <section className="py-5 border-t border-[#DADDE1]">
+            <div className="flex items-center justify-between pb-3 px-1">
+              <h2 className="text-sm font-bold text-gray-900 tracking-tight">
+                {isCreator ? 'My Creative Work' : 'My Posts'}
+              </h2>
+              <span className="text-xs text-gray-500 font-medium">
+                {myPosts.length} {myPosts.length === 1 ? 'post' : 'posts'}
+              </span>
+            </div>
+
+            {isLoadingPosts ? (
+              <div className="py-12 flex justify-center items-center">
+                <Loader2 className="w-5 h-5 animate-spin text-[#9747FF]" />
+              </div>
+            ) : myPosts.length === 0 ? (
+              <div className="py-8 px-4 text-center text-gray-500 text-xs">
+                <p className="font-semibold text-gray-700">No creative work published yet.</p>
+                {isCreator ? (
+                  <Button
+                    onClick={() => (window.location.href = '/home')}
+                    className="mt-3 bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs rounded-full px-5 h-8 font-semibold shadow-2xs cursor-pointer"
+                  >
+                    Create a Post on Home Feed
+                  </Button>
+                ) : (
+                  <p className="mt-1 text-gray-400">Your published content will appear here.</p>
+                )}
+              </div>
+            ) : (
+              <div className="divide-y divide-[#DADDE1] -mx-3 sm:mx-0">
+                {myPosts.map((post) => (
+                  <SocialFeedCard
+                    key={post._id}
+                    post={post}
+                    onPostUpdated={handlePostUpdated}
+                  />
+                ))}
+              </div>
+            )}
           </section>
         </main>
 

@@ -255,7 +255,7 @@ export const categoryService = {
 
 // Social Feed & Services API
 export const socialService = {
-  getFeed: (params?: { tab?: string; category?: string; page?: number; limit?: number; since?: string }) =>
+  getFeed: (params?: { tab?: string; category?: string; page?: number; limit?: number; since?: string; creatorId?: string }) =>
     api.get('/services/feed', { params }),
 
   checkNewPosts: (since: string) =>

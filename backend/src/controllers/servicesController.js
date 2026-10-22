@@ -108,7 +108,7 @@ function balanceCreatorExposure(rankedPosts, limitNum) {
  * Get social creative feed across creators with fair ranking and exposure balancing
  */
 exports.getFeed = catchAsync(async (req, res, next) => {
-  const { tab = 'for-you', category, page = 1, limit = 15, since } = req.query;
+  const { tab = 'for-you', category, page = 1, limit = 15, since, creatorId } = req.query;
   const pageNum = Math.max(1, parseInt(page, 10) || 1);
   const limitNum = Math.max(1, Math.min(50, parseInt(limit, 10) || 15));
 
@@ -120,9 +120,18 @@ exports.getFeed = catchAsync(async (req, res, next) => {
 
   // Find creators with published services
   const query = {
-    role: 'creator',
     'services.0': { $exists: true }
   };
+
+  if (creatorId) {
+    if (/^[0-9a-fA-F]{24}$/.test(creatorId)) {
+      query._id = creatorId;
+    } else {
+      query.$or = [{ seoSlug: creatorId }, { username: creatorId }];
+    }
+  } else {
+    query.role = 'creator';
+  }
 
   if (category && category !== 'All') {
     query.categories = { $in: [new RegExp(category, 'i')] };
@@ -190,6 +199,22 @@ exports.getFeed = catchAsync(async (req, res, next) => {
       });
     }
   });
+
+  // If creatorId was requested, return only that creator's posts sorted newest first
+  if (creatorId) {
+    allCandidatePosts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    const total = allCandidatePosts.length;
+    const paginated = allCandidatePosts.slice((pageNum - 1) * limitNum, pageNum * limitNum);
+    return successResponse(res, 200, 'Creator posts retrieved', {
+      posts: paginated,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages: Math.ceil(total / limitNum) || 1
+      }
+    });
+  }
 
   // If client asked for new posts since a given timestamp (Refresh / New Post detection)
   if (since) {

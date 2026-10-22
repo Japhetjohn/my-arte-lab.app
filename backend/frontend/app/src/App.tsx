@@ -126,7 +126,7 @@ function AppContent() {
 
   // Get creator ID from URL for dynamic routing
   const getCreatorFromPath = (path: string) => {
-    const match = path.match(/\/creator\/(.+)/);
+    const match = path.match(/\/creators?\/(.+)/);
     if (match) {
       return match[1];
     }
@@ -158,7 +158,8 @@ function AppContent() {
   const publicBrowsingRoutes = ['/', '/home', '/creators', '/explore', '/legal', '/privacy-policy'];
   const isPublicBrowsingRoute =
     publicBrowsingRoutes.includes(currentPath) ||
-    currentPath.startsWith('/creator/');
+    currentPath.startsWith('/creator/') ||
+    currentPath.startsWith('/creators/');
 
   // Protected routes require authentication
   if (!isPublicBrowsingRoute && !isAuthenticated && !isLoading) {

@@ -6,9 +6,10 @@ interface VerifiedBadgeProps {
   expiresAt?: string;
   showTooltip?: boolean;
   onClick?: () => void;
+  size?: 'sm' | 'md' | 'lg';
 }
 
-export function VerifiedBadge({ className, expiresAt, showTooltip = true, onClick }: VerifiedBadgeProps) {
+export function VerifiedBadge({ className, expiresAt, showTooltip = true, onClick, size = 'md' }: VerifiedBadgeProps) {
   const formatExpiry = (dateStr?: string) => {
     if (!dateStr) return '';
     const date = new Date(dateStr);
@@ -23,11 +24,17 @@ export function VerifiedBadge({ className, expiresAt, showTooltip = true, onClic
     ? `Verified until ${formatExpiry(expiresAt)}`
     : 'Verified Creator';
 
+  const sizeClasses = {
+    sm: 'w-4 h-4',
+    md: 'w-4.5 h-4.5',
+    lg: 'w-6 h-6 sm:w-6.5 sm:h-6.5',
+  };
+
   const img = (
     <img 
       src="/images/verified-badge.png" 
       alt="Verified" 
-      className={cn('w-4 h-4 inline-block cursor-pointer shrink-0', className)}
+      className={cn('inline-block cursor-pointer shrink-0 align-middle', sizeClasses[size], className)}
       onClick={onClick}
     />
   );
