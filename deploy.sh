@@ -4,16 +4,23 @@
 VPS_IP="72.61.97.210"
 VPS_USER="root"
 SSH_PASS="${SSHPASS:-@Kuulsinim45}"
-SSHPASS_BIN="$(which sshpass 2>/dev/null || echo "$HOME/.local/bin/sshpass")"
 
 echo "🚀 Deploying MyArteLab to VPS..."
 
-SSH_CMD="ssh"
-if [ -x "$SSHPASS_BIN" ]; then
-  SSH_CMD="$SSHPASS_BIN -p $SSH_PASS ssh -o StrictHostKeyChecking=no"
+# Setup SSH Askpass helper for non-interactive password authentication
+ASKPASS_TMP=""
+if [ -n "$SSH_PASS" ]; then
+  ASKPASS_TMP=$(mktemp)
+  chmod +x "$ASKPASS_TMP"
+  cat << EOF > "$ASKPASS_TMP"
+#!/bin/bash
+echo '$SSH_PASS'
+EOF
+  export SSH_ASKPASS="$ASKPASS_TMP"
+  export SSH_ASKPASS_REQUIRE=force
 fi
 
-$SSH_CMD ${VPS_USER}@${VPS_IP} << 'REMOTE_SCRIPT'
+ssh -o StrictHostKeyChecking=no ${VPS_USER}@${VPS_IP} << 'REMOTE_SCRIPT'
   set -e
   
   echo "📥 Pulling latest code from git..."
@@ -47,6 +54,9 @@ $SSH_CMD ${VPS_USER}@${VPS_IP} << 'REMOTE_SCRIPT'
   echo "🌐 Check your site at: https://app.myartelab.com"
 REMOTE_SCRIPT
 
+if [ -n "$ASKPASS_TMP" ]; then
+  rm -f "$ASKPASS_TMP"
+fi
+
 echo ""
 echo "🎉 Deployment finished!"
-

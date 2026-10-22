@@ -16,10 +16,46 @@ import {
   Settings, 
   Search,
   X,
-  Clock
+  Clock,
+  Menu,
+  Home,
+  Compass,
+  Sparkles,
+  Users,
+  Calendar,
+  FolderOpen,
+  Wallet
 } from 'lucide-react';
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetDescription,
+  SheetTrigger
+} from '@/components/ui/sheet';
 import type { User as UserType } from '@/types';
 import { getAvatarUrl } from '@/lib/imageUrl';
+
+interface NavItem {
+  path: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  authOnly?: boolean;
+}
+
+const mobileNavItems: NavItem[] = [
+  { path: '/home', label: 'Home', icon: Home },
+  { path: '/discover', label: 'Discover', icon: Sparkles },
+  { path: '/explore', label: 'Explore', icon: Compass },
+  { path: '/creators', label: 'Creators', icon: Users },
+  { path: '/bookings', label: 'Bookings', icon: Calendar, authOnly: true },
+  { path: '/projects', label: 'Projects', icon: FolderOpen, authOnly: true },
+  { path: '/messages', label: 'Messages', icon: MessageSquare, authOnly: true },
+  { path: '/notifications', label: 'Notifications', icon: Bell, authOnly: true },
+  { path: '/wallet', label: 'Wallet', icon: Wallet, authOnly: true },
+  { path: '/profile', label: 'Profile', icon: User, authOnly: true },
+  { path: '/settings', label: 'Settings', icon: Settings, authOnly: true },
+];
 
 interface TopNavigationProps {
   user: UserType | null;
@@ -36,6 +72,7 @@ export function TopNavigation({
   onLogout,
   onNavigate,
 }: TopNavigationProps) {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [mobileSearchQuery, setMobileSearchQuery] = useState('');
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
@@ -94,6 +131,7 @@ export function TopNavigation({
   };
 
   const handleNavClick = (path: string) => {
+    setMobileMenuOpen(false);
     if (onNavigate) {
       onNavigate(path);
     } else {
@@ -102,6 +140,7 @@ export function TopNavigation({
   };
 
   const handleLogout = () => {
+    setMobileMenuOpen(false);
     if (onLogout) {
       onLogout();
     }
@@ -118,31 +157,22 @@ export function TopNavigation({
     return currentPath === path || currentPath.startsWith(path + '/');
   };
 
-  const mobileCapsuleItems = [
-    { path: '/home', label: 'HOME' },
-    { path: '/discover', label: 'DISCOVER' },
-    { path: '/explore', label: 'EXPLORE' },
-    { path: '/creators', label: 'CREATORS' },
-  ];
+  const visibleMobileNavItems = mobileNavItems.filter((item) => !item.authOnly || !!user);
 
   return (
     <>
       {/* =========================================================================
-          MOBILE VIEW: Capsule Navigation Header (lg:hidden)
-          Strict reference specification of media_1792623665365_81b0be64.png
-          - Single horizontal capsule outer container with fully rounded ends (rounded-full)
-          - Thin MyArteLab purple outline (border border-[#9747FF])
-          - White background (bg-white)
-          - Centered in available mobile header area
-          - Active item: fully rounded purple pill (bg-[#9747FF] text-white)
-          - Inactive items: dark text (text-gray-900) directly on container background
-          - Visible inset: active pill does not touch or overlap outer border
-          - Clean uppercase sans-serif typography, no unnecessary icons or cards
-          - No hamburger menu at widths where the capsule fits comfortably
+          MOBILE VIEW: Simplified Mobile Header (lg:hidden)
+          Strict requirements:
+          - Logo on the left
+          - Search icon
+          - Profile/person icon
+          - Hamburger menu at the far right
+          - No visible horizontal navigation capsule/links
           ========================================================================= */}
       <div className="lg:hidden sticky top-0 z-50 w-full bg-white border-b border-gray-200/80">
-        <div className="flex items-center justify-between h-14 sm:h-16 px-3 sm:px-5 gap-2">
-          {/* Left: MyArteLab Brand Logo */}
+        <div className="flex items-center justify-between h-14 sm:h-16 px-4 sm:px-6">
+          {/* 1. Left: MyArteLab Brand Logo */}
           <a 
             href="/home" 
             onClick={(e) => { e.preventDefault(); handleNavClick('/home'); }}
@@ -156,70 +186,143 @@ export function TopNavigation({
             />
           </a>
 
-          {/* Center: Reference Capsule Navigation Bar */}
-          <div className="flex-1 flex items-center justify-center min-w-0 px-1">
-            <nav 
-              className="inline-flex items-center rounded-full border border-[#9747FF] bg-white p-1 shadow-2xs max-w-full"
-              aria-label="Mobile Navigation"
-            >
-              {mobileCapsuleItems.map((item) => {
-                const active = isCurrentActive(item.path);
-                return (
-                  <button
-                    key={item.path}
-                    type="button"
-                    onClick={() => handleNavClick(item.path)}
-                    aria-current={active ? 'page' : undefined}
-                    className={`shrink-0 rounded-full text-[11px] sm:text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer outline-none focus:outline-none whitespace-nowrap ${
-                      active
-                        ? 'bg-[#9747FF] text-white px-3 sm:px-4 py-1.5 shadow-xs'
-                        : 'text-gray-900 hover:text-[#9747FF] px-2.5 sm:px-3.5 py-1.5'
-                    }`}
-                  >
-                    {item.label}
-                  </button>
-                );
-              })}
-            </nav>
-          </div>
-
-          {/* Right: Search & Profile / Login (No hamburger menu, no duplicate Wallet/Logout in dropdown) */}
-          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+          {/* 2. Right: Search icon, Profile/Person icon, Hamburger menu at far right */}
+          <div className="flex items-center gap-2.5 sm:gap-3.5 shrink-0">
             {/* Search Icon */}
             <button
               type="button"
               onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
-              className={`p-1.5 transition-colors cursor-pointer outline-none focus:outline-none ${
+              className={`p-1.5 sm:p-2 transition-colors cursor-pointer outline-none focus:outline-none ${
                 mobileSearchOpen ? 'text-[#9747FF]' : 'text-gray-800 hover:text-gray-950'
               }`}
               aria-label="Search"
             >
-              <Search className="w-5 h-5 stroke-[1.75]" />
+              <Search className="w-5 h-5 sm:w-6 sm:h-6 stroke-[1.75]" />
             </button>
 
-            {/* Profile / Login Icon */}
+            {/* Profile / Person Icon */}
             {user ? (
               <button
                 type="button"
                 onClick={() => handleNavClick('/profile')}
-                className="p-1.5 text-gray-800 hover:text-gray-950 transition-colors cursor-pointer outline-none focus:outline-none relative"
+                className="p-1.5 sm:p-2 text-gray-800 hover:text-gray-950 transition-colors cursor-pointer outline-none focus:outline-none relative"
                 aria-label="Profile"
               >
-                <User className="w-5 h-5 stroke-[1.75]" />
+                <User className="w-5 h-5 sm:w-6 sm:h-6 stroke-[1.75]" />
                 {(unreadNotifications > 0 || unreadMessages > 0) && (
-                  <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-[#9747FF]" />
+                  <span className="absolute top-1 sm:top-1.5 right-1 sm:right-1.5 w-2 h-2 rounded-full bg-[#9747FF]" />
                 )}
               </button>
             ) : (
               <button
                 type="button"
                 onClick={() => handleNavClick('/login')}
-                className="p-1.5 text-gray-800 hover:text-gray-950 transition-colors cursor-pointer outline-none focus:outline-none"
+                className="p-1.5 sm:p-2 text-gray-800 hover:text-gray-950 transition-colors cursor-pointer outline-none focus:outline-none"
                 aria-label="Log in"
               >
-                <User className="w-5 h-5 stroke-[1.75]" />
+                <User className="w-5 h-5 sm:w-6 sm:h-6 stroke-[1.75]" />
               </button>
             )}
+
+            {/* Hamburger Menu (Far Right) */}
+            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <button
+                  type="button"
+                  className="p-1.5 sm:p-2 text-gray-800 hover:text-gray-950 transition-colors cursor-pointer outline-none focus:outline-none"
+                  aria-label="Open navigation menu"
+                >
+                  <Menu className="w-5 h-5 sm:w-6 sm:h-6 stroke-[1.75]" />
+                </button>
+              </SheetTrigger>
+
+              {/* Mobile Drawer (sliding in from right) */}
+              <SheetContent 
+                side="right" 
+                className="w-[82vw] max-w-xs sm:max-w-sm p-0 flex flex-col h-full bg-[#fafafa] border-l border-gray-200/80 [&>button:last-child]:hidden [&>[data-slot=sheet-close]]:hidden"
+              >
+                <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+                <SheetDescription className="sr-only">MyArteLab mobile navigation drawer</SheetDescription>
+
+                {/* Top Section: Title & Close control */}
+                <div className="pt-6 pb-2 px-6 sm:px-7 shrink-0 flex items-center justify-between">
+                  <span className="text-sm font-semibold text-gray-900 tracking-tight">Navigation</span>
+                  <button
+                    type="button"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="p-1.5 text-gray-500 hover:text-gray-950 transition-colors cursor-pointer outline-none focus:outline-none"
+                    aria-label="Close menu"
+                  >
+                    <X className="w-5 h-5 stroke-[1.75]" />
+                  </button>
+                </div>
+
+                {/* Navigation Items: Home, Discover, Explore, Creators + Auth items */}
+                <div className="flex-1 overflow-y-auto px-6 sm:px-7 pt-3 pb-6">
+                  <nav className="space-y-4 sm:space-y-5">
+                    {visibleMobileNavItems.map((item) => {
+                      const Icon = item.icon;
+                      const active = isCurrentActive(item.path);
+
+                      return (
+                        <button
+                          key={item.path}
+                          type="button"
+                          onClick={() => handleNavClick(item.path)}
+                          className={`w-full flex items-center gap-4 text-left transition-colors cursor-pointer group py-1.5 outline-none focus:outline-none ${
+                            active 
+                              ? 'text-[#9747FF] font-semibold' 
+                              : 'text-gray-700 hover:text-gray-950 font-normal'
+                          }`}
+                        >
+                          <Icon 
+                            className={`w-5 h-5 shrink-0 transition-colors stroke-[1.75] ${
+                              active 
+                                ? 'text-[#9747FF]' 
+                                : 'text-gray-500 group-hover:text-gray-900'
+                            }`} 
+                          />
+                          <span className="text-base tracking-normal">
+                            {item.label}
+                          </span>
+                          {item.path === '/messages' && unreadMessages > 0 && (
+                            <span className="ml-auto text-xs bg-[#9747FF] text-white px-2 py-0.5 rounded-full font-bold">
+                              {unreadMessages}
+                            </span>
+                          )}
+                          {item.path === '/notifications' && unreadNotifications > 0 && (
+                            <span className="ml-auto text-xs bg-red-500 text-white px-2 py-0.5 rounded-full font-bold">
+                              {unreadNotifications}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </nav>
+                </div>
+
+                {/* Bottom Section: Centered Logout / Login */}
+                <div className="mt-auto shrink-0 bg-[#f3f4f6] w-full border-t border-gray-200/80 pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] px-6 flex items-center justify-center">
+                  {user ? (
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      className="w-full text-center text-sm font-semibold text-red-600 hover:text-red-700 transition-colors cursor-pointer py-1.5 outline-none focus:outline-none"
+                    >
+                      Logout
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleNavClick('/login')}
+                      className="w-full text-center text-sm font-semibold text-[#9747FF] hover:text-[#8534f0] transition-colors cursor-pointer py-1.5 outline-none focus:outline-none"
+                    >
+                      Log in
+                    </button>
+                  )}
+                </div>
+              </SheetContent>
+            </Sheet>
           </div>
         </div>
 

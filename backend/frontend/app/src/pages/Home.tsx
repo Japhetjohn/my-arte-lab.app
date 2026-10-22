@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   Sparkles,
-  TrendingUp,
   Compass,
   Users,
   Calendar,
@@ -13,7 +12,6 @@ import {
   ArrowRight,
   Plus,
   ArrowUp,
-  Clock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PostComposer } from '@/components/social/PostComposer';
@@ -41,7 +39,7 @@ const CATEGORIES = [
 
 export function Home() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'for-you' | 'trending' | 'latest'>('for-you');
+  const activeTab = 'for-you';
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [suggestedCreators, setSuggestedCreators] = useState<Creator[]>([]);
@@ -132,7 +130,7 @@ export function Home() {
     }, 45000); // Check every 45s
 
     return () => clearInterval(interval);
-  }, [activeTab, selectedCategory]);
+  }, [selectedCategory]);
 
   // Insert new posts smoothly when user clicks the banner
   const handleLoadNewPosts = () => {
@@ -167,10 +165,10 @@ export function Home() {
     fetchSuggested();
   }, []);
 
-  // Reload on tab or category change
+  // Reload on category change
   useEffect(() => {
     loadFeed(true, selectedCategory, activeTab);
-  }, [activeTab, selectedCategory]);
+  }, [selectedCategory]);
 
   const handleRefresh = () => {
     if (isRefreshing) return;
@@ -300,67 +298,9 @@ export function Home() {
             Feed Tabs, Post Composer (X-inspired), and Post Cards
            ========================================================================= */}
         <section className="col-span-1 lg:col-span-6 flex flex-col gap-4">
-          {/* Feed Header Tabs: For You | Trending | Latest */}
-          <div className="bg-white rounded-2xl border border-gray-200/80 p-2 shadow-xs flex items-center justify-between sticky top-16 lg:static z-10">
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => setActiveTab('for-you')}
-                className={cn(
-                  'px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer',
-                  activeTab === 'for-you'
-                    ? 'bg-[#9747FF] text-white shadow-xs'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                )}
-              >
-                For You
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveTab('trending')}
-                className={cn(
-                  'px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer inline-flex items-center gap-1.5',
-                  activeTab === 'trending'
-                    ? 'bg-[#9747FF] text-white shadow-xs'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                )}
-              >
-                <TrendingUp className="w-3.5 h-3.5" />
-                <span>Trending</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveTab('latest')}
-                className={cn(
-                  'px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer inline-flex items-center gap-1.5',
-                  activeTab === 'latest'
-                    ? 'bg-[#9747FF] text-white shadow-xs'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                )}
-              >
-                <Clock className="w-3.5 h-3.5" />
-                <span>Latest</span>
-              </button>
-            </div>
-
-            {/* Header Refresh Control with Restrained Rotation Animation (Part 6) */}
-            <button
-              type="button"
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-              className="p-2 text-gray-500 hover:text-[#9747FF] hover:bg-purple-50 rounded-xl transition-colors cursor-pointer mr-1"
-              aria-label="Refresh creative feed"
-              title="Refresh Feed"
-            >
-              <RefreshCw className={cn('w-4 h-4', isRefreshing && 'animate-spin text-[#9747FF]')} />
-            </button>
-          </div>
-
-          {/* New Posts Notification Banner (Part 6.3 - Non-disruptive) */}
+          {/* New Posts Notification Banner (Non-disruptive) */}
           {newPostsCount > 0 && (
-            <div className="flex justify-center sticky top-28 z-20 animate-in fade-in slide-in-from-top-2">
+            <div className="flex justify-center sticky top-20 lg:top-4 z-20 animate-in fade-in slide-in-from-top-2">
               <button
                 type="button"
                 onClick={handleLoadNewPosts}
@@ -372,23 +312,37 @@ export function Home() {
             </div>
           )}
 
-          {/* Category Filter Pills */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
-            {CATEGORIES.map((cat) => (
-              <button
-                key={cat}
-                type="button"
-                onClick={() => setSelectedCategory(cat)}
-                className={cn(
-                  'px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer shrink-0 shadow-2xs',
-                  selectedCategory === cat
-                    ? 'bg-gray-900 text-white'
-                    : 'bg-white text-gray-600 hover:text-gray-900 border border-gray-200/80 hover:border-gray-300'
-                )}
-              >
-                {cat}
-              </button>
-            ))}
+          {/* Category Filter Pills & Preserved Refresh Action */}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar flex-1 min-w-0">
+              {CATEGORIES.map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setSelectedCategory(cat)}
+                  className={cn(
+                    'px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer shrink-0 shadow-2xs',
+                    selectedCategory === cat
+                      ? 'bg-gray-900 text-white'
+                      : 'bg-white text-gray-600 hover:text-gray-900 border border-gray-200/80 hover:border-gray-300'
+                  )}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+
+            {/* Preserved Refresh Control */}
+            <button
+              type="button"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="p-2 text-gray-500 hover:text-[#9747FF] hover:bg-purple-50 rounded-full border border-gray-200/80 bg-white shadow-2xs transition-colors cursor-pointer shrink-0"
+              aria-label="Refresh creative feed"
+              title="Refresh Feed"
+            >
+              <RefreshCw className={cn('w-4 h-4', isRefreshing && 'animate-spin text-[#9747FF]')} />
+            </button>
           </div>
 
           {/* X-Inspired Post Composer (with Character limit ring & Reference 1 Image Uploader) */}
@@ -407,7 +361,7 @@ export function Home() {
               <div className="w-14 h-14 rounded-full bg-purple-50 text-[#9747FF] flex items-center justify-center mb-3">
                 <Sparkles className="w-7 h-7" />
               </div>
-              <h3 className="font-bold text-gray-900 text-base mb-1">No artwork found in this tab</h3>
+              <h3 className="font-bold text-gray-900 text-base mb-1">No artwork yet</h3>
               <p className="text-xs sm:text-sm text-gray-500 max-w-sm mb-4">
                 Be the first creator to share your work with the MyArteLab community!
               </p>
