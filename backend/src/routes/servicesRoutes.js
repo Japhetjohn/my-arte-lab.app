@@ -1,24 +1,37 @@
 const express = require('express');
 const router = express.Router();
 const {
+  getFeed,
   getMyServices,
   addService,
   updateService,
   deleteService,
   uploadServiceImage,
-  deleteServiceImage
+  deleteServiceImage,
+  toggleLike,
+  getComments,
+  addComment,
+  recordImpression
 } = require('../controllers/servicesController');
-const { protect } = require('../middleware/auth');
+const { protect, optionalAuth } = require('../middleware/auth');
 const { upload } = require('../services/uploadService');
 
-router.use(protect);
+// Public endpoints (with optionalAuth to identify current user likes and impressions)
+router.get('/feed', optionalAuth, getFeed);
+router.get('/:serviceId/comments', optionalAuth, getComments);
+router.post('/:serviceId/impression', optionalAuth, recordImpression);
 
-router.get('/', getMyServices);
-router.post('/', addService);
-router.put('/:serviceId', updateService);
+// Authenticated social engagement endpoints
+router.post('/:serviceId/like', protect, toggleLike);
+router.post('/:serviceId/comments', protect, addComment);
+
+// Creator service management
+router.get('/', protect, getMyServices);
+router.post('/', protect, addService);
+router.put('/:serviceId', protect, updateService);
 router.delete('/:serviceId', deleteService);
 
-router.post('/:serviceId/images', upload.single('image'), uploadServiceImage);
-router.delete('/:serviceId/images/:imageIndex', deleteServiceImage);
+router.post('/:serviceId/images', protect, upload.single('image'), uploadServiceImage);
+router.delete('/:serviceId/images/:imageIndex', protect, deleteServiceImage);
 
 module.exports = router;

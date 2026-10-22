@@ -252,3 +252,28 @@ export const categoryService = {
   getCategory: (id: string) =>
     api.get(`/categories/${id}`),
 };
+
+// Social Feed & Services API
+export const socialService = {
+  getFeed: (params?: { tab?: string; category?: string; page?: number; limit?: number; since?: string }) =>
+    api.get('/services/feed', { params }),
+
+  checkNewPosts: (since: string) =>
+    api.get('/services/feed', { params: { since } }),
+
+  recordImpression: (serviceId: string) =>
+    api.post(`/services/${serviceId}/impression`),
+
+  toggleLike: (serviceId: string) =>
+    api.post(`/services/${serviceId}/like`),
+
+  getComments: (serviceId: string, sort?: 'latest' | 'popular') =>
+    api.get(`/services/${serviceId}/comments`, { params: { sort } }),
+
+  addComment: (serviceId: string, text: string) =>
+    api.post(`/services/${serviceId}/comments`, { text }),
+
+  createPost: (data: { title?: string; description: string; images?: string[]; directLink?: string }) =>
+    api.post('/services', data),
+};
+

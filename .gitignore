@@ -38,6 +38,7 @@ build/
 tmp/
 temp/
 backend/.env
+*Twitter Tweet Box*
 
 # Git repositories
 *.git/
