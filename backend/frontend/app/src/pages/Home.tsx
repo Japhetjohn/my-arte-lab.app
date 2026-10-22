@@ -6,7 +6,6 @@ import {
   Users,
   Calendar,
   Wallet,
-  CheckCircle2,
   Loader2,
   RefreshCw,
   Plus,
@@ -16,6 +15,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { PostComposer } from '@/components/social/PostComposer';
 import { SocialFeedCard, type FeedPost } from '@/components/social/SocialFeedCard';
+import { VerifiedBadge } from '@/components/shared/VerifiedBadge';
 import {
   Drawer,
   DrawerContent,
@@ -556,7 +556,7 @@ export function Home() {
                           {creator.name || 'Creator'}
                         </span>
                         {creator.isVerified && (
-                          <CheckCircle2 className="w-3 h-3 text-[#9747FF] shrink-0" />
+                          <VerifiedBadge className="w-3.5 h-3.5 shrink-0 inline-block align-middle" showTooltip={false} />
                         )}
                       </div>
                       <span className="text-[11px] text-gray-600 truncate">

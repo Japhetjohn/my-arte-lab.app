@@ -7,8 +7,10 @@ import {
   Globe,
   MoreHorizontal,
   Copy,
-  ExternalLink,
   Calendar,
+  ChevronLeft,
+  ChevronRight,
+  Users,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -38,6 +40,8 @@ export interface FeedPost {
   creator: {
     _id: string;
     name: string;
+    firstName?: string;
+    lastName?: string;
     username?: string;
     avatar?: string;
     bio?: string;
@@ -85,6 +89,40 @@ function formatTimestamp(dateInput?: string | Date): string {
   if (diffSec < 604800) return `${Math.floor(diffSec / 86400)}d`;
   if (diffSec < 31536000) return `${Math.floor(diffSec / 604800)}w`;
   return `${Math.floor(diffSec / 31536000)}y`;
+}
+
+/**
+ * Clean caption linkifier: converts URLs into clickable brand-purple links without ugly boxes or icons
+ */
+function renderCaptionWithLinks(text: string) {
+  const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+)/g;
+  const parts = text.split(urlRegex);
+
+  return parts.map((part, i) => {
+    if (part.match(urlRegex)) {
+      const href = part.startsWith('www.') ? `https://${part}` : part;
+      const trailingPunctuation = part.match(/[.,!?;:]+$/);
+      const cleanHref = trailingPunctuation ? href.slice(0, -trailingPunctuation[0].length) : href;
+      const cleanText = trailingPunctuation ? part.slice(0, -trailingPunctuation[0].length) : part;
+      const punctuation = trailingPunctuation ? trailingPunctuation[0] : '';
+
+      return (
+        <span key={i}>
+          <a
+            href={cleanHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="text-[#9747FF] hover:underline break-all"
+          >
+            {cleanText}
+          </a>
+          {punctuation}
+        </span>
+      );
+    }
+    return part;
+  });
 }
 
 export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
@@ -174,6 +212,23 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
       behavior: 'smooth',
     });
     setActiveGalleryIndex(clamped);
+  };
+
+  const handlePrevImage = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (activeGalleryIndex > 0) {
+      scrollToIndex(activeGalleryIndex - 1);
+    }
+  };
+
+  const handleNextImage = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const imagesCount = (post.images || []).length;
+    if (activeGalleryIndex < imagesCount - 1) {
+      scrollToIndex(activeGalleryIndex + 1);
+    }
   };
 
   // Mouse drag handlers for desktop trackpad/drag
@@ -308,6 +363,16 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
   const hasImages = images.length > 0;
   const descriptionText = post.description || post.title || '';
 
+  // Extract author display name reliably
+  const creatorDisplayName =
+    post.creator?.name && post.creator.name !== 'Creator'
+      ? post.creator.name
+      : `${(post.creator as any)?.firstName || ''} ${(post.creator as any)?.lastName || ''}`.trim() ||
+        post.creator?.username ||
+        post.creator?.name ||
+        'Creator';
+  const creatorInitial = (creatorDisplayName || 'C')[0].toUpperCase();
+
   // Calculate if caption requires truncation
   // Text-only: first 5 lines visible + "Read more"
   // With images: first 3 lines visible + "...see more"
@@ -334,12 +399,12 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
             {post.creator.avatar ? (
               <img
                 src={getAvatarUrl(post.creator.avatar)}
-                alt={post.creator.name}
+                alt={creatorDisplayName}
                 className="w-full h-full object-cover"
               />
             ) : (
               <span className="text-[#9747FF] font-bold text-sm sm:text-base">
-                {(post.creator.name || 'C')[0].toUpperCase()}
+                {creatorInitial}
               </span>
             )}
           </div>
@@ -348,10 +413,10 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
           <div className="flex flex-col min-w-0">
             <div className="flex items-center gap-1.5 flex-wrap">
               <span className="font-bold text-[15px] sm:text-base text-gray-900 group-hover:text-[#9747FF] transition-colors leading-tight truncate">
-                {post.creator.name}
+                {creatorDisplayName}
               </span>
               {post.creator.isVerified && (
-                <VerifiedBadge className="w-4 h-4 shrink-0 inline-block" />
+                <VerifiedBadge className="w-4 h-4 shrink-0 inline-block align-middle" showTooltip={false} />
               )}
             </div>
 
@@ -376,33 +441,36 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
                 <MoreHorizontal className="w-5 h-5 stroke-[2]" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem onClick={handleShare} className="cursor-pointer">
-                <Copy className="w-4 h-4 mr-2 text-gray-500" />
-                <span>Copy artwork link</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => (window.location.href = `/creators/${post.creator._id}`)}
-                className="cursor-pointer"
-              >
-                <ExternalLink className="w-4 h-4 mr-2 text-gray-500" />
-                <span>View creator profile</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => (window.location.href = `/creators/${post.creator._id}`)}
-                className="cursor-pointer"
-              >
-                <Calendar className="w-4 h-4 mr-2 text-gray-500" />
-                <span>Book creator</span>
-              </DropdownMenuItem>
-              {post.directLink && (
-                <DropdownMenuItem
-                  onClick={() => window.open(post.directLink, '_blank')}
-                  className="cursor-pointer"
-                >
-                  <ExternalLink className="w-4 h-4 mr-2 text-gray-500" />
-                  <span>Open external link</span>
+            <DropdownMenuContent align="end" className="w-48 bg-white border border-[#DADDE1] rounded-xl shadow-md p-1 divide-y divide-[#DADDE1]/50">
+              <div className="py-1">
+                <DropdownMenuItem onClick={handleShare} className="cursor-pointer text-xs">
+                  <Copy className="w-3.5 h-3.5 mr-2 text-gray-500" />
+                  <span>Copy artwork link</span>
                 </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => (window.location.href = `/creators/${post.creator._id}`)}
+                  className="cursor-pointer text-xs"
+                >
+                  <Users className="w-3.5 h-3.5 mr-2 text-gray-500" />
+                  <span>View creator profile</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => (window.location.href = `/creators/${post.creator._id}`)}
+                  className="cursor-pointer text-xs"
+                >
+                  <Calendar className="w-3.5 h-3.5 mr-2 text-gray-500" />
+                  <span>Book creator</span>
+                </DropdownMenuItem>
+              </div>
+              {post.directLink && (
+                <div className="py-1">
+                  <DropdownMenuItem
+                    onClick={() => window.open(post.directLink, '_blank')}
+                    className="cursor-pointer text-xs text-[#9747FF]"
+                  >
+                    <span>Visit website link</span>
+                  </DropdownMenuItem>
+                </div>
               )}
             </DropdownMenuContent>
           </DropdownMenu>
@@ -418,7 +486,7 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
               !isCaptionExpanded && (hasImages ? 'line-clamp-3' : 'line-clamp-5')
             )}
           >
-            {descriptionText}
+            {renderCaptionWithLinks(descriptionText)}
           </p>
 
           {/* "...see more" (with images) or "Read more" (text-only 5-line limit) */}
@@ -442,17 +510,19 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
             </button>
           )}
 
-          {/* Optional external link */}
+          {/* Optional external link — clean purple link without square icon */}
           {post.directLink && (
-            <a
-              href={post.directLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-[#9747FF] hover:underline"
-            >
-              <ExternalLink className="w-3.5 h-3.5" />
-              <span className="truncate max-w-xs">{post.directLink}</span>
-            </a>
+            <div className="mt-2">
+              <a
+                href={post.directLink.startsWith('http') ? post.directLink : `https://${post.directLink}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="text-xs sm:text-sm text-[#9747FF] hover:underline break-all inline-block"
+              >
+                {post.directLink}
+              </a>
+            </div>
           )}
         </div>
       )}
@@ -471,8 +541,39 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
               />
             </div>
           ) : (
-            // Multiple-Image Post: Horizontal swipeable gallery with tiny dots (NO arrows)
+            // Multiple-Image Post: Horizontal swipeable gallery with mobile-only arrows & desktop dots
             <div className="w-full relative overflow-hidden bg-black/5">
+              {/* Mobile-Only Subtle Left/Right Navigation Arrows (sm:hidden) */}
+              <button
+                type="button"
+                onClick={handlePrevImage}
+                disabled={activeGalleryIndex === 0}
+                className={cn(
+                  'sm:hidden absolute left-2 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full flex items-center justify-center transition-all select-none',
+                  activeGalleryIndex === 0
+                    ? 'bg-black/20 text-white/30 cursor-not-allowed'
+                    : 'bg-black/45 hover:bg-[#9747FF] text-white active:scale-95 cursor-pointer shadow-xs'
+                )}
+                aria-label="Previous artwork image"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+
+              <button
+                type="button"
+                onClick={handleNextImage}
+                disabled={activeGalleryIndex === images.length - 1}
+                className={cn(
+                  'sm:hidden absolute right-2 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full flex items-center justify-center transition-all select-none',
+                  activeGalleryIndex === images.length - 1
+                    ? 'bg-black/20 text-white/30 cursor-not-allowed'
+                    : 'bg-black/45 hover:bg-[#9747FF] text-white active:scale-95 cursor-pointer shadow-xs'
+                )}
+                aria-label="Next artwork image"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+
               <div
                 ref={galleryScrollRef}
                 onScroll={handleGalleryScroll}
@@ -508,8 +609,8 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
                 ))}
               </div>
 
-              {/* Extremely Small Pagination Dots (3-4px mobile, 4-5px desktop, active: #9747FF, inactive: #DADDE1) */}
-              <div className="w-full flex items-center justify-center gap-1 sm:gap-1.5 py-1 bg-white">
+              {/* Desktop-Only Pagination Dots (Hidden on mobile, preserved on desktop) */}
+              <div className="hidden sm:flex w-full items-center justify-center gap-1.5 py-1 bg-white">
                 {images.map((_, dotIdx) => (
                   <button
                     key={dotIdx}
@@ -518,8 +619,8 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
                     className={cn(
                       'rounded-full transition-all duration-200 cursor-pointer focus:outline-none p-0 shrink-0',
                       activeGalleryIndex === dotIdx
-                        ? 'w-[4px] h-[4px] sm:w-[5px] sm:h-[5px] bg-[#9747FF]'
-                        : 'w-[3px] h-[3px] sm:w-[4px] sm:h-[4px] bg-[#DADDE1] hover:bg-gray-400'
+                        ? 'w-[5px] h-[5px] bg-[#9747FF]'
+                        : 'w-[4px] h-[4px] bg-[#DADDE1] hover:bg-gray-400'
                     )}
                     aria-label={`View artwork image ${dotIdx + 1} of ${images.length}`}
                   />

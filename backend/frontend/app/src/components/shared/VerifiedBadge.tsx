@@ -1,4 +1,5 @@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 
 interface VerifiedBadgeProps {
   className?: string;
@@ -26,7 +27,7 @@ export function VerifiedBadge({ className, expiresAt, showTooltip = true, onClic
     <img 
       src="/images/verified-badge.png" 
       alt="Verified" 
-      className={`w-7 h-7 inline-block cursor-pointer ${className}`}
+      className={cn('w-4 h-4 inline-block cursor-pointer shrink-0', className)}
       onClick={onClick}
     />
   );

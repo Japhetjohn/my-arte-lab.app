@@ -129,7 +129,7 @@ exports.getFeed = catchAsync(async (req, res, next) => {
   }
 
   const creators = await User.find(query)
-    .select('name username avatar bio categories isVerified rating priceRange startingPrice location services')
+    .select('firstName lastName name username avatar bio categories isVerified verificationSubscription rating priceRange startingPrice location services')
     .lean();
 
   // Flatten services into feed posts with creator identity
@@ -139,6 +139,18 @@ exports.getFeed = catchAsync(async (req, res, next) => {
     if (userBlockedIds.has(creator._id.toString())) return;
 
     if (Array.isArray(creator.services)) {
+      const creatorName =
+        `${creator.firstName || ''} ${creator.lastName || ''}`.trim() ||
+        creator.name ||
+        creator.username ||
+        'Creator';
+
+      let isVerified = !!creator.isVerified;
+      if (creator.verificationSubscription && creator.verificationSubscription.expiresAt) {
+        const gracePeriodEnd = new Date(new Date(creator.verificationSubscription.expiresAt).getTime() + 48 * 60 * 60 * 1000);
+        isVerified = gracePeriodEnd > new Date();
+      }
+
       creator.services.forEach(service => {
         const likes = Array.isArray(service.likes) ? service.likes : [];
         const comments = Array.isArray(service.comments) ? service.comments : [];
@@ -161,12 +173,14 @@ exports.getFeed = catchAsync(async (req, res, next) => {
           recentComments: comments.slice(-3),
           creator: {
             _id: creator._id,
-            name: creator.name || 'Creator',
+            name: creatorName,
+            firstName: creator.firstName,
+            lastName: creator.lastName,
             username: creator.username || '',
             avatar: creator.avatar || '',
             bio: creator.bio || '',
             categories: creator.categories || [],
-            isVerified: !!creator.isVerified,
+            isVerified,
             rating: creator.rating || { average: 5.0, count: 0 },
             priceRange: creator.priceRange,
             startingPrice: creator.startingPrice,
