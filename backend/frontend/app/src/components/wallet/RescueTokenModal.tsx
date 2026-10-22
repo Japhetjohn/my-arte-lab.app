@@ -184,18 +184,18 @@ export function RescueTokenModal({
 
   // Structured Content
   const content = (
-    <div className="flex flex-col h-full max-h-[90dvh] sm:max-h-[85vh] overflow-hidden text-gray-900 selection:bg-purple-100 selection:text-purple-900">
+    <div className="flex flex-col h-full max-h-[90dvh] sm:max-h-[85vh] overflow-hidden text-gray-900 dark:text-gray-100 selection:bg-purple-100 selection:text-purple-900">
       {/* 1. Header Bar */}
-      <div className="shrink-0 flex items-center justify-between pb-3.5 pt-1 border-b border-gray-100 bg-white">
+      <div className="shrink-0 flex items-center justify-between pb-3.5 pt-1 border-b border-[#DADDE1] dark:border-[#2f3032] bg-white dark:bg-[#1a1b1c]">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-purple-50 text-[#9747FF] flex items-center justify-center shrink-0">
+          <div className="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-950/40 text-[#9747FF] flex items-center justify-center shrink-0">
             <LifeBuoy className="w-4 h-4" />
           </div>
           <div>
-            <h2 className="text-base sm:text-lg font-semibold text-gray-900 tracking-tight">
+            <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 tracking-tight">
               Token Rescue
             </h2>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
               Recover unsupported tokens to an external wallet
             </p>
           </div>
@@ -204,7 +204,7 @@ export function RescueTokenModal({
         <button
           type="button"
           onClick={handleModalClose}
-          className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
+          className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
           aria-label="Close"
         >
           <X className="w-4 h-4" />
@@ -212,7 +212,7 @@ export function RescueTokenModal({
       </div>
 
       {/* Tabs: Rescue vs History */}
-      <div className="flex items-center gap-2 border-b border-gray-100 pt-2 pb-2">
+      <div className="flex items-center gap-2 border-b border-[#DADDE1] dark:border-[#2f3032] pt-2 pb-2">
         <button
           type="button"
           onClick={() => setActiveTab('rescue')}
@@ -492,7 +492,7 @@ export function RescueTokenModal({
 
       {/* 3. Action Footer */}
       {activeTab === 'rescue' && !successData && (
-        <div className="shrink-0 bg-white border-t border-gray-100 pt-3 pb-[max(env(safe-area-inset-bottom,0px),16px)]">
+        <div className="shrink-0 bg-white dark:bg-[#1a1b1c] border-t border-[#DADDE1] dark:border-[#2f3032] pt-3 pb-[max(env(safe-area-inset-bottom,0px),16px)]">
           <button
             type="button"
             onClick={handleRescueSubmit}
@@ -520,7 +520,7 @@ export function RescueTokenModal({
         onOpenChange={(open) => !open && handleModalClose()}
         repositionInputs={false}
       >
-        <DrawerContent className="bg-white rounded-t-3xl max-h-[90dvh] flex flex-col p-5 pb-0 border-none shadow-2xl focus:outline-none z-[150]">
+        <DrawerContent className="bg-white dark:bg-[#1a1b1c] text-gray-900 dark:text-gray-100 rounded-t-2xl max-h-[90dvh] flex flex-col p-5 pb-0 border-t border-[#DADDE1] dark:border-[#2f3032] shadow-2xl focus:outline-none z-[150]">
           <DrawerTitle className="sr-only">Token Rescue</DrawerTitle>
           <DrawerDescription className="sr-only">
             Recover unsupported tokens to an external wallet
@@ -535,7 +535,7 @@ export function RescueTokenModal({
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleModalClose()}>
       <DialogContent
         showCloseButton={false}
-        className="bg-white rounded-2xl max-h-[85vh] sm:max-w-[480px] flex flex-col p-6 pb-0 border border-gray-100 shadow-xl focus:outline-none z-[150]"
+        className="bg-white dark:bg-[#1a1b1c] text-gray-900 dark:text-gray-100 rounded-2xl max-h-[85vh] sm:max-w-[480px] flex flex-col p-6 pb-0 border border-[#DADDE1] dark:border-[#2f3032] shadow-xl focus:outline-none z-[150]"
       >
         <DialogTitle className="sr-only">Token Rescue</DialogTitle>
         <DialogDescription className="sr-only">

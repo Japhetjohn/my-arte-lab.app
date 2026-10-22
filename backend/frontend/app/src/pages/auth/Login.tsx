@@ -236,21 +236,21 @@ export function Login() {
 
       {/* Email Verification Modal */}
       <Dialog open={showVerifyModal} onOpenChange={() => {}}>
-        <DialogContent className="sm:max-w-md rounded-2xl" showCloseButton={false}>
-          <DialogHeader>
-            <DialogTitle className="text-center text-xl font-bold text-gray-900">
+        <DialogContent className="sm:max-w-md" showCloseButton={false}>
+          <DialogHeader className="text-center sm:text-center">
+            <DialogTitle className="text-center text-xl font-bold text-gray-900 dark:text-gray-100">
               Verify Your Email
             </DialogTitle>
           </DialogHeader>
           
-          <div className="py-4 sm:py-6">
+          <div className="py-2 sm:py-4">
             <div className="text-center mb-6">
               <div className="w-14 h-14 bg-[#9747FF]/10 text-[#9747FF] rounded-2xl flex items-center justify-center mx-auto mb-3">
                 <Mail className="w-7 h-7" />
               </div>
-              <p className="text-xs sm:text-sm text-gray-600">
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                 Enter the 6-digit code sent to<br />
-                <span className="font-semibold text-gray-900">{verifyEmail}</span>
+                <span className="font-semibold text-gray-900 dark:text-gray-100">{verifyEmail}</span>
               </p>
             </div>
 
@@ -266,7 +266,7 @@ export function Login() {
                   value={digit}
                   onChange={(e) => handleCodeChange(index, e.target.value)}
                   onKeyDown={(e) => handleKeyDown(index, e)}
-                  className="w-11 sm:w-12 h-13 sm:h-14 text-center text-xl sm:text-2xl font-bold border-2 rounded-xl focus-visible:border-[#9747FF] focus-visible:ring-[#9747FF]/20"
+                  className="w-11 sm:w-12 h-13 sm:h-14 text-center text-xl sm:text-2xl font-bold border-2 border-gray-200 dark:border-[#2f3032] dark:bg-[#121212] dark:text-gray-100 rounded-xl focus-visible:border-[#9747FF] focus-visible:ring-[#9747FF]/20"
                 />
               ))}
             </div>
@@ -286,7 +286,7 @@ export function Login() {
               )}
             </Button>
 
-            <p className="text-center text-xs sm:text-sm text-gray-500 mt-4">
+            <p className="text-center text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-4">
               Didn&apos;t receive the code?{' '}
               <button
                 type="button"

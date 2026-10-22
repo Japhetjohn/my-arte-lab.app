@@ -110,7 +110,7 @@ function SettingsSheetModal({
   if (isMobile) {
     return (
       <Drawer open={isOpen} onOpenChange={(open) => !open && onClose()} repositionInputs={false}>
-        <DrawerContent className="bg-white dark:bg-[#1a1b1c] rounded-t-3xl max-h-[90dvh] flex flex-col p-5 pb-0 border-none shadow-2xl focus:outline-none z-[150]">
+        <DrawerContent className="bg-white dark:bg-[#1a1b1c] rounded-t-2xl max-h-[90dvh] flex flex-col p-5 pb-0 border-t border-[#DADDE1] dark:border-[#2f3032] shadow-2xl focus:outline-none z-[150]">
           <DrawerTitle className="sr-only">{title}</DrawerTitle>
           <DrawerDescription className="sr-only">{description || title}</DrawerDescription>
           {bodyContent}
@@ -124,7 +124,7 @@ function SettingsSheetModal({
       <DialogContent
         showCloseButton={false}
         className={cn(
-          'bg-white dark:bg-[#1a1b1c] rounded-2xl max-h-[85vh] flex flex-col p-6 pb-0 border border-gray-100 dark:border-[#2f3032] shadow-xl focus:outline-none z-[150]',
+          'bg-white dark:bg-[#1a1b1c] rounded-2xl max-h-[85vh] flex flex-col p-6 pb-0 border border-[#DADDE1] dark:border-[#2f3032] shadow-xl focus:outline-none z-[150]',
           maxWidth
         )}
       >

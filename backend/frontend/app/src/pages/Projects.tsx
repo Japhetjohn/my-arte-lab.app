@@ -155,7 +155,7 @@ export function Projects() {
                 <Button 
                   size="sm" 
                   variant="outline"
-                  className="border-[#8A2BE2] text-[#8A2BE2] hover:bg-[#8A2BE2] hover:text-white"
+                  className="border-[#9747FF] text-[#9747FF] hover:bg-[#9747FF] hover:text-white"
                   onClick={() => window.location.href = `/projects/${project._id}`}
                 >
                   Apply Now
@@ -219,7 +219,7 @@ export function Projects() {
               )}
               <Button 
                 size="sm" 
-                className="bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white"
+                className="bg-[#9747FF] hover:bg-[#8534f0] text-white"
                 onClick={() => window.location.href = `/projects/${project._id}`}
               >
                 {isOwner ? 'View Details' : 'View & Apply'}
@@ -234,7 +234,7 @@ export function Projects() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-8 h-8 animate-spin text-[#8A2BE2]" />
+        <Loader2 className="w-8 h-8 animate-spin text-[#9747FF]" />
       </div>
     );
   }
@@ -242,9 +242,9 @@ export function Projects() {
   return (
     <div className="space-y-6 pb-20 lg:pb-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Browse Projects</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Browse Projects</h1>
         <Button 
-          className="bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white"
+          className="bg-[#9747FF] hover:bg-[#8534f0] text-white font-semibold rounded-xl"
           onClick={() => setIsCreateModalOpen(true)}
         >
           <Plus className="w-4 h-4 mr-2" />
@@ -409,12 +409,12 @@ function CreateProjectModal({ isOpen, onClose, onSuccess }: CreateProjectModalPr
           <DialogTitle>Create New Project</DialogTitle>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+        <form onSubmit={handleSubmit} className="space-y-4 pt-2">
           <div>
-            <label className="block text-sm font-medium mb-1">Project Title *</label>
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Project Title *</label>
             <input
               type="text"
-              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#8A2BE2] focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-200 dark:border-[#2f3032] bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-[#9747FF] focus:border-transparent outline-none text-sm"
               placeholder="e.g., Wedding Photography in Lagos"
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
@@ -423,9 +423,9 @@ function CreateProjectModal({ isOpen, onClose, onSuccess }: CreateProjectModalPr
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Description *</label>
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Description *</label>
             <textarea
-              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#8A2BE2] focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-200 dark:border-[#2f3032] bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-[#9747FF] focus:border-transparent outline-none text-sm"
               rows={4}
               placeholder="Describe your project in detail..."
               value={formData.description}
@@ -435,9 +435,9 @@ function CreateProjectModal({ isOpen, onClose, onSuccess }: CreateProjectModalPr
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Category *</label>
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Category *</label>
             <select
-              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#8A2BE2] focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-200 dark:border-[#2f3032] bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-[#9747FF] focus:border-transparent outline-none text-sm"
               value={formData.category}
               onChange={(e) => setFormData({ ...formData, category: e.target.value })}
               required
@@ -451,10 +451,10 @@ function CreateProjectModal({ isOpen, onClose, onSuccess }: CreateProjectModalPr
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-1">Budget Min ($) *</label>
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Budget Min ($) *</label>
               <input
                 type="number"
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#8A2BE2] focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-200 dark:border-[#2f3032] bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-[#9747FF] focus:border-transparent outline-none text-sm"
                 placeholder="100"
                 value={formData.budgetMin}
                 onChange={(e) => setFormData({ ...formData, budgetMin: e.target.value })}
@@ -462,10 +462,10 @@ function CreateProjectModal({ isOpen, onClose, onSuccess }: CreateProjectModalPr
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Budget Max ($) *</label>
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Budget Max ($) *</label>
               <input
                 type="number"
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#8A2BE2] focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-200 dark:border-[#2f3032] bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-[#9747FF] focus:border-transparent outline-none text-sm"
                 placeholder="500"
                 value={formData.budgetMax}
                 onChange={(e) => setFormData({ ...formData, budgetMax: e.target.value })}
@@ -475,9 +475,9 @@ function CreateProjectModal({ isOpen, onClose, onSuccess }: CreateProjectModalPr
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Timeline *</label>
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Timeline *</label>
             <select
-              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#8A2BE2] focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-200 dark:border-[#2f3032] bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-[#9747FF] focus:border-transparent outline-none text-sm"
               value={formData.timeline}
               onChange={(e) => setFormData({ ...formData, timeline: e.target.value })}
               required
@@ -489,10 +489,10 @@ function CreateProjectModal({ isOpen, onClose, onSuccess }: CreateProjectModalPr
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Skills Required (comma separated)</label>
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Skills Required (comma separated)</label>
             <input
               type="text"
-              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#8A2BE2] focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-200 dark:border-[#2f3032] bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-[#9747FF] focus:border-transparent outline-none text-sm"
               placeholder="e.g., Photography, Editing, Lightroom"
               value={formData.skillsRequired}
               onChange={(e) => setFormData({ ...formData, skillsRequired: e.target.value })}
@@ -500,9 +500,9 @@ function CreateProjectModal({ isOpen, onClose, onSuccess }: CreateProjectModalPr
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Expected Deliverables (one per line)</label>
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Expected Deliverables (one per line)</label>
             <textarea
-              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#8A2BE2] focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-200 dark:border-[#2f3032] bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-[#9747FF] focus:border-transparent outline-none text-sm"
               rows={3}
               placeholder="e.g.,&#10;50 edited photos&#10;Online gallery&#10;Raw files"
               value={formData.deliverables}
@@ -510,11 +510,11 @@ function CreateProjectModal({ isOpen, onClose, onSuccess }: CreateProjectModalPr
             />
           </div>
 
-          <div className="flex gap-3 pt-4">
+          <div className="flex gap-3 pt-4 border-t border-[#DADDE1] dark:border-[#2f3032]">
             <Button
               type="button"
               variant="outline"
-              className="flex-1"
+              className="flex-1 rounded-xl dark:border-[#2f3032] dark:text-gray-300 dark:hover:bg-gray-800"
               onClick={onClose}
               disabled={isSubmitting}
             >
@@ -522,7 +522,7 @@ function CreateProjectModal({ isOpen, onClose, onSuccess }: CreateProjectModalPr
             </Button>
             <Button
               type="submit"
-              className="flex-1 bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white"
+              className="flex-1 bg-[#9747FF] hover:bg-[#8534f0] text-white font-semibold rounded-xl"
               disabled={isSubmitting}
             >
               {isSubmitting ? (

@@ -175,7 +175,7 @@ export function ProjectDetail() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-8 h-8 animate-spin text-[#8A2BE2]" />
+        <Loader2 className="w-8 h-8 animate-spin text-[#9747FF]" />
       </div>
     );
   }
@@ -185,7 +185,7 @@ export function ProjectDetail() {
       <div className="text-center py-20">
         <p className="text-gray-500">Project not found</p>
         <Button 
-          className="mt-4 bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white"
+          className="mt-4 bg-[#9747FF] hover:bg-[#8534f0] text-white"
           onClick={() => window.location.href = '/projects'}
         >
           Back to Projects
@@ -270,7 +270,7 @@ export function ProjectDetail() {
           <div className="flex gap-3 pt-4">
             {isCreator && project.status === 'open' && !hasApplied && !isOwner && (
               <Button 
-                className="bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white"
+                className="bg-[#9747FF] hover:bg-[#8534f0] text-white"
                 onClick={() => setIsApplyModalOpen(true)}
               >
                 <Send className="w-4 h-4 mr-2" />
@@ -284,7 +284,7 @@ export function ProjectDetail() {
             )}
             {isOwner && project.status === 'in_progress' && (
               <Button 
-                className="bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white"
+                className="bg-[#9747FF] hover:bg-[#8534f0] text-white"
                 onClick={() => window.location.href = '/bookings'}
               >
                 <Wallet className="w-4 h-4 mr-2" />
@@ -313,7 +313,7 @@ export function ProjectDetail() {
                       <p className="text-sm text-gray-500">Submitted {new Date(myApp.createdAt).toLocaleDateString()}</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold text-[#8A2BE2]">
+                      <p className="font-semibold text-[#9747FF]">
                         ${myApp.proposedBudget?.amount} {myApp.proposedBudget?.currency}
                       </p>
                       <p className="text-sm text-gray-500">{myApp.proposedTimeline}</p>
@@ -339,7 +339,7 @@ export function ProjectDetail() {
                         The client has accepted your proposal. Check your bookings for next steps.
                       </p>
                       <Button 
-                        className="bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white"
+                        className="bg-[#9747FF] hover:bg-[#8534f0] text-white"
                         onClick={() => window.location.href = '/bookings'}
                       >
                         View in Bookings
@@ -372,7 +372,7 @@ export function ProjectDetail() {
             ) : (
               <div className="space-y-4">
                 {applications.map((app) => (
-                  <Card key={app._id} className="border-l-4 border-l-[#8A2BE2]">
+                  <Card key={app._id} className="border-l-4 border-l-[#9747FF]">
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-3">
@@ -390,7 +390,7 @@ export function ProjectDetail() {
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="font-semibold text-[#8A2BE2]">
+                          <p className="font-semibold text-[#9747FF]">
                             ${app.proposedBudget?.amount} {app.proposedBudget?.currency}
                           </p>
                           <p className="text-sm text-gray-500">{app.proposedTimeline}</p>
@@ -403,7 +403,7 @@ export function ProjectDetail() {
                         <div className="flex gap-2 mt-4">
                           <Button
                             size="sm"
-                            className="bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white"
+                            className="bg-[#9747FF] hover:bg-[#8534f0] text-white"
                             onClick={() => handleAcceptApplication(app._id)}
                           >
                             <CheckCircle className="w-4 h-4 mr-1" />
@@ -466,33 +466,37 @@ export function ProjectDetail() {
           <DialogHeader>
             <DialogTitle>Complete Payment</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 mt-4">
-            <p className="text-gray-600">
+          <div className="space-y-4 pt-2">
+            <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
               You have accepted an application. Please complete the payment to start the project.
             </p>
             
             {selectedApplication && (
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <p className="font-medium">
-                  Amount: ${selectedApplication.proposedBudget?.amount} {selectedApplication.proposedBudget?.currency}
-                </p>
-                <p className="text-sm text-gray-500">
-                  Creator: {selectedApplication.creatorId?.name || 
-                  `${selectedApplication.creatorId?.firstName} ${selectedApplication.creatorId?.lastName}`}
-                </p>
+              <div className="border-y border-[#DADDE1] dark:border-[#2f3032] py-3.5 space-y-1">
+                <div className="flex justify-between items-center text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  <span>Amount:</span>
+                  <span>${selectedApplication.proposedBudget?.amount} {selectedApplication.proposedBudget?.currency}</span>
+                </div>
+                <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
+                  <span>Creator:</span>
+                  <span>
+                    {selectedApplication.creatorId?.name || 
+                    `${selectedApplication.creatorId?.firstName} ${selectedApplication.creatorId?.lastName}`}
+                  </span>
+                </div>
               </div>
             )}
 
-            <div className="flex gap-3">
+            <div className="flex gap-3 pt-3 border-t border-[#DADDE1] dark:border-[#2f3032]">
               <Button
                 variant="outline"
-                className="flex-1"
+                className="flex-1 rounded-xl dark:border-[#2f3032] dark:text-gray-300 dark:hover:bg-gray-800"
                 onClick={() => setIsPaymentModalOpen(false)}
               >
                 Cancel
               </Button>
               <Button
-                className="flex-1 bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white"
+                className="flex-1 bg-[#9747FF] hover:bg-[#8534f0] text-white font-semibold rounded-xl"
                 onClick={handlePayForProject}
               >
                 <Wallet className="w-4 h-4 mr-2" />
@@ -579,11 +583,11 @@ function ApplyModal({ isOpen, onClose, projectId, onSuccess }: ApplyModalProps) 
           <DialogTitle>Apply to Project</DialogTitle>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+        <form onSubmit={handleSubmit} className="space-y-4 pt-2">
           <div>
-            <label className="block text-sm font-medium mb-1">Cover Letter *</label>
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Cover Letter *</label>
             <textarea
-              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#8A2BE2] focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-200 dark:border-[#2f3032] bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-[#9747FF] focus:border-transparent outline-none text-sm"
               rows={4}
               placeholder="Introduce yourself and explain why you're a good fit..."
               value={formData.coverLetter}
@@ -593,10 +597,10 @@ function ApplyModal({ isOpen, onClose, projectId, onSuccess }: ApplyModalProps) 
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Your Proposed Budget (USDC) *</label>
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Your Proposed Budget (USDC) *</label>
             <input
               type="number"
-              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#8A2BE2] focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-200 dark:border-[#2f3032] bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-[#9747FF] focus:border-transparent outline-none text-sm"
               placeholder="500"
               value={formData.proposedAmount}
               onChange={(e) => setFormData({ ...formData, proposedAmount: e.target.value })}
@@ -605,9 +609,9 @@ function ApplyModal({ isOpen, onClose, projectId, onSuccess }: ApplyModalProps) 
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Timeline *</label>
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Timeline *</label>
             <select
-              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#8A2BE2] focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-200 dark:border-[#2f3032] bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-[#9747FF] focus:border-transparent outline-none text-sm"
               value={formData.proposedTimeline}
               onChange={(e) => setFormData({ ...formData, proposedTimeline: e.target.value })}
               required
@@ -619,9 +623,9 @@ function ApplyModal({ isOpen, onClose, projectId, onSuccess }: ApplyModalProps) 
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Portfolio Links (one per line)</label>
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Portfolio Links (one per line)</label>
             <textarea
-              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#8A2BE2] focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-200 dark:border-[#2f3032] bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-[#9747FF] focus:border-transparent outline-none text-sm"
               rows={3}
               placeholder="https://example.com/work1&#10;https://example.com/work2"
               value={formData.portfolioLinks}
@@ -629,11 +633,11 @@ function ApplyModal({ isOpen, onClose, projectId, onSuccess }: ApplyModalProps) 
             />
           </div>
 
-          <div className="flex gap-3 pt-4">
+          <div className="flex gap-3 pt-4 border-t border-[#DADDE1] dark:border-[#2f3032]">
             <Button
               type="button"
               variant="outline"
-              className="flex-1"
+              className="flex-1 rounded-xl dark:border-[#2f3032] dark:text-gray-300 dark:hover:bg-gray-800"
               onClick={onClose}
               disabled={isSubmitting}
             >
@@ -641,7 +645,7 @@ function ApplyModal({ isOpen, onClose, projectId, onSuccess }: ApplyModalProps) 
             </Button>
             <Button
               type="submit"
-              className="flex-1 bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white"
+              className="flex-1 bg-[#9747FF] hover:bg-[#8534f0] text-white font-semibold rounded-xl"
               disabled={isSubmitting}
             >
               {isSubmitting ? (

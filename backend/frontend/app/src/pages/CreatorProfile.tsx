@@ -813,18 +813,18 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
 
       {/* 1. Edit Profile Modal */}
       <Dialog open={isEditProfileOpen} onOpenChange={setIsEditProfileOpen}>
-        <DialogContent className="max-w-md dark:bg-[#1a1b1c] dark:border-[#2f3032]">
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-lg font-bold text-gray-900 dark:text-gray-100">Edit Creator Profile</DialogTitle>
+            <DialogTitle>Edit Creator Profile</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 mt-2">
+          <div className="space-y-4 pt-2">
             <div>
               <Label className="text-xs font-medium text-gray-700 dark:text-gray-300">Bio</Label>
               <Textarea
                 value={profileForm.bio}
                 onChange={(e) => setProfileForm((prev) => ({ ...prev, bio: e.target.value }))}
                 placeholder="Tell clients about your creative background..."
-                className="mt-1 dark:bg-[#121212] dark:border-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
+                className="mt-1 dark:bg-[#121212] dark:border-[#2f3032] dark:text-gray-100 dark:placeholder-gray-500 focus-visible:ring-[#9747FF]"
                 rows={4}
               />
             </div>
@@ -834,7 +834,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                 value={profileForm.category}
                 onChange={(e) => setProfileForm((prev) => ({ ...prev, category: e.target.value }))}
                 placeholder="e.g., Digital Art, Graphic Design"
-                className="mt-1 dark:bg-[#121212] dark:border-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
+                className="mt-1 dark:bg-[#121212] dark:border-[#2f3032] dark:text-gray-100 dark:placeholder-gray-500 focus-visible:ring-[#9747FF]"
               />
             </div>
             <div>
@@ -848,14 +848,14 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                   }))
                 }
                 placeholder="e.g., Photoshop, Blender, Figma"
-                className="mt-1 dark:bg-[#121212] dark:border-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
+                className="mt-1 dark:bg-[#121212] dark:border-[#2f3032] dark:text-gray-100 dark:placeholder-gray-500 focus-visible:ring-[#9747FF]"
               />
             </div>
-            <div className="flex justify-end gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
+            <div className="flex justify-end gap-2 pt-3 border-t border-[#DADDE1] dark:border-[#2f3032]">
               <Button
                 variant="outline"
                 onClick={() => setIsEditProfileOpen(false)}
-                className="text-xs rounded-xl dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800/60"
+                className="text-xs rounded-xl dark:border-[#2f3032] dark:text-gray-300 dark:hover:bg-gray-800/60"
               >
                 Cancel
               </Button>
@@ -872,33 +872,31 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
 
       {/* 2. Verification Dialog */}
       <Dialog open={showVerifyDialog} onOpenChange={setShowVerifyDialog}>
-        <DialogContent className="max-w-md dark:bg-[#1a1b1c] dark:border-[#2f3032]">
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-lg font-bold text-gray-900 dark:text-gray-100">
-              <BadgeCheck className="w-6 h-6 text-[#9747FF]" />
+            <DialogTitle className="flex items-center gap-2">
+              <BadgeCheck className="w-5 h-5 text-[#9747FF]" />
               Get Verified Creator Badge
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 mt-2 text-xs text-gray-600 dark:text-gray-300">
-            <div className="bg-purple-50/60 dark:bg-purple-950/30 p-4 rounded-xl border border-purple-100 dark:border-purple-900/50 space-y-2">
+          <div className="space-y-4 pt-2 text-xs text-gray-600 dark:text-gray-300">
+            <div className="space-y-2 pb-4 border-b border-[#DADDE1] dark:border-[#2f3032]">
               <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">Verified Creator Benefits</p>
-              <ul className="space-y-1.5 text-gray-600 dark:text-gray-300 list-disc list-inside">
+              <ul className="space-y-1.5 text-gray-600 dark:text-gray-400 list-disc list-inside">
                 <li>Distinct verification badge next to your name</li>
                 <li>Increased visibility and ranking across the platform</li>
                 <li>Priority placement in creative searches &amp; feed</li>
               </ul>
             </div>
-            <div className="p-3 bg-gray-50 dark:bg-[#121212] rounded-xl space-y-1 border border-transparent dark:border-gray-800">
-              <div className="flex justify-between">
-                <span className="text-gray-500 dark:text-gray-400">Monthly Subscription</span>
-                <span className="font-bold text-gray-900 dark:text-gray-100">$1.00 USDC / month</span>
-              </div>
+            <div className="flex justify-between items-center py-1">
+              <span className="text-gray-500 dark:text-gray-400">Monthly Subscription</span>
+              <span className="font-bold text-gray-900 dark:text-gray-100 text-sm">$1.00 USDC / month</span>
             </div>
-            <div className="flex justify-end gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
+            <div className="flex justify-end gap-2 pt-3 border-t border-[#DADDE1] dark:border-[#2f3032]">
               <Button
                 variant="outline"
                 onClick={() => setShowVerifyDialog(false)}
-                className="text-xs rounded-xl dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800/60"
+                className="text-xs rounded-xl dark:border-[#2f3032] dark:text-gray-300 dark:hover:bg-gray-800/60"
               >
                 Cancel
               </Button>
@@ -946,25 +944,25 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
 
       {/* 3. Cancel Verification Dialog */}
       <Dialog open={showCancelVerifyDialog} onOpenChange={setShowCancelVerifyDialog}>
-        <DialogContent className="max-w-md dark:bg-[#1a1b1c] dark:border-[#2f3032]">
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-lg font-bold text-gray-900 dark:text-gray-100">
-              <BadgeCheck className="w-6 h-6 text-red-500" />
+            <DialogTitle className="flex items-center gap-2">
+              <BadgeCheck className="w-5 h-5 text-red-500" />
               Cancel Verification
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 mt-2 text-xs">
-            <div className="bg-red-50 dark:bg-red-950/30 p-4 rounded-xl border border-red-200 dark:border-red-900/50">
-              <h3 className="font-semibold text-red-700 dark:text-red-400">Remove Verified Badge?</h3>
-              <p className="text-red-600/80 dark:text-red-300/80 mt-1">
+          <div className="space-y-4 pt-2 text-xs">
+            <div className="space-y-1.5 py-1">
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm">Remove Verified Badge?</h3>
+              <p className="text-gray-500 dark:text-gray-400 leading-relaxed">
                 Your verified badge will be removed upon cancellation. You can re-subscribe anytime.
               </p>
             </div>
-            <div className="flex justify-end gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
+            <div className="flex justify-end gap-2 pt-3 border-t border-[#DADDE1] dark:border-[#2f3032]">
               <Button
                 variant="outline"
                 onClick={() => setShowCancelVerifyDialog(false)}
-                className="text-xs rounded-xl dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800/60"
+                className="text-xs rounded-xl dark:border-[#2f3032] dark:text-gray-300 dark:hover:bg-gray-800/60"
               >
                 Keep Badge
               </Button>

@@ -138,7 +138,7 @@ export function EditProject() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-8 h-8 animate-spin text-[#8A2BE2]" />
+        <Loader2 className="w-8 h-8 animate-spin text-[#9747FF]" />
       </div>
     );
   }
@@ -148,7 +148,7 @@ export function EditProject() {
       <div className="text-center py-20">
         <p className="text-gray-500">Project not found</p>
         <Button 
-          className="mt-4 bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white"
+          className="mt-4 bg-[#9747FF] hover:bg-[#8534f0] text-white"
           onClick={() => window.location.href = '/projects'}
         >
           Back to Projects
@@ -163,7 +163,7 @@ export function EditProject() {
       <div className="text-center py-20">
         <p className="text-gray-500">This project cannot be edited (status: {project.status})</p>
         <Button 
-          className="mt-4 bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white"
+          className="mt-4 bg-[#9747FF] hover:bg-[#8534f0] text-white"
           onClick={() => window.location.href = `/projects/${projectId}`}
         >
           View Project
@@ -196,7 +196,7 @@ export function EditProject() {
               <label className="block text-sm font-medium mb-1">Project Title *</label>
               <input
                 type="text"
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#8A2BE2] focus:border-transparent"
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#9747FF] focus:border-transparent"
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 required
@@ -206,7 +206,7 @@ export function EditProject() {
             <div>
               <label className="block text-sm font-medium mb-1">Description *</label>
               <textarea
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#8A2BE2] focus:border-transparent"
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#9747FF] focus:border-transparent"
                 rows={4}
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -217,7 +217,7 @@ export function EditProject() {
             <div>
               <label className="block text-sm font-medium mb-1">Category *</label>
               <select
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#8A2BE2] focus:border-transparent"
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#9747FF] focus:border-transparent"
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 required
@@ -234,7 +234,7 @@ export function EditProject() {
                 <label className="block text-sm font-medium mb-1">Budget Min ($) *</label>
                 <input
                   type="number"
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#8A2BE2] focus:border-transparent"
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#9747FF] focus:border-transparent"
                   value={formData.budgetMin}
                   onChange={(e) => setFormData({ ...formData, budgetMin: e.target.value })}
                   required
@@ -244,7 +244,7 @@ export function EditProject() {
                 <label className="block text-sm font-medium mb-1">Budget Max ($) *</label>
                 <input
                   type="number"
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#8A2BE2] focus:border-transparent"
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#9747FF] focus:border-transparent"
                   value={formData.budgetMax}
                   onChange={(e) => setFormData({ ...formData, budgetMax: e.target.value })}
                   required
@@ -255,7 +255,7 @@ export function EditProject() {
             <div>
               <label className="block text-sm font-medium mb-1">Timeline *</label>
               <select
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#8A2BE2] focus:border-transparent"
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#9747FF] focus:border-transparent"
                 value={formData.timeline}
                 onChange={(e) => setFormData({ ...formData, timeline: e.target.value })}
                 required
@@ -270,7 +270,7 @@ export function EditProject() {
               <label className="block text-sm font-medium mb-1">Skills Required (comma separated)</label>
               <input
                 type="text"
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#8A2BE2] focus:border-transparent"
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#9747FF] focus:border-transparent"
                 value={formData.skillsRequired}
                 onChange={(e) => setFormData({ ...formData, skillsRequired: e.target.value })}
               />
@@ -279,7 +279,7 @@ export function EditProject() {
             <div>
               <label className="block text-sm font-medium mb-1">Expected Deliverables (one per line)</label>
               <textarea
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#8A2BE2] focus:border-transparent"
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#9747FF] focus:border-transparent"
                 rows={3}
                 value={formData.deliverables}
                 onChange={(e) => setFormData({ ...formData, deliverables: e.target.value })}
@@ -298,7 +298,7 @@ export function EditProject() {
               </Button>
               <Button
                 type="submit"
-                className="flex-1 bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white"
+                className="flex-1 bg-[#9747FF] hover:bg-[#8534f0] text-white"
                 disabled={isSaving}
               >
                 {isSaving ? (

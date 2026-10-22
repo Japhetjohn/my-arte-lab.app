@@ -165,7 +165,7 @@ export function TransactionDetailsModal({
   const content = (
     <div className="flex flex-col h-full max-h-[90dvh] sm:max-h-[85vh] overflow-hidden text-gray-900 dark:text-gray-100">
       {/* 1. Header Bar: Title and Close Button */}
-      <div className="shrink-0 flex items-center justify-between pb-3.5 pt-1 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-[#1a1b1c]">
+      <div className="shrink-0 flex items-center justify-between pb-3.5 pt-1 border-b border-[#DADDE1] dark:border-[#2f3032] bg-white dark:bg-[#1a1b1c]">
         <div className="flex items-center gap-2">
           <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100 tracking-tight">
             Transaction Details
@@ -383,7 +383,7 @@ export function TransactionDetailsModal({
       </div>
 
       {/* 3. Fixed Action Footer: Reusing AddFundsModal fixed footer button pattern */}
-      <div className="shrink-0 bg-white border-t border-gray-100 pt-3 pb-[max(env(safe-area-inset-bottom,0px),16px)]">
+      <div className="shrink-0 bg-white dark:bg-[#1a1b1c] border-t border-[#DADDE1] dark:border-[#2f3032] pt-3 pb-[max(env(safe-area-inset-bottom,0px),16px)]">
         <button
           type="button"
           onClick={onClose}
@@ -404,7 +404,7 @@ export function TransactionDetailsModal({
         onOpenChange={(open) => !open && onClose()}
         repositionInputs={false}
       >
-        <DrawerContent className="bg-white dark:bg-[#1a1b1c] text-gray-900 dark:text-gray-100 rounded-t-3xl max-h-[90dvh] flex flex-col p-5 pb-0 border-none shadow-2xl focus:outline-none z-[150]">
+        <DrawerContent className="bg-white dark:bg-[#1a1b1c] text-gray-900 dark:text-gray-100 rounded-t-2xl max-h-[90dvh] flex flex-col p-5 pb-0 border-t border-[#DADDE1] dark:border-[#2f3032] shadow-2xl focus:outline-none z-[150]">
           <DrawerTitle className="sr-only">Transaction Details</DrawerTitle>
           <DrawerDescription className="sr-only">
             View transaction details and receipt
@@ -419,7 +419,7 @@ export function TransactionDetailsModal({
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
         showCloseButton={false}
-        className="bg-white dark:bg-[#1a1b1c] text-gray-900 dark:text-gray-100 rounded-2xl max-h-[85vh] sm:max-w-[460px] flex flex-col p-6 pb-0 border border-gray-100 dark:border-[#2f3032] shadow-xl focus:outline-none z-[150]"
+        className="bg-white dark:bg-[#1a1b1c] text-gray-900 dark:text-gray-100 rounded-2xl max-h-[85vh] sm:max-w-[460px] flex flex-col p-6 pb-0 border border-[#DADDE1] dark:border-[#2f3032] shadow-xl focus:outline-none z-[150]"
       >
         <DialogTitle className="sr-only">Transaction Details</DialogTitle>
         <DialogDescription className="sr-only">

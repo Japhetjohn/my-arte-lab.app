@@ -399,7 +399,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                       {/* Confirm & Release Payment */}
                       <Dialog>
                         <DialogTrigger asChild>
-                          <Button className="w-full bg-[#8A2BE2] hover:bg-[#7B1FD1]">
+                          <Button className="w-full bg-[#9747FF] hover:bg-[#8534f0] text-white font-semibold rounded-xl">
                             <CheckCircle className="w-4 h-4 mr-2" />
                             Confirm Deliverables & Release Payment
                           </Button>
@@ -412,50 +412,54 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                               Payment will be released automatically after you confirm.
                             </DialogDescription>
                           </DialogHeader>
-                          <div className="space-y-4">
+                          <div className="space-y-4 pt-2">
                             <div>
-                              <label className="text-sm font-medium">Your Rating *</label>
+                              <label className="text-xs font-medium text-gray-700 dark:text-gray-300">Your Rating *</label>
                               <div className="flex items-center gap-2 mt-2">
                                 {[1, 2, 3, 4, 5].map((star) => (
                                   <button 
                                     key={star}
+                                    type="button"
                                     onClick={() => setReviewForm({...reviewForm, rating: star})}
+                                    className="cursor-pointer focus:outline-none"
                                   >
                                     <Star 
-                                      className={`w-8 h-8 ${star <= reviewForm.rating ? 'fill-amber-400 text-amber-400' : 'text-gray-300'}`}
+                                      className={`w-7 h-7 ${star <= reviewForm.rating ? 'fill-amber-400 text-amber-400' : 'text-gray-300 dark:text-gray-600'}`}
                                     />
                                   </button>
                                 ))}
                               </div>
                             </div>
                             <div>
-                              <label className="text-sm font-medium">Review (optional)</label>
+                              <label className="text-xs font-medium text-gray-700 dark:text-gray-300">Review (optional)</label>
                               <Textarea 
                                 value={reviewForm.comment}
                                 onChange={(e) => setReviewForm({...reviewForm, comment: e.target.value})}
                                 placeholder="Share your experience with this creator..."
-                                className="mt-2"
+                                className="mt-1.5 dark:bg-[#121212] dark:border-[#2f3032] dark:text-gray-100 focus-visible:ring-[#9747FF]"
                               />
                             </div>
-                            <div className="bg-amber-50 p-3 rounded-lg">
-                              <p className="text-sm text-amber-800">
-                                <strong>Payment:</strong> {booking.amount} {booking.currency} will be released
+                            <div className="border-y border-[#DADDE1] dark:border-[#2f3032] py-3.5 space-y-1">
+                              <p className="text-xs font-semibold text-gray-900 dark:text-gray-100">
+                                Payment: {booking.amount} {booking.currency} will be released
                               </p>
-                              <p className="text-xs text-amber-600 mt-1">
+                              <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
                                 • {creatorName} receives: {(booking.creatorAmount || booking.amount * 0.9).toFixed(2)} {booking.currency}<br/>
                                 • Platform fee (10%): {(booking.platformFee || booking.amount * 0.1).toFixed(2)} {booking.currency}
                               </p>
                             </div>
-                            <Button 
-                              onClick={() => {
-                                handleReleaseFunds(reviewForm.rating, reviewForm.comment);
-                                setReviewForm({ rating: 5, comment: '' });
-                              }} 
-                              className="w-full bg-[#8A2BE2] hover:bg-[#7B1FD1]"
-                              disabled={!reviewForm.rating}
-                            >
-                              Confirm & Release {booking.amount} {booking.currency}
-                            </Button>
+                            <div className="pt-2 border-t border-[#DADDE1] dark:border-[#2f3032]">
+                              <Button 
+                                onClick={() => {
+                                  handleReleaseFunds(reviewForm.rating, reviewForm.comment);
+                                  setReviewForm({ rating: 5, comment: '' });
+                                }} 
+                                className="w-full bg-[#9747FF] hover:bg-[#8534f0] text-white font-semibold rounded-xl"
+                                disabled={!reviewForm.rating}
+                              >
+                                Confirm & Release {booking.amount} {booking.currency}
+                              </Button>
+                            </div>
                           </div>
                         </DialogContent>
                       </Dialog>
@@ -463,7 +467,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                       {/* Report Issue & Request Refund */}
                       <Dialog>
                         <DialogTrigger asChild>
-                          <Button variant="outline" className="w-full text-red-600 border-red-300 hover:bg-red-50">
+                          <Button variant="outline" className="w-full text-red-600 border-red-300 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl">
                             <AlertCircle className="w-4 h-4 mr-2" />
                             Report Issue & Request Refund
                           </Button>
@@ -475,11 +479,11 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                               Describe the issue with the deliverables. Support will review and may issue a refund.
                             </DialogDescription>
                           </DialogHeader>
-                          <div className="space-y-4">
+                          <div className="space-y-4 pt-2">
                             <div>
-                              <label className="text-sm font-medium">Issue Type *</label>
+                              <label className="text-xs font-medium text-gray-700 dark:text-gray-300">Issue Type *</label>
                               <select 
-                                className="w-full mt-1 p-2 border rounded-md"
+                                className="w-full mt-1.5 p-2.5 border border-gray-200 dark:border-[#2f3032] bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-[#9747FF] focus:border-transparent outline-none text-sm"
                                 value={disputeForm.reason}
                                 onChange={(e) => setDisputeForm({...disputeForm, reason: e.target.value})}
                               >
@@ -495,30 +499,32 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                               </select>
                             </div>
                             <div>
-                              <label className="text-sm font-medium">Details *</label>
+                              <label className="text-xs font-medium text-gray-700 dark:text-gray-300">Details *</label>
                               <Textarea 
                                 value={disputeForm.details}
                                 onChange={(e) => setDisputeForm({...disputeForm, details: e.target.value})}
                                 placeholder="Please provide specific details about the issue..."
-                                className="mt-2"
+                                className="mt-1.5 dark:bg-[#121212] dark:border-[#2f3032] dark:text-gray-100 focus-visible:ring-[#9747FF]"
                                 rows={4}
                               />
                             </div>
-                            <div className="bg-red-50 p-3 rounded-lg">
-                              <p className="text-sm text-red-800">
-                                <strong>Refund Amount:</strong> {booking.amount} {booking.currency}
+                            <div className="border-y border-[#DADDE1] dark:border-[#2f3032] py-3.5 space-y-1">
+                              <p className="text-xs font-semibold text-red-600 dark:text-red-400">
+                                Refund Amount: {booking.amount} {booking.currency}
                               </p>
-                              <p className="text-xs text-red-600 mt-1">
+                              <p className="text-xs text-gray-500 dark:text-gray-400">
                                 If approved, funds will be returned to your wallet.
                               </p>
                             </div>
-                            <Button 
-                              onClick={handleDispute}
-                              className="w-full bg-red-600 hover:bg-red-700"
-                              disabled={!disputeForm.reason || !disputeForm.details}
-                            >
-                              Submit Dispute Request
-                            </Button>
+                            <div className="pt-2 border-t border-[#DADDE1] dark:border-[#2f3032]">
+                              <Button 
+                                onClick={handleDispute}
+                                className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl"
+                                disabled={!disputeForm.reason || !disputeForm.details}
+                              >
+                                Submit Dispute Request
+                              </Button>
+                            </div>
                           </div>
                         </DialogContent>
                       </Dialog>
@@ -531,7 +537,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
               {isCreator && (booking.status === 'confirmed' || booking.status === 'in_progress') && (
                 <Dialog>
                   <DialogTrigger asChild>
-                    <Button className="w-full bg-[#8A2BE2]">
+                    <Button className="w-full bg-[#9747FF] hover:bg-[#8534f0] text-white font-semibold rounded-xl">
                       <Upload className="w-4 h-4 mr-2" />
                       Submit Work
                     </Button>
@@ -543,46 +549,52 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                         Submit your completed work for client review.
                       </DialogDescription>
                     </DialogHeader>
-                    <div className="space-y-4">
+                    <div className="space-y-4 pt-2">
                       <div>
-                        <label className="text-sm font-medium">Title *</label>
+                        <label className="text-xs font-medium text-gray-700 dark:text-gray-300">Title *</label>
                         <Input 
                           value={deliverableForm.title}
                           onChange={(e) => setDeliverableForm({...deliverableForm, title: e.target.value})}
                           placeholder="e.g., Final Logo Design"
+                          className="mt-1.5 dark:bg-[#121212] dark:border-[#2f3032] dark:text-gray-100 focus-visible:ring-[#9747FF]"
                         />
                       </div>
                       <div>
-                        <label className="text-sm font-medium">Description</label>
+                        <label className="text-xs font-medium text-gray-700 dark:text-gray-300">Description</label>
                         <Textarea 
                           value={deliverableForm.description}
                           onChange={(e) => setDeliverableForm({...deliverableForm, description: e.target.value})}
                           placeholder="Describe what you've delivered..."
+                          className="mt-1.5 dark:bg-[#121212] dark:border-[#2f3032] dark:text-gray-100 focus-visible:ring-[#9747FF]"
                         />
                       </div>
                       <div>
-                        <label className="text-sm font-medium">File URL (optional)</label>
+                        <label className="text-xs font-medium text-gray-700 dark:text-gray-300">File URL (optional)</label>
                         <Input 
                           value={deliverableForm.fileUrl}
                           onChange={(e) => setDeliverableForm({...deliverableForm, fileUrl: e.target.value})}
                           placeholder="https://drive.google.com/..."
+                          className="mt-1.5 dark:bg-[#121212] dark:border-[#2f3032] dark:text-gray-100 focus-visible:ring-[#9747FF]"
                         />
                       </div>
                       <div>
-                        <label className="text-sm font-medium">Links (one per line)</label>
+                        <label className="text-xs font-medium text-gray-700 dark:text-gray-300">Links (one per line)</label>
                         <Textarea 
                           value={deliverableForm.links}
                           onChange={(e) => setDeliverableForm({...deliverableForm, links: e.target.value})}
                           placeholder="https://figma.com/...&#10;https://github.com/..."
+                          className="mt-1.5 dark:bg-[#121212] dark:border-[#2f3032] dark:text-gray-100 focus-visible:ring-[#9747FF]"
                         />
                       </div>
-                      <Button 
-                        onClick={handleSubmitDeliverable} 
-                        className="w-full bg-[#8A2BE2]"
-                        disabled={!deliverableForm.title}
-                      >
-                        Submit Deliverable
-                      </Button>
+                      <div className="pt-2 border-t border-[#DADDE1] dark:border-[#2f3032]">
+                        <Button 
+                          onClick={handleSubmitDeliverable} 
+                          className="w-full bg-[#9747FF] hover:bg-[#8534f0] text-white font-semibold rounded-xl"
+                          disabled={!deliverableForm.title}
+                        >
+                          Submit Deliverable
+                        </Button>
+                      </div>
                     </div>
                   </DialogContent>
                 </Dialog>
@@ -749,13 +761,13 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
               {/* Creator Actions */}
               {isCreator && booking.status === 'pending' && (
                 <>
-                  <Button onClick={handleAcceptBooking} className="w-full bg-[#8A2BE2] hover:bg-[#7B1FD1]">
+                  <Button onClick={handleAcceptBooking} className="w-full bg-[#9747FF] hover:bg-[#8534f0] text-white font-semibold rounded-xl">
                     <CheckCircle className="w-4 h-4 mr-2" />
                     Accept Booking
                   </Button>
                   <Dialog>
                     <DialogTrigger asChild>
-                      <Button variant="outline" className="w-full">
+                      <Button variant="outline" className="w-full rounded-xl dark:border-[#2f3032] dark:text-gray-300 dark:hover:bg-gray-800">
                         Counter Offer
                       </Button>
                     </DialogTrigger>
@@ -766,26 +778,31 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                           Propose a different price for this booking.
                         </DialogDescription>
                       </DialogHeader>
-                      <div className="space-y-4">
-                        <p>Current amount: {booking.amount} {booking.currency}</p>
+                      <div className="space-y-4 pt-2">
+                        <div className="border-b border-[#DADDE1] dark:border-[#2f3032] pb-3 text-xs text-gray-500 dark:text-gray-400">
+                          Current amount: <span className="font-semibold text-gray-900 dark:text-gray-100 text-sm ml-1">{booking.amount} {booking.currency}</span>
+                        </div>
                         <div>
-                          <label className="text-sm font-medium">Your Proposed Amount</label>
+                          <label className="text-xs font-medium text-gray-700 dark:text-gray-300">Your Proposed Amount ({booking.currency}) *</label>
                           <Input 
                             type="number"
                             value={counterAmount}
                             onChange={(e) => setCounterAmount(e.target.value)}
                             placeholder="Enter amount..."
+                            className="mt-1.5 dark:bg-[#121212] dark:border-[#2f3032] dark:text-gray-100 focus-visible:ring-[#9747FF]"
                           />
                         </div>
-                        <Button onClick={handleCounterProposal} className="w-full bg-[#8A2BE2]">
-                          Send Proposal
-                        </Button>
+                        <div className="pt-3 border-t border-[#DADDE1] dark:border-[#2f3032]">
+                          <Button onClick={handleCounterProposal} className="w-full bg-[#9747FF] hover:bg-[#8534f0] text-white font-semibold rounded-xl">
+                            Send Proposal
+                          </Button>
+                        </div>
                       </div>
                     </DialogContent>
                   </Dialog>
                   <Button 
                     variant="outline" 
-                    className="w-full text-red-600 hover:text-red-700"
+                    className="w-full text-red-600 hover:text-red-700 dark:border-[#2f3032] dark:hover:bg-red-950/20 rounded-xl"
                     onClick={() => handleRejectBooking('Not available')}
                   >
                     Decline

@@ -594,7 +594,7 @@ export function AddFundsModal({
   const content = (
     <div className="flex flex-col h-full max-h-[90dvh] sm:max-h-[85vh] overflow-hidden text-gray-900 dark:text-gray-100">
       {/* 1. Header Bar: Understated Back button, Title, Close button */}
-      <div className="shrink-0 flex items-center justify-between pb-3.5 pt-1 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-[#1a1b1c]">
+      <div className="shrink-0 flex items-center justify-between pb-3.5 pt-1 border-b border-[#DADDE1] dark:border-[#2f3032] bg-white dark:bg-[#1a1b1c]">
         <div className="flex items-center gap-2">
           {step !== 'select-method' && (
             <button
@@ -943,7 +943,7 @@ export function AddFundsModal({
       </div>
 
       {/* 3. Fixed Opaque Action Footer: Always visible above bottom navigation and safe areas */}
-      <div className="shrink-0 bg-white border-t border-gray-100 pt-3 pb-[max(env(safe-area-inset-bottom,0px),16px)]">
+      <div className="shrink-0 bg-white dark:bg-[#1a1b1c] border-t border-[#DADDE1] dark:border-[#2f3032] pt-3 pb-[max(env(safe-area-inset-bottom,0px),16px)]">
         {renderFooterActions()}
       </div>
     </div>
@@ -957,7 +957,7 @@ export function AddFundsModal({
         onOpenChange={(open) => !open && handleModalClose()}
         repositionInputs={false}
       >
-        <DrawerContent className="bg-white dark:bg-[#1a1b1c] text-gray-900 dark:text-gray-100 rounded-t-3xl max-h-[90dvh] flex flex-col p-5 pb-0 border-none shadow-2xl focus:outline-none z-[150]">
+        <DrawerContent className="bg-white dark:bg-[#1a1b1c] text-gray-900 dark:text-gray-100 rounded-t-2xl max-h-[90dvh] flex flex-col p-5 pb-0 border-t border-[#DADDE1] dark:border-[#2f3032] shadow-2xl focus:outline-none z-[150]">
           <DrawerTitle className="sr-only">Add Funds</DrawerTitle>
           <DrawerDescription className="sr-only">
             Fund your MyArteLab wallet balance
@@ -972,7 +972,7 @@ export function AddFundsModal({
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleModalClose()}>
       <DialogContent
         showCloseButton={false}
-        className="bg-white dark:bg-[#1a1b1c] text-gray-900 dark:text-gray-100 rounded-2xl max-h-[85vh] sm:max-w-[460px] flex flex-col p-6 pb-0 border border-gray-100 dark:border-[#2f3032] shadow-xl focus:outline-none z-[150]"
+        className="bg-white dark:bg-[#1a1b1c] text-gray-900 dark:text-gray-100 rounded-2xl max-h-[85vh] sm:max-w-[460px] flex flex-col p-6 pb-0 border border-[#DADDE1] dark:border-[#2f3032] shadow-xl focus:outline-none z-[150]"
       >
         <DialogTitle className="sr-only">Add Funds</DialogTitle>
         <DialogDescription className="sr-only">

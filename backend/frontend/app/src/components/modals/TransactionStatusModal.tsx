@@ -74,38 +74,38 @@ export function TransactionStatusModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md text-center">
-        <DialogHeader className="space-y-4">
-          <div className={cn('mx-auto w-24 h-24 rounded-full flex items-center justify-center', config.bgClass)}>
+      <DialogContent className="sm:max-w-md text-center p-6 sm:p-8">
+        <DialogHeader className="space-y-3 pb-0 border-b-0 text-center sm:text-center">
+          <div className={cn('mx-auto w-20 h-20 rounded-full flex items-center justify-center', config.bgClass)}>
             {status === 'pending' ? (
               <img
                 src={config.illustration}
                 alt={config.title}
-                className="w-20 h-20 object-contain"
+                className="w-16 h-16 object-contain"
               />
             ) : (
-              <Icon className={cn('w-12 h-12', config.iconClass)} />
+              <Icon className={cn('w-10 h-10', config.iconClass)} />
             )}
           </div>
-          <DialogTitle className="text-xl font-bold text-gray-900">
+          <DialogTitle className="text-xl font-bold text-gray-900 dark:text-gray-100 text-center">
             {title || config.title}
           </DialogTitle>
-          <DialogDescription className="text-gray-500">
+          <DialogDescription className="text-gray-500 dark:text-gray-400 text-sm text-center">
             {message || config.message}
           </DialogDescription>
           {reference && (
-            <p className="text-sm text-gray-400">
+            <p className="text-xs text-gray-400 dark:text-gray-500">
               Reference: <span className="font-mono">{reference}</span>
             </p>
           )}
         </DialogHeader>
 
-        <div className="mt-6 space-y-2">
+        <div className="mt-4 pt-4 border-t border-[#DADDE1] dark:border-[#2f3032] space-y-2">
           {status === 'failed' && onRetry && (
             <Button
               onClick={onRetry}
               variant="outline"
-              className="w-full gap-2"
+              className="w-full gap-2 rounded-xl dark:border-[#2f3032] dark:text-gray-300 dark:hover:bg-gray-800"
             >
               <RefreshCw className="w-4 h-4" />
               Try Again
@@ -115,7 +115,7 @@ export function TransactionStatusModal({
             <Button
               onClick={onViewDetails}
               variant="outline"
-              className="w-full"
+              className="w-full rounded-xl dark:border-[#2f3032] dark:text-gray-300 dark:hover:bg-gray-800"
             >
               View Details
             </Button>
@@ -123,10 +123,10 @@ export function TransactionStatusModal({
           <Button
             onClick={onClose}
             className={cn(
-              'w-full',
+              'w-full rounded-xl font-semibold',
               status === 'completed'
-                ? 'bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white'
-                : 'bg-gray-100 hover:bg-gray-200 text-gray-900'
+                ? 'bg-[#9747FF] hover:bg-[#8534f0] text-white'
+                : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'
             )}
           >
             {status === 'completed' ? 'Done' : 'Close'}

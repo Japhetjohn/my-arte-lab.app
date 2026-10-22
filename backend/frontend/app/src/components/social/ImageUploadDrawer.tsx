@@ -41,11 +41,11 @@ export function ImageUploadDrawer({
         maxImages={maxImages}
         maxSizeMB={maxSizeMB}
       />
-      <div className="flex justify-end gap-2 pt-2">
+      <div className="flex justify-end gap-2 pt-3 border-t border-[#DADDE1] dark:border-[#2f3032]">
         <Button
           type="button"
           onClick={onClose}
-          className="w-full sm:w-auto bg-[#9747FF] hover:bg-[#8534f0] text-white font-semibold rounded-xl px-6 py-2.5 transition-colors shadow-sm"
+          className="w-full sm:w-auto bg-[#9747FF] hover:bg-[#8534f0] text-white font-semibold rounded-xl px-6 py-2.5 transition-colors shadow-xs"
         >
           Done ({images.length} selected)
         </Button>
@@ -57,7 +57,7 @@ export function ImageUploadDrawer({
   if (isMobile) {
     return (
       <Drawer open={isOpen} onOpenChange={(open) => !open && onClose()}>
-        <DrawerContent className="bg-white rounded-t-3xl max-h-[90dvh] flex flex-col p-5 pb-8 border-none shadow-2xl focus:outline-none z-[150]">
+        <DrawerContent className="bg-white dark:bg-[#1a1b1c] text-gray-900 dark:text-gray-100 rounded-t-2xl max-h-[90dvh] flex flex-col p-5 pb-8 border-t border-[#DADDE1] dark:border-[#2f3032] shadow-2xl focus:outline-none z-[150]">
           <DrawerTitle className="sr-only">Upload Images</DrawerTitle>
           <DrawerDescription className="sr-only">
             Select or drag and drop artwork images to attach to your post
@@ -73,7 +73,7 @@ export function ImageUploadDrawer({
   // Desktop Modal (Dialog)
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-xl p-6 bg-white rounded-2xl border border-gray-100 shadow-2xl focus:outline-none z-[150]">
+      <DialogContent className="sm:max-w-xl p-6 bg-white dark:bg-[#1a1b1c] text-gray-900 dark:text-gray-100 rounded-2xl border border-[#DADDE1] dark:border-[#2f3032] shadow-2xl focus:outline-none z-[150]">
         <DialogTitle className="sr-only">Upload Images</DialogTitle>
         <DialogDescription className="sr-only">
           Select or drag and drop artwork images to attach to your post

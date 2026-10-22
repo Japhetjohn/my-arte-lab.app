@@ -604,7 +604,7 @@ export function Home() {
           }
         }}
       >
-        <DrawerContent className="bg-white dark:bg-[#1a1b1c] rounded-t-3xl max-h-[92dvh] flex flex-col p-4 pb-8 border-none shadow-2xl focus:outline-none z-[150]">
+        <DrawerContent className="bg-white dark:bg-[#1a1b1c] rounded-t-2xl max-h-[92dvh] flex flex-col p-4 pb-8 border-t border-[#DADDE1] dark:border-[#2f3032] shadow-2xl focus:outline-none z-[150]">
           <DrawerTitle className="sr-only">Create New Post</DrawerTitle>
           <DrawerDescription className="sr-only">
             Publish artwork and updates to the creative feed
