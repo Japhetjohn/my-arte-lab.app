@@ -232,7 +232,7 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
     <article
       ref={cardRef}
       className={cn(
-        'bg-white border-b-[8px] sm:border-b-0 border-gray-100 sm:rounded-2xl sm:border sm:border-gray-200/80 sm:shadow-xs overflow-hidden transition-shadow',
+        'w-full bg-white border-b border-[#DADDE1] transition-colors',
         className
       )}
     >
@@ -430,7 +430,7 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
       )}
 
       {/* 4. Engagement Summary Row (Reactions & Comments count) */}
-      <div className="px-4 py-2 flex items-center justify-between text-xs sm:text-[13px] text-gray-500 border-b border-gray-100">
+      <div className="px-4 py-2 flex items-center justify-between text-xs sm:text-[13px] text-gray-500 border-b border-[#DADDE1]/70">
         {/* Left: Reaction Indicators & Aggregate Count */}
         <div className="flex items-center gap-1.5">
           <div className="flex items-center -space-x-1">
@@ -458,28 +458,28 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
         </button>
       </div>
 
-      {/* 5. Like, Comment, and Share Action Row (Facebook-Style Pill Buttons) */}
-      <div className="px-3 sm:px-4 py-2.5 flex items-center gap-2 sm:gap-2.5">
+      {/* 5. Like, Comment, and Share Action Row (Clean Facebook-Style, no card pills) */}
+      <div className="px-2 sm:px-4 py-1 flex items-center justify-between">
         {/* Like Button */}
         <button
           type="button"
           onClick={handleToggleLike}
           disabled={isLiking}
           className={cn(
-            'flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 sm:px-3 rounded-full text-xs sm:text-sm font-semibold transition-all cursor-pointer active:scale-95 select-none',
+            'flex-1 flex items-center justify-center gap-2 py-2 px-2 rounded-lg text-xs sm:text-sm font-medium transition-colors cursor-pointer select-none active:scale-95',
             isLiked
-              ? 'bg-purple-100/90 text-[#9747FF]'
-              : 'bg-gray-100 hover:bg-gray-200/80 active:bg-gray-200 text-gray-700'
+              ? 'text-[#9747FF] hover:bg-purple-50/70 font-semibold'
+              : 'text-gray-600 hover:bg-gray-100/70 hover:text-gray-900 active:bg-gray-200/60'
           )}
           aria-label={isLiked ? 'Unlike post' : 'Like post'}
         >
           <ThumbsUp
             className={cn(
               'w-4 h-4 sm:w-4.5 sm:h-4.5 transition-transform duration-200',
-              isLiked ? 'fill-[#9747FF] text-[#9747FF] scale-110' : 'text-gray-600'
+              isLiked ? 'fill-[#9747FF] text-[#9747FF] scale-110' : 'text-gray-500'
             )}
           />
-          <span>{formatCount(likesCount)}</span>
+          <span>{likesCount > 0 ? formatCount(likesCount) : 'Like'}</span>
         </button>
 
         {/* Comment Button */}
@@ -487,32 +487,32 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
           type="button"
           onClick={() => setShowComments((prev) => !prev)}
           className={cn(
-            'flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 sm:px-3 rounded-full text-xs sm:text-sm font-semibold transition-all cursor-pointer active:scale-95 select-none',
+            'flex-1 flex items-center justify-center gap-2 py-2 px-2 rounded-lg text-xs sm:text-sm font-medium transition-colors cursor-pointer select-none active:scale-95',
             showComments
-              ? 'bg-purple-50 text-[#9747FF]'
-              : 'bg-gray-100 hover:bg-gray-200/80 active:bg-gray-200 text-gray-700'
+              ? 'text-[#9747FF] bg-purple-50/60 font-semibold'
+              : 'text-gray-600 hover:bg-gray-100/70 hover:text-gray-900 active:bg-gray-200/60'
           )}
           aria-label="View comments"
         >
-          <MessageCircle className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-gray-600" />
-          <span>{formatCount(commentsCount)}</span>
+          <MessageCircle className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-gray-500" />
+          <span>{commentsCount > 0 ? formatCount(commentsCount) : 'Comment'}</span>
         </button>
 
         {/* Share Button (Curved arrow matching Facebook reference) */}
         <button
           type="button"
           onClick={handleShare}
-          className="flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 sm:px-3 rounded-full text-xs sm:text-sm font-semibold bg-gray-100 hover:bg-gray-200/80 active:bg-gray-200 text-gray-700 transition-all cursor-pointer active:scale-95 select-none"
+          className="flex-1 flex items-center justify-center gap-2 py-2 px-2 rounded-lg text-xs sm:text-sm font-medium text-gray-600 hover:bg-gray-100/70 hover:text-gray-900 active:bg-gray-200/60 transition-colors cursor-pointer select-none active:scale-95"
           aria-label="Share post"
         >
-          <Forward className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-gray-600" />
+          <Forward className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-gray-500" />
           <span>Share</span>
         </button>
       </div>
 
       {/* 6. Expandable Comments Section */}
       {showComments && (
-        <div className="px-4 pb-4 pt-1 border-t border-gray-100 animate-in fade-in duration-200">
+        <div className="px-4 pb-4 pt-1 border-t border-[#DADDE1]/70 animate-in fade-in duration-200">
           <CommentsSection
             serviceId={serviceId}
             initialCommentsCount={commentsCount}

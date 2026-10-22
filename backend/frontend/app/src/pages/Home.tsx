@@ -441,7 +441,7 @@ export function Home() {
               - Center: Rounded pill "What's on your mind?" input trigger
               - Right: Compact "Photo" shortcut with emerald gallery icon
               ========================================================================= */}
-          <div className="sm:hidden -mx-3 sm:mx-0 bg-white border-t border-b border-gray-200/80 px-4 py-3 flex items-center gap-3">
+          <div className="sm:hidden -mx-3 sm:mx-0 bg-white border-t border-b border-[#DADDE1] px-4 py-3 flex items-center gap-3">
             {/* Left: Creator Avatar (clean circular avatar, no active-status indicator) */}
             <div className="w-10 h-10 rounded-full overflow-hidden bg-purple-50 border border-gray-200 flex items-center justify-center shrink-0">
               {user?.avatar ? (
@@ -506,14 +506,14 @@ export function Home() {
             <PostComposer onPostCreated={handlePostCreated} />
           </div>
 
-          {/* Social Feed Post Stream */}
+          {/* Social Feed Post Stream — Clean Continuous Stream (No Rectangular Cards) */}
           {isLoading ? (
-            <div className="bg-white rounded-2xl border border-gray-200/80 p-12 flex flex-col items-center justify-center gap-3">
+            <div className="bg-white border-y sm:border sm:border-[#DADDE1] p-12 flex flex-col items-center justify-center gap-3">
               <Loader2 className="w-6 h-6 animate-spin text-[#9747FF]" />
               <p className="text-sm font-medium text-gray-500">Loading creative artwork feed...</p>
             </div>
           ) : posts.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-gray-200/80 p-12 text-center flex flex-col items-center">
+            <div className="bg-white border-y sm:border sm:border-[#DADDE1] p-12 text-center flex flex-col items-center">
               <div className="w-14 h-14 rounded-full bg-purple-50 text-[#9747FF] flex items-center justify-center mb-3">
                 <Sparkles className="w-7 h-7" />
               </div>
@@ -530,14 +530,14 @@ export function Home() {
               </Button>
             </div>
           ) : (
-            <div className="flex flex-col gap-0 sm:gap-4 -mx-3 sm:mx-0">
+            <div className="flex flex-col gap-0 -mx-3 sm:mx-0 bg-white sm:border-t sm:border-[#DADDE1]">
               {posts.map((post) => (
                 <SocialFeedCard key={post._id} post={post} />
               ))}
 
               {/* Load More Pagination */}
               {hasMore && (
-                <div className="pt-2 pb-6 flex justify-center">
+                <div className="pt-4 pb-8 flex justify-center bg-white border-b border-[#DADDE1]">
                   <Button
                     type="button"
                     onClick={handleLoadMore}
