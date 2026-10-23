@@ -114,6 +114,10 @@ export function Notifications() {
   const deleteNotification = async (notificationId: string) => {
     try {
       await api.delete(`/notifications/${notificationId}`);
+      const target = notifications.find(n => n._id === notificationId);
+      if (target && !target.read) {
+        setUnreadCount(prev => Math.max(0, prev - 1));
+      }
       setNotifications(prev => prev.filter(n => n._id !== notificationId));
       toast.success('Notification deleted');
     } catch (error) {
@@ -125,9 +129,20 @@ export function Notifications() {
     try {
       await api.delete('/notifications/read');
       setNotifications(prev => prev.filter(n => !n.read));
-      toast.success('Read notifications deleted');
+      toast.success('Read notifications cleared');
     } catch (error) {
-      toast.error('Failed to delete notifications');
+      toast.error('Failed to clear notifications');
+    }
+  };
+
+  const clearAllNotifications = async () => {
+    try {
+      await api.delete('/notifications/all');
+      setNotifications([]);
+      setUnreadCount(0);
+      toast.success('All notifications cleared');
+    } catch (error) {
+      toast.error('Failed to clear notifications');
     }
   };
 
@@ -322,20 +337,34 @@ export function Notifications() {
                   size="sm"
                   onClick={markAllAsRead}
                   className="h-8 px-2.5 text-xs font-medium text-gray-600 dark:text-gray-300 hover:text-[#9747FF] dark:hover:text-[#9747FF]"
+                  title="Mark all as read"
                 >
                   <CheckCheck className="w-3.5 h-3.5 mr-1 text-[#9747FF]" />
                   <span>Mark read</span>
                 </Button>
               )}
-              {notifications.some(n => n.read) && (
+              {notifications.some(n => n.read) && notifications.some(n => !n.read) && (
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={deleteAllRead}
                   className="h-8 px-2.5 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-rose-600"
+                  title="Clear read notifications"
                 >
                   <Trash2 className="w-3.5 h-3.5 mr-1" />
-                  <span>Clear</span>
+                  <span>Clear read</span>
+                </Button>
+              )}
+              {notifications.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearAllNotifications}
+                  className="h-8 px-2.5 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-rose-600"
+                  title="Clear all notifications"
+                >
+                  <Trash2 className="w-3.5 h-3.5 mr-1" />
+                  <span>{notifications.every(n => n.read) ? 'Clear' : 'Clear all'}</span>
                 </Button>
               )}
             </div>

@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Notification = require('../models/Notification');
 const { successResponse } = require('../utils/apiResponse');
 const { ErrorHandler, catchAsync } = require('../utils/errorHandler');
@@ -41,8 +42,14 @@ exports.getUnreadCount = catchAsync(async (req, res, next) => {
  * Mark notification as read
  */
 exports.markAsRead = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return next(new ErrorHandler('Invalid notification ID', 400));
+  }
+
   const notification = await Notification.findOne({
-    _id: req.params.id,
+    _id: id,
     recipient: req.user._id
   });
 
@@ -68,8 +75,22 @@ exports.markAllAsRead = catchAsync(async (req, res, next) => {
  * Delete notification
  */
 exports.deleteNotification = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+
+  // Safeguard: If 'read', 'all', or 'clear' is passed, delegate to the proper handler
+  if (id === 'read') {
+    return exports.deleteAllRead(req, res, next);
+  }
+  if (id === 'all' || id === 'clear') {
+    return exports.deleteAll(req, res, next);
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return next(new ErrorHandler('Invalid notification ID', 400));
+  }
+
   const notification = await Notification.findOneAndDelete({
-    _id: req.params.id,
+    _id: id,
     recipient: req.user._id
   });
 
@@ -90,4 +111,15 @@ exports.deleteAllRead = catchAsync(async (req, res, next) => {
   });
 
   successResponse(res, 200, 'All read notifications deleted');
+});
+
+/**
+ * Delete all notifications (clear all)
+ */
+exports.deleteAll = catchAsync(async (req, res, next) => {
+  await Notification.deleteMany({
+    recipient: req.user._id
+  });
+
+  successResponse(res, 200, 'All notifications deleted');
 });
