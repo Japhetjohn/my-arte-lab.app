@@ -368,11 +368,11 @@ export function Home() {
               </a>
 
               <a
-                href="/discover"
+                href="/explore"
                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] dark:hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-white/[0.04] transition-colors"
               >
                 <Compass className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                <span>Discover Creators</span>
+                <span>Explore</span>
               </a>
 
               <a
@@ -380,7 +380,7 @@ export function Home() {
                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] dark:hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-white/[0.04] transition-colors"
               >
                 <Users className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                <span>Browse All</span>
+                <span>Browse Creators</span>
               </a>
 
               {user && (
@@ -517,10 +517,10 @@ export function Home() {
               </p>
               <Button
                 type="button"
-                onClick={() => (window.location.href = '/discover')}
+                onClick={() => (window.location.href = '/creators')}
                 className="bg-[#9747FF] hover:bg-[#8534f0] text-white rounded-xl text-xs font-semibold px-4 py-2"
               >
-                Discover Creators
+                Browse Creators
               </Button>
             </div>
           ) : (
@@ -563,7 +563,7 @@ export function Home() {
           <div className="pb-4">
             <div className="flex items-center justify-between pb-2.5 border-b border-[#DADDE1] dark:border-[#2f3032] mb-3.5">
               <h4 className="font-bold text-sm text-gray-900 dark:text-gray-100 tracking-tight">Top Creators</h4>
-              <a href="/discover" className="text-xs font-semibold text-[#9747FF] hover:underline">
+              <a href="/creators" className="text-xs font-semibold text-[#9747FF] hover:underline">
                 View all
               </a>
             </div>

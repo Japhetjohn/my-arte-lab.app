@@ -19,10 +19,8 @@ import {
   Menu,
   Home,
   Compass,
-  Sparkles,
   Users,
   Calendar,
-  FolderOpen,
   Wallet
 } from 'lucide-react';
 import {
@@ -44,11 +42,9 @@ interface NavItem {
 
 const mobileNavItems: NavItem[] = [
   { path: '/home', label: 'Home', icon: Home },
-  { path: '/discover', label: 'Discover', icon: Sparkles },
   { path: '/explore', label: 'Explore', icon: Compass },
   { path: '/creators', label: 'Creators', icon: Users },
   { path: '/bookings', label: 'Bookings', icon: Calendar, authOnly: true },
-  { path: '/projects', label: 'Projects', icon: FolderOpen, authOnly: true },
   { path: '/messages', label: 'Messages', icon: MessageSquare, authOnly: true },
   { path: '/notifications', label: 'Notifications', icon: Bell, authOnly: true },
   { path: '/wallet', label: 'Wallet', icon: Wallet, authOnly: true },
@@ -255,7 +251,7 @@ export function TopNavigation({
                   </button>
                 </div>
 
-                {/* Navigation Items: Home, Discover, Explore, Creators + Auth items */}
+                {/* Navigation Items: Home, Explore, Creators + Auth items */}
                 <div className="flex-1 overflow-y-auto px-6 sm:px-7 pt-3 pb-6">
                   <nav className="space-y-4 sm:space-y-5">
                     {visibleMobileNavItems.map((item) => {
@@ -427,15 +423,6 @@ export function TopNavigation({
               </button>
               <button 
                 type="button" 
-                onClick={() => handleNavClick('/discover')} 
-                className={`transition-colors hover:text-[#9747FF] cursor-pointer ${
-                  isCurrentActive('/discover') ? 'text-[#9747FF] font-semibold' : 'text-gray-700 dark:text-gray-300'
-                }`}
-              >
-                Discover
-              </button>
-              <button 
-                type="button" 
                 onClick={() => handleNavClick('/explore')} 
                 className={`transition-colors hover:text-[#9747FF] cursor-pointer ${
                   isCurrentActive('/explore') ? 'text-[#9747FF] font-semibold' : 'text-gray-700 dark:text-gray-300'
@@ -464,15 +451,6 @@ export function TopNavigation({
                     }`}
                   >
                     Bookings
-                  </button>
-                  <button 
-                    type="button" 
-                    onClick={() => handleNavClick('/projects')} 
-                    className={`transition-colors hover:text-[#9747FF] cursor-pointer ${
-                      isCurrentActive('/projects') ? 'text-[#9747FF] font-semibold' : 'text-gray-700 dark:text-gray-300'
-                    }`}
-                  >
-                    Projects
                   </button>
                   <button 
                     type="button" 

@@ -463,11 +463,11 @@ export function Settings() {
               </a>
 
               <a
-                href="/discover"
+                href="/explore"
                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] dark:hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-white/[0.04] transition-colors"
               >
                 <Compass className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                <span>Discover Creators</span>
+                <span>Explore</span>
               </a>
 
               <a
@@ -475,7 +475,7 @@ export function Settings() {
                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] dark:hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-white/[0.04] transition-colors"
               >
                 <Users className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                <span>Browse All</span>
+                <span>Browse Creators</span>
               </a>
 
               <a

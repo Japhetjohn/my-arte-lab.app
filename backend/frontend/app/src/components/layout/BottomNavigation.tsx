@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import { Home, Compass, Calendar, FolderOpen, Wallet } from 'lucide-react';
+import { Home, Compass, Calendar, Wallet } from 'lucide-react';
 
 interface BottomNavigationProps {
   currentPath: string;
@@ -9,7 +9,6 @@ const navItems = [
   { path: '/home', label: 'Home', icon: Home },
   { path: '/explore', label: 'Explore', icon: Compass },
   { path: '/bookings', label: 'Bookings', icon: Calendar },
-  { path: '/projects', label: 'Projects', icon: FolderOpen },
   { path: '/wallet', label: 'Wallet', icon: Wallet },
 ];
 

@@ -519,7 +519,7 @@ export function Notifications() {
           {/* Quick links */}
           <div className="pb-5 border-b border-[#DADDE1] dark:border-[#2f3032]">
             <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400 mb-2">
-              Discover
+              Explore
             </h4>
             <div className="space-y-2">
               <a

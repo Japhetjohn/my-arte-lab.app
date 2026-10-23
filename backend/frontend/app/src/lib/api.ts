@@ -208,24 +208,6 @@ export const bookingService = {
     api.post(`/bookings/${id}/cancel`, { reason }),
 };
 
-// Project Service
-export const projectService = {
-  getProjects: (params?: { page?: number; limit?: number; status?: string }) =>
-    api.get('/projects', { params }),
-
-  getProject: (id: string) =>
-    api.get(`/projects/${id}`),
-
-  createProject: (data: any) =>
-    api.post('/projects', data),
-
-  updateProject: (id: string, data: any) =>
-    api.put(`/projects/${id}`, data),
-
-  deleteProject: (id: string) =>
-    api.delete(`/projects/${id}`),
-};
-
 // Message Service
 export const messageService = {
   getConversations: () =>

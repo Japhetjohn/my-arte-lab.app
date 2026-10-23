@@ -567,11 +567,11 @@ export function Bookings() {
             </h4>
             <div className="space-y-3">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600 dark:text-gray-400">Active Projects</span>
+                <span className="text-gray-600 dark:text-gray-400">Active Bookings</span>
                 <span className="font-semibold text-gray-900 dark:text-gray-100">{activeCount}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600 dark:text-gray-400">Completed Projects</span>
+                <span className="text-gray-600 dark:text-gray-400">Completed Bookings</span>
                 <span className="font-semibold text-gray-900 dark:text-gray-100">{completedCount}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
@@ -581,7 +581,7 @@ export function Bookings() {
             </div>
           </div>
 
-          {/* Discover Shortcut */}
+          {/* Explore Shortcut */}
           <div className="pb-5 border-b border-[#DADDE1] dark:border-[#2f3032]">
             <a
               href="/explore"

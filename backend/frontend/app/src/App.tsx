@@ -18,9 +18,6 @@ import { Wallet } from '@/pages/Wallet';
 import { Messages } from '@/pages/Messages';
 import { Notifications } from '@/pages/Notifications';
 import { Settings } from '@/pages/Settings';
-import { Projects } from '@/pages/Projects';
-import { ProjectDetail } from '@/pages/ProjectDetail';
-import { EditProject } from '@/pages/EditProject';
 import { CreatorProfile } from '@/pages/CreatorProfile';
 import { PostDetail } from '@/pages/PostDetail';
 import { Explore } from '@/pages/Explore';
@@ -219,16 +216,14 @@ function AppContent() {
       return <BookingDetail bookingId={bookingMatch[1]} />;
     }
 
-    // Check if it's a project edit page (must be before detail)
-    const projectEditMatch = currentPath.match(/\/projects\/(.+)\/edit/);
-    if (projectEditMatch) {
-      return <EditProject />;
-    }
-
-    // Check if it's a project detail page
-    const projectMatch = currentPath.match(/\/projects\/(.+)/);
-    if (projectMatch) {
-      return <ProjectDetail />;
+    // Redirect obsolete Discover & Project routes cleanly to Home
+    if (
+      currentPath === '/discover' ||
+      currentPath.startsWith('/discover/') ||
+      currentPath === '/projects' ||
+      currentPath.startsWith('/projects/')
+    ) {
+      return <NavigateToHome />;
     }
 
     switch (currentPath) {
@@ -246,8 +241,6 @@ function AppContent() {
       case '/settings':
       case '/profile':
         return <Settings />;
-      case '/projects':
-        return <Projects />;
       case '/explore':
         return <Explore />;
       case '/creators':

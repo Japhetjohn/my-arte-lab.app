@@ -375,7 +375,7 @@ export function MobileWallet({
           <div className="bg-gray-50/70 dark:bg-[#18191a]/70 border border-dashed border-gray-200/80 dark:border-gray-800 rounded-xl p-3.5 text-center">
             <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">No active escrow funds</p>
             <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Funds for booked projects are securely held in escrow until milestones are completed.
+              Funds for bookings are securely held in escrow until milestones are completed.
             </p>
             <a
               href="/bookings"
