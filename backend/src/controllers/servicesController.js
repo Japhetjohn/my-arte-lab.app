@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const Notification = require('../models/Notification');
 const { successResponse, errorResponse } = require('../utils/apiResponse');
 const { ErrorHandler, catchAsync } = require('../utils/errorHandler');
 const { uploadServiceImage } = require('../services/uploadService');
@@ -108,7 +109,7 @@ function balanceCreatorExposure(rankedPosts, limitNum) {
  * Get social creative feed across creators with fair ranking and exposure balancing
  */
 exports.getFeed = catchAsync(async (req, res, next) => {
-  const { tab = 'for-you', category, page = 1, limit = 15, since, creatorId } = req.query;
+  const { tab = 'for-you', category, page = 1, limit = 15, since, creatorId, serviceId } = req.query;
   const pageNum = Math.max(1, parseInt(page, 10) || 1);
   const limitNum = Math.max(1, Math.min(50, parseInt(limit, 10) || 15));
 
@@ -123,14 +124,14 @@ exports.getFeed = catchAsync(async (req, res, next) => {
     'services.0': { $exists: true }
   };
 
-  if (creatorId) {
+  if (serviceId && /^[0-9a-fA-F]{24}$/.test(serviceId)) {
+    query['services._id'] = serviceId;
+  } else if (creatorId) {
     if (/^[0-9a-fA-F]{24}$/.test(creatorId)) {
       query._id = creatorId;
     } else {
       query.$or = [{ seoSlug: creatorId }, { username: creatorId }];
     }
-  } else {
-    query.role = 'creator';
   }
 
   if (category && category !== 'All') {
@@ -138,7 +139,7 @@ exports.getFeed = catchAsync(async (req, res, next) => {
   }
 
   const creators = await User.find(query)
-    .select('firstName lastName name username avatar bio categories isVerified verificationSubscription rating priceRange startingPrice location services')
+    .select('firstName lastName name email username seoSlug avatar bio categories isVerified verificationSubscription rating priceRange startingPrice location services')
     .lean();
 
   // Flatten services into feed posts with creator identity
@@ -152,7 +153,14 @@ exports.getFeed = catchAsync(async (req, res, next) => {
         `${creator.firstName || ''} ${creator.lastName || ''}`.trim() ||
         creator.name ||
         creator.username ||
+        (creator.email ? creator.email.split('@')[0] : '') ||
         'Creator';
+
+      const creatorUsername =
+        creator.username ||
+        (creator.email ? creator.email.split('@')[0] : '') ||
+        creator.seoSlug ||
+        'creator';
 
       let isVerified = !!creator.isVerified;
       if (creator.verificationSubscription && creator.verificationSubscription.expiresAt) {
@@ -185,7 +193,7 @@ exports.getFeed = catchAsync(async (req, res, next) => {
             name: creatorName,
             firstName: creator.firstName,
             lastName: creator.lastName,
-            username: creator.username || '',
+            username: creatorUsername,
             avatar: creator.avatar || '',
             bio: creator.bio || '',
             categories: creator.categories || [],
@@ -335,6 +343,21 @@ exports.toggleLike = catchAsync(async (req, res, next) => {
   } else {
     service.likes.push(userId);
     isLiked = true;
+
+    // Send real-time notification to the post creator (skip self-likes)
+    if (userId.toString() !== creator._id.toString()) {
+      const senderName = req.user.name || `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim() || 'Someone';
+      const artworkTitle = service.title ? `"${service.title.slice(0, 40)}"` : 'your artwork';
+      Notification.createNotification({
+        recipient: creator._id,
+        sender: userId,
+        type: 'post_like',
+        title: 'New Like on your Artwork',
+        message: `${senderName} liked ${artworkTitle}`,
+        link: `/home?post=${serviceId}`,
+        metadata: { serviceId }
+      }).catch(err => console.error('Failed to create post_like notification:', err));
+    }
   }
 
   await creator.save({ validateBeforeSave: false });
@@ -418,6 +441,21 @@ exports.addComment = catchAsync(async (req, res, next) => {
 
   const createdComment = service.comments[service.comments.length - 1];
 
+  // Send real-time notification to the post creator (skip self-comments)
+  if (req.user._id.toString() !== creator._id.toString()) {
+    const senderName = req.user.name || `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim() || 'Someone';
+    const preview = text.trim().slice(0, 60) + (text.trim().length > 60 ? '...' : '');
+    Notification.createNotification({
+      recipient: creator._id,
+      sender: req.user._id,
+      type: 'post_comment',
+      title: 'New Comment on your Artwork',
+      message: `${senderName} commented: "${preview}"`,
+      link: `/home?post=${serviceId}&comment=${createdComment._id}`,
+      metadata: { serviceId, commentId: createdComment._id }
+    }).catch(err => console.error('Failed to create post_comment notification:', err));
+  }
+
   successResponse(res, 201, 'Comment added successfully', {
     comment: createdComment,
     commentsCount: service.comments.length
@@ -429,9 +467,8 @@ exports.addComment = catchAsync(async (req, res, next) => {
  */
 exports.getMyServices = catchAsync(async (req, res, next) => {
   const user = await User.findById(req.user._id);
-
-  if (user.role !== 'creator') {
-    return next(new ErrorHandler('Only creators can have services', 403));
+  if (!user) {
+    return next(new ErrorHandler('User not found', 404));
   }
 
   successResponse(res, 200, 'Services retrieved successfully', {
@@ -446,9 +483,24 @@ exports.addService = catchAsync(async (req, res, next) => {
   const { title, description, directLink, images } = req.body;
 
   const user = await User.findById(req.user._id);
+  if (!user) {
+    return next(new ErrorHandler('User not found', 404));
+  }
 
+  // Allow any authenticated creative member to publish artwork / social post
   if (user.role !== 'creator') {
-    return next(new ErrorHandler('Only creators can publish services or posts', 403));
+    user.role = 'creator';
+    if (!user.categories || user.categories.length === 0) {
+      user.categories = ['Creative Member'];
+    }
+    if (!user.category) {
+      user.category = 'Creative Member';
+    }
+  }
+
+  // Ensure user has a valid seoSlug
+  if (!user.seoSlug && typeof user.generateSlug === 'function') {
+    await user.generateSlug();
   }
 
   if (!description || !description.trim()) {
@@ -464,11 +516,25 @@ exports.addService = catchAsync(async (req, res, next) => {
     ? images.filter(img => typeof img === 'string' && img.trim().length > 0).slice(0, 5)
     : [];
 
+  // Normalize direct link: ensure valid http(s) URL if provided
+  let normalizedLink = undefined;
+  if (directLink && typeof directLink === 'string' && directLink.trim()) {
+    let clean = directLink.trim();
+    if (!/^https?:\/\//i.test(clean)) {
+      clean = `https://${clean}`;
+    }
+    normalizedLink = clean;
+  }
+
+  if (!Array.isArray(user.services)) {
+    user.services = [];
+  }
+
   const newService = {
     title: effectiveTitle,
     description: trimmedDesc,
     images: imageList,
-    directLink: directLink ? directLink.trim() : undefined,
+    directLink: normalizedLink,
     likes: [],
     comments: [],
     impressions: [],

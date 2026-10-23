@@ -114,12 +114,18 @@ export function PostComposer({ onPostCreated, className, autoOpenImageUploader }
         }
       }
 
+      // Normalize direct link on frontend as well
+      let cleanLink = directLink.trim();
+      if (cleanLink && !/^https?:\/\//i.test(cleanLink)) {
+        cleanLink = `https://${cleanLink}`;
+      }
+
       // Submit new post / service
       const payload = {
         description: description.trim(),
         title: description.trim().slice(0, 60),
         images: uploadedImageUrls,
-        directLink: directLink.trim() ? directLink.trim() : undefined,
+        directLink: cleanLink || undefined,
       };
 
       const res = await socialService.createPost(payload);

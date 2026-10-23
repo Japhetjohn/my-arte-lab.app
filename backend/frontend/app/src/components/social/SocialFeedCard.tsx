@@ -135,6 +135,26 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
   const [showComments, setShowComments] = useState(false);
   const [commentsCount, setCommentsCount] = useState(post.commentsCount || 0);
 
+  // Deep link targeted post highlight state
+  const [isHighlighted, setIsHighlighted] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const targetPostId = params.get('post');
+    const targetCommentId = params.get('comment');
+    if (targetPostId && (targetPostId === serviceId || targetPostId === post._id)) {
+      setIsHighlighted(true);
+      if (targetCommentId) {
+        setShowComments(true);
+      }
+      const timer = setTimeout(() => {
+        setIsHighlighted(false);
+      }, 3500);
+      return () => clearTimeout(timer);
+    }
+  }, [serviceId, post._id]);
+
   // Caption expansion state
   const [isCaptionExpanded, setIsCaptionExpanded] = useState(false);
 
@@ -373,6 +393,12 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
         'Creator';
   const creatorInitial = (creatorDisplayName || 'C')[0].toUpperCase();
 
+  const creatorUsername =
+    post.creator?.username ||
+    ((post.creator as any)?.email ? (post.creator as any).email.split('@')[0] : '') ||
+    (post.creator as any)?.seoSlug ||
+    '';
+
   // Calculate if caption requires truncation
   // Text-only: first 5 lines visible + "Read more"
   // With images: first 3 lines visible + "...see more"
@@ -382,9 +408,11 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
 
   return (
     <article
+      id={`post-${serviceId}`}
       ref={cardRef}
       className={cn(
         'w-full bg-white dark:bg-[#18191a] border-b border-[#DADDE1] dark:border-[#2f3032] transition-colors',
+        isHighlighted && 'ring-2 ring-[#9747FF]/70 bg-purple-50/20 dark:bg-purple-950/20 rounded-md',
         className
       )}
     >
@@ -409,7 +437,7 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
             )}
           </div>
 
-          {/* Creator Name, Verification, Timestamp */}
+          {/* Creator Name, Verification, Username, Timestamp */}
           <div className="flex flex-col min-w-0">
             <div className="flex items-center gap-1.5 flex-wrap">
               <span className="font-bold text-[15px] sm:text-base text-gray-900 dark:text-gray-100 group-hover:text-[#9747FF] transition-colors leading-tight truncate">
@@ -417,6 +445,11 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
               </span>
               {post.creator.isVerified && (
                 <VerifiedBadge className="w-4 h-4 shrink-0 inline-block align-middle" showTooltip={false} />
+              )}
+              {creatorUsername && (
+                <span className="text-xs text-gray-500 dark:text-gray-400 font-normal">
+                  @{creatorUsername}
+                </span>
               )}
             </div>
 

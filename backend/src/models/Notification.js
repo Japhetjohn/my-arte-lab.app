@@ -33,6 +33,10 @@ const notificationSchema = new mongoose.Schema({
       'system',
       'unsupported_token_detected',
       'work_delivered',
+      // Social post interactions
+      'post_like',
+      'post_comment',
+      'post_reply',
       // Project notifications
       'project_created',
       'project_application_received',

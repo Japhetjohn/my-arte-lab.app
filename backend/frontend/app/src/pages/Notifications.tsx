@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/shared/EmptyState';
-import { api } from '@/contexts/AuthContext';
-import { getImageUrl } from '@/lib/imageUrl';
+import { api, useAuth } from '@/contexts/AuthContext';
+import { getAvatarUrl } from '@/lib/imageUrl';
+import { VerifiedBadge } from '@/components/shared/VerifiedBadge';
 import { 
   Bell, 
   CheckCircle, 
@@ -15,9 +15,17 @@ import {
   MessageSquare,
   Briefcase,
   AlertCircle,
-  CheckCheck
+  CheckCheck,
+  Heart,
+  Sparkles,
+  Calendar,
+  Wallet,
+  Settings as SettingsIcon,
+  Compass,
+  ArrowRight
 } from 'lucide-react';
 import { toast } from '@/components/ui/sonner';
+import { cn } from '@/lib/utils';
 
 interface Notification {
   _id: string;
@@ -38,21 +46,25 @@ interface Notification {
 }
 
 const notificationIcons: Record<string, React.ReactNode> = {
-  booking_request: <Briefcase className="w-5 h-5 text-blue-500" />,
-  booking_accepted: <CheckCircle className="w-5 h-5 text-[#8A2BE2]" />,
-  booking_rejected: <AlertCircle className="w-5 h-5 text-red-500" />,
-  booking_completed: <CheckCircle className="w-5 h-5 text-[#8A2BE2]" />,
-  booking_cancelled: <AlertCircle className="w-5 h-5 text-red-500" />,
-  payment_received: <DollarSign className="w-5 h-5 text-[#8A2BE2]" />,
-  payment_deducted: <DollarSign className="w-5 h-5 text-amber-500" />,
-  payment_failed: <AlertCircle className="w-5 h-5 text-red-500" />,
-  message: <MessageSquare className="w-5 h-5 text-purple-500" />,
-  counter_proposal: <DollarSign className="w-5 h-5 text-amber-500" />,
-  work_delivered: <CheckCircle className="w-5 h-5 text-blue-500" />,
-  system: <Bell className="w-5 h-5 text-gray-500" />,
+  post_like: <Heart className="w-4 h-4 text-[#9747FF] fill-[#9747FF]" />,
+  post_comment: <MessageSquare className="w-4 h-4 text-[#9747FF]" />,
+  post_reply: <MessageSquare className="w-4 h-4 text-[#9747FF]" />,
+  booking_request: <Briefcase className="w-4 h-4 text-blue-500" />,
+  booking_accepted: <CheckCircle className="w-4 h-4 text-emerald-500" />,
+  booking_rejected: <AlertCircle className="w-4 h-4 text-rose-500" />,
+  booking_completed: <CheckCircle className="w-4 h-4 text-[#9747FF]" />,
+  booking_cancelled: <AlertCircle className="w-4 h-4 text-rose-500" />,
+  payment_received: <DollarSign className="w-4 h-4 text-[#9747FF]" />,
+  payment_deducted: <DollarSign className="w-4 h-4 text-amber-500" />,
+  payment_failed: <AlertCircle className="w-4 h-4 text-rose-500" />,
+  message: <MessageSquare className="w-4 h-4 text-[#9747FF]" />,
+  counter_proposal: <DollarSign className="w-4 h-4 text-amber-500" />,
+  work_delivered: <CheckCircle className="w-4 h-4 text-blue-500" />,
+  system: <Bell className="w-4 h-4 text-gray-500" />,
 };
 
 export function Notifications() {
+  const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -60,7 +72,6 @@ export function Notifications() {
 
   useEffect(() => {
     fetchNotifications();
-    // Poll for new notifications every 30 seconds
     const interval = setInterval(fetchNotifications, 30000);
     return () => clearInterval(interval);
   }, []);
@@ -130,7 +141,7 @@ export function Notifications() {
   };
 
   const getNotificationIcon = (type: string) => {
-    return notificationIcons[type] || <Bell className="w-5 h-5 text-gray-500" />;
+    return notificationIcons[type] || <Bell className="w-4 h-4 text-gray-500" />;
   };
 
   const formatTime = (dateString: string) => {
@@ -140,7 +151,7 @@ export function Notifications() {
     
     if (diffInHours < 1) {
       const minutes = Math.floor(diffInHours * 60);
-      return `${minutes}m ago`;
+      return `${Math.max(1, minutes)}m ago`;
     } else if (diffInHours < 24) {
       return `${Math.floor(diffInHours)}h ago`;
     } else if (diffInHours < 48) {
@@ -150,159 +161,399 @@ export function Notifications() {
     }
   };
 
+  const artworkCount = notifications.filter(n => n.type.startsWith('post_')).length;
+  const bookingsCount = notifications.filter(n => n.type.includes('booking') || n.type.includes('payment') || n.type === 'work_delivered').length;
+  const messagesCount = notifications.filter(n => n.type === 'message').length;
+
   const filteredNotifications = notifications.filter(n => {
     if (activeTab === 'all') return true;
     if (activeTab === 'unread') return !n.read;
-    if (activeTab === 'bookings') return n.type.includes('booking') || n.type.includes('payment');
+    if (activeTab === 'artwork') return n.type.startsWith('post_');
+    if (activeTab === 'bookings') return n.type.includes('booking') || n.type.includes('payment') || n.type === 'work_delivered';
     if (activeTab === 'messages') return n.type === 'message';
     return true;
   });
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-8 h-8 animate-spin text-[#8A2BE2]" />
+      <div className="flex items-center justify-center py-24">
+        <Loader2 className="w-8 h-8 animate-spin text-[#9747FF]" />
       </div>
     );
   }
 
+  const userDisplayName = user?.name || `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Creative Member';
+  const userUsername = user?.email ? user.email.split('@')[0] : 'creator';
+
   return (
-    <div className="space-y-6 pb-20 lg:pb-8 max-w-4xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold text-gray-900">Notifications</h1>
-          {unreadCount > 0 && (
-            <Badge className="bg-[#8A2BE2]">{unreadCount} new</Badge>
-          )}
-        </div>
-        <div className="flex gap-2">
-          {unreadCount > 0 && (
-            <Button variant="outline" size="sm" onClick={markAllAsRead}>
-              <CheckCheck className="w-4 h-4 mr-2" />
-              Mark all read
-            </Button>
-          )}
-          {notifications.some(n => n.read) && (
-            <Button variant="ghost" size="sm" onClick={deleteAllRead}>
-              <Trash2 className="w-4 h-4 mr-2" />
-              Clear read
-            </Button>
-          )}
-        </div>
-      </div>
+    <div className="w-full relative">
+      {/* 3-Column Standardized Layout with continuous ash-gray dividers */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="flex w-full overflow-x-auto scrollbar-hide lg:w-auto lg:inline-flex">
-          <TabsTrigger value="all" className="flex-shrink-0">
-            All ({notifications.length})
-          </TabsTrigger>
-          <TabsTrigger value="unread" className="flex-shrink-0">
-            Unread ({unreadCount})
-          </TabsTrigger>
-          <TabsTrigger value="bookings" className="flex-shrink-0">
-            Bookings
-          </TabsTrigger>
-          <TabsTrigger value="messages" className="flex-shrink-0">
-            Messages
-          </TabsTrigger>
-        </TabsList>
+        {/* =========================================================================
+            LEFT COLUMN (lg:col-span-3, hidden on mobile)
+            Profile summary & platform navigation
+           ========================================================================= */}
+        <aside className="hidden lg:flex flex-col gap-6 lg:col-span-3 sticky top-20">
+          {/* User Profile Mini Summary */}
+          <div className="pb-5 border-b border-[#DADDE1] dark:border-[#2f3032]">
+            {user ? (
+              <div className="flex flex-col items-center text-center">
+                <div className="w-16 h-16 rounded-full overflow-hidden bg-purple-50 dark:bg-purple-950/40 flex items-center justify-center border-2 border-[#9747FF]/20 mb-3">
+                  {user.avatar ? (
+                    <img src={getAvatarUrl(user.avatar)} alt={userDisplayName} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-[#9747FF] font-bold text-xl">
+                      {(userDisplayName || 'C')[0].toUpperCase()}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1.5 justify-center">
+                  <h3 className="font-bold text-gray-900 dark:text-gray-100 text-base leading-tight">
+                    {userDisplayName}
+                  </h3>
+                  {user.isVerified && (
+                    <VerifiedBadge className="w-4 h-4 shrink-0 inline-block align-middle" showTooltip={false} />
+                  )}
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  @{userUsername}
+                </p>
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/50 text-[#9747FF] text-xs font-semibold mt-2.5">
+                  <Sparkles className="w-3 h-3" />
+                  <span>{user.category || 'Creator'}</span>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-sm text-gray-600 dark:text-gray-400">Join the MyArteLab community</p>
+                <Button asChild size="sm" className="mt-2 rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white">
+                  <a href="/login">Log In</a>
+                </Button>
+              </div>
+            )}
+          </div>
 
-        <TabsContent value={activeTab} className="mt-6">
-          {filteredNotifications.length > 0 ? (
-            <div className="space-y-3">
-              {filteredNotifications.map((notification) => (
-                <Card 
-                  key={notification._id}
-                  className={`cursor-pointer transition-all hover:shadow-md ${
-                    !notification.read ? 'bg-blue-50/50 border-blue-200' : ''
-                  }`}
-                  onClick={() => handleNotificationClick(notification)}
+          {/* Quick Platform Navigation Menu */}
+          <div className="pb-2">
+            <div className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 px-3 mb-2">
+              Menu
+            </div>
+            <nav className="space-y-1">
+              <a
+                href="/home"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] dark:hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-[#1e1f20] transition-colors"
+              >
+                <Sparkles className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                <span>Creative Feed</span>
+              </a>
+
+              <a
+                href="/notifications"
+                className="flex items-center justify-between px-3 py-2.5 rounded-xl font-semibold text-sm text-[#9747FF] bg-purple-50/80 dark:bg-purple-950/30 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <Bell className="w-4 h-4 text-[#9747FF]" />
+                  <span>Notifications</span>
+                </div>
+                {unreadCount > 0 && (
+                  <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-[#9747FF] text-white">
+                    {unreadCount}
+                  </span>
+                )}
+              </a>
+
+              <a
+                href="/messages"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] dark:hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-[#1e1f20] transition-colors"
+              >
+                <MessageSquare className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                <span>Messages</span>
+              </a>
+
+              <a
+                href="/bookings"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] dark:hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-[#1e1f20] transition-colors"
+              >
+                <Calendar className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                <span>Bookings</span>
+              </a>
+
+              <a
+                href="/wallet"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] dark:hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-[#1e1f20] transition-colors"
+              >
+                <Wallet className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                <span>Wallet</span>
+              </a>
+
+              <a
+                href="/settings"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] dark:hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-[#1e1f20] transition-colors"
+              >
+                <SettingsIcon className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                <span>Profile & Settings</span>
+              </a>
+            </nav>
+          </div>
+        </aside>
+
+        {/* =========================================================================
+            CENTER COLUMN (lg:col-span-6, full width on mobile)
+            Notifications Header, Tabs, and Feed Stream
+           ========================================================================= */}
+        <main className="col-span-1 lg:col-span-6 w-full max-w-xl mx-auto flex flex-col pb-16">
+          {/* Header */}
+          <div className="px-4 pt-2 pb-3 flex items-center justify-between border-b border-[#DADDE1] dark:border-[#2f3032]">
+            <div className="flex items-center gap-2.5">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
+                Notifications
+              </h1>
+              {unreadCount > 0 && (
+                <Badge className="bg-[#9747FF] text-white hover:bg-[#8534f0] border-none font-semibold text-xs px-2 py-0.5">
+                  {unreadCount} new
+                </Badge>
+              )}
+            </div>
+            <div className="flex items-center gap-1.5">
+              {unreadCount > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={markAllAsRead}
+                  className="h-8 px-2.5 text-xs font-medium text-gray-600 dark:text-gray-300 hover:text-[#9747FF] dark:hover:text-[#9747FF]"
                 >
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-4">
-                      {/* Icon */}
-                      <div className="flex-shrink-0 mt-1">
-                        {notification.sender?.avatar ? (
-                          <img 
-                            src={getImageUrl(notification.sender.avatar)}
-                            alt=""
-                            className="w-10 h-10 rounded-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
+                  <CheckCheck className="w-3.5 h-3.5 mr-1 text-[#9747FF]" />
+                  <span>Mark read</span>
+                </Button>
+              )}
+              {notifications.some(n => n.read) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={deleteAllRead}
+                  className="h-8 px-2.5 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-rose-600"
+                >
+                  <Trash2 className="w-3.5 h-3.5 mr-1" />
+                  <span>Clear</span>
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* Filter Tabs */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <div className="border-b border-[#DADDE1] dark:border-[#2f3032] px-2 overflow-x-auto scrollbar-hide">
+              <TabsList className="bg-transparent h-11 p-0 flex gap-1 justify-start">
+                <TabsTrigger
+                  value="all"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#9747FF] data-[state=active]:text-[#9747FF] data-[state=active]:bg-transparent px-3 py-2 text-xs font-semibold text-gray-600 dark:text-gray-400 transition-colors"
+                >
+                  All ({notifications.length})
+                </TabsTrigger>
+                <TabsTrigger
+                  value="unread"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#9747FF] data-[state=active]:text-[#9747FF] data-[state=active]:bg-transparent px-3 py-2 text-xs font-semibold text-gray-600 dark:text-gray-400 transition-colors"
+                >
+                  Unread ({unreadCount})
+                </TabsTrigger>
+                <TabsTrigger
+                  value="artwork"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#9747FF] data-[state=active]:text-[#9747FF] data-[state=active]:bg-transparent px-3 py-2 text-xs font-semibold text-gray-600 dark:text-gray-400 transition-colors"
+                >
+                  Artwork ({artworkCount})
+                </TabsTrigger>
+                <TabsTrigger
+                  value="bookings"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#9747FF] data-[state=active]:text-[#9747FF] data-[state=active]:bg-transparent px-3 py-2 text-xs font-semibold text-gray-600 dark:text-gray-400 transition-colors"
+                >
+                  Bookings ({bookingsCount})
+                </TabsTrigger>
+                <TabsTrigger
+                  value="messages"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#9747FF] data-[state=active]:text-[#9747FF] data-[state=active]:bg-transparent px-3 py-2 text-xs font-semibold text-gray-600 dark:text-gray-400 transition-colors"
+                >
+                  Messages ({messagesCount})
+                </TabsTrigger>
+              </TabsList>
+            </div>
+
+            <TabsContent value={activeTab} className="m-0 focus-visible:outline-none">
+              {filteredNotifications.length > 0 ? (
+                <div className="flex flex-col">
+                  {filteredNotifications.map((notification) => {
+                    const isUnread = !notification.read;
+                    return (
+                      <div
+                        key={notification._id}
+                        onClick={() => handleNotificationClick(notification)}
+                        className={cn(
+                          'w-full px-4 py-3.5 border-b border-[#DADDE1] dark:border-[#2f3032] flex items-start gap-3.5 transition-colors cursor-pointer group hover:bg-gray-50/80 dark:hover:bg-[#1f2022]',
+                          isUnread && 'bg-purple-50/40 dark:bg-purple-950/20'
+                        )}
+                      >
+                        {/* Icon or Avatar */}
+                        <div className="relative shrink-0 mt-0.5">
+                          {notification.sender?.avatar ? (
+                            <img
+                              src={getAvatarUrl(notification.sender.avatar)}
+                              alt=""
+                              className="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-gray-700"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-950/60 flex items-center justify-center">
+                              {getNotificationIcon(notification.type)}
+                            </div>
+                          )}
+                          {/* Mini Type Badge Indicator */}
+                          <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-white dark:bg-[#18191a] border border-[#DADDE1] dark:border-[#2f3032] flex items-center justify-center shadow-xs">
                             {getNotificationIcon(notification.type)}
                           </div>
-                        )}
-                      </div>
-
-                      {/* Content */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <p className="font-semibold text-gray-900">
-                              {notification.title}
-                              {!notification.read && (
-                                <span className="ml-2 inline-block w-2 h-2 bg-[#8A2BE2] rounded-full"></span>
-                              )}
-                            </p>
-                            <p className="text-gray-600 text-sm mt-1">
-                              {notification.message}
-                            </p>
-                          </div>
-                          <span className="text-xs text-gray-400 flex-shrink-0">
-                            {formatTime(notification.createdAt)}
-                          </span>
                         </div>
 
-                        {/* Actions */}
-                        <div className="flex items-center gap-2 mt-3">
-                          {!notification.read && (
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
+                        {/* Notification Body */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0 flex-1">
+                              <p className={cn(
+                                'text-sm text-gray-900 dark:text-gray-100 leading-snug',
+                                isUnread ? 'font-bold' : 'font-medium'
+                              )}>
+                                {notification.title}
+                                {isUnread && (
+                                  <span className="inline-block w-2 h-2 rounded-full bg-[#9747FF] ml-2 align-middle" />
+                                )}
+                              </p>
+                              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2 leading-relaxed">
+                                {notification.message}
+                              </p>
+                            </div>
+
+                            <span className="text-[11px] text-gray-600 dark:text-gray-400 shrink-0 mt-0.5 font-medium">
+                              {formatTime(notification.createdAt)}
+                            </span>
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="flex items-center gap-2 mt-2">
+                            {isUnread && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  markAsRead(notification._id);
+                                }}
+                                className="text-xs text-[#9747FF] hover:underline font-medium inline-flex items-center gap-1"
+                              >
+                                <CheckCircle className="w-3.5 h-3.5" />
+                                <span>Mark read</span>
+                              </button>
+                            )}
+
+                            <button
+                              type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                markAsRead(notification._id);
+                                deleteNotification(notification._id);
                               }}
+                              className="text-xs text-gray-600 hover:text-rose-600 font-medium ml-auto p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                              title="Delete notification"
                             >
-                              <CheckCircle className="w-4 h-4 mr-1" />
-                              Mark read
-                            </Button>
-                          )}
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            className="text-red-600 hover:text-red-700"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              deleteNotification(notification._id);
-                            }}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="py-12 px-4">
+                  <EmptyState
+                    image="/images/empty-notifications.png"
+                    title="No notifications"
+                    description={
+                      activeTab === 'unread'
+                        ? "You're all caught up! No unread notifications."
+                        : "You don't have any notifications in this section yet."
+                    }
+                    actionLabel="Explore Creators"
+                    onAction={() => (window.location.href = '/explore')}
+                  />
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+        </main>
+
+        {/* =========================================================================
+            RIGHT COLUMN (lg:col-span-3, hidden on mobile)
+            Notification Info & Community Highlights
+           ========================================================================= */}
+        <aside className="hidden lg:flex flex-col gap-6 lg:col-span-3 sticky top-20">
+          {/* Notifications summary info */}
+          <div className="pb-5 border-b border-[#DADDE1] dark:border-[#2f3032]">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400 mb-2">
+              Activity Overview
+            </h4>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600 dark:text-gray-400">Total Notifications</span>
+                <span className="font-semibold text-gray-900 dark:text-gray-100">{notifications.length}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600 dark:text-gray-400">Unread</span>
+                <span className="font-semibold text-[#9747FF]">{unreadCount}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600 dark:text-gray-400">Artwork Activity</span>
+                <span className="font-semibold text-gray-900 dark:text-gray-100">{artworkCount}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600 dark:text-gray-400">Bookings & Orders</span>
+                <span className="font-semibold text-gray-900 dark:text-gray-100">{bookingsCount}</span>
+              </div>
             </div>
-          ) : (
-            <EmptyState
-              image="/images/empty-notifications.png"
-              title="No notifications"
-              description={
-                activeTab === 'unread' 
-                  ? "You're all caught up! No unread notifications."
-                  : "You don't have any notifications yet."
-              }
-              actionLabel="Browse Creators"
-              onAction={() => window.location.href = '/explore'}
-            />
-          )}
-        </TabsContent>
-      </Tabs>
+          </div>
+
+          {/* Quick links */}
+          <div className="pb-5 border-b border-[#DADDE1] dark:border-[#2f3032]">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400 mb-2">
+              Discover
+            </h4>
+            <div className="space-y-2">
+              <a
+                href="/explore"
+                className="flex items-center justify-between p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-[#1e1f20] transition-colors group"
+              >
+                <div className="flex items-center gap-2.5">
+                  <Compass className="w-4 h-4 text-[#9747FF]" />
+                  <span className="text-sm font-medium text-gray-800 dark:text-gray-200">Explore Creators</span>
+                </div>
+                <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-[#9747FF] transition-colors" />
+              </a>
+
+              <a
+                href="/home"
+                className="flex items-center justify-between p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-[#1e1f20] transition-colors group"
+              >
+                <div className="flex items-center gap-2.5">
+                  <Sparkles className="w-4 h-4 text-[#9747FF]" />
+                  <span className="text-sm font-medium text-gray-800 dark:text-gray-200">View Creative Feed</span>
+                </div>
+                <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-[#9747FF] transition-colors" />
+              </a>
+            </div>
+          </div>
+
+          {/* Footer copyright */}
+          <div className="px-1 text-xs text-gray-600 dark:text-gray-400">
+            <p>© {new Date().getFullYear()} MyArteLab Inc.</p>
+            <p className="mt-1">Continuous Borderless Design System</p>
+          </div>
+        </aside>
+
+      </div>
     </div>
   );
 }

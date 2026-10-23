@@ -67,8 +67,25 @@ export function Home() {
           limit: 15,
         });
 
-        const fetchedPosts: FeedPost[] = res.data?.data?.posts || [];
+        let fetchedPosts: FeedPost[] = res.data?.data?.posts || [];
         const pagination = res.data?.data?.pagination;
+
+        // If landing on a specific post from notification/deep-link, ensure it's loaded
+        if (resetPage && typeof window !== 'undefined') {
+          const urlParams = new URLSearchParams(window.location.search);
+          const targetPostId = urlParams.get('post');
+          if (targetPostId && !fetchedPosts.some((p) => p._id === targetPostId || (p as any).serviceId === targetPostId)) {
+            try {
+              const singleRes = await socialService.getFeed({ serviceId: targetPostId });
+              const singlePosts = singleRes.data?.data?.posts || [];
+              if (singlePosts.length > 0) {
+                fetchedPosts = [singlePosts[0], ...fetchedPosts];
+              }
+            } catch {
+              // fallback gracefully
+            }
+          }
+        }
 
         if (resetPage) {
           setPosts(fetchedPosts);
@@ -158,6 +175,23 @@ export function Home() {
     };
     fetchSuggested();
   }, []);
+
+  // Scroll to targeted post if arriving from notification or direct link
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const targetPostId = params.get('post');
+    if (!targetPostId || isLoading) return;
+
+    const timer = setTimeout(() => {
+      const el = document.getElementById(`post-${targetPostId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 450);
+
+    return () => clearTimeout(timer);
+  }, [posts, isLoading]);
 
   // Initial load
   useEffect(() => {
