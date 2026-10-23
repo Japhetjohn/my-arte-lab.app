@@ -47,14 +47,13 @@ import {
   Wallet,
   Settings,
   Loader2,
-  FileText,
-  X,
-  FileCheck,
   Send,
   Eye,
-  Plus,
   Lock,
   DollarSign,
+  X,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 
 interface BookingDetailProps {
@@ -105,6 +104,9 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
 
   // Image lightbox preview modal
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+
+  // Description show more/less state
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -440,6 +442,256 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
     !booking.counterProposal.applied &&
     booking.counterProposal.amount
   );
+  const latestRevision = booking.revisionRequests && booking.revisionRequests.length > 0
+    ? booking.revisionRequests[booking.revisionRequests.length - 1]
+    : null;
+  const isLongDescription = (booking.serviceDescription || '').length > 240;
+  const deliverablesCount = deliverables.length;
+
+  const getStatusBadge = () => {
+    const isRevision = !!(booking.revisionRequests && booking.revisionRequests.length > 0) && booking.status === 'in_progress';
+    if (hasActiveCounterOffer) {
+      return {
+        label: isClient ? 'Counter Offer Received' : 'Counter Offer Sent',
+        className: 'bg-purple-100 text-[#9747FF] dark:bg-purple-950/60 dark:text-purple-300',
+      };
+    }
+    if (isRevision) {
+      return {
+        label: 'Revision Requested',
+        className: 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300',
+      };
+    }
+    switch (booking.status) {
+      case 'pending':
+        return {
+          label: 'Pending Response',
+          className: 'bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300',
+        };
+      case 'awaiting_payment':
+        return {
+          label: 'Awaiting Escrow Deposit',
+          className: 'bg-purple-100 text-[#9747FF] dark:bg-purple-950/60 dark:text-purple-300',
+        };
+      case 'confirmed':
+      case 'in_progress':
+        return {
+          label: 'In Progress',
+          className: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300',
+        };
+      case 'delivered':
+        return {
+          label: 'Delivered / In Review',
+          className: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300',
+        };
+      case 'completed':
+        return {
+          label: 'Completed',
+          className: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300',
+        };
+      case 'cancelled':
+        return {
+          label: 'Cancelled',
+          className: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
+        };
+      case 'disputed':
+        return {
+          label: 'Disputed',
+          className: 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300',
+        };
+      default:
+        return {
+          label: booking.status,
+          className: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
+        };
+    }
+  };
+
+  const statusBadge = getStatusBadge();
+
+  const renderStatusAction = () => {
+    // 1. Creator - Pending request
+    if (isCreator && booking.status === 'pending') {
+      return (
+        <div className="pt-2 flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-200/60 dark:border-purple-800/40">
+          <div className="text-xs text-gray-700 dark:text-gray-300">
+            <span className="font-semibold text-gray-900 dark:text-gray-100">{booking.client.name}</span> requested your creative services for <strong className="text-[#9747FF]">{booking.amount} {booking.currency}</strong>.
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button
+              size="sm"
+              onClick={handleAcceptRequest}
+              disabled={isProcessingAction}
+              className="h-8 px-4 text-xs font-semibold rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white shadow-2xs cursor-pointer"
+            >
+              {isProcessingAction ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : null}
+              Accept Booking
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setCounterAmount(String(booking.amount));
+                setIsCounterModalOpen(true);
+              }}
+              disabled={isProcessingAction}
+              className="h-8 px-3 text-xs font-semibold rounded-full border border-[#DADDE1] dark:border-[#2f3032] text-[#9747FF] hover:bg-purple-50 dark:hover:bg-purple-950/30 cursor-pointer"
+            >
+              Counter Offer
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={handleDeclineRequest}
+              disabled={isProcessingAction}
+              className="h-8 px-2.5 text-xs rounded-full text-gray-500 hover:text-rose-600 cursor-pointer"
+            >
+              Decline
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
+    // 2. Client - Counter offer received
+    if (isClient && hasActiveCounterOffer) {
+      return (
+        <div className="pt-2 flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-200/60 dark:border-purple-800/40">
+          <div className="text-xs text-gray-700 dark:text-gray-300">
+            <span className="font-semibold text-gray-900 dark:text-gray-100">{booking.creator.name}</span> proposed a counter offer of <strong className="text-[#9747FF]">{booking.counterProposal?.amount} {booking.currency}</strong> (originally {booking.amount} {booking.currency}).
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button
+              size="sm"
+              onClick={handleAcceptCounter}
+              disabled={isProcessingAction}
+              className="h-8 px-4 text-xs font-semibold rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white shadow-2xs cursor-pointer"
+            >
+              {isProcessingAction ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : null}
+              Accept Counter
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleRejectCounter}
+              disabled={isProcessingAction}
+              className="h-8 px-3 text-xs font-semibold rounded-full border border-[#DADDE1] dark:border-[#2f3032] text-gray-700 dark:text-gray-300 cursor-pointer"
+            >
+              Decline
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
+    // 3. Client - Escrow funding required
+    if (isClient && booking.status === 'awaiting_payment') {
+      return (
+        <div className="pt-2 flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-200/60 dark:border-purple-800/40">
+          <div className="text-xs text-gray-700 dark:text-gray-300">
+            Creator accepted! Deposit <strong className="text-gray-900 dark:text-gray-100">{booking.amount} {booking.currency}</strong> into smart escrow to initiate production.
+          </div>
+          <Button
+            size="sm"
+            onClick={() => {
+              fetchWalletBalance();
+              setIsFundingModalOpen(true);
+            }}
+            className="h-8 px-4 text-xs font-semibold rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white shadow-2xs flex items-center gap-1.5 cursor-pointer"
+          >
+            <Lock className="w-3.5 h-3.5" />
+            <span>Deposit &amp; Fund Escrow</span>
+          </Button>
+        </div>
+      );
+    }
+
+    // 4. Creator - Awaiting client escrow deposit
+    if (isCreator && booking.status === 'awaiting_payment') {
+      return (
+        <div className="pt-2 p-3 rounded-xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-800/40 text-xs text-amber-800 dark:text-amber-300 flex items-center gap-2">
+          <ShieldCheck className="w-4 h-4 shrink-0" />
+          <span>Accepted! Awaiting client escrow deposit of {booking.amount} {booking.currency} before work begins.</span>
+        </div>
+      );
+    }
+
+    // 5. Revision requested
+    if (latestRevision && booking.status === 'in_progress') {
+      return (
+        <div className="pt-2 p-3 rounded-xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-800/40 text-xs space-y-1.5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5 font-semibold text-amber-800 dark:text-amber-300">
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Revision Requested by {booking.client.name}</span>
+            </div>
+            {isCreator && (
+              <Button
+                size="sm"
+                onClick={() => setIsSubmitModalOpen(true)}
+                className="h-7 px-3 text-xs font-semibold rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white shadow-2xs cursor-pointer"
+              >
+                Submit Revised Work
+              </Button>
+            )}
+          </div>
+          <p className="text-gray-700 dark:text-gray-300 italic">
+            "{latestRevision.notes}"
+          </p>
+        </div>
+      );
+    }
+
+    // 6. Client - Deliverables ready for review
+    if (isClient && booking.status === 'delivered') {
+      return (
+        <div className="pt-2 flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-800/40">
+          <div className="text-xs text-gray-700 dark:text-gray-300">
+            Deliverables ready for your inspection! Review files below, then approve or request revisions.
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button
+              size="sm"
+              onClick={() => setIsApprovalModalOpen(true)}
+              className="h-8 px-4 text-xs font-semibold rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white shadow-2xs cursor-pointer"
+            >
+              Approve &amp; Release Funds
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setIsRevisionModalOpen(true)}
+              className="h-8 px-3 text-xs font-semibold rounded-full border border-[#DADDE1] dark:border-[#2f3032] text-gray-700 dark:text-gray-300 cursor-pointer"
+            >
+              <RotateCcw className="w-3.5 h-3.5 mr-1" />
+              Request Revision
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
+    // 7. Client - Completed but not rated yet
+    if (booking.status === 'completed' && isClient && !booking.review) {
+      return (
+        <div className="pt-2 flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-800/40">
+          <div className="text-xs text-gray-700 dark:text-gray-300">
+            Project completed! Rate your experience with {booking.creator.name}.
+          </div>
+          <Button
+            size="sm"
+            onClick={() => setIsApprovalModalOpen(true)}
+            className="h-8 px-4 text-xs font-semibold rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white shadow-2xs cursor-pointer"
+          >
+            <Star className="w-3.5 h-3.5 mr-1 fill-current" />
+            Rate Creator
+          </Button>
+        </div>
+      );
+    }
+
+    return null;
+  };
 
   return (
     <div className="w-full relative">
@@ -554,339 +806,272 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
             </div>
           </div>
 
-          {/* Project Title & Category */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/40 text-[#9747FF] border border-purple-200/50 dark:border-purple-800/40">
+          {/* =========================================================================
+              SECTION A: BOOKING SUMMARY & STATUS (Compact, Status-Aware, Contextual)
+             ========================================================================= */}
+          <div className="pb-5 border-b border-[#DADDE1] dark:border-[#2f3032] space-y-4">
+            {/* Creator Identity & Metadata */}
+            <div className="flex items-center gap-3">
+              <a
+                href={`/creators/${booking.creator._id}`}
+                className="w-10 h-10 sm:w-11 sm:h-11 rounded-full overflow-hidden bg-purple-100 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/40 shrink-0 hover:opacity-90 transition-opacity"
+              >
+                {booking.creator.avatar ? (
+                  <img src={getAvatarUrl(booking.creator.avatar)} alt={booking.creator.name} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center font-bold text-[#9747FF] text-sm">
+                    {(booking.creator.name || 'C')[0]?.toUpperCase()}
+                  </div>
+                )}
+              </a>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <a
+                    href={`/creators/${booking.creator._id}`}
+                    className="font-bold text-sm sm:text-base text-gray-900 dark:text-gray-100 hover:text-[#9747FF] transition-colors truncate"
+                  >
+                    {booking.creator.name}
+                  </a>
+                  {booking.creator.isVerified && <VerifiedBadge className="w-4 h-4" showTooltip={false} />}
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/40 text-[#9747FF] border border-purple-200/50 dark:border-purple-800/40">
+                    Hired Creator
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Created on {new Date(booking.createdAt).toLocaleDateString()}
+                </p>
+              </div>
+            </div>
+
+            {/* Project Title & Category */}
+            <div className="space-y-1">
+              <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
                 {booking.category}
               </span>
-              <span className="text-xs text-gray-400">
-                Created on {new Date(booking.createdAt).toLocaleDateString()}
-              </span>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 tracking-tight leading-snug">
+                {booking.serviceTitle}
+              </h1>
             </div>
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 tracking-tight leading-snug">
-              {booking.serviceTitle}
-            </h1>
-          </div>
 
-          {/* Milestone Progress Tracker (Sleek connected track, natural background, ash-gray divider) */}
-          <div className="pb-5 border-b border-[#DADDE1] dark:border-[#2f3032] space-y-3.5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                  Project Milestones
-                </h4>
-                <span className="text-gray-300 dark:text-gray-700">•</span>
-                <span className="text-xs font-semibold text-[#9747FF]">
-                  {booking.status === 'completed'
-                    ? 'All Milestones Completed'
-                    : `Step ${activeStepIdx + 1} of ${timelineSteps.length}: ${currentStep?.label}`}
+            {/* Key Metrics in One Compact Clean Row */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 py-3 border-y border-[#DADDE1] dark:border-[#2f3032]">
+              <div>
+                <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 block">Status</span>
+                <span className={cn('inline-block text-xs font-semibold px-2.5 py-0.5 rounded-full mt-0.5 capitalize', statusBadge.className)}>
+                  {statusBadge.label}
                 </span>
               </div>
-              <span className="text-[11px] font-medium text-gray-400 dark:text-gray-500 hidden sm:inline-block">
-                {completedStepsCount} of {timelineSteps.length} complete
-              </span>
+              <div>
+                <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 block">Agreed Budget</span>
+                <span className="text-sm font-bold text-gray-900 dark:text-gray-100 mt-0.5 block">
+                  {booking.amount} {booking.currency}
+                </span>
+              </div>
+              <div>
+                <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 block">Due Date</span>
+                <span className="text-xs font-semibold text-gray-800 dark:text-gray-200 mt-0.5 block">
+                  {new Date(booking.endDate).toLocaleDateString()}
+                </span>
+              </div>
+              <div>
+                <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 block">Deliverables</span>
+                <span className="text-xs font-semibold text-gray-800 dark:text-gray-200 mt-0.5 block">
+                  {deliverablesCount} item{deliverablesCount === 1 ? '' : 's'}
+                </span>
+              </div>
             </div>
 
-            {/* Stepper Track */}
-            <div className="relative pt-1 pb-1">
-              {/* Continuous Track Line running through circle centers (10% to 90%) */}
-              <div className="absolute top-[14px] sm:top-[16px] left-[10%] right-[10%] h-0.5 bg-gray-200 dark:bg-[#2f3032] -translate-y-1/2 z-0">
-                <div
-                  className="h-full bg-[#9747FF] transition-all duration-500 ease-out"
-                  style={{ width: `${Math.min(100, Math.max(0, progressPercentage))}%` }}
-                />
+            {/* Milestone Progress Tracker */}
+            <div className="space-y-3 pt-1">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                    Project Milestones
+                  </h4>
+                  <span className="text-gray-300 dark:text-gray-700">•</span>
+                  <span className="text-xs font-semibold text-[#9747FF]">
+                    {booking.status === 'completed'
+                      ? 'All Milestones Completed'
+                      : `Step ${activeStepIdx + 1} of ${timelineSteps.length}: ${currentStep?.label}`}
+                  </span>
+                </div>
+                <span className="text-[11px] font-medium text-gray-400 dark:text-gray-500 hidden sm:inline-block">
+                  {completedStepsCount} of {timelineSteps.length} complete
+                </span>
               </div>
 
-              {/* 5 Step Nodes */}
-              <div className="relative z-10 grid grid-cols-5 gap-1">
-                {timelineSteps.map((step, idx) => {
-                  const isDone = step.done;
-                  const isCurrent = idx === activeStepIdx && booking.status !== 'completed';
+              {/* Stepper Track */}
+              <div className="relative pt-1 pb-1">
+                <div className="absolute top-[14px] sm:top-[16px] left-[10%] right-[10%] h-0.5 bg-gray-200 dark:bg-[#2f3032] -translate-y-1/2 z-0">
+                  <div
+                    className="h-full bg-[#9747FF] transition-all duration-500 ease-out"
+                    style={{ width: `${Math.min(100, Math.max(0, progressPercentage))}%` }}
+                  />
+                </div>
 
-                  return (
-                    <div key={step.id} className="flex flex-col items-center text-center">
-                      {/* Step Circle Node */}
-                      <div
-                        className={cn(
-                          'w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all',
-                          isDone
-                            ? 'bg-[#9747FF] text-white shadow-xs'
-                            : isCurrent
-                            ? 'bg-white dark:bg-[#18191a] border-2 border-[#9747FF] text-[#9747FF] ring-4 ring-[#9747FF]/15'
-                            : 'bg-white dark:bg-[#18191a] border border-gray-300 dark:border-gray-700 text-gray-400 dark:text-gray-500'
-                        )}
-                      >
-                        {isDone ? (
-                          <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.5]" />
-                        ) : (
-                          <span className="text-[11px] sm:text-xs">{idx + 1}</span>
-                        )}
+                <div className="relative z-10 grid grid-cols-5 gap-1">
+                  {timelineSteps.map((step, idx) => {
+                    const isDone = step.done;
+                    const isCurrent = idx === activeStepIdx && booking.status !== 'completed';
+
+                    return (
+                      <div key={step.id} className="flex flex-col items-center text-center">
+                        <div
+                          className={cn(
+                            'w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all',
+                            isDone
+                              ? 'bg-[#9747FF] text-white shadow-xs'
+                              : isCurrent
+                              ? 'bg-white dark:bg-[#18191a] border-2 border-[#9747FF] text-[#9747FF] ring-4 ring-[#9747FF]/15'
+                              : 'bg-white dark:bg-[#18191a] border border-gray-300 dark:border-gray-700 text-gray-400 dark:text-gray-500'
+                          )}
+                        >
+                          {isDone ? (
+                            <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.5]" />
+                          ) : (
+                            <span className="text-[11px] sm:text-xs">{idx + 1}</span>
+                          )}
+                        </div>
+
+                        <span
+                          className={cn(
+                            'text-[10px] sm:text-xs mt-2 text-center font-medium leading-tight max-w-[64px] sm:max-w-[85px] transition-colors',
+                            isCurrent
+                              ? 'text-[#9747FF] font-bold'
+                              : isDone
+                              ? 'text-gray-900 dark:text-gray-100 font-semibold'
+                              : 'text-gray-400 dark:text-gray-500'
+                          )}
+                        >
+                          {step.label}
+                        </span>
                       </div>
-
-                      {/* Step Label */}
-                      <span
-                        className={cn(
-                          'text-[10px] sm:text-xs mt-2 text-center font-medium leading-tight max-w-[64px] sm:max-w-[85px] transition-colors',
-                          isCurrent
-                            ? 'text-[#9747FF] font-bold'
-                            : isDone
-                            ? 'text-gray-900 dark:text-gray-100 font-semibold'
-                            : 'text-gray-400 dark:text-gray-500'
-                        )}
-                      >
-                        {step.label}
-                      </span>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
+            </div>
+
+            {/* Contextual Action Callout (Display only the action relevant to current status) */}
+            {renderStatusAction()}
+
+            {/* Mobile Escrow Protection Indicator (visible only on mobile/tablet) */}
+            <div className="lg:hidden flex items-center gap-2 p-2.5 rounded-xl bg-gray-50 dark:bg-gray-800/60 border border-[#DADDE1] dark:border-[#2f3032] text-xs">
+              <ShieldCheck className="w-4 h-4 text-[#9747FF] shrink-0" />
+              <span className="text-gray-600 dark:text-gray-400 font-medium">
+                {booking.paymentStatus === 'paid'
+                  ? (booking.status === 'completed' ? 'Escrow Released to Creator' : 'Escrow Protected: Funds locked securely')
+                  : (booking.status === 'awaiting_payment' ? 'Deposit Required to Fund Escrow' : 'Escrow Deposit Pending Acceptance')}
+              </span>
             </div>
           </div>
 
-          {/* ACTION BANNER 1: Creator - Pending Booking Request */}
-          {isCreator && booking.status === 'pending' && (
-            <div className="py-4 border-b border-[#DADDE1] dark:border-[#2f3032] space-y-3">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-[#9747FF]" />
-                <h4 className="font-bold text-xs uppercase tracking-wider text-[#9747FF]">
-                  Action Required: Incoming Booking Request
-                </h4>
-              </div>
-              <p className="text-xs text-gray-700 dark:text-gray-300">
-                {booking.client.name} has requested your creative services for{' '}
-                <strong className="text-gray-900 dark:text-gray-100">{booking.amount} {booking.currency}</strong>.
-                Review the deliverables and timeline below before responding.
-              </p>
-              <div className="flex items-center gap-2 pt-1 flex-wrap">
-                <Button
-                  size="sm"
-                  onClick={handleAcceptRequest}
-                  disabled={isProcessingAction}
-                  className="rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white text-[11px] sm:text-xs font-semibold h-7.5 sm:h-8 px-3.5 sm:px-4 shadow-2xs"
-                >
-                  {isProcessingAction ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <CheckCircle2 className="w-3.5 h-3.5 mr-1" />}
-                  Accept Request
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    setCounterAmount(String(booking.amount));
-                    setIsCounterModalOpen(true);
-                  }}
-                  disabled={isProcessingAction}
-                  className="rounded-full border-[#DADDE1] dark:border-[#2f3032] text-[11px] sm:text-xs font-semibold text-[#9747FF] hover:bg-purple-50 dark:hover:bg-purple-950/30 h-7.5 sm:h-8 px-2.5 sm:px-3"
-                >
-                  Counter Offer
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={handleDeclineRequest}
-                  disabled={isProcessingAction}
-                  className="rounded-full text-[11px] sm:text-xs text-gray-500 hover:text-red-600 h-7.5 sm:h-8 px-2.5"
-                >
-                  Decline
-                </Button>
-              </div>
-            </div>
-          )}
+          {/* =========================================================================
+              SECTION B: PROJECT BRIEF & SCOPE (Unified Brief, Notes & Moodboards)
+             ========================================================================= */}
+          <div className="space-y-3 pb-5 border-b border-[#DADDE1] dark:border-[#2f3032]">
+            <h3 className="font-bold text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">
+              Project Brief &amp; Scope
+            </h3>
 
-          {/* ACTION BANNER 2: Client - Counter Offer Received */}
-          {isClient && hasActiveCounterOffer && (
-            <div className="py-4 border-b border-[#DADDE1] dark:border-[#2f3032] space-y-3">
-              <div className="flex items-center gap-2 text-[#9747FF]">
-                <Sparkles className="w-4 h-4" />
-                <h4 className="font-bold text-xs uppercase tracking-wider">
-                  Creator Proposed a Counter Offer
-                </h4>
-              </div>
-              <p className="text-xs text-gray-700 dark:text-gray-300">
-                {booking.creator.name} proposed a revised budget of{' '}
-                <strong className="text-gray-900 dark:text-gray-100 font-bold">
-                  {booking.counterProposal?.amount} {booking.currency}
-                </strong>{' '}
-                (originally {booking.amount} {booking.currency}).
-              </p>
-              <div className="flex items-center gap-2 pt-1 flex-wrap">
-                <Button
-                  size="sm"
-                  onClick={handleAcceptCounter}
-                  disabled={isProcessingAction}
-                  className="rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white text-[11px] sm:text-xs font-semibold h-7.5 sm:h-8 px-3.5 sm:px-4 shadow-2xs"
-                >
-                  {isProcessingAction ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <CheckCircle2 className="w-3.5 h-3.5 mr-1" />}
-                  Accept Counter Offer
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleRejectCounter}
-                  disabled={isProcessingAction}
-                  className="rounded-full border-[#DADDE1] dark:border-[#2f3032] text-[11px] sm:text-xs font-semibold text-gray-600 dark:text-gray-300 h-7.5 sm:h-8 px-2.5 sm:px-3"
-                >
-                  Decline
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* ACTION BANNER 3: Client - Escrow Funding Required */}
-          {isClient && booking.status === 'awaiting_payment' && (
-            <div className="py-4 border-b border-[#DADDE1] dark:border-[#2f3032] space-y-3">
-              <div className="flex items-center gap-2 text-[#9747FF]">
-                <ShieldCheck className="w-5 h-5 text-[#9747FF]" />
-                <h4 className="font-bold text-xs uppercase tracking-wider text-[#9747FF]">
-                  Action Required: Fund Escrow Deposit
-                </h4>
-              </div>
-              <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">
-                {booking.creator.name} has accepted the booking request. Deposit{' '}
-                <strong className="text-gray-900 dark:text-gray-100 font-bold">
-                  {booking.amount} {booking.currency}
-                </strong>{' '}
-                into smart escrow to authorize work. Funds remain protected and are only released upon your approval of the deliverables.
-              </p>
-              <div className="flex items-center gap-2 pt-1">
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    fetchWalletBalance();
-                    setIsFundingModalOpen(true);
-                  }}
-                  className="rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white text-[11px] sm:text-xs font-semibold h-7.5 sm:h-8 px-3.5 sm:px-4 shadow-2xs flex items-center gap-1.5"
-                >
-                  <Wallet className="w-3.5 h-3.5" />
-                  <span>Deposit &amp; Fund Escrow</span>
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* ACTION BANNER 4: Creator - Waiting for Client Deposit */}
-          {isCreator && booking.status === 'awaiting_payment' && (
-            <div className="py-4 border-b border-[#DADDE1] dark:border-[#2f3032] space-y-2">
-              <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
-                <ShieldCheck className="w-4 h-4 shrink-0" />
-                <h4 className="font-bold text-xs uppercase tracking-wider">
-                  Awaiting Client Escrow Deposit
-                </h4>
-              </div>
-              <p className="text-xs text-gray-600 dark:text-gray-400">
-                You've accepted this booking! The client has been notified to deposit {booking.amount} {booking.currency} into escrow. Once funded, you'll receive an instant notification to begin production.
-              </p>
-            </div>
-          )}
-
-          {/* ACTION BANNER 5: Client - Deliverables Ready for Review */}
-          {isClient && booking.status === 'delivered' && (
-            <div className="py-4 border-b border-[#DADDE1] dark:border-[#2f3032] space-y-3">
-              <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
-                <FileCheck className="w-5 h-5 shrink-0" />
-                <h4 className="font-bold text-xs uppercase tracking-wider">
-                  Deliverables Ready For Review
-                </h4>
-              </div>
-              <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">
-                {booking.creator.name} has submitted deliverables for your inspection. Review the attached files and links below. If satisfied, approve the delivery to release escrow funds and complete the project.
-              </p>
-              <div className="flex items-center gap-2 pt-1 flex-wrap">
-                <Button
-                  size="sm"
-                  onClick={() => setIsApprovalModalOpen(true)}
-                  className="rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white text-[11px] sm:text-xs font-semibold h-7.5 sm:h-8 px-3.5 sm:px-4 shadow-2xs"
-                >
-                  Approve &amp; Release Escrow
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setIsRevisionModalOpen(true)}
-                  className="rounded-full border-[#DADDE1] dark:border-[#2f3032] text-[11px] sm:text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/[0.04] h-7.5 sm:h-8 px-2.5 sm:px-3"
-                >
-                  <RotateCcw className="w-3.5 h-3.5 mr-1" />
-                  Request Revision
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* ACTION BANNER 6: Revision Requested Notice */}
-          {booking.revisionRequests && booking.revisionRequests.length > 0 && booking.status === 'in_progress' && (
-            <div className="py-4 border-b border-[#DADDE1] dark:border-[#2f3032] space-y-2">
-              <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
-                <RotateCcw className="w-4 h-4 shrink-0" />
-                <h4 className="font-bold text-xs uppercase tracking-wider">
-                  Revision In Progress
-                </h4>
-              </div>
-              <p className="text-xs text-gray-700 dark:text-gray-300">
-                <strong>Feedback from {booking.client.name}:</strong> "
-                {booking.revisionRequests[booking.revisionRequests.length - 1].notes}"
-              </p>
-              {isCreator && (
-                <div className="pt-2">
-                  <Button
-                    size="sm"
-                    onClick={() => setIsSubmitModalOpen(true)}
-                    className="rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white text-[11px] sm:text-xs font-semibold h-7.5 sm:h-8 px-3.5 sm:px-4 shadow-2xs"
+            {/* Description with Show More / Show Less */}
+            <div className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
+              {isLongDescription && !isDescriptionExpanded ? (
+                <>
+                  <p>{booking.serviceDescription.slice(0, 240)}...</p>
+                  <button
+                    type="button"
+                    onClick={() => setIsDescriptionExpanded(true)}
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-[#9747FF] hover:underline mt-1 cursor-pointer"
                   >
-                    Submit Revised Deliverables
-                  </Button>
-                </div>
+                    <span>Show more</span>
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  </button>
+                </>
+              ) : (
+                <>
+                  <p>{booking.serviceDescription}</p>
+                  {isLongDescription && (
+                    <button
+                      type="button"
+                      onClick={() => setIsDescriptionExpanded(false)}
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-[#9747FF] hover:underline mt-1 cursor-pointer"
+                    >
+                      <span>Show less</span>
+                      <ChevronUp className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </>
               )}
             </div>
-          )}
 
-          {/* Project Brief & Scope */}
-          <div className="space-y-3 pb-5 border-b border-[#DADDE1] dark:border-[#2f3032]">
-            <h3 className="font-bold text-sm text-gray-900 dark:text-gray-100 uppercase tracking-wider">
-              Project Description &amp; Scope
-            </h3>
-            <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
-              {booking.serviceDescription}
-            </p>
-
+            {/* Special Client Instructions / Notes */}
             {booking.metadata?.notes && (
-              <div className="py-2.5 px-3 border-l-2 border-[#9747FF] text-xs bg-purple-50/40 dark:bg-purple-950/20">
-                <span className="font-semibold text-gray-700 dark:text-gray-300">Additional Client Notes:</span>
-                <p className="italic text-gray-600 dark:text-gray-400 mt-0.5">{booking.metadata.notes}</p>
+              <div className="p-3 rounded-xl border-l-2 border-[#9747FF] bg-purple-50/40 dark:bg-purple-950/20 text-xs">
+                <span className="font-semibold text-gray-900 dark:text-gray-100 block mb-0.5">Special Instructions:</span>
+                <p className="italic text-gray-600 dark:text-gray-400">{booking.metadata.notes}</p>
+              </div>
+            )}
+
+            {/* Reference Files & Moodboards Gallery (only if provided) */}
+            {referenceImages.length > 0 && (
+              <div className="space-y-2 pt-2">
+                <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider block">
+                  Reference Files &amp; Moodboards ({referenceImages.length})
+                </span>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                  {referenceImages.map((imgUrl, i) => (
+                    <div
+                      key={i}
+                      onClick={() => setPreviewImageUrl(getImageUrl(imgUrl))}
+                      className="relative rounded-xl overflow-hidden border border-[#DADDE1] dark:border-[#2f3032] aspect-video group cursor-pointer bg-gray-100 dark:bg-gray-800"
+                    >
+                      <img
+                        src={getImageUrl(imgUrl)}
+                        alt={`Reference ${i + 1}`}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                      />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
+                        <Eye className="w-4 h-4" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
 
-          {/* Agreed Deliverables Checklist */}
-          <div className="space-y-3 pb-5 border-b border-[#DADDE1] dark:border-[#2f3032]">
+          {/* =========================================================================
+              SECTION C: DELIVERABLES & SUBMISSIONS (Unified Deliverables & Stream)
+             ========================================================================= */}
+          <div className="space-y-4 pb-5 border-b border-[#DADDE1] dark:border-[#2f3032]">
             <div className="flex items-center justify-between">
-              <h3 className="font-bold text-sm text-gray-900 dark:text-gray-100 uppercase tracking-wider">
-                Agreed Deliverables ({deliverables.length})
+              <h3 className="font-bold text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                Deliverables &amp; Submissions ({deliverablesCount})
               </h3>
-              {isCreator && ['in_progress', 'confirmed'].includes(booking.status) && (
+              {isCreator && ['in_progress', 'confirmed', 'delivered'].includes(booking.status) && (
                 <Button
                   size="sm"
                   onClick={() => setIsSubmitModalOpen(true)}
-                  className="rounded-full h-8 text-xs bg-[#9747FF] hover:bg-[#8534f0] text-white font-semibold px-4 shadow-2xs"
+                  className="h-8 px-4 text-xs font-semibold rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white shadow-2xs flex items-center gap-1.5 cursor-pointer"
                 >
-                  <UploadCloud className="w-3.5 h-3.5 mr-1" />
-                  Submit Deliverables
+                  <UploadCloud className="w-3.5 h-3.5" />
+                  <span>Submit Work</span>
                 </Button>
               )}
             </div>
 
+            {/* Deliverables Checklist */}
             <div className="divide-y divide-[#DADDE1] dark:divide-[#2f3032]">
               {deliverables.map((del) => (
-                <div
-                  key={del.id}
-                  className="py-3 flex items-start justify-between gap-3"
-                >
+                <div key={del.id} className="py-3 flex items-start justify-between gap-3">
                   <div className="flex items-start gap-2.5 min-w-0">
                     <Package className="w-4 h-4 text-[#9747FF] shrink-0 mt-0.5" />
                     <div>
-                      <p className="font-semibold text-sm text-gray-900 dark:text-gray-100">
+                      <p className="font-semibold text-xs sm:text-sm text-gray-900 dark:text-gray-100">
                         {del.title}
                       </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                      <p className="text-[11px] text-gray-500 dark:text-gray-400">
                         Format: <span className="font-medium text-gray-700 dark:text-gray-300">{del.format}</span>
                       </p>
                       {del.description && (
@@ -909,141 +1094,93 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                 </div>
               ))}
             </div>
-          </div>
 
-          {/* Reference Files & Moodboards Gallery */}
-          {referenceImages.length > 0 && (
-            <div className="space-y-3 pb-5 border-b border-[#DADDE1] dark:border-[#2f3032]">
-              <h3 className="font-bold text-sm text-gray-900 dark:text-gray-100 uppercase tracking-wider">
-                Reference Files &amp; Moodboards ({referenceImages.length})
-              </h3>
-
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {referenceImages.map((imgUrl, i) => (
-                  <div
-                    key={i}
-                    onClick={() => setPreviewImageUrl(getImageUrl(imgUrl))}
-                    className="relative rounded-xl overflow-hidden border border-[#DADDE1] dark:border-[#2f3032] aspect-video group cursor-pointer bg-gray-100 dark:bg-gray-800"
-                  >
-                    <img
-                      src={getImageUrl(imgUrl)}
-                      alt={`Reference ${i + 1}`}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                    />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
-                      <Eye className="w-5 h-5" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Submissions & Deliverables History */}
-          <div className="space-y-4 pb-5 border-b border-[#DADDE1] dark:border-[#2f3032]">
-            <div className="flex items-center justify-between">
-              <h3 className="font-bold text-sm text-gray-900 dark:text-gray-100 uppercase tracking-wider">
-                Submissions &amp; Work Packages ({submissions.length})
-              </h3>
-              {isCreator && ['in_progress', 'confirmed', 'delivered'].includes(booking.status) && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setIsSubmitModalOpen(true)}
-                  className="rounded-full h-8 text-xs border-[#DADDE1] dark:border-[#2f3032] text-[#9747FF] font-semibold px-4"
-                >
-                  <Plus className="w-3.5 h-3.5 mr-1" />
-                  New Submission
-                </Button>
-              )}
-            </div>
-
+            {/* Work Submissions Stream */}
             {submissions.length > 0 ? (
-              <div className="divide-y divide-[#DADDE1] dark:divide-[#2f3032]">
-                {submissions.map((sub, idx) => (
-                  <div
-                    key={sub.id || idx}
-                    className="py-4 space-y-3"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-xs px-2.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950/50 text-[#9747FF]">
-                          Version {sub.version || idx + 1}
+              <div className="pt-2 space-y-3">
+                <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider block">
+                  Work Submissions ({submissions.length})
+                </span>
+
+                <div className="divide-y divide-[#DADDE1] dark:divide-[#2f3032]">
+                  {submissions.map((sub, idx) => (
+                    <div key={sub.id || idx} className="py-3 space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-[11px] px-2.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950/50 text-[#9747FF]">
+                            Version {sub.version || idx + 1}
+                          </span>
+                          <h4 className="font-semibold text-xs sm:text-sm text-gray-900 dark:text-gray-100">
+                            {sub.title}
+                          </h4>
+                        </div>
+                        <span className="text-[11px] text-gray-400">
+                          {new Date(sub.uploadedAt).toLocaleDateString()}
                         </span>
-                        <h4 className="font-bold text-sm text-gray-900 dark:text-gray-100">
-                          {sub.title}
-                        </h4>
                       </div>
-                      <span className="text-[11px] text-gray-400">
-                        {new Date(sub.uploadedAt).toLocaleDateString()}
-                      </span>
-                    </div>
 
-                    {sub.description && (
-                      <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
-                        {sub.description}
-                      </p>
-                    )}
+                      {sub.description && (
+                        <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
+                          {sub.description}
+                        </p>
+                      )}
 
-                    {/* Files Attached */}
-                    {sub.files && sub.files.length > 0 && (
-                      <div className="space-y-1.5 pt-1">
-                        <span className="text-[11px] font-semibold text-gray-500 uppercase">Attached Files:</span>
-                        <div className="flex flex-wrap gap-2">
+                      {/* Files Attached */}
+                      {sub.files && sub.files.length > 0 && (
+                        <div className="flex flex-wrap gap-2 pt-1">
                           {sub.files.map((file, fIdx) => (
                             <a
                               key={fIdx}
                               href={getImageUrl(file)}
                               target="_blank"
                               rel="noreferrer"
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-gray-800 border border-[#DADDE1] dark:border-[#2f3032] text-xs font-medium text-gray-800 dark:text-gray-200 hover:text-[#9747FF] transition-colors"
+                              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white dark:bg-gray-800 border border-[#DADDE1] dark:border-[#2f3032] text-xs font-medium text-gray-800 dark:text-gray-200 hover:text-[#9747FF] transition-colors"
                             >
                               <Download className="w-3.5 h-3.5 text-[#9747FF]" />
                               <span>Deliverable File #{fIdx + 1}</span>
                             </a>
                           ))}
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                    {/* External Links */}
-                    {sub.links && sub.links.length > 0 && (
-                      <div className="space-y-1.5 pt-1">
-                        <span className="text-[11px] font-semibold text-gray-500 uppercase">External Links:</span>
-                        <div className="flex flex-wrap gap-2">
+                      {/* External Links */}
+                      {sub.links && sub.links.length > 0 && (
+                        <div className="flex flex-wrap gap-2 pt-1">
                           {sub.links.map((link, lIdx) => (
                             <a
                               key={lIdx}
                               href={link}
                               target="_blank"
                               rel="noreferrer"
-                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-purple-50 dark:bg-purple-950/40 text-xs font-semibold text-[#9747FF] hover:underline"
+                              className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-purple-50 dark:bg-purple-950/40 text-xs font-semibold text-[#9747FF] hover:underline"
                             >
                               <span>{link.replace(/^https?:\/\//, '').split('/')[0]}</span>
                               <ExternalLink className="w-3.5 h-3.5" />
                             </a>
                           ))}
                         </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             ) : (
-              <div className="py-8 text-center text-gray-400 space-y-1">
-                <FileText className="w-8 h-8 mx-auto stroke-1 text-gray-300 dark:text-gray-600" />
-                <p className="text-xs font-medium text-gray-600 dark:text-gray-400">No work packages submitted yet.</p>
-                <p className="text-[11px] text-gray-400">When the creator submits milestones or deliverables, they will appear here.</p>
+              <div className="py-4 text-center">
+                <p className="text-xs text-gray-500 dark:text-gray-400 italic">
+                  No work submitted yet. Uploaded deliverables and files will appear here once submitted by the creator.
+                </p>
               </div>
             )}
           </div>
 
-          {/* Completed Review Card */}
+          {/* =========================================================================
+              SECTION D: COMPLETED REVIEW & RATING (When Project is Completed)
+             ========================================================================= */}
           {booking.status === 'completed' && booking.review && (
-            <div className="py-4 border-b border-[#DADDE1] dark:border-[#2f3032] space-y-2.5">
+            <div className="py-4 border-b border-[#DADDE1] dark:border-[#2f3032] space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                   <h4 className="font-bold text-xs uppercase tracking-wider text-emerald-800 dark:text-emerald-300">
                     Project Completed &amp; Reviewed
                   </h4>
