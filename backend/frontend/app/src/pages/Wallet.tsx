@@ -123,9 +123,10 @@ export function Wallet() {
         />
       </div>
 
-      {/* Desktop view (>= 1024px) - Clean, spacious, minimalist white aesthetic */}
+      {/* Desktop view (>= 1024px) - Clean, spacious 3-column layout matching Home & Bookings */}
       <div className="hidden lg:block pb-12">
         <DesktopWallet
+          user={user}
           balance={totalBalanceUSD}
           availableBalance={availableBalance}
           pendingWithdrawal={pendingWithdrawal}
