@@ -45,7 +45,8 @@ export function CommentsSection({
   const handleToggleCommentLike = async (comment: CommentItem) => {
     if (!comment._id) return;
     if (!user) {
-      toast.error('Please log in to like this comment');
+      const targetUrl = window.location.pathname + window.location.search;
+      window.location.href = `/login?redirect=${encodeURIComponent(targetUrl)}`;
       return;
     }
 
@@ -125,7 +126,8 @@ export function CommentsSection({
     e.preventDefault();
 
     if (!user) {
-      toast.error('Please log in to comment');
+      const targetUrl = window.location.pathname + window.location.search;
+      window.location.href = `/login?redirect=${encodeURIComponent(targetUrl)}`;
       return;
     }
 
@@ -259,6 +261,12 @@ export function CommentsSection({
             <textarea
               value={commentText}
               onChange={(e) => setCommentText(e.target.value)}
+              onFocus={() => {
+                if (!user) {
+                  const targetUrl = window.location.pathname + window.location.search;
+                  window.location.href = `/login?redirect=${encodeURIComponent(targetUrl)}`;
+                }
+              }}
               placeholder="Write a comment..."
               rows={2}
               className="w-full resize-none border-none bg-transparent text-xs sm:text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none p-0"
@@ -349,7 +357,14 @@ export function CommentsSection({
                 <div className="flex items-center gap-4 mt-2">
                   <button
                     type="button"
-                    onClick={() => setReplyingTo(comment.userName || 'member')}
+                    onClick={() => {
+                      if (!user) {
+                        const targetUrl = window.location.pathname + window.location.search;
+                        window.location.href = `/login?redirect=${encodeURIComponent(targetUrl)}`;
+                        return;
+                      }
+                      setReplyingTo(comment.userName || 'member');
+                    }}
                     className="inline-flex items-center gap-1 text-[11px] font-semibold text-gray-500 dark:text-gray-400 hover:text-[#9747FF] transition-colors"
                   >
                     <Reply className="w-3 h-3" />

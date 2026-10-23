@@ -199,16 +199,21 @@ export function PostDetail({ postId: propPostId }: PostDetailProps) {
                   )}
                 </a>
                 <div className="min-w-0">
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 min-w-0">
                     <a
                       href={`/creators/${post.creator._id}`}
                       className="font-bold text-sm text-gray-900 dark:text-gray-100 hover:text-[#9747FF] truncate block"
                     >
                       {post.creator.name}
                     </a>
-                    {post.creator.isVerified && <VerifiedBadge className="w-3.5 h-3.5" showTooltip={false} />}
+                    {post.creator.isVerified && <VerifiedBadge className="w-3.5 h-3.5 shrink-0" showTooltip={false} />}
                   </div>
-                  <p className="text-xs text-gray-500">
+                  {(post.creator as any)?.username && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 font-normal truncate mt-0.5 leading-tight">
+                      @{(post.creator as any).username}
+                    </p>
+                  )}
+                  <p className="text-xs text-gray-500 mt-0.5">
                     {(post.creator as any)?.category || (Array.isArray(post.creator.categories) ? post.creator.categories.join(' • ') : 'Creator')}
                   </p>
                 </div>

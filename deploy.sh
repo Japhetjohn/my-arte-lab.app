@@ -20,7 +20,7 @@ EOF
   export SSH_ASKPASS_REQUIRE=force
 fi
 
-ssh -o StrictHostKeyChecking=no ${VPS_USER}@${VPS_IP} << 'REMOTE_SCRIPT'
+ssh -F /dev/null -o StrictHostKeyChecking=no ${VPS_USER}@${VPS_IP} << 'REMOTE_SCRIPT'
   set -e
   
   echo "📥 Pulling latest code from git..."

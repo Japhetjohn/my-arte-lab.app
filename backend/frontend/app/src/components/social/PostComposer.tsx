@@ -84,7 +84,7 @@ export function PostComposer({ onPostCreated, className, autoOpenImageUploader }
     e.preventDefault();
 
     if (!user) {
-      toast.error('Please log in to publish a post');
+      window.location.href = `/login?redirect=${encodeURIComponent('/home')}`;
       return;
     }
 
@@ -206,6 +206,11 @@ export function PostComposer({ onPostCreated, className, autoOpenImageUploader }
               ref={textareaRef}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              onFocus={() => {
+                if (!user) {
+                  window.location.href = `/login?redirect=${encodeURIComponent('/home')}`;
+                }
+              }}
               placeholder="Share your latest creative work..."
               rows={2}
               className="w-full resize-none border-none bg-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 text-sm sm:text-base leading-relaxed focus:outline-none focus:ring-0 p-0"

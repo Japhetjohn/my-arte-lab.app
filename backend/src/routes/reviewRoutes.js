@@ -29,6 +29,6 @@ router.put(
   reviewController.respondToReview
 );
 
-router.post('/:id/helpful', optionalAuth, validateObjectId('id'), handleValidationErrors, reviewController.markHelpful);
+router.post('/:id/helpful', validateObjectId('id'), handleValidationErrors, reviewController.markHelpful);
 
 module.exports = router;

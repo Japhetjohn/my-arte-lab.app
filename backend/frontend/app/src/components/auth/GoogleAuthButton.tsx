@@ -95,7 +95,9 @@ export function GoogleAuthButton({
                 } else if (authUser?.isOnboarded === false) {
                   navigate('/onboarding');
                 } else {
-                  navigate('/home');
+                  const redirectParam = new URLSearchParams(window.location.search).get('redirect');
+                  const dest = redirectParam && redirectParam.startsWith('/') && !redirectParam.startsWith('//') ? redirectParam : '/home';
+                  navigate(dest);
                 }
               } catch (err: any) {
                 // Handled in context
@@ -135,7 +137,9 @@ export function GoogleAuthButton({
                 } else if (authUser?.isOnboarded === false) {
                   navigate('/onboarding');
                 } else {
-                  navigate('/home');
+                  const redirectParam = new URLSearchParams(window.location.search).get('redirect');
+                  const dest = redirectParam && redirectParam.startsWith('/') && !redirectParam.startsWith('//') ? redirectParam : '/home';
+                  navigate(dest);
                 }
               } catch (err: any) {
                 // Handled in context

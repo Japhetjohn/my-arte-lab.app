@@ -7,8 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { CREATOR_CATEGORIES } from '@/lib/validations/authSchemas';
-import { getAvatarUrl } from '@/lib/imageUrl';
-import { CheckCircle2, Loader2, Sparkles, Briefcase, MapPin, User as UserIcon } from 'lucide-react';
+import { Loader2, Sparkles, Briefcase, MapPin, User as UserIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/components/ui/sonner';
 
@@ -64,35 +63,6 @@ export function Onboarding() {
       illustration="/images/auth-illustration.svg"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Google Identity Confirmation Banner */}
-        <div className="flex items-center gap-3 p-3 rounded-xl bg-purple-50/60 dark:bg-purple-950/20 border border-purple-200/70 dark:border-purple-800/40">
-          <div className="w-10 h-10 rounded-full overflow-hidden bg-purple-100 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/40 shrink-0">
-            {user?.avatar ? (
-              <img
-                src={getAvatarUrl(user.avatar)}
-                alt={user.name || user.firstName}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center font-bold text-[#9747FF] text-sm">
-                {(user?.firstName || 'U')[0]?.toUpperCase()}
-              </div>
-            )}
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="font-bold text-xs sm:text-sm text-gray-900 dark:text-gray-100 truncate">
-                {user?.name || `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Creative Member'}
-              </span>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 text-[10px] font-semibold border border-emerald-200/60 dark:border-emerald-800/40">
-                <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-                Verified via Google
-              </span>
-            </div>
-            <p className="text-[11px] text-gray-500 truncate">{user?.email}</p>
-          </div>
-        </div>
-
         {/* 1. Account Role Selection (Mandatory) */}
         <div className="space-y-1.5">
           <Label className="text-xs font-semibold text-gray-700 dark:text-gray-300">

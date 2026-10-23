@@ -35,10 +35,10 @@ export function BottomNavigation({ currentPath }: BottomNavigationProps) {
               )}
             >
               <div className={cn(
-                'p-1.5 rounded-lg transition-colors',
+                'p-1 rounded-lg transition-colors',
                 active && 'bg-[#9747FF]/10'
               )}>
-                <Icon className={cn('w-5 h-5', active && 'fill-current')} />
+                <Icon className={cn('w-6 h-6 stroke-[2]', active && 'fill-current')} />
               </div>
               <span className="text-[10px] mt-0.5 font-medium">{item.label}</span>
             </a>

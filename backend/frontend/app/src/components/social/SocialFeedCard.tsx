@@ -382,7 +382,8 @@ export function SocialFeedCard({
 
   const handleToggleLike = async () => {
     if (!user) {
-      toast.error('Please log in to like this post');
+      const targetUrl = window.location.pathname + window.location.search;
+      window.location.href = `/login?redirect=${encodeURIComponent(targetUrl)}`;
       return;
     }
 
@@ -509,22 +510,25 @@ export function SocialFeedCard({
 
           {/* Creator Name, Verification, Username, Timestamp */}
           <div className="flex flex-col min-w-0">
-            <div className="flex items-center gap-1.5 flex-wrap">
+            {/* First line: Display name + Verification badge */}
+            <div className="flex items-center gap-1.5 min-w-0">
               <span className="font-bold text-[15px] sm:text-base text-gray-900 dark:text-gray-100 group-hover:text-[#9747FF] transition-colors leading-tight truncate">
                 {creatorDisplayName}
               </span>
               {post.creator.isVerified && (
                 <VerifiedBadge className="w-4 h-4 shrink-0 inline-block align-middle" showTooltip={false} />
               )}
-              {creatorUsername && (
-                <span className="text-xs text-gray-500 dark:text-gray-400 font-normal">
-                  @{creatorUsername}
-                </span>
-              )}
             </div>
 
+            {/* Second line: Username/handle directly underneath */}
+            {creatorUsername && (
+              <span className="text-xs text-gray-500 dark:text-gray-400 font-normal leading-tight truncate mt-0.5">
+                @{creatorUsername}
+              </span>
+            )}
+
             {/* Timestamp & Public Visibility Globe */}
-            <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 leading-none mt-1">
+            <div className="flex items-center gap-1.5 text-[11px] sm:text-xs text-gray-400 dark:text-gray-400 leading-none mt-1">
               <span>{formatTimestamp(post.createdAt)}</span>
               <span>•</span>
               <Globe className="w-3 h-3 text-gray-400 shrink-0" aria-label="Public artwork" />

@@ -89,6 +89,11 @@ export function CreatorCard({ creator, onViewProfile, onBook }: CreatorCardProps
               </h3>
               {creator.isVerified && <VerifiedBadge className="w-3.5 h-3.5 shrink-0" />}
             </div>
+            {(creator as any)?.username && (
+              <p className="text-xs text-gray-500 font-normal truncate text-center">
+                @{(creator as any).username}
+              </p>
+            )}
             
             <p className="text-[11px] sm:text-xs text-gray-500 font-medium capitalize truncate">
               {Array.isArray(creator.category) 

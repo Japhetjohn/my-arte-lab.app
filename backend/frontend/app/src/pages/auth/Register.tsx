@@ -172,7 +172,9 @@ export function Register() {
       
       // Auto-login after verification
       await login(registeredEmail, registeredPassword);
-      navigate('/home');
+      const redirectParam = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('redirect') : null;
+      const dest = redirectParam && redirectParam.startsWith('/') && !redirectParam.startsWith('//') ? redirectParam : '/home';
+      navigate(dest);
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Invalid verification code');
     } finally {
@@ -371,7 +373,11 @@ export function Register() {
         <p className="text-center text-xs sm:text-sm text-gray-500 pt-2 sm:pt-3">
           Already have an account?{' '}
           <Link
-            to="/login"
+            to={
+              typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('redirect')
+                ? `/login?redirect=${encodeURIComponent(new URLSearchParams(window.location.search).get('redirect')!)}`
+                : '/login'
+            }
             className="text-[#9747FF] hover:text-[#8534f0] font-semibold hover:underline transition-colors ml-0.5"
           >
             Log in

@@ -11,6 +11,7 @@ import type { Creator } from '@/types';
 import {
   Users,
   Compass,
+  Home,
   Sparkles,
   Calendar,
   Wallet,
@@ -213,8 +214,8 @@ export function Creators() {
                 href="/home"
                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] dark:hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-[#1e1f20] transition-colors"
               >
-                <Sparkles className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                <span>Creative Feed</span>
+                <Home className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                <span>Home</span>
               </a>
 
               <a
@@ -343,12 +344,13 @@ export function Creators() {
                       <div className="flex items-start justify-between gap-2">
                         {/* Name, Badge, Handle */}
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+                          {/* First line: Display name + Verification badge */}
+                          <div className="flex items-center gap-1.5 min-w-0">
                             <a
                               href={profileUrl}
                               className="font-bold text-sm sm:text-base text-gray-900 dark:text-gray-100 hover:text-[#9747FF] dark:hover:text-[#9747FF] transition-colors truncate inline-flex items-center gap-1.5 leading-tight"
                             >
-                              <span>{displayName}</span>
+                              <span className="truncate">{displayName}</span>
                               {creator.isVerified && (
                                 <VerifiedBadge
                                   className="w-4 h-4 shrink-0 inline-block align-middle"
@@ -356,16 +358,18 @@ export function Creators() {
                                 />
                               )}
                             </a>
-                            {username && (
-                              <span className="text-xs text-gray-500 dark:text-gray-400 font-normal truncate">
-                                @{username}
-                              </span>
-                            )}
                           </div>
+
+                          {/* Second line: Username/handle directly underneath */}
+                          {username && (
+                            <p className="text-xs text-gray-500 dark:text-gray-400 font-normal truncate mt-0.5 leading-tight">
+                              @{username}
+                            </p>
+                          )}
 
                           {/* Category */}
                           {categoryText && (
-                            <p className="text-xs font-semibold text-[#9747FF] dark:text-[#a855f7] mt-0.5 truncate">
+                            <p className="text-xs font-semibold text-[#9747FF] dark:text-[#a855f7] mt-1 truncate">
                               {categoryText}
                             </p>
                           )}

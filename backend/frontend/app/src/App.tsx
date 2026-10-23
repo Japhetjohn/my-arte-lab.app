@@ -197,7 +197,8 @@ function AppContent() {
 
   // Protected routes require authentication
   if (!isPublicBrowsingRoute && !isAuthenticated && !isLoading) {
-    window.location.href = '/login';
+    const targetUrl = window.location.pathname + window.location.search;
+    window.location.href = `/login?redirect=${encodeURIComponent(targetUrl)}`;
     return null;
   }
 

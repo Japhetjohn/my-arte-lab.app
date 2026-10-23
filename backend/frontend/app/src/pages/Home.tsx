@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import {
+  Home as HomeIcon,
   Sparkles,
   Compass,
   Users,
@@ -43,6 +44,10 @@ export function Home() {
   const [composerAutoOpenImage, setComposerAutoOpenImage] = useState(false);
 
   const handleOpenMobileComposer = (openImagePicker = false) => {
+    if (!user) {
+      window.location.href = `/login?redirect=${encodeURIComponent('/home')}`;
+      return;
+    }
     setComposerAutoOpenImage(openImagePicker);
     setIsMobileComposerOpen(true);
   };
@@ -377,8 +382,8 @@ export function Home() {
                 href="/home"
                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-sm bg-purple-50 dark:bg-purple-950/50 text-[#9747FF] transition-colors"
               >
-                <Sparkles className="w-4 h-4 text-[#9747FF]" />
-                <span>Creative Feed</span>
+                <HomeIcon className="w-5 h-5 text-[#9747FF]" />
+                <span>Home</span>
               </a>
 
               <a
@@ -607,7 +612,7 @@ export function Home() {
                       )}
                     </div>
                     <div className="min-w-0 flex flex-col">
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1 min-w-0">
                         <span className="font-bold text-xs text-gray-900 dark:text-gray-100 group-hover:text-[#9747FF] truncate">
                           {creator.name || 'Creator'}
                         </span>
@@ -615,6 +620,11 @@ export function Home() {
                           <VerifiedBadge className="w-3.5 h-3.5 shrink-0 inline-block align-middle" showTooltip={false} />
                         )}
                       </div>
+                      {(creator as any)?.username && (
+                        <span className="text-[11px] text-gray-500 dark:text-gray-400 font-normal truncate mt-0.5">
+                          @{(creator as any).username}
+                        </span>
+                      )}
                       <span className="text-[11px] text-gray-600 dark:text-gray-400 truncate">
                         {Array.isArray(creator.category) ? creator.category[0] : creator.category || 'Creator'}
                       </span>

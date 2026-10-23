@@ -239,7 +239,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
   // Toggle favorite/bookmark
   const handleToggleFavorite = async () => {
     if (!currentUser) {
-      toast.error('Please login to bookmark creators');
+      window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`;
       return;
     }
 
@@ -485,7 +485,13 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                 ) : (
                   <>
                     <Button
-                      onClick={() => (window.location.href = `/bookings?creator=${creator.id}`)}
+                      onClick={() => {
+                        if (!currentUser) {
+                          window.location.href = `/login?redirect=${encodeURIComponent(`/bookings?creator=${creator.id}`)}`;
+                          return;
+                        }
+                        window.location.href = `/bookings?creator=${creator.id}`;
+                      }}
                       className="w-full h-8 rounded-full bg-[#9747FF] text-white hover:bg-[#8534f0] text-xs font-semibold shadow-2xs transition-colors cursor-pointer inline-flex items-center justify-center gap-1.5"
                     >
                       <Calendar className="h-3.5 w-3.5" />
@@ -758,7 +764,13 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
               <div className="pt-2">
                 {!isOwner ? (
                   <Button
-                    onClick={() => (window.location.href = `/bookings?creator=${creator.id}`)}
+                    onClick={() => {
+                      if (!currentUser) {
+                        window.location.href = `/login?redirect=${encodeURIComponent(`/bookings?creator=${creator.id}`)}`;
+                        return;
+                      }
+                      window.location.href = `/bookings?creator=${creator.id}`;
+                    }}
                     className="w-full bg-[#9747FF] hover:bg-[#8534f0] text-white font-semibold rounded-xl text-xs py-2 shadow-xs cursor-pointer"
                   >
                     Book This Creator

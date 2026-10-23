@@ -37,6 +37,7 @@ export function Login() {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
+    const redirectParam = urlParams.get('redirect');
     if (code) {
       setIsLoading(true);
       window.history.replaceState({}, document.title, window.location.pathname);
@@ -49,7 +50,8 @@ export function Login() {
           if (authUser?.isOnboarded === false) {
             window.location.href = '/onboarding';
           } else {
-            window.location.href = '/home';
+            const dest = redirectParam && redirectParam.startsWith('/') && !redirectParam.startsWith('//') ? redirectParam : '/home';
+            window.location.href = dest;
           }
         })
         .catch(() => {
@@ -75,7 +77,9 @@ export function Login() {
       if (storedUser?.isOnboarded === false) {
         window.location.href = '/onboarding';
       } else {
-        window.location.href = '/home';
+        const redirectParam = new URLSearchParams(window.location.search).get('redirect');
+        const dest = redirectParam && redirectParam.startsWith('/') && !redirectParam.startsWith('//') ? redirectParam : '/home';
+        window.location.href = dest;
       }
     } catch (error: any) {
       // Check if the error is due to unverified email
@@ -235,7 +239,11 @@ export function Login() {
         <p className="text-center text-xs sm:text-sm text-gray-500 pt-3 sm:pt-4">
           Don&apos;t have an account?{' '}
           <Link
-            to="/register"
+            to={
+              typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('redirect')
+                ? `/register?redirect=${encodeURIComponent(new URLSearchParams(window.location.search).get('redirect')!)}`
+                : '/register'
+            }
             className="text-[#9747FF] hover:text-[#8534f0] font-semibold hover:underline transition-colors ml-0.5"
           >
             Sign up
