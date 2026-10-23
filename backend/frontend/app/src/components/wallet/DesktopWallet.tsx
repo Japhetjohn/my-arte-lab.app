@@ -4,7 +4,6 @@ import {
   ArrowUpRight,
   Lock,
   ShieldCheck,
-  TrendingUp,
   ArrowRight,
   RefreshCw,
   Loader2,
@@ -100,7 +99,6 @@ export function DesktopWallet({
   });
   const [wholePart, decimalPart] = formattedBalance.split('.');
   const hasPendingWithdrawal = pendingWithdrawal > 0;
-  const hasEscrowActivity = escrowBalance > 0 || incomingEarnings > 0;
 
   // Grouped chronological transactions
   const groupedTransactions = useMemo(() => {
@@ -364,36 +362,12 @@ export function DesktopWallet({
 
         {/* =========================================================================
             CENTER COLUMN (col-span-1 lg:col-span-6)
-            Wallet Header, Balance, Actions, Escrow, and Transaction History
+            Balance, Actions, and Transaction History
            ========================================================================= */}
         <section className="col-span-1 lg:col-span-6 flex flex-col gap-0">
-          {/* A. Wallet Page Header */}
-          <div className="flex items-center justify-between pb-4 border-b border-[#DADDE1] dark:border-[#2f3032] mb-6">
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
-                Wallet
-              </h1>
-              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                Manage your available balance, escrow payments, and withdrawals.
-              </p>
-            </div>
-            {onRefresh && (
-              <button
-                type="button"
-                onClick={handleRefresh}
-                disabled={isRefreshing}
-                className="p-2 rounded-xl border border-gray-200 dark:border-[#2f3032] hover:bg-gray-100/70 dark:hover:bg-white/[0.04] text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 transition-colors cursor-pointer"
-                title="Refresh wallet"
-                aria-label="Refresh wallet"
-              >
-                <RefreshCw className={cn('w-4 h-4', isRefreshing && 'animate-spin text-[#9747FF]')} />
-              </button>
-            )}
-          </div>
-
           {/* Recoverable Error Banner */}
           {walletError && (
-            <div className="p-3.5 mb-6 bg-red-50/80 dark:bg-red-950/40 border border-red-200/80 dark:border-red-900/50 rounded-xl flex items-center justify-between text-xs text-red-700 dark:text-red-300">
+            <div className="p-3.5 mb-5 bg-red-50/80 dark:bg-red-950/40 border border-red-200/80 dark:border-red-900/50 rounded-xl flex items-center justify-between text-xs text-red-700 dark:text-red-300">
               <div className="flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
                 <span>{walletError}</span>
@@ -410,8 +384,8 @@ export function DesktopWallet({
             </div>
           )}
 
-          {/* B. Main Wallet Balance & C. Wallet Actions */}
-          <div className="pb-6 border-b border-[#DADDE1] dark:border-[#2f3032] mb-6">
+          {/* 1. Main Wallet Balance & Action Buttons */}
+          <div className="pb-6 border-b border-[#DADDE1] dark:border-[#2f3032]">
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-5">
               <div>
                 <div className="flex items-center gap-2 mb-1.5">
@@ -419,6 +393,18 @@ export function DesktopWallet({
                     Available Balance
                   </span>
                   {isWalletLoading && <Loader2 className="w-3 h-3 animate-spin text-[#9747FF]" />}
+                  {onRefresh && (
+                    <button
+                      type="button"
+                      onClick={handleRefresh}
+                      disabled={isRefreshing}
+                      className="p-1 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors cursor-pointer"
+                      title="Refresh wallet"
+                      aria-label="Refresh wallet"
+                    >
+                      <RefreshCw className={cn('w-3 h-3', isRefreshing && 'animate-spin text-[#9747FF]')} />
+                    </button>
+                  )}
                 </div>
                 <div className="flex items-baseline">
                   <span className="text-2xl sm:text-3xl font-light text-gray-400 dark:text-gray-500 mr-1">$</span>
@@ -444,87 +430,31 @@ export function DesktopWallet({
                 )}
               </div>
 
-              {/* Action Buttons */}
+              {/* 2. Consistent Add Funds and Withdraw Buttons (Identical visual treatment matching mobile) */}
               <div className="flex items-center gap-2.5 shrink-0">
-                <Button
+                <button
                   type="button"
                   onClick={onAddFunds}
-                  className="h-11 px-5 rounded-xl bg-[#9747FF] hover:bg-[#8534f0] active:bg-[#7427dc] text-white font-semibold text-sm flex items-center gap-2 shadow-xs transition-all cursor-pointer"
+                  className="h-11 px-5 rounded-xl bg-gray-100 hover:bg-gray-200/80 dark:bg-[#1e1f20] dark:hover:bg-[#252627] active:scale-[0.98] border border-gray-200/70 dark:border-gray-800 text-gray-900 dark:text-gray-100 font-semibold text-sm flex items-center justify-center gap-2 shadow-2xs transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#9747FF]/20"
                 >
-                  <ArrowDownLeft className="w-4 h-4" />
+                  <ArrowDownLeft className="w-4 h-4 text-gray-700 dark:text-gray-300" />
                   <span>Add Funds</span>
-                </Button>
+                </button>
 
-                <Button
+                <button
                   type="button"
-                  variant="outline"
                   onClick={onWithdraw}
-                  className="h-11 px-5 rounded-xl border border-gray-200 dark:border-[#2f3032] hover:bg-gray-100/70 dark:hover:bg-white/[0.04] text-gray-900 dark:text-gray-100 font-semibold text-sm flex items-center gap-2 transition-all cursor-pointer"
+                  className="h-11 px-5 rounded-xl bg-gray-100 hover:bg-gray-200/80 dark:bg-[#1e1f20] dark:hover:bg-[#252627] active:scale-[0.98] border border-gray-200/70 dark:border-gray-800 text-gray-900 dark:text-gray-100 font-semibold text-sm flex items-center justify-center gap-2 shadow-2xs transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#9747FF]/20"
                 >
-                  <ArrowUpRight className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                  <ArrowUpRight className="w-4 h-4 text-gray-700 dark:text-gray-300" />
                   <span>Withdraw</span>
-                </Button>
+                </button>
               </div>
             </div>
           </div>
 
-          {/* Escrow Activity Strip (when active) */}
-          {hasEscrowActivity && (
-            <div className="pb-6 border-b border-[#DADDE1] dark:border-[#2f3032] mb-6">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-[#9747FF]" />
-                  <h2 className="text-sm font-bold text-gray-900 dark:text-gray-100 tracking-tight">Active Escrow &amp; Earnings</h2>
-                </div>
-                <span className="text-xs text-gray-400 dark:text-gray-500">Protected</span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {escrowBalance > 0 && (
-                  <div className="p-3.5 rounded-xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-200/60 dark:border-purple-800/40 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-950/50 text-[#9747FF] flex items-center justify-center shrink-0">
-                        <Lock className="w-3.5 h-3.5" />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-xs text-gray-900 dark:text-gray-100">Held in Escrow</p>
-                        <p className="text-[11px] text-gray-500 dark:text-gray-400">Locked until milestones approved</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold text-sm text-gray-900 dark:text-gray-100">
-                        ${escrowBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{' '}
-                        <span className="text-[10px] text-gray-400 font-normal">USDC</span>
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {incomingEarnings > 0 && (
-                  <div className="p-3.5 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-800/40 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600 flex items-center justify-center shrink-0">
-                        <TrendingUp className="w-3.5 h-3.5" />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-xs text-gray-900 dark:text-gray-100">Incoming Earnings</p>
-                        <p className="text-[11px] text-gray-500 dark:text-gray-400">Pending client sign-off</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold text-sm text-emerald-600">
-                        ${incomingEarnings.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{' '}
-                        <span className="text-[10px] text-gray-400 font-normal">USDC</span>
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* D. Transaction History Section */}
-          <div className="space-y-4">
+          {/* 3. Transaction History Section */}
+          <div className="pt-6 space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-[#DADDE1] dark:border-[#2f3032]">
               <div className="flex items-center gap-2">
                 <h2 className="text-sm font-bold text-gray-900 dark:text-gray-100 tracking-tight">Recent Transactions</h2>
@@ -694,7 +624,7 @@ export function DesktopWallet({
                 )}
               </div>
             ) : (
-              <div className="text-center py-14 px-4 bg-white dark:bg-[#18191a] border border-[#DADDE1] dark:border-[#2f3032] rounded-2xl">
+              <div className="text-center py-14 px-4">
                 <div className="w-10 h-10 rounded-full bg-purple-50 dark:bg-purple-950/40 text-[#9747FF] flex items-center justify-center mx-auto mb-2.5">
                   <Wallet className="w-5 h-5 stroke-[1.75]" />
                 </div>
@@ -743,10 +673,6 @@ export function DesktopWallet({
               Account Overview
             </h4>
             <div className="space-y-3">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600 dark:text-gray-400">Available</span>
-                <span className="font-bold text-[#9747FF]">${formattedBalance} USDC</span>
-              </div>
               {escrowBalance > 0 && (
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-600 dark:text-gray-400">In Escrow</span>
@@ -766,7 +692,7 @@ export function DesktopWallet({
                 </div>
               )}
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600 dark:text-gray-400">Transactions</span>
+                <span className="text-gray-600 dark:text-gray-400">Total Transactions</span>
                 <span className="font-semibold text-gray-900 dark:text-gray-100">{transactions.length}</span>
               </div>
             </div>
