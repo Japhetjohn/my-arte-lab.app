@@ -517,7 +517,7 @@ export function Bookings() {
                   title="No bookings found"
                   description="You haven't initiated or received any bookings yet."
                   actionLabel="Browse Creators"
-                  onAction={() => (window.location.href = '/explore')}
+                  onAction={() => (window.location.href = '/creators')}
                 />
               </div>
             ) : (

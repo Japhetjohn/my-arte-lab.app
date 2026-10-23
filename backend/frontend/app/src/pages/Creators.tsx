@@ -336,12 +336,6 @@ export function Creators() {
                           </span>
                         )}
                       </div>
-                      {creator.availability === 'available' && (
-                        <span
-                          className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white dark:border-[#18191a]"
-                          title="Available for bookings"
-                        />
-                      )}
                     </a>
 
                     {/* Info Block */}
@@ -349,19 +343,19 @@ export function Creators() {
                       <div className="flex items-start justify-between gap-2">
                         {/* Name, Badge, Handle */}
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-1.5 flex-wrap">
+                          <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
                             <a
                               href={profileUrl}
-                              className="font-bold text-sm sm:text-base text-gray-900 dark:text-gray-100 hover:text-[#9747FF] dark:hover:text-[#9747FF] transition-colors truncate"
+                              className="font-bold text-sm sm:text-base text-gray-900 dark:text-gray-100 hover:text-[#9747FF] dark:hover:text-[#9747FF] transition-colors truncate inline-flex items-center gap-1.5 leading-tight"
                             >
-                              {displayName}
+                              <span>{displayName}</span>
+                              {creator.isVerified && (
+                                <VerifiedBadge
+                                  className="w-4 h-4 shrink-0 inline-block align-middle"
+                                  showTooltip={false}
+                                />
+                              )}
                             </a>
-                            {creator.isVerified && (
-                              <VerifiedBadge
-                                className="w-4 h-4 shrink-0 inline-block align-middle"
-                                showTooltip={false}
-                              />
-                            )}
                             {username && (
                               <span className="text-xs text-gray-500 dark:text-gray-400 font-normal truncate">
                                 @{username}

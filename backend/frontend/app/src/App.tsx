@@ -144,23 +144,28 @@ function AppContent() {
     return null;
   };
 
+  // Normalize currentPath to remove trailing slash (except for '/')
+  const normalizedPath = currentPath.length > 1 && currentPath.endsWith('/')
+    ? currentPath.slice(0, -1)
+    : currentPath;
+
   // Auth-only pages (rendered without the main app layout)
   const authRoutes = ['/login', '/register', '/forgot-password', '/reset-password', '/verify-email', '/onboarding'];
-  const isAuthRoute = authRoutes.some(route => currentPath.startsWith(route));
+  const isAuthRoute = authRoutes.some(route => normalizedPath.startsWith(route));
 
   if (isAuthRoute) {
     switch (true) {
-      case currentPath === '/login':
+      case normalizedPath === '/login':
         return isAuthenticated ? (user?.isOnboarded === false ? <NavigateToOnboarding /> : <NavigateToHome />) : <Login />;
-      case currentPath === '/register':
+      case normalizedPath === '/register':
         return isAuthenticated ? (user?.isOnboarded === false ? <NavigateToOnboarding /> : <NavigateToHome />) : <Register />;
-      case currentPath === '/onboarding':
+      case normalizedPath === '/onboarding':
         return isAuthenticated ? (user?.isOnboarded === false ? <Onboarding /> : <NavigateToHome />) : <Login />;
-      case currentPath === '/forgot-password':
+      case normalizedPath === '/forgot-password':
         return <ForgotPassword />;
-      case currentPath.startsWith('/reset-password'):
+      case normalizedPath.startsWith('/reset-password'):
         return <ResetPassword />;
-      case currentPath.startsWith('/verify-email'):
+      case normalizedPath.startsWith('/verify-email'):
         return <VerifyEmail />;
       default:
         return <Login />;
@@ -168,18 +173,18 @@ function AppContent() {
   }
 
   // Redirect authenticated users with incomplete onboarding to /onboarding
-  if (isAuthenticated && user?.isOnboarded === false && currentPath !== '/onboarding') {
+  if (isAuthenticated && user?.isOnboarded === false && normalizedPath !== '/onboarding') {
     return <NavigateToOnboarding />;
   }
 
   // Public browsing pages: visible to guests and logged-in users
   const publicBrowsingRoutes = ['/', '/home', '/creators', '/explore', '/legal', '/privacy-policy'];
   const isPublicBrowsingRoute =
-    publicBrowsingRoutes.includes(currentPath) ||
-    currentPath.startsWith('/creator/') ||
-    currentPath.startsWith('/creators/') ||
-    currentPath.startsWith('/post/') ||
-    currentPath.startsWith('/posts/');
+    publicBrowsingRoutes.includes(normalizedPath) ||
+    normalizedPath.startsWith('/creator/') ||
+    normalizedPath.startsWith('/creators/') ||
+    normalizedPath.startsWith('/post/') ||
+    normalizedPath.startsWith('/posts/');
 
   // Protected routes require authentication
   if (!isPublicBrowsingRoute && !isAuthenticated && !isLoading) {
@@ -210,34 +215,34 @@ function AppContent() {
     }
 
     // Check if it's a creator profile page
-    const creatorId = getCreatorFromPath(currentPath);
+    const creatorId = getCreatorFromPath(normalizedPath);
     if (creatorId) {
       return <CreatorProfile creatorId={creatorId} />;
     }
 
     // Check if it's a dedicated post detail page
-    const postMatch = currentPath.match(/\/posts?\/(.+)/);
+    const postMatch = normalizedPath.match(/\/posts?\/(.+)/);
     if (postMatch) {
       return <PostDetail postId={postMatch[1]} />;
     }
 
     // Check if it's a booking detail page
-    const bookingMatch = currentPath.match(/\/bookings\/(.+)/);
+    const bookingMatch = normalizedPath.match(/\/bookings?\/(.+)/);
     if (bookingMatch) {
       return <BookingDetail bookingId={bookingMatch[1]} />;
     }
 
     // Redirect obsolete Discover & Project routes cleanly to Home
     if (
-      currentPath === '/discover' ||
-      currentPath.startsWith('/discover/') ||
-      currentPath === '/projects' ||
-      currentPath.startsWith('/projects/')
+      normalizedPath === '/discover' ||
+      normalizedPath.startsWith('/discover/') ||
+      normalizedPath === '/projects' ||
+      normalizedPath.startsWith('/projects/')
     ) {
       return <NavigateToHome />;
     }
 
-    switch (currentPath) {
+    switch (normalizedPath) {
       case '/':
       case '/home':
         return <Home />;
