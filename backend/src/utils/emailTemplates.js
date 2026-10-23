@@ -35,7 +35,7 @@ const COLORS = {
 };
 
 const ASSETS = {
-  logo: `${BASE_APP_URL}/images/logo.png`,
+  logo: `${BASE_APP_URL}/images/myartelab-logo.png`,
   openedIllustrationPng: `${BASE_APP_URL}/images/undraw_opened_47gd.png`,
   openedIllustrationSvg: `${BASE_APP_URL}/images/undraw_opened_47gd.svg`,
 };
@@ -200,7 +200,7 @@ const baseTemplate = ({
                                 <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center">
                                     <tr>
                                         <td valign="middle" style="padding-right: 10px;">
-                                            <img src="${ASSETS.logo}" width="36" height="36" alt="MyArteLab Logo" style="display: block; width: 36px; height: 36px; border-radius: 8px; border: 0;" />
+                                            <img src="${ASSETS.logo}" width="36" height="36" alt="MyArteLab Logo" style="display: block; width: 36px; height: 36px; border: 0;" />
                                         </td>
                                         <td valign="middle">
                                             <span style="font-size: 22px; font-weight: 800; color: #111827; letter-spacing: -0.5px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">MyArte<span style="color: ${COLORS.primary};">Lab</span></span>

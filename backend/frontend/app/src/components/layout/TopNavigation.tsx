@@ -174,9 +174,9 @@ export function TopNavigation({
             aria-label="MyArteLab Home"
           >
             <img 
-              src="/images/logo.png" 
+              src="/images/myartelab-logo.png" 
               alt="MyArteLab" 
-              className="h-7 w-7 sm:h-8 sm:w-8 object-contain" 
+              className="h-8 w-8 sm:h-9 sm:w-9 object-contain" 
             />
           </a>
 
@@ -394,9 +394,9 @@ export function TopNavigation({
             className="flex items-center gap-2.5 shrink-0 group select-none cursor-pointer"
           >
             <img 
-              src="/images/logo.png" 
+              src="/images/myartelab-logo.png" 
               alt="MyArteLab" 
-              className="h-7 w-7 object-contain shrink-0 transition-transform group-hover:scale-105" 
+              className="h-8 w-8 sm:h-9 sm:w-9 object-contain shrink-0 transition-transform group-hover:scale-105" 
             />
             <span className="font-semibold text-lg tracking-[-0.015em] text-gray-900 dark:text-gray-100 antialiased leading-none">
               MyArteLab

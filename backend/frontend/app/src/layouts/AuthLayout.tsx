@@ -40,6 +40,24 @@ export function AuthLayout({
           {/* AUTH FORM COLUMN — Clean, Unboxed, Form Content          */}
           {/* ========================================================= */}
           <div className="w-full lg:w-1/2 max-w-md mx-auto flex flex-col justify-center py-2">
+            {/* MyArteLab Brand Header */}
+            <div className="mb-5 flex justify-center sm:justify-start">
+              <a
+                href="/home"
+                className="inline-flex items-center gap-2.5 group select-none cursor-pointer focus:outline-none"
+                aria-label="MyArteLab Home"
+              >
+                <img
+                  src="/images/myartelab-logo.png"
+                  alt="MyArteLab"
+                  className="h-9 w-9 sm:h-10 sm:w-10 object-contain transition-transform group-hover:scale-105"
+                />
+                <span className="font-semibold text-xl tracking-[-0.015em] text-gray-900 leading-none">
+                  MyArteLab
+                </span>
+              </a>
+            </div>
+
             {/* Mobile Illustration (Centered above form) */}
             <div className="lg:hidden flex justify-center mb-5 sm:mb-6 select-none">
               <img

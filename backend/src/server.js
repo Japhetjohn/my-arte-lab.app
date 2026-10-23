@@ -422,7 +422,7 @@ function injectCreatorMeta(req, creator) {
   const profileUrl = `${origin}${profilePath}`;
   const name = creator.name || `${creator.firstName || ''} ${creator.lastName || ''}`.trim();
   const description = creator.bio || `Check out ${name}'s profile on MyArteLab`;
-  const image = toAbsoluteUrl(req, creator.avatar) || `${origin}/images/logo.png`;
+  const image = toAbsoluteUrl(req, creator.avatar) || `${origin}/images/myartelab-logo.png`;
 
   let html = indexHtmlTemplate;
   html = replaceMetaTag(html, /<title>.*?<\/title>/, `<title>${escapeHtmlMeta(`${name} - MyArteLab Profile`)}</title>`);
