@@ -619,15 +619,15 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                 <strong className="text-gray-900 dark:text-gray-100">{booking.amount} {booking.currency}</strong>.
                 Review the deliverables and timeline below before responding.
               </p>
-              <div className="flex items-center gap-2.5 pt-1 flex-wrap">
+              <div className="flex items-center gap-2 pt-1 flex-wrap">
                 <Button
                   size="sm"
                   onClick={handleAcceptRequest}
                   disabled={isProcessingAction}
-                  className="rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold px-5 shadow-2xs"
+                  className="rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white text-[11px] sm:text-xs font-semibold h-7.5 sm:h-8 px-3.5 sm:px-4 shadow-2xs"
                 >
                   {isProcessingAction ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <CheckCircle2 className="w-3.5 h-3.5 mr-1" />}
-                  Accept Booking Request
+                  Accept Request
                 </Button>
                 <Button
                   size="sm"
@@ -637,16 +637,16 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                     setIsCounterModalOpen(true);
                   }}
                   disabled={isProcessingAction}
-                  className="rounded-full border-[#DADDE1] dark:border-[#2f3032] text-xs font-semibold text-[#9747FF] hover:bg-purple-50 dark:hover:bg-purple-950/30"
+                  className="rounded-full border-[#DADDE1] dark:border-[#2f3032] text-[11px] sm:text-xs font-semibold text-[#9747FF] hover:bg-purple-50 dark:hover:bg-purple-950/30 h-7.5 sm:h-8 px-2.5 sm:px-3"
                 >
-                  Propose Counter Offer
+                  Counter Offer
                 </Button>
                 <Button
                   size="sm"
                   variant="ghost"
                   onClick={handleDeclineRequest}
                   disabled={isProcessingAction}
-                  className="rounded-full text-xs text-gray-500 hover:text-red-600"
+                  className="rounded-full text-[11px] sm:text-xs text-gray-500 hover:text-red-600 h-7.5 sm:h-8 px-2.5"
                 >
                   Decline
                 </Button>
@@ -670,12 +670,12 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                 </strong>{' '}
                 (originally {booking.amount} {booking.currency}).
               </p>
-              <div className="flex items-center gap-2.5 pt-1">
+              <div className="flex items-center gap-2 pt-1 flex-wrap">
                 <Button
                   size="sm"
                   onClick={handleAcceptCounter}
                   disabled={isProcessingAction}
-                  className="rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold px-5 shadow-2xs"
+                  className="rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white text-[11px] sm:text-xs font-semibold h-7.5 sm:h-8 px-3.5 sm:px-4 shadow-2xs"
                 >
                   {isProcessingAction ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <CheckCircle2 className="w-3.5 h-3.5 mr-1" />}
                   Accept Counter Offer
@@ -685,9 +685,9 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                   variant="outline"
                   onClick={handleRejectCounter}
                   disabled={isProcessingAction}
-                  className="rounded-full border-[#DADDE1] dark:border-[#2f3032] text-xs font-semibold text-gray-600 dark:text-gray-300"
+                  className="rounded-full border-[#DADDE1] dark:border-[#2f3032] text-[11px] sm:text-xs font-semibold text-gray-600 dark:text-gray-300 h-7.5 sm:h-8 px-2.5 sm:px-3"
                 >
-                  Decline Offer
+                  Decline
                 </Button>
               </div>
             </div>
@@ -709,14 +709,14 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                 </strong>{' '}
                 into smart escrow to authorize work. Funds remain protected and are only released upon your approval of the deliverables.
               </p>
-              <div className="flex items-center gap-2.5 pt-1">
+              <div className="flex items-center gap-2 pt-1">
                 <Button
                   size="sm"
                   onClick={() => {
                     fetchWalletBalance();
                     setIsFundingModalOpen(true);
                   }}
-                  className="rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold px-5 shadow-2xs flex items-center gap-1.5"
+                  className="rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white text-[11px] sm:text-xs font-semibold h-7.5 sm:h-8 px-3.5 sm:px-4 shadow-2xs flex items-center gap-1.5"
                 >
                   <Wallet className="w-3.5 h-3.5" />
                   <span>Deposit &amp; Fund Escrow</span>
@@ -752,19 +752,19 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
               <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">
                 {booking.creator.name} has submitted deliverables for your inspection. Review the attached files and links below. If satisfied, approve the delivery to release escrow funds and complete the project.
               </p>
-              <div className="flex items-center gap-3 pt-1">
+              <div className="flex items-center gap-2 pt-1 flex-wrap">
                 <Button
                   size="sm"
                   onClick={() => setIsApprovalModalOpen(true)}
-                  className="rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold px-5 shadow-2xs"
+                  className="rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white text-[11px] sm:text-xs font-semibold h-7.5 sm:h-8 px-3.5 sm:px-4 shadow-2xs"
                 >
-                  Approve Delivery &amp; Release Escrow
+                  Approve &amp; Release Escrow
                 </Button>
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={() => setIsRevisionModalOpen(true)}
-                  className="rounded-full border-[#DADDE1] dark:border-[#2f3032] text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/[0.04]"
+                  className="rounded-full border-[#DADDE1] dark:border-[#2f3032] text-[11px] sm:text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/[0.04] h-7.5 sm:h-8 px-2.5 sm:px-3"
                 >
                   <RotateCcw className="w-3.5 h-3.5 mr-1" />
                   Request Revision
@@ -791,7 +791,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                   <Button
                     size="sm"
                     onClick={() => setIsSubmitModalOpen(true)}
-                    className="rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold px-5 shadow-2xs"
+                    className="rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white text-[11px] sm:text-xs font-semibold h-7.5 sm:h-8 px-3.5 sm:px-4 shadow-2xs"
                   >
                     Submit Revised Deliverables
                   </Button>

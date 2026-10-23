@@ -15,6 +15,7 @@ export interface CommentItem {
   text: string;
   createdAt?: string | Date;
   likesCount?: number;
+  isLiked?: boolean;
   replies?: CommentItem[];
 }
 
@@ -38,6 +39,66 @@ export function CommentsSection({
   const [commentText, setCommentText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [likingIds, setLikingIds] = useState<Set<string>>(new Set());
+
+  // Toggle comment like with optimistic updates
+  const handleToggleCommentLike = async (comment: CommentItem) => {
+    if (!comment._id) return;
+    if (!user) {
+      toast.error('Please log in to like this comment');
+      return;
+    }
+
+    const commentId = comment._id;
+    if (likingIds.has(commentId)) return;
+
+    const previousIsLiked = !!comment.isLiked;
+    const previousLikesCount = comment.likesCount || 0;
+    const nextIsLiked = !previousIsLiked;
+    const nextLikesCount = nextIsLiked ? previousLikesCount + 1 : Math.max(0, previousLikesCount - 1);
+
+    // Optimistic UI update
+    setComments((prev) =>
+      prev.map((c) =>
+        c._id === commentId
+          ? { ...c, isLiked: nextIsLiked, likesCount: nextLikesCount }
+          : c
+      )
+    );
+
+    setLikingIds((prev) => new Set(prev).add(commentId));
+
+    try {
+      const res = await socialService.toggleCommentLike(serviceId, commentId);
+      const data = res.data?.data;
+      if (data) {
+        setComments((prev) =>
+          prev.map((c) =>
+            c._id === commentId
+              ? { ...c, isLiked: data.isLiked, likesCount: data.likesCount }
+              : c
+          )
+        );
+      }
+    } catch (err: any) {
+      console.error('Error toggling comment like:', err);
+      // Revert optimistic update
+      setComments((prev) =>
+        prev.map((c) =>
+          c._id === commentId
+            ? { ...c, isLiked: previousIsLiked, likesCount: previousLikesCount }
+            : c
+        )
+      );
+      toast.error(err.response?.data?.message || 'Could not update comment like');
+    } finally {
+      setLikingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(commentId);
+        return next;
+      });
+    }
+  };
 
   // Fetch comments from backend
   const fetchComments = async (sort = sortOrder) => {
@@ -297,9 +358,25 @@ export function CommentsSection({
 
                   <button
                     type="button"
-                    className="inline-flex items-center gap-1 text-[11px] font-medium text-gray-400 hover:text-red-500 transition-colors"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleToggleCommentLike(comment);
+                    }}
+                    disabled={likingIds.has(comment._id || '')}
+                    className={cn(
+                      'inline-flex items-center gap-1 text-[11px] font-medium transition-colors cursor-pointer select-none',
+                      comment.isLiked
+                        ? 'text-red-500 font-semibold'
+                        : 'text-gray-400 hover:text-red-500'
+                    )}
+                    aria-label={comment.isLiked ? 'Unlike comment' : 'Like comment'}
                   >
-                    <Heart className="w-3 h-3" />
+                    <Heart
+                      className={cn(
+                        'w-3.5 h-3.5 transition-transform active:scale-125',
+                        comment.isLiked ? 'fill-red-500 text-red-500' : 'text-gray-400 hover:text-red-500'
+                      )}
+                    />
                     <span>{comment.likesCount || 0}</span>
                   </button>
                 </div>

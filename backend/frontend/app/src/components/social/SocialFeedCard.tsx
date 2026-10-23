@@ -57,6 +57,8 @@ export interface FeedPost {
 interface SocialFeedCardProps {
   post: FeedPost;
   onPostUpdated?: (updated: FeedPost) => void;
+  onPostDeleted?: () => void;
+  defaultExpandedComments?: boolean;
   className?: string;
 }
 
@@ -125,14 +127,19 @@ function renderCaptionWithLinks(text: string) {
   });
 }
 
-export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
+export function SocialFeedCard({
+  post,
+  className,
+  defaultExpandedComments,
+  onPostDeleted: _onPostDeleted,
+}: SocialFeedCardProps) {
   const { user } = useAuth();
   const serviceId = post.serviceId || post._id;
 
   const [isLiked, setIsLiked] = useState(post.isLiked);
   const [likesCount, setLikesCount] = useState(post.likesCount || 0);
   const [isLiking, setIsLiking] = useState(false);
-  const [showComments, setShowComments] = useState(false);
+  const [showComments, setShowComments] = useState(defaultExpandedComments || false);
   const [commentsCount, setCommentsCount] = useState(post.commentsCount || 0);
 
   // Deep link targeted post highlight state
@@ -361,21 +368,34 @@ export function SocialFeedCard({ post, className }: SocialFeedCardProps) {
   };
 
   const handleShare = async () => {
-    const postUrl = `${window.location.origin}/creators/${post.creator._id}`;
-    if (navigator.share) {
+    const postUrl = `${window.location.origin}/post/${serviceId}`;
+
+    let copied = false;
+    if (navigator.clipboard && window.isSecureContext) {
       try {
-        await navigator.share({
-          title: post.title || post.creator.name,
-          text: post.description || 'Check out this creative artwork on MyArteLab',
-          url: postUrl,
-        });
-        return;
+        await navigator.clipboard.writeText(postUrl);
+        copied = true;
       } catch {}
     }
 
-    if (navigator.clipboard) {
-      await navigator.clipboard.writeText(postUrl);
-      toast.success('Post link copied to clipboard');
+    if (!copied) {
+      try {
+        const textArea = document.createElement('textarea');
+        textArea.value = postUrl;
+        textArea.style.position = 'fixed';
+        textArea.style.opacity = '0';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        copied = document.execCommand('copy');
+        document.body.removeChild(textArea);
+      } catch {}
+    }
+
+    if (copied) {
+      toast.success('Post link copied');
+    } else {
+      window.prompt('Copy post link:', postUrl);
     }
   };
 

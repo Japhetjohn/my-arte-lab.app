@@ -73,8 +73,7 @@ export function Bookings() {
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessingAction, setIsProcessingAction] = useState(false);
 
-  // Filter tabs
-  const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'awaiting_payment' | 'in_progress' | 'delivered' | 'completed' | 'cancelled'>('all');
+  // Role switcher
   const [roleFilter, setRoleFilter] = useState<'all' | 'client' | 'creator'>('all');
 
   // New Booking Modal
@@ -278,31 +277,45 @@ export function Bookings() {
     }
   };
 
-  // Filter logic
-  const filteredBookings = bookings.filter((b) => {
+  // Filter bookings by role
+  const roleBookings = bookings.filter((b) => {
     const isClient = user?.id === b.client._id;
     const isCreator = user?.id === b.creator._id;
-
-    // Role filter
     if (roleFilter === 'client' && !isClient) return false;
     if (roleFilter === 'creator' && !isCreator) return false;
-
-    // Status tab filter
-    if (activeTab === 'all') return true;
-    if (activeTab === 'pending') return b.status === 'pending';
-    if (activeTab === 'awaiting_payment') return b.status === 'awaiting_payment';
-    if (activeTab === 'in_progress') return b.status === 'in_progress' || b.status === 'confirmed';
-    if (activeTab === 'delivered') return b.status === 'delivered';
-    if (activeTab === 'completed') return b.status === 'completed';
-    if (activeTab === 'cancelled') return b.status === 'cancelled' || b.status === 'disputed';
     return true;
   });
 
-  // Calculate stats
+  // 1. Action Required: Bookings needing immediate attention
+  const actionRequiredBookings = roleBookings.filter((b) => {
+    const isClient = user?.id === b.client._id;
+    const isCreator = user?.id === b.creator._id;
+    const hasActiveCounter = Boolean(b.counterProposal?.amount && !b.counterProposal?.applied);
+    const hasActiveRevision = Boolean(b.revisionRequests && b.revisionRequests.length > 0 && b.status === 'in_progress');
+
+    if (isCreator && b.status === 'pending') return true;
+    if (isClient && hasActiveCounter) return true;
+    if (isClient && b.status === 'awaiting_payment') return true;
+    if (isClient && b.status === 'delivered') return true;
+    if (isCreator && hasActiveRevision) return true;
+    return false;
+  });
+
+  const actionRequiredIds = new Set(actionRequiredBookings.map((b) => b._id));
+
+  // 2. Active Projects: Ongoing production or waiting on counterpart
+  const activeBookings = roleBookings.filter((b) => {
+    if (actionRequiredIds.has(b._id)) return false;
+    return ['pending', 'awaiting_payment', 'confirmed', 'in_progress', 'delivered'].includes(b.status);
+  });
+
+  // 3. Completed & Past Bookings
+  const pastBookings = roleBookings.filter((b) => {
+    return ['completed', 'cancelled', 'disputed'].includes(b.status);
+  });
+
+  // Calculate stats for overview
   const activeCount = bookings.filter((b) => ['in_progress', 'confirmed', 'delivered'].includes(b.status)).length;
-  const pendingCount = bookings.filter((b) => b.status === 'pending').length;
-  const awaitingPaymentCount = bookings.filter((b) => b.status === 'awaiting_payment').length;
-  const deliveredCount = bookings.filter((b) => b.status === 'delivered').length;
   const completedCount = bookings.filter((b) => b.status === 'completed').length;
   const totalValue = bookings
     .filter((b) => b.status !== 'cancelled')
@@ -530,14 +543,14 @@ export function Bookings() {
             )}
           </div>
 
-          {/* Contextual Action Buttons matching authentication button style (rounded-full) */}
-          <div className="flex items-center gap-2 flex-wrap">
+          {/* Contextual Action Buttons - Compact & responsive for mobile */}
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
             {/* 1. Client Action: Fund Escrow */}
             {isClient && b.status === 'awaiting_payment' && (
               <Button
                 size="sm"
                 onClick={() => handleOpenFundingModal(b)}
-                className="h-8 px-4 text-xs rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white font-semibold shadow-2xs cursor-pointer inline-flex items-center gap-1.5"
+                className="h-7.5 sm:h-8 px-3 sm:px-4 text-[11px] sm:text-xs rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white font-semibold shadow-2xs cursor-pointer inline-flex items-center gap-1.5"
               >
                 <Lock className="w-3.5 h-3.5" />
                 <span>Fund Escrow ({b.amount} {b.currency})</span>
@@ -546,13 +559,13 @@ export function Bookings() {
 
             {/* 2. Creator Action when Pending: Accept / Counter / Decline */}
             {isCreator && b.status === 'pending' && (
-              <>
+              <div className="flex items-center gap-1.5 flex-wrap">
                 <Button
                   size="sm"
                   variant="ghost"
                   onClick={() => handleOpenDeclineModal(b)}
                   disabled={isProcessingAction}
-                  className="h-8 px-3 text-xs rounded-full text-gray-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30"
+                  className="h-7.5 sm:h-8 px-2.5 sm:px-3 text-[11px] sm:text-xs rounded-full text-gray-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30"
                 >
                   Decline
                 </Button>
@@ -561,20 +574,20 @@ export function Bookings() {
                   variant="outline"
                   onClick={() => handleOpenCounterModal(b)}
                   disabled={isProcessingAction}
-                  className="h-8 px-3 text-xs rounded-full border-gray-300 dark:border-gray-700 text-[#9747FF] hover:bg-purple-50 dark:hover:bg-purple-950/30 font-medium"
+                  className="h-7.5 sm:h-8 px-2.5 sm:px-3 text-[11px] sm:text-xs rounded-full border-gray-300 dark:border-gray-700 text-[#9747FF] hover:bg-purple-50 dark:hover:bg-purple-950/30 font-medium"
                 >
-                  Counter Offer
+                  Counter
                 </Button>
                 <Button
                   size="sm"
                   onClick={() => handleAccept(b)}
                   disabled={isProcessingAction}
-                  className="h-8 px-4 text-xs rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white font-semibold shadow-2xs"
+                  className="h-7.5 sm:h-8 px-3 sm:px-4 text-[11px] sm:text-xs rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white font-semibold shadow-2xs"
                 >
                   {isProcessingAction ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}
-                  <span>Accept Request</span>
+                  <span>Accept</span>
                 </Button>
-              </>
+              </div>
             )}
 
             {/* 3. Creator Action when In Progress: Submit Work */}
@@ -582,7 +595,7 @@ export function Bookings() {
               <Button
                 size="sm"
                 onClick={() => (window.location.href = `/bookings/${b._id}?action=submit`)}
-                className="h-8 px-4 text-xs rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white font-semibold shadow-2xs"
+                className="h-7.5 sm:h-8 px-3 sm:px-4 text-[11px] sm:text-xs rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white font-semibold shadow-2xs"
               >
                 <span>Submit Work</span>
               </Button>
@@ -593,7 +606,7 @@ export function Bookings() {
               <Button
                 size="sm"
                 onClick={() => (window.location.href = `/bookings/${b._id}?action=review`)}
-                className="h-8 px-4 text-xs rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-2xs inline-flex items-center gap-1.5"
+                className="h-7.5 sm:h-8 px-3 sm:px-4 text-[11px] sm:text-xs rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-2xs inline-flex items-center gap-1.5"
               >
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 <span>Review &amp; Approve</span>
@@ -605,7 +618,7 @@ export function Bookings() {
               size="sm"
               variant="outline"
               onClick={() => (window.location.href = `/bookings/${b._id}`)}
-              className="h-8 px-3.5 text-xs rounded-full border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 font-medium inline-flex items-center gap-1"
+              className="h-7.5 sm:h-8 px-2.5 sm:px-3 text-[11px] sm:text-xs rounded-full border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 font-medium inline-flex items-center gap-1"
             >
               <span>Workspace</span>
               <ArrowRight className="w-3 h-3 text-gray-400" />
@@ -788,116 +801,85 @@ export function Bookings() {
               <Button
                 size="sm"
                 onClick={() => (window.location.href = '/explore')}
-                className="h-8 px-3 rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold shadow-2xs inline-flex items-center gap-1"
+                className="h-7.5 sm:h-8 px-2.5 sm:px-3.5 rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white text-[11px] sm:text-xs font-semibold shadow-2xs inline-flex items-center gap-1"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Book Creator</span>
+                <span className="sm:hidden">Book</span>
               </Button>
             </div>
           </div>
 
-          {/* Status Tabs with subtle square-ended horizontal divider */}
-          <div className="border-b border-[#DADDE1] dark:border-[#2f3032] px-2 overflow-x-auto scrollbar-hide">
-            <div className="h-11 flex gap-1 justify-start">
-              <button
-                type="button"
-                onClick={() => setActiveTab('all')}
-                className={cn(
-                  'border-b-2 border-transparent px-3 py-2 text-xs font-semibold transition-colors shrink-0',
-                  activeTab === 'all'
-                    ? 'border-[#9747FF] text-[#9747FF]'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                )}
-              >
-                All ({bookings.length})
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab('pending')}
-                className={cn(
-                  'border-b-2 border-transparent px-3 py-2 text-xs font-semibold transition-colors shrink-0',
-                  activeTab === 'pending'
-                    ? 'border-[#9747FF] text-[#9747FF]'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                )}
-              >
-                Pending ({pendingCount})
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab('awaiting_payment')}
-                className={cn(
-                  'border-b-2 border-transparent px-3 py-2 text-xs font-semibold transition-colors shrink-0',
-                  activeTab === 'awaiting_payment'
-                    ? 'border-[#9747FF] text-[#9747FF]'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                )}
-              >
-                Awaiting Deposit ({awaitingPaymentCount})
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab('in_progress')}
-                className={cn(
-                  'border-b-2 border-transparent px-3 py-2 text-xs font-semibold transition-colors shrink-0',
-                  activeTab === 'in_progress'
-                    ? 'border-[#9747FF] text-[#9747FF]'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                )}
-              >
-                Active ({activeCount})
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab('delivered')}
-                className={cn(
-                  'border-b-2 border-transparent px-3 py-2 text-xs font-semibold transition-colors shrink-0',
-                  activeTab === 'delivered'
-                    ? 'border-[#9747FF] text-[#9747FF]'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                )}
-              >
-                Delivered ({deliveredCount})
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab('completed')}
-                className={cn(
-                  'border-b-2 border-transparent px-3 py-2 text-xs font-semibold transition-colors shrink-0',
-                  activeTab === 'completed'
-                    ? 'border-[#9747FF] text-[#9747FF]'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                )}
-              >
-                Completed ({completedCount})
-              </button>
-            </div>
-          </div>
-
-          {/* Bookings Stream */}
+          {/* Bookings Stream - Organized by Sectional Priority without Cluttered Filter Bars */}
           <div className="flex flex-col">
             {isLoading ? (
               <div className="py-20 flex flex-col items-center justify-center gap-2">
                 <Loader2 className="w-8 h-8 animate-spin text-[#9747FF]" />
                 <span className="text-xs text-gray-500">Loading bookings...</span>
               </div>
-            ) : filteredBookings.length > 0 ? (
-              <div className="px-4 divide-y-0">
-                {filteredBookings.map(renderBookingItem)}
-              </div>
-            ) : (
+            ) : roleBookings.length === 0 ? (
               <div className="py-14 px-4">
                 <EmptyState
                   image="/images/empty-bookings.png"
                   title="No bookings found"
                   description={
-                    activeTab === 'all'
+                    roleFilter === 'all'
                       ? "You haven't initiated or received any bookings yet."
-                      : `No bookings currently in '${activeTab.replace('_', ' ')}' status.`
+                      : `No bookings found under your ${roleFilter} account.`
                   }
                   actionLabel="Browse Creators"
                   onAction={() => (window.location.href = '/explore')}
                 />
+              </div>
+            ) : (
+              <div className="flex flex-col">
+                {/* 1. Action Required / Needs Attention */}
+                {actionRequiredBookings.length > 0 && (
+                  <section className="mb-4">
+                    <div className="flex items-center justify-between px-4 pt-3 pb-2 border-b border-[#DADDE1] dark:border-[#2f3032]">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-[#9747FF] animate-pulse" />
+                        <h2 className="text-xs font-bold uppercase tracking-wider text-gray-900 dark:text-gray-100">
+                          Action Required ({actionRequiredBookings.length})
+                        </h2>
+                      </div>
+                      <span className="text-[11px] text-[#9747FF] font-medium">Needs response</span>
+                    </div>
+                    <div className="px-4">
+                      {actionRequiredBookings.map(renderBookingItem)}
+                    </div>
+                  </section>
+                )}
+
+                {/* 2. Active Projects */}
+                {activeBookings.length > 0 && (
+                  <section className="mb-4">
+                    <div className="flex items-center justify-between px-4 pt-3 pb-2 border-b border-[#DADDE1] dark:border-[#2f3032]">
+                      <h2 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                        Active Bookings ({activeBookings.length})
+                      </h2>
+                      <span className="text-[11px] text-gray-400">In production</span>
+                    </div>
+                    <div className="px-4">
+                      {activeBookings.map(renderBookingItem)}
+                    </div>
+                  </section>
+                )}
+
+                {/* 3. Completed & Past Bookings */}
+                {pastBookings.length > 0 && (
+                  <section className="mb-4">
+                    <div className="flex items-center justify-between px-4 pt-3 pb-2 border-b border-[#DADDE1] dark:border-[#2f3032]">
+                      <h2 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                        Completed &amp; Past ({pastBookings.length})
+                      </h2>
+                      <span className="text-[11px] text-gray-400">History</span>
+                    </div>
+                    <div className="px-4">
+                      {pastBookings.map(renderBookingItem)}
+                    </div>
+                  </section>
+                )}
               </div>
             )}
           </div>

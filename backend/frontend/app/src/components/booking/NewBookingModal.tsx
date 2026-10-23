@@ -712,9 +712,9 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
           size="sm"
           onClick={() => setCurrentStep((prev) => (prev - 1) as any)}
           disabled={isLoading}
-          className="rounded-full border-[#DADDE1] dark:border-[#2f3032] text-xs font-semibold px-4 cursor-pointer"
+          className="rounded-full border-[#DADDE1] dark:border-[#2f3032] text-[11px] sm:text-xs font-semibold h-7.5 sm:h-8 px-3 sm:px-4 cursor-pointer"
         >
-          <ChevronLeft className="w-4 h-4 mr-1" />
+          <ChevronLeft className="w-3.5 h-3.5 mr-1" />
           Back
         </Button>
       ) : (
@@ -724,7 +724,7 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
           size="sm"
           onClick={handleClose}
           disabled={isLoading}
-          className="rounded-full text-xs text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 cursor-pointer"
+          className="rounded-full text-[11px] sm:text-xs text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 h-7.5 sm:h-8 px-3 cursor-pointer"
         >
           Cancel
         </Button>
@@ -735,10 +735,10 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
           type="button"
           size="sm"
           onClick={handleNextStep}
-          className="bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold rounded-full px-5 cursor-pointer shadow-xs"
+          className="bg-[#9747FF] hover:bg-[#8534f0] text-white text-[11px] sm:text-xs font-semibold rounded-full h-7.5 sm:h-8 px-3.5 sm:px-5 cursor-pointer shadow-xs"
         >
           Continue
-          <ChevronRight className="w-4 h-4 ml-1" />
+          <ChevronRight className="w-3.5 h-3.5 ml-1" />
         </Button>
       ) : (
         <Button
@@ -746,11 +746,11 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
           size="sm"
           onClick={handleSubmitBooking}
           disabled={isLoading}
-          className="bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold rounded-full px-6 cursor-pointer shadow-xs"
+          className="bg-[#9747FF] hover:bg-[#8534f0] text-white text-[11px] sm:text-xs font-semibold rounded-full h-7.5 sm:h-8 px-4 sm:px-6 cursor-pointer shadow-xs"
         >
           {isLoading ? (
             <>
-              <Loader2 className="w-4 h-4 animate-spin mr-1.5" />
+              <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
               Submitting...
             </>
           ) : (

@@ -37,6 +37,7 @@ const notificationSchema = new mongoose.Schema({
       'post_like',
       'post_comment',
       'post_reply',
+      'comment_like',
       // Project notifications
       'project_created',
       'project_application_received',

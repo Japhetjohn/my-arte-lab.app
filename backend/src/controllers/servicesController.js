@@ -386,11 +386,27 @@ exports.getComments = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Post not found', 404));
   }
 
-  let comments = Array.isArray(service.comments) ? [...service.comments] : [];
+  let rawComments = Array.isArray(service.comments) ? [...service.comments] : [];
+  const currentUserId = req.user?._id ? req.user._id.toString() : null;
+
+  let comments = rawComments.map(c => {
+    const likes = Array.isArray(c.likes) ? c.likes : [];
+    const isLiked = currentUserId ? likes.some(id => id.toString() === currentUserId) : false;
+    return {
+      _id: c._id,
+      user: c.user,
+      userName: c.userName,
+      userAvatar: c.userAvatar,
+      text: c.text,
+      likesCount: likes.length,
+      isLiked,
+      createdAt: c.createdAt
+    };
+  });
 
   if (sort === 'popular') {
-    // Popular: sort by text length and engagement
-    comments.sort((a, b) => b.text.length - a.text.length);
+    // Popular: sort by likes count and text length
+    comments.sort((a, b) => (b.likesCount || 0) - (a.likesCount || 0) || b.text.length - a.text.length);
   } else {
     // Latest first
     comments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -460,6 +476,120 @@ exports.addComment = catchAsync(async (req, res, next) => {
     comment: createdComment,
     commentsCount: service.comments.length
   });
+});
+
+/**
+ * Toggle like on a comment
+ */
+exports.toggleCommentLike = catchAsync(async (req, res, next) => {
+  const { serviceId, commentId } = req.params;
+  const userId = req.user._id;
+
+  const creator = await User.findOne({ 'services._id': serviceId });
+  if (!creator) {
+    return next(new ErrorHandler('Post not found', 404));
+  }
+
+  const service = creator.services.id(serviceId);
+  if (!service) {
+    return next(new ErrorHandler('Post not found', 404));
+  }
+
+  const comment = (service.comments || []).id(commentId);
+  if (!comment) {
+    return next(new ErrorHandler('Comment not found', 404));
+  }
+
+  if (!Array.isArray(comment.likes)) {
+    comment.likes = [];
+  }
+
+  const likeIndex = comment.likes.findIndex(id => id.toString() === userId.toString());
+  const isLiked = likeIndex === -1;
+
+  if (likeIndex > -1) {
+    comment.likes.splice(likeIndex, 1);
+  } else {
+    comment.likes.push(userId);
+    // Send notification to comment author (skip if self-like)
+    if (comment.user && comment.user.toString() !== userId.toString()) {
+      const senderName = req.user.name || `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim() || 'Someone';
+      const preview = (comment.text || '').slice(0, 40) + ((comment.text || '').length > 40 ? '...' : '');
+      Notification.createNotification({
+        recipient: comment.user,
+        sender: userId,
+        type: 'comment_like',
+        title: 'New Like on Your Comment',
+        message: `${senderName} liked your comment: "${preview}"`,
+        link: `/post/${serviceId}`,
+        metadata: {
+          serviceId,
+          commentId: comment._id
+        }
+      }).catch(err => console.error('Failed to create comment_like notification:', err));
+    }
+  }
+
+  comment.likesCount = comment.likes.length;
+  await creator.save({ validateBeforeSave: false });
+
+  successResponse(res, 200, isLiked ? 'Comment liked' : 'Comment unliked', {
+    isLiked,
+    likesCount: comment.likes.length,
+    commentId: comment._id
+  });
+});
+
+/**
+ * Get a single service / post by ID with author details
+ */
+exports.getServiceById = catchAsync(async (req, res, next) => {
+  const { serviceId } = req.params;
+
+  const creator = await User.findOne({ 'services._id': serviceId })
+    .select('firstName lastName name username email avatar isVerified category rating location bio services')
+    .lean();
+
+  if (!creator) {
+    return next(new ErrorHandler('Post not found', 404));
+  }
+
+  const service = (creator.services || []).find(s => s._id.toString() === serviceId);
+  if (!service) {
+    return next(new ErrorHandler('Post not found', 404));
+  }
+
+  const likes = Array.isArray(service.likes) ? service.likes : [];
+  const isLiked = req.user ? likes.some(id => id.toString() === req.user._id.toString()) : false;
+  const comments = Array.isArray(service.comments) ? service.comments : [];
+
+  const formattedPost = {
+    _id: service._id,
+    title: service.title,
+    description: service.description,
+    category: service.category,
+    images: service.images || [],
+    packages: service.packages || [],
+    likes: likes,
+    likesCount: likes.length,
+    commentsCount: comments.length,
+    impressionsCount: service.impressionsCount || 0,
+    isLiked,
+    createdAt: service.createdAt,
+    creator: {
+      _id: creator._id,
+      name: creator.name || `${creator.firstName || ''} ${creator.lastName || ''}`.trim() || 'Creator',
+      username: creator.username || creator.email?.split('@')[0],
+      avatar: creator.avatar,
+      isVerified: creator.isVerified || false,
+      category: creator.category,
+      rating: creator.rating?.average || 0,
+      location: creator.location,
+      bio: creator.bio
+    }
+  };
+
+  successResponse(res, 200, 'Post retrieved successfully', { post: formattedPost });
 });
 
 /**

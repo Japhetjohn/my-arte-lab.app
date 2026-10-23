@@ -273,6 +273,12 @@ export const socialService = {
   addComment: (serviceId: string, text: string) =>
     api.post(`/services/${serviceId}/comments`, { text }),
 
+  toggleCommentLike: (serviceId: string, commentId: string) =>
+    api.post(`/services/${serviceId}/comments/${commentId}/like`),
+
+  getPost: (serviceId: string) =>
+    api.get(`/services/${serviceId}`),
+
   createPost: (data: { title?: string; description: string; images?: string[]; directLink?: string }) =>
     api.post('/services', data),
 };

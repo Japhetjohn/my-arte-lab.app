@@ -220,6 +220,14 @@ const userSchema = new mongoose.Schema({
         trim: true,
         maxlength: 1000
       },
+      likes: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+      }],
+      likesCount: {
+        type: Number,
+        default: 0
+      },
       createdAt: {
         type: Date,
         default: Date.now

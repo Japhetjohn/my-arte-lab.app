@@ -21,6 +21,7 @@ import { Projects } from '@/pages/Projects';
 import { ProjectDetail } from '@/pages/ProjectDetail';
 import { EditProject } from '@/pages/EditProject';
 import { CreatorProfile } from '@/pages/CreatorProfile';
+import { PostDetail } from '@/pages/PostDetail';
 import { Explore } from '@/pages/Explore';
 import { Creators } from '@/pages/Creators';
 import { Legal } from '@/pages/Legal';
@@ -160,7 +161,9 @@ function AppContent() {
   const isPublicBrowsingRoute =
     publicBrowsingRoutes.includes(currentPath) ||
     currentPath.startsWith('/creator/') ||
-    currentPath.startsWith('/creators/');
+    currentPath.startsWith('/creators/') ||
+    currentPath.startsWith('/post/') ||
+    currentPath.startsWith('/posts/');
 
   // Protected routes require authentication
   if (!isPublicBrowsingRoute && !isAuthenticated && !isLoading) {
@@ -194,6 +197,12 @@ function AppContent() {
     const creatorId = getCreatorFromPath(currentPath);
     if (creatorId) {
       return <CreatorProfile creatorId={creatorId} />;
+    }
+
+    // Check if it's a dedicated post detail page
+    const postMatch = currentPath.match(/\/posts?\/(.+)/);
+    if (postMatch) {
+      return <PostDetail postId={postMatch[1]} />;
     }
 
     // Check if it's a booking detail page
