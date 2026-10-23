@@ -34,8 +34,8 @@ import {
   Lock,
   Wallet,
   ChevronRight,
+  Home as HomeIcon,
   Sparkles,
-  Compass,
   Users,
   Calendar,
   LogOut,
@@ -472,16 +472,8 @@ export function Settings() {
                 href="/home"
                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] dark:hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-white/[0.04] transition-colors"
               >
-                <Sparkles className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                <span>Creative Feed</span>
-              </a>
-
-              <a
-                href="/explore"
-                className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] dark:hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-white/[0.04] transition-colors"
-              >
-                <Compass className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                <span>Explore</span>
+                <HomeIcon className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                <span>Home</span>
               </a>
 
               <a

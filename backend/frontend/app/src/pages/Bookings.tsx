@@ -24,7 +24,7 @@ import {
   Loader2,
   Star,
   Sparkles,
-  Compass,
+  Users,
   Wallet,
   Settings as SettingsIcon,
   MoreVertical,
@@ -581,15 +581,15 @@ export function Bookings() {
             </div>
           </div>
 
-          {/* Explore Shortcut */}
+          {/* Creators Shortcut */}
           <div className="pb-5 border-b border-[#DADDE1] dark:border-[#2f3032]">
             <a
-              href="/explore"
+              href="/creators"
               className="flex items-center justify-between p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-[#1e1f20] transition-colors group"
             >
               <div className="flex items-center gap-2.5">
-                <Compass className="w-4 h-4 text-[#9747FF]" />
-                <span className="text-sm font-medium text-gray-800 dark:text-gray-200">Explore Creators</span>
+                <Users className="w-4 h-4 text-[#9747FF]" />
+                <span className="text-sm font-medium text-gray-800 dark:text-gray-200">Browse Creators</span>
               </div>
               <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-[#9747FF] transition-colors" />
             </a>

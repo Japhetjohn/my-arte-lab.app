@@ -18,7 +18,6 @@ import {
   Clock,
   Menu,
   Home,
-  Compass,
   Users,
   Calendar,
   Wallet
@@ -42,7 +41,6 @@ interface NavItem {
 
 const mobileNavItems: NavItem[] = [
   { path: '/home', label: 'Home', icon: Home },
-  { path: '/explore', label: 'Explore', icon: Compass },
   { path: '/creators', label: 'Creators', icon: Users },
   { path: '/bookings', label: 'Bookings', icon: Calendar, authOnly: true },
   { path: '/messages', label: 'Messages', icon: MessageSquare, authOnly: true },
@@ -107,8 +105,8 @@ export function TopNavigation({
 
     setMobileSearchOpen(false);
 
-    const targetUrl = `/explore?q=${encodeURIComponent(trimmed)}`;
-    if (window.location.pathname === '/explore') {
+    const targetUrl = `/creators?q=${encodeURIComponent(trimmed)}`;
+    if (window.location.pathname === '/creators') {
       window.location.search = `?q=${encodeURIComponent(trimmed)}`;
     } else {
       if (onNavigate) {
@@ -415,15 +413,6 @@ export function TopNavigation({
                 }`}
               >
                 Home
-              </button>
-              <button 
-                type="button" 
-                onClick={() => handleNavClick('/explore')} 
-                className={`transition-colors hover:text-[#9747FF] cursor-pointer ${
-                  isCurrentActive('/explore') ? 'text-[#9747FF] font-semibold' : 'text-gray-700 dark:text-gray-300'
-                }`}
-              >
-                Explore
               </button>
               <button 
                 type="button" 

@@ -24,7 +24,6 @@ import {
   Calendar,
   Loader2,
   Sparkles,
-  Compass,
   Users,
   Wallet,
   Briefcase,
@@ -546,15 +545,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] dark:hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-[#1e1f20] transition-colors"
               >
                 <Sparkles className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                <span>Creative Feed</span>
-              </a>
-
-              <a
-                href="/explore"
-                className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] dark:hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-[#1e1f20] transition-colors"
-              >
-                <Compass className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                <span>Explore</span>
+                <span>Home</span>
               </a>
 
               <a

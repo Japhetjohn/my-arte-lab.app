@@ -22,7 +22,7 @@ import {
   Calendar,
   Wallet,
   Settings as SettingsIcon,
-  Compass,
+  Users,
   ArrowRight
 } from 'lucide-react';
 import { toast } from '@/components/ui/sonner';
@@ -539,8 +539,8 @@ export function Notifications() {
                         ? "You're all caught up! No unread notifications."
                         : "You don't have any notifications in this section yet."
                     }
-                    actionLabel="Explore Creators"
-                    onAction={() => (window.location.href = '/explore')}
+                    actionLabel="Browse Creators"
+                    onAction={() => (window.location.href = '/creators')}
                   />
                 </div>
               )}
@@ -581,16 +581,16 @@ export function Notifications() {
           {/* Quick links */}
           <div className="pb-5 border-b border-[#DADDE1] dark:border-[#2f3032]">
             <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400 mb-2">
-              Explore
+              Discover
             </h4>
             <div className="space-y-2">
               <a
-                href="/explore"
+                href="/creators"
                 className="flex items-center justify-between p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-[#1e1f20] transition-colors group"
               >
                 <div className="flex items-center gap-2.5">
-                  <Compass className="w-4 h-4 text-[#9747FF]" />
-                  <span className="text-sm font-medium text-gray-800 dark:text-gray-200">Explore Creators</span>
+                  <Users className="w-4 h-4 text-[#9747FF]" />
+                  <span className="text-sm font-medium text-gray-800 dark:text-gray-200">Browse Creators</span>
                 </div>
                 <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-[#9747FF] transition-colors" />
               </a>

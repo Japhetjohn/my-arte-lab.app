@@ -10,7 +10,6 @@ import {
   AlertCircle,
   ChevronRight,
   Sparkles,
-  Compass,
   Users,
   Calendar,
   Wallet,
@@ -314,15 +313,7 @@ export function DesktopWallet({
                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] dark:hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-[#1e1f20] transition-colors"
               >
                 <Sparkles className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                <span>Creative Feed</span>
-              </a>
-
-              <a
-                href="/explore"
-                className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] dark:hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-[#1e1f20] transition-colors"
-              >
-                <Compass className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                <span>Explore</span>
+                <span>Home</span>
               </a>
 
               <a
@@ -713,12 +704,12 @@ export function DesktopWallet({
               </a>
 
               <a
-                href="/explore"
+                href="/creators"
                 className="flex items-center justify-between p-2.5 rounded-xl hover:bg-gray-100/70 dark:hover:bg-[#1e1f20] transition-colors group"
               >
                 <div className="flex items-center gap-2.5">
-                  <Compass className="w-4 h-4 text-[#9747FF]" />
-                  <span className="text-sm font-medium text-gray-800 dark:text-gray-200">Explore Creators</span>
+                  <Users className="w-4 h-4 text-[#9747FF]" />
+                  <span className="text-sm font-medium text-gray-800 dark:text-gray-200">Browse Creators</span>
                 </div>
                 <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-[#9747FF] transition-colors" />
               </a>

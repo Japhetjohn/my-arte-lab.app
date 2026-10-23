@@ -20,7 +20,6 @@ import { Notifications } from '@/pages/Notifications';
 import { Settings } from '@/pages/Settings';
 import { CreatorProfile } from '@/pages/CreatorProfile';
 import { PostDetail } from '@/pages/PostDetail';
-import { Explore } from '@/pages/Explore';
 import { Creators } from '@/pages/Creators';
 import { Legal } from '@/pages/Legal';
 import { PrivacyPolicy } from '@/pages/PrivacyPolicy';
@@ -242,6 +241,12 @@ function AppContent() {
       return <BookingDetail bookingId={bookingMatch[1]} />;
     }
 
+    // Redirect /explore to /creators
+    if (normalizedPath === '/explore' || normalizedPath.startsWith('/explore/')) {
+      window.location.replace('/creators' + (window.location.search || ''));
+      return null;
+    }
+
     // Redirect obsolete Discover & Project routes cleanly to Home
     if (
       normalizedPath === '/discover' ||
@@ -268,7 +273,8 @@ function AppContent() {
       case '/profile':
         return <Settings />;
       case '/explore':
-        return <Explore />;
+        window.location.replace('/creators' + (window.location.search || ''));
+        return null;
       case '/creators':
         return <Creators />;
       case '/legal':

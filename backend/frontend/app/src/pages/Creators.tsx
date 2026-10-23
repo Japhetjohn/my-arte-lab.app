@@ -10,7 +10,6 @@ import { toast } from '@/components/ui/sonner';
 import type { Creator } from '@/types';
 import {
   Users,
-  Compass,
   Home,
   Sparkles,
   Calendar,
@@ -216,14 +215,6 @@ export function Creators() {
               >
                 <Home className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                 <span>Home</span>
-              </a>
-
-              <a
-                href="/explore"
-                className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] dark:hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-[#1e1f20] transition-colors"
-              >
-                <Compass className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                <span>Explore</span>
               </a>
 
               {/* Creators Active Link */}
@@ -475,19 +466,6 @@ export function Creators() {
               Explore Platform
             </h4>
             <div className="space-y-2">
-              <a
-                href="/explore"
-                className="flex items-center justify-between p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-[#1e1f20] transition-colors group"
-              >
-                <div className="flex items-center gap-2.5">
-                  <Compass className="w-4 h-4 text-[#9747FF]" />
-                  <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                    Explore Categories
-                  </span>
-                </div>
-                <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-[#9747FF] transition-colors" />
-              </a>
-
               <a
                 href="/home"
                 className="flex items-center justify-between p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-[#1e1f20] transition-colors group"

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { ArrowLeft, Loader2, Sparkles, Compass, Calendar, Wallet, Settings } from 'lucide-react';
+import { ArrowLeft, Loader2, Home as HomeIcon, Users, Calendar, Wallet, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SocialFeedCard, type FeedPost } from '@/components/social/SocialFeedCard';
 import { VerifiedBadge } from '@/components/shared/VerifiedBadge';
@@ -90,18 +90,18 @@ export function PostDetail({ postId: propPostId }: PostDetailProps) {
           <nav className="space-y-1">
             <a
               href="/home"
-              className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-[#9747FF] bg-purple-50/80 dark:bg-purple-950/30 transition-colors"
+              className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-white/[0.04] transition-colors"
             >
-              <Sparkles className="w-4 h-4 text-[#9747FF]" />
-              <span>Creative Feed</span>
+              <HomeIcon className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+              <span>Home</span>
             </a>
 
             <a
-              href="/explore"
+              href="/creators"
               className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-white/[0.04] transition-colors"
             >
-              <Compass className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-              <span>Explore</span>
+              <Users className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              <span>Browse Creators</span>
             </a>
 
             <a
