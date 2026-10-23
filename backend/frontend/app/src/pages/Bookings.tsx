@@ -45,7 +45,6 @@ import {
   Wallet,
   Settings as SettingsIcon,
   MoreVertical,
-  Plus,
   Package,
   ArrowRight,
   ShieldCheck,
@@ -72,9 +71,6 @@ export function Bookings() {
   const [bookings, setBookings] = useState<BookingWorkflowItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessingAction, setIsProcessingAction] = useState(false);
-
-  // Role switcher
-  const [roleFilter, setRoleFilter] = useState<'all' | 'client' | 'creator'>('all');
 
   // New Booking Modal
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
@@ -277,14 +273,8 @@ export function Bookings() {
     }
   };
 
-  // Filter bookings by role
-  const roleBookings = bookings.filter((b) => {
-    const isClient = user?.id === b.client._id;
-    const isCreator = user?.id === b.creator._id;
-    if (roleFilter === 'client' && !isClient) return false;
-    if (roleFilter === 'creator' && !isCreator) return false;
-    return true;
-  });
+  // All bookings for user
+  const roleBookings = bookings;
 
   // 1. Action Required: Bookings needing immediate attention
   const actionRequiredBookings = roleBookings.filter((b) => {
@@ -760,59 +750,6 @@ export function Bookings() {
                 </span>
               )}
             </div>
-
-            <div className="flex items-center gap-1.5">
-              {/* Role Toggle Switcher */}
-              <div className="inline-flex p-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-[11px] font-medium">
-                <button
-                  type="button"
-                  onClick={() => setRoleFilter('all')}
-                  className={cn(
-                    'px-2.5 py-1 rounded-full transition-colors',
-                    roleFilter === 'all'
-                      ? 'bg-white dark:bg-[#18191a] text-gray-900 dark:text-gray-100 font-semibold shadow-2xs'
-                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-900'
-                  )}
-                >
-                  All
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRoleFilter('client')}
-                  className={cn(
-                    'px-2.5 py-1 rounded-full transition-colors',
-                    roleFilter === 'client'
-                      ? 'bg-white dark:bg-[#18191a] text-gray-900 dark:text-gray-100 font-semibold shadow-2xs'
-                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-900'
-                  )}
-                >
-                  As Client
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRoleFilter('creator')}
-                  className={cn(
-                    'px-2.5 py-1 rounded-full transition-colors',
-                    roleFilter === 'creator'
-                      ? 'bg-white dark:bg-[#18191a] text-gray-900 dark:text-gray-100 font-semibold shadow-2xs'
-                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-900'
-                  )}
-                >
-                  As Creator
-                </button>
-              </div>
-
-              {/* Book Creator Shortcut */}
-              <Button
-                size="sm"
-                onClick={() => (window.location.href = '/explore')}
-                className="h-7.5 sm:h-8 px-2.5 sm:px-3.5 rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white text-[11px] sm:text-xs font-semibold shadow-2xs inline-flex items-center gap-1"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Book Creator</span>
-                <span className="sm:hidden">Book</span>
-              </Button>
-            </div>
           </div>
 
           {/* Bookings Stream - Organized by Sectional Priority without Cluttered Filter Bars */}
@@ -827,11 +764,7 @@ export function Bookings() {
                 <EmptyState
                   image="/images/empty-bookings.png"
                   title="No bookings found"
-                  description={
-                    roleFilter === 'all'
-                      ? "You haven't initiated or received any bookings yet."
-                      : `No bookings found under your ${roleFilter} account.`
-                  }
+                  description="You haven't initiated or received any bookings yet."
                   actionLabel="Browse Creators"
                   onAction={() => (window.location.href = '/explore')}
                 />
