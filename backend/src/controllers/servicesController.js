@@ -769,26 +769,30 @@ exports.updateService = catchAsync(async (req, res, next) => {
 });
 
 /**
- * Delete a service
+ * Delete a service / creative post
  */
 exports.deleteService = catchAsync(async (req, res, next) => {
   const { serviceId } = req.params;
 
-  const user = await User.findById(req.user._id);
+  if (!req.user || !req.user._id) {
+    return next(new ErrorHandler('Authentication required', 401));
+  }
 
-  if (user.role !== 'creator') {
-    return next(new ErrorHandler('Only creators can delete services', 403));
+  const user = await User.findById(req.user._id);
+  if (!user) {
+    return next(new ErrorHandler('User not found', 404));
   }
 
   const service = user.services.id(serviceId);
   if (!service) {
-    return next(new ErrorHandler('Service not found', 404));
+    return next(new ErrorHandler('Post not found or you are not authorized to delete it', 404));
   }
 
   user.services.pull(serviceId);
   await user.save({ validateBeforeSave: false });
 
-  successResponse(res, 200, 'Service deleted successfully', {
+  successResponse(res, 200, 'Post deleted successfully', {
+    serviceId,
     services: user.services
   });
 });

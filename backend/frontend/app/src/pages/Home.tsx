@@ -198,6 +198,20 @@ export function Home() {
     loadFeed(true);
   }, []);
 
+  // Instant post deletion sync across Home feed
+  useEffect(() => {
+    const handleGlobalPostDeleted = (e: any) => {
+      const deletedId = e.detail?.postId;
+      if (deletedId) {
+        setPosts((prev) =>
+          prev.filter((p) => p._id !== deletedId && (p as any).serviceId !== deletedId)
+        );
+      }
+    };
+    window.addEventListener('postDeleted', handleGlobalPostDeleted);
+    return () => window.removeEventListener('postDeleted', handleGlobalPostDeleted);
+  }, []);
+
   const handleRefresh = useCallback(() => {
     if (isRefreshing) return;
     setIsRefreshing(true);
@@ -526,7 +540,15 @@ export function Home() {
           ) : (
             <div className="flex flex-col gap-0 -mx-3 sm:mx-0 bg-white dark:bg-[#18191a]">
               {posts.map((post) => (
-                <SocialFeedCard key={post._id} post={post} />
+                <SocialFeedCard
+                  key={post._id}
+                  post={post}
+                  onPostDeleted={() => {
+                    setPosts((prev) =>
+                      prev.filter((p) => p._id !== post._id && (p as any).serviceId !== post._id)
+                    );
+                  }}
+                />
               ))}
 
               {/* Load More Pagination */}

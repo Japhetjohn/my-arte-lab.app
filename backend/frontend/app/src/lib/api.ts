@@ -263,5 +263,8 @@ export const socialService = {
 
   createPost: (data: { title?: string; description: string; images?: string[]; directLink?: string }) =>
     api.post('/services', data),
+
+  deletePost: (serviceId: string) =>
+    api.delete(`/services/${serviceId}`),
 };
 

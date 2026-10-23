@@ -271,7 +271,7 @@ export function Creators() {
            ========================================================================= */}
         <main className="col-span-1 lg:col-span-6 w-full max-w-xl mx-auto flex flex-col pb-16">
           {/* Header */}
-          <div className="px-4 pt-2 pb-3.5 flex items-center justify-between border-b border-[#DADDE1] dark:border-[#2f3032]">
+          <div className="px-4 pt-2 pb-3.5 flex items-center justify-between bg-white dark:bg-[#18191a] border-b border-[#DADDE1] dark:border-[#2f3032]">
             <div className="flex items-center gap-2.5">
               <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
                 Creators
@@ -286,14 +286,14 @@ export function Creators() {
 
           {/* List Content */}
           {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-24 gap-3">
+            <div className="flex flex-col items-center justify-center py-24 gap-3 bg-white dark:bg-[#18191a]">
               <Loader2 className="w-6 h-6 animate-spin text-[#9747FF]" />
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
                 Loading creators...
               </p>
             </div>
           ) : creators.length === 0 ? (
-            <div className="py-16 px-4">
+            <div className="py-16 px-4 bg-white dark:bg-[#18191a]">
               <EmptyState
                 image="/images/empty-search.png"
                 title="No creators found"
@@ -303,7 +303,7 @@ export function Creators() {
               />
             </div>
           ) : (
-            <div className="flex flex-col divide-y divide-[#DADDE1] dark:divide-[#2f3032] border-b border-[#DADDE1] dark:border-[#2f3032]">
+            <div className="flex flex-col divide-y divide-[#DADDE1] dark:divide-[#2f3032] bg-white dark:bg-[#18191a] border-b border-[#DADDE1] dark:border-[#2f3032]">
               {creators.map((creator) => {
                 const creatorId = creator.id || (creator as any)._id;
                 const profileUrl = getCreatorProfileUrl(creator as any);

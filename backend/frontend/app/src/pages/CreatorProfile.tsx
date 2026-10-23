@@ -220,6 +220,22 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
     setPosts(prev => prev.map(p => p._id === updatedPost._id ? updatedPost : p));
   };
 
+  // Instant post deletion sync across profile
+  useEffect(() => {
+    const handleGlobalPostDeleted = (e: any) => {
+      const deletedId = e.detail?.postId;
+      if (deletedId) {
+        setPosts(prev => prev.filter(p => p._id !== deletedId && (p as any).serviceId !== deletedId));
+        setCreator(prev => prev ? {
+          ...prev,
+          services: ((prev as any).services || []).filter((s: any) => (s._id || s.id) !== deletedId)
+        } : prev);
+      }
+    };
+    window.addEventListener('postDeleted', handleGlobalPostDeleted);
+    return () => window.removeEventListener('postDeleted', handleGlobalPostDeleted);
+  }, []);
+
   // Toggle favorite/bookmark
   const handleToggleFavorite = async () => {
     if (!currentUser) {
@@ -689,6 +705,13 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                     key={post._id}
                     post={post}
                     onPostUpdated={handlePostUpdated}
+                    onPostDeleted={() => {
+                      setPosts(prev => prev.filter(p => p._id !== post._id && (p as any).serviceId !== post._id));
+                      setCreator(prev => prev ? {
+                        ...prev,
+                        services: ((prev as any).services || []).filter((s: any) => (s._id || s.id) !== post._id && (s._id || s.id) !== post.serviceId)
+                      } : prev);
+                    }}
                   />
                 ))}
               </div>

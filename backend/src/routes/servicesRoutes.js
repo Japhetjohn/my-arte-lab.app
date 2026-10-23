@@ -33,7 +33,7 @@ router.post('/:serviceId/comments/:commentId/like', protect, toggleCommentLike);
 router.get('/', protect, getMyServices);
 router.post('/', protect, addService);
 router.put('/:serviceId', protect, updateService);
-router.delete('/:serviceId', deleteService);
+router.delete('/:serviceId', protect, deleteService);
 
 router.post('/:serviceId/images', protect, upload.single('image'), uploadServiceImage);
 router.delete('/:serviceId/images/:imageIndex', protect, deleteServiceImage);

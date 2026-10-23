@@ -11,6 +11,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Users,
+  Trash2,
+  Loader2,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -18,6 +20,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/sonner';
 import { socialService } from '@/lib/api';
 import { getAvatarUrl, getImageUrl } from '@/lib/imageUrl';
@@ -131,7 +142,7 @@ export function SocialFeedCard({
   post,
   className,
   defaultExpandedComments,
-  onPostDeleted: _onPostDeleted,
+  onPostDeleted,
 }: SocialFeedCardProps) {
   const { user } = useAuth();
   const serviceId = post.serviceId || post._id;
@@ -141,6 +152,41 @@ export function SocialFeedCard({
   const [isLiking, setIsLiking] = useState(false);
   const [showComments, setShowComments] = useState(defaultExpandedComments || false);
   const [commentsCount, setCommentsCount] = useState(post.commentsCount || 0);
+
+  // Post deletion states
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeleted, setIsDeleted] = useState(false);
+
+  // Check if current user is the owner/author of the post
+  const isOwner = Boolean(
+    user &&
+    post.creator &&
+    (String((user as any)._id || user.id) === String(post.creator._id || (post.creator as any).id))
+  );
+
+  const handleDeletePost = async () => {
+    setIsDeleting(true);
+    try {
+      await socialService.deletePost(serviceId);
+      toast.success('Post deleted successfully');
+      setIsDeleted(true);
+      if (onPostDeleted) {
+        onPostDeleted();
+      }
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('postDeleted', { detail: { postId: serviceId } })
+        );
+      }
+    } catch (error: any) {
+      console.error('Failed to delete post:', error);
+      toast.error(error.response?.data?.message || 'Failed to delete post');
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteDialog(false);
+    }
+  };
 
   // Deep link targeted post highlight state
   const [isHighlighted, setIsHighlighted] = useState(false);
@@ -426,6 +472,10 @@ export function SocialFeedCard({
     ? descriptionText.length > 140 || descriptionText.split('\n').length > 3
     : descriptionText.length > 280 || descriptionText.split('\n').length > 5;
 
+  if (isDeleted) {
+    return null;
+  }
+
   return (
     <article
       id={`post-${serviceId}`}
@@ -522,6 +572,17 @@ export function SocialFeedCard({
                     className="cursor-pointer text-xs text-[#9747FF] dark:focus:bg-gray-800"
                   >
                     <span>Visit website link</span>
+                  </DropdownMenuItem>
+                </div>
+              )}
+              {isOwner && (
+                <div className="py-1">
+                  <DropdownMenuItem
+                    onClick={() => setShowDeleteDialog(true)}
+                    className="cursor-pointer text-xs text-red-600 dark:text-red-400 focus:text-red-700 dark:focus:text-red-300 focus:bg-red-50 dark:focus:bg-red-950/30 font-medium"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 mr-2 text-red-500" />
+                    <span>Delete post</span>
                   </DropdownMenuItem>
                 </div>
               )}
@@ -765,6 +826,47 @@ export function SocialFeedCard({
           />
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="sm:max-w-md bg-white dark:bg-[#1e1f20] rounded-2xl border border-gray-200 dark:border-gray-800 p-6">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold text-gray-900 dark:text-gray-100">
+              Delete Post?
+            </DialogTitle>
+            <DialogDescription className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+              Are you sure you want to delete this post? This action will permanently remove this creative work from your profile and the feed.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex flex-row justify-end gap-2.5 mt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowDeleteDialog(false)}
+              disabled={isDeleting}
+              className="rounded-xl border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleDeletePost}
+              disabled={isDeleting}
+              className="rounded-xl bg-red-600 hover:bg-red-700 text-white flex items-center gap-2 cursor-pointer"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Deleting...</span>
+                </>
+              ) : (
+                <span>Delete</span>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </article>
   );
 }

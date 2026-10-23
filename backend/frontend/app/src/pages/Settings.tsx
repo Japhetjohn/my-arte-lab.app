@@ -236,6 +236,20 @@ export function Settings() {
     setMyPosts((prev) => prev.map((p) => (p._id === updatedPost._id ? updatedPost : p)));
   };
 
+  // Instant post deletion sync across settings profile
+  useEffect(() => {
+    const handleGlobalPostDeleted = (e: any) => {
+      const deletedId = e.detail?.postId;
+      if (deletedId) {
+        setMyPosts((prev) =>
+          prev.filter((p) => p._id !== deletedId && (p as any).serviceId !== deletedId)
+        );
+      }
+    };
+    window.addEventListener('postDeleted', handleGlobalPostDeleted);
+    return () => window.removeEventListener('postDeleted', handleGlobalPostDeleted);
+  }, []);
+
   // Load user data into form
   useEffect(() => {
     if (currentUser) {
@@ -891,6 +905,11 @@ export function Settings() {
                     key={post._id}
                     post={post}
                     onPostUpdated={handlePostUpdated}
+                    onPostDeleted={() => {
+                      setMyPosts((prev) =>
+                        prev.filter((p) => p._id !== post._id && (p as any).serviceId !== post._id)
+                      );
+                    }}
                   />
                 ))}
               </div>
