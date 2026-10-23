@@ -615,16 +615,19 @@ export function Bookings() {
               </Button>
             )}
 
-            {/* 5. General Workspace Navigation Button */}
-            <Button
-              size="sm"
-              variant="outline"
+            {/* 5. General Workspace Navigation Button - borderless, clean arrow on mobile */}
+            <button
+              type="button"
               onClick={() => (window.location.href = `/bookings/${b._id}`)}
-              className="h-8 px-3.5 text-xs rounded-full border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 font-medium inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="p-1.5 sm:px-2.5 sm:py-1 text-xs text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 transition-colors inline-flex items-center gap-1 cursor-pointer outline-none group border-0 bg-transparent"
+              title="Open Workspace"
+              aria-label="Open Workspace"
             >
-              <span>Workspace</span>
-              <ArrowRight className="w-3 h-3 text-gray-400" />
-            </Button>
+              <span className="hidden sm:inline font-medium text-gray-600 dark:text-gray-400 group-hover:text-[#9747FF] transition-colors">
+                Workspace
+              </span>
+              <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-[#9747FF] group-hover:translate-x-0.5 transition-all" />
+            </button>
           </div>
         </div>
       </article>
