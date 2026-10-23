@@ -32,6 +32,7 @@ import {
   ArrowLeft,
   Calendar,
   MessageSquare,
+  Check,
   CheckCircle2,
   AlertCircle,
   UploadCloud,
@@ -425,6 +426,12 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
   };
 
   const timelineSteps = getTimelineSteps();
+  const completedStepsCount = timelineSteps.filter((s) => s.done).length;
+  const firstIncompleteIdx = timelineSteps.findIndex((s) => !s.done);
+  const activeStepIdx = firstIncompleteIdx !== -1 ? firstIncompleteIdx : timelineSteps.length - 1;
+  const currentStep = timelineSteps[activeStepIdx];
+  const progressPercentage = (completedStepsCount / (timelineSteps.length - 1)) * 100;
+
   const deliverables = booking.expectedDeliverables || [];
   const submissions = booking.submissions || [];
   const referenceImages = booking.attachments || [];
@@ -562,46 +569,78 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
             </h1>
           </div>
 
-          {/* Milestone Progress Tracker (Natural background, ash-gray divider) */}
-          <div className="pb-5 border-b border-[#DADDE1] dark:border-[#2f3032] space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-              Project Milestone Tracker
-            </h4>
+          {/* Milestone Progress Tracker (Sleek connected track, natural background, ash-gray divider) */}
+          <div className="pb-5 border-b border-[#DADDE1] dark:border-[#2f3032] space-y-3.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  Project Milestones
+                </h4>
+                <span className="text-gray-300 dark:text-gray-700">•</span>
+                <span className="text-xs font-semibold text-[#9747FF]">
+                  {booking.status === 'completed'
+                    ? 'All Milestones Completed'
+                    : `Step ${activeStepIdx + 1} of ${timelineSteps.length}: ${currentStep?.label}`}
+                </span>
+              </div>
+              <span className="text-[11px] font-medium text-gray-400 dark:text-gray-500 hidden sm:inline-block">
+                {completedStepsCount} of {timelineSteps.length} complete
+              </span>
+            </div>
 
-            <div className="flex items-center justify-between gap-1 overflow-x-auto pb-1">
-              {timelineSteps.map((step, idx) => (
-                <div key={step.id} className="flex items-center flex-1 min-w-[70px]">
-                  <div className="flex flex-col items-center">
-                    <div
-                      className={cn(
-                        'w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all',
-                        step.done && 'bg-[#9747FF] text-white',
-                        step.active && !step.done && 'bg-purple-100 dark:bg-purple-950 text-[#9747FF] ring-2 ring-[#9747FF]',
-                        !step.active && 'bg-gray-200 dark:bg-gray-800 text-gray-400'
-                      )}
-                    >
-                      {step.done ? <CheckCircle2 className="w-4 h-4" /> : idx + 1}
+            {/* Stepper Track */}
+            <div className="relative pt-1 pb-1">
+              {/* Continuous Track Line running through circle centers (10% to 90%) */}
+              <div className="absolute top-[14px] sm:top-[16px] left-[10%] right-[10%] h-0.5 bg-gray-200 dark:bg-[#2f3032] -translate-y-1/2 z-0">
+                <div
+                  className="h-full bg-[#9747FF] transition-all duration-500 ease-out"
+                  style={{ width: `${Math.min(100, Math.max(0, progressPercentage))}%` }}
+                />
+              </div>
+
+              {/* 5 Step Nodes */}
+              <div className="relative z-10 grid grid-cols-5 gap-1">
+                {timelineSteps.map((step, idx) => {
+                  const isDone = step.done;
+                  const isCurrent = idx === activeStepIdx && booking.status !== 'completed';
+
+                  return (
+                    <div key={step.id} className="flex flex-col items-center text-center">
+                      {/* Step Circle Node */}
+                      <div
+                        className={cn(
+                          'w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all',
+                          isDone
+                            ? 'bg-[#9747FF] text-white shadow-xs'
+                            : isCurrent
+                            ? 'bg-white dark:bg-[#18191a] border-2 border-[#9747FF] text-[#9747FF] ring-4 ring-[#9747FF]/15'
+                            : 'bg-white dark:bg-[#18191a] border border-gray-300 dark:border-gray-700 text-gray-400 dark:text-gray-500'
+                        )}
+                      >
+                        {isDone ? (
+                          <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.5]" />
+                        ) : (
+                          <span className="text-[11px] sm:text-xs">{idx + 1}</span>
+                        )}
+                      </div>
+
+                      {/* Step Label */}
+                      <span
+                        className={cn(
+                          'text-[10px] sm:text-xs mt-2 text-center font-medium leading-tight max-w-[64px] sm:max-w-[85px] transition-colors',
+                          isCurrent
+                            ? 'text-[#9747FF] font-bold'
+                            : isDone
+                            ? 'text-gray-900 dark:text-gray-100 font-semibold'
+                            : 'text-gray-400 dark:text-gray-500'
+                        )}
+                      >
+                        {step.label}
+                      </span>
                     </div>
-                    <span
-                      className={cn(
-                        'text-[10px] mt-1 text-center font-medium',
-                        step.active ? 'text-gray-900 dark:text-gray-100 font-semibold' : 'text-gray-400'
-                      )}
-                    >
-                      {step.label}
-                    </span>
-                  </div>
-
-                  {idx < timelineSteps.length - 1 && (
-                    <div
-                      className={cn(
-                        'flex-1 h-0.5 mx-1.5 rounded-full',
-                        step.done ? 'bg-[#9747FF]' : 'bg-[#DADDE1] dark:bg-[#2f3032]'
-                      )}
-                    />
-                  )}
-                </div>
-              ))}
+                  );
+                })}
+              </div>
             </div>
           </div>
 
