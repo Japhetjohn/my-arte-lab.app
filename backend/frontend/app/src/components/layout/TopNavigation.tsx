@@ -194,29 +194,24 @@ export function TopNavigation({
               <Search className="w-5 h-5 sm:w-6 sm:h-6 stroke-[1.75]" />
             </button>
 
-            {/* Profile / Person Icon */}
-            {user ? (
-              <button
-                type="button"
-                onClick={() => handleNavClick('/profile')}
-                className="p-1.5 sm:p-2 text-gray-800 dark:text-gray-200 hover:text-gray-950 dark:hover:text-white transition-colors cursor-pointer outline-none focus:outline-none relative"
-                aria-label="Profile"
-              >
-                <User className="w-5 h-5 sm:w-6 sm:h-6 stroke-[1.75]" />
-                {(unreadNotifications > 0 || unreadMessages > 0) && (
-                  <span className="absolute top-1 sm:top-1.5 right-1 sm:right-1.5 w-2 h-2 rounded-full bg-[#9747FF]" />
-                )}
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => handleNavClick('/login')}
-                className="p-1.5 sm:p-2 text-gray-800 dark:text-gray-200 hover:text-gray-950 dark:hover:text-white transition-colors cursor-pointer outline-none focus:outline-none"
-                aria-label="Log in"
-              >
-                <User className="w-5 h-5 sm:w-6 sm:h-6 stroke-[1.75]" />
-              </button>
-            )}
+            {/* Notifications Bell Icon */}
+            <button
+              type="button"
+              onClick={() => handleNavClick(user ? '/notifications' : '/login')}
+              className={`p-1.5 sm:p-2 transition-colors cursor-pointer outline-none focus:outline-none relative ${
+                isCurrentActive('/notifications')
+                  ? 'text-[#9747FF]'
+                  : 'text-gray-800 dark:text-gray-200 hover:text-gray-950 dark:hover:text-white'
+              }`}
+              aria-label={`Notifications${user && unreadNotifications > 0 ? ` (${unreadNotifications} unread)` : ''}`}
+            >
+              <Bell className="w-5 h-5 sm:w-6 sm:h-6 stroke-[1.75]" />
+              {user && unreadNotifications > 0 && (
+                <span className="absolute top-0.5 right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-[#9747FF] text-white text-[10px] font-bold flex items-center justify-center leading-none shadow-2xs pointer-events-none">
+                  {unreadNotifications > 99 ? '99+' : unreadNotifications}
+                </span>
+              )}
+            </button>
 
             {/* Hamburger Menu (Far Right) */}
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
@@ -224,7 +219,7 @@ export function TopNavigation({
                 <button
                   type="button"
                   className="p-1.5 sm:p-2 text-gray-800 dark:text-gray-200 hover:text-gray-950 dark:hover:text-white transition-colors cursor-pointer outline-none focus:outline-none"
-                  aria-label="Open navigation menu"
+                  aria-label="Open menu"
                 >
                   <Menu className="w-5 h-5 sm:w-6 sm:h-6 stroke-[1.75]" />
                 </button>
@@ -285,8 +280,8 @@ export function TopNavigation({
                             </span>
                           )}
                           {item.path === '/notifications' && unreadNotifications > 0 && (
-                            <span className="ml-auto text-xs bg-red-500 text-white px-2 py-0.5 rounded-full font-bold">
-                              {unreadNotifications}
+                            <span className="ml-auto text-xs bg-[#9747FF] text-white px-2 py-0.5 rounded-full font-bold">
+                              {unreadNotifications > 99 ? '99+' : unreadNotifications}
                             </span>
                           )}
                         </button>
@@ -488,12 +483,12 @@ export function TopNavigation({
                   size="icon"
                   className="relative h-9 w-9 text-gray-700 dark:text-gray-300 hover:text-gray-950 dark:hover:text-white"
                   onClick={() => handleNavClick('/notifications')}
-                  aria-label="Notifications"
+                  aria-label={`Notifications${unreadNotifications > 0 ? ` (${unreadNotifications} unread)` : ''}`}
                 >
                   <Bell className="w-5 h-5" />
                   {unreadNotifications > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold">
-                      {unreadNotifications}
+                    <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 bg-[#9747FF] text-white text-[10px] rounded-full flex items-center justify-center font-bold shadow-2xs leading-none">
+                      {unreadNotifications > 99 ? '99+' : unreadNotifications}
                     </span>
                   )}
                 </Button>

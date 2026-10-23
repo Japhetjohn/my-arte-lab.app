@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -49,6 +50,10 @@ const notificationIcons: Record<string, React.ReactNode> = {
   post_like: <Heart className="w-4 h-4 text-[#9747FF] fill-[#9747FF]" />,
   post_comment: <MessageSquare className="w-4 h-4 text-[#9747FF]" />,
   post_reply: <MessageSquare className="w-4 h-4 text-[#9747FF]" />,
+  post_mention: <MessageSquare className="w-4 h-4 text-[#9747FF]" />,
+  comment_mention: <MessageSquare className="w-4 h-4 text-[#9747FF]" />,
+  comment_like: <Heart className="w-4 h-4 text-[#9747FF] fill-[#9747FF]" />,
+  review_received: <CheckCircle className="w-4 h-4 text-[#9747FF]" />,
   booking_request: <Briefcase className="w-4 h-4 text-blue-500" />,
   booking_accepted: <CheckCircle className="w-4 h-4 text-emerald-500" />,
   booking_rejected: <AlertCircle className="w-4 h-4 text-rose-500" />,
@@ -65,10 +70,15 @@ const notificationIcons: Record<string, React.ReactNode> = {
 
 export function Notifications() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
+
+  const broadcastUnreadCount = (count: number) => {
+    window.dispatchEvent(new CustomEvent('notificationsUpdated', { detail: { unreadCount: count } }));
+  };
 
   useEffect(() => {
     fetchNotifications();
@@ -79,8 +89,11 @@ export function Notifications() {
   const fetchNotifications = async () => {
     try {
       const response = await api.get('/notifications?limit=100');
-      setNotifications(response.data.data?.notifications || []);
-      setUnreadCount(response.data.data?.unreadCount || 0);
+      const items = response.data.data?.notifications || [];
+      const unread = response.data.data?.unreadCount || 0;
+      setNotifications(items);
+      setUnreadCount(unread);
+      broadcastUnreadCount(unread);
     } catch (error: any) {
       console.error('Failed to fetch notifications:', error);
     } finally {
@@ -94,7 +107,11 @@ export function Notifications() {
       setNotifications(prev => 
         prev.map(n => n._id === notificationId ? { ...n, read: true } : n)
       );
-      setUnreadCount(prev => Math.max(0, prev - 1));
+      setUnreadCount(prev => {
+        const next = Math.max(0, prev - 1);
+        broadcastUnreadCount(next);
+        return next;
+      });
     } catch (error) {
       console.error('Failed to mark as read:', error);
     }
@@ -105,6 +122,7 @@ export function Notifications() {
       await api.patch('/notifications/mark-all-read');
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
       setUnreadCount(0);
+      broadcastUnreadCount(0);
       toast.success('All notifications marked as read');
     } catch (error) {
       toast.error('Failed to mark all as read');
@@ -116,7 +134,11 @@ export function Notifications() {
       await api.delete(`/notifications/${notificationId}`);
       const target = notifications.find(n => n._id === notificationId);
       if (target && !target.read) {
-        setUnreadCount(prev => Math.max(0, prev - 1));
+        setUnreadCount(prev => {
+          const next = Math.max(0, prev - 1);
+          broadcastUnreadCount(next);
+          return next;
+        });
       }
       setNotifications(prev => prev.filter(n => n._id !== notificationId));
       toast.success('Notification deleted');
@@ -140,6 +162,7 @@ export function Notifications() {
       await api.delete('/notifications/all');
       setNotifications([]);
       setUnreadCount(0);
+      broadcastUnreadCount(0);
       toast.success('All notifications cleared');
     } catch (error) {
       toast.error('Failed to clear notifications');
@@ -151,7 +174,11 @@ export function Notifications() {
       markAsRead(notification._id);
     }
     if (notification.link) {
-      window.location.href = notification.link;
+      if (notification.link.startsWith('/')) {
+        navigate(notification.link);
+      } else {
+        window.location.href = notification.link;
+      }
     }
   };
 
@@ -176,16 +203,22 @@ export function Notifications() {
     }
   };
 
-  const artworkCount = notifications.filter(n => n.type.startsWith('post_')).length;
-  const bookingsCount = notifications.filter(n => n.type.includes('booking') || n.type.includes('payment') || n.type === 'work_delivered').length;
-  const messagesCount = notifications.filter(n => n.type === 'message').length;
+  const isArtworkType = (type: string) =>
+    type.startsWith('post_') || type.startsWith('comment_');
+  const isBookingsType = (type: string) =>
+    type.includes('booking') || type.includes('payment') || type === 'work_delivered' || type === 'counter_proposal' || type === 'review_received';
+  const isMessagesType = (type: string) => type === 'message';
+
+  const artworkCount = notifications.filter(n => isArtworkType(n.type)).length;
+  const bookingsCount = notifications.filter(n => isBookingsType(n.type)).length;
+  const messagesCount = notifications.filter(n => isMessagesType(n.type)).length;
 
   const filteredNotifications = notifications.filter(n => {
     if (activeTab === 'all') return true;
     if (activeTab === 'unread') return !n.read;
-    if (activeTab === 'artwork') return n.type.startsWith('post_');
-    if (activeTab === 'bookings') return n.type.includes('booking') || n.type.includes('payment') || n.type === 'work_delivered';
-    if (activeTab === 'messages') return n.type === 'message';
+    if (activeTab === 'artwork') return isArtworkType(n.type);
+    if (activeTab === 'bookings') return isBookingsType(n.type);
+    if (activeTab === 'messages') return isMessagesType(n.type);
     return true;
   });
 

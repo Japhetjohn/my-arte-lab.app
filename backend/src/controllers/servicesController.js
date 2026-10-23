@@ -346,17 +346,27 @@ exports.toggleLike = catchAsync(async (req, res, next) => {
 
     // Send real-time notification to the post creator (skip self-likes)
     if (userId.toString() !== creator._id.toString()) {
-      const senderName = req.user.name || `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim() || 'Someone';
-      const artworkTitle = service.title ? `"${service.title.slice(0, 40)}"` : 'your artwork';
-      Notification.createNotification({
+      const existingLike = await Notification.findOne({
         recipient: creator._id,
         sender: userId,
         type: 'post_like',
-        title: 'New Like on your Artwork',
-        message: `${senderName} liked ${artworkTitle}`,
-        link: `/home?post=${serviceId}`,
-        metadata: { serviceId }
-      }).catch(err => console.error('Failed to create post_like notification:', err));
+        'metadata.serviceId': serviceId,
+        read: false
+      });
+
+      if (!existingLike) {
+        const senderName = req.user.name || `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim() || 'Someone';
+        const postTitle = service.title ? `"${service.title.slice(0, 40)}"` : 'your post';
+        Notification.createNotification({
+          recipient: creator._id,
+          sender: userId,
+          type: 'post_like',
+          title: 'New Like on your Post',
+          message: `${senderName} liked ${postTitle}`,
+          link: `/post/${serviceId}`,
+          metadata: { serviceId }
+        }).catch(err => console.error('Failed to create post_like notification:', err));
+      }
     }
   }
 
@@ -457,19 +467,62 @@ exports.addComment = catchAsync(async (req, res, next) => {
 
   const createdComment = service.comments[service.comments.length - 1];
 
-  // Send real-time notification to the post creator (skip self-comments)
-  if (req.user._id.toString() !== creator._id.toString()) {
-    const senderName = req.user.name || `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim() || 'Someone';
-    const preview = text.trim().slice(0, 60) + (text.trim().length > 60 ? '...' : '');
+  // Parse @mentions from comment text
+  const senderName = req.user.name || `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim() || 'Someone';
+  const preview = text.trim().slice(0, 60) + (text.trim().length > 60 ? '...' : '');
+  const mentionMatches = text.match(/@([\w.-]+)/g);
+  const uniqueHandles = [...new Set(mentionMatches ? mentionMatches.map(m => m.slice(1).toLowerCase()) : [])];
+
+  let mentionedUsers = [];
+  if (uniqueHandles.length > 0) {
+    mentionedUsers = await User.find({
+      $or: [
+        { seoSlug: { $in: uniqueHandles } },
+        { email: { $in: uniqueHandles.map(h => new RegExp('^' + h + '@', 'i')) } },
+        { firstName: { $in: uniqueHandles.map(h => new RegExp('^' + h + '$', 'i')) } }
+      ]
+    }).select('_id name firstName lastName email seoSlug').lean();
+  }
+
+  // Deduplicate mentioned users by _id and filter out self-mentions
+  const mentionedUserMap = new Map();
+  for (const u of mentionedUsers) {
+    if (u._id.toString() !== req.user._id.toString()) {
+      mentionedUserMap.set(u._id.toString(), u);
+    }
+  }
+
+  // Check if post creator was mentioned (to avoid double notifying the author)
+  const creatorIdStr = creator._id.toString();
+  const creatorWasMentioned = mentionedUserMap.has(creatorIdStr);
+  if (creatorWasMentioned) {
+    mentionedUserMap.delete(creatorIdStr);
+  }
+
+  // Notify post creator (skip if author commented on their own post)
+  if (req.user._id.toString() !== creatorIdStr) {
     Notification.createNotification({
       recipient: creator._id,
       sender: req.user._id,
-      type: 'post_comment',
-      title: 'New Comment on your Artwork',
-      message: `${senderName} commented: "${preview}"`,
-      link: `/home?post=${serviceId}&comment=${createdComment._id}`,
+      type: creatorWasMentioned ? 'post_mention' : 'post_comment',
+      title: creatorWasMentioned ? 'Mention on your Post' : 'New Comment on your Post',
+      message: creatorWasMentioned ? `${senderName} mentioned you: "${preview}"` : `${senderName} commented: "${preview}"`,
+      link: `/post/${serviceId}?comment=${createdComment._id}`,
       metadata: { serviceId, commentId: createdComment._id }
-    }).catch(err => console.error('Failed to create post_comment notification:', err));
+    }).catch(err => console.error('Failed to create post comment/mention notification:', err));
+  }
+
+  // Notify all other mentioned users individually
+  for (const mentionedUser of mentionedUserMap.values()) {
+    Notification.createNotification({
+      recipient: mentionedUser._id,
+      sender: req.user._id,
+      type: 'post_mention',
+      title: 'You were mentioned in a comment',
+      message: `${senderName} mentioned you in a comment: "${preview}"`,
+      link: `/post/${serviceId}?comment=${createdComment._id}`,
+      metadata: { serviceId, commentId: createdComment._id, mentionedHandle: mentionedUser.seoSlug || mentionedUser.firstName }
+    }).catch(err => console.error('Failed to create post_mention notification:', err));
   }
 
   successResponse(res, 201, 'Comment added successfully', {

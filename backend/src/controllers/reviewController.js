@@ -1,6 +1,7 @@
 const Review = require('../models/Review');
 const Booking = require('../models/Booking');
 const User = require('../models/User');
+const Notification = require('../models/Notification');
 const { successResponse } = require('../utils/apiResponse');
 const { ErrorHandler, catchAsync } = require('../utils/errorHandler');
 const emailConfig = require('../config/email');
@@ -54,6 +55,17 @@ exports.createReview = catchAsync(async (req, res, next) => {
       <p>Login to your account to view details.</p>
     `
   }).catch(err => console.error('Email failed:', err));
+
+  Notification.createNotification({
+    recipient: booking.creator._id,
+    sender: req.user._id,
+    type: 'review_received',
+    title: 'New Review Received',
+    message: `${req.user.name || 'A client'} left you a ${rating}-star review`,
+    link: `/bookings/${bookingId}`,
+    booking: bookingId,
+    metadata: { bookingId, rating }
+  }).catch(err => console.error('Failed to create review notification:', err));
 
   successResponse(res, 201, 'Review submitted successfully', { review });
 });

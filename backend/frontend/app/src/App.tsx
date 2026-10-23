@@ -80,10 +80,21 @@ function AppContent() {
       fetchCounts();
     };
     window.addEventListener('messagesRead', handleMessagesRead);
+
+    // Listen for notifications being updated or marked as read
+    const handleNotificationsUpdated = (e: any) => {
+      if (typeof e?.detail?.unreadCount === 'number') {
+        setUnreadNotifications(e.detail.unreadCount);
+      } else {
+        fetchCounts();
+      }
+    };
+    window.addEventListener('notificationsUpdated', handleNotificationsUpdated);
     
     return () => {
       clearInterval(interval);
       window.removeEventListener('messagesRead', handleMessagesRead);
+      window.removeEventListener('notificationsUpdated', handleNotificationsUpdated);
     };
   }, [isAuthenticated]);
 
