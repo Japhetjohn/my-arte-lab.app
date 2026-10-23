@@ -31,8 +31,8 @@ export function BookingTracker({ booking }: BookingTrackerProps) {
                   className={cn(
                     'w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors',
                     isCompleted && 'bg-green-500 text-white',
-                    isCurrent && 'bg-[#8A2BE2] text-white',
-                    isPending && 'bg-gray-100 text-gray-400'
+                    isCurrent && 'bg-[#9747FF] text-white',
+                    isPending && 'bg-gray-100 dark:bg-gray-800 text-gray-400'
                   )}
                 >
                   {isCompleted ? (
@@ -47,7 +47,7 @@ export function BookingTracker({ booking }: BookingTrackerProps) {
                   className={cn(
                     'text-xs mt-1.5 font-medium',
                     isCompleted && 'text-green-600',
-                    isCurrent && 'text-[#8A2BE2]',
+                    isCurrent && 'text-[#9747FF]',
                     isPending && 'text-gray-400'
                   )}
                 >
@@ -58,7 +58,7 @@ export function BookingTracker({ booking }: BookingTrackerProps) {
                 <div
                   className={cn(
                     'flex-1 h-0.5 mx-2 transition-colors',
-                    isCompleted ? 'bg-green-500' : 'bg-gray-200'
+                    isCompleted ? 'bg-green-500' : 'bg-gray-200 dark:bg-gray-700'
                   )}
                 />
               )}

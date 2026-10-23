@@ -1,85 +1,49 @@
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
-import { api } from '@/contexts/AuthContext';
-import { useAuth } from '@/contexts/AuthContext';
-import { getImageUrl } from '@/lib/imageUrl';
-import { 
-  Loader2, 
-  ArrowLeft, 
-  MessageSquare, 
-  DollarSign, 
-  CheckCircle,
-  Star,
-  Upload,
-  AlertCircle,
-  User
-} from 'lucide-react';
-import { toast } from '@/components/ui/sonner';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogTrigger,
 } from '@/components/ui/dialog';
-
-interface Booking {
-  _id: string;
-  bookingId: string;
-  serviceTitle: string;
-  serviceDescription: string;
-  amount: number;
-  currency: string;
-  status: string;
-  paymentStatus: string;
-  platformFee?: number;
-  creatorAmount?: number;
-  platformCommission?: number;
-  createdAt: string;
-  startDate: string;
-  endDate: string;
-  completedAt?: string;
-  cancellationReason?: string;
-  counterProposal?: {
-    amount: number;
-    proposedAt: string;
-    applied?: boolean;
-  };
-  client: {
-    _id: string;
-    name?: string;
-    firstName?: string;
-    lastName?: string;
-    avatar?: string;
-    email?: string;
-  };
-  creator: {
-    _id: string;
-    name?: string;
-    firstName?: string;
-    lastName?: string;
-    avatar?: string;
-    email?: string;
-    category?: string;
-  };
-  deliverables?: Array<{
-    title: string;
-    description: string;
-    fileUrl?: string;
-    links?: string[];
-    uploadedAt: string;
-  }>;
-  review?: {
-    rating: number;
-    comment: string;
-    createdAt: string;
-  };
-}
+import { VerifiedBadge } from '@/components/shared/VerifiedBadge';
+import { useAuth } from '@/contexts/AuthContext';
+import { getAvatarUrl, getImageUrl } from '@/lib/imageUrl';
+import {
+  bookingWorkflowService,
+  type BookingWorkflowItem,
+} from '@/lib/bookingWorkflow';
+import { uploadService } from '@/lib/api';
+import { cn } from '@/lib/utils';
+import { toast } from '@/components/ui/sonner';
+import {
+  ArrowLeft,
+  Calendar,
+  MessageSquare,
+  CheckCircle2,
+  AlertCircle,
+  UploadCloud,
+  ExternalLink,
+  Download,
+  Star,
+  Package,
+  ShieldCheck,
+  RotateCcw,
+  Sparkles,
+  Compass,
+  Wallet,
+  Settings,
+  Loader2,
+  FileText,
+  X,
+  FileCheck,
+  Send,
+  Eye,
+  Plus,
+} from 'lucide-react';
 
 interface BookingDetailProps {
   bookingId?: string;
@@ -87,776 +51,1230 @@ interface BookingDetailProps {
 
 export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps = {}) {
   const { user } = useAuth();
-  // Get booking ID from URL if not passed as prop
   const urlMatch = typeof window !== 'undefined' ? window.location.pathname.match(/\/bookings\/(.+)/) : null;
   const id = propBookingId || urlMatch?.[1];
-  const [booking, setBooking] = useState<Booking | null>(null);
+
+  const [booking, setBooking] = useState<BookingWorkflowItem | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' });
-  const [deliverableForm, setDeliverableForm] = useState({ title: '', description: '', fileUrl: '', links: '' });
+
+  // Submission Modal state
+  const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
+  const [submissionTitle, setSubmissionTitle] = useState('');
+  const [submissionDesc, setSubmissionDesc] = useState('');
+  const [submissionLinks, setSubmissionLinks] = useState('');
+  const [submissionFiles, setSubmissionFiles] = useState<string[]>([]);
+  const [isUploadingFile, setIsUploadingFile] = useState(false);
+  const [isSubmittingWork, setIsSubmittingWork] = useState(false);
+
+  // Revision Modal state
+  const [isRevisionModalOpen, setIsRevisionModalOpen] = useState(false);
+  const [revisionNotes, setRevisionNotes] = useState('');
+  const [isSubmittingRevision, setIsSubmittingRevision] = useState(false);
+
+  // Approval & Rating Modal state
+  const [isApprovalModalOpen, setIsApprovalModalOpen] = useState(false);
+  const [rating, setRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState('');
+  const [isSubmittingApproval, setIsSubmittingApproval] = useState(false);
+
+  // Counter proposal modal state
+  const [isCounterModalOpen, setIsCounterModalOpen] = useState(false);
   const [counterAmount, setCounterAmount] = useState('');
-  const [disputeForm, setDisputeForm] = useState({ reason: '', details: '' });
+  const [isSubmittingCounter, setIsSubmittingCounter] = useState(false);
+
+  // Image lightbox preview modal
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    if (id) fetchBooking();
+    if (id) {
+      fetchBookingDetails();
+    }
   }, [id]);
 
-  const fetchBooking = async () => {
+  // Check URL query parameters for direct modal triggers (e.g., ?action=submit or ?action=review)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const action = params.get('action');
+      if (action === 'submit') {
+        setIsSubmitModalOpen(true);
+      } else if (action === 'review') {
+        setIsApprovalModalOpen(true);
+      }
+    }
+  }, []);
+
+  const fetchBookingDetails = async () => {
     try {
       setIsLoading(true);
       setError(null);
-      const response = await api.get(`/bookings/${id}`);
-      const bookingData = response.data.data?.booking;
-      
-      if (!bookingData) {
-        setError('Booking not found');
-        return;
-      }
-      
-      // Ensure client and creator have names
-      if (bookingData.client) {
-        bookingData.client.name = bookingData.client.name || 
-          `${bookingData.client.firstName || ''} ${bookingData.client.lastName || ''}`.trim() || 
-          'Unknown Client';
-      }
-      if (bookingData.creator) {
-        bookingData.creator.name = bookingData.creator.name || 
-          `${bookingData.creator.firstName || ''} ${bookingData.creator.lastName || ''}`.trim() || 
-          'Unknown Creator';
-      }
-      
-      setBooking(bookingData);
-    } catch (error: any) {
-      console.error('Error fetching booking:', error);
-      setError(error.response?.data?.error || 'Failed to fetch booking');
-      toast.error(error.response?.data?.error || 'Failed to fetch booking');
+      const item = await bookingWorkflowService.getBooking(id!);
+      setBooking(item);
+    } catch (err: any) {
+      console.error('Error loading booking:', err);
+      setError(err.response?.data?.error || err.message || 'Failed to load booking');
+      toast.error('Could not load booking details');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const getUserName = (userObj: any) => {
-    if (!userObj) return 'Unknown';
-    return userObj.name || 
-      `${userObj.firstName || ''} ${userObj.lastName || ''}`.trim() || 
-      'Unknown User';
-  };
+  const isClient = user?.id === booking?.client?._id;
+  const isCreator = user?.id === booking?.creator?._id;
+  const otherParty = isClient ? booking?.creator : booking?.client;
 
-  const isClient = booking?.client?._id === user?.id;
-  const isCreator = booking?.creator?._id === user?.id;
-
-  const handleAcceptBooking = async () => {
+  // Actions
+  const handleAcceptRequest = async () => {
+    if (!booking) return;
     try {
-      await api.post(`/bookings/${id}/accept`);
-      toast.success('Booking accepted! Client has been notified to pay.');
-      fetchBooking();
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Failed to accept booking');
+      await bookingWorkflowService.acceptBooking(booking._id);
+      await bookingWorkflowService.startWork(booking._id);
+      toast.success('Booking accepted! Project is now In Progress.');
+      fetchBookingDetails();
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Failed to accept booking');
     }
   };
 
-  const handleRejectBooking = async (reason: string) => {
+  const handleDeclineRequest = async () => {
+    if (!booking) return;
+    const reason = prompt('Please specify a reason for declining:');
+    if (reason === null) return;
     try {
-      await api.post(`/bookings/${id}/reject`, { reason });
-      toast.success('Booking rejected');
-      fetchBooking();
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Failed to reject booking');
+      await bookingWorkflowService.rejectBooking(booking._id, reason || 'Declined by creator');
+      toast.success('Booking declined');
+      fetchBookingDetails();
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Failed to decline booking');
     }
   };
 
-  const handlePayBooking = async () => {
-    try {
-      await api.post(`/bookings/${id}/pay`);
-      toast.success('Payment successful! Funds held in escrow.');
-      fetchBooking();
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Payment failed');
+  const handleSendCounter = async () => {
+    if (!booking) return;
+    const amountNum = parseFloat(counterAmount);
+    if (isNaN(amountNum) || amountNum <= 0) {
+      toast.error('Please enter a valid amount');
+      return;
     }
-  };
-
-  const handleCompleteWork = async () => {
     try {
-      await api.post(`/bookings/${id}/complete`);
-      toast.success('Work marked as complete! Client notified to review.');
-      fetchBooking();
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Failed to complete booking');
-    }
-  };
-
-  const handleReleaseFunds = async (rating?: number, comment?: string) => {
-    try {
-      await api.post(`/bookings/${id}/release-funds`, { rating, comment });
-      toast.success('Payment released to creator!');
-      fetchBooking();
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Failed to release funds');
-    }
-  };
-
-  const handleSubmitReview = async () => {
-    try {
-      await api.post(`/reviews`, {
-        booking: id,
-        creator: booking?.creator._id,
-        rating: reviewForm.rating,
-        comment: reviewForm.comment
-      });
-      toast.success('Review submitted!');
-      fetchBooking();
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Failed to submit review');
-    }
-  };
-
-  const handleSubmitDeliverable = async () => {
-    try {
-      const payload = {
-        ...deliverableForm,
-        links: deliverableForm.links ? deliverableForm.links.split('\n').filter(l => l.trim()) : []
-      };
-      await api.post(`/bookings/${id}/submit`, payload);
-      toast.success('Work submitted! Client notified to review.');
-      setDeliverableForm({ title: '', description: '', fileUrl: '', links: '' });
-      fetchBooking();
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Failed to submit deliverable');
-    }
-  };
-
-  const handleCounterProposal = async () => {
-    try {
-      await api.post(`/bookings/${id}/counter`, { amount: parseFloat(counterAmount) });
+      setIsSubmittingCounter(true);
+      await bookingWorkflowService.counterProposal(booking._id, amountNum);
       toast.success('Counter proposal sent!');
-      setCounterAmount('');
-      fetchBooking();
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Failed to send counter proposal');
+      setIsCounterModalOpen(false);
+      fetchBookingDetails();
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Failed to send counter proposal');
+    } finally {
+      setIsSubmittingCounter(false);
     }
   };
 
-  const handleDispute = async () => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setIsUploadingFile(true);
     try {
-      await api.post(`/bookings/${id}/dispute`, { 
-        reason: disputeForm.reason,
-        details: disputeForm.details 
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        try {
+          const res = await uploadService.uploadImage(file);
+          const url = res.data?.data?.url || res.data?.url;
+          if (url) {
+            setSubmissionFiles((prev) => [...prev, url]);
+          }
+        } catch {
+          // Fallback to local preview URL
+          setSubmissionFiles((prev) => [...prev, URL.createObjectURL(file)]);
+        }
+      }
+    } finally {
+      setIsUploadingFile(false);
+    }
+  };
+
+  const handleSubmitWork = async () => {
+    if (!booking) return;
+    if (!submissionTitle.trim()) {
+      toast.error('Please provide a title for this delivery');
+      return;
+    }
+
+    const linksArray = submissionLinks
+      .split('\n')
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0);
+
+    try {
+      setIsSubmittingWork(true);
+      await bookingWorkflowService.submitDeliverables(booking._id, {
+        title: submissionTitle.trim(),
+        description: submissionDesc.trim(),
+        files: submissionFiles,
+        fileUrl: submissionFiles[0] || '',
+        links: linksArray,
       });
-      toast.success('Dispute submitted! Support will review and contact you.');
-      setDisputeForm({ reason: '', details: '' });
-      fetchBooking();
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Failed to submit dispute');
+
+      toast.success('Work submitted successfully! Client has been notified.');
+      setIsSubmitModalOpen(false);
+      setSubmissionTitle('');
+      setSubmissionDesc('');
+      setSubmissionLinks('');
+      setSubmissionFiles([]);
+      fetchBookingDetails();
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Failed to submit deliverables');
+    } finally {
+      setIsSubmittingWork(false);
+    }
+  };
+
+  const handleRequestRevision = async () => {
+    if (!booking) return;
+    if (!revisionNotes.trim()) {
+      toast.error('Please describe what revisions or modifications are required');
+      return;
+    }
+
+    try {
+      setIsSubmittingRevision(true);
+      await bookingWorkflowService.requestRevision(booking._id, revisionNotes.trim());
+      toast.success('Revision requested. Creator has been notified.');
+      setIsRevisionModalOpen(false);
+      setRevisionNotes('');
+      fetchBookingDetails();
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Failed to request revision');
+    } finally {
+      setIsSubmittingRevision(false);
+    }
+  };
+
+  const handleApproveProject = async () => {
+    if (!booking) return;
+    try {
+      setIsSubmittingApproval(true);
+      await bookingWorkflowService.approveAndComplete(booking._id, {
+        rating,
+        comment: reviewComment.trim(),
+      });
+
+      toast.success('Project approved and completed! Thank you for your review.');
+      setIsApprovalModalOpen(false);
+      fetchBookingDetails();
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Failed to approve project');
+    } finally {
+      setIsSubmittingApproval(false);
     }
   };
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-8 h-8 animate-spin text-[#8A2BE2]" />
+      <div className="flex flex-col items-center justify-center py-28 text-gray-400 space-y-3">
+        <Loader2 className="w-8 h-8 animate-spin text-[#9747FF]" />
+        <p className="text-xs">Loading booking workspace...</p>
       </div>
     );
   }
 
   if (error || !booking) {
     return (
-      <div className="text-center py-20">
-        <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-        <p className="text-gray-500">{error || 'Booking not found'}</p>
-        <Button className="mt-4" onClick={() => window.location.href = '/bookings'}>
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Bookings
+      <div className="max-w-xl mx-auto py-16 text-center space-y-4">
+        <AlertCircle className="w-12 h-12 text-red-500 mx-auto" />
+        <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Booking Workspace Unavailable</h2>
+        <p className="text-xs text-gray-500">{error || 'Booking could not be found'}</p>
+        <Button
+          onClick={() => (window.location.href = '/bookings')}
+          className="bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs rounded-xl"
+        >
+          Return to My Bookings
         </Button>
       </div>
     );
   }
 
-  const getStatusStep = () => {
-    const steps = ['pending', 'awaiting_payment', 'confirmed', 'in_progress', 'delivered', 'completed'];
-    return steps.indexOf(booking.status);
+  // Stepper phase mapping
+  const getTimelineSteps = () => {
+    const isRevision = (booking.revisionRequests && booking.revisionRequests.length > 0) && booking.status === 'in_progress';
+
+    return [
+      {
+        id: 'submitted',
+        label: 'Request Sent',
+        active: true,
+        done: true,
+      },
+      {
+        id: 'accepted',
+        label: 'Accepted',
+        active: booking.status !== 'pending',
+        done: booking.status !== 'pending',
+      },
+      {
+        id: 'in_progress',
+        label: isRevision ? 'Revision Underway' : 'In Progress',
+        active: ['in_progress', 'confirmed', 'delivered', 'completed'].includes(booking.status),
+        done: ['delivered', 'completed'].includes(booking.status),
+      },
+      {
+        id: 'delivered',
+        label: 'Delivered',
+        active: ['delivered', 'completed'].includes(booking.status),
+        done: booking.status === 'completed',
+      },
+      {
+        id: 'completed',
+        label: 'Completed',
+        active: booking.status === 'completed',
+        done: booking.status === 'completed',
+      },
+    ];
   };
 
-  const clientName = getUserName(booking.client);
-  const creatorName = getUserName(booking.creator);
+  const timelineSteps = getTimelineSteps();
+  const deliverables = booking.expectedDeliverables || [];
+  const submissions = booking.submissions || [];
+  const referenceImages = booking.attachments || [];
 
   return (
-    <div className="space-y-6 pb-20 lg:pb-8 max-w-4xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" onClick={() => window.location.href = '/bookings'}>
-          <ArrowLeft className="w-4 h-4" />
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Booking Details</h1>
-          <p className="text-sm text-gray-500">{booking.bookingId}</p>
-        </div>
-      </div>
+    <div className="w-full relative">
+      {/* 3-Column Booking Detail Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        {/* =========================================================================
+            LEFT COLUMN (lg:col-span-3, hidden on mobile/tablet)
+            Platform Navigation and User Context
+           ========================================================================= */}
+        <aside className="hidden lg:flex flex-col gap-6 lg:col-span-3 sticky top-20">
+          <div className="pb-5 border-b border-[#DADDE1] dark:border-[#2f3032]">
+            {user && (
+              <div className="flex flex-col items-center text-center">
+                <div className="w-16 h-16 rounded-full overflow-hidden bg-purple-100 dark:bg-purple-950/40 flex items-center justify-center border-2 border-[#9747FF]/20 mb-3">
+                  {user.avatar ? (
+                    <img src={getAvatarUrl(user.avatar)} alt={user.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-[#9747FF] font-bold text-xl">
+                      {(user.name || user.firstName || 'U')[0].toUpperCase()}
+                    </span>
+                  )}
+                </div>
+                <h3 className="font-bold text-gray-900 dark:text-gray-100 text-base leading-tight">
+                  {user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Creative Member'}
+                </h3>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
+                  @{user.email.split('@')[0]}
+                </p>
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/50 text-[#9747FF] text-xs font-semibold mt-2.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#9747FF]"></span>
+                  {user.role === 'creator' ? 'Verified Creator' : 'Client'}
+                </div>
+              </div>
+            )}
+          </div>
 
-      {/* Status Timeline */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between">
-            {[
-              { key: 'pending', label: 'Request Sent', icon: '1' },
-              { key: 'awaiting_payment', label: 'Payment', icon: '2' },
-              { key: 'confirmed', label: 'Confirmed', icon: '3' },
-              { key: 'in_progress', label: 'In Progress', icon: '4' },
-              { key: 'delivered', label: 'Delivered', icon: '5' },
-              { key: 'completed', label: 'Completed', icon: '✓' }
-            ].map((step, index) => {
-              const currentStep = getStatusStep();
-              const isActive = index <= currentStep;
-              const isCurrent = index === currentStep;
-              
-              return (
-                <div key={step.key} className="flex flex-col items-center flex-1">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all ${
-                    isActive ? 'bg-[#8A2BE2] text-white' : 'bg-gray-200 text-gray-500'
-                  } ${isCurrent ? 'ring-4 ring-[#8A2BE2]/20' : ''}`}>
-                    {isActive ? step.icon : index + 1}
+          <div className="pb-2">
+            <nav className="space-y-1">
+              <a
+                href="/home"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-white/[0.04] transition-colors"
+              >
+                <Sparkles className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                <span>Creative Feed</span>
+              </a>
+
+              <a
+                href="/discover"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-white/[0.04] transition-colors"
+              >
+                <Compass className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                <span>Discover Creators</span>
+              </a>
+
+              <a
+                href="/bookings"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-sm bg-purple-50 dark:bg-purple-950/50 text-[#9747FF] transition-colors"
+              >
+                <Calendar className="w-4 h-4 text-[#9747FF]" />
+                <span>My Bookings</span>
+              </a>
+
+              <a
+                href="/wallet"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-white/[0.04] transition-colors"
+              >
+                <Wallet className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                <span>Wallet &amp; Earnings</span>
+              </a>
+
+              <a
+                href="/settings"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-white/[0.04] transition-colors"
+              >
+                <Settings className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                <span>Settings &amp; Profile</span>
+              </a>
+            </nav>
+          </div>
+        </aside>
+
+        {/* =========================================================================
+            CENTER COLUMN (lg:col-span-6, full width on mobile)
+            Interactive Project Workspace, Timeline, Deliverables, & Submissions
+           ========================================================================= */}
+        <section className="col-span-1 lg:col-span-6 flex flex-col gap-6">
+          
+          {/* Top Bar: Back & ID */}
+          <div className="flex items-center justify-between pb-3 border-b border-[#DADDE1] dark:border-[#2f3032]">
+            <a
+              href="/bookings"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-600 dark:text-gray-400 hover:text-[#9747FF] transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Back to Bookings</span>
+            </a>
+
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-xs px-2.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
+                {booking.bookingId || booking._id.slice(-8)}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => (window.location.href = `/messages?user=${otherParty?._id}`)}
+                className="h-7 text-xs rounded-lg border-[#DADDE1] dark:border-[#2f3032] text-gray-700 dark:text-gray-200"
+              >
+                <MessageSquare className="w-3.5 h-3.5 mr-1" />
+                Message {otherParty?.name?.split(' ')[0]}
+              </Button>
+            </div>
+          </div>
+
+          {/* Project Title & Status Hero */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/40 text-[#9747FF] border border-purple-200/50 dark:border-purple-800/40">
+                {booking.category}
+              </span>
+              <span className="text-xs text-gray-400">
+                Created on {new Date(booking.createdAt).toLocaleDateString()}
+              </span>
+            </div>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 tracking-tight leading-snug">
+              {booking.serviceTitle}
+            </h1>
+          </div>
+
+          {/* Visual Progress Timeline */}
+          <div className="p-4 rounded-2xl bg-gray-50/70 dark:bg-white/[0.02] border border-[#DADDE1] dark:border-[#2f3032] space-y-3">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+              Project Milestone Tracker
+            </h4>
+
+            <div className="flex items-center justify-between gap-1 overflow-x-auto pb-1">
+              {timelineSteps.map((step, idx) => (
+                <div key={step.id} className="flex items-center flex-1 min-w-[70px]">
+                  <div className="flex flex-col items-center">
+                    <div
+                      className={cn(
+                        'w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all',
+                        step.done && 'bg-[#9747FF] text-white',
+                        step.active && !step.done && 'bg-purple-100 dark:bg-purple-950 text-[#9747FF] ring-2 ring-[#9747FF]',
+                        !step.active && 'bg-gray-200 dark:bg-gray-800 text-gray-400'
+                      )}
+                    >
+                      {step.done ? <CheckCircle2 className="w-4 h-4" /> : idx + 1}
+                    </div>
+                    <span
+                      className={cn(
+                        'text-[10px] mt-1 text-center font-medium',
+                        step.active ? 'text-gray-900 dark:text-gray-100 font-semibold' : 'text-gray-400'
+                      )}
+                    >
+                      {step.label}
+                    </span>
                   </div>
-                  <span className={`text-[10px] mt-2 text-center ${isActive ? 'text-gray-900 font-medium' : 'text-gray-400'}`}>
-                    {step.label}
+
+                  {idx < timelineSteps.length - 1 && (
+                    <div
+                      className={cn(
+                        'flex-1 h-0.5 mx-1.5 rounded-full',
+                        step.done ? 'bg-[#9747FF]' : 'bg-[#DADDE1] dark:bg-[#2f3032]'
+                      )}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* In-Progress Dev Preview Notice */}
+            {['awaiting_payment', 'in_progress', 'confirmed'].includes(booking.status) && (
+              <div className="p-2.5 rounded-xl bg-purple-50/70 dark:bg-purple-950/30 border border-purple-200/50 dark:border-purple-800/30 flex items-center gap-2 text-xs text-[#9747FF]">
+                <ShieldCheck className="w-4 h-4 shrink-0" />
+                <span>
+                  <strong>Dev Preview:</strong> Project terms agreed. Ready for work without upfront wallet deduction.
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Incoming Request Actions (if Creator & Pending) */}
+          {isCreator && booking.status === 'pending' && (
+            <div className="p-4 rounded-2xl bg-purple-50/60 dark:bg-purple-950/30 border border-purple-200/60 dark:border-purple-800/40 space-y-3">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-[#9747FF]" />
+                <h4 className="font-bold text-xs uppercase tracking-wider text-[#9747FF]">
+                  Action Required: Incoming Booking Request
+                </h4>
+              </div>
+              <p className="text-xs text-gray-700 dark:text-gray-300">
+                {booking.client.name} has requested your creative services for {booking.amount} {booking.currency}. Review the deliverables and timeline below before responding.
+              </p>
+              <div className="flex items-center gap-2.5 pt-1">
+                <Button
+                  size="sm"
+                  onClick={handleAcceptRequest}
+                  className="bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold rounded-xl px-4 shadow-xs"
+                >
+                  Accept Booking Request
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setCounterAmount(String(booking.amount));
+                    setIsCounterModalOpen(true);
+                  }}
+                  className="rounded-xl border-[#DADDE1] dark:border-[#2f3032] text-xs font-semibold text-[#9747FF]"
+                >
+                  Propose Counter Offer
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={handleDeclineRequest}
+                  className="text-xs text-gray-500 hover:text-red-600 rounded-xl"
+                >
+                  Decline
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Work Delivered Review Banner (if Client & Delivered) */}
+          {isClient && booking.status === 'delivered' && (
+            <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/40 space-y-3">
+              <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
+                <FileCheck className="w-5 h-5 shrink-0" />
+                <h4 className="font-bold text-xs uppercase tracking-wider">
+                  Deliverables Ready For Review
+                </h4>
+              </div>
+              <p className="text-xs text-gray-700 dark:text-gray-300">
+                {booking.creator.name} has submitted deliverables for your project. Please inspect the files and links below. If satisfied, approve to complete the project and leave a review.
+              </p>
+              <div className="flex items-center gap-3 pt-1">
+                <Button
+                  size="sm"
+                  onClick={() => setIsApprovalModalOpen(true)}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl px-5 shadow-xs"
+                >
+                  Approve Delivery &amp; Rate
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setIsRevisionModalOpen(true)}
+                  className="rounded-xl border-emerald-300 dark:border-emerald-700 text-xs text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100/50"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 mr-1" />
+                  Request Revision
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Revision Requested Notice */}
+          {booking.revisionRequests && booking.revisionRequests.length > 0 && booking.status === 'in_progress' && (
+            <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 space-y-2">
+              <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+                <RotateCcw className="w-4 h-4 shrink-0" />
+                <h4 className="font-bold text-xs uppercase tracking-wider">
+                  Revision In Progress
+                </h4>
+              </div>
+              <p className="text-xs text-gray-700 dark:text-gray-300">
+                <strong>Feedback from {booking.client.name}:</strong> "
+                {booking.revisionRequests[booking.revisionRequests.length - 1].notes}"
+              </p>
+              {isCreator && (
+                <div className="pt-2">
+                  <Button
+                    size="sm"
+                    onClick={() => setIsSubmitModalOpen(true)}
+                    className="bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold rounded-xl px-4"
+                  >
+                    Submit Revised Work
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Project Brief & Scope */}
+          <div className="space-y-3 pb-5 border-b border-[#DADDE1] dark:border-[#2f3032]">
+            <h3 className="font-bold text-sm text-gray-900 dark:text-gray-100 uppercase tracking-wider">
+              Project Description &amp; Scope
+            </h3>
+            <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
+              {booking.serviceDescription}
+            </p>
+
+            {booking.metadata?.notes && (
+              <div className="p-3 rounded-xl bg-gray-50 dark:bg-white/[0.02] border border-[#DADDE1] dark:border-[#2f3032] text-xs">
+                <span className="font-semibold text-gray-600 dark:text-gray-400">Additional Client Notes:</span>
+                <p className="italic text-gray-700 dark:text-gray-300 mt-0.5">{booking.metadata.notes}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Agreed Deliverables Checklist */}
+          <div className="space-y-3 pb-5 border-b border-[#DADDE1] dark:border-[#2f3032]">
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-sm text-gray-900 dark:text-gray-100 uppercase tracking-wider">
+                Agreed Deliverables ({deliverables.length})
+              </h3>
+              {isCreator && ['in_progress', 'confirmed'].includes(booking.status) && (
+                <Button
+                  size="sm"
+                  onClick={() => setIsSubmitModalOpen(true)}
+                  className="h-7 text-xs bg-[#9747FF] hover:bg-[#8534f0] text-white rounded-lg shadow-2xs"
+                >
+                  <UploadCloud className="w-3.5 h-3.5 mr-1" />
+                  Submit Deliverables
+                </Button>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              {deliverables.map((del) => (
+                <div
+                  key={del.id}
+                  className="p-3 rounded-xl bg-gray-50 dark:bg-white/[0.02] border border-[#DADDE1] dark:border-[#2f3032] flex items-start justify-between gap-3"
+                >
+                  <div className="flex items-start gap-2.5 min-w-0">
+                    <Package className="w-4 h-4 text-[#9747FF] shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-semibold text-sm text-gray-900 dark:text-gray-100">
+                        {del.title}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Format: <span className="font-medium text-gray-700 dark:text-gray-300">{del.format}</span>
+                      </p>
+                      {del.description && (
+                        <p className="text-xs text-gray-400 mt-0.5">{del.description}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <span
+                    className={cn(
+                      'text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 uppercase',
+                      del.status === 'approved' && 'bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-300',
+                      del.status === 'submitted' && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300',
+                      del.status === 'in_progress' && 'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300',
+                      del.status === 'pending' && 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                    )}
+                  >
+                    {del.status}
                   </span>
                 </div>
-              );
-            })}
+              ))}
+            </div>
           </div>
-        </CardContent>
-      </Card>
 
-      <div className="grid md:grid-cols-3 gap-6">
-        {/* Main Content */}
-        <div className="md:col-span-2 space-y-6">
-          {/* Service Details */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Service Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <h3 className="font-semibold text-lg">{booking.serviceTitle}</h3>
-                <p className="text-gray-600 mt-2">{booking.serviceDescription}</p>
-              </div>
-              
-              {booking.counterProposal && booking.counterProposal.amount && !booking.counterProposal.applied && (
-                <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg">
-                  <p className="font-medium text-amber-800">Counter Proposal Pending</p>
-                  <p className="text-amber-700">
-                    {isClient 
-                      ? `${creatorName} proposed ${booking.counterProposal.amount} ${booking.currency}`
-                      : `You proposed ${booking.counterProposal.amount} ${booking.currency}`
-                    }
-                  </p>
-                  {isClient && (
-                    <div className="flex gap-2 mt-3">
-                      <Button size="sm" onClick={handlePayBooking}>Accept & Pay</Button>
-                      <Button size="sm" variant="outline" onClick={async () => {
-                        try {
-                          await api.post(`/bookings/${id}/reject`, { reason: 'Counter proposal rejected by client' });
-                          toast.success('Counter proposal rejected');
-                          fetchBooking();
-                        } catch (error: any) {
-                          toast.error(error.response?.data?.error || 'Failed to reject counter proposal');
-                        }
-                      }}>Reject</Button>
-                    </div>
-                  )}
-                </div>
-              )}
+          {/* Reference Files & Moodboards Gallery */}
+          {referenceImages.length > 0 && (
+            <div className="space-y-3 pb-5 border-b border-[#DADDE1] dark:border-[#2f3032]">
+              <h3 className="font-bold text-sm text-gray-900 dark:text-gray-100 uppercase tracking-wider">
+                Reference Files &amp; Moodboards ({referenceImages.length})
+              </h3>
 
-              {/* Deliverables */}
-              {booking.deliverables && booking.deliverables.length > 0 && (
-                <div className="mt-4">
-                  <h4 className="font-medium mb-2">Deliverables</h4>
-                  <div className="space-y-2">
-                    {booking.deliverables.map((del, idx) => (
-                      <div key={idx} className="bg-gray-50 p-3 rounded-lg">
-                        <p className="font-medium">{del.title}</p>
-                        <p className="text-sm text-gray-600">{del.description}</p>
-                        {del.fileUrl && (
-                          <a href={del.fileUrl} target="_blank" rel="noopener noreferrer" className="text-[#8A2BE2] text-sm hover:underline block mt-1">
-                            Download File
-                          </a>
-                        )}
-                        {del.links && del.links.length > 0 && (
-                          <div className="mt-2 space-y-1">
-                            {del.links.map((link, linkIdx) => (
-                              <a key={linkIdx} href={link} target="_blank" rel="noopener noreferrer" className="text-[#8A2BE2] text-sm hover:underline block">
-                                Link {linkIdx + 1}
-                              </a>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                  
-                  {/* Client - Confirm Deliverables & Rate (in Deliverables section) */}
-                  {isClient && booking.status === 'delivered' && (
-                    <div className="mt-4 space-y-3">
-                      {/* Confirm & Release Payment */}
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button className="w-full bg-[#9747FF] hover:bg-[#8534f0] text-white font-semibold rounded-xl">
-                            <CheckCircle className="w-4 h-4 mr-2" />
-                            Confirm Deliverables & Release Payment
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Confirm Work & Rate Creator</DialogTitle>
-                            <DialogDescription>
-                              Review the deliverables and rate {creatorName}. 
-                              Payment will be released automatically after you confirm.
-                            </DialogDescription>
-                          </DialogHeader>
-                          <div className="space-y-4 pt-2">
-                            <div>
-                              <label className="text-xs font-medium text-gray-700 dark:text-gray-300">Your Rating *</label>
-                              <div className="flex items-center gap-2 mt-2">
-                                {[1, 2, 3, 4, 5].map((star) => (
-                                  <button 
-                                    key={star}
-                                    type="button"
-                                    onClick={() => setReviewForm({...reviewForm, rating: star})}
-                                    className="cursor-pointer focus:outline-none"
-                                  >
-                                    <Star 
-                                      className={`w-7 h-7 ${star <= reviewForm.rating ? 'fill-amber-400 text-amber-400' : 'text-gray-300 dark:text-gray-600'}`}
-                                    />
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                            <div>
-                              <label className="text-xs font-medium text-gray-700 dark:text-gray-300">Review (optional)</label>
-                              <Textarea 
-                                value={reviewForm.comment}
-                                onChange={(e) => setReviewForm({...reviewForm, comment: e.target.value})}
-                                placeholder="Share your experience with this creator..."
-                                className="mt-1.5 dark:bg-[#121212] dark:border-[#2f3032] dark:text-gray-100 focus-visible:ring-[#9747FF]"
-                              />
-                            </div>
-                            <div className="border-y border-[#DADDE1] dark:border-[#2f3032] py-3.5 space-y-1">
-                              <p className="text-xs font-semibold text-gray-900 dark:text-gray-100">
-                                Payment: {booking.amount} {booking.currency} will be released
-                              </p>
-                              <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
-                                • {creatorName} receives: {(booking.creatorAmount || booking.amount * 0.9).toFixed(2)} {booking.currency}<br/>
-                                • Platform fee (10%): {(booking.platformFee || booking.amount * 0.1).toFixed(2)} {booking.currency}
-                              </p>
-                            </div>
-                            <div className="pt-2 border-t border-[#DADDE1] dark:border-[#2f3032]">
-                              <Button 
-                                onClick={() => {
-                                  handleReleaseFunds(reviewForm.rating, reviewForm.comment);
-                                  setReviewForm({ rating: 5, comment: '' });
-                                }} 
-                                className="w-full bg-[#9747FF] hover:bg-[#8534f0] text-white font-semibold rounded-xl"
-                                disabled={!reviewForm.rating}
-                              >
-                                Confirm & Release {booking.amount} {booking.currency}
-                              </Button>
-                            </div>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
-
-                      {/* Report Issue & Request Refund */}
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button variant="outline" className="w-full text-red-600 border-red-300 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl">
-                            <AlertCircle className="w-4 h-4 mr-2" />
-                            Report Issue & Request Refund
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Report Issue to Support</DialogTitle>
-                            <DialogDescription>
-                              Describe the issue with the deliverables. Support will review and may issue a refund.
-                            </DialogDescription>
-                          </DialogHeader>
-                          <div className="space-y-4 pt-2">
-                            <div>
-                              <label className="text-xs font-medium text-gray-700 dark:text-gray-300">Issue Type *</label>
-                              <select 
-                                className="w-full mt-1.5 p-2.5 border border-gray-200 dark:border-[#2f3032] bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-[#9747FF] focus:border-transparent outline-none text-sm"
-                                value={disputeForm.reason}
-                                onChange={(e) => setDisputeForm({...disputeForm, reason: e.target.value})}
-                              >
-                                <option value="">Select an issue...</option>
-                                <option value="incomplete_work">Incomplete work</option>
-                                <option value="poor_quality">Poor quality</option>
-                                <option value="not_as_described">Not as described</option>
-                                <option value="missing_deliverables">Missing deliverables</option>
-                                <option value="plagiarism">Plagiarism/unoriginal work</option>
-                                <option value="late_delivery">Late delivery</option>
-                                <option value="no_response">Creator not responding</option>
-                                <option value="other">Other</option>
-                              </select>
-                            </div>
-                            <div>
-                              <label className="text-xs font-medium text-gray-700 dark:text-gray-300">Details *</label>
-                              <Textarea 
-                                value={disputeForm.details}
-                                onChange={(e) => setDisputeForm({...disputeForm, details: e.target.value})}
-                                placeholder="Please provide specific details about the issue..."
-                                className="mt-1.5 dark:bg-[#121212] dark:border-[#2f3032] dark:text-gray-100 focus-visible:ring-[#9747FF]"
-                                rows={4}
-                              />
-                            </div>
-                            <div className="border-y border-[#DADDE1] dark:border-[#2f3032] py-3.5 space-y-1">
-                              <p className="text-xs font-semibold text-red-600 dark:text-red-400">
-                                Refund Amount: {booking.amount} {booking.currency}
-                              </p>
-                              <p className="text-xs text-gray-500 dark:text-gray-400">
-                                If approved, funds will be returned to your wallet.
-                              </p>
-                            </div>
-                            <div className="pt-2 border-t border-[#DADDE1] dark:border-[#2f3032]">
-                              <Button 
-                                onClick={handleDispute}
-                                className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl"
-                                disabled={!disputeForm.reason || !disputeForm.details}
-                              >
-                                Submit Dispute Request
-                              </Button>
-                            </div>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Submit Deliverable - Creator Only (shows for confirmed OR in_progress) */}
-              {isCreator && (booking.status === 'confirmed' || booking.status === 'in_progress') && (
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button className="w-full bg-[#9747FF] hover:bg-[#8534f0] text-white font-semibold rounded-xl">
-                      <Upload className="w-4 h-4 mr-2" />
-                      Submit Work
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Submit Deliverable</DialogTitle>
-                      <DialogDescription>
-                        Submit your completed work for client review.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 pt-2">
-                      <div>
-                        <label className="text-xs font-medium text-gray-700 dark:text-gray-300">Title *</label>
-                        <Input 
-                          value={deliverableForm.title}
-                          onChange={(e) => setDeliverableForm({...deliverableForm, title: e.target.value})}
-                          placeholder="e.g., Final Logo Design"
-                          className="mt-1.5 dark:bg-[#121212] dark:border-[#2f3032] dark:text-gray-100 focus-visible:ring-[#9747FF]"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-xs font-medium text-gray-700 dark:text-gray-300">Description</label>
-                        <Textarea 
-                          value={deliverableForm.description}
-                          onChange={(e) => setDeliverableForm({...deliverableForm, description: e.target.value})}
-                          placeholder="Describe what you've delivered..."
-                          className="mt-1.5 dark:bg-[#121212] dark:border-[#2f3032] dark:text-gray-100 focus-visible:ring-[#9747FF]"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-xs font-medium text-gray-700 dark:text-gray-300">File URL (optional)</label>
-                        <Input 
-                          value={deliverableForm.fileUrl}
-                          onChange={(e) => setDeliverableForm({...deliverableForm, fileUrl: e.target.value})}
-                          placeholder="https://drive.google.com/..."
-                          className="mt-1.5 dark:bg-[#121212] dark:border-[#2f3032] dark:text-gray-100 focus-visible:ring-[#9747FF]"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-xs font-medium text-gray-700 dark:text-gray-300">Links (one per line)</label>
-                        <Textarea 
-                          value={deliverableForm.links}
-                          onChange={(e) => setDeliverableForm({...deliverableForm, links: e.target.value})}
-                          placeholder="https://figma.com/...&#10;https://github.com/..."
-                          className="mt-1.5 dark:bg-[#121212] dark:border-[#2f3032] dark:text-gray-100 focus-visible:ring-[#9747FF]"
-                        />
-                      </div>
-                      <div className="pt-2 border-t border-[#DADDE1] dark:border-[#2f3032]">
-                        <Button 
-                          onClick={handleSubmitDeliverable} 
-                          className="w-full bg-[#9747FF] hover:bg-[#8534f0] text-white font-semibold rounded-xl"
-                          disabled={!deliverableForm.title}
-                        >
-                          Submit Deliverable
-                        </Button>
-                      </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Review Section - Show when completed */}
-          {booking.status === 'completed' && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Review</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {booking.review ? (
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <Star 
-                          key={star} 
-                          className={`w-5 h-5 ${star <= booking.review!.rating ? 'fill-amber-400 text-amber-400' : 'text-gray-300'}`}
-                        />
-                      ))}
-                    </div>
-                    <p className="text-gray-700">{booking.review.comment}</p>
-                  </div>
-                ) : isClient ? (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-sm font-medium">Rating</label>
-                      <div className="flex items-center gap-2 mt-2">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <button 
-                            key={star}
-                            onClick={() => setReviewForm({...reviewForm, rating: star})}
-                          >
-                            <Star 
-                              className={`w-8 h-8 ${star <= reviewForm.rating ? 'fill-amber-400 text-amber-400' : 'text-gray-300'}`}
-                            />
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Comment</label>
-                      <Textarea 
-                        value={reviewForm.comment}
-                        onChange={(e) => setReviewForm({...reviewForm, comment: e.target.value})}
-                        placeholder="Share your experience..."
-                        className="mt-2"
-                      />
-                    </div>
-                    <Button onClick={handleSubmitReview} className="bg-[#8A2BE2]">
-                      Submit Review
-                    </Button>
-                  </div>
-                ) : (
-                  <p className="text-gray-500">Waiting for client review...</p>
-                )}
-              </CardContent>
-            </Card>
-          )}
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Price Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Payment</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600">Total Amount</span>
-                <span className="text-2xl font-bold">{booking.amount} {booking.currency}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-500">Platform Fee (10%)</span>
-                <span className="text-gray-500">{(booking.platformFee || booking.amount * 0.1).toFixed(2)} {booking.currency}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-500">Creator Receives</span>
-                <span className="text-[#8A2BE2] font-medium">{(booking.creatorAmount || booking.amount * 0.9).toFixed(2)} {booking.currency}</span>
-              </div>
-              <div className="pt-4 border-t">
-                {booking.status === 'pending' ? (
-                  <Badge variant="secondary" className="w-full justify-center py-2">
-                    ⏳ Awaiting Creator Response
-                  </Badge>
-                ) : booking.status === 'awaiting_payment' ? (
-                  <Badge variant="secondary" className="w-full justify-center py-2 bg-amber-100 text-amber-800 hover:bg-amber-100">
-                    💳 Payment Required
-                  </Badge>
-                ) : booking.paymentStatus === 'paid' ? (
-                  <Badge variant="default" className="w-full justify-center py-2 bg-[#8A2BE2]">
-                    ✓ Paid (In Escrow)
-                  </Badge>
-                ) : (
-                  <Badge variant="secondary" className="w-full justify-center py-2">
-                    ⏳ {booking.paymentStatus}
-                  </Badge>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Other Party Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle>{isClient ? 'Creator' : 'Client'}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-3">
-                {isClient ? (
-                  booking.creator?.avatar ? (
-                    <img 
-                      src={getImageUrl(booking.creator.avatar)}
-                      alt={creatorName}
-                      className="w-12 h-12 rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
-                      <User className="w-6 h-6 text-gray-400" />
-                    </div>
-                  )
-                ) : (
-                  booking.client?.avatar ? (
-                    <img 
-                      src={getImageUrl(booking.client.avatar)}
-                      alt={clientName}
-                      className="w-12 h-12 rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
-                      <User className="w-6 h-6 text-gray-400" />
-                    </div>
-                  )
-                )}
-                <div>
-                  <p className="font-medium">{isClient ? creatorName : clientName}</p>
-                  {isClient && booking.creator?.category && (
-                    <p className="text-sm text-gray-500">
-                      {Array.isArray(booking.creator.category) 
-                        ? booking.creator.category.join(', ')
-                        : booking.creator.category}
-                    </p>
-                  )}
-                </div>
-              </div>
-              <Button 
-                variant="outline" 
-                className="w-full mt-4"
-                onClick={() => window.location.href = `/messages?user=${isClient ? booking.creator._id : booking.client._id}`}
-              >
-                <MessageSquare className="w-4 h-4 mr-2" />
-                Send Message
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Action Buttons */}
-          <Card>
-            <CardContent className="p-4 space-y-3">
-              {/* Creator Actions */}
-              {isCreator && booking.status === 'pending' && (
-                <>
-                  <Button onClick={handleAcceptBooking} className="w-full bg-[#9747FF] hover:bg-[#8534f0] text-white font-semibold rounded-xl">
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    Accept Booking
-                  </Button>
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button variant="outline" className="w-full rounded-xl dark:border-[#2f3032] dark:text-gray-300 dark:hover:bg-gray-800">
-                        Counter Offer
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Make Counter Proposal</DialogTitle>
-                        <DialogDescription>
-                          Propose a different price for this booking.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4 pt-2">
-                        <div className="border-b border-[#DADDE1] dark:border-[#2f3032] pb-3 text-xs text-gray-500 dark:text-gray-400">
-                          Current amount: <span className="font-semibold text-gray-900 dark:text-gray-100 text-sm ml-1">{booking.amount} {booking.currency}</span>
-                        </div>
-                        <div>
-                          <label className="text-xs font-medium text-gray-700 dark:text-gray-300">Your Proposed Amount ({booking.currency}) *</label>
-                          <Input 
-                            type="number"
-                            value={counterAmount}
-                            onChange={(e) => setCounterAmount(e.target.value)}
-                            placeholder="Enter amount..."
-                            className="mt-1.5 dark:bg-[#121212] dark:border-[#2f3032] dark:text-gray-100 focus-visible:ring-[#9747FF]"
-                          />
-                        </div>
-                        <div className="pt-3 border-t border-[#DADDE1] dark:border-[#2f3032]">
-                          <Button onClick={handleCounterProposal} className="w-full bg-[#9747FF] hover:bg-[#8534f0] text-white font-semibold rounded-xl">
-                            Send Proposal
-                          </Button>
-                        </div>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                  <Button 
-                    variant="outline" 
-                    className="w-full text-red-600 hover:text-red-700 dark:border-[#2f3032] dark:hover:bg-red-950/20 rounded-xl"
-                    onClick={() => handleRejectBooking('Not available')}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {referenceImages.map((imgUrl, i) => (
+                  <div
+                    key={i}
+                    onClick={() => setPreviewImageUrl(getImageUrl(imgUrl))}
+                    className="relative rounded-xl overflow-hidden border border-[#DADDE1] dark:border-[#2f3032] aspect-video group cursor-pointer bg-gray-100 dark:bg-gray-800"
                   >
-                    Decline
-                  </Button>
-                </>
-              )}
+                    <img
+                      src={getImageUrl(imgUrl)}
+                      alt={`Reference ${i + 1}`}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
+                      <Eye className="w-5 h-5" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
-              {/* Client - Waiting for Creator Response */}
-              {isClient && booking.status === 'pending' && (
-                <div className="text-center p-4 bg-amber-50 rounded-lg">
-                  <p className="text-amber-800 font-medium">⏳ Waiting for Creator</p>
-                  <p className="text-amber-600 text-sm mt-1">
-                    {creatorName} needs to accept your booking before you can proceed to payment.
-                  </p>
-                </div>
-              )}
-
-              {/* Client Payment - Only after creator accepts */}
-              {isClient && booking.status === 'awaiting_payment' && (
-                <Button onClick={handlePayBooking} className="w-full bg-[#8A2BE2] hover:bg-[#7B1FD1]">
-                  <DollarSign className="w-4 h-4 mr-2" />
-                  Pay {booking.amount} {booking.currency}
+          {/* Submissions & Deliverables History */}
+          <div className="space-y-4 pb-5 border-b border-[#DADDE1] dark:border-[#2f3032]">
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-sm text-gray-900 dark:text-gray-100 uppercase tracking-wider">
+                Submissions &amp; Work Packages ({submissions.length})
+              </h3>
+              {isCreator && ['in_progress', 'confirmed', 'delivered'].includes(booking.status) && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setIsSubmitModalOpen(true)}
+                  className="h-7 text-xs rounded-lg border-[#DADDE1] dark:border-[#2f3032] text-[#9747FF]"
+                >
+                  <Plus className="w-3.5 h-3.5 mr-1" />
+                  New Submission
                 </Button>
               )}
+            </div>
 
-              {/* Creator Complete */}
-              {isCreator && booking.status === 'in_progress' && (
-                <Button onClick={handleCompleteWork} className="w-full bg-[#8A2BE2]">
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Mark as Complete
-                </Button>
+            {submissions.length > 0 ? (
+              <div className="space-y-3">
+                {submissions.map((sub, idx) => (
+                  <div
+                    key={sub.id || idx}
+                    className="p-4 rounded-xl bg-gray-50 dark:bg-white/[0.02] border border-[#DADDE1] dark:border-[#2f3032] space-y-3"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-xs px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950/50 text-[#9747FF]">
+                          Version {sub.version || idx + 1}
+                        </span>
+                        <h4 className="font-bold text-sm text-gray-900 dark:text-gray-100">
+                          {sub.title}
+                        </h4>
+                      </div>
+                      <span className="text-[11px] text-gray-400">
+                        {new Date(sub.uploadedAt).toLocaleDateString()}
+                      </span>
+                    </div>
+
+                    {sub.description && (
+                      <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
+                        {sub.description}
+                      </p>
+                    )}
+
+                    {/* Files Attached */}
+                    {sub.files && sub.files.length > 0 && (
+                      <div className="space-y-1.5 pt-1">
+                        <span className="text-[11px] font-semibold text-gray-500 uppercase">Attached Files:</span>
+                        <div className="flex flex-wrap gap-2">
+                          {sub.files.map((file, fIdx) => (
+                            <a
+                              key={fIdx}
+                              href={getImageUrl(file)}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white dark:bg-gray-800 border border-[#DADDE1] dark:border-[#2f3032] text-xs font-medium text-gray-800 dark:text-gray-200 hover:text-[#9747FF] transition-colors"
+                            >
+                              <Download className="w-3.5 h-3.5 text-[#9747FF]" />
+                              <span>Deliverable File #{fIdx + 1}</span>
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* External Links */}
+                    {sub.links && sub.links.length > 0 && (
+                      <div className="space-y-1.5 pt-1">
+                        <span className="text-[11px] font-semibold text-gray-500 uppercase">External Links:</span>
+                        <div className="flex flex-wrap gap-2">
+                          {sub.links.map((link, lIdx) => (
+                            <a
+                              key={lIdx}
+                              href={link}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-purple-50 dark:bg-purple-950/40 text-xs font-semibold text-[#9747FF] hover:underline"
+                            >
+                              <span>{link.replace(/^https?:\/\//, '').split('/')[0]}</span>
+                              <ExternalLink className="w-3.5 h-3.5" />
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-6 text-center border border-dashed border-[#DADDE1] dark:border-[#2f3032] rounded-xl text-gray-400 space-y-1">
+                <FileText className="w-8 h-8 mx-auto stroke-1" />
+                <p className="text-xs font-medium">No work packages submitted yet.</p>
+                <p className="text-[11px]">When the creator delivers milestones or finals, they will appear here.</p>
+              </div>
+            )}
+          </div>
+
+          {/* Completed Review Card */}
+          {booking.status === 'completed' && booking.review && (
+            <div className="p-4 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-800/40 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                  <h4 className="font-bold text-xs uppercase tracking-wider text-emerald-800 dark:text-emerald-300">
+                    Project Completed &amp; Reviewed
+                  </h4>
+                </div>
+                <div className="flex items-center gap-1 text-amber-500 font-bold text-xs">
+                  {[...Array(5)].map((_, i) => (
+                    <Star
+                      key={i}
+                      className={cn(
+                        'w-3.5 h-3.5',
+                        i < booking.review!.rating ? 'fill-current text-amber-500' : 'text-gray-300'
+                      )}
+                    />
+                  ))}
+                  <span className="ml-1 text-gray-900 dark:text-gray-100">{booking.review.rating}.0</span>
+                </div>
+              </div>
+
+              {booking.review.comment && (
+                <p className="text-xs text-gray-700 dark:text-gray-300 italic leading-relaxed">
+                  "{booking.review.comment}"
+                </p>
               )}
+            </div>
+          )}
+        </section>
 
-              {/* Status Info - Delivered */}
-              {isClient && booking.status === 'delivered' && (
-                <div className="text-center p-4 bg-amber-50 rounded-lg">
-                  <p className="text-amber-800 font-medium">⏳ Review Deliverables</p>
-                  <p className="text-amber-600 text-sm mt-1">
-                    Please review the submitted work above and confirm to release payment.
-                  </p>
+        {/* =========================================================================
+            RIGHT COLUMN (lg:col-span-3, hidden on mobile/tablet)
+            Contextual Project Summary: Counterparts, Escrow & Timeline
+           ========================================================================= */}
+        <aside className="hidden lg:flex flex-col gap-6 lg:col-span-3 sticky top-20">
+          
+          {/* Client & Creator Profile Strip */}
+          <div className="p-4 rounded-2xl bg-gray-50/70 dark:bg-white/[0.02] border border-[#DADDE1] dark:border-[#2f3032] space-y-4">
+            <h4 className="font-bold text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">
+              Project Participants
+            </h4>
+
+            {/* Creator */}
+            <div className="flex items-center gap-3">
+              <a
+                href={`/creators/${booking.creator._id}`}
+                className="w-10 h-10 rounded-full overflow-hidden bg-purple-100 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/40 shrink-0"
+              >
+                {booking.creator.avatar ? (
+                  <img src={getAvatarUrl(booking.creator.avatar)} alt={booking.creator.name} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center font-bold text-[#9747FF] text-xs">
+                    {(booking.creator.name || 'C')[0]?.toUpperCase()}
+                  </div>
+                )}
+              </a>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1">
+                  <span className="font-bold text-xs text-gray-900 dark:text-gray-100 truncate">
+                    {booking.creator.name}
+                  </span>
+                  {booking.creator.isVerified && <VerifiedBadge className="w-3.5 h-3.5" showTooltip={false} />}
+                </div>
+                <p className="text-[11px] text-gray-500">Creator</p>
+              </div>
+            </div>
+
+            {/* Client */}
+            <div className="flex items-center gap-3 pt-2 border-t border-[#DADDE1] dark:border-[#2f3032]">
+              <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shrink-0">
+                {booking.client.avatar ? (
+                  <img src={getAvatarUrl(booking.client.avatar)} alt={booking.client.name} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center font-bold text-gray-600 dark:text-gray-300 text-xs">
+                    {(booking.client.name || 'C')[0]?.toUpperCase()}
+                  </div>
+                )}
+              </div>
+              <div className="min-w-0">
+                <span className="font-bold text-xs text-gray-900 dark:text-gray-100 truncate block">
+                  {booking.client.name}
+                </span>
+                <p className="text-[11px] text-gray-500">Client / Buyer</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Financial Summary */}
+          <div className="p-4 rounded-2xl bg-gray-50/70 dark:bg-white/[0.02] border border-[#DADDE1] dark:border-[#2f3032] space-y-3 text-xs">
+            <h4 className="font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+              Financial &amp; Escrow
+            </h4>
+
+            <div className="space-y-2">
+              <div className="flex justify-between text-gray-600 dark:text-gray-300">
+                <span>Agreed Budget:</span>
+                <span className="font-bold text-gray-900 dark:text-gray-100">
+                  {booking.amount} {booking.currency}
+                </span>
+              </div>
+
+              <div className="flex justify-between text-gray-400 text-[11px]">
+                <span>Platform Commission (10%):</span>
+                <span>{booking.platformFee || (booking.amount * 0.1).toFixed(2)} {booking.currency}</span>
+              </div>
+
+              <div className="flex justify-between text-[#9747FF] font-semibold pt-1 border-t border-[#DADDE1] dark:border-[#2f3032]">
+                <span>Creator Earnings:</span>
+                <span>{booking.creatorAmount || (booking.amount * 0.9).toFixed(2)} {booking.currency}</span>
+              </div>
+
+              <div className="pt-2 text-[11px] text-gray-500 flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4 text-[#9747FF]" />
+                <span>Escrow Protected (Preview Mode)</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Timeline Summary */}
+          <div className="p-4 rounded-2xl bg-gray-50/70 dark:bg-white/[0.02] border border-[#DADDE1] dark:border-[#2f3032] space-y-2 text-xs">
+            <h4 className="font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+              Key Dates
+            </h4>
+            <div className="space-y-1.5 text-gray-600 dark:text-gray-300">
+              <div className="flex justify-between">
+                <span>Start Date:</span>
+                <span className="font-medium text-gray-900 dark:text-gray-100">
+                  {new Date(booking.startDate).toLocaleDateString()}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>Due Date:</span>
+                <span className="font-medium text-gray-900 dark:text-gray-100">
+                  {new Date(booking.endDate).toLocaleDateString()}
+                </span>
+              </div>
+              {booking.completedAt && (
+                <div className="flex justify-between text-emerald-600">
+                  <span>Completed At:</span>
+                  <span className="font-medium">{new Date(booking.completedAt).toLocaleDateString()}</span>
                 </div>
               )}
-
-              {/* Status Info - Completed */}
-              {booking.status === 'completed' && (
-                <div className="text-center text-[#8A2BE2] font-medium">
-                  <CheckCircle className="w-8 h-8 mx-auto mb-2" />
-                  Booking Completed
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+          </div>
+        </aside>
       </div>
+
+      {/* =========================================================================
+          MODALS: Submission, Revision, Approval & Rating, Counter, Lightbox
+         ========================================================================= */}
+
+      {/* Creator Submit Deliverables Modal */}
+      <Dialog open={isSubmitModalOpen} onOpenChange={setIsSubmitModalOpen}>
+        <DialogContent className="max-w-lg rounded-2xl bg-white dark:bg-[#18191a] border border-[#DADDE1] dark:border-[#2f3032] p-5">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold text-gray-900 dark:text-gray-100">
+              Submit Deliverables
+            </DialogTitle>
+            <DialogDescription className="text-xs text-gray-500">
+              Deliver completed files, design assets, and external links for client review.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-3">
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-gray-800 dark:text-gray-200">
+                Delivery Title <span className="text-[#9747FF]">*</span>
+              </label>
+              <Input
+                placeholder="e.g. Final Vector Package & Style Guide v1"
+                value={submissionTitle}
+                onChange={(e) => setSubmissionTitle(e.target.value)}
+                className="h-10 text-xs rounded-xl border-[#DADDE1] dark:border-[#2f3032] dark:bg-[#121212]"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-gray-800 dark:text-gray-200">
+                Delivery Notes / Instructions
+              </label>
+              <Textarea
+                rows={3}
+                placeholder="Explain the changes made, file structure, or how to inspect the deliverables..."
+                value={submissionDesc}
+                onChange={(e) => setSubmissionDesc(e.target.value)}
+                className="text-xs rounded-xl border-[#DADDE1] dark:border-[#2f3032] dark:bg-[#121212] resize-none"
+              />
+            </div>
+
+            {/* File Upload */}
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-gray-800 dark:text-gray-200">
+                Upload Assets / Images / Files
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="file"
+                  multiple
+                  onChange={handleFileUpload}
+                  className="text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:bg-purple-50 file:text-[#9747FF] hover:file:bg-purple-100"
+                />
+                {isUploadingFile && <Loader2 className="w-4 h-4 animate-spin text-[#9747FF]" />}
+              </div>
+              {submissionFiles.length > 0 && (
+                <p className="text-[11px] text-emerald-600 font-medium">
+                  {submissionFiles.length} file(s) attached
+                </p>
+              )}
+            </div>
+
+            {/* Links */}
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-gray-800 dark:text-gray-200">
+                External Asset Links (One per line)
+              </label>
+              <Textarea
+                rows={2}
+                placeholder="https://www.figma.com/file/..., https://github.com/..."
+                value={submissionLinks}
+                onChange={(e) => setSubmissionLinks(e.target.value)}
+                className="text-xs font-mono rounded-xl border-[#DADDE1] dark:border-[#2f3032] dark:bg-[#121212] resize-none"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-[#DADDE1] dark:border-[#2f3032]">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsSubmitModalOpen(false)}
+                disabled={isSubmittingWork}
+                className="rounded-xl border-[#DADDE1] dark:border-[#2f3032] text-xs"
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleSubmitWork}
+                disabled={isSubmittingWork}
+                className="bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold rounded-xl"
+              >
+                {isSubmittingWork ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <Send className="w-3.5 h-3.5 mr-1" />}
+                Submit Work Package
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Client Request Revision Modal */}
+      <Dialog open={isRevisionModalOpen} onOpenChange={setIsRevisionModalOpen}>
+        <DialogContent className="max-w-md rounded-2xl bg-white dark:bg-[#18191a] border border-[#DADDE1] dark:border-[#2f3032] p-5">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold text-gray-900 dark:text-gray-100">
+              Request Project Revision
+            </DialogTitle>
+            <DialogDescription className="text-xs text-gray-500">
+              Specify changes or refinements you would like {booking.creator.name} to make.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-3">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-gray-800 dark:text-gray-200">
+                Revision Details &amp; Feedback <span className="text-[#9747FF]">*</span>
+              </label>
+              <Textarea
+                rows={4}
+                placeholder="Clearly describe what needs adjustment (e.g. color adjustments, missing asset format, revised copy)..."
+                value={revisionNotes}
+                onChange={(e) => setRevisionNotes(e.target.value)}
+                className="text-xs rounded-xl border-[#DADDE1] dark:border-[#2f3032] dark:bg-[#121212] focus-visible:ring-[#9747FF] resize-none"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-[#DADDE1] dark:border-[#2f3032]">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsRevisionModalOpen(false)}
+                disabled={isSubmittingRevision}
+                className="rounded-xl border-[#DADDE1] dark:border-[#2f3032] text-xs"
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleRequestRevision}
+                disabled={isSubmittingRevision}
+                className="bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-xl"
+              >
+                {isSubmittingRevision ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <RotateCcw className="w-3.5 h-3.5 mr-1" />}
+                Send Revision Request
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Client Approval & Rating Modal */}
+      <Dialog open={isApprovalModalOpen} onOpenChange={setIsApprovalModalOpen}>
+        <DialogContent className="max-w-md rounded-2xl bg-white dark:bg-[#18191a] border border-[#DADDE1] dark:border-[#2f3032] p-5">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold text-gray-900 dark:text-gray-100">
+              Approve Deliverables &amp; Complete Project
+            </DialogTitle>
+            <DialogDescription className="text-xs text-gray-500">
+              Confirm your satisfaction with the deliverables and rate your experience with {booking.creator.name}.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-3">
+            {/* Interactive Stars */}
+            <div className="space-y-2 text-center py-2">
+              <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                Rate Creator Performance:
+              </span>
+              <div className="flex items-center justify-center gap-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => setRating(star)}
+                    className="p-1 hover:scale-110 transition-transform cursor-pointer"
+                  >
+                    <Star
+                      className={cn(
+                        'w-7 h-7',
+                        star <= rating
+                          ? 'fill-amber-400 text-amber-400'
+                          : 'text-gray-300 dark:text-gray-700'
+                      )}
+                    />
+                  </button>
+                ))}
+              </div>
+              <p className="text-[11px] text-gray-400 font-medium">
+                {rating === 5 && 'Outstanding work! Highly recommended.'}
+                {rating === 4 && 'Great results and communication.'}
+                {rating === 3 && 'Met expectations.'}
+                {rating < 3 && 'Needs improvement.'}
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-gray-800 dark:text-gray-200">
+                Review &amp; Testimonial (Optional)
+              </label>
+              <Textarea
+                rows={3}
+                placeholder="Share your thoughts on the quality, turnaround time, and collaboration..."
+                value={reviewComment}
+                onChange={(e) => setReviewComment(e.target.value)}
+                className="text-xs rounded-xl border-[#DADDE1] dark:border-[#2f3032] dark:bg-[#121212] focus-visible:ring-[#9747FF] resize-none"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-[#DADDE1] dark:border-[#2f3032]">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsApprovalModalOpen(false)}
+                disabled={isSubmittingApproval}
+                className="rounded-xl border-[#DADDE1] dark:border-[#2f3032] text-xs"
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleApproveProject}
+                disabled={isSubmittingApproval}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl"
+              >
+                {isSubmittingApproval ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <CheckCircle2 className="w-3.5 h-3.5 mr-1" />}
+                Confirm &amp; Complete Project
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Counter Proposal Modal */}
+      <Dialog open={isCounterModalOpen} onOpenChange={setIsCounterModalOpen}>
+        <DialogContent className="max-w-md rounded-2xl bg-white dark:bg-[#18191a] border border-[#DADDE1] dark:border-[#2f3032] p-5">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold text-gray-900 dark:text-gray-100">
+              Send Counter Offer
+            </DialogTitle>
+            <DialogDescription className="text-xs text-gray-500">
+              Propose revised budget terms for this project.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-3">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-gray-800 dark:text-gray-200">
+                Counter Budget (USDC)
+              </label>
+              <Input
+                type="number"
+                min="1"
+                value={counterAmount}
+                onChange={(e) => setCounterAmount(e.target.value)}
+                className="h-10 text-sm rounded-xl border-[#DADDE1] dark:border-[#2f3032] dark:bg-[#121212] focus-visible:ring-[#9747FF]"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-[#DADDE1] dark:border-[#2f3032]">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsCounterModalOpen(false)}
+                disabled={isSubmittingCounter}
+                className="rounded-xl border-[#DADDE1] dark:border-[#2f3032] text-xs"
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleSendCounter}
+                disabled={isSubmittingCounter}
+                className="bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold rounded-xl"
+              >
+                {isSubmittingCounter ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <Send className="w-3.5 h-3.5 mr-1" />}
+                Submit Counter Offer
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Lightbox Preview Modal */}
+      {previewImageUrl && (
+        <Dialog open={!!previewImageUrl} onOpenChange={() => setPreviewImageUrl(null)}>
+          <DialogContent className="max-w-3xl p-2 bg-black/95 border-none rounded-2xl overflow-hidden">
+            <div className="relative flex items-center justify-center min-h-[300px]">
+              <img
+                src={previewImageUrl}
+                alt="Enlarged preview"
+                className="max-h-[80vh] w-auto object-contain rounded-lg"
+              />
+              <button
+                type="button"
+                onClick={() => setPreviewImageUrl(null)}
+                className="absolute top-2 right-2 p-1.5 rounded-full bg-black/60 text-white hover:bg-black/90 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

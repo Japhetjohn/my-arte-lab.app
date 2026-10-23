@@ -25,7 +25,9 @@ exports.createBooking = catchAsync(async (req, res, next) => {
     currency,
     startDate,
     endDate,
-    attachments
+    attachments,
+    expectedDeliverables,
+    metadata
   } = req.body;
 
   const validation = isValidBookingAmount(amount);
@@ -47,7 +49,9 @@ exports.createBooking = catchAsync(async (req, res, next) => {
         currency,
         startDate,
         endDate,
-        attachments
+        attachments,
+        expectedDeliverables,
+        metadata
       },
       req.user._id,
       idempotencyKey
@@ -836,4 +840,116 @@ exports.refundBooking = catchAsync(async (req, res, next) => {
     booking: updatedBooking,
     message: `Refund of ${updatedBooking.amount} ${updatedBooking.currency} has been processed and added to client's wallet.`
   });
+});
+
+exports.startWork = catchAsync(async (req, res, next) => {
+  const booking = await Booking.findById(req.params.id).populate('creator client');
+  if (!booking) {
+    return next(new ErrorHandler('Booking not found', 404));
+  }
+
+  const isAuthorized =
+    booking.client._id.toString() === req.user._id.toString() ||
+    booking.creator._id.toString() === req.user._id.toString();
+
+  if (!isAuthorized) {
+    return next(new ErrorHandler('Not authorized to update this booking', 403));
+  }
+
+  booking.status = 'in_progress';
+  await booking.save();
+
+  await Notification.createNotification({
+    recipient: booking.client._id,
+    sender: booking.creator._id,
+    type: 'system',
+    title: 'Project In Progress',
+    message: `Work on "${booking.serviceTitle}" is now underway.`,
+    link: `/bookings`,
+    booking: booking._id,
+    metadata: {
+      bookingId: booking.bookingId
+    }
+  }).catch(err => console.error('Notification error:', err));
+
+  successResponse(res, 200, 'Project moved to In Progress', { booking });
+});
+
+exports.requestRevision = catchAsync(async (req, res, next) => {
+  const { notes } = req.body;
+  const booking = await Booking.findById(req.params.id).populate('creator client');
+  if (!booking) {
+    return next(new ErrorHandler('Booking not found', 404));
+  }
+
+  if (booking.client._id.toString() !== req.user._id.toString()) {
+    return next(new ErrorHandler('Only the client can request a revision', 403));
+  }
+
+  booking.status = 'in_progress';
+  if (notes) {
+    await booking.addMessage(req.user._id, `[Revision Requested]: ${notes}`);
+  }
+  await booking.save();
+
+  await Notification.createNotification({
+    recipient: booking.creator._id,
+    sender: req.user._id,
+    type: 'system',
+    title: 'Revision Requested',
+    message: `${req.user.name} has requested a revision on "${booking.serviceTitle}": ${notes || 'See project details'}`,
+    link: `/bookings`,
+    booking: booking._id,
+    metadata: {
+      bookingId: booking.bookingId,
+      notes
+    }
+  }).catch(err => console.error('Notification error:', err));
+
+  successResponse(res, 200, 'Revision requested successfully', { booking });
+});
+
+exports.approveBooking = catchAsync(async (req, res, next) => {
+  const { rating, comment } = req.body;
+  const booking = await Booking.findById(req.params.id).populate('creator client');
+  if (!booking) {
+    return next(new ErrorHandler('Booking not found', 404));
+  }
+
+  if (booking.client._id.toString() !== req.user._id.toString()) {
+    return next(new ErrorHandler('Only the client can approve this booking', 403));
+  }
+
+  booking.status = 'completed';
+  booking.completedAt = new Date();
+
+  if (rating) {
+    const numericRating = Math.min(5, Math.max(1, Number(rating) || 5));
+    booking.review = {
+      rating: numericRating,
+      comment: comment || '',
+      createdAt: new Date()
+    };
+  }
+
+  await booking.save();
+
+  await Notification.createNotification({
+    recipient: booking.creator._id,
+    sender: req.user._id,
+    type: 'system',
+    title: 'Work Approved! 🎉',
+    message: `${req.user.name} approved the deliverables for "${booking.serviceTitle}".`,
+    link: `/bookings`,
+    booking: booking._id,
+    metadata: {
+      bookingId: booking.bookingId,
+      rating: booking.review?.rating
+    }
+  }).catch(err => console.error('Notification error:', err));
+
+  metricsService.updateCreatorMetrics(booking.creator._id.toString())
+    .catch(err => console.error('Failed to update creator metrics:', err));
+
+  successResponse(res, 200, 'Booking approved and completed', { booking });
 });

@@ -126,6 +126,27 @@ const bookingSchema = new mongoose.Schema({
     type: String
   }],
 
+  expectedDeliverables: [{
+    id: String,
+    title: { type: String, required: true },
+    format: String,
+    description: String,
+    status: {
+      type: String,
+      enum: ['pending', 'in_progress', 'submitted', 'approved'],
+      default: 'pending'
+    }
+  }],
+
+  revisionRequests: [{
+    requestedAt: { type: Date, default: Date.now },
+    notes: String,
+    requestedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    }
+  }],
+
   deliverables: [{
     title: String,
     description: String,

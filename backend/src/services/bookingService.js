@@ -549,7 +549,19 @@ class BookingService {
   }
 
   async createBookingWithValidation(bookingData, clientId, idempotencyKey = null) {
-    const { creatorId, amount, serviceTitle, serviceDescription, category, currency, startDate, endDate } = bookingData;
+    const {
+      creatorId,
+      amount,
+      serviceTitle,
+      serviceDescription,
+      category,
+      currency,
+      startDate,
+      endDate,
+      attachments,
+      expectedDeliverables,
+      metadata
+    } = bookingData;
 
     if (amount < BOOKING_LIMITS.MIN_AMOUNT) {
       throw new ErrorHandler(`Minimum booking amount is ${BOOKING_LIMITS.MIN_AMOUNT} USDC`, 400);
@@ -593,6 +605,9 @@ class BookingService {
       creatorAmount,
       startDate,
       endDate,
+      attachments: attachments || [],
+      expectedDeliverables: expectedDeliverables || [],
+      metadata: metadata || {},
       escrowWallet: {
         address: `escrow-${bookingId}`,
         balance: 0 // Balance is 0 until payment is processed
