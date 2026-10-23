@@ -31,13 +31,13 @@
     <!-- Theme Color -->
     <meta name="theme-color" content="#9747FF">
 
-    <!-- Anti-FOUC Theme Initialization Script -->
+    <!-- Clean Light Theme Initialization Script -->
     <script>
       (function() {
         try {
           var saved = localStorage.getItem('myartelab_theme');
-          var isDark = saved === 'dark' || ((!saved || saved === 'system') && window.matchMedia('(prefers-color-scheme: dark)').matches);
-          if (isDark) {
+          // MyArteLab default is clean light theme. Only apply dark if explicitly set to 'dark' by user in Settings.
+          if (saved === 'dark') {
             document.documentElement.classList.add('dark');
           } else {
             document.documentElement.classList.remove('dark');
@@ -48,7 +48,7 @@
 
     <!-- Google Identity Services -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script type="module" crossorigin src="/assets/index-DkYaHtft.js"></script>
+    <script type="module" crossorigin src="/assets/index-CRCsV_OL.js"></script>
     <link rel="stylesheet" crossorigin href="/assets/index-CzyWZGrL.css">
   </head>
   <body>

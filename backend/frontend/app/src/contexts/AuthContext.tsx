@@ -146,20 +146,65 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     token: null,
   });
 
-  // Initialize auth state from localStorage
+  // Helper to normalize user onboarding status safely
+  const normalizeUserOnboarding = (rawUser: any): User => {
+    if (!rawUser) return rawUser;
+    const isNewOAuthUser =
+      rawUser.password === 'OAUTH_USER_NO_PASSWORD' &&
+      rawUser.createdAt &&
+      new Date(rawUser.createdAt) >= new Date('2026-10-23T15:00:00.000Z');
+
+    const isEstablished =
+      rawUser.isOnboarded === true ||
+      (!isNewOAuthUser &&
+        ((rawUser.role === 'creator' && (rawUser.bio || (rawUser.services && rawUser.services.length > 0) || (rawUser.category && rawUser.category.length > 0))) ||
+        (rawUser.createdAt && new Date(rawUser.createdAt) < new Date('2026-10-23T15:00:00.000Z')) ||
+        (rawUser.password && rawUser.password !== 'OAUTH_USER_NO_PASSWORD')));
+
+    return {
+      ...rawUser,
+      isOnboarded: rawUser.isOnboarded === true ? true : (isEstablished ? true : false),
+    };
+  };
+
+  // Initialize auth state from localStorage and sync profile in background
   useEffect(() => {
-    const initAuth = () => {
+    const initAuth = async () => {
       const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-      const user = localStorage.getItem('user') || sessionStorage.getItem('user');
-      
-      if (token && user) {
-        setState({
-          user: JSON.parse(user),
-          isAuthenticated: true,
-          isLoading: false,
-          token,
-        });
-        api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      const storedUser = localStorage.getItem('user') || sessionStorage.getItem('user');
+
+      if (token && storedUser) {
+        try {
+          const parsedUser = normalizeUserOnboarding(JSON.parse(storedUser));
+          api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+          setState({
+            user: parsedUser,
+            isAuthenticated: true,
+            isLoading: false,
+            token,
+          });
+
+          // Background sync to fetch fresh user profile from backend
+          api.get('/auth/me').then(response => {
+            const freshUser = response.data?.data?.user || response.data?.data;
+            if (freshUser) {
+              const normalized = normalizeUserOnboarding(freshUser);
+              const storage = localStorage.getItem('token') ? localStorage : sessionStorage;
+              storage.setItem('user', JSON.stringify(normalized));
+              setState(prev => ({
+                ...prev,
+                user: normalized,
+                isAuthenticated: true,
+              }));
+            }
+          }).catch(err => {
+            // Keep cached session intact during network blips or server startup
+            console.warn('[AuthContext] Background profile sync skipped:', err.message);
+          });
+        } catch {
+          setState(prev => ({ ...prev, isLoading: false }));
+        }
       } else {
         setState(prev => ({ ...prev, isLoading: false }));
       }
@@ -246,7 +291,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(async (email: string, password: string, rememberMe = false) => {
     try {
       const response = await api.post('/auth/login', { email, password });
-      const { user, token } = response.data.data || response.data;
+      const rawUser = response.data.data?.user || response.data?.user || response.data?.data;
+      const { token } = response.data.data || response.data;
+      const user = normalizeUserOnboarding(rawUser);
 
       const storage = rememberMe ? localStorage : sessionStorage;
       storage.setItem('token', token);
@@ -272,7 +319,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const loginWithGoogle = useCallback(async (data: GoogleAuthPayload) => {
     try {
       const response = await api.post('/auth/google', data);
-      const { user, token } = response.data.data || response.data;
+      const rawUser = response.data.data?.user || response.data?.user || response.data?.data;
+      const { token } = response.data.data || response.data;
+      const user = normalizeUserOnboarding(rawUser);
 
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));

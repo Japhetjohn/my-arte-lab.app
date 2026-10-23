@@ -149,6 +149,15 @@ function AppContent() {
     ? currentPath.slice(0, -1)
     : currentPath;
 
+  // Show clean lightweight loading while auth state is initializing
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#9747FF] border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
   // Auth-only pages (rendered without the main app layout)
   const authRoutes = ['/login', '/register', '/forgot-password', '/reset-password', '/verify-email', '/onboarding'];
   const isAuthRoute = authRoutes.some(route => normalizedPath.startsWith(route));
@@ -172,8 +181,8 @@ function AppContent() {
     }
   }
 
-  // Redirect authenticated users with incomplete onboarding to /onboarding
-  if (isAuthenticated && user?.isOnboarded === false && normalizedPath !== '/onboarding') {
+  // Redirect authenticated users with genuinely incomplete onboarding to /onboarding
+  if (!isLoading && isAuthenticated && user && user.isOnboarded === false && normalizedPath !== '/onboarding') {
     return <NavigateToOnboarding />;
   }
 

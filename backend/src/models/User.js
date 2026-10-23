@@ -357,8 +357,7 @@ const userSchema = new mongoose.Schema({
   },
 
   isOnboarded: {
-    type: Boolean,
-    default: false
+    type: Boolean
   },
 
   isPhoneVerified: {
@@ -709,14 +708,31 @@ userSchema.methods.getPublicProfile = function () {
     obj.isVerified = gracePeriodEnd > new Date();
   }
 
-  // Onboarding status: explicitly true/false if present, else safe fallback for legacy users
+  // Onboarding status determination:
+  // An account is considered onboarded if:
+  // 1. Explicitly true (completed onboarding)
+  // 2. Or established / legacy user:
+  //    - Account existed before the onboarding feature rollout (Oct 23, 2026)
+  //    - Registered with email/password (password hash is present and not 'OAUTH_USER_NO_PASSWORD')
+  //    - Has established creator data (bio, services, portfolio, or category)
+  // Only genuinely new OAuth users created without a password on or after Oct 23, 2026 require onboarding.
+  const isNewOAuthUser =
+    this.password === 'OAUTH_USER_NO_PASSWORD' &&
+    this.createdAt &&
+    new Date(this.createdAt) >= new Date('2026-10-23T15:00:00.000Z');
+
+  const isEstablishedUser =
+    (this.createdAt && new Date(this.createdAt) < new Date('2026-10-23T15:00:00.000Z')) ||
+    (this.password && this.password !== 'OAUTH_USER_NO_PASSWORD') ||
+    (this.role === 'creator' && (this.bio || (this.services && this.services.length > 0) || (this.category && this.category.length > 0)));
+
   if (this.isOnboarded === true) {
     obj.isOnboarded = true;
-  } else if (this.isOnboarded === false) {
-    obj.isOnboarded = false;
+  } else if (!isNewOAuthUser && isEstablishedUser) {
+    obj.isOnboarded = true;
   } else {
-    // Legacy users who already completed basic registration & verification
-    obj.isOnboarded = Boolean(this.isEmailVerified && this.role && (this.role !== 'creator' || (this.category && this.category.length > 0)));
+    // Brand new OAuth registration that has not completed onboarding
+    obj.isOnboarded = false;
   }
 
   // Remove sensitive fields

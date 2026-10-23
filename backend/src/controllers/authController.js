@@ -200,6 +200,10 @@ exports.login = catchAsync(async (req, res, next) => {
     await user.resetLoginAttempts();
   }
 
+  const publicProfile = user.getPublicProfile();
+  if (publicProfile.isOnboarded && user.isOnboarded !== true) {
+    user.isOnboarded = true;
+  }
   user.lastLogin = new Date();
   user.lastActive = new Date();
   await user.save({ validateBeforeSave: false });
@@ -208,7 +212,7 @@ exports.login = catchAsync(async (req, res, next) => {
   const refreshToken = generateRefreshToken(user._id);
 
   successResponse(res, 200, 'Login successful', {
-    user: user.getPublicProfile(),
+    user: publicProfile,
     token,
     refreshToken
   });
@@ -223,10 +227,16 @@ exports.getMe = catchAsync(async (req, res, next) => {
 
   // Update lastActive in background
   user.lastActive = new Date();
+  const publicProfile = user.getPublicProfile();
+
+  // If public profile determined onboarding is complete, ensure document flag matches
+  if (publicProfile.isOnboarded && user.isOnboarded !== true) {
+    user.isOnboarded = true;
+  }
   user.save({ validateBeforeSave: false }).catch(() => {});
 
   successResponse(res, 200, 'User retrieved successfully', {
-    user: user.getPublicProfile()
+    user: publicProfile
   });
 });
 
@@ -1044,6 +1054,8 @@ exports.googleAuth = catchAsync(async (req, res, next) => {
       if (!user.avatar && googleUser.avatar) {
         user.avatar = googleUser.avatar;
       }
+      // An existing user account with this email was found — ensure onboarding is preserved as complete
+      user.isOnboarded = true;
       await user.save({ validateBeforeSave: false });
     } else {
       // Create new user record
@@ -1109,6 +1121,20 @@ exports.googleAuth = catchAsync(async (req, res, next) => {
   }
   if (typeof user.isLocked === 'function' && user.isLocked()) {
     return next(new ErrorHandler('Account is temporarily locked. Please try again later.', 423));
+  }
+
+  // For returning users, ensure onboarding is marked true if profile is established
+  if (!isNew) {
+    const isEstablished =
+      user.isOnboarded === true ||
+      (user.createdAt && new Date(user.createdAt) < new Date('2026-10-23T15:00:00.000Z')) ||
+      (user.password && user.password !== 'OAUTH_USER_NO_PASSWORD') ||
+      (user.role === 'creator' && (user.bio || (user.services && user.services.length > 0) || (user.category && user.category.length > 0))) ||
+      (user.isEmailVerified && user.role);
+
+    if (isEstablished && user.isOnboarded !== true) {
+      user.isOnboarded = true;
+    }
   }
 
   // Reset login attempts and update timestamps

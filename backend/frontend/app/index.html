@@ -31,13 +31,13 @@
     <!-- Theme Color -->
     <meta name="theme-color" content="#9747FF">
 
-    <!-- Anti-FOUC Theme Initialization Script -->
+    <!-- Clean Light Theme Initialization Script -->
     <script>
       (function() {
         try {
           var saved = localStorage.getItem('myartelab_theme');
-          var isDark = saved === 'dark' || ((!saved || saved === 'system') && window.matchMedia('(prefers-color-scheme: dark)').matches);
-          if (isDark) {
+          // MyArteLab default is clean light theme. Only apply dark if explicitly set to 'dark' by user in Settings.
+          if (saved === 'dark') {
             document.documentElement.classList.add('dark');
           } else {
             document.documentElement.classList.remove('dark');
