@@ -23,6 +23,10 @@ export function ProtectedRoute({ children, requireVerified = true }: ProtectedRo
     return <Navigate to="/verify-email" state={{ from: location }} replace />;
   }
 
+  if (user && user.isOnboarded === false) {
+    return <Navigate to="/onboarding" state={{ from: location }} replace />;
+  }
+
   return <>{children}</>;
 }
 
@@ -39,6 +43,9 @@ export function PublicRoute({ children }: { children: React.ReactNode }) {
   if (isAuthenticated) {
     if (!user?.isEmailVerified) {
       return <Navigate to="/verify-email" replace />;
+    }
+    if (user?.isOnboarded === false) {
+      return <Navigate to="/onboarding" replace />;
     }
     return <Navigate to={from} replace />;
   }

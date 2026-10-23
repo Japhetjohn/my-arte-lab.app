@@ -68,8 +68,12 @@ export function Register() {
         redirectUri: window.location.origin + window.location.pathname,
         role: selectedRole,
       })
-        .then(() => {
-          navigate('/home');
+        .then((authUser) => {
+          if (authUser?.isOnboarded === false) {
+            navigate('/onboarding');
+          } else {
+            navigate('/home');
+          }
         })
         .catch(() => {
           setIsLoading(false);

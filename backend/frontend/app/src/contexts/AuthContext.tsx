@@ -24,6 +24,7 @@ export interface User {
   coverImage?: string;
   role: 'client' | 'creator' | 'admin';
   isEmailVerified: boolean;
+  isOnboarded?: boolean;
   isVerified?: boolean;
   verificationSubscription?: {
     active: boolean;
@@ -85,9 +86,25 @@ export interface GoogleAuthPayload {
   category?: string;
 }
 
+export interface OnboardingData {
+  role: 'client' | 'creator';
+  category?: string | string[];
+  location?: {
+    localArea?: string;
+    state?: string;
+    country?: string;
+    countryCode?: string;
+  };
+  bio?: string;
+  phoneNumber?: string;
+  firstName?: string;
+  lastName?: string;
+}
+
 interface AuthContextType extends AuthState {
   login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
   loginWithGoogle: (data: GoogleAuthPayload) => Promise<User>;
+  completeOnboarding: (data: OnboardingData) => Promise<User>;
   register: (userData: RegisterData) => Promise<void>;
   logout: () => void;
   verifyEmail: (code: string, email?: string) => Promise<void>;
@@ -273,6 +290,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return user;
     } catch (error: any) {
       const message = error.response?.data?.error || error.response?.data?.message || 'Google authentication failed';
+      toast.error(message);
+      throw error;
+    }
+  }, []);
+
+  const completeOnboarding = useCallback(async (data: OnboardingData) => {
+    try {
+      const response = await api.post('/auth/complete-onboarding', data);
+      const updatedUser = response.data.data?.user || response.data.user;
+
+      setState(prev => ({ ...prev, user: updatedUser }));
+
+      const storage = localStorage.getItem('token') ? localStorage : sessionStorage;
+      storage.setItem('user', JSON.stringify(updatedUser));
+
+      toast.success('Onboarding complete! Welcome to MyArteLab.');
+      return updatedUser;
+    } catch (error: any) {
+      const message = error.response?.data?.error || error.response?.data?.message || 'Failed to complete onboarding';
       toast.error(message);
       throw error;
     }
@@ -469,6 +505,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ...state,
         login,
         loginWithGoogle,
+        completeOnboarding,
         register,
         logout,
         verifyEmail,

@@ -45,8 +45,12 @@ export function Login() {
         redirectUri: window.location.origin + window.location.pathname,
         role: 'client',
       })
-        .then(() => {
-          window.location.href = '/home';
+        .then((authUser) => {
+          if (authUser?.isOnboarded === false) {
+            window.location.href = '/onboarding';
+          } else {
+            window.location.href = '/home';
+          }
         })
         .catch(() => {
           setIsLoading(false);
@@ -67,7 +71,12 @@ export function Login() {
     setShowVerifyModal(false);
     try {
       await login(data.email, data.password);
-      window.location.href = '/home';
+      const storedUser = JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user') || '{}');
+      if (storedUser?.isOnboarded === false) {
+        window.location.href = '/onboarding';
+      } else {
+        window.location.href = '/home';
+      }
     } catch (error: any) {
       // Check if the error is due to unverified email
       const response = error.response?.data;

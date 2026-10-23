@@ -536,6 +536,7 @@ exports.verifyEmail = catchAsync(async (req, res, next) => {
   }
 
   user.isEmailVerified = true;
+  user.isOnboarded = true;
   user.emailVerificationToken = undefined;
   user.emailVerificationExpire = undefined;
   await user.save({ validateBeforeSave: false });
@@ -1020,6 +1021,8 @@ exports.googleAuth = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Could not retrieve verified Google profile', 400));
   }
 
+  const isGoogleEmailVerified = Boolean(googleUser.emailVerified);
+
   // Find existing user by Google ID or by Email
   let user = await User.findOne({ googleId: googleUser.googleId });
   let isNew = false;
@@ -1028,9 +1031,14 @@ exports.googleAuth = catchAsync(async (req, res, next) => {
     user = await User.findOne({ email: googleUser.email });
 
     if (user) {
+      // Safe account linking: Only link if Google identity has verified the email
+      if (!isGoogleEmailVerified) {
+        return next(new ErrorHandler('Google email is not verified by Google. Cannot link to existing account.', 403));
+      }
+
       // Link Google ID to existing user account
       user.googleId = googleUser.googleId;
-      if (googleUser.emailVerified && !user.isEmailVerified) {
+      if (!user.isEmailVerified) {
         user.isEmailVerified = true;
       }
       if (!user.avatar && googleUser.avatar) {
@@ -1039,11 +1047,15 @@ exports.googleAuth = catchAsync(async (req, res, next) => {
       await user.save({ validateBeforeSave: false });
     } else {
       // Create new user record
+      if (!isGoogleEmailVerified) {
+        return next(new ErrorHandler('Google account email is not verified. Please verify your email with Google first.', 403));
+      }
+
       isNew = true;
       const targetRole = role === 'creator' ? 'creator' : 'client';
       const userCategory = targetRole === 'creator' && category
         ? (Array.isArray(category) ? category : [category])
-        : undefined;
+        : [];
 
       user = await User.create({
         firstName: googleUser.firstName,
@@ -1052,10 +1064,11 @@ exports.googleAuth = catchAsync(async (req, res, next) => {
         googleId: googleUser.googleId,
         password: 'OAUTH_USER_NO_PASSWORD',
         isEmailVerified: true,
+        isOnboarded: false, // New Google sign-ups must complete mandatory onboarding
         avatar: googleUser.avatar || '/images/avatar-3.png',
         coverImage: '/images/hero-bg.jpg',
-        role: targetRole,
-        category: userCategory,
+        role: targetRole === 'creator' && userCategory.length > 0 ? 'creator' : 'client',
+        category: targetRole === 'creator' && userCategory.length > 0 ? userCategory : undefined,
         location: {
           country: 'Nigeria',
           state: '',
@@ -1084,8 +1097,8 @@ exports.googleAuth = catchAsync(async (req, res, next) => {
         recipient: user._id,
         type: 'system',
         title: 'Welcome to MyArteLab!',
-        message: 'Your account has been created successfully with Google.',
-        link: '/profile'
+        message: 'Your account has been created with Google. Complete your profile setup to get started.',
+        link: '/onboarding'
       }).catch(() => {});
     }
   }
@@ -1109,11 +1122,79 @@ exports.googleAuth = catchAsync(async (req, res, next) => {
   // Issue authentic session tokens
   const token = generateToken(user._id);
   const refreshToken = generateRefreshToken(user._id);
+  const publicProfile = user.getPublicProfile();
 
   successResponse(res, 200, isNew ? 'Google registration successful' : 'Google login successful', {
-    user: user.getPublicProfile(),
+    user: publicProfile,
     token,
     refreshToken,
-    isNewUser: isNew
+    isNewUser: isNew,
+    requiresOnboarding: !publicProfile.isOnboarded
+  });
+});
+
+/**
+ * @desc    Complete onboarding for authenticated user
+ * @route   POST /api/auth/complete-onboarding
+ * @access  Private
+ */
+exports.completeOnboarding = catchAsync(async (req, res, next) => {
+  const { role, category, location, bio, phoneNumber, firstName, lastName } = req.body;
+  const user = await User.findById(req.user._id);
+
+  if (!user) {
+    return next(new ErrorHandler('User not found', 404));
+  }
+
+  // 1. Validate role (mandatory: client or creator)
+  if (!role || (role !== 'client' && role !== 'creator')) {
+    return next(new ErrorHandler('Please select a valid account type (client or creator)', 400));
+  }
+
+  // 2. Validate categories if creator (mandatory: 1 to 3 categories)
+  let normalizedCategories = [];
+  if (role === 'creator') {
+    const rawCategories = Array.isArray(category) ? category : category ? [category] : [];
+    normalizedCategories = rawCategories.filter(Boolean);
+    if (normalizedCategories.length === 0) {
+      return next(new ErrorHandler('Creators must select at least one primary creative category', 400));
+    }
+    if (normalizedCategories.length > 3) {
+      return next(new ErrorHandler('Creators can select at most 3 categories', 400));
+    }
+  }
+
+  // 3. Update user fields
+  user.role = role;
+  user.category = role === 'creator' ? normalizedCategories : undefined;
+
+  if (firstName && firstName.trim()) user.firstName = firstName.trim();
+  if (lastName && lastName.trim()) user.lastName = lastName.trim();
+  if (bio !== undefined) user.bio = bio ? bio.trim() : user.bio;
+  if (phoneNumber !== undefined) user.phoneNumber = phoneNumber ? phoneNumber.trim() : user.phoneNumber;
+
+  // 4. Update location if provided
+  if (location) {
+    const { normalizeCountryCode, getCountryName } = require('../utils/countryUtils');
+    const localArea = location.localArea || user.location?.localArea || '';
+    const state = location.state || user.location?.state || '';
+    const rawCountry = location.country || user.location?.country || 'Nigeria';
+    const normalizedCountryCode = location.countryCode || normalizeCountryCode(rawCountry) || user.countryCode || 'NG';
+    const countryName = getCountryName(normalizedCountryCode) || rawCountry;
+
+    user.location = {
+      localArea,
+      state,
+      country: countryName
+    };
+    user.countryCode = normalizedCountryCode;
+  }
+
+  // 5. Mark onboarding as complete and save
+  user.isOnboarded = true;
+  await user.save();
+
+  successResponse(res, 200, 'Onboarding completed successfully', {
+    user: user.getPublicProfile()
   });
 });

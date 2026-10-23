@@ -84,7 +84,7 @@ export function GoogleAuthButton({
 
             if (response?.code) {
               try {
-                await loginWithGoogle({
+                const authUser = await loginWithGoogle({
                   code: response.code,
                   redirectUri: 'postmessage',
                   role,
@@ -92,6 +92,8 @@ export function GoogleAuthButton({
                 });
                 if (onSuccess) {
                   onSuccess();
+                } else if (authUser?.isOnboarded === false) {
+                  navigate('/onboarding');
                 } else {
                   navigate('/home');
                 }
@@ -123,13 +125,15 @@ export function GoogleAuthButton({
           callback: async (response: any) => {
             if (response?.credential) {
               try {
-                await loginWithGoogle({
+                const authUser = await loginWithGoogle({
                   credential: response.credential,
                   role,
                   category,
                 });
                 if (onSuccess) {
                   onSuccess();
+                } else if (authUser?.isOnboarded === false) {
+                  navigate('/onboarding');
                 } else {
                   navigate('/home');
                 }

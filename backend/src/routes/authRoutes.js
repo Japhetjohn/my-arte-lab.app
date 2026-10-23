@@ -27,6 +27,7 @@ router.get('/google/url', authController.getGoogleAuthUrl);
 
 router.use(protect);
 
+router.post('/complete-onboarding', authController.completeOnboarding);
 router.get('/me', authController.getMe);
 router.post('/ping', authController.pingActivity);
 router.post('/logout', authController.logout);

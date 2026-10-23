@@ -7,6 +7,7 @@ import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
 
 import { Login } from '@/pages/auth/Login';
 import { Register } from '@/pages/auth/Register';
+import { Onboarding } from '@/pages/auth/Onboarding';
 import { VerifyEmail } from '@/pages/auth/VerifyEmail';
 import { ForgotPassword } from '@/pages/auth/ForgotPassword';
 import { ResetPassword } from '@/pages/auth/ResetPassword';
@@ -136,15 +137,17 @@ function AppContent() {
   };
 
   // Auth-only pages (rendered without the main app layout)
-  const authRoutes = ['/login', '/register', '/forgot-password', '/reset-password', '/verify-email'];
+  const authRoutes = ['/login', '/register', '/forgot-password', '/reset-password', '/verify-email', '/onboarding'];
   const isAuthRoute = authRoutes.some(route => currentPath.startsWith(route));
 
   if (isAuthRoute) {
     switch (true) {
       case currentPath === '/login':
-        return isAuthenticated ? <NavigateToHome /> : <Login />;
+        return isAuthenticated ? (user?.isOnboarded === false ? <NavigateToOnboarding /> : <NavigateToHome />) : <Login />;
       case currentPath === '/register':
-        return isAuthenticated ? <NavigateToHome /> : <Register />;
+        return isAuthenticated ? (user?.isOnboarded === false ? <NavigateToOnboarding /> : <NavigateToHome />) : <Register />;
+      case currentPath === '/onboarding':
+        return isAuthenticated ? (user?.isOnboarded === false ? <Onboarding /> : <NavigateToHome />) : <Login />;
       case currentPath === '/forgot-password':
         return <ForgotPassword />;
       case currentPath.startsWith('/reset-password'):
@@ -154,6 +157,11 @@ function AppContent() {
       default:
         return <Login />;
     }
+  }
+
+  // Redirect authenticated users with incomplete onboarding to /onboarding
+  if (isAuthenticated && user?.isOnboarded === false && currentPath !== '/onboarding') {
+    return <NavigateToOnboarding />;
   }
 
   // Public browsing pages: visible to guests and logged-in users
@@ -287,6 +295,11 @@ function AppContent() {
 
 function NavigateToHome() {
   window.location.href = '/home';
+  return null;
+}
+
+function NavigateToOnboarding() {
+  window.location.href = '/onboarding';
   return null;
 }
 

@@ -356,6 +356,11 @@ const userSchema = new mongoose.Schema({
     default: false
   },
 
+  isOnboarded: {
+    type: Boolean,
+    default: false
+  },
+
   isPhoneVerified: {
     type: Boolean,
     default: false
@@ -702,6 +707,16 @@ userSchema.methods.getPublicProfile = function () {
   if (sub && sub.expiresAt) {
     const gracePeriodEnd = new Date(sub.expiresAt.getTime() + GRACE_PERIOD_HOURS * 60 * 60 * 1000);
     obj.isVerified = gracePeriodEnd > new Date();
+  }
+
+  // Onboarding status: explicitly true/false if present, else safe fallback for legacy users
+  if (this.isOnboarded === true) {
+    obj.isOnboarded = true;
+  } else if (this.isOnboarded === false) {
+    obj.isOnboarded = false;
+  } else {
+    // Legacy users who already completed basic registration & verification
+    obj.isOnboarded = Boolean(this.isEmailVerified && this.role && (this.role !== 'creator' || (this.category && this.category.length > 0)));
   }
 
   // Remove sensitive fields
