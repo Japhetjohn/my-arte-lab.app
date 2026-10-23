@@ -50,9 +50,9 @@ export function AuthLayout({
                 <img
                   src="/images/myartelab-logo.png"
                   alt="MyArteLab"
-                  className="h-9 w-9 sm:h-10 sm:w-10 object-contain transition-transform group-hover:scale-105"
+                  className="h-10 sm:h-11 md:h-12 w-auto object-contain transition-transform group-hover:scale-105"
                 />
-                <span className="font-semibold text-xl tracking-[-0.015em] text-gray-900 leading-none">
+                <span className="font-bold text-2xl tracking-[-0.015em] text-gray-900 leading-none">
                   MyArteLab
                 </span>
               </a>

@@ -176,7 +176,7 @@ export function TopNavigation({
             <img 
               src="/images/myartelab-logo.png" 
               alt="MyArteLab" 
-              className="h-8 w-8 sm:h-9 sm:w-9 object-contain" 
+              className="h-9 sm:h-10 w-auto object-contain" 
             />
           </a>
 
@@ -391,14 +391,14 @@ export function TopNavigation({
           <a 
             href="/home" 
             onClick={(e) => { e.preventDefault(); handleNavClick('/home'); }}
-            className="flex items-center gap-2.5 shrink-0 group select-none cursor-pointer"
+            className="flex items-center gap-3 shrink-0 group select-none cursor-pointer"
           >
             <img 
               src="/images/myartelab-logo.png" 
               alt="MyArteLab" 
-              className="h-8 w-8 sm:h-9 sm:w-9 object-contain shrink-0 transition-transform group-hover:scale-105" 
+              className="h-9 sm:h-10 md:h-11 w-auto object-contain shrink-0 transition-transform group-hover:scale-105" 
             />
-            <span className="font-semibold text-lg tracking-[-0.015em] text-gray-900 dark:text-gray-100 antialiased leading-none">
+            <span className="font-bold text-xl sm:text-2xl tracking-[-0.015em] text-gray-900 dark:text-gray-100 antialiased leading-none">
               MyArteLab
             </span>
           </a>
