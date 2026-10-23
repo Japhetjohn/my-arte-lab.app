@@ -321,14 +321,14 @@ export function Bookings() {
     .filter((b) => b.status !== 'cancelled')
     .reduce((acc, curr) => acc + (curr.amount || 0), 0);
 
-  // Status badge helper
+  // Status display helper - restrained typography label matching home feed
   const getStatusDisplay = (b: BookingWorkflowItem) => {
     const isRevision = (b.revisionRequests && b.revisionRequests.length > 0) && b.status === 'in_progress';
 
     if (isRevision) {
       return {
         label: 'Revision Requested',
-        className: 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400',
+        textClassName: 'text-amber-600 dark:text-amber-400',
       };
     }
 
@@ -336,38 +336,38 @@ export function Bookings() {
       case 'pending':
         return {
           label: 'Pending Response',
-          className: 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400',
+          textClassName: 'text-blue-600 dark:text-blue-400',
         };
       case 'awaiting_payment':
         return {
           label: 'Awaiting Escrow Deposit',
-          className: 'bg-purple-50 dark:bg-purple-950/40 text-[#9747FF]',
+          textClassName: 'text-[#9747FF]',
         };
       case 'confirmed':
       case 'in_progress':
         return {
           label: 'In Progress',
-          className: 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400',
+          textClassName: 'text-indigo-600 dark:text-indigo-400',
         };
       case 'delivered':
         return {
           label: 'Delivered / In Review',
-          className: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400',
+          textClassName: 'text-emerald-600 dark:text-emerald-400',
         };
       case 'completed':
         return {
           label: 'Completed',
-          className: 'bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-300',
+          textClassName: 'text-emerald-600 dark:text-emerald-400',
         };
       case 'cancelled':
         return {
           label: 'Cancelled',
-          className: 'bg-gray-100 dark:bg-gray-800 text-gray-500',
+          textClassName: 'text-gray-500 dark:text-gray-400',
         };
       default:
         return {
           label: b.status,
-          className: 'bg-gray-100 dark:bg-gray-800 text-gray-600',
+          textClassName: 'text-gray-600 dark:text-gray-400',
         };
     }
   };
@@ -383,14 +383,14 @@ export function Bookings() {
     return (
       <article
         key={b._id}
-        className="py-4 border-b border-[#DADDE1] dark:border-[#2f3032] space-y-3 transition-colors"
+        className="py-4 border-b border-[#DADDE1] dark:border-[#2f3032] space-y-2.5 transition-colors"
       >
-        {/* Top Header: Other party info, Role badge, Status */}
+        {/* Top Header: Creator Avatar, Identity, Status & Three-Dot Menu */}
         <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
             <a
               href={isClient ? `/creators/${b.creator._id}` : undefined}
-              className="w-10 h-10 sm:w-11 sm:h-11 rounded-full overflow-hidden bg-purple-50 dark:bg-purple-950/40 border border-gray-200 dark:border-gray-800 shrink-0"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full overflow-hidden bg-purple-50 dark:bg-purple-950/40 border border-gray-200/80 dark:border-gray-800 shrink-0"
             >
               {otherParty.avatar ? (
                 <img
@@ -399,35 +399,38 @@ export function Bookings() {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center font-bold text-[#9747FF] text-sm">
+                <div className="w-full h-full flex items-center justify-center font-bold text-[#9747FF] text-xs sm:text-sm">
                   {(otherParty.name || 'U')[0]?.toUpperCase()}
                 </div>
               )}
             </a>
 
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="font-bold text-sm sm:text-base text-gray-900 dark:text-gray-100 truncate">
+                <a
+                  href={isClient ? `/creators/${b.creator._id}` : undefined}
+                  className="font-bold text-sm sm:text-base text-gray-900 dark:text-gray-100 hover:text-[#9747FF] transition-colors truncate"
+                >
                   {otherParty.name}
-                </span>
+                </a>
                 {otherParty.isVerified && (
-                  <VerifiedBadge className="w-3.5 h-3.5" showTooltip={false} />
+                  <VerifiedBadge className="w-3.5 h-3.5 shrink-0" showTooltip={false} />
                 )}
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
+                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800/80 shrink-0">
                   {isClient ? 'Hired Creator' : 'Client'}
                 </span>
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
-                {b.category} • ID: <span className="font-mono text-[11px]">{b.bookingId || b._id.slice(-6)}</span>
+              <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
+                {b.category ? `${b.category} • ` : ''}ID: <span className="font-mono">{b.bookingId || b._id.slice(-8).toUpperCase()}</span>
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1 shrink-0 pt-0.5">
             <span
               className={cn(
-                'text-[11px] font-semibold px-2.5 py-0.5 rounded-full',
-                statusInfo.className
+                'text-xs font-semibold tracking-tight text-right',
+                statusInfo.textClassName
               )}
             >
               {statusInfo.label}
@@ -435,11 +438,15 @@ export function Bookings() {
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-full">
+                <button
+                  type="button"
+                  className="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors cursor-pointer outline-none"
+                  aria-label="Booking options"
+                >
                   <MoreVertical className="w-4 h-4" />
-                </Button>
+                </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-white dark:bg-[#18191a] border border-[#DADDE1] dark:border-[#2f3032] rounded-xl shadow-md p-1">
+              <DropdownMenuContent align="end" className="bg-white dark:bg-[#18191a] border border-[#DADDE1] dark:border-[#2f3032] rounded-xl shadow-md p-1 min-w-[150px]">
                 <DropdownMenuItem onClick={() => (window.location.href = `/bookings/${b._id}`)} className="text-xs cursor-pointer">
                   Open Workspace
                 </DropdownMenuItem>
@@ -459,23 +466,25 @@ export function Bookings() {
           </div>
         </div>
 
-        {/* Project Title & Description sitting naturally on background */}
-        <div className="space-y-1">
+        {/* Project Title & Short Description */}
+        <div className="space-y-0.5">
           <h4
             onClick={() => (window.location.href = `/bookings/${b._id}`)}
-            className="text-sm sm:text-base font-bold text-gray-900 dark:text-gray-100 hover:text-[#9747FF] dark:hover:text-[#9747FF] transition-colors cursor-pointer"
+            className="text-sm sm:text-base font-bold text-gray-900 dark:text-gray-100 hover:text-[#9747FF] dark:hover:text-[#9747FF] transition-colors cursor-pointer leading-snug line-clamp-1"
           >
             {b.serviceTitle}
           </h4>
-          <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2 leading-relaxed">
-            {b.serviceDescription}
-          </p>
+          {b.serviceDescription && (
+            <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2 leading-relaxed">
+              {b.serviceDescription}
+            </p>
+          )}
         </div>
 
-        {/* Counter Offer Section: simple inline row separated by subtle ash-gray border, NO chunky boxes */}
+        {/* Counter Offer Notice if pending */}
         {hasActiveCounterOffer && (
-          <div className="py-2.5 px-3 rounded-lg bg-purple-50/50 dark:bg-purple-950/20 border-l-2 border-[#9747FF] flex flex-wrap items-center justify-between gap-2 text-xs">
-            <div className="flex items-center gap-2 text-[#9747FF] font-semibold">
+          <div className="py-2 px-3 rounded-lg bg-purple-50/50 dark:bg-purple-950/20 border-l-2 border-[#9747FF] flex flex-wrap items-center justify-between gap-2 text-xs">
+            <div className="flex items-center gap-1.5 text-[#9747FF] font-semibold">
               <RotateCcw className="w-3.5 h-3.5 shrink-0" />
               <span>Counter Offer: {b.counterProposal?.amount} {b.currency}</span>
             </div>
@@ -485,7 +494,7 @@ export function Bookings() {
                   size="sm"
                   onClick={() => handleAcceptCounter(b)}
                   disabled={isProcessingAction}
-                  className="h-7 px-3 text-xs bg-[#9747FF] text-white rounded-full hover:bg-[#8534f0] font-semibold shadow-2xs"
+                  className="h-7.5 px-3 text-xs bg-[#9747FF] text-white rounded-full hover:bg-[#8534f0] font-semibold shadow-2xs"
                 >
                   Accept Offer
                 </Button>
@@ -494,31 +503,24 @@ export function Bookings() {
                   variant="outline"
                   onClick={() => handleRejectCounter(b)}
                   disabled={isProcessingAction}
-                  className="h-7 px-3 text-xs rounded-full border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300"
+                  className="h-7.5 px-3 text-xs rounded-full border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
                 >
                   Decline
                 </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => (window.location.href = `/bookings/${b._id}`)}
-                  className="h-7 px-2 text-xs text-[#9747FF] hover:bg-purple-50 dark:hover:bg-purple-950/40"
-                >
-                  Review
-                </Button>
               </div>
             ) : (
-              <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
-                Waiting for client to respond to your counter offer
+              <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
+                Waiting for client to respond
               </span>
             )}
           </div>
         )}
 
-        {/* Metadata & Primary Action Row (straightforward, no nested card) */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-1 text-xs text-gray-500 dark:text-gray-400">
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-            <div className="flex items-center gap-1 font-semibold text-gray-900 dark:text-gray-100">
+        {/* Metadata and Contextual Actions: Single line on desktop, wrapping gracefully on mobile */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-0.5">
+          {/* Metadata items */}
+          <div className="flex items-center gap-x-4 gap-y-1.5 flex-wrap text-xs text-gray-500 dark:text-gray-400">
+            <div className="flex items-center gap-1 font-bold text-gray-900 dark:text-gray-100">
               <DollarSign className="w-3.5 h-3.5 text-[#9747FF]" />
               <span>{b.amount} {b.currency}</span>
             </div>
@@ -543,29 +545,29 @@ export function Bookings() {
             )}
           </div>
 
-          {/* Contextual Action Buttons - Compact & responsive for mobile */}
-          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+          {/* Contextual Action Buttons - Proportional, content-fitting, matching header buttons */}
+          <div className="flex items-center gap-2 flex-wrap">
             {/* 1. Client Action: Fund Escrow */}
             {isClient && b.status === 'awaiting_payment' && (
               <Button
                 size="sm"
                 onClick={() => handleOpenFundingModal(b)}
-                className="h-7.5 sm:h-8 px-3 sm:px-4 text-[11px] sm:text-xs rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white font-semibold shadow-2xs cursor-pointer inline-flex items-center gap-1.5"
+                className="h-8 px-3.5 text-xs rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white font-semibold shadow-2xs cursor-pointer inline-flex items-center gap-1.5 transition-colors"
               >
                 <Lock className="w-3.5 h-3.5" />
-                <span>Fund Escrow ({b.amount} {b.currency})</span>
+                <span>Fund Escrow</span>
               </Button>
             )}
 
             {/* 2. Creator Action when Pending: Accept / Counter / Decline */}
             {isCreator && b.status === 'pending' && (
-              <div className="flex items-center gap-1.5 flex-wrap">
+              <>
                 <Button
                   size="sm"
                   variant="ghost"
                   onClick={() => handleOpenDeclineModal(b)}
                   disabled={isProcessingAction}
-                  className="h-7.5 sm:h-8 px-2.5 sm:px-3 text-[11px] sm:text-xs rounded-full text-gray-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30"
+                  className="h-8 px-2.5 text-xs rounded-full text-gray-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
                 >
                   Decline
                 </Button>
@@ -574,7 +576,7 @@ export function Bookings() {
                   variant="outline"
                   onClick={() => handleOpenCounterModal(b)}
                   disabled={isProcessingAction}
-                  className="h-7.5 sm:h-8 px-2.5 sm:px-3 text-[11px] sm:text-xs rounded-full border-gray-300 dark:border-gray-700 text-[#9747FF] hover:bg-purple-50 dark:hover:bg-purple-950/30 font-medium"
+                  className="h-8 px-3 text-xs rounded-full border border-gray-300 dark:border-gray-700 text-[#9747FF] hover:bg-purple-50 dark:hover:bg-purple-950/30 font-semibold transition-colors"
                 >
                   Counter
                 </Button>
@@ -582,12 +584,12 @@ export function Bookings() {
                   size="sm"
                   onClick={() => handleAccept(b)}
                   disabled={isProcessingAction}
-                  className="h-7.5 sm:h-8 px-3 sm:px-4 text-[11px] sm:text-xs rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white font-semibold shadow-2xs"
+                  className="h-8 px-3.5 text-xs rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white font-semibold shadow-2xs transition-colors"
                 >
                   {isProcessingAction ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}
                   <span>Accept</span>
                 </Button>
-              </div>
+              </>
             )}
 
             {/* 3. Creator Action when In Progress: Submit Work */}
@@ -595,7 +597,7 @@ export function Bookings() {
               <Button
                 size="sm"
                 onClick={() => (window.location.href = `/bookings/${b._id}?action=submit`)}
-                className="h-7.5 sm:h-8 px-3 sm:px-4 text-[11px] sm:text-xs rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white font-semibold shadow-2xs"
+                className="h-8 px-3.5 text-xs rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white font-semibold shadow-2xs inline-flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 <span>Submit Work</span>
               </Button>
@@ -606,7 +608,7 @@ export function Bookings() {
               <Button
                 size="sm"
                 onClick={() => (window.location.href = `/bookings/${b._id}?action=review`)}
-                className="h-7.5 sm:h-8 px-3 sm:px-4 text-[11px] sm:text-xs rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-2xs inline-flex items-center gap-1.5"
+                className="h-8 px-3.5 text-xs rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-2xs inline-flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 <span>Review &amp; Approve</span>
@@ -618,7 +620,7 @@ export function Bookings() {
               size="sm"
               variant="outline"
               onClick={() => (window.location.href = `/bookings/${b._id}`)}
-              className="h-7.5 sm:h-8 px-2.5 sm:px-3 text-[11px] sm:text-xs rounded-full border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 font-medium inline-flex items-center gap-1"
+              className="h-8 px-3.5 text-xs rounded-full border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 font-medium inline-flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <span>Workspace</span>
               <ArrowRight className="w-3 h-3 text-gray-400" />
