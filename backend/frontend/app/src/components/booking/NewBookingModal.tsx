@@ -373,7 +373,7 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
                   variant="outline"
                   size="sm"
                   onClick={handleAddDeliverable}
-                  className="h-7 text-xs rounded-lg border-[#DADDE1] dark:border-[#2f3032] text-[#9747FF] hover:bg-purple-50 dark:hover:bg-purple-950/40"
+                  className="h-7 text-xs rounded-full border-[#DADDE1] dark:border-[#2f3032] text-[#9747FF] hover:bg-purple-50 dark:hover:bg-purple-950/40"
                 >
                   <Plus className="w-3.5 h-3.5 mr-1" />
                   Add Item
@@ -538,7 +538,7 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
                   size="sm"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isUploading}
-                  className="h-7 text-xs rounded-lg border-[#DADDE1] dark:border-[#2f3032] text-[#9747FF]"
+                  className="h-7 text-xs rounded-full border-[#DADDE1] dark:border-[#2f3032] text-[#9747FF]"
                 >
                   {isUploading ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" />
@@ -609,7 +609,7 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
                   Ready to send your booking request
                 </p>
                 <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-                  Review your project scope below. {creator.name} will be notified to review and accept. Funds will only be settled after project agreement.
+                  Review your project scope below. {creator.name} will review and accept your request. Once accepted, you will deposit the agreed budget into MyArteLab escrow to initiate production.
                 </p>
               </div>
             </div>
@@ -712,7 +712,7 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
           size="sm"
           onClick={() => setCurrentStep((prev) => (prev - 1) as any)}
           disabled={isLoading}
-          className="rounded-xl border-[#DADDE1] dark:border-[#2f3032] text-xs font-semibold px-4 cursor-pointer"
+          className="rounded-full border-[#DADDE1] dark:border-[#2f3032] text-xs font-semibold px-4 cursor-pointer"
         >
           <ChevronLeft className="w-4 h-4 mr-1" />
           Back
@@ -724,7 +724,7 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
           size="sm"
           onClick={handleClose}
           disabled={isLoading}
-          className="rounded-xl text-xs text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 cursor-pointer"
+          className="rounded-full text-xs text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 cursor-pointer"
         >
           Cancel
         </Button>
@@ -735,7 +735,7 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
           type="button"
           size="sm"
           onClick={handleNextStep}
-          className="bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold rounded-xl px-5 cursor-pointer shadow-xs"
+          className="bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold rounded-full px-5 cursor-pointer shadow-xs"
         >
           Continue
           <ChevronRight className="w-4 h-4 ml-1" />
@@ -746,7 +746,7 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
           size="sm"
           onClick={handleSubmitBooking}
           disabled={isLoading}
-          className="bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold rounded-xl px-6 cursor-pointer shadow-xs"
+          className="bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold rounded-full px-6 cursor-pointer shadow-xs"
         >
           {isLoading ? (
             <>

@@ -670,6 +670,75 @@ exports.counterProposal = catchAsync(async (req, res, next) => {
 
   successResponse(res, 200, 'Counter proposal sent successfully', { booking });
 });
+
+exports.acceptCounterOffer = catchAsync(async (req, res, next) => {
+  const booking = await Booking.findById(req.params.id).populate('client creator');
+  if (!booking) {
+    return next(new ErrorHandler('Booking not found', 404));
+  }
+
+  if (booking.client._id.toString() !== req.user._id.toString()) {
+    return next(new ErrorHandler('Only the client can accept a counter offer', 403));
+  }
+
+  if (!booking.counterProposal || !booking.counterProposal.amount || booking.counterProposal.applied) {
+    return next(new ErrorHandler('No active counter offer to accept', 400));
+  }
+
+  booking.amount = booking.counterProposal.amount;
+  booking.platformFee = booking.counterProposal.platformFee;
+  booking.creatorAmount = booking.counterProposal.creatorAmount;
+  booking.counterProposal.applied = true;
+  booking.status = 'awaiting_payment';
+  await booking.addMessage(req.user._id, `Accepted counter offer of ${booking.amount} ${booking.currency}`);
+  await booking.save();
+
+  await Notification.createNotification({
+    recipient: booking.creator._id,
+    sender: req.user._id,
+    type: 'counter_proposal',
+    title: 'Counter Offer Accepted! 🎉',
+    message: `${req.user.name} accepted your counter offer of ${booking.amount} ${booking.currency} for "${booking.serviceTitle}". Awaiting escrow payment.`,
+    link: `/bookings/${booking._id}`,
+    booking: booking._id
+  }).catch(() => {});
+
+  successResponse(res, 200, 'Counter offer accepted. Ready for escrow funding.', { booking });
+});
+
+exports.rejectCounterOffer = catchAsync(async (req, res, next) => {
+  const { reason } = req.body;
+  const booking = await Booking.findById(req.params.id).populate('client creator');
+  if (!booking) {
+    return next(new ErrorHandler('Booking not found', 404));
+  }
+
+  if (booking.client._id.toString() !== req.user._id.toString()) {
+    return next(new ErrorHandler('Only the client can decline a counter offer', 403));
+  }
+
+  if (!booking.counterProposal || !booking.counterProposal.amount || booking.counterProposal.applied) {
+    return next(new ErrorHandler('No active counter offer to decline', 400));
+  }
+
+  booking.counterProposal.applied = false;
+  booking.counterProposal = null;
+  await booking.addMessage(req.user._id, `Declined counter offer${reason ? `: ${reason}` : ''}`);
+  await booking.save();
+
+  await Notification.createNotification({
+    recipient: booking.creator._id,
+    sender: req.user._id,
+    type: 'counter_proposal',
+    title: 'Counter Offer Declined',
+    message: `${req.user.name} declined your counter offer for "${booking.serviceTitle}".`,
+    link: `/bookings/${booking._id}`,
+    booking: booking._id
+  }).catch(() => {});
+
+  successResponse(res, 200, 'Counter offer declined', { booking });
+});
+
 exports.payBooking = catchAsync(async (req, res, next) => {
   const result = await bookingService.processBookingPayment(req.params.id, req.user._id);
   const { booking, client } = result;
@@ -887,6 +956,15 @@ exports.requestRevision = catchAsync(async (req, res, next) => {
   }
 
   booking.status = 'in_progress';
+  if (!Array.isArray(booking.revisionRequests)) {
+    booking.revisionRequests = [];
+  }
+  booking.revisionRequests.push({
+    requestedAt: new Date(),
+    notes: notes || '',
+    requestedBy: req.user._id
+  });
+
   if (notes) {
     await booking.addMessage(req.user._id, `[Revision Requested]: ${notes}`);
   }
@@ -898,7 +976,7 @@ exports.requestRevision = catchAsync(async (req, res, next) => {
     type: 'system',
     title: 'Revision Requested',
     message: `${req.user.name} has requested a revision on "${booking.serviceTitle}": ${notes || 'See project details'}`,
-    link: `/bookings`,
+    link: `/bookings/${booking._id}`,
     booking: booking._id,
     metadata: {
       bookingId: booking.bookingId,
@@ -918,6 +996,18 @@ exports.approveBooking = catchAsync(async (req, res, next) => {
 
   if (booking.client._id.toString() !== req.user._id.toString()) {
     return next(new ErrorHandler('Only the client can approve this booking', 403));
+  }
+
+  // If the booking is funded into escrow, execute the authoritative escrow release transaction
+  if (booking.paymentStatus === 'paid' || (booking.escrowWallet && booking.escrowWallet.balance >= booking.amount)) {
+    const result = await bookingService.releaseFundsWithTransaction(
+      req.params.id,
+      req.user._id,
+      { rating, comment }
+    );
+    return successResponse(res, 200, 'Booking approved and escrow funds released to creator', {
+      booking: result.booking
+    });
   }
 
   booking.status = 'completed';
@@ -940,7 +1030,7 @@ exports.approveBooking = catchAsync(async (req, res, next) => {
     type: 'system',
     title: 'Work Approved! 🎉',
     message: `${req.user.name} approved the deliverables for "${booking.serviceTitle}".`,
-    link: `/bookings`,
+    link: `/bookings/${booking._id}`,
     booking: booking._id,
     metadata: {
       bookingId: booking.bookingId,

@@ -172,14 +172,17 @@ const bookingSchema = new mongoose.Schema({
   }],
 
   counterProposal: {
-    amount: Number,
-    creatorAmount: Number,
-    platformFee: Number,
-    proposedAt: Date,
-    applied: {
-      type: Boolean,
-      default: false
-    }
+    type: {
+      amount: Number,
+      creatorAmount: Number,
+      platformFee: Number,
+      proposedAt: Date,
+      applied: {
+        type: Boolean,
+        default: false
+      }
+    },
+    default: null
   },
 
   review: {

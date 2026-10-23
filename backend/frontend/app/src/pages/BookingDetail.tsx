@@ -9,8 +9,16 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+} from '@/components/ui/drawer';
 import { VerifiedBadge } from '@/components/shared/VerifiedBadge';
 import { useAuth } from '@/contexts/AuthContext';
+import { api } from '@/contexts/AuthContext';
 import { getAvatarUrl, getImageUrl } from '@/lib/imageUrl';
 import {
   bookingWorkflowService,
@@ -19,6 +27,7 @@ import {
 import { uploadService } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { toast } from '@/components/ui/sonner';
+import { useIsMobile } from '@/hooks/use-mobile';
 import {
   ArrowLeft,
   Calendar,
@@ -43,6 +52,8 @@ import {
   Send,
   Eye,
   Plus,
+  Lock,
+  DollarSign,
 } from 'lucide-react';
 
 interface BookingDetailProps {
@@ -51,12 +62,20 @@ interface BookingDetailProps {
 
 export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps = {}) {
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const urlMatch = typeof window !== 'undefined' ? window.location.pathname.match(/\/bookings\/(.+)/) : null;
   const id = propBookingId || urlMatch?.[1];
 
   const [booking, setBooking] = useState<BookingWorkflowItem | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isProcessingAction, setIsProcessingAction] = useState(false);
+
+  // Escrow Funding Modal state
+  const [isFundingModalOpen, setIsFundingModalOpen] = useState(false);
+  const [walletAvailableBalance, setWalletAvailableBalance] = useState<number | null>(null);
+  const [isLoadingWallet, setIsLoadingWallet] = useState(false);
+  const [isSubmittingFunding, setIsSubmittingFunding] = useState(false);
 
   // Submission Modal state
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
@@ -120,36 +139,103 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
     }
   };
 
+  const fetchWalletBalance = async () => {
+    setIsLoadingWallet(true);
+    try {
+      const res = await api.get('/wallet');
+      const avail = res.data?.availableBalance ?? res.data?.data?.availableBalance ?? res.data?.balance ?? 0;
+      setWalletAvailableBalance(parseFloat(Number(avail).toFixed(2)));
+    } catch {
+      setWalletAvailableBalance(0);
+    } finally {
+      setIsLoadingWallet(false);
+    }
+  };
+
   const isClient = user?.id === booking?.client?._id;
   const isCreator = user?.id === booking?.creator?._id;
   const otherParty = isClient ? booking?.creator : booking?.client;
 
-  // Actions
-  const handleAcceptRequest = async () => {
+  // Escrow Funding
+  const handleConfirmFunding = async () => {
     if (!booking) return;
     try {
-      await bookingWorkflowService.acceptBooking(booking._id);
-      await bookingWorkflowService.startWork(booking._id);
-      toast.success('Booking accepted! Project is now In Progress.');
+      setIsSubmittingFunding(true);
+      await bookingWorkflowService.payBooking(booking._id);
+      toast.success('Funds locked in escrow! The creator has been notified to begin work.');
+      setIsFundingModalOpen(false);
       fetchBookingDetails();
     } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to accept booking');
+      const msg = err.response?.data?.error || err.response?.data?.message || 'Failed to fund escrow';
+      toast.error(msg);
+    } finally {
+      setIsSubmittingFunding(false);
     }
   };
 
+  // Creator Accepts Booking Request -> moves to awaiting_payment
+  const handleAcceptRequest = async () => {
+    if (!booking) return;
+    try {
+      setIsProcessingAction(true);
+      await bookingWorkflowService.acceptBooking(booking._id);
+      toast.success('Booking accepted! Client has been notified to deposit funds into escrow.');
+      fetchBookingDetails();
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Failed to accept booking');
+    } finally {
+      setIsProcessingAction(false);
+    }
+  };
+
+  // Creator Declines Booking Request
   const handleDeclineRequest = async () => {
     if (!booking) return;
     const reason = prompt('Please specify a reason for declining:');
     if (reason === null) return;
     try {
+      setIsProcessingAction(true);
       await bookingWorkflowService.rejectBooking(booking._id, reason || 'Declined by creator');
       toast.success('Booking declined');
       fetchBookingDetails();
     } catch (err: any) {
       toast.error(err.response?.data?.error || 'Failed to decline booking');
+    } finally {
+      setIsProcessingAction(false);
     }
   };
 
+  // Client Accepts Counter Offer -> moves to awaiting_payment at new amount
+  const handleAcceptCounter = async () => {
+    if (!booking) return;
+    try {
+      setIsProcessingAction(true);
+      await bookingWorkflowService.acceptCounterProposal(booking._id);
+      toast.success('Counter offer accepted! Ready for escrow funding.');
+      fetchBookingDetails();
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Failed to accept counter offer');
+    } finally {
+      setIsProcessingAction(false);
+    }
+  };
+
+  // Client Declines Counter Offer
+  const handleRejectCounter = async () => {
+    if (!booking) return;
+    try {
+      setIsProcessingAction(true);
+      await bookingWorkflowService.rejectCounterProposal(booking._id);
+      toast.success('Counter offer declined');
+      fetchBookingDetails();
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Failed to decline counter offer');
+    } finally {
+      setIsProcessingAction(false);
+    }
+  };
+
+  // Creator Sends Counter Offer
   const handleSendCounter = async () => {
     if (!booking) return;
     const amountNum = parseFloat(counterAmount);
@@ -160,7 +246,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
     try {
       setIsSubmittingCounter(true);
       await bookingWorkflowService.counterProposal(booking._id, amountNum);
-      toast.success('Counter proposal sent!');
+      toast.success(`Counter offer of ${amountNum} USDC sent!`);
       setIsCounterModalOpen(false);
       fetchBookingDetails();
     } catch (err: any) {
@@ -170,6 +256,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
     }
   };
 
+  // File Upload for Deliverables
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -185,7 +272,6 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
             setSubmissionFiles((prev) => [...prev, url]);
           }
         } catch {
-          // Fallback to local preview URL
           setSubmissionFiles((prev) => [...prev, URL.createObjectURL(file)]);
         }
       }
@@ -194,6 +280,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
     }
   };
 
+  // Creator Submits Work
   const handleSubmitWork = async () => {
     if (!booking) return;
     if (!submissionTitle.trim()) {
@@ -216,7 +303,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
         links: linksArray,
       });
 
-      toast.success('Work submitted successfully! Client has been notified.');
+      toast.success('Work submitted successfully! Client has been notified for review.');
       setIsSubmitModalOpen(false);
       setSubmissionTitle('');
       setSubmissionDesc('');
@@ -230,6 +317,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
     }
   };
 
+  // Client Requests Revision
   const handleRequestRevision = async () => {
     if (!booking) return;
     if (!revisionNotes.trim()) {
@@ -251,6 +339,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
     }
   };
 
+  // Client Approves Project & Releases Escrow
   const handleApproveProject = async () => {
     if (!booking) return;
     try {
@@ -260,7 +349,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
         comment: reviewComment.trim(),
       });
 
-      toast.success('Project approved and completed! Thank you for your review.');
+      toast.success('Deliverables approved! Escrow funds released to creator.');
       setIsApprovalModalOpen(false);
       fetchBookingDetails();
     } catch (err: any) {
@@ -287,7 +376,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
         <p className="text-xs text-gray-500">{error || 'Booking could not be found'}</p>
         <Button
           onClick={() => (window.location.href = '/bookings')}
-          className="bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs rounded-xl"
+          className="rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold px-5"
         >
           Return to My Bookings
         </Button>
@@ -295,9 +384,11 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
     );
   }
 
-  // Stepper phase mapping
+  // Stepper phase mapping (5 unified phases)
   const getTimelineSteps = () => {
-    const isRevision = (booking.revisionRequests && booking.revisionRequests.length > 0) && booking.status === 'in_progress';
+    const isRevision = !!(booking.revisionRequests && booking.revisionRequests.length > 0) && booking.status === 'in_progress';
+    const isFundedOrBeyond = ['confirmed', 'in_progress', 'delivered', 'completed'].includes(booking.status);
+    const isDeliveredOrDone = ['delivered', 'completed'].includes(booking.status);
 
     return [
       {
@@ -313,16 +404,16 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
         done: booking.status !== 'pending',
       },
       {
-        id: 'in_progress',
-        label: isRevision ? 'Revision Underway' : 'In Progress',
-        active: ['in_progress', 'confirmed', 'delivered', 'completed'].includes(booking.status),
-        done: ['delivered', 'completed'].includes(booking.status),
+        id: 'funded',
+        label: 'Escrow Funded',
+        active: isFundedOrBeyond || booking.status === 'awaiting_payment',
+        done: isFundedOrBeyond,
       },
       {
-        id: 'delivered',
-        label: 'Delivered',
-        active: ['delivered', 'completed'].includes(booking.status),
-        done: booking.status === 'completed',
+        id: 'in_progress',
+        label: isRevision ? 'Revision Underway' : 'In Production',
+        active: isFundedOrBeyond,
+        done: isDeliveredOrDone,
       },
       {
         id: 'completed',
@@ -337,10 +428,15 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
   const deliverables = booking.expectedDeliverables || [];
   const submissions = booking.submissions || [];
   const referenceImages = booking.attachments || [];
+  const hasActiveCounterOffer = !!(
+    booking.counterProposal &&
+    !booking.counterProposal.applied &&
+    booking.counterProposal.amount
+  );
 
   return (
     <div className="w-full relative">
-      {/* 3-Column Booking Detail Layout */}
+      {/* 3-Column Desktop Layout (Preserved platform architecture) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
         {/* =========================================================================
@@ -421,7 +517,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
 
         {/* =========================================================================
             CENTER COLUMN (lg:col-span-6, full width on mobile)
-            Interactive Project Workspace, Timeline, Deliverables, & Submissions
+            Interactive Project Workspace, Clean Horizontal Dividers
            ========================================================================= */}
         <section className="col-span-1 lg:col-span-6 flex flex-col gap-6">
           
@@ -443,7 +539,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                 variant="outline"
                 size="sm"
                 onClick={() => (window.location.href = `/messages?user=${otherParty?._id}`)}
-                className="h-7 text-xs rounded-lg border-[#DADDE1] dark:border-[#2f3032] text-gray-700 dark:text-gray-200"
+                className="h-7 text-xs rounded-full border-[#DADDE1] dark:border-[#2f3032] text-gray-700 dark:text-gray-200"
               >
                 <MessageSquare className="w-3.5 h-3.5 mr-1" />
                 Message {otherParty?.name?.split(' ')[0]}
@@ -451,7 +547,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
             </div>
           </div>
 
-          {/* Project Title & Status Hero */}
+          {/* Project Title & Category */}
           <div className="space-y-2">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/40 text-[#9747FF] border border-purple-200/50 dark:border-purple-800/40">
@@ -466,8 +562,8 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
             </h1>
           </div>
 
-          {/* Visual Progress Timeline */}
-          <div className="p-4 rounded-2xl bg-gray-50/70 dark:bg-white/[0.02] border border-[#DADDE1] dark:border-[#2f3032] space-y-3">
+          {/* Milestone Progress Tracker (Natural background, ash-gray divider) */}
+          <div className="pb-5 border-b border-[#DADDE1] dark:border-[#2f3032] space-y-3">
             <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
               Project Milestone Tracker
             </h4>
@@ -507,21 +603,11 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                 </div>
               ))}
             </div>
-
-            {/* In-Progress Dev Preview Notice */}
-            {['awaiting_payment', 'in_progress', 'confirmed'].includes(booking.status) && (
-              <div className="p-2.5 rounded-xl bg-purple-50/70 dark:bg-purple-950/30 border border-purple-200/50 dark:border-purple-800/30 flex items-center gap-2 text-xs text-[#9747FF]">
-                <ShieldCheck className="w-4 h-4 shrink-0" />
-                <span>
-                  <strong>Dev Preview:</strong> Project terms agreed. Ready for work without upfront wallet deduction.
-                </span>
-              </div>
-            )}
           </div>
 
-          {/* Incoming Request Actions (if Creator & Pending) */}
+          {/* ACTION BANNER 1: Creator - Pending Booking Request */}
           {isCreator && booking.status === 'pending' && (
-            <div className="p-4 rounded-2xl bg-purple-50/60 dark:bg-purple-950/30 border border-purple-200/60 dark:border-purple-800/40 space-y-3">
+            <div className="py-4 border-b border-[#DADDE1] dark:border-[#2f3032] space-y-3">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-[#9747FF]" />
                 <h4 className="font-bold text-xs uppercase tracking-wider text-[#9747FF]">
@@ -529,14 +615,18 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                 </h4>
               </div>
               <p className="text-xs text-gray-700 dark:text-gray-300">
-                {booking.client.name} has requested your creative services for {booking.amount} {booking.currency}. Review the deliverables and timeline below before responding.
+                {booking.client.name} has requested your creative services for{' '}
+                <strong className="text-gray-900 dark:text-gray-100">{booking.amount} {booking.currency}</strong>.
+                Review the deliverables and timeline below before responding.
               </p>
-              <div className="flex items-center gap-2.5 pt-1">
+              <div className="flex items-center gap-2.5 pt-1 flex-wrap">
                 <Button
                   size="sm"
                   onClick={handleAcceptRequest}
-                  className="bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold rounded-xl px-4 shadow-xs"
+                  disabled={isProcessingAction}
+                  className="rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold px-5 shadow-2xs"
                 >
+                  {isProcessingAction ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <CheckCircle2 className="w-3.5 h-3.5 mr-1" />}
                   Accept Booking Request
                 </Button>
                 <Button
@@ -546,7 +636,8 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                     setCounterAmount(String(booking.amount));
                     setIsCounterModalOpen(true);
                   }}
-                  className="rounded-xl border-[#DADDE1] dark:border-[#2f3032] text-xs font-semibold text-[#9747FF]"
+                  disabled={isProcessingAction}
+                  className="rounded-full border-[#DADDE1] dark:border-[#2f3032] text-xs font-semibold text-[#9747FF] hover:bg-purple-50 dark:hover:bg-purple-950/30"
                 >
                   Propose Counter Offer
                 </Button>
@@ -554,7 +645,8 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                   size="sm"
                   variant="ghost"
                   onClick={handleDeclineRequest}
-                  className="text-xs text-gray-500 hover:text-red-600 rounded-xl"
+                  disabled={isProcessingAction}
+                  className="rounded-full text-xs text-gray-500 hover:text-red-600"
                 >
                   Decline
                 </Button>
@@ -562,31 +654,117 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
             </div>
           )}
 
-          {/* Work Delivered Review Banner (if Client & Delivered) */}
+          {/* ACTION BANNER 2: Client - Counter Offer Received */}
+          {isClient && hasActiveCounterOffer && (
+            <div className="py-4 border-b border-[#DADDE1] dark:border-[#2f3032] space-y-3">
+              <div className="flex items-center gap-2 text-[#9747FF]">
+                <Sparkles className="w-4 h-4" />
+                <h4 className="font-bold text-xs uppercase tracking-wider">
+                  Creator Proposed a Counter Offer
+                </h4>
+              </div>
+              <p className="text-xs text-gray-700 dark:text-gray-300">
+                {booking.creator.name} proposed a revised budget of{' '}
+                <strong className="text-gray-900 dark:text-gray-100 font-bold">
+                  {booking.counterProposal?.amount} {booking.currency}
+                </strong>{' '}
+                (originally {booking.amount} {booking.currency}).
+              </p>
+              <div className="flex items-center gap-2.5 pt-1">
+                <Button
+                  size="sm"
+                  onClick={handleAcceptCounter}
+                  disabled={isProcessingAction}
+                  className="rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold px-5 shadow-2xs"
+                >
+                  {isProcessingAction ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <CheckCircle2 className="w-3.5 h-3.5 mr-1" />}
+                  Accept Counter Offer
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleRejectCounter}
+                  disabled={isProcessingAction}
+                  className="rounded-full border-[#DADDE1] dark:border-[#2f3032] text-xs font-semibold text-gray-600 dark:text-gray-300"
+                >
+                  Decline Offer
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* ACTION BANNER 3: Client - Escrow Funding Required */}
+          {isClient && booking.status === 'awaiting_payment' && (
+            <div className="py-4 border-b border-[#DADDE1] dark:border-[#2f3032] space-y-3">
+              <div className="flex items-center gap-2 text-[#9747FF]">
+                <ShieldCheck className="w-5 h-5 text-[#9747FF]" />
+                <h4 className="font-bold text-xs uppercase tracking-wider text-[#9747FF]">
+                  Action Required: Fund Escrow Deposit
+                </h4>
+              </div>
+              <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">
+                {booking.creator.name} has accepted the booking request. Deposit{' '}
+                <strong className="text-gray-900 dark:text-gray-100 font-bold">
+                  {booking.amount} {booking.currency}
+                </strong>{' '}
+                into smart escrow to authorize work. Funds remain protected and are only released upon your approval of the deliverables.
+              </p>
+              <div className="flex items-center gap-2.5 pt-1">
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    fetchWalletBalance();
+                    setIsFundingModalOpen(true);
+                  }}
+                  className="rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold px-5 shadow-2xs flex items-center gap-1.5"
+                >
+                  <Wallet className="w-3.5 h-3.5" />
+                  <span>Deposit &amp; Fund Escrow</span>
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* ACTION BANNER 4: Creator - Waiting for Client Deposit */}
+          {isCreator && booking.status === 'awaiting_payment' && (
+            <div className="py-4 border-b border-[#DADDE1] dark:border-[#2f3032] space-y-2">
+              <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                <ShieldCheck className="w-4 h-4 shrink-0" />
+                <h4 className="font-bold text-xs uppercase tracking-wider">
+                  Awaiting Client Escrow Deposit
+                </h4>
+              </div>
+              <p className="text-xs text-gray-600 dark:text-gray-400">
+                You've accepted this booking! The client has been notified to deposit {booking.amount} {booking.currency} into escrow. Once funded, you'll receive an instant notification to begin production.
+              </p>
+            </div>
+          )}
+
+          {/* ACTION BANNER 5: Client - Deliverables Ready for Review */}
           {isClient && booking.status === 'delivered' && (
-            <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/40 space-y-3">
-              <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
+            <div className="py-4 border-b border-[#DADDE1] dark:border-[#2f3032] space-y-3">
+              <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
                 <FileCheck className="w-5 h-5 shrink-0" />
                 <h4 className="font-bold text-xs uppercase tracking-wider">
                   Deliverables Ready For Review
                 </h4>
               </div>
-              <p className="text-xs text-gray-700 dark:text-gray-300">
-                {booking.creator.name} has submitted deliverables for your project. Please inspect the files and links below. If satisfied, approve to complete the project and leave a review.
+              <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">
+                {booking.creator.name} has submitted deliverables for your inspection. Review the attached files and links below. If satisfied, approve the delivery to release escrow funds and complete the project.
               </p>
               <div className="flex items-center gap-3 pt-1">
                 <Button
                   size="sm"
                   onClick={() => setIsApprovalModalOpen(true)}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl px-5 shadow-xs"
+                  className="rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold px-5 shadow-2xs"
                 >
-                  Approve Delivery &amp; Rate
+                  Approve Delivery &amp; Release Escrow
                 </Button>
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={() => setIsRevisionModalOpen(true)}
-                  className="rounded-xl border-emerald-300 dark:border-emerald-700 text-xs text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100/50"
+                  className="rounded-full border-[#DADDE1] dark:border-[#2f3032] text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/[0.04]"
                 >
                   <RotateCcw className="w-3.5 h-3.5 mr-1" />
                   Request Revision
@@ -595,10 +773,10 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
             </div>
           )}
 
-          {/* Revision Requested Notice */}
+          {/* ACTION BANNER 6: Revision Requested Notice */}
           {booking.revisionRequests && booking.revisionRequests.length > 0 && booking.status === 'in_progress' && (
-            <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 space-y-2">
-              <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+            <div className="py-4 border-b border-[#DADDE1] dark:border-[#2f3032] space-y-2">
+              <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
                 <RotateCcw className="w-4 h-4 shrink-0" />
                 <h4 className="font-bold text-xs uppercase tracking-wider">
                   Revision In Progress
@@ -613,9 +791,9 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                   <Button
                     size="sm"
                     onClick={() => setIsSubmitModalOpen(true)}
-                    className="bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold rounded-xl px-4"
+                    className="rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold px-5 shadow-2xs"
                   >
-                    Submit Revised Work
+                    Submit Revised Deliverables
                   </Button>
                 </div>
               )}
@@ -632,9 +810,9 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
             </p>
 
             {booking.metadata?.notes && (
-              <div className="p-3 rounded-xl bg-gray-50 dark:bg-white/[0.02] border border-[#DADDE1] dark:border-[#2f3032] text-xs">
-                <span className="font-semibold text-gray-600 dark:text-gray-400">Additional Client Notes:</span>
-                <p className="italic text-gray-700 dark:text-gray-300 mt-0.5">{booking.metadata.notes}</p>
+              <div className="py-2.5 px-3 border-l-2 border-[#9747FF] text-xs bg-purple-50/40 dark:bg-purple-950/20">
+                <span className="font-semibold text-gray-700 dark:text-gray-300">Additional Client Notes:</span>
+                <p className="italic text-gray-600 dark:text-gray-400 mt-0.5">{booking.metadata.notes}</p>
               </div>
             )}
           </div>
@@ -649,7 +827,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                 <Button
                   size="sm"
                   onClick={() => setIsSubmitModalOpen(true)}
-                  className="h-7 text-xs bg-[#9747FF] hover:bg-[#8534f0] text-white rounded-lg shadow-2xs"
+                  className="rounded-full h-8 text-xs bg-[#9747FF] hover:bg-[#8534f0] text-white font-semibold px-4 shadow-2xs"
                 >
                   <UploadCloud className="w-3.5 h-3.5 mr-1" />
                   Submit Deliverables
@@ -657,11 +835,11 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
               )}
             </div>
 
-            <div className="space-y-2">
+            <div className="divide-y divide-[#DADDE1] dark:divide-[#2f3032]">
               {deliverables.map((del) => (
                 <div
                   key={del.id}
-                  className="p-3 rounded-xl bg-gray-50 dark:bg-white/[0.02] border border-[#DADDE1] dark:border-[#2f3032] flex items-start justify-between gap-3"
+                  className="py-3 flex items-start justify-between gap-3"
                 >
                   <div className="flex items-start gap-2.5 min-w-0">
                     <Package className="w-4 h-4 text-[#9747FF] shrink-0 mt-0.5" />
@@ -680,7 +858,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
 
                   <span
                     className={cn(
-                      'text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 uppercase',
+                      'text-[10px] font-semibold px-2.5 py-0.5 rounded-full shrink-0 uppercase',
                       del.status === 'approved' && 'bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-300',
                       del.status === 'submitted' && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300',
                       del.status === 'in_progress' && 'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300',
@@ -733,7 +911,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                   size="sm"
                   variant="outline"
                   onClick={() => setIsSubmitModalOpen(true)}
-                  className="h-7 text-xs rounded-lg border-[#DADDE1] dark:border-[#2f3032] text-[#9747FF]"
+                  className="rounded-full h-8 text-xs border-[#DADDE1] dark:border-[#2f3032] text-[#9747FF] font-semibold px-4"
                 >
                   <Plus className="w-3.5 h-3.5 mr-1" />
                   New Submission
@@ -742,15 +920,15 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
             </div>
 
             {submissions.length > 0 ? (
-              <div className="space-y-3">
+              <div className="divide-y divide-[#DADDE1] dark:divide-[#2f3032]">
                 {submissions.map((sub, idx) => (
                   <div
                     key={sub.id || idx}
-                    className="p-4 rounded-xl bg-gray-50 dark:bg-white/[0.02] border border-[#DADDE1] dark:border-[#2f3032] space-y-3"
+                    className="py-4 space-y-3"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-xs px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950/50 text-[#9747FF]">
+                        <span className="font-bold text-xs px-2.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950/50 text-[#9747FF]">
                           Version {sub.version || idx + 1}
                         </span>
                         <h4 className="font-bold text-sm text-gray-900 dark:text-gray-100">
@@ -779,7 +957,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                               href={getImageUrl(file)}
                               target="_blank"
                               rel="noreferrer"
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white dark:bg-gray-800 border border-[#DADDE1] dark:border-[#2f3032] text-xs font-medium text-gray-800 dark:text-gray-200 hover:text-[#9747FF] transition-colors"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-gray-800 border border-[#DADDE1] dark:border-[#2f3032] text-xs font-medium text-gray-800 dark:text-gray-200 hover:text-[#9747FF] transition-colors"
                             >
                               <Download className="w-3.5 h-3.5 text-[#9747FF]" />
                               <span>Deliverable File #{fIdx + 1}</span>
@@ -800,7 +978,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                               href={link}
                               target="_blank"
                               rel="noreferrer"
-                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-purple-50 dark:bg-purple-950/40 text-xs font-semibold text-[#9747FF] hover:underline"
+                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-purple-50 dark:bg-purple-950/40 text-xs font-semibold text-[#9747FF] hover:underline"
                             >
                               <span>{link.replace(/^https?:\/\//, '').split('/')[0]}</span>
                               <ExternalLink className="w-3.5 h-3.5" />
@@ -813,17 +991,17 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                 ))}
               </div>
             ) : (
-              <div className="p-6 text-center border border-dashed border-[#DADDE1] dark:border-[#2f3032] rounded-xl text-gray-400 space-y-1">
-                <FileText className="w-8 h-8 mx-auto stroke-1" />
-                <p className="text-xs font-medium">No work packages submitted yet.</p>
-                <p className="text-[11px]">When the creator delivers milestones or finals, they will appear here.</p>
+              <div className="py-8 text-center text-gray-400 space-y-1">
+                <FileText className="w-8 h-8 mx-auto stroke-1 text-gray-300 dark:text-gray-600" />
+                <p className="text-xs font-medium text-gray-600 dark:text-gray-400">No work packages submitted yet.</p>
+                <p className="text-[11px] text-gray-400">When the creator submits milestones or deliverables, they will appear here.</p>
               </div>
             )}
           </div>
 
           {/* Completed Review Card */}
           {booking.status === 'completed' && booking.review && (
-            <div className="p-4 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-800/40 space-y-2.5">
+            <div className="py-4 border-b border-[#DADDE1] dark:border-[#2f3032] space-y-2.5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-5 h-5 text-emerald-600" />
@@ -856,12 +1034,12 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
 
         {/* =========================================================================
             RIGHT COLUMN (lg:col-span-3, hidden on mobile/tablet)
-            Contextual Project Summary: Counterparts, Escrow & Timeline
+            Participants, Escrow Security & Timeline Summary
            ========================================================================= */}
         <aside className="hidden lg:flex flex-col gap-6 lg:col-span-3 sticky top-20">
           
           {/* Client & Creator Profile Strip */}
-          <div className="p-4 rounded-2xl bg-gray-50/70 dark:bg-white/[0.02] border border-[#DADDE1] dark:border-[#2f3032] space-y-4">
+          <div className="pb-5 border-b border-[#DADDE1] dark:border-[#2f3032] space-y-4">
             <h4 className="font-bold text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">
               Project Participants
             </h4>
@@ -911,8 +1089,8 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
             </div>
           </div>
 
-          {/* Financial Summary */}
-          <div className="p-4 rounded-2xl bg-gray-50/70 dark:bg-white/[0.02] border border-[#DADDE1] dark:border-[#2f3032] space-y-3 text-xs">
+          {/* Financial & Escrow Summary */}
+          <div className="pb-5 border-b border-[#DADDE1] dark:border-[#2f3032] space-y-3 text-xs">
             <h4 className="font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
               Financial &amp; Escrow
             </h4>
@@ -935,15 +1113,22 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                 <span>{booking.creatorAmount || (booking.amount * 0.9).toFixed(2)} {booking.currency}</span>
               </div>
 
-              <div className="pt-2 text-[11px] text-gray-500 flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-[#9747FF]" />
-                <span>Escrow Protected (Preview Mode)</span>
+              <div className="pt-2 text-[11px] flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4 text-[#9747FF] shrink-0" />
+                <span className={cn(
+                  'font-medium',
+                  booking.paymentStatus === 'paid' ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-500'
+                )}>
+                  {booking.paymentStatus === 'paid'
+                    ? (booking.status === 'completed' ? 'Escrow Released to Creator' : 'Funds Safely Locked in Escrow')
+                    : (booking.status === 'awaiting_payment' ? 'Deposit Required to Fund Escrow' : 'Escrow Deposit Pending Acceptance')}
+                </span>
               </div>
             </div>
           </div>
 
-          {/* Timeline Summary */}
-          <div className="p-4 rounded-2xl bg-gray-50/70 dark:bg-white/[0.02] border border-[#DADDE1] dark:border-[#2f3032] space-y-2 text-xs">
+          {/* Key Dates Summary */}
+          <div className="pb-5 border-b border-[#DADDE1] dark:border-[#2f3032] space-y-2 text-xs">
             <h4 className="font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
               Key Dates
             </h4>
@@ -972,13 +1157,154 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
       </div>
 
       {/* =========================================================================
-          MODALS: Submission, Revision, Approval & Rating, Counter, Lightbox
+          MODALS & DRAWERS (Responsive mobile Drawer / desktop Dialog)
          ========================================================================= */}
 
-      {/* Creator Submit Deliverables Modal */}
+      {/* 1. Escrow Funding Modal */}
+      {isMobile ? (
+        <Drawer open={isFundingModalOpen} onOpenChange={setIsFundingModalOpen}>
+          <DrawerContent className="p-4 bg-white dark:bg-[#18191a] border-[#DADDE1] dark:border-[#2f3032]">
+            <DrawerHeader className="text-left pb-3 border-b border-[#DADDE1] dark:border-[#2f3032]">
+              <DrawerTitle className="text-base font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                <Lock className="w-4 h-4 text-[#9747FF]" />
+                <span>Fund Escrow Deposit</span>
+              </DrawerTitle>
+              <DrawerDescription className="text-xs text-gray-500">
+                Lock payment for "{booking.serviceTitle}" in secure escrow.
+              </DrawerDescription>
+            </DrawerHeader>
+
+            <div className="py-4 space-y-4">
+              <div className="space-y-2 text-xs">
+                <div className="flex justify-between py-1 border-b border-[#DADDE1]/60 dark:border-[#2f3032]">
+                  <span className="text-gray-500">Creator:</span>
+                  <span className="font-semibold text-gray-900 dark:text-gray-100">{booking.creator.name}</span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-[#DADDE1]/60 dark:border-[#2f3032]">
+                  <span className="text-gray-500">Escrow Deposit:</span>
+                  <span className="font-bold text-gray-900 dark:text-gray-100">{booking.amount} {booking.currency}</span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-[#DADDE1]/60 dark:border-[#2f3032]">
+                  <span className="text-gray-500">Available Wallet Balance:</span>
+                  <span className="font-semibold text-[#9747FF]">
+                    {isLoadingWallet ? 'Checking...' : `${walletAvailableBalance ?? 0} ${booking.currency}`}
+                  </span>
+                </div>
+              </div>
+
+              {walletAvailableBalance !== null && walletAvailableBalance < booking.amount ? (
+                <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 text-xs space-y-2">
+                  <p>Your wallet balance is lower than the required {booking.amount} {booking.currency}.</p>
+                  <Button
+                    size="sm"
+                    onClick={() => (window.location.href = '/wallet')}
+                    className="w-full rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold"
+                  >
+                    Deposit Funds into Wallet
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-xs text-gray-500 leading-relaxed">
+                  Funds will be deducted from your wallet and held in MyArteLab smart escrow. Funds are only transferred to the creator after you approve the final deliverables.
+                </p>
+              )}
+
+              <div className="flex items-center gap-2 pt-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsFundingModalOpen(false)}
+                  disabled={isSubmittingFunding}
+                  className="flex-1 rounded-full text-xs border-[#DADDE1] dark:border-[#2f3032]"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleConfirmFunding}
+                  disabled={isSubmittingFunding || (walletAvailableBalance !== null && walletAvailableBalance < booking.amount)}
+                  className="flex-1 rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold"
+                >
+                  {isSubmittingFunding ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <Lock className="w-3.5 h-3.5 mr-1" />}
+                  Confirm &amp; Lock
+                </Button>
+              </div>
+            </div>
+          </DrawerContent>
+        </Drawer>
+      ) : (
+        <Dialog open={isFundingModalOpen} onOpenChange={setIsFundingModalOpen}>
+          <DialogContent className="max-w-md bg-white dark:bg-[#18191a] border border-[#DADDE1] dark:border-[#2f3032] p-5 rounded-2xl">
+            <DialogHeader className="pb-3 border-b border-[#DADDE1] dark:border-[#2f3032]">
+              <DialogTitle className="text-base font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                <Lock className="w-4 h-4 text-[#9747FF]" />
+                <span>Fund Escrow Deposit</span>
+              </DialogTitle>
+              <DialogDescription className="text-xs text-gray-500">
+                Lock payment for "{booking.serviceTitle}" in secure escrow.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="py-4 space-y-4">
+              <div className="space-y-2 text-xs">
+                <div className="flex justify-between py-1 border-b border-[#DADDE1]/60 dark:border-[#2f3032]">
+                  <span className="text-gray-500">Creator:</span>
+                  <span className="font-semibold text-gray-900 dark:text-gray-100">{booking.creator.name}</span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-[#DADDE1]/60 dark:border-[#2f3032]">
+                  <span className="text-gray-500">Escrow Deposit:</span>
+                  <span className="font-bold text-gray-900 dark:text-gray-100">{booking.amount} {booking.currency}</span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-[#DADDE1]/60 dark:border-[#2f3032]">
+                  <span className="text-gray-500">Your Available Balance:</span>
+                  <span className="font-semibold text-[#9747FF]">
+                    {isLoadingWallet ? 'Checking...' : `${walletAvailableBalance ?? 0} ${booking.currency}`}
+                  </span>
+                </div>
+              </div>
+
+              {walletAvailableBalance !== null && walletAvailableBalance < booking.amount ? (
+                <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 text-xs space-y-2">
+                  <p>Your wallet balance is lower than the required {booking.amount} {booking.currency}.</p>
+                  <Button
+                    size="sm"
+                    onClick={() => (window.location.href = '/wallet')}
+                    className="w-full rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold"
+                  >
+                    Deposit Funds into Wallet
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-xs text-gray-500 leading-relaxed">
+                  Funds will be deducted from your wallet and held securely in escrow. Funds are only transferred to the creator after you inspect and approve the completed deliverables.
+                </p>
+              )}
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsFundingModalOpen(false)}
+                  disabled={isSubmittingFunding}
+                  className="rounded-full text-xs px-4 border-[#DADDE1] dark:border-[#2f3032]"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleConfirmFunding}
+                  disabled={isSubmittingFunding || (walletAvailableBalance !== null && walletAvailableBalance < booking.amount)}
+                  className="rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold px-5"
+                >
+                  {isSubmittingFunding ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <Lock className="w-3.5 h-3.5 mr-1" />}
+                  Confirm &amp; Lock in Escrow
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* 2. Creator Submit Deliverables Modal */}
       <Dialog open={isSubmitModalOpen} onOpenChange={setIsSubmitModalOpen}>
         <DialogContent className="max-w-lg rounded-2xl bg-white dark:bg-[#18191a] border border-[#DADDE1] dark:border-[#2f3032] p-5">
-          <DialogHeader>
+          <DialogHeader className="pb-3 border-b border-[#DADDE1] dark:border-[#2f3032]">
             <DialogTitle className="text-base font-bold text-gray-900 dark:text-gray-100">
               Submit Deliverables
             </DialogTitle>
@@ -1023,7 +1349,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                   type="file"
                   multiple
                   onChange={handleFileUpload}
-                  className="text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:bg-purple-50 file:text-[#9747FF] hover:file:bg-purple-100"
+                  className="text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:bg-purple-50 file:text-[#9747FF] hover:file:bg-purple-100"
                 />
                 {isUploadingFile && <Loader2 className="w-4 h-4 animate-spin text-[#9747FF]" />}
               </div>
@@ -1054,7 +1380,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                 size="sm"
                 onClick={() => setIsSubmitModalOpen(false)}
                 disabled={isSubmittingWork}
-                className="rounded-xl border-[#DADDE1] dark:border-[#2f3032] text-xs"
+                className="rounded-full border-[#DADDE1] dark:border-[#2f3032] text-xs px-4"
               >
                 Cancel
               </Button>
@@ -1062,7 +1388,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                 size="sm"
                 onClick={handleSubmitWork}
                 disabled={isSubmittingWork}
-                className="bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold rounded-xl"
+                className="rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold px-5"
               >
                 {isSubmittingWork ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <Send className="w-3.5 h-3.5 mr-1" />}
                 Submit Work Package
@@ -1072,10 +1398,10 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
         </DialogContent>
       </Dialog>
 
-      {/* Client Request Revision Modal */}
+      {/* 3. Client Request Revision Modal */}
       <Dialog open={isRevisionModalOpen} onOpenChange={setIsRevisionModalOpen}>
         <DialogContent className="max-w-md rounded-2xl bg-white dark:bg-[#18191a] border border-[#DADDE1] dark:border-[#2f3032] p-5">
-          <DialogHeader>
+          <DialogHeader className="pb-3 border-b border-[#DADDE1] dark:border-[#2f3032]">
             <DialogTitle className="text-base font-bold text-gray-900 dark:text-gray-100">
               Request Project Revision
             </DialogTitle>
@@ -1104,7 +1430,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                 size="sm"
                 onClick={() => setIsRevisionModalOpen(false)}
                 disabled={isSubmittingRevision}
-                className="rounded-xl border-[#DADDE1] dark:border-[#2f3032] text-xs"
+                className="rounded-full border-[#DADDE1] dark:border-[#2f3032] text-xs px-4"
               >
                 Cancel
               </Button>
@@ -1112,7 +1438,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                 size="sm"
                 onClick={handleRequestRevision}
                 disabled={isSubmittingRevision}
-                className="bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-xl"
+                className="rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold px-5"
               >
                 {isSubmittingRevision ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <RotateCcw className="w-3.5 h-3.5 mr-1" />}
                 Send Revision Request
@@ -1122,15 +1448,15 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
         </DialogContent>
       </Dialog>
 
-      {/* Client Approval & Rating Modal */}
+      {/* 4. Client Approval & Rating Modal */}
       <Dialog open={isApprovalModalOpen} onOpenChange={setIsApprovalModalOpen}>
         <DialogContent className="max-w-md rounded-2xl bg-white dark:bg-[#18191a] border border-[#DADDE1] dark:border-[#2f3032] p-5">
-          <DialogHeader>
+          <DialogHeader className="pb-3 border-b border-[#DADDE1] dark:border-[#2f3032]">
             <DialogTitle className="text-base font-bold text-gray-900 dark:text-gray-100">
-              Approve Deliverables &amp; Complete Project
+              Approve Deliverables &amp; Release Escrow
             </DialogTitle>
             <DialogDescription className="text-xs text-gray-500">
-              Confirm your satisfaction with the deliverables and rate your experience with {booking.creator.name}.
+              Confirm your satisfaction with deliverables. Funds will be released from escrow to {booking.creator.name}.
             </DialogDescription>
           </DialogHeader>
 
@@ -1186,7 +1512,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                 size="sm"
                 onClick={() => setIsApprovalModalOpen(false)}
                 disabled={isSubmittingApproval}
-                className="rounded-xl border-[#DADDE1] dark:border-[#2f3032] text-xs"
+                className="rounded-full border-[#DADDE1] dark:border-[#2f3032] text-xs px-4"
               >
                 Cancel
               </Button>
@@ -1194,22 +1520,23 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                 size="sm"
                 onClick={handleApproveProject}
                 disabled={isSubmittingApproval}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl"
+                className="rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold px-5"
               >
                 {isSubmittingApproval ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <CheckCircle2 className="w-3.5 h-3.5 mr-1" />}
-                Confirm &amp; Complete Project
+                Confirm &amp; Release Funds
               </Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Counter Proposal Modal */}
+      {/* 5. Counter Proposal Modal */}
       <Dialog open={isCounterModalOpen} onOpenChange={setIsCounterModalOpen}>
         <DialogContent className="max-w-md rounded-2xl bg-white dark:bg-[#18191a] border border-[#DADDE1] dark:border-[#2f3032] p-5">
-          <DialogHeader>
-            <DialogTitle className="text-base font-bold text-gray-900 dark:text-gray-100">
-              Send Counter Offer
+          <DialogHeader className="pb-3 border-b border-[#DADDE1] dark:border-[#2f3032]">
+            <DialogTitle className="text-base font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+              <RotateCcw className="w-4 h-4 text-[#9747FF]" />
+              <span>Send Counter Offer</span>
             </DialogTitle>
             <DialogDescription className="text-xs text-gray-500">
               Propose revised budget terms for this project.
@@ -1217,26 +1544,38 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
           </DialogHeader>
 
           <div className="space-y-4 py-3">
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-gray-800 dark:text-gray-200">
-                Counter Budget (USDC)
-              </label>
-              <Input
-                type="number"
-                min="1"
-                value={counterAmount}
-                onChange={(e) => setCounterAmount(e.target.value)}
-                className="h-10 text-sm rounded-xl border-[#DADDE1] dark:border-[#2f3032] dark:bg-[#121212] focus-visible:ring-[#9747FF]"
-              />
+            <div className="flex justify-between text-xs py-1 border-b border-[#DADDE1]/60 dark:border-[#2f3032]">
+              <span className="text-gray-500">Original Proposed Budget:</span>
+              <span className="font-semibold text-gray-900 dark:text-gray-100">
+                {booking.amount} {booking.currency}
+              </span>
             </div>
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-[#DADDE1] dark:border-[#2f3032]">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                Your Proposed Amount ({booking.currency})
+              </label>
+              <div className="relative">
+                <DollarSign className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                <Input
+                  type="number"
+                  min="1"
+                  step="0.01"
+                  placeholder="Enter revised amount"
+                  value={counterAmount}
+                  onChange={(e) => setCounterAmount(e.target.value)}
+                  className="pl-9 text-xs rounded-xl border-[#DADDE1] dark:border-[#2f3032] dark:bg-[#121212] focus-visible:ring-[#9747FF]"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#DADDE1] dark:border-[#2f3032]">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setIsCounterModalOpen(false)}
                 disabled={isSubmittingCounter}
-                className="rounded-xl border-[#DADDE1] dark:border-[#2f3032] text-xs"
+                className="rounded-full border-[#DADDE1] dark:border-[#2f3032] text-xs px-4"
               >
                 Cancel
               </Button>
@@ -1244,7 +1583,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                 size="sm"
                 onClick={handleSendCounter}
                 disabled={isSubmittingCounter}
-                className="bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold rounded-xl"
+                className="rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold px-5"
               >
                 {isSubmittingCounter ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <Send className="w-3.5 h-3.5 mr-1" />}
                 Submit Counter Offer
@@ -1254,7 +1593,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
         </DialogContent>
       </Dialog>
 
-      {/* Lightbox Preview Modal */}
+      {/* 6. Lightbox Preview Modal */}
       {previewImageUrl && (
         <Dialog open={!!previewImageUrl} onOpenChange={() => setPreviewImageUrl(null)}>
           <DialogContent className="max-w-3xl p-2 bg-black/95 border-none rounded-2xl overflow-hidden">

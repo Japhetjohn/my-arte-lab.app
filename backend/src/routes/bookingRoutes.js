@@ -27,6 +27,8 @@ router.post('/:id/pay', validateObjectId('id'), handleValidationErrors, bookingC
 router.post('/:id/submit', validateObjectId('id'), handleValidationErrors, bookingController.submitDeliverable);
 router.post('/:id/reject', validateObjectId('id'), handleValidationErrors, bookingController.rejectBooking);
 router.post('/:id/counter-proposal', validateObjectId('id'), handleValidationErrors, bookingController.counterProposal);
+router.post('/:id/accept-counter', validateObjectId('id'), handleValidationErrors, bookingController.acceptCounterOffer);
+router.post('/:id/reject-counter', validateObjectId('id'), handleValidationErrors, bookingController.rejectCounterOffer);
 router.post('/:id/dispute', validateObjectId('id'), handleValidationErrors, bookingController.disputeBooking);
 router.post('/:id/refund', validateObjectId('id'), handleValidationErrors, bookingController.refundBooking);
 router.post('/:id/start-work', validateObjectId('id'), handleValidationErrors, bookingController.startWork);

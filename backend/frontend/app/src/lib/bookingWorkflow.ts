@@ -191,6 +191,12 @@ export function mergeBookingWithWorkflow(rawBooking: any): BookingWorkflowItem {
       ? rawBooking.attachments
       : cached?.attachments || [];
 
+  // Counter proposal: only valid if active and has an amount
+  const counterProposal =
+    rawBooking.counterProposal && rawBooking.counterProposal.amount && !rawBooking.counterProposal.applied
+      ? rawBooking.counterProposal
+      : undefined;
+
   return {
     ...rawBooking,
     client,
@@ -199,11 +205,38 @@ export function mergeBookingWithWorkflow(rawBooking: any): BookingWorkflowItem {
     submissions,
     revisionRequests,
     attachments,
+    counterProposal,
     review: rawBooking.review || cached?.review,
   };
 }
 
 export const bookingWorkflowService = {
+  /**
+   * Client funds booking into escrow from authoritative wallet
+   */
+  async payBooking(id: string): Promise<BookingWorkflowItem> {
+    const res = await api.post(`/bookings/${id}/pay`);
+    const booking = res.data?.data?.booking;
+    return mergeBookingWithWorkflow(booking);
+  },
+
+  /**
+   * Client accepts creator's counter proposal
+   */
+  async acceptCounterProposal(id: string): Promise<BookingWorkflowItem> {
+    const res = await api.post(`/bookings/${id}/accept-counter`);
+    const booking = res.data?.data?.booking;
+    return mergeBookingWithWorkflow(booking);
+  },
+
+  /**
+   * Client rejects creator's counter proposal
+   */
+  async rejectCounterProposal(id: string, reason?: string): Promise<BookingWorkflowItem> {
+    const res = await api.post(`/bookings/${id}/reject-counter`, { reason });
+    const booking = res.data?.data?.booking;
+    return mergeBookingWithWorkflow(booking);
+  },
   /**
    * Fetch all user bookings and merge with workflow data
    */
