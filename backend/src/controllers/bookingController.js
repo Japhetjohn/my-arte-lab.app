@@ -12,6 +12,7 @@ const bookingService = require('../services/bookingService');
 const metricsService = require('../services/metricsService');
 const { isValidBookingAmount } = require('../utils/validators');
 const { PLATFORM_CONFIG, ADMIN_CONFIG } = require('../utils/constants');
+const { isUserVerified, isFounder } = require('../utils/verificationHelper');
 
 const PLATFORM_COMMISSION = parseFloat(process.env.PLATFORM_COMMISSION) || PLATFORM_CONFIG.COMMISSION_RATE;
 
@@ -163,14 +164,27 @@ exports.getMyBookings = catchAsync(async (req, res, next) => {
 
   const bookings = await Booking.find(query)
     .select('-messages') // Exclude messages array to prevent N+1 queries and reduce payload
-    .populate('client', 'firstName lastName name avatar email')
-    .populate('creator', 'firstName lastName name avatar email category')
+    .populate('client', 'firstName lastName name avatar email isVerified isFounder verificationSubscription')
+    .populate('creator', 'firstName lastName name avatar email category isVerified isFounder verificationSubscription')
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limitNum);
 
+  const formattedBookings = bookings.map(b => {
+    const bObj = b.toObject ? b.toObject() : { ...b };
+    if (bObj.creator && typeof bObj.creator === 'object') {
+      bObj.creator.isVerified = isUserVerified(bObj.creator);
+      bObj.creator.isFounder = isFounder(bObj.creator);
+    }
+    if (bObj.client && typeof bObj.client === 'object') {
+      bObj.client.isVerified = isUserVerified(bObj.client);
+      bObj.client.isFounder = isFounder(bObj.client);
+    }
+    return bObj;
+  });
+
   successResponse(res, 200, 'Bookings retrieved successfully', {
-    bookings,
+    bookings: formattedBookings,
     pagination: {
       total: totalBookings,
       page: pageNum,
@@ -182,8 +196,8 @@ exports.getMyBookings = catchAsync(async (req, res, next) => {
 
 exports.getBooking = catchAsync(async (req, res, next) => {
   const booking = await Booking.findById(req.params.id)
-    .populate('client', 'firstName lastName name avatar email')
-    .populate('creator', 'firstName lastName name avatar email category wallet.address');
+    .populate('client', 'firstName lastName name avatar email isVerified isFounder verificationSubscription')
+    .populate('creator', 'firstName lastName name avatar email category wallet.address isVerified isFounder verificationSubscription');
 
   if (!booking) {
     return next(new ErrorHandler('Booking not found', 404));
@@ -234,8 +248,18 @@ exports.getBooking = catchAsync(async (req, res, next) => {
   // Both can add messages
   availableActions.push('add-message');
 
+  const bookingObj = booking.toObject ? booking.toObject() : { ...booking };
+  if (bookingObj.creator && typeof bookingObj.creator === 'object') {
+    bookingObj.creator.isVerified = isUserVerified(bookingObj.creator);
+    bookingObj.creator.isFounder = isFounder(bookingObj.creator);
+  }
+  if (bookingObj.client && typeof bookingObj.client === 'object') {
+    bookingObj.client.isVerified = isUserVerified(bookingObj.client);
+    bookingObj.client.isFounder = isFounder(bookingObj.client);
+  }
+
   successResponse(res, 200, 'Booking retrieved successfully', { 
-    booking,
+    booking: bookingObj,
     availableActions
   });
 });

@@ -3,6 +3,7 @@ const Notification = require('../models/Notification');
 const { successResponse, errorResponse } = require('../utils/apiResponse');
 const { ErrorHandler, catchAsync } = require('../utils/errorHandler');
 const { uploadServiceImage } = require('../services/uploadService');
+const { isUserVerified, isFounder } = require('../utils/verificationHelper');
 
 /**
  * Fair Feed Algorithm:
@@ -162,11 +163,8 @@ exports.getFeed = catchAsync(async (req, res, next) => {
         creator.seoSlug ||
         'creator';
 
-      let isVerified = !!creator.isVerified;
-      if (creator.verificationSubscription && creator.verificationSubscription.expiresAt) {
-        const gracePeriodEnd = new Date(new Date(creator.verificationSubscription.expiresAt).getTime() + 48 * 60 * 60 * 1000);
-        isVerified = gracePeriodEnd > new Date();
-      }
+      const isVerified = isUserVerified(creator);
+      const isFounderUser = isFounder(creator);
 
       creator.services.forEach(service => {
         const likes = Array.isArray(service.likes) ? service.likes : [];
@@ -198,6 +196,7 @@ exports.getFeed = catchAsync(async (req, res, next) => {
             bio: creator.bio || '',
             categories: creator.categories || [],
             isVerified,
+            isFounder: isFounderUser,
             rating: creator.rating || { average: 5.0, count: 0 },
             priceRange: creator.priceRange,
             startingPrice: creator.startingPrice,
@@ -399,14 +398,27 @@ exports.getComments = catchAsync(async (req, res, next) => {
   let rawComments = Array.isArray(service.comments) ? [...service.comments] : [];
   const currentUserId = req.user?._id ? req.user._id.toString() : null;
 
+  // Authoritatively lookup commenter verification status
+  const userIds = rawComments.map(c => c.user).filter(Boolean);
+  const userMap = new Map();
+  if (userIds.length > 0) {
+    const authors = await User.find({ _id: { $in: userIds } })
+      .select('_id name email isVerified isFounder verificationSubscription')
+      .lean();
+    authors.forEach(u => userMap.set(u._id.toString(), u));
+  }
+
   let comments = rawComments.map(c => {
     const likes = Array.isArray(c.likes) ? c.likes : [];
     const isLiked = currentUserId ? likes.some(id => id.toString() === currentUserId) : false;
+    const author = c.user ? userMap.get(c.user.toString()) : null;
+    const isCommenterVerified = author ? isUserVerified(author) : false;
     return {
       _id: c._id,
       user: c.user,
       userName: c.userName,
       userAvatar: c.userAvatar,
+      isVerified: isCommenterVerified,
       text: c.text,
       likesCount: likes.length,
       isLiked,
@@ -525,8 +537,11 @@ exports.addComment = catchAsync(async (req, res, next) => {
     }).catch(err => console.error('Failed to create post_mention notification:', err));
   }
 
+  const commentResponse = createdComment.toObject ? createdComment.toObject() : { ...createdComment };
+  commentResponse.isVerified = isUserVerified(req.user);
+
   successResponse(res, 201, 'Comment added successfully', {
-    comment: createdComment,
+    comment: commentResponse,
     commentsCount: service.comments.length
   });
 });
@@ -600,7 +615,7 @@ exports.getServiceById = catchAsync(async (req, res, next) => {
   const { serviceId } = req.params;
 
   const creator = await User.findOne({ 'services._id': serviceId })
-    .select('firstName lastName name username email avatar isVerified category rating location bio services')
+    .select('firstName lastName name username email avatar isVerified isFounder verificationSubscription category rating location bio services')
     .lean();
 
   if (!creator) {
@@ -634,7 +649,8 @@ exports.getServiceById = catchAsync(async (req, res, next) => {
       name: creator.name || `${creator.firstName || ''} ${creator.lastName || ''}`.trim() || 'Creator',
       username: creator.username || creator.email?.split('@')[0],
       avatar: creator.avatar,
-      isVerified: creator.isVerified || false,
+      isVerified: isUserVerified(creator),
+      isFounder: isFounder(creator),
       category: creator.category,
       rating: creator.rating?.average || 0,
       location: creator.location,

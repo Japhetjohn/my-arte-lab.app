@@ -418,9 +418,7 @@ export function Settings() {
     'Creator';
 
   const userEmail = currentUser?.email || '';
-  const isVerifiedUser = !!(
-    currentUser?.isVerified || currentUser?.verificationSubscription?.active
-  );
+  const isVerifiedUser = !!currentUser?.isVerified;
   const isCreator = currentUser?.role === 'creator';
 
   return (

@@ -380,6 +380,11 @@ const userSchema = new mongoose.Schema({
     default: false
   },
 
+  isFounder: {
+    type: Boolean,
+    default: false
+  },
+
   verificationSubscription: {
     active: { type: Boolean, default: false },
     subscribedAt: { type: Date },
@@ -700,12 +705,16 @@ userSchema.methods.getPublicProfile = function () {
   obj.id = obj._id.toString();
   obj.name = this.name;
 
-  // Compute isVerified on-the-fly based on subscription expiry + grace period
-  const GRACE_PERIOD_HOURS = 48;
-  const sub = obj.verificationSubscription;
-  if (sub && sub.expiresAt) {
-    const gracePeriodEnd = new Date(sub.expiresAt.getTime() + GRACE_PERIOD_HOURS * 60 * 60 * 1000);
-    obj.isVerified = gracePeriodEnd > new Date();
+  // Compute isVerified on-the-fly using the authoritative verification rule
+  const { isUserVerified, isFounder } = require('../utils/verificationHelper');
+  obj.isVerified = isUserVerified(this);
+  obj.isFounder = isFounder(this);
+  if (obj.isFounder) {
+    obj.verificationSubscription = {
+      ...(obj.verificationSubscription || {}),
+      active: true,
+      lifetime: true
+    };
   }
 
   // Onboarding status determination:

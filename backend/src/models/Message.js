@@ -125,9 +125,10 @@ messageSchema.statics.getConversations = async function(userId) {
   const userIds = Array.from(conversationMap.keys()).map(id => new mongoose.Types.ObjectId(id));
   
   // Fetch user details
+  const { isUserVerified, isFounder } = require('../utils/verificationHelper');
   const users = await mongoose.model('User').find({
     _id: { $in: userIds }
-  }).select('_id name firstName lastName avatar email username').lean();
+  }).select('_id name firstName lastName avatar email username isVerified isFounder verificationSubscription').lean();
   
   // Build final conversations array
   const conversations = [];
@@ -143,7 +144,9 @@ messageSchema.statics.getConversations = async function(userId) {
           lastName: user.lastName,
           avatar: user.avatar,
           email: user.email,
-          username: user.username
+          username: user.username,
+          isVerified: isUserVerified(user),
+          isFounder: isFounder(user)
         },
         lastMessage: {
           content: conv.lastMessage.content,

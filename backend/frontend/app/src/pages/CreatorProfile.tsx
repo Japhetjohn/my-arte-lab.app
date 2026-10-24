@@ -97,12 +97,17 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
   const [showVerifyDialog, setShowVerifyDialog] = useState(false);
   const [showCancelVerifyDialog, setShowCancelVerifyDialog] = useState(false);
 
-  // Compute isVerified on-the-fly (client-side grace period check)
+  // Single authoritative verification status from backend
   const isVerifiedLive = (() => {
-    if (!creator?.verificationSubscription?.expiresAt) return !!creator?.isVerified;
-    const GRACE_PERIOD_MS = 48 * 60 * 60 * 1000;
-    const graceEnd = new Date(creator.verificationSubscription.expiresAt).getTime() + GRACE_PERIOD_MS;
-    return graceEnd > Date.now();
+    if (!creator) return false;
+    if ((creator as any).isFounder) return true;
+    if (creator.verificationSubscription?.expiresAt) {
+      return (
+        new Date(creator.verificationSubscription.expiresAt).getTime() > Date.now() &&
+        creator.verificationSubscription.active !== false
+      );
+    }
+    return !!creator.isVerified;
   })();
 
   // Fetch creator's posts

@@ -4,6 +4,7 @@ const { successResponse, paginatedResponse } = require('../utils/apiResponse');
 const { ErrorHandler, catchAsync } = require('../utils/errorHandler');
 const { escapeRegex } = require('../utils/sanitize');
 const recommendationEngine = require('../services/recommendationEngine');
+const { isUserVerified, isFounder } = require('../utils/verificationHelper');
 
 // Simple stemmer: removes common suffixes to match word roots
 // e.g., "photographer" -> "photograph", "designers" -> "design"
@@ -177,6 +178,8 @@ exports.getAllCreators = catchAsync(async (req, res, next) => {
       ...creator,
       id: creator._id.toString(),
       name: `${creator.firstName || ''} ${creator.lastName || ''}`.trim(),
+      isVerified: isUserVerified(creator),
+      isFounder: isFounder(creator),
       _profileScore: Math.round(profileScore * 100),
       _activityScore: Math.round(activityScore * 100)
     };
@@ -209,7 +212,9 @@ exports.getRecommendedCreators = catchAsync(async (req, res, next) => {
       creators: creators.map(c => ({
         ...c,
         id: c._id.toString(),
-        name: `${c.firstName || ''} ${c.lastName || ''}`.trim()
+        name: `${c.firstName || ''} ${c.lastName || ''}`.trim(),
+        isVerified: isUserVerified(c),
+        isFounder: isFounder(c)
       }))
     });
   }
@@ -241,6 +246,8 @@ exports.getRecommendedCreators = catchAsync(async (req, res, next) => {
     ...creator,
     id: creator._id.toString(),
     name: `${creator.firstName || ''} ${creator.lastName || ''}`.trim(),
+    isVerified: isUserVerified(creator),
+    isFounder: isFounder(creator),
     // Include distance for info (but don't show in UI)
     _distance: distance ? Math.round(distance) : null,
     _matchScore: Math.round(totalScore * 100)
@@ -278,6 +285,8 @@ exports.getTrendingCreators = catchAsync(async (req, res, next) => {
     ...creator,
     id: creator._id.toString(),
     name: `${creator.firstName || ''} ${creator.lastName || ''}`.trim(),
+    isVerified: isUserVerified(creator),
+    isFounder: isFounder(creator),
     _trendScore: Math.round(trendScore),
     _activityScore: Math.round(activityScore * 100),
     _profileScore: Math.round(profileScore * 100)
@@ -350,23 +359,26 @@ exports.getFeaturedCreators = catchAsync(async (req, res, next) => {
   const creators = await User.find({
     role: 'creator',
     isActive: true,
-    isVerified: true,
     'rating.average': { $gte: 4.5 },
     completedBookings: { $gte: 5 }
   })
     .select('-password -twoFactorSecret -twoFactorBackupCodes -emailVerificationToken -passwordResetToken -loginAttempts -lockUntil')
     .sort({ 'rating.average': -1, completedBookings: -1 })
-    .limit(parseInt(limit))
     .lean();
 
-  // Add name virtual field and id to each creator
-  const creatorsWithName = creators.map(creator => ({
-    ...creator,
-    id: creator._id.toString(),
-    name: `${creator.firstName || ''} ${creator.lastName || ''}`.trim()
-  }));
+  // Authoritatively filter and map only actively verified featured creators
+  const verifiedFeatured = creators
+    .filter(c => isUserVerified(c))
+    .slice(0, parseInt(limit))
+    .map(creator => ({
+      ...creator,
+      id: creator._id.toString(),
+      name: `${creator.firstName || ''} ${creator.lastName || ''}`.trim(),
+      isVerified: true,
+      isFounder: isFounder(creator)
+    }));
 
-  successResponse(res, 200, 'Featured creators retrieved successfully', { creators: creatorsWithName });
+  successResponse(res, 200, 'Featured creators retrieved successfully', { creators: verifiedFeatured });
 });
 
 exports.getCreatorStats = catchAsync(async (req, res, next) => {

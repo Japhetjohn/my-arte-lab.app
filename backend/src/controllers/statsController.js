@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const Booking = require('../models/Booking');
 const { successResponse } = require('../utils/apiResponse');
+const { isUserVerified, isFounder } = require('../utils/verificationHelper');
 
 exports.getPlatformStats = async (req, res, next) => {
   try {
@@ -80,7 +81,8 @@ exports.getFeaturedCreators = async (req, res, next) => {
         location: locationStr,
         rating: creator.rating?.average?.toFixed(1) || '0.0',
         reviewCount: creator.rating?.count || 0,
-        verified: creator.isVerified || false,
+        verified: isUserVerified(creator),
+        isFounder: isFounder(creator),
         price: creator.hourlyRate ? `From $${creator.hourlyRate}/hr` : 'Contact for pricing',
         bio: creator.bio || 'No bio yet',
         cover: creator.coverImage,

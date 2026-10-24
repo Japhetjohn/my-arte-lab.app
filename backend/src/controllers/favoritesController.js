@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const { ErrorHandler, catchAsync } = require('../utils/errorHandler');
 const { successResponse } = require('../utils/apiResponse');
+const { isUserVerified, isFounder } = require('../utils/verificationHelper');
 
 /**
  * Add creator to favorites
@@ -51,11 +52,18 @@ exports.getFavorites = catchAsync(async (req, res, next) => {
   const user = await User.findById(req.user._id)
     .populate({
       path: 'favoriteCreators',
-      select: 'name email avatar bio category skills rating services metrics badges isVerified location'
+      select: 'name email avatar bio category skills rating services metrics badges isVerified isFounder verificationSubscription location'
     });
 
+  const formattedFavorites = (user?.favoriteCreators || []).map(c => {
+    const cObj = c.toObject ? c.toObject() : { ...c };
+    cObj.isVerified = isUserVerified(cObj);
+    cObj.isFounder = isFounder(cObj);
+    return cObj;
+  });
+
   successResponse(res, 200, 'Favorites retrieved successfully', {
-    favorites: user.favoriteCreators
+    favorites: formattedFavorites
   });
 });
 

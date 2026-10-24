@@ -228,8 +228,16 @@ router.post('/verify-creator', async (req, res) => {
       return errorResponse(res, 400, 'User is not a creator');
     }
 
-    // Update verified status
+    // Update verified status with clean 1-month administrative subscription
+    const { addOneCalendarMonth, isFounder } = require('../utils/verificationHelper');
     user.isVerified = true;
+    user.verificationSubscription = {
+      active: true,
+      subscribedAt: new Date(),
+      expiresAt: addOneCalendarMonth(new Date()),
+      lastRenewalAt: new Date(),
+      autoRenew: false
+    };
     await user.save();
 
     console.log(`[ADMIN] Verified creator: ${user.name} (${user.email})`);
@@ -273,8 +281,17 @@ router.post('/unverify-creator', async (req, res) => {
       return errorResponse(res, 404, `User not found`);
     }
 
+    const { isFounder } = require('../utils/verificationHelper');
+    if (isFounder(user)) {
+      return errorResponse(res, 400, 'Cannot unverify a platform founder account');
+    }
+
     // Update verified status
     user.isVerified = false;
+    if (user.verificationSubscription) {
+      user.verificationSubscription.active = false;
+      user.verificationSubscription.autoRenew = false;
+    }
     await user.save();
 
     console.log(`[ADMIN] Unverified creator: ${user.name} (${user.email})`);

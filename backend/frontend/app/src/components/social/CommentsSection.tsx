@@ -6,12 +6,14 @@ import { toast } from '@/components/ui/sonner';
 import { socialService } from '@/lib/api';
 import { getAvatarUrl } from '@/lib/imageUrl';
 import { cn } from '@/lib/utils';
+import { VerifiedBadge } from '@/components/shared/VerifiedBadge';
 
 export interface CommentItem {
   _id?: string;
   user?: string;
   userName?: string;
   userAvatar?: string;
+  isVerified?: boolean;
   text: string;
   createdAt?: string | Date;
   likesCount?: number;
@@ -332,8 +334,11 @@ export function CommentsSection({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">
+                    <span className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100 inline-flex items-center gap-1">
                       {comment.userName || 'Creator Community Member'}
+                      {comment.isVerified && (
+                        <VerifiedBadge className="w-3.5 h-3.5 shrink-0 inline-block align-middle" showTooltip={false} />
+                      )}
                     </span>
                     <span className="text-[11px] text-gray-400 font-normal">
                       {formatTimestamp(comment.createdAt)}
