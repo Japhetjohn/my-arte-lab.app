@@ -7,6 +7,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { VerifiedBadge } from '@/components/shared/VerifiedBadge';
+import { ConfirmationModal } from '@/components/modals/ConfirmationModal';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { api, useAuth } from '@/contexts/AuthContext';
 import { socialService } from '@/lib/api';
@@ -973,55 +974,32 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
         </DialogContent>
       </Dialog>
 
-      {/* 3. Cancel Verification Dialog */}
-      <Dialog open={showCancelVerifyDialog} onOpenChange={setShowCancelVerifyDialog}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <BadgeCheck className="w-5 h-5 text-red-500" />
-              Cancel Verification
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 pt-2 text-xs">
-            <div className="space-y-1.5 py-1">
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm">Remove Verified Badge?</h3>
-              <p className="text-gray-500 dark:text-gray-400 leading-relaxed">
-                Your verified badge will be removed upon cancellation. You can re-subscribe anytime.
-              </p>
-            </div>
-            <div className="flex justify-end gap-2 pt-3 border-t border-[#DADDE1] dark:border-[#2f3032]">
-              <Button
-                variant="outline"
-                onClick={() => setShowCancelVerifyDialog(false)}
-                className="text-xs rounded-xl dark:border-[#2f3032] dark:text-gray-300 dark:hover:bg-gray-800/60"
-              >
-                Keep Badge
-              </Button>
-              <Button
-                className="bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded-xl"
-                disabled={isVerifying}
-                onClick={async () => {
-                  try {
-                    setIsVerifying(true);
-                    await verificationService.cancel();
-                    setCreator((prev) =>
-                      prev ? { ...prev, isVerified: false, verificationSubscription: undefined } : null
-                    );
-                    toast.success('Verification cancelled');
-                    setShowCancelVerifyDialog(false);
-                  } catch (error: any) {
-                    toast.error(error.response?.data?.error || 'Failed to cancel');
-                  } finally {
-                    setIsVerifying(false);
-                  }
-                }}
-              >
-                {isVerifying ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Cancel Subscription'}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* 3. Cancel Verification Confirmation Modal (Type A: Centered Modal on both mobile & desktop) */}
+      <ConfirmationModal
+        isOpen={showCancelVerifyDialog}
+        onClose={() => !isVerifying && setShowCancelVerifyDialog(false)}
+        onConfirm={async () => {
+          try {
+            setIsVerifying(true);
+            await verificationService.cancel();
+            setCreator((prev) =>
+              prev ? { ...prev, isVerified: false, verificationSubscription: undefined } : null
+            );
+            toast.success('Verification cancelled');
+            setShowCancelVerifyDialog(false);
+          } catch (error: any) {
+            toast.error(error.response?.data?.error || 'Failed to cancel');
+          } finally {
+            setIsVerifying(false);
+          }
+        }}
+        title="Remove Verified Badge?"
+        description="Your verified badge will be removed upon cancellation. You can re-subscribe anytime."
+        confirmLabel="Cancel Subscription"
+        cancelLabel="Keep Badge"
+        variant="destructive"
+        isLoading={isVerifying}
+      />
 
       {/* 4. Full Image Lightbox */}
       <ImageDialog open={!!selectedItem} onOpenChange={() => setSelectedItem(null)}>

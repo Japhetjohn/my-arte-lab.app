@@ -11,6 +11,7 @@ import { SocialFeedCard, type FeedPost } from '@/components/social/SocialFeedCar
 import { getAvatarUrl } from '@/lib/imageUrl';
 import { toast } from '@/components/ui/sonner';
 import { VerifiedBadge } from '@/components/shared/VerifiedBadge';
+import { ConfirmationModal } from '@/components/modals/ConfirmationModal';
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
   Dialog,
@@ -1457,37 +1458,17 @@ export function Settings() {
         </div>
       </SettingsSheetModal>
 
-      {/* 6. Confirm Logout Popup */}
-      <SettingsSheetModal
+      {/* 6. Confirm Logout Popup (Type A: Centered Modal on both mobile & desktop) */}
+      <ConfirmationModal
         isOpen={isLogoutDialogOpen}
         onClose={() => setIsLogoutDialogOpen(false)}
+        onConfirm={handleLogout}
         title="Sign Out"
-        description="Are you sure you want to log out of your MyArteLab account?"
-        maxWidth="sm:max-w-sm"
-        footer={
-          <div className="flex items-center justify-end gap-2.5">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setIsLogoutDialogOpen(false)}
-              className="text-xs h-9 px-4 rounded-xl cursor-pointer dark:border-gray-700 dark:text-gray-200"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              onClick={handleLogout}
-              className="bg-red-600 hover:bg-red-700 text-white font-semibold text-xs h-9 px-5 rounded-xl shadow-xs cursor-pointer"
-            >
-              Log Out
-            </Button>
-          </div>
-        }
-      >
-        <div className="py-2 text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
-          You will need to sign in again to access your account, creator dashboard, and messages.
-        </div>
-      </SettingsSheetModal>
+        description="Are you sure you want to log out of your MyArteLab account? You will need to sign in again to access your account, creator dashboard, and messages."
+        confirmLabel="Log Out"
+        cancelLabel="Cancel"
+        variant="destructive"
+      />
     </div>
   );
 }

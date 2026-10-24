@@ -7,6 +7,7 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { api, useAuth } from '@/contexts/AuthContext';
 import { getAvatarUrl } from '@/lib/imageUrl';
 import { VerifiedBadge } from '@/components/shared/VerifiedBadge';
+import { ConfirmationModal } from '@/components/modals/ConfirmationModal';
 import { 
   Bell, 
   CheckCircle, 
@@ -75,6 +76,8 @@ export function Notifications() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
+  const [isClearModalOpen, setIsClearModalOpen] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
 
   const broadcastUnreadCount = (count: number) => {
     window.dispatchEvent(new CustomEvent('notificationsUpdated', { detail: { unreadCount: count } }));
@@ -157,15 +160,23 @@ export function Notifications() {
     }
   };
 
-  const clearAllNotifications = async () => {
+  const clearAllNotifications = () => {
+    setIsClearModalOpen(true);
+  };
+
+  const handleConfirmClearAll = async () => {
     try {
+      setIsClearing(true);
       await api.delete('/notifications/all');
       setNotifications([]);
       setUnreadCount(0);
       broadcastUnreadCount(0);
       toast.success('All notifications cleared');
+      setIsClearModalOpen(false);
     } catch (error) {
       toast.error('Failed to clear notifications');
+    } finally {
+      setIsClearing(false);
     }
   };
 
@@ -616,6 +627,19 @@ export function Notifications() {
         </aside>
 
       </div>
+
+      {/* Clear All Notifications Modal (Type A: Centered Modal on both mobile & desktop) */}
+      <ConfirmationModal
+        isOpen={isClearModalOpen}
+        onClose={() => !isClearing && setIsClearModalOpen(false)}
+        onConfirm={handleConfirmClearAll}
+        title="Clear All Notifications?"
+        description="Are you sure you want to clear all notifications? This action cannot be undone."
+        confirmLabel="Clear All"
+        cancelLabel="Cancel"
+        variant="destructive"
+        isLoading={isClearing}
+      />
     </div>
   );
 }

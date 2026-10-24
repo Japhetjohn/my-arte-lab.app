@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { VerifiedBadge } from '@/components/shared/VerifiedBadge';
+import { ConfirmationModal } from '@/components/modals/ConfirmationModal';
 import { NewBookingModal } from '@/components/booking/NewBookingModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/contexts/AuthContext';
@@ -52,6 +53,11 @@ export function Bookings() {
   // New Booking Modal (triggered by URL ?creator=...)
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [selectedCreator, setSelectedCreator] = useState<CreatorInfo | null>(null);
+
+  // Cancel Booking Modal state (Type A centered modal)
+  const [cancellingBookingId, setCancellingBookingId] = useState<string | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
+  const [isCancelling, setIsCancelling] = useState(false);
 
   // Check for creator query param in URL on mount
   useEffect(() => {
@@ -100,15 +106,23 @@ export function Bookings() {
     }
   };
 
-  const handleCancelBooking = async (bookingId: string) => {
-    const reason = prompt('Please specify a reason for cancellation:');
-    if (reason === null) return;
+  const handleCancelBooking = (bookingId: string) => {
+    setCancellingBookingId(bookingId);
+    setCancelReason('');
+  };
+
+  const handleConfirmCancel = async () => {
+    if (!cancellingBookingId) return;
     try {
-      await bookingWorkflowService.cancelBooking(bookingId, reason || 'Cancelled by user');
+      setIsCancelling(true);
+      await bookingWorkflowService.cancelBooking(cancellingBookingId, cancelReason.trim() || 'Cancelled by user');
       toast.success('Booking cancelled');
+      setCancellingBookingId(null);
       fetchBookings();
     } catch (error: any) {
       toast.error(error.response?.data?.error || 'Failed to cancel booking');
+    } finally {
+      setIsCancelling(false);
     }
   };
 
@@ -618,6 +632,32 @@ export function Bookings() {
           }}
         />
       )}
+
+      {/* Cancel Booking Confirmation Modal (Type A: Centered Modal on both mobile & desktop) */}
+      <ConfirmationModal
+        isOpen={!!cancellingBookingId}
+        onClose={() => !isCancelling && setCancellingBookingId(null)}
+        onConfirm={handleConfirmCancel}
+        title="Cancel Booking?"
+        description={
+          <div className="space-y-3 pt-1 text-left">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Are you sure you want to cancel this booking? This action cannot be undone.
+            </p>
+            <input
+              type="text"
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              placeholder="Reason for cancellation (Optional)"
+              className="w-full text-xs px-3 py-2 rounded-xl border border-[#DADDE1] dark:border-[#2f3032] bg-transparent text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#9747FF]"
+            />
+          </div>
+        }
+        confirmLabel="Cancel Booking"
+        cancelLabel="Keep Booking"
+        variant="destructive"
+        isLoading={isCancelling}
+      />
     </div>
   );
 }

@@ -102,6 +102,10 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
   const [counterAmount, setCounterAmount] = useState('');
   const [isSubmittingCounter, setIsSubmittingCounter] = useState(false);
 
+  // Decline modal state (Type A centered modal)
+  const [isDeclineModalOpen, setIsDeclineModalOpen] = useState(false);
+  const [declineReason, setDeclineReason] = useState('');
+
   // Image lightbox preview modal
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
 
@@ -192,14 +196,19 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
   };
 
   // Creator Declines Booking Request
-  const handleDeclineRequest = async () => {
+  const handleDeclineRequest = () => {
     if (!booking) return;
-    const reason = prompt('Please specify a reason for declining:');
-    if (reason === null) return;
+    setDeclineReason('');
+    setIsDeclineModalOpen(true);
+  };
+
+  const handleConfirmDecline = async () => {
+    if (!booking) return;
     try {
       setIsProcessingAction(true);
-      await bookingWorkflowService.rejectBooking(booking._id, reason || 'Declined by creator');
+      await bookingWorkflowService.rejectBooking(booking._id, declineReason.trim() || 'Declined by creator');
       toast.success('Booking declined');
+      setIsDeclineModalOpen(false);
       fetchBookingDetails();
     } catch (err: any) {
       toast.error(err.response?.data?.error || 'Failed to decline booking');
@@ -1765,6 +1774,52 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                 Submit Counter Offer
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Decline Booking Modal (Type A: Centered Modal on both mobile & desktop) */}
+      <Dialog open={isDeclineModalOpen} onOpenChange={setIsDeclineModalOpen}>
+        <DialogContent className="w-full max-w-[calc(100%-2rem)] sm:max-w-md rounded-2xl bg-white dark:bg-[#18191a] border border-[#DADDE1] dark:border-[#2f3032] p-5">
+          <DialogHeader className="pb-3 border-b border-[#DADDE1] dark:border-[#2f3032]">
+            <DialogTitle className="text-base font-bold text-gray-900 dark:text-gray-100">
+              Decline Booking Request
+            </DialogTitle>
+            <DialogDescription className="text-xs text-gray-500">
+              Let the client know why you are unable to accept this booking request.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-3">
+            <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 block mb-1.5">
+              Reason for declining (Optional)
+            </label>
+            <Textarea
+              value={declineReason}
+              onChange={(e) => setDeclineReason(e.target.value)}
+              placeholder="e.g., Currently unavailable for new bookings, schedule conflict..."
+              rows={3}
+              className="w-full text-xs rounded-xl border-[#DADDE1] dark:border-[#2f3032]"
+            />
+          </div>
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#DADDE1] dark:border-[#2f3032]">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsDeclineModalOpen(false)}
+              className="text-xs h-9 px-4 rounded-xl cursor-pointer"
+              disabled={isProcessingAction}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleConfirmDecline}
+              disabled={isProcessingAction}
+              className="bg-red-600 hover:bg-red-700 text-white font-semibold text-xs h-9 px-4 rounded-xl cursor-pointer"
+            >
+              {isProcessingAction ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : null}
+              Decline Booking
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

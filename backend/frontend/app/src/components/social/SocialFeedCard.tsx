@@ -12,7 +12,6 @@ import {
   ChevronRight,
   Users,
   Trash2,
-  Loader2,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -20,19 +19,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/sonner';
 import { socialService } from '@/lib/api';
 import { getAvatarUrl, getImageUrl } from '@/lib/imageUrl';
 import { VerifiedBadge } from '@/components/shared/VerifiedBadge';
+import { ConfirmationModal } from '@/components/modals/ConfirmationModal';
 import { CommentsSection } from './CommentsSection';
 import { cn } from '@/lib/utils';
 
@@ -831,46 +822,18 @@ export function SocialFeedCard({
         </div>
       )}
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent className="sm:max-w-md bg-white dark:bg-[#1e1f20] rounded-2xl border border-gray-200 dark:border-gray-800 p-6">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-bold text-gray-900 dark:text-gray-100">
-              Delete Post?
-            </DialogTitle>
-            <DialogDescription className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-              Are you sure you want to delete this post? This action will permanently remove this creative work from your profile and the feed.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="flex flex-row justify-end gap-2.5 mt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setShowDeleteDialog(false)}
-              disabled={isDeleting}
-              className="rounded-xl border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={handleDeletePost}
-              disabled={isDeleting}
-              className="rounded-xl bg-red-600 hover:bg-red-700 text-white flex items-center gap-2 cursor-pointer"
-            >
-              {isDeleting ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Deleting...</span>
-                </>
-              ) : (
-                <span>Delete</span>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Delete Confirmation Dialog (Type A: Centered Modal on both mobile & desktop) */}
+      <ConfirmationModal
+        isOpen={showDeleteDialog}
+        onClose={() => !isDeleting && setShowDeleteDialog(false)}
+        onConfirm={handleDeletePost}
+        title="Delete Post?"
+        description="Are you sure you want to delete this post? This action will permanently remove this creative work from your profile and the feed."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="destructive"
+        isLoading={isDeleting}
+      />
     </article>
   );
 }

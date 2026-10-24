@@ -35,6 +35,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { VerifiedBadge } from '@/components/shared/VerifiedBadge';
+import { ConfirmationModal } from '@/components/modals/ConfirmationModal';
 import { creatorService, uploadService } from '@/lib/api';
 import type { Creator } from '@/types';
 
@@ -93,6 +94,8 @@ export function Messages() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
+  const [isBlockModalOpen, setIsBlockModalOpen] = useState(false);
+  const [isBlocking, setIsBlocking] = useState(false);
   const [suggestedCreators, setSuggestedCreators] = useState<Creator[]>([]);
 
   // Photo upload state
@@ -590,15 +593,19 @@ export function Messages() {
     return Array.from(map.values());
   };
 
-  const handleBlockUser = async () => {
+  const handleBlockUser = () => {
+    if (!selectedConversation) return;
+    setIsBlockModalOpen(true);
+  };
+
+  const handleConfirmBlock = async () => {
     if (!selectedConversation) return;
 
     const otherUserId = selectedConversation.otherUser?._id || selectedConversation._id;
     const otherUserName = getParticipantName(selectedConversation.otherUser);
 
-    if (!confirm(`Are you sure you want to block ${otherUserName}?`)) return;
-
     try {
+      setIsBlocking(true);
       await api.post(`/blocks/${otherUserId}`);
       setIsBlocked(true);
       toast.success(`${otherUserName} has been blocked`);
@@ -609,9 +616,12 @@ export function Messages() {
           return cUserId !== otherUserId;
         })
       );
+      setIsBlockModalOpen(false);
       handleBackToList();
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to block user');
+    } finally {
+      setIsBlocking(false);
     }
   };
 
@@ -1578,6 +1588,19 @@ export function Messages() {
           </div>
         </div>
       )}
+
+      {/* Block User Confirmation Modal (Type A: Centered Modal on both mobile & desktop) */}
+      <ConfirmationModal
+        isOpen={isBlockModalOpen}
+        onClose={() => !isBlocking && setIsBlockModalOpen(false)}
+        onConfirm={handleConfirmBlock}
+        title={`Block ${selectedConversation ? getParticipantName(selectedConversation.otherUser) : 'User'}?`}
+        description="They will no longer be able to send you direct messages or view your profile."
+        confirmLabel="Block User"
+        cancelLabel="Cancel"
+        variant="destructive"
+        isLoading={isBlocking}
+      />
     </div>
   );
 }
