@@ -24,4 +24,7 @@ router.patch('/:userId/read', messagesController.markAsRead);
 // Delete a message
 router.delete('/:messageId', messagesController.deleteMessage);
 
+// Toggle reaction on a message
+router.post('/:messageId/reactions', messagesController.toggleReaction);
+
 module.exports = router;

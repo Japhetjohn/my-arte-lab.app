@@ -15,10 +15,32 @@ const messageSchema = new mongoose.Schema({
   },
   content: {
     type: String,
-    required: true,
+    default: '',
     maxlength: 2000,
     trim: true
   },
+  imageUrl: {
+    type: String,
+    default: null,
+    trim: true
+  },
+  reactions: [
+    {
+      userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+      },
+      emoji: {
+        type: String,
+        required: true
+      },
+      createdAt: {
+        type: Date,
+        default: Date.now
+      }
+    }
+  ],
   read: {
     type: Boolean,
     default: false
@@ -125,6 +147,7 @@ messageSchema.statics.getConversations = async function(userId) {
         },
         lastMessage: {
           content: conv.lastMessage.content,
+          imageUrl: conv.lastMessage.imageUrl,
           createdAt: conv.lastMessage.createdAt,
           senderId: conv.lastMessage.senderId
         },

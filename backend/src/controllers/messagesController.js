@@ -8,15 +8,15 @@ const { successResponse, errorResponse } = require('../utils/apiResponse');
  */
 exports.sendMessage = async (req, res) => {
   try {
-    const { recipientId, content } = req.body;
+    const { recipientId, content, imageUrl } = req.body;
     const senderId = req.user.id;
 
-    // Validate input
-    if (!recipientId || !content?.trim()) {
-      return errorResponse(res, 'Recipient ID and message content are required', 400);
+    // Validate input: requires recipientId and at least one of content or imageUrl
+    if (!recipientId || (!content?.trim() && !imageUrl?.trim())) {
+      return errorResponse(res, 'Recipient ID and message content or image are required', 400);
     }
 
-    if (content.trim().length > 2000) {
+    if (content && content.trim().length > 2000) {
       return errorResponse(res, 'Message too long. Maximum 2000 characters', 400);
     }
 
@@ -46,7 +46,8 @@ exports.sendMessage = async (req, res) => {
     const message = new Message({
       senderId,
       recipientId,
-      content: content.trim()
+      content: (content || '').trim(),
+      imageUrl: imageUrl ? imageUrl.trim() : null
     });
 
     await message.save();
@@ -193,5 +194,69 @@ exports.deleteMessage = async (req, res) => {
   } catch (error) {
     console.error('Error deleting message:', error);
     return errorResponse(res, 'Failed to delete message', 500);
+  }
+};
+
+/**
+ * Toggle reaction on a message
+ * POST /api/messages/:messageId/reactions
+ */
+exports.toggleReaction = async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const { emoji } = req.body;
+    const userId = req.user.id;
+
+    if (!emoji || typeof emoji !== 'string' || emoji.trim().length === 0 || emoji.length > 10) {
+      return errorResponse(res, 'Valid emoji is required', 400);
+    }
+
+    const message = await Message.findById(messageId);
+    if (!message) {
+      return errorResponse(res, 'Message not found', 404);
+    }
+
+    // Permission check: only conversation participants can react
+    if (message.senderId.toString() !== userId && message.recipientId.toString() !== userId) {
+      return errorResponse(res, 'You are not authorized to react to this message', 403);
+    }
+
+    if (!Array.isArray(message.reactions)) {
+      message.reactions = [];
+    }
+
+    const cleanEmoji = emoji.trim();
+    const existingIndex = message.reactions.findIndex(
+      r => r.userId.toString() === userId
+    );
+
+    if (existingIndex > -1) {
+      if (message.reactions[existingIndex].emoji === cleanEmoji) {
+        // Toggle off if clicking the exact same emoji
+        message.reactions.splice(existingIndex, 1);
+      } else {
+        // Update reaction to new emoji
+        message.reactions[existingIndex].emoji = cleanEmoji;
+        message.reactions[existingIndex].createdAt = new Date();
+      }
+    } else {
+      // Add new reaction
+      message.reactions.push({
+        userId,
+        emoji: cleanEmoji,
+        createdAt: new Date()
+      });
+    }
+
+    await message.save();
+
+    return successResponse(res, 200, 'Reaction updated successfully', {
+      messageId: message._id,
+      reactions: message.reactions
+    });
+
+  } catch (error) {
+    console.error('Error toggling reaction:', error);
+    return errorResponse(res, 'Failed to update reaction', 500);
   }
 };
