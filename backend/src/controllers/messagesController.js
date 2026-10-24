@@ -55,8 +55,8 @@ exports.sendMessage = async (req, res) => {
     // This prevents message notifications from appearing in the notification bell
 
     // Populate sender info for response
-    await message.populate('senderId', 'name avatar');
-    await message.populate('recipientId', 'name avatar');
+    await message.populate('senderId', 'name avatar email username firstName lastName');
+    await message.populate('recipientId', 'name avatar email username firstName lastName');
 
     return successResponse(res, 201, 'Message sent successfully', { message });
 

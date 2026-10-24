@@ -52,8 +52,8 @@ messageSchema.statics.getConversation = async function(userId1, userId2, options
   .sort({ createdAt: -1 })
   .skip(skip)
   .limit(limit)
-  .populate('senderId', 'name avatar')
-  .populate('recipientId', 'name avatar')
+  .populate('senderId', 'name avatar email username firstName lastName')
+  .populate('recipientId', 'name avatar email username firstName lastName')
   .lean();
 
   // Reverse to show oldest first
@@ -105,7 +105,7 @@ messageSchema.statics.getConversations = async function(userId) {
   // Fetch user details
   const users = await mongoose.model('User').find({
     _id: { $in: userIds }
-  }).select('_id name firstName lastName avatar').lean();
+  }).select('_id name firstName lastName avatar email username').lean();
   
   // Build final conversations array
   const conversations = [];
@@ -119,7 +119,9 @@ messageSchema.statics.getConversations = async function(userId) {
           name: user.name,
           firstName: user.firstName,
           lastName: user.lastName,
-          avatar: user.avatar
+          avatar: user.avatar,
+          email: user.email,
+          username: user.username
         },
         lastMessage: {
           content: conv.lastMessage.content,
