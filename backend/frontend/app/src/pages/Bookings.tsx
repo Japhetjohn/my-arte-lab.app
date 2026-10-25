@@ -649,7 +649,7 @@ export function Bookings() {
               value={cancelReason}
               onChange={(e) => setCancelReason(e.target.value)}
               placeholder="Reason for cancellation (Optional)"
-              className="w-full text-xs px-3 py-2 rounded-xl border border-[#DADDE1] dark:border-[#2f3032] bg-transparent text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#9747FF]"
+              className="w-full text-xs px-0 py-2 border-0 border-b border-[#DADDE1] dark:border-[#2f3032] rounded-none bg-transparent text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-0 focus:border-[#9747FF] transition-colors"
             />
           </div>
         }

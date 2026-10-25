@@ -853,25 +853,28 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
             <div>
               <Label className="text-xs font-medium text-gray-700 dark:text-gray-300">Bio</Label>
               <Textarea
+                variant="line"
                 value={profileForm.bio}
                 onChange={(e) => setProfileForm((prev) => ({ ...prev, bio: e.target.value }))}
                 placeholder="Tell clients about your creative background..."
-                className="mt-1 dark:bg-[#121212] dark:border-[#2f3032] dark:text-gray-100 dark:placeholder-gray-500 focus-visible:ring-[#9747FF]"
-                rows={4}
+                className="mt-1 resize-none"
+                rows={3}
               />
             </div>
             <div>
               <Label className="text-xs font-medium text-gray-700 dark:text-gray-300">Category</Label>
               <Input
+                variant="line"
                 value={profileForm.category}
                 onChange={(e) => setProfileForm((prev) => ({ ...prev, category: e.target.value }))}
                 placeholder="e.g., Digital Art, Graphic Design"
-                className="mt-1 dark:bg-[#121212] dark:border-[#2f3032] dark:text-gray-100 dark:placeholder-gray-500 focus-visible:ring-[#9747FF]"
+                className="mt-1 h-9 text-sm"
               />
             </div>
             <div>
               <Label className="text-xs font-medium text-gray-700 dark:text-gray-300">Skills (comma separated)</Label>
               <Input
+                variant="line"
                 value={profileForm.skills.join(', ')}
                 onChange={(e) =>
                   setProfileForm((prev) => ({
@@ -880,7 +883,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                   }))
                 }
                 placeholder="e.g., Photoshop, Blender, Figma"
-                className="mt-1 dark:bg-[#121212] dark:border-[#2f3032] dark:text-gray-100 dark:placeholder-gray-500 focus-visible:ring-[#9747FF]"
+                className="mt-1 h-9 text-sm"
               />
             </div>
             <div className="flex justify-end gap-2 pt-3 border-t border-[#DADDE1] dark:border-[#2f3032]">

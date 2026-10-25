@@ -200,11 +200,12 @@ export function Explore() {
       <div ref={searchRef} className="relative">
         <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             <Input
               type="text"
+              variant="line"
               placeholder="Search creators, skills, category, city..."
-              className="pl-10 pr-10"
+              className="pl-7 pr-8 h-10 text-sm"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => setShowHistory(true)}

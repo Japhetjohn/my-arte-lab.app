@@ -867,8 +867,8 @@ export function Messages() {
             Two-pane messaging interface on desktop, single-view transition on mobile
            ========================================================================= */}
         <main className="col-span-1 lg:col-span-6 flex flex-col min-w-0">
-          {/* Main Messaging Container — Borderless Clean Card-Free Design */}
-          <div className="w-full bg-white dark:bg-[#18191a] border border-[#DADDE1] dark:border-[#2f3032] rounded-2xl overflow-hidden flex h-[calc(100vh-8.5rem)] min-h-[580px] shadow-xs">
+          {/* Main Messaging Container — Borderless Clean Workspace Inside Column 2 */}
+          <div className="w-full bg-white dark:bg-[#18191a] flex h-[calc(100vh-8rem)] min-h-[580px] overflow-hidden">
             {/* ---------------------------------------------------------------------
                 PANE 1: CONVERSATION LIST
                 Hidden on mobile when an individual conversation is active
@@ -901,23 +901,24 @@ export function Messages() {
                   </button>
                 </div>
 
-                {/* Collapsible Clean Search Input */}
+                {/* Collapsible Clean Grey-Line Search Input */}
                 {(isSearchOpen || searchQuery) && (
-                  <div className="mt-3 relative flex items-center">
-                    <Search className="absolute left-3 w-4 h-4 text-gray-400 pointer-events-none" />
+                  <div className="mt-3 relative flex items-center border-b border-[#DADDE1] dark:border-[#2f3032] focus-within:border-[#9747FF] transition-colors pb-1">
+                    <Search className="w-4 h-4 text-gray-400 shrink-0 mr-2 pointer-events-none" />
                     <input
                       ref={searchInputRef}
                       type="text"
                       placeholder="Search messages..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full bg-gray-100 dark:bg-[#252628] text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 text-xs rounded-full pl-9 pr-8 py-2 border-none outline-none focus:ring-1 focus:ring-[#9747FF]/40 transition-all"
+                      className="w-full bg-transparent text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 text-xs border-none outline-none py-1"
                     />
                     {searchQuery && (
                       <button
                         type="button"
                         onClick={() => setSearchQuery('')}
-                        className="absolute right-2.5 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                        className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                        aria-label="Clear search"
                       >
                         <X className="w-3.5 h-3.5" />
                       </button>
@@ -1035,16 +1036,16 @@ export function Messages() {
               {selectedConversation ? (
                 <>
                   {/* Conversation Header */}
-                  <div className="px-4 py-3 border-b border-[#DADDE1] dark:border-[#2f3032] flex items-center justify-between bg-white dark:bg-[#18191a] shrink-0">
+                  <div className="px-3.5 sm:px-4 py-2.5 sm:py-3 border-b border-[#DADDE1] dark:border-[#2f3032] flex items-center justify-between bg-white dark:bg-[#18191a] shrink-0 sticky top-0 z-10">
                     <div className="flex items-center gap-2.5 min-w-0">
                       {/* Back button (Mobile view only) */}
                       <button
                         type="button"
                         onClick={handleBackToList}
-                        className="p-1.5 -ml-1.5 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white rounded-full hover:bg-gray-100 dark:hover:bg-[#252628] transition-colors lg:hidden cursor-pointer"
+                        className="p-1.5 -ml-1 text-gray-600 dark:text-gray-300 hover:text-gray-950 dark:hover:text-white rounded-full hover:bg-gray-100 dark:hover:bg-[#252628] transition-colors lg:hidden cursor-pointer shrink-0"
                         aria-label="Back to messages"
                       >
-                        <ChevronLeft className="w-5 h-5" />
+                        <ChevronLeft className="w-6 h-6" />
                       </button>
 
                       {/* Recipient Avatar */}
@@ -1059,24 +1060,22 @@ export function Messages() {
                         />
                       </a>
 
-                      {/* Recipient Name and Username */}
-                      <div className="min-w-0">
-                        <a
-                          href={`/creators/${selectedConversation.otherUser?._id || selectedConversation._id}`}
-                          className="hover:underline flex items-center gap-1 group truncate"
-                        >
-                          <h2 className="font-bold text-sm sm:text-base text-gray-950 dark:text-gray-100 leading-tight truncate">
+                      {/* Recipient Identity: Display Name on Line 1, @username on Line 2 */}
+                      <div className="min-w-0 flex flex-col justify-center">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <a
+                            href={`/creators/${selectedConversation.otherUser?._id || selectedConversation._id}`}
+                            className="font-bold text-sm sm:text-base text-gray-950 dark:text-gray-100 leading-tight hover:underline truncate"
+                          >
                             {getParticipantName(selectedConversation.otherUser)}
-                          </h2>
+                          </a>
                           {selectedConversation.otherUser?.isVerified && (
                             <VerifiedBadge className="w-3.5 h-3.5 shrink-0 inline-block align-middle" showTooltip={false} />
                           )}
-                        </a>
-                        {getParticipantUsername(selectedConversation.otherUser) && (
-                          <p className="text-xs text-gray-500 dark:text-gray-400 font-normal truncate">
-                            @{getParticipantUsername(selectedConversation.otherUser)}
-                          </p>
-                        )}
+                        </div>
+                        <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 font-normal truncate mt-0.5 leading-tight">
+                          @{getParticipantUsername(selectedConversation.otherUser)}
+                        </p>
                       </div>
                     </div>
 

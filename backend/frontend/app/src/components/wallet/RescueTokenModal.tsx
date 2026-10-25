@@ -396,22 +396,22 @@ export function RescueTokenModal({
                     setRecipient('');
                     setErrorMessage(null);
                   }}
-                  className="w-full h-11 px-3 bg-gray-50 hover:bg-gray-100/70 border border-gray-200 rounded-xl text-xs sm:text-sm font-medium text-gray-900 appearance-none focus:outline-none focus:ring-2 focus:ring-[#9747FF]/20 focus:border-[#9747FF] transition-all cursor-pointer pr-10"
+                  className="w-full h-10 px-0 bg-transparent border-0 border-b border-[#DADDE1] dark:border-[#2f3032] rounded-none text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100 appearance-none focus:outline-none focus:ring-0 focus:border-[#9747FF] transition-all cursor-pointer pr-8"
                 >
                   {chains.map((chain) => (
-                    <option key={chain.id} value={chain.id}>
+                    <option key={chain.id} value={chain.id} className="bg-white dark:bg-[#1a1b1c] text-gray-900 dark:text-gray-100">
                       {chain.name} ({chain.id})
                     </option>
                   ))}
                 </select>
-                <ChevronDown className="w-4 h-4 text-gray-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <ChevronDown className="w-4 h-4 text-gray-400 absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>
             </div>
 
             {/* Token Contract / Mint Address Input */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-semibold text-gray-700">
+                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
                   Token Contract / Mint Address
                 </label>
                 <span className="text-[11px] text-gray-400">
@@ -424,10 +424,10 @@ export function RescueTokenModal({
                 onChange={(e) => setTokenAddress(e.target.value)}
                 placeholder={selectedChain.example}
                 className={cn(
-                  'w-full h-11 px-3 bg-white border rounded-xl text-xs font-mono text-gray-900 placeholder:text-gray-300 focus:outline-none focus:ring-2 transition-all',
+                  'w-full h-10 px-0 bg-transparent border-0 border-b rounded-none text-xs font-mono text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-0 transition-all',
                   tokenAddress && !isTokenValid
-                    ? 'border-red-300 focus:ring-red-200'
-                    : 'border-gray-200 focus:border-[#9747FF] focus:ring-[#9747FF]/20'
+                    ? 'border-red-500 focus:border-red-500'
+                    : 'border-[#DADDE1] dark:border-[#2f3032] focus:border-[#9747FF]'
                 )}
               />
               {tokenAddress && !isTokenValid && (
@@ -442,7 +442,7 @@ export function RescueTokenModal({
             {/* Destination Recipient Address */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-semibold text-gray-700">
+                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
                   External Destination Address
                 </label>
                 <span className="text-[11px] text-gray-400">Must be your external wallet</span>
@@ -453,10 +453,10 @@ export function RescueTokenModal({
                 onChange={(e) => setRecipient(e.target.value)}
                 placeholder="Paste destination wallet address"
                 className={cn(
-                  'w-full h-11 px-3 bg-white border rounded-xl text-xs font-mono text-gray-900 placeholder:text-gray-300 focus:outline-none focus:ring-2 transition-all',
+                  'w-full h-10 px-0 bg-transparent border-0 border-b rounded-none text-xs font-mono text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-0 transition-all',
                   (recipient && !isRecipientValid) || isSelfSend
-                    ? 'border-red-300 focus:ring-red-200'
-                    : 'border-gray-200 focus:border-[#9747FF] focus:ring-[#9747FF]/20'
+                    ? 'border-red-500 focus:border-red-500'
+                    : 'border-[#DADDE1] dark:border-[#2f3032] focus:border-[#9747FF]'
                 )}
               />
               {isSelfSend ? (

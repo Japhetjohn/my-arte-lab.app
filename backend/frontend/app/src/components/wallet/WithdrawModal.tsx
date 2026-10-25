@@ -1445,7 +1445,7 @@ export function WithdrawModal({
                   setErrorMessage(null);
                 }}
                 placeholder={selectedCountry === 'NG' ? '10-digit account number' : 'Enter account number'}
-                className="w-full h-11 px-3.5 bg-white border border-gray-200 rounded-xl text-sm font-mono tracking-wider focus:outline-none focus:border-[#9747FF] focus:ring-1 focus:ring-[#9747FF] placeholder:font-sans placeholder:tracking-normal placeholder:text-gray-400"
+                className="w-full h-10 px-0 bg-transparent border-0 border-b border-[#DADDE1] dark:border-[#2f3032] rounded-none text-sm font-mono tracking-wider focus:outline-none focus:ring-0 focus:border-[#9747FF] placeholder:font-sans placeholder:tracking-normal placeholder:text-gray-400 transition-colors"
               />
             </div>
 
@@ -1727,7 +1727,7 @@ export function WithdrawModal({
                     setErrorMessage(null);
                   }}
                   placeholder="Enter or paste Solana address"
-                  className="w-full h-11 pl-3.5 pr-20 bg-white border border-gray-200 rounded-xl text-xs sm:text-sm font-mono focus:outline-none focus:border-[#9747FF] focus:ring-1 focus:ring-[#9747FF]"
+                  className="w-full h-10 pl-0 pr-20 bg-transparent border-0 border-b border-[#DADDE1] dark:border-[#2f3032] rounded-none text-xs sm:text-sm font-mono focus:outline-none focus:ring-0 focus:border-[#9747FF] placeholder:font-sans placeholder:text-gray-400 transition-colors"
                 />
                 <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
                   {destinationAddress ? (

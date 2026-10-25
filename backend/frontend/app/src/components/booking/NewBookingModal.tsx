@@ -321,10 +321,11 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
               </Label>
               <Input
                 id="serviceTitle"
+                variant="line"
                 placeholder="e.g. Brand Identity & UI Design System"
                 value={form.serviceTitle}
                 onChange={(e) => setForm({ ...form, serviceTitle: e.target.value })}
-                className="h-10 text-sm rounded-xl border-[#DADDE1] dark:border-[#2f3032] dark:bg-[#121212] focus-visible:ring-[#9747FF]"
+                className="h-10 text-sm"
               />
             </div>
 
@@ -335,10 +336,11 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
               </Label>
               <Input
                 id="category"
+                variant="line"
                 value={form.category}
                 onChange={(e) => setForm({ ...form, category: e.target.value })}
                 placeholder="e.g. Graphic Design, 3D Art, Video"
-                className="h-10 text-sm rounded-xl border-[#DADDE1] dark:border-[#2f3032] dark:bg-[#121212] focus-visible:ring-[#9747FF]"
+                className="h-10 text-sm"
               />
             </div>
 
@@ -349,11 +351,12 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
               </Label>
               <Textarea
                 id="serviceDescription"
-                rows={4}
+                variant="line"
+                rows={3}
                 placeholder="Detail your goals, visual style, key constraints, references, and what you expect from the creator..."
                 value={form.serviceDescription}
                 onChange={(e) => setForm({ ...form, serviceDescription: e.target.value })}
-                className="text-sm rounded-xl border-[#DADDE1] dark:border-[#2f3032] dark:bg-[#121212] focus-visible:ring-[#9747FF] resize-none"
+                className="text-sm resize-none"
               />
             </div>
 
@@ -380,14 +383,14 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
                 </Button>
               </div>
 
-              <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
+              <div className="space-y-3 max-h-60 overflow-y-auto pr-1 divide-y divide-[#DADDE1]/60 dark:divide-[#2f3032]/60">
                 {deliverables.map((item, index) => (
                   <div
                     key={index}
-                    className="p-3 rounded-xl bg-gray-50 dark:bg-white/[0.02] border border-[#DADDE1] dark:border-[#2f3032] space-y-2 relative group"
+                    className={cn("space-y-2 relative group", index > 0 && "pt-3")}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-[11px] font-semibold text-[#9747FF] uppercase">
+                      <span className="text-[11px] font-semibold text-[#9747FF] uppercase tracking-wider">
                         Item #{index + 1}
                       </span>
                       {deliverables.length > 1 && (
@@ -402,23 +405,24 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
                       )}
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <Input
+                          variant="line"
                           placeholder="Deliverable title (e.g. Logo Vector)"
                           value={item.title}
                           onChange={(e) => handleDeliverableChange(index, 'title', e.target.value)}
-                          className="h-8 text-xs rounded-lg border-[#DADDE1] dark:border-[#2f3032] dark:bg-[#121212]"
+                          className="h-8 text-xs"
                         />
                       </div>
                       <div>
                         <select
                           value={item.format}
                           onChange={(e) => handleDeliverableChange(index, 'format', e.target.value)}
-                          className="w-full h-8 text-xs rounded-lg px-2 border border-[#DADDE1] dark:border-[#2f3032] bg-white dark:bg-[#121212] text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-[#9747FF]"
+                          className="w-full h-8 text-xs bg-transparent border-0 border-b border-[#DADDE1] dark:border-[#2f3032] rounded-none px-0 py-1 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-0 focus:border-[#9747FF] transition-colors"
                         >
                           {DELIVERABLE_FORMATS.map((fmt) => (
-                            <option key={fmt} value={fmt}>
+                            <option key={fmt} value={fmt} className="bg-white dark:bg-[#1a1b1c] text-gray-900 dark:text-gray-100">
                               {fmt}
                             </option>
                           ))}
@@ -427,10 +431,11 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
                     </div>
 
                     <Input
+                      variant="line"
                       placeholder="Requirements / Acceptance criteria (optional)"
                       value={item.description}
                       onChange={(e) => handleDeliverableChange(index, 'description', e.target.value)}
-                      className="h-8 text-xs rounded-lg border-[#DADDE1] dark:border-[#2f3032] dark:bg-[#121212]"
+                      className="h-8 text-xs"
                     />
                   </div>
                 ))}
@@ -447,16 +452,17 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
               <Label className="text-xs font-semibold text-gray-800 dark:text-gray-200">
                 Project Timeline <span className="text-[#9747FF]">*</span>
               </Label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <span className="text-[11px] text-gray-500 dark:text-gray-400">Target Start Date</span>
                   <div className="relative">
-                    <Calendar className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <Calendar className="w-4 h-4 text-gray-400 absolute left-0 top-1/2 -translate-y-1/2 pointer-events-none" />
                     <Input
                       type="date"
+                      variant="line"
                       value={form.startDate}
                       onChange={(e) => setForm({ ...form, startDate: e.target.value })}
-                      className="pl-9 h-10 text-xs rounded-xl border-[#DADDE1] dark:border-[#2f3032] dark:bg-[#121212]"
+                      className="pl-6 h-9 text-xs"
                     />
                   </div>
                 </div>
@@ -464,12 +470,13 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
                 <div className="space-y-1">
                   <span className="text-[11px] text-gray-500 dark:text-gray-400">Expected Delivery Deadline</span>
                   <div className="relative">
-                    <Clock className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <Clock className="w-4 h-4 text-gray-400 absolute left-0 top-1/2 -translate-y-1/2 pointer-events-none" />
                     <Input
                       type="date"
+                      variant="line"
                       value={form.endDate}
                       onChange={(e) => setForm({ ...form, endDate: e.target.value })}
-                      className="pl-9 h-10 text-xs rounded-xl border-[#DADDE1] dark:border-[#2f3032] dark:bg-[#121212]"
+                      className="pl-6 h-9 text-xs"
                     />
                   </div>
                 </div>
@@ -482,21 +489,22 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
                 Proposed Budget (USDC) <span className="text-[#9747FF]">*</span>
               </Label>
               <div className="relative">
-                <DollarSign className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <DollarSign className="w-4 h-4 text-gray-400 absolute left-0 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <Input
                   id="amount"
                   type="number"
                   min="1"
                   step="1"
+                  variant="line"
                   placeholder="e.g. 250"
                   value={form.amount}
                   onChange={(e) => setForm({ ...form, amount: e.target.value })}
-                  className="pl-9 h-10 text-sm font-semibold rounded-xl border-[#DADDE1] dark:border-[#2f3032] dark:bg-[#121212] focus-visible:ring-[#9747FF]"
+                  className="pl-6 h-10 text-sm font-semibold"
                 />
               </div>
 
               {parsedAmount > 0 && (
-                <div className="p-3 rounded-xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-200/50 dark:border-purple-900/30 text-xs space-y-1.5">
+                <div className="py-2.5 border-t border-b border-[#DADDE1]/60 dark:border-[#2f3032]/60 text-xs space-y-1.5 mt-2">
                   <div className="flex justify-between text-gray-600 dark:text-gray-300">
                     <span>Proposed Project Budget:</span>
                     <span className="font-semibold text-gray-900 dark:text-gray-100">{parsedAmount} USDC</span>
@@ -505,7 +513,7 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
                     <span>Platform Commission (10%):</span>
                     <span>{platformFee} USDC</span>
                   </div>
-                  <div className="flex justify-between text-[#9747FF] font-semibold pt-1 border-t border-purple-200/40 dark:border-purple-900/30">
+                  <div className="flex justify-between text-[#9747FF] font-semibold pt-1 border-t border-[#DADDE1]/40 dark:border-[#2f3032]/40">
                     <span>Creator Net Earnings:</span>
                     <span>{creatorEarnings} USDC</span>
                   </div>
@@ -588,11 +596,12 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
               </Label>
               <Textarea
                 id="notes"
+                variant="line"
                 rows={2}
                 placeholder="Preferred communication channels, revision preferences, or other important notes..."
                 value={form.notes}
                 onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                className="text-xs rounded-xl border-[#DADDE1] dark:border-[#2f3032] dark:bg-[#121212] focus-visible:ring-[#9747FF] resize-none"
+                className="text-xs resize-none"
               />
             </div>
           </div>
@@ -655,11 +664,11 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
                 <span className="text-[11px] uppercase tracking-wider text-gray-400 font-semibold">
                   Deliverables Checklist ({validDeliverables.length})
                 </span>
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 divide-y divide-[#DADDE1]/40 dark:divide-[#2f3032]/40">
                   {validDeliverables.map((del, idx) => (
                     <div
                       key={idx}
-                      className="flex items-start gap-2 p-2 rounded-lg bg-gray-50 dark:bg-white/[0.02] border border-[#DADDE1] dark:border-[#2f3032]"
+                      className={cn("flex items-start gap-2 py-2", idx > 0 && "pt-2")}
                     >
                       <PackageCheck className="w-4 h-4 text-[#9747FF] shrink-0 mt-0.5" />
                       <div className="min-w-0">
@@ -754,7 +763,7 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
               Submitting...
             </>
           ) : (
-            'Send Booking Request'
+            'Submit Project'
           )}
         </Button>
       )}

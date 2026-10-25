@@ -1056,12 +1056,13 @@ export function Settings() {
               </Label>
               <Input
                 id="edit-firstName"
+                variant="line"
                 value={profileForm.firstName}
                 onChange={(e) =>
                   setProfileForm((prev) => ({ ...prev, firstName: e.target.value }))
                 }
                 placeholder="First name"
-                className="focus-visible:ring-[#9747FF] dark:bg-[#121212] dark:border-gray-800 dark:text-gray-100"
+                className="h-9 text-sm"
               />
             </div>
             <div className="space-y-1.5">
@@ -1070,12 +1071,13 @@ export function Settings() {
               </Label>
               <Input
                 id="edit-lastName"
+                variant="line"
                 value={profileForm.lastName}
                 onChange={(e) =>
                   setProfileForm((prev) => ({ ...prev, lastName: e.target.value }))
                 }
                 placeholder="Last name"
-                className="focus-visible:ring-[#9747FF] dark:bg-[#121212] dark:border-gray-800 dark:text-gray-100"
+                className="h-9 text-sm"
               />
             </div>
           </div>
@@ -1088,9 +1090,10 @@ export function Settings() {
               </Label>
               <Input
                 id="edit-email"
+                variant="line"
                 value={profileForm.email}
                 disabled
-                className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 cursor-not-allowed dark:border-gray-800"
+                className="h-9 text-sm opacity-60 cursor-not-allowed"
               />
             </div>
             <div className="space-y-1.5">
@@ -1099,12 +1102,13 @@ export function Settings() {
               </Label>
               <Input
                 id="edit-phone"
+                variant="line"
                 value={profileForm.phoneNumber}
                 onChange={(e) =>
                   setProfileForm((prev) => ({ ...prev, phoneNumber: e.target.value }))
                 }
                 placeholder="+1 (555) 000-0000"
-                className="focus-visible:ring-[#9747FF] dark:bg-[#121212] dark:border-gray-800 dark:text-gray-100"
+                className="h-9 text-sm"
               />
             </div>
           </div>
@@ -1114,26 +1118,29 @@ export function Settings() {
             <Label className="text-xs font-medium text-gray-700 dark:text-gray-300">Location</Label>
             <div className="grid grid-cols-3 gap-2">
               <Input
+                variant="line"
                 placeholder="City / Area"
                 value={profileForm.localArea}
                 onChange={(e) =>
                   setProfileForm((prev) => ({ ...prev, localArea: e.target.value }))
                 }
-                className="focus-visible:ring-[#9747FF] dark:bg-[#121212] dark:border-gray-800 dark:text-gray-100"
+                className="h-9 text-sm"
               />
               <Input
+                variant="line"
                 placeholder="State"
                 value={profileForm.state}
                 onChange={(e) => setProfileForm((prev) => ({ ...prev, state: e.target.value }))}
-                className="focus-visible:ring-[#9747FF] dark:bg-[#121212] dark:border-gray-800 dark:text-gray-100"
+                className="h-9 text-sm"
               />
               <Input
+                variant="line"
                 placeholder="Country"
                 value={profileForm.country}
                 onChange={(e) =>
                   setProfileForm((prev) => ({ ...prev, country: e.target.value }))
                 }
-                className="focus-visible:ring-[#9747FF] dark:bg-[#121212] dark:border-gray-800 dark:text-gray-100"
+                className="h-9 text-sm"
               />
             </div>
           </div>
@@ -1150,7 +1157,7 @@ export function Settings() {
               id="edit-bio"
               value={profileForm.bio}
               onChange={(e) => setProfileForm((prev) => ({ ...prev, bio: e.target.value }))}
-              className="w-full min-h-[90px] px-3 py-2 border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#9747FF]/20 focus:border-[#9747FF] transition-all"
+              className="w-full min-h-[70px] px-0 py-2 border-0 border-b border-[#DADDE1] dark:border-[#2f3032] bg-transparent text-gray-900 dark:text-gray-100 rounded-none text-sm focus:outline-none focus:ring-0 focus:border-[#9747FF] transition-colors resize-none placeholder:text-gray-400 dark:placeholder:text-gray-500"
               placeholder="Share a short bio about your creative expertise and background..."
               maxLength={500}
             />
@@ -1163,10 +1170,11 @@ export function Settings() {
             </Label>
             <Input
               id="edit-skills"
+              variant="line"
               value={profileForm.skills.join(', ')}
               onChange={(e) => handleSkillsChange(e.target.value)}
               placeholder="e.g. Digital Art, Branding, 3D Design, Photography"
-              className="focus-visible:ring-[#9747FF] dark:bg-[#121212] dark:border-gray-800 dark:text-gray-100"
+              className="h-9 text-sm"
             />
           </div>
         </div>
@@ -1212,12 +1220,13 @@ export function Settings() {
             <Label className="text-xs font-medium text-gray-700 dark:text-gray-300">Current Password</Label>
             <Input
               type="password"
+              variant="line"
               value={passwordForm.currentPassword}
               onChange={(e) =>
                 setPasswordForm((prev) => ({ ...prev, currentPassword: e.target.value }))
               }
               placeholder="Enter current password"
-              className="focus-visible:ring-[#9747FF] dark:bg-[#121212] dark:border-gray-800 dark:text-gray-100"
+              className="h-9 text-sm"
             />
           </div>
 
@@ -1225,12 +1234,13 @@ export function Settings() {
             <Label className="text-xs font-medium text-gray-700 dark:text-gray-300">New Password</Label>
             <Input
               type="password"
+              variant="line"
               value={passwordForm.newPassword}
               onChange={(e) =>
                 setPasswordForm((prev) => ({ ...prev, newPassword: e.target.value }))
               }
               placeholder="Enter new password"
-              className="focus-visible:ring-[#9747FF] dark:bg-[#121212] dark:border-gray-800 dark:text-gray-100"
+              className="h-9 text-sm"
             />
             <p className="text-[11px] text-gray-500 dark:text-gray-400">
               Minimum 8 characters with at least one uppercase and one lowercase letter.
@@ -1241,12 +1251,13 @@ export function Settings() {
             <Label className="text-xs font-medium text-gray-700 dark:text-gray-300">Confirm New Password</Label>
             <Input
               type="password"
+              variant="line"
               value={passwordForm.confirmPassword}
               onChange={(e) =>
                 setPasswordForm((prev) => ({ ...prev, confirmPassword: e.target.value }))
               }
               placeholder="Confirm new password"
-              className="focus-visible:ring-[#9747FF] dark:bg-[#121212] dark:border-gray-800 dark:text-gray-100"
+              className="h-9 text-sm"
             />
           </div>
         </div>

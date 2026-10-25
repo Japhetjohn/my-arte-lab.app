@@ -1504,10 +1504,11 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                 Delivery Title <span className="text-[#9747FF]">*</span>
               </label>
               <Input
+                variant="line"
                 placeholder="e.g. Final Vector Package & Style Guide v1"
                 value={submissionTitle}
                 onChange={(e) => setSubmissionTitle(e.target.value)}
-                className="h-10 text-xs rounded-xl border-[#DADDE1] dark:border-[#2f3032] dark:bg-[#121212]"
+                className="h-9 text-xs"
               />
             </div>
 
@@ -1516,11 +1517,12 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                 Delivery Notes / Instructions
               </label>
               <Textarea
+                variant="line"
                 rows={3}
                 placeholder="Explain the changes made, file structure, or how to inspect the deliverables..."
                 value={submissionDesc}
                 onChange={(e) => setSubmissionDesc(e.target.value)}
-                className="text-xs rounded-xl border-[#DADDE1] dark:border-[#2f3032] dark:bg-[#121212] resize-none"
+                className="text-xs resize-none"
               />
             </div>
 
@@ -1551,11 +1553,12 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                 External Asset Links (One per line)
               </label>
               <Textarea
+                variant="line"
                 rows={2}
                 placeholder="https://www.figma.com/file/..., https://github.com/..."
                 value={submissionLinks}
                 onChange={(e) => setSubmissionLinks(e.target.value)}
-                className="text-xs font-mono rounded-xl border-[#DADDE1] dark:border-[#2f3032] dark:bg-[#121212] resize-none"
+                className="text-xs font-mono resize-none"
               />
             </div>
 
@@ -1601,11 +1604,12 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                 Revision Details &amp; Feedback <span className="text-[#9747FF]">*</span>
               </label>
               <Textarea
+                variant="line"
                 rows={4}
                 placeholder="Clearly describe what needs adjustment (e.g. color adjustments, missing asset format, revised copy)..."
                 value={revisionNotes}
                 onChange={(e) => setRevisionNotes(e.target.value)}
-                className="text-xs rounded-xl border-[#DADDE1] dark:border-[#2f3032] dark:bg-[#121212] focus-visible:ring-[#9747FF] resize-none"
+                className="text-xs resize-none"
               />
             </div>
 
@@ -1683,11 +1687,12 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                 Review &amp; Testimonial (Optional)
               </label>
               <Textarea
+                variant="line"
                 rows={3}
                 placeholder="Share your thoughts on the quality, turnaround time, and collaboration..."
                 value={reviewComment}
                 onChange={(e) => setReviewComment(e.target.value)}
-                className="text-xs rounded-xl border-[#DADDE1] dark:border-[#2f3032] dark:bg-[#121212] focus-visible:ring-[#9747FF] resize-none"
+                className="text-xs resize-none"
               />
             </div>
 
@@ -1741,15 +1746,16 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                 Your Proposed Amount ({booking.currency})
               </label>
               <div className="relative">
-                <DollarSign className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                <DollarSign className="absolute left-0 top-2.5 h-4 w-4 text-gray-400 pointer-events-none" />
                 <Input
                   type="number"
                   min="1"
                   step="0.01"
+                  variant="line"
                   placeholder="Enter revised amount"
                   value={counterAmount}
                   onChange={(e) => setCounterAmount(e.target.value)}
-                  className="pl-9 text-xs rounded-xl border-[#DADDE1] dark:border-[#2f3032] dark:bg-[#121212] focus-visible:ring-[#9747FF]"
+                  className="pl-6 text-xs font-semibold"
                 />
               </div>
             </div>
@@ -1794,11 +1800,12 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
               Reason for declining (Optional)
             </label>
             <Textarea
+              variant="line"
               value={declineReason}
               onChange={(e) => setDeclineReason(e.target.value)}
               placeholder="e.g., Currently unavailable for new bookings, schedule conflict..."
               rows={3}
-              className="w-full text-xs rounded-xl border-[#DADDE1] dark:border-[#2f3032]"
+              className="w-full text-xs resize-none"
             />
           </div>
           <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#DADDE1] dark:border-[#2f3032]">
