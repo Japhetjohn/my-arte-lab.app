@@ -355,7 +355,7 @@ export function DesktopWallet({
             CENTER COLUMN (col-span-1 lg:col-span-6)
             Balance, Actions, and Transaction History
            ========================================================================= */}
-        <section className="col-span-1 lg:col-span-6 flex flex-col gap-0">
+        <section className="col-span-1 lg:col-span-6 w-full max-w-xl mx-auto flex flex-col gap-0">
           {/* Recoverable Error Banner */}
           {walletError && (
             <div className="p-3.5 mb-5 bg-red-50/80 dark:bg-red-950/40 border border-red-200/80 dark:border-red-900/50 rounded-xl flex items-center justify-between text-xs text-red-700 dark:text-red-300">
@@ -421,23 +421,23 @@ export function DesktopWallet({
                 )}
               </div>
 
-              {/* 2. Consistent Add Funds and Withdraw Buttons (Identical visual treatment matching mobile) */}
+              {/* 2. Consistent Add Funds and Withdraw Buttons (Clean pill treatment) */}
               <div className="flex items-center gap-2.5 shrink-0">
                 <button
                   type="button"
                   onClick={onAddFunds}
-                  className="h-11 px-5 rounded-xl bg-gray-100 hover:bg-gray-200/80 dark:bg-[#1e1f20] dark:hover:bg-[#252627] active:scale-[0.98] border border-gray-200/70 dark:border-gray-800 text-gray-900 dark:text-gray-100 font-semibold text-sm flex items-center justify-center gap-2 shadow-2xs transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#9747FF]/20"
+                  className="h-10 px-5 rounded-full bg-[#9747FF] hover:bg-[#8534f0] active:scale-[0.98] text-white font-semibold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer focus:outline-none"
                 >
-                  <ArrowDownLeft className="w-4 h-4 text-gray-700 dark:text-gray-300" />
+                  <ArrowDownLeft className="w-3.5 h-3.5" />
                   <span>Add funds</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={onWithdraw}
-                  className="h-11 px-5 rounded-xl bg-gray-100 hover:bg-gray-200/80 dark:bg-[#1e1f20] dark:hover:bg-[#252627] active:scale-[0.98] border border-gray-200/70 dark:border-gray-800 text-gray-900 dark:text-gray-100 font-semibold text-sm flex items-center justify-center gap-2 shadow-2xs transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#9747FF]/20"
+                  className="h-10 px-5 rounded-full bg-transparent hover:bg-gray-50 dark:hover:bg-white/[0.04] border border-[#DADDE1] dark:border-[#2f3032] active:scale-[0.98] text-gray-800 dark:text-gray-200 hover:border-[#9747FF] hover:text-[#9747FF] font-semibold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all cursor-pointer focus:outline-none"
                 >
-                  <ArrowUpRight className="w-4 h-4 text-gray-700 dark:text-gray-300" />
+                  <ArrowUpRight className="w-3.5 h-3.5" />
                   <span>Withdraw</span>
                 </button>
               </div>
@@ -519,7 +519,7 @@ export function DesktopWallet({
                                 onSelectTransaction?.(tx);
                               }
                             }}
-                            className="flex items-center justify-between py-3.5 px-3 hover:bg-purple-50/40 dark:hover:bg-purple-950/20 active:bg-purple-50/70 dark:active:bg-purple-950/30 transition-all rounded-xl cursor-pointer group"
+                            className="flex items-center justify-between py-3.5 px-2 hover:bg-gray-50/70 dark:hover:bg-white/[0.02] active:bg-gray-100/70 dark:active:bg-white/[0.04] transition-colors cursor-pointer group"
                             aria-label={`View details for ${meta.categoryName} of ${formatted.text}`}
                           >
                             {/* Left: Monochrome vector icon & Description */}

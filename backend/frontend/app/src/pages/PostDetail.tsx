@@ -7,6 +7,7 @@ import { VerifiedBadge } from '@/components/shared/VerifiedBadge';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { socialService } from '@/lib/api';
 import { getAvatarUrl } from '@/lib/imageUrl';
+import { isPostAuthor } from '@/lib/ownership';
 
 interface PostDetailProps {
   postId?: string;
@@ -179,71 +180,86 @@ export function PostDetail({ postId: propPostId }: PostDetailProps) {
             Creator Profile Summary & Commission Actions
            ========================================================================= */}
         <aside className="hidden lg:flex flex-col gap-6 lg:col-span-3 sticky top-20">
-          {post?.creator && (
-            <div className="pb-5 border-b border-[#DADDE1] dark:border-[#2f3032] space-y-4">
-              <h4 className="font-bold text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                About the Creator
-              </h4>
+          {post?.creator && (() => {
+            const isOwner = isPostAuthor(user, post);
+            return (
+              <div className="pb-5 border-b border-[#DADDE1] dark:border-[#2f3032] space-y-4">
+                <h4 className="font-bold text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  {isOwner ? 'Your Post' : 'About the Creator'}
+                </h4>
 
-              <div className="flex items-center gap-3">
-                <a
-                  href={`/creators/${post.creator._id}`}
-                  className="w-12 h-12 rounded-full overflow-hidden bg-purple-100 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/40 shrink-0"
-                >
-                  {post.creator.avatar ? (
-                    <img src={getAvatarUrl(post.creator.avatar)} alt={post.creator.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center font-bold text-[#9747FF] text-sm">
-                      {(post.creator.name || 'C')[0]?.toUpperCase()}
+                <div className="flex items-center gap-3">
+                  <a
+                    href={`/creators/${post.creator._id}`}
+                    className="w-12 h-12 rounded-full overflow-hidden bg-purple-100 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/40 shrink-0"
+                  >
+                    {post.creator.avatar ? (
+                      <img src={getAvatarUrl(post.creator.avatar)} alt={post.creator.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center font-bold text-[#9747FF] text-sm">
+                        {(post.creator.name || 'C')[0]?.toUpperCase()}
+                      </div>
+                    )}
+                  </a>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1 min-w-0">
+                      <a
+                        href={`/creators/${post.creator._id}`}
+                        className="font-bold text-sm text-gray-900 dark:text-gray-100 hover:text-[#9747FF] truncate block"
+                      >
+                        {post.creator.name}
+                      </a>
+                      {post.creator.isVerified && <VerifiedBadge className="w-3.5 h-3.5 shrink-0" showTooltip={false} />}
                     </div>
-                  )}
-                </a>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1 min-w-0">
-                    <a
-                      href={`/creators/${post.creator._id}`}
-                      className="font-bold text-sm text-gray-900 dark:text-gray-100 hover:text-[#9747FF] truncate block"
-                    >
-                      {post.creator.name}
-                    </a>
-                    {post.creator.isVerified && <VerifiedBadge className="w-3.5 h-3.5 shrink-0" showTooltip={false} />}
-                  </div>
-                  {(post.creator as any)?.username && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400 font-normal truncate mt-0.5 leading-tight">
-                      @{(post.creator as any).username}
+                    {(post.creator as any)?.username && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400 font-normal truncate mt-0.5 leading-tight">
+                        @{(post.creator as any).username}
+                      </p>
+                    )}
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {(post.creator as any)?.category || (Array.isArray(post.creator.categories) ? post.creator.categories.join(' • ') : 'Creator')}
                     </p>
-                  )}
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    {(post.creator as any)?.category || (Array.isArray(post.creator.categories) ? post.creator.categories.join(' • ') : 'Creator')}
+                  </div>
+                </div>
+
+                {post.creator.bio && (
+                  <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed line-clamp-3">
+                    {post.creator.bio}
                   </p>
+                )}
+
+                <div className="flex items-center gap-2 pt-1">
+                  {isOwner ? (
+                    <Button
+                      size="sm"
+                      onClick={() => (window.location.href = `/creators/${post.creator._id}`)}
+                      className="rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold px-4 shadow-2xs w-full"
+                    >
+                      View Your Public Profile
+                    </Button>
+                  ) : (
+                    <>
+                      <Button
+                        size="sm"
+                        onClick={() => (window.location.href = `/creators/${post.creator._id}`)}
+                        className="rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold px-4 shadow-2xs flex-1"
+                      >
+                        View Profile
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => (window.location.href = `/messages?user=${post.creator._id}`)}
+                        className="rounded-full border-[#DADDE1] dark:border-[#2f3032] text-xs font-semibold px-3"
+                      >
+                        Message
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
-
-              {post.creator.bio && (
-                <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed line-clamp-3">
-                  {post.creator.bio}
-                </p>
-              )}
-
-              <div className="flex items-center gap-2 pt-1">
-                <Button
-                  size="sm"
-                  onClick={() => (window.location.href = `/creators/${post.creator._id}`)}
-                  className="rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold px-4 shadow-2xs flex-1"
-                >
-                  View Profile
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => (window.location.href = `/messages?user=${post.creator._id}`)}
-                  className="rounded-full border-[#DADDE1] dark:border-[#2f3032] text-xs font-semibold px-3"
-                >
-                  Message
-                </Button>
-              </div>
-            </div>
-          )}
+            );
+          })()}
         </aside>
       </div>
     </div>

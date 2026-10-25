@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { isSameAccount } from '@/lib/ownership';
 import {
   Home as HomeIcon,
   Sparkles,
@@ -33,6 +34,11 @@ export function Home() {
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [suggestedCreators, setSuggestedCreators] = useState<Creator[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Invariant: Exclude current user from suggested creators
+  const displayedSuggestedCreators = useMemo(() => {
+    return suggestedCreators.filter((c) => !isSameAccount(user, c));
+  }, [suggestedCreators, user]);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -587,7 +593,7 @@ export function Home() {
             </div>
 
             <div className="space-y-3.5">
-              {suggestedCreators.map((creator) => (
+              {displayedSuggestedCreators.map((creator) => (
                 <div key={creator.id} className="flex items-center justify-between gap-2.5">
                   <a
                     href={`/creators/${creator.id}`}

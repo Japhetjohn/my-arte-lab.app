@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Notification = require('../models/Notification');
 const { successResponse } = require('../utils/apiResponse');
 const { ErrorHandler, catchAsync } = require('../utils/errorHandler');
+const { isUserVerified } = require('../utils/verificationHelper');
 
 /**
  * Get user notifications
@@ -15,11 +16,19 @@ exports.getNotifications = catchAsync(async (req, res, next) => {
     query.read = read === 'true';
   }
 
-  const notifications = await Notification.find(query)
-    .populate('sender', 'name firstName lastName avatar')
+  const rawNotifications = await Notification.find(query)
+    .populate('sender', 'name firstName lastName avatar isVerified verificationSubscription email')
     .sort({ createdAt: -1 })
     .limit(parseInt(limit))
-    .skip(parseInt(skip));
+    .skip(parseInt(skip))
+    .lean();
+
+  const notifications = rawNotifications.map(n => {
+    if (n.sender) {
+      n.sender.isVerified = isUserVerified(n.sender);
+    }
+    return n;
+  });
 
   const unreadCount = await Notification.getUnreadCount(req.user._id);
 

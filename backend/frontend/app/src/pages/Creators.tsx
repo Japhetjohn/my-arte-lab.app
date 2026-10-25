@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth, api } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { VerifiedBadge } from '@/components/shared/VerifiedBadge';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { NewBookingModal } from '@/components/booking/NewBookingModal';
+import { isSameAccount } from '@/lib/ownership';
 import { getAvatarUrl } from '@/lib/imageUrl';
 import { getCreatorProfileUrl } from '@/lib/utils';
 import { toast } from '@/components/ui/sonner';
@@ -31,6 +32,11 @@ export function Creators() {
   // Booking Modal State (reusing NewBookingModal)
   const [selectedCreatorForBooking, setSelectedCreatorForBooking] = useState<any | null>(null);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+
+  // Invariant: current user should never be presented to themselves in the hire-creators directory
+  const displayedCreators = useMemo(() => {
+    return creators.filter((c) => !isSameAccount(user, c));
+  }, [creators, user]);
 
   // Fetch all creators directly from backend
   const fetchCreators = useCallback(async () => {
@@ -64,17 +70,23 @@ export function Creators() {
       const match = creators.find(
         (c) => c.id === targetId || (c as any)._id === targetId
       );
-      if (match) {
+      if (match && !isSameAccount(user, match)) {
         handleBook(match);
       }
     }
-  }, [creators]);
+  }, [creators, user]);
 
   const handleBook = (creator: any) => {
     if (!user) {
       window.location.href = `/login?redirect=${encodeURIComponent(
         `/creators?creator=${creator.id || creator._id}`
       )}`;
+      return;
+    }
+
+    // Invariant: Never allow self-booking
+    if (isSameAccount(user, creator)) {
+      toast.error('You cannot book your own account for a project.');
       return;
     }
 
@@ -268,9 +280,9 @@ export function Creators() {
               <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
                 Creators
               </h1>
-              {creators.length > 0 && (
+              {displayedCreators.length > 0 && (
                 <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/40 text-[#9747FF]">
-                  {creators.length}
+                  {displayedCreators.length}
                 </span>
               )}
             </div>
@@ -284,7 +296,7 @@ export function Creators() {
                 Loading creators...
               </p>
             </div>
-          ) : creators.length === 0 ? (
+          ) : displayedCreators.length === 0 ? (
             <div className="py-16 px-4 bg-white dark:bg-[#18191a]">
               <EmptyState
                 image="/images/empty-search.png"
@@ -296,7 +308,7 @@ export function Creators() {
             </div>
           ) : (
             <div className="flex flex-col divide-y divide-[#DADDE1] dark:divide-[#2f3032] bg-white dark:bg-[#18191a] border-b border-[#DADDE1] dark:border-[#2f3032]">
-              {creators.map((creator) => {
+              {displayedCreators.map((creator) => {
                 const creatorId = creator.id || (creator as any)._id;
                 const profileUrl = getCreatorProfileUrl(creator as any);
                 const displayName = getDisplayName(creator);

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -7,6 +7,7 @@ import { CreatorCard } from '@/components/shared/CreatorCard';
 import { CategoryCard } from '@/components/shared/CategoryCard';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { getCreatorProfileUrl } from '@/lib/utils';
+import { isSameAccount } from '@/lib/ownership';
 import { api } from '@/contexts/AuthContext';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Creator, Category } from '@/types';
@@ -104,7 +105,7 @@ export function Explore() {
       let all = res.data.data?.results || res.data.data || [];
 
       if (currentUser) {
-        all = all.filter((c: Creator & { _id?: string }) => c.id !== currentUser.id && c._id !== currentUser.id);
+        all = all.filter((c: any) => !isSameAccount(currentUser, c));
       }
       if (opts.tab === 'verified') all = all.filter((c: Creator) => c.isVerified);
       if (opts.tab === 'available') all = all.filter((c: Creator) => c.availability === 'available' || !c.availability);
@@ -115,7 +116,7 @@ export function Explore() {
     } finally {
       setIsLoading(false);
     }
-  }, [currentUser?.id]);
+  }, [currentUser]);
 
   // Initial load
   useEffect(() => { fetchCreators(); }, []);
@@ -172,10 +173,14 @@ export function Explore() {
 
   const getSelectedCategoryName = () => categories.find(c => c.id === selectedCategory)?.name || selectedCategory;
 
-  if (isLoading && creators.length === 0) {
+  const displayedCreators = useMemo(() => {
+    return creators.filter((c) => !isSameAccount(currentUser, c));
+  }, [creators, currentUser]);
+
+  if (isLoading && displayedCreators.length === 0) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-8 h-8 animate-spin text-[#8A2BE2]" />
+        <Loader2 className="w-8 h-8 animate-spin text-[#9747FF]" />
       </div>
     );
   }
@@ -186,11 +191,11 @@ export function Explore() {
         <h1 className="text-2xl font-bold text-gray-900">Explore creators</h1>
         <div className="flex items-center gap-2">
           <Button variant={viewMode === 'grid' ? 'default' : 'outline'} size="icon" onClick={() => setViewMode('grid')}
-            className={`h-10 w-10 sm:h-9 sm:w-9 ${viewMode === 'grid' ? 'bg-[#8A2BE2]' : ''}`}>
+            className={`h-10 w-10 sm:h-9 sm:w-9 ${viewMode === 'grid' ? 'bg-[#9747FF]' : ''}`}>
             <Grid3X3 className="w-5 h-5 sm:w-4 sm:h-4" />
           </Button>
           <Button variant={viewMode === 'list' ? 'default' : 'outline'} size="icon" onClick={() => setViewMode('list')}
-            className={`h-10 w-10 sm:h-9 sm:w-9 ${viewMode === 'list' ? 'bg-[#8A2BE2]' : ''}`}>
+            className={`h-10 w-10 sm:h-9 sm:w-9 ${viewMode === 'list' ? 'bg-[#9747FF]' : ''}`}>
             <List className="w-5 h-5 sm:w-4 sm:h-4" />
           </Button>
         </div>
@@ -236,7 +241,7 @@ export function Explore() {
               <div className="flex flex-wrap gap-2">
                 {searchHistory.map((query, idx) => (
                   <button key={idx} onClick={() => doSearch(query)}
-                    className="group flex items-center gap-1 px-3 py-1.5 bg-gray-100 hover:bg-[#8A2BE2]/10 rounded-full text-sm text-gray-700 hover:text-[#8A2BE2] transition-colors">
+                    className="group flex items-center gap-1 px-3 py-1.5 bg-gray-100 hover:bg-[#9747FF]/10 rounded-full text-sm text-gray-700 hover:text-[#9747FF] transition-colors">
                     <Clock className="w-3 h-3 text-gray-400" />
                     <span>{query}</span>
                     <span onClick={(e) => { e.stopPropagation(); removeFromSearchHistory(query); setSearchHistory(getSearchHistory()); }}
@@ -265,9 +270,9 @@ export function Explore() {
 
       {/* Selected Category Badge */}
       {selectedCategory && (
-        <div className="flex items-center gap-2 bg-[#8A2BE2]/10 px-4 py-3 rounded-lg">
+        <div className="flex items-center gap-2 bg-[#9747FF]/10 px-4 py-3 rounded-lg">
           <span className="text-sm text-gray-600">Showing:</span>
-          <span className="px-3 py-1 bg-[#8A2BE2] text-white text-sm rounded-full font-medium capitalize">
+          <span className="px-3 py-1 bg-[#9747FF] text-white text-sm rounded-full font-medium capitalize">
             {getSelectedCategoryName()}
           </span>
           <Button variant="ghost" size="sm" className="ml-auto" onClick={clearFilters}>Remove filter</Button>
@@ -284,9 +289,9 @@ export function Explore() {
         </TabsList>
 
         <TabsContent value={activeTab} className="mt-6">
-          {creators.length > 0 ? (
+          {displayedCreators.length > 0 ? (
             <div className={`grid ${viewMode === 'grid' ? 'grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4' : 'grid-cols-1 gap-4'}`}>
-              {creators.map((creator) => (
+              {displayedCreators.map((creator) => (
                 <CreatorCard key={creator.id} creator={creator} onViewProfile={(c) => window.location.href = getCreatorProfileUrl(c)} onBook={(c) => window.location.href = `/bookings?creator=${c.id || (c as any)._id}`} />
               ))}
             </div>

@@ -12,6 +12,7 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { api, useAuth } from '@/contexts/AuthContext';
 import { socialService } from '@/lib/api';
 import { SocialFeedCard, type FeedPost } from '@/components/social/SocialFeedCard';
+import { isSameAccount } from '@/lib/ownership';
 import {
   Star,
   MapPin,
@@ -77,7 +78,8 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
   const [notFound, setNotFound] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isFavorited, setIsFavorited] = useState(false);
-  const [isOwner, setIsOwner] = useState(false);
+  // Authoritative, reactive account ownership check (immune to race conditions)
+  const isOwner = Boolean(propIsOwnProfile || isSameAccount(currentUser, creator));
 
   // Social feed posts state for this creator only
   const [posts, setPosts] = useState<FeedPost[]>([]);
@@ -138,7 +140,6 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
         setCreator(userData);
         setPortfolio(userData.portfolio || []);
         setReviews([]);
-        setIsOwner(true);
 
         setProfileForm({
           bio: userData.bio || '',
@@ -165,10 +166,6 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
         setCreator(creatorData);
         setPortfolio(creatorData.portfolio || []);
         setReviews(reviewsData || []);
-
-        if (currentUser && (currentUser.id === creatorData.id || (currentUser as any)._id === creatorData.id)) {
-          setIsOwner(true);
-        }
 
         setProfileForm({
           bio: creatorData.bio || '',

@@ -35,6 +35,7 @@ import {
 import { VerifiedBadge } from '@/components/shared/VerifiedBadge';
 import { ConfirmationModal } from '@/components/modals/ConfirmationModal';
 import { uploadService } from '@/lib/api';
+import { isSameAccount } from '@/lib/ownership';
 
 interface Participant {
   _id: string;
@@ -132,6 +133,14 @@ export function Messages() {
 
       // Handle user param - open existing or start conversation
       if (userId) {
+        if (currentUser && isSameAccount(currentUser, { id: userId, _id: userId })) {
+          toast.info("You cannot message your own account.");
+          const url = new URL(window.location.href);
+          url.searchParams.delete('user');
+          window.history.replaceState({}, '', url);
+          return;
+        }
+
         const existingConv = convs.find(
           (c: Conversation) => c.otherUser?._id === userId || c._id === userId
         );
@@ -945,11 +954,16 @@ export function Messages() {
 
                         {/* Conversation Details */}
                         <div className="flex-1 min-w-0">
-                          {/* Row 1: Name and Timestamp */}
+                          {/* Row 1: Name, Verified Badge, and Timestamp */}
                           <div className="flex items-center justify-between gap-1 mb-0.5">
-                            <h3 className="font-semibold text-xs sm:text-sm text-gray-950 dark:text-gray-100 truncate group-hover:text-[#9747FF] transition-colors">
-                              {name}
-                            </h3>
+                            <div className="flex items-center gap-1 min-w-0">
+                              <h3 className="font-semibold text-xs sm:text-sm text-gray-950 dark:text-gray-100 truncate group-hover:text-[#9747FF] transition-colors">
+                                {name}
+                              </h3>
+                              {otherUser?.isVerified && (
+                                <VerifiedBadge className="w-3.5 h-3.5 shrink-0 inline-block align-middle" showTooltip={false} />
+                              )}
+                            </div>
                             <span className="text-[10px] text-gray-400 dark:text-gray-500 whitespace-nowrap shrink-0">
                               {time}
                             </span>

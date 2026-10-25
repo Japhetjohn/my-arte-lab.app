@@ -578,6 +578,11 @@ class BookingService {
       }
     }
 
+    const { isSelfAction } = require('../utils/ownershipHelper');
+    if (isSelfAction(clientId, creatorId)) {
+      throw new ErrorHandler('You cannot book yourself for a creative project', 400);
+    }
+
     const creator = await User.findById(creatorId);
     if (!creator || creator.role !== 'creator') {
       throw new ErrorHandler('Creator not found', 404);

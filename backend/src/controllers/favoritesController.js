@@ -2,12 +2,17 @@ const User = require('../models/User');
 const { ErrorHandler, catchAsync } = require('../utils/errorHandler');
 const { successResponse } = require('../utils/apiResponse');
 const { isUserVerified, isFounder } = require('../utils/verificationHelper');
+const { isSelfAction } = require('../utils/ownershipHelper');
 
 /**
  * Add creator to favorites
  */
 exports.addToFavorites = catchAsync(async (req, res, next) => {
   const { creatorId } = req.params;
+
+  if (isSelfAction(req.user._id, creatorId)) {
+    return next(new ErrorHandler('You cannot add yourself to favorite creators', 400));
+  }
 
   const creator = await User.findById(creatorId);
   if (!creator || !creator.role || !creator.role.toLowerCase().includes('creator')) {

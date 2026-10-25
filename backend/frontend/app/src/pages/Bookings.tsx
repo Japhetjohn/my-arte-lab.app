@@ -12,6 +12,7 @@ import { ConfirmationModal } from '@/components/modals/ConfirmationModal';
 import { NewBookingModal } from '@/components/booking/NewBookingModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/contexts/AuthContext';
+import { isSameAccount } from '@/lib/ownership';
 import { getAvatarUrl } from '@/lib/imageUrl';
 import {
   bookingWorkflowService,
@@ -77,9 +78,20 @@ export function Bookings() {
 
   const fetchCreatorAndOpenModal = async (creatorId: string) => {
     try {
+      // Invariant: Never allow self-booking
+      if (user && isSameAccount(user, { id: creatorId, _id: creatorId })) {
+        toast.error('You cannot book your own account for a creative project.');
+        return;
+      }
+
       const response = await api.get(`/creators/${creatorId}`);
       const creator = response.data.data?.creator;
       if (creator) {
+        if (isSameAccount(user, creator)) {
+          toast.error('You cannot book your own account for a creative project.');
+          return;
+        }
+
         setSelectedCreator({
           id: creator.id || creator._id,
           name: creator.name || `${creator.firstName || ''} ${creator.lastName || ''}`.trim() || 'Creator',

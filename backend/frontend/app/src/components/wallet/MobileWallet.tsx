@@ -223,7 +223,7 @@ export function MobileWallet({
   const hasEscrowActivity = escrowBalance > 0 || incomingEarnings > 0;
 
   return (
-    <div className="bg-white dark:bg-[#121212] min-h-[calc(100vh-4rem)] -mx-3 sm:-mx-4 -mt-3 sm:-mt-4 p-4 sm:p-6 pb-32 text-gray-900 dark:text-gray-100 selection:bg-purple-100 selection:text-purple-900">
+    <div className="bg-white dark:bg-[#18191a] min-h-[calc(100vh-4rem)] max-w-xl mx-auto px-4 pt-2 pb-32 text-gray-900 dark:text-gray-100">
       {/* 1. Header: Quick Actions (Refresh) */}
       {onRefresh && (
         <header className="flex items-center justify-end pt-1 pb-1">
@@ -240,15 +240,15 @@ export function MobileWallet({
         </header>
       )}
 
-      {/* 2. Available Balance Section */}
-      <section className="text-center pt-2 pb-2">
+      {/* 2. Available Balance & Action Buttons */}
+      <section className="text-center pt-2 pb-5 border-b border-[#DADDE1] dark:border-[#2f3032]">
         <div className="flex items-center justify-center gap-1.5 mb-1.5">
-          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Available balance</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Available balance</p>
           {isWalletLoading && <Loader2 className="w-3.5 h-3.5 animate-spin text-[#9747FF]" />}
         </div>
         <div className="flex items-baseline justify-center">
           <span className="text-2xl sm:text-3xl font-light text-gray-400 dark:text-gray-500 mr-0.5 align-baseline">$</span>
-          <span className="text-5xl sm:text-6xl font-bold tracking-tight text-gray-900 dark:text-gray-100">{wholePart}</span>
+          <span className="text-4xl sm:text-5xl font-bold tracking-tight text-gray-900 dark:text-gray-100">{wholePart}</span>
           <span className="text-2xl sm:text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">.{decimalPart}</span>
           <span className="text-xs font-semibold text-[#9747FF] bg-purple-50 dark:bg-[#9747FF]/15 border border-purple-200/60 dark:border-purple-800/60 px-2 py-0.5 rounded-md ml-1.5 align-baseline">
             USDC
@@ -286,53 +286,53 @@ export function MobileWallet({
             </span>
           </div>
         )}
+
+        {/* Action Buttons (Clean pills) */}
+        <div className="flex items-center justify-center gap-3 max-w-xs mx-auto w-full mt-4">
+          <button
+            type="button"
+            onClick={onAddFunds}
+            className="flex-1 h-10 px-4 rounded-full bg-[#9747FF] hover:bg-[#8534f0] active:scale-[0.98] text-white font-semibold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer focus:outline-none"
+          >
+            <ArrowDownLeft className="w-3.5 h-3.5" />
+            <span>Add funds</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={onWithdraw}
+            className="flex-1 h-10 px-4 rounded-full bg-transparent hover:bg-gray-50 dark:hover:bg-white/[0.04] border border-[#DADDE1] dark:border-[#2f3032] active:scale-[0.98] text-gray-800 dark:text-gray-200 hover:border-[#9747FF] hover:text-[#9747FF] font-semibold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all cursor-pointer focus:outline-none"
+          >
+            <ArrowUpRight className="w-3.5 h-3.5" />
+            <span>Withdraw</span>
+          </button>
+        </div>
       </section>
 
-      {/* 3. Consistent Add Funds and Withdraw Buttons (Identical visual treatment, no visual competition) */}
-      <section className="grid grid-cols-2 gap-3 max-w-sm mx-auto w-full mb-6 mt-4">
-        <button
-          type="button"
-          onClick={onAddFunds}
-          className="h-12 px-4 rounded-xl bg-gray-100 hover:bg-gray-200/80 dark:bg-[#1e1f20] dark:hover:bg-[#252627] active:scale-[0.98] border border-gray-200/70 dark:border-gray-800 text-gray-900 dark:text-gray-100 font-semibold text-sm sm:text-base flex items-center justify-center gap-2 shadow-2xs transition-all cursor-pointer"
-        >
-          <ArrowDownLeft className="w-4 h-4 text-gray-700 dark:text-gray-300" />
-          <span>Add funds</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={onWithdraw}
-          className="h-12 px-4 rounded-xl bg-gray-100 hover:bg-gray-200/80 dark:bg-[#1e1f20] dark:hover:bg-[#252627] active:scale-[0.98] border border-gray-200/70 dark:border-gray-800 text-gray-900 dark:text-gray-100 font-semibold text-sm sm:text-base flex items-center justify-center gap-2 shadow-2xs transition-all cursor-pointer"
-        >
-          <ArrowUpRight className="w-4 h-4 text-gray-700 dark:text-gray-300" />
-          <span>Withdraw</span>
-        </button>
-      </section>
-
-      {/* 4. Escrow Section (Clean, no emojis) */}
-      <section className="max-w-md mx-auto mb-6">
-        <div className="flex items-center justify-between mb-2.5 px-1">
+      {/* 4. Escrow Section (Clean continuous stream with thin straight line dividers) */}
+      <section className="py-4 border-b border-[#DADDE1] dark:border-[#2f3032]">
+        <div className="flex items-center justify-between mb-3 px-1">
           <div className="flex items-center gap-1.5">
             <ShieldCheck className="w-4 h-4 text-[#9747FF]" />
             <h2 className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400">
-              Escrow activity
+              Escrow protection
             </h2>
           </div>
           <span className="text-xs font-medium text-gray-400 dark:text-gray-500">Protected funds</span>
         </div>
 
         {hasEscrowActivity ? (
-          <div className="space-y-2.5">
+          <div className="divide-y divide-[#DADDE1] dark:divide-[#2f3032]">
             {/* Client Escrow */}
             {escrowBalance > 0 && (
-              <div className="bg-white dark:bg-[#18191a] border border-gray-150 dark:border-[#2f3032] rounded-xl p-3.5 shadow-xs flex items-center justify-between">
+              <div className="py-3 px-1 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-full bg-purple-50 dark:bg-[#9747FF]/15 text-[#9747FF] flex items-center justify-center shrink-0">
                     <Lock className="w-4 h-4" />
                   </div>
                   <div>
                     <p className="font-semibold text-sm text-gray-900 dark:text-gray-100">Held in escrow</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Released to creator upon deliverable approval</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Released upon deliverable approval</p>
                   </div>
                 </div>
                 <div className="text-right">
@@ -340,7 +340,7 @@ export function MobileWallet({
                     ${escrowBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{' '}
                     <span className="text-xs text-gray-400 dark:text-gray-500 font-normal">USDC</span>
                   </p>
-                  <span className="inline-block text-xs text-purple-700 dark:text-purple-300 font-semibold bg-purple-50 dark:bg-[#9747FF]/20 border border-purple-200/60 dark:border-purple-800/60 px-2 py-0.5 rounded-md mt-0.5">
+                  <span className="inline-block text-[11px] text-[#9747FF] font-semibold">
                     In escrow
                   </span>
                 </div>
@@ -349,14 +349,14 @@ export function MobileWallet({
 
             {/* Creator Incoming Earnings */}
             {incomingEarnings > 0 && (
-              <div className="bg-white dark:bg-[#18191a] border border-gray-150 dark:border-[#2f3032] rounded-xl p-3.5 shadow-xs flex items-center justify-between">
+              <div className="py-3 px-1 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 flex items-center justify-center shrink-0">
                     <TrendingUp className="w-4 h-4" />
                   </div>
                   <div>
                     <p className="font-semibold text-sm text-gray-900 dark:text-gray-100">Incoming earnings</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Paid out when the client approves deliverables</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Paid out upon approval</p>
                   </div>
                 </div>
                 <div className="text-right">
@@ -364,7 +364,7 @@ export function MobileWallet({
                     ${incomingEarnings.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{' '}
                     <span className="text-xs text-gray-400 dark:text-gray-500 font-normal">USDC</span>
                   </p>
-                  <span className="inline-block text-xs text-emerald-700 dark:text-emerald-300 font-semibold bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/60 px-2 py-0.5 rounded-md mt-0.5">
+                  <span className="inline-block text-[11px] text-emerald-600 font-semibold">
                     Pending
                   </span>
                 </div>
@@ -372,27 +372,24 @@ export function MobileWallet({
             )}
           </div>
         ) : (
-          <div className="bg-gray-50/70 dark:bg-[#18191a]/70 border border-dashed border-gray-200/80 dark:border-gray-800 rounded-xl p-3.5 text-center">
-            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">No active escrow funds</p>
-            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Project funds are held in escrow until deliverables are completed and approved.
-            </p>
+          <div className="py-2 px-1 text-xs text-gray-500 dark:text-gray-400 flex items-center justify-between">
+            <span>No active escrow funds right now</span>
             <a
               href="/bookings"
-              className="inline-flex items-center gap-1 text-xs sm:text-sm font-semibold text-[#9747FF] hover:underline mt-2"
+              className="inline-flex items-center gap-1 font-semibold text-[#9747FF] hover:underline"
             >
               <span>View bookings</span>
-              <ArrowRight className="w-3.5 h-3.5 ml-0.5" />
+              <ArrowRight className="w-3.5 h-3.5" />
             </a>
           </div>
         )}
       </section>
 
-      {/* 5. Recent Transactions Section (NO filter tabs, pure line icons, NO emojis) */}
-      <section className="max-w-md mx-auto">
-        <div className="flex items-center justify-between mb-3 px-1">
+      {/* 5. Recent Transactions Section */}
+      <section className="pt-4">
+        <div className="flex items-center justify-between pb-2.5 border-b border-[#DADDE1] dark:border-[#2f3032] mb-3 px-1">
           <div className="flex items-center gap-2">
-            <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 tracking-tight">Recent transactions</h2>
+            <h2 className="text-sm font-bold text-gray-900 dark:text-gray-100 tracking-tight">Recent transactions</h2>
             {isTransactionsLoading && (
               <Loader2 className="w-3.5 h-3.5 animate-spin text-[#9747FF]" />
             )}
@@ -440,7 +437,7 @@ export function MobileWallet({
                 </div>
 
                 {/* Rows in this date group */}
-                <div className="bg-white dark:bg-[#121212]">
+                <div className="divide-y divide-[#DADDE1] dark:divide-[#2f3032]">
                   {group.items.map((tx) => {
                     const txId = tx.id || (tx as any)._id || `tx-${Math.random()}`;
                     const meta = getCategoryMeta(tx);
@@ -464,7 +461,7 @@ export function MobileWallet({
                             onSelectTransaction?.(tx);
                           }
                         }}
-                        className="flex items-center justify-between py-3 px-1.5 border-b border-gray-100 dark:border-gray-800/80 last:border-0 hover:bg-purple-50/40 dark:hover:bg-purple-950/20 active:bg-purple-50/70 dark:active:bg-purple-950/30 active:scale-[0.99] rounded-xl transition-all cursor-pointer group"
+                        className="flex items-center justify-between py-3.5 px-1 hover:bg-gray-50/70 dark:hover:bg-white/[0.02] active:bg-gray-100/70 dark:active:bg-white/[0.04] transition-colors cursor-pointer group"
                         aria-label={`View details for ${meta.categoryName} of ${formatted.text}`}
                       >
                         {/* Left: Monochrome vector icon & Description (NO EMOJIS) */}
@@ -548,8 +545,8 @@ export function MobileWallet({
             )}
           </div>
         ) : (
-          <div className="text-center py-12 px-4 bg-gray-50/50 dark:bg-[#18191a] rounded-2xl border border-gray-100 dark:border-[#2f3032] mt-2">
-            <div className="w-10 h-10 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center mx-auto mb-2.5 text-gray-400 dark:text-gray-300 shadow-2xs border border-gray-100 dark:border-gray-700">
+          <div className="text-center py-12 px-4 mt-2">
+            <div className="w-10 h-10 rounded-full bg-purple-50 dark:bg-purple-950/40 text-[#9747FF] flex items-center justify-center mx-auto mb-2.5">
               <FolderOpen className="w-5 h-5 stroke-[1.5]" />
             </div>
             <p className="font-semibold text-gray-900 dark:text-gray-100 text-base">No transactions yet</p>

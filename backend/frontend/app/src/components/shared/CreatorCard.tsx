@@ -8,6 +8,8 @@ import { VerifiedBadge } from './VerifiedBadge';
 import { NewBookingModal } from '@/components/booking/NewBookingModal';
 import { getImageUrl } from '@/lib/imageUrl';
 import { getCreatorProfileUrl } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
+import { isSameAccount } from '@/lib/ownership';
 
 interface CreatorCardProps {
   creator: Creator & { rating?: number | { average?: number; count?: number }; _id?: string; priceRange?: { min: number; max: number } };
@@ -16,6 +18,8 @@ interface CreatorCardProps {
 }
 
 export function CreatorCard({ creator, onViewProfile, onBook }: CreatorCardProps) {
+  const { user } = useAuth();
+  const isSelf = isSameAccount(user, creator);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const getCreatorId = () => creator.id || (creator as any)._id;
   const profileUrl = getCreatorProfileUrl(creator as any);
@@ -31,6 +35,7 @@ export function CreatorCard({ creator, onViewProfile, onBook }: CreatorCardProps
 
   const handleBook = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (isSelf) return;
     if (onBook) {
       onBook(creator);
     } else {
@@ -62,7 +67,7 @@ export function CreatorCard({ creator, onViewProfile, onBook }: CreatorCardProps
   return (
     <>
       <Card 
-        className="group hover:shadow-lg transition-all duration-300 border border-gray-200 hover:border-[#8A2BE2]/30 overflow-hidden cursor-pointer h-full min-h-[220px]"
+        className="group hover:shadow-lg transition-all duration-300 border border-gray-200 hover:border-[#9747FF]/30 overflow-hidden cursor-pointer h-full min-h-[220px]"
         onClick={handleCardClick}
       >
         <CardContent className="p-3 sm:p-4 flex flex-col items-center text-center h-full gap-3">
@@ -110,21 +115,34 @@ export function CreatorCard({ creator, onViewProfile, onBook }: CreatorCardProps
           
           {/* Bottom Section: Buttons */}
           <div className="flex items-center gap-1 w-full mt-auto pt-2 border-t border-gray-100">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleView}
-              className="flex-1 border-gray-200 text-[10px] sm:text-xs h-7 sm:h-8"
-            >
-              View
-            </Button>
-            <Button
-              size="sm"
-              onClick={handleBook}
-              className="flex-1 bg-[#8A2BE2] hover:bg-[#7B1FD1] text-white text-[10px] sm:text-xs h-7 sm:h-8"
-            >
-              Book
-            </Button>
+            {isSelf ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleView}
+                className="w-full border-gray-200 text-[10px] sm:text-xs h-7 sm:h-8 font-medium hover:text-[#9747FF] hover:border-[#9747FF]"
+              >
+                View your profile
+              </Button>
+            ) : (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleView}
+                  className="flex-1 border-gray-200 text-[10px] sm:text-xs h-7 sm:h-8"
+                >
+                  View
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleBook}
+                  className="flex-1 bg-[#9747FF] hover:bg-[#8534f0] text-white text-[10px] sm:text-xs h-7 sm:h-8"
+                >
+                  Book
+                </Button>
+              </>
+            )}
           </div>
         </CardContent>
       </Card>

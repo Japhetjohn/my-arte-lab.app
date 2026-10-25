@@ -24,6 +24,7 @@ import { socialService } from '@/lib/api';
 import { getAvatarUrl, getImageUrl } from '@/lib/imageUrl';
 import { VerifiedBadge } from '@/components/shared/VerifiedBadge';
 import { ConfirmationModal } from '@/components/modals/ConfirmationModal';
+import { isPostAuthor } from '@/lib/ownership';
 import { CommentsSection } from './CommentsSection';
 import { cn } from '@/lib/utils';
 
@@ -149,12 +150,8 @@ export function SocialFeedCard({
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDeleted, setIsDeleted] = useState(false);
 
-  // Check if current user is the owner/author of the post
-  const isOwner = Boolean(
-    user &&
-    post.creator &&
-    (String((user as any)._id || user.id) === String(post.creator._id || (post.creator as any).id))
-  );
+  // Check if current user is the owner/author of the post using centralized ownership rule
+  const isOwner = isPostAuthor(user, post);
 
   const handleDeletePost = async () => {
     setIsDeleting(true);
@@ -550,15 +547,17 @@ export function SocialFeedCard({
                   className="cursor-pointer text-xs dark:text-gray-200 dark:focus:bg-gray-800"
                 >
                   <Users className="w-3.5 h-3.5 mr-2 text-gray-500" />
-                  <span>View creator profile</span>
+                  <span>{isOwner ? 'View your profile' : 'View creator profile'}</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => (window.location.href = `/creators/${post.creator._id}`)}
-                  className="cursor-pointer text-xs dark:text-gray-200 dark:focus:bg-gray-800"
-                >
-                  <Calendar className="w-3.5 h-3.5 mr-2 text-gray-500" />
-                  <span>Book creator</span>
-                </DropdownMenuItem>
+                {!isOwner && (
+                  <DropdownMenuItem
+                    onClick={() => (window.location.href = `/creators/${post.creator._id}`)}
+                    className="cursor-pointer text-xs dark:text-gray-200 dark:focus:bg-gray-800"
+                  >
+                    <Calendar className="w-3.5 h-3.5 mr-2 text-gray-500" />
+                    <span>Book creator</span>
+                  </DropdownMenuItem>
+                )}
               </div>
               {post.directLink && (
                 <div className="py-1">

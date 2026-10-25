@@ -13,6 +13,7 @@ const metricsService = require('../services/metricsService');
 const { isValidBookingAmount } = require('../utils/validators');
 const { PLATFORM_CONFIG, ADMIN_CONFIG } = require('../utils/constants');
 const { isUserVerified, isFounder } = require('../utils/verificationHelper');
+const { isSelfAction } = require('../utils/ownershipHelper');
 
 const PLATFORM_COMMISSION = parseFloat(process.env.PLATFORM_COMMISSION) || PLATFORM_CONFIG.COMMISSION_RATE;
 
@@ -34,6 +35,11 @@ exports.createBooking = catchAsync(async (req, res, next) => {
   const validation = isValidBookingAmount(amount);
   if (!validation.valid) {
     return next(new ErrorHandler(validation.error, 400));
+  }
+
+  // Prevent self-booking
+  if (isSelfAction(req.user._id, creatorId)) {
+    return next(new ErrorHandler('You cannot book yourself for a creative project', 400));
   }
 
   const idempotencyKey = req.headers['idempotency-key'];

@@ -50,6 +50,11 @@ exports.getAllCreators = catchAsync(async (req, res, next) => {
   const actualLimit = parseInt(limit) === 1000 ? 1000 : parseInt(limit) || 12;
   const query = { role: 'creator', isActive: true };
 
+  // Exclude current authenticated user so a creator never sees themselves in hiring lists
+  if (req.user && req.user._id) {
+    query._id = { $ne: req.user._id };
+  }
+
   if (category && category !== 'all') {
     query.category = { $in: [category] };
   }
@@ -263,11 +268,13 @@ exports.getRecommendedCreators = catchAsync(async (req, res, next) => {
 exports.getTrendingCreators = catchAsync(async (req, res, next) => {
   const { limit = 10 } = req.query;
 
-  // Fetch all active creators
-  const allCreators = await User.find({
-    role: 'creator',
-    isActive: true
-  })
+  const query = { role: 'creator', isActive: true };
+  if (req.user && req.user._id) {
+    query._id = { $ne: req.user._id };
+  }
+
+  // Fetch all active creators (excluding current user)
+  const allCreators = await User.find(query)
     .select('-password')
     .lean();
 
@@ -356,12 +363,17 @@ exports.getCreatorProfileBySlug = catchAsync(async (req, res, next) => {
 exports.getFeaturedCreators = catchAsync(async (req, res, next) => {
   const { limit = 6 } = req.query;
 
-  const creators = await User.find({
+  const query = {
     role: 'creator',
     isActive: true,
     'rating.average': { $gte: 4.5 },
     completedBookings: { $gte: 5 }
-  })
+  };
+  if (req.user && req.user._id) {
+    query._id = { $ne: req.user._id };
+  }
+
+  const creators = await User.find(query)
     .select('-password -twoFactorSecret -twoFactorBackupCodes -emailVerificationToken -passwordResetToken -loginAttempts -lockUntil')
     .sort({ 'rating.average': -1, completedBookings: -1 })
     .lean();

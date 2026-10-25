@@ -81,6 +81,7 @@ exports.getFeaturedCreators = async (req, res, next) => {
         location: locationStr,
         rating: creator.rating?.average?.toFixed(1) || '0.0',
         reviewCount: creator.rating?.count || 0,
+        isVerified: isUserVerified(creator),
         verified: isUserVerified(creator),
         isFounder: isFounder(creator),
         price: creator.hourlyRate ? `From $${creator.hourlyRate}/hr` : 'Contact for pricing',
