@@ -9,8 +9,6 @@ import {
   Ban,
   Loader2,
   Info,
-  ShieldCheck,
-  CheckCircle2,
   MessageSquare,
   Home as HomeIcon,
   Users,
@@ -36,8 +34,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { VerifiedBadge } from '@/components/shared/VerifiedBadge';
 import { ConfirmationModal } from '@/components/modals/ConfirmationModal';
-import { creatorService, uploadService } from '@/lib/api';
-import type { Creator } from '@/types';
+import { uploadService } from '@/lib/api';
 
 interface Participant {
   _id: string;
@@ -96,7 +93,6 @@ export function Messages() {
   const [isBlocked, setIsBlocked] = useState(false);
   const [isBlockModalOpen, setIsBlockModalOpen] = useState(false);
   const [isBlocking, setIsBlocking] = useState(false);
-  const [suggestedCreators, setSuggestedCreators] = useState<Creator[]>([]);
 
   // Photo upload state
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
@@ -118,21 +114,10 @@ export function Messages() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Fetch conversations and suggested creators on mount
+  // Fetch conversations on mount
   useEffect(() => {
     fetchConversations();
-    fetchSuggestedCreators();
   }, []);
-
-  const fetchSuggestedCreators = async () => {
-    try {
-      const res = await creatorService.getCreators({ limit: 5 });
-      const list = res.data?.data?.results || res.data?.data || [];
-      setSuggestedCreators(list.slice(0, 5));
-    } catch (err) {
-      console.error('Error fetching suggested creators:', err);
-    }
-  };
 
   const fetchConversations = async () => {
     try {
@@ -347,7 +332,7 @@ export function Messages() {
     setSelectedConversation(null);
     const url = new URL(window.location.href);
     url.searchParams.delete('user');
-    window.history.pushState({}, '', url);
+    window.history.replaceState({}, '', url);
   };
 
   // Image attachment handler
@@ -863,19 +848,19 @@ export function Messages() {
         </aside>
 
         {/* =========================================================================
-            CENTER COLUMN (lg:col-span-6, full width on mobile)
-            Two-pane messaging interface on desktop, single-view transition on mobile
+            CENTER COLUMN (lg:col-span-9, full width on mobile)
+            Two-pane messaging workspace on desktop, single-view transition on mobile
            ========================================================================= */}
-        <main className="col-span-1 lg:col-span-6 flex flex-col min-w-0">
-          {/* Main Messaging Container — Borderless Clean Workspace Inside Column 2 */}
-          <div className="w-full bg-white dark:bg-[#18191a] flex h-[calc(100vh-8rem)] min-h-[580px] overflow-hidden">
+        <main className="col-span-1 lg:col-span-9 flex flex-col min-w-0">
+          {/* Main Messaging Container — Borderless Clean Workspace */}
+          <div className="w-full bg-white dark:bg-[#18191a] flex h-[calc(100dvh-10rem)] lg:h-[calc(100vh-8rem)] min-h-[520px] overflow-hidden">
             {/* ---------------------------------------------------------------------
                 PANE 1: CONVERSATION LIST
                 Hidden on mobile when an individual conversation is active
                --------------------------------------------------------------------- */}
             <div
               className={cn(
-                'w-full lg:w-[220px] xl:w-[250px] shrink-0 border-r border-[#DADDE1] dark:border-[#2f3032] flex flex-col h-full bg-white dark:bg-[#18191a]',
+                'w-full lg:w-[320px] xl:w-[360px] shrink-0 border-r border-[#DADDE1] dark:border-[#2f3032] flex flex-col h-full bg-white dark:bg-[#18191a]',
                 selectedConversation && 'hidden lg:flex'
               )}
             >
@@ -1030,20 +1015,20 @@ export function Messages() {
               className={cn(
                 'flex-1 flex flex-col min-w-0 h-full bg-white dark:bg-[#18191a]',
                 !selectedConversation && 'hidden lg:flex',
-                selectedConversation && 'fixed inset-0 z-40 lg:static lg:z-auto h-[100dvh] lg:h-full'
+                selectedConversation && 'fixed inset-0 z-[60] lg:static lg:z-auto h-[100dvh] lg:h-full'
               )}
             >
               {selectedConversation ? (
                 <>
-                  {/* Conversation Header */}
-                  <div className="px-3.5 sm:px-4 py-2.5 sm:py-3 border-b border-[#DADDE1] dark:border-[#2f3032] flex items-center justify-between bg-white dark:bg-[#18191a] shrink-0 sticky top-0 z-10">
-                    <div className="flex items-center gap-2.5 min-w-0">
+                  {/* Active Conversation Header */}
+                  <div className="px-3.5 sm:px-4 py-2.5 sm:py-3 border-b border-[#DADDE1] dark:border-[#2f3032] flex items-center justify-between bg-white dark:bg-[#18191a] shrink-0 sticky top-0 z-10 pt-[max(0.625rem,env(safe-area-inset-top,0.625rem))]">
+                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
                       {/* Back button (Mobile view only) */}
                       <button
                         type="button"
                         onClick={handleBackToList}
-                        className="p-1.5 -ml-1 text-gray-600 dark:text-gray-300 hover:text-gray-950 dark:hover:text-white rounded-full hover:bg-gray-100 dark:hover:bg-[#252628] transition-colors lg:hidden cursor-pointer shrink-0"
-                        aria-label="Back to messages"
+                        className="p-1.5 -ml-1 text-gray-700 dark:text-gray-200 hover:text-gray-950 dark:hover:text-white rounded-full hover:bg-gray-100 dark:hover:bg-[#252628] transition-colors lg:hidden cursor-pointer shrink-0"
+                        aria-label="Back to conversations"
                       >
                         <ChevronLeft className="w-6 h-6" />
                       </button>
@@ -1051,17 +1036,23 @@ export function Messages() {
                       {/* Recipient Avatar */}
                       <a
                         href={`/creators/${selectedConversation.otherUser?._id || selectedConversation._id}`}
-                        className="shrink-0"
+                        className="shrink-0 rounded-full focus:outline-none focus:ring-2 focus:ring-[#9747FF]/40"
                       >
-                        <img
-                          src={getAvatarUrl(selectedConversation.otherUser?.avatar)}
-                          alt={getParticipantName(selectedConversation.otherUser)}
-                          className="w-10 h-10 rounded-full object-cover border border-gray-200/80 dark:border-gray-800"
-                        />
+                        {selectedConversation.otherUser?.avatar ? (
+                          <img
+                            src={getAvatarUrl(selectedConversation.otherUser.avatar)}
+                            alt={getParticipantName(selectedConversation.otherUser)}
+                            className="w-10 h-10 rounded-full object-cover border border-gray-200/80 dark:border-gray-800"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-950/40 text-[#9747FF] flex items-center justify-center font-bold text-sm border border-purple-200/60 dark:border-purple-800/40">
+                            {(getParticipantName(selectedConversation.otherUser) || 'U')[0]?.toUpperCase() || 'U'}
+                          </div>
+                        )}
                       </a>
 
                       {/* Recipient Identity: Display Name on Line 1, @username on Line 2 */}
-                      <div className="min-w-0 flex flex-col justify-center">
+                      <div className="min-w-0 flex-1 flex flex-col justify-center">
                         <div className="flex items-center gap-1.5 min-w-0">
                           <a
                             href={`/creators/${selectedConversation.otherUser?._id || selectedConversation._id}`}
@@ -1070,17 +1061,19 @@ export function Messages() {
                             {getParticipantName(selectedConversation.otherUser)}
                           </a>
                           {selectedConversation.otherUser?.isVerified && (
-                            <VerifiedBadge className="w-3.5 h-3.5 shrink-0 inline-block align-middle" showTooltip={false} />
+                            <VerifiedBadge className="w-4 h-4 shrink-0 inline-block align-middle" showTooltip={false} />
                           )}
                         </div>
-                        <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 font-normal truncate mt-0.5 leading-tight">
-                          @{getParticipantUsername(selectedConversation.otherUser)}
-                        </p>
+                        {getParticipantUsername(selectedConversation.otherUser) && (
+                          <span className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 font-normal truncate mt-0.5 leading-tight">
+                            @{getParticipantUsername(selectedConversation.otherUser)}
+                          </span>
+                        )}
                       </div>
                     </div>
 
                     {/* Actions Menu */}
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 shrink-0 ml-2">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <button
@@ -1310,7 +1303,7 @@ export function Messages() {
                   </div>
 
                   {/* Message Composer Anchored at Bottom */}
-                  <div className="p-3 sm:p-4 border-t border-[#DADDE1] dark:border-[#2f3032] bg-white dark:bg-[#18191a] shrink-0 safe-area-pb">
+                  <div className="p-3 sm:p-4 border-t border-[#DADDE1] dark:border-[#2f3032] bg-white dark:bg-[#18191a] shrink-0 pb-[max(0.75rem,env(safe-area-inset-bottom,0.75rem))] sm:pb-4">
                     {isBlocked ? (
                       <div className="text-center py-2.5 px-4 bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 text-xs rounded-xl border border-red-100 dark:border-red-900/40">
                         You have blocked this user.
@@ -1430,119 +1423,6 @@ export function Messages() {
             </div>
           </div>
         </main>
-
-        {/* =========================================================================
-            RIGHT COLUMN (lg:col-span-3, hidden on mobile/tablet)
-            Top Creators & Safe Messaging Escrow Guarantee
-           ========================================================================= */}
-        <aside className="hidden lg:flex flex-col gap-6 lg:col-span-3 sticky top-20">
-          {/* Safe Messaging Escrow Protection */}
-          <div className="pb-5 border-b border-[#DADDE1] dark:border-[#2f3032]">
-            <div className="flex items-center gap-2 text-gray-900 dark:text-gray-100 mb-2">
-              <ShieldCheck className="w-4 h-4 text-[#9747FF]" />
-              <h4 className="text-xs font-semibold uppercase tracking-wider">
-                Escrow protection
-              </h4>
-            </div>
-            <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed mb-3">
-              Keep communication and payments on MyArteLab to protect funds in escrow until deliverables are reviewed and approved.
-            </p>
-            <div className="space-y-2 text-xs text-gray-600 dark:text-gray-400">
-              <div className="flex items-start gap-2">
-                <CheckCircle2 className="w-3.5 h-3.5 text-[#9747FF] shrink-0 mt-0.5" />
-                <span>Funds stay held until you approve deliverables</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <CheckCircle2 className="w-3.5 h-3.5 text-[#9747FF] shrink-0 mt-0.5" />
-                <span>Complete message record and project terms</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <CheckCircle2 className="w-3.5 h-3.5 text-[#9747FF] shrink-0 mt-0.5" />
-                <span>Protected refunds if project terms are not met</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Top Creators to Connect With */}
-          <div className="pb-4">
-            <div className="flex items-center justify-between pb-2.5 border-b border-[#DADDE1] dark:border-[#2f3032] mb-3.5">
-              <h4 className="font-bold text-sm text-gray-900 dark:text-gray-100 tracking-tight">
-                Featured creators
-              </h4>
-              <a
-                href="/creators"
-                className="text-xs font-semibold text-[#9747FF] hover:underline"
-              >
-                View all
-              </a>
-            </div>
-
-            <div className="space-y-3.5">
-              {suggestedCreators.map((creator) => {
-                const creatorName =
-                  creator.name ||
-                  `${creator.firstName || ''} ${creator.lastName || ''}`.trim() ||
-                  'Creator';
-                const creatorUsername =
-                  (creator as any)?.username ||
-                  (creator.email ? creator.email.split('@')[0] : '');
-
-                return (
-                  <div key={creator.id} className="flex items-center justify-between gap-2.5">
-                    <a
-                      href={`/creators/${creator.id}`}
-                      className="flex items-center gap-2.5 min-w-0 group cursor-pointer"
-                    >
-                      <div className="w-9 h-9 rounded-full overflow-hidden bg-purple-100 dark:bg-purple-950/40 flex items-center justify-center shrink-0 border border-purple-200 dark:border-purple-800/40">
-                        {creator.avatar ? (
-                          <img
-                            src={getAvatarUrl(creator.avatar)}
-                            alt={creatorName}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <span className="text-[#9747FF] font-bold text-xs">
-                            {(creatorName || 'C')[0]?.toUpperCase() || 'C'}
-                          </span>
-                        )}
-                      </div>
-                      <div className="min-w-0 flex flex-col">
-                        <div className="flex items-center gap-1 min-w-0">
-                          <span className="font-bold text-xs text-gray-900 dark:text-gray-100 group-hover:text-[#9747FF] truncate">
-                            {creatorName}
-                          </span>
-                          {creator.isVerified && (
-                            <VerifiedBadge
-                              className="w-3.5 h-3.5 shrink-0 inline-block align-middle"
-                              showTooltip={false}
-                            />
-                          )}
-                        </div>
-                        {creatorUsername && (
-                          <span className="text-[11px] text-gray-500 dark:text-gray-400 font-normal truncate mt-0.5">
-                            @{creatorUsername}
-                          </span>
-                        )}
-                        <span className="text-[11px] text-gray-600 dark:text-gray-400 truncate">
-                          {Array.isArray(creator.category)
-                            ? creator.category[0]
-                            : creator.category || 'Creative'}
-                        </span>
-                      </div>
-                    </a>
-
-                    <a
-                      href={`/messages?user=${creator.id}`}
-                      className="shrink-0 text-xs font-semibold px-2.5 py-1 rounded-full bg-purple-50 dark:bg-purple-950/50 text-[#9747FF] hover:bg-[#9747FF] hover:text-white transition-all cursor-pointer"
-                    >
-                      Chat
-                    </a>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </aside>
       </div>
 
       {/* =========================================================================
