@@ -25,6 +25,9 @@ import { Legal } from '@/pages/Legal';
 import { PrivacyPolicy } from '@/pages/PrivacyPolicy';
 import { EmptyState, preloadOfflineImage } from '@/components/shared/EmptyState';
 import { Toaster } from '@/components/ui/sonner';
+import { usePwaInstall } from '@/hooks/usePwaInstall';
+import { useServiceWorker } from '@/hooks/useServiceWorker';
+import { PwaInstallModal } from '@/components/pwa/PwaInstallModal';
 import './App.css';
 
 // Main App Content Component
@@ -34,6 +37,10 @@ function AppContent() {
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const { user, isAuthenticated, isLoading, logout } = useAuth();
+
+  // PWA Service Worker & Install Prompt Controller
+  useServiceWorker();
+  const { isPromptOpen, isIOS, promptInstall, dismissPrompt } = usePwaInstall();
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -313,6 +320,12 @@ function AppContent() {
       </main>
       
       <BottomNavigation currentPath={currentPath} />
+      <PwaInstallModal
+        isOpen={isPromptOpen}
+        onClose={dismissPrompt}
+        onInstall={promptInstall}
+        isIOS={isIOS}
+      />
       <Toaster theme={isDark ? 'dark' : 'light'} />
     </div>
   );

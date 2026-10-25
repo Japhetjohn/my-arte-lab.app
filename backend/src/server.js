@@ -387,6 +387,39 @@ app.use('/assets', express.static(path.join(__dirname, '../frontend/dist/assets'
   }
 }));
 
+// Service Worker with strict no-cache headers to allow instant updates
+app.get('/sw.js', (req, res) => {
+  const candidates = [
+    path.join(__dirname, '../frontend/sw.js'),
+    path.join(__dirname, '../frontend/app/public/sw.js')
+  ];
+  for (const swPath of candidates) {
+    if (fs.existsSync(swPath)) {
+      res.setHeader('Content-Type', 'application/javascript; charset=UTF-8');
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Service-Worker-Allowed', '/');
+      return res.sendFile(swPath);
+    }
+  }
+  return res.status(404).end();
+});
+
+// Web App Manifest with correct MIME type
+app.get('/manifest.webmanifest', (req, res) => {
+  const candidates = [
+    path.join(__dirname, '../frontend/manifest.webmanifest'),
+    path.join(__dirname, '../frontend/app/public/manifest.webmanifest')
+  ];
+  for (const manifestPath of candidates) {
+    if (fs.existsSync(manifestPath)) {
+      res.setHeader('Content-Type', 'application/manifest+json; charset=UTF-8');
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+      return res.sendFile(manifestPath);
+    }
+  }
+  return res.status(404).end();
+});
+
 app.use(express.static(path.join(__dirname, '../frontend')));
 
 // Cache the SPA index.html template in memory
