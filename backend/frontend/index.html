@@ -37,9 +37,28 @@
     <link rel="icon" type="image/png" sizes="48x48" href="/images/favicon-48x48.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="192x192" href="/images/icon-192x192.png">
-    <link rel="icon" type="image/png" sizes="512x512" href="/images/icon-512x512.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+
+    <!-- Early capture of PWA beforeinstallprompt event so it is never missed by SPAs -->
+    <script>
+      (function() {
+        window.__MYARTELAB_PWA_PROMPT__ = null;
+        window.addEventListener('beforeinstallprompt', function(e) {
+          e.preventDefault();
+          window.__MYARTELAB_PWA_PROMPT__ = e;
+          window.dispatchEvent(new CustomEvent('myartelab:beforeinstallprompt'));
+        });
+        window.addEventListener('appinstalled', function() {
+          window.__MYARTELAB_PWA_PROMPT__ = null;
+          try {
+            localStorage.setItem('myartelab_pwa_installed', 'true');
+          } catch(e) {}
+          window.dispatchEvent(new CustomEvent('myartelab:appinstalled'));
+        });
+      })();
+    </script>
 
     <!-- Clean Light Theme Initialization Script -->
     <script>
@@ -58,8 +77,8 @@
 
     <!-- Google Identity Services -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script type="module" crossorigin src="/assets/index-tIN54QGk.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-DvOG9qJd.css">
+    <script type="module" crossorigin src="/assets/index-Ba_booPA.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-KD9EJXIT.css">
   </head>
   <body>
     <div id="root"></div>

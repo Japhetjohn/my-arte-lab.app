@@ -13,6 +13,7 @@ import { toast } from '@/components/ui/sonner';
 import { VerifiedBadge } from '@/components/shared/VerifiedBadge';
 import { ConfirmationModal } from '@/components/modals/ConfirmationModal';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { usePwaInstall } from '@/hooks/usePwaInstall';
 import {
   Dialog,
   DialogContent,
@@ -43,8 +44,11 @@ import {
   HelpCircle,
   ExternalLink,
   CheckCircle2,
+  Download,
+  Activity,
   X,
 } from 'lucide-react';
+import { PwaDiagnosticsModal } from '@/components/pwa/PwaDiagnosticsModal';
 import { cn } from '@/lib/utils';
 
 // Reusable responsive settings popup component
@@ -157,6 +161,16 @@ export function Settings() {
   const [isBecomeCreatorOpen, setIsBecomeCreatorOpen] = useState(false);
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
 
+  // PWA Installation & Diagnostics Controller
+  const {
+    openInstallFlow,
+    isStandalone,
+    isIOS,
+    hasNativePrompt,
+  } = usePwaInstall();
+  const [isDiagnosticsOpen, setIsDiagnosticsOpen] = useState(false);
+  const isPwaDebug = searchParams.get('pwa-debug') === '1' || searchParams.has('debug');
+
   // User's own posts state
   const [myPosts, setMyPosts] = useState<FeedPost[]>([]);
   const [isLoadingPosts, setIsLoadingPosts] = useState(false);
@@ -208,6 +222,13 @@ export function Settings() {
       setIsPrivacyModalOpen(true);
     }
   }, [tabParam]);
+
+  // Open PWA Diagnostics if ?pwa-debug=1 is in URL
+  useEffect(() => {
+    if (isPwaDebug) {
+      setIsDiagnosticsOpen(true);
+    }
+  }, [isPwaDebug]);
 
   // Fetch current user's own posts
   useEffect(() => {
@@ -611,6 +632,67 @@ export function Settings() {
                   />
                 </div>
               </div>
+
+              {/* Install MyArteLab App Row */}
+              <button
+                type="button"
+                onClick={openInstallFlow}
+                className="w-full flex items-center justify-between py-3.5 px-2 hover:bg-gray-100/60 dark:hover:bg-white/[0.04] rounded-xl transition-colors cursor-pointer text-left group"
+              >
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <div className="w-9 h-9 rounded-full bg-purple-50 dark:bg-purple-950/50 text-[#9747FF] flex items-center justify-center shrink-0">
+                    <Download className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100 group-hover:text-[#9747FF] transition-colors truncate block">
+                      Install MyArteLab App
+                    </span>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                      {isStandalone
+                        ? 'App is installed on this device'
+                        : isIOS
+                        ? 'Add to iPhone or iPad Home Screen'
+                        : hasNativePrompt
+                        ? 'Install app for quick home screen access'
+                        : 'Add MyArteLab to your home screen for quick access'}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                  {isStandalone ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-full">
+                      <CheckCircle2 className="w-3 h-3" />
+                      <span>Installed</span>
+                    </span>
+                  ) : (
+                    <ChevronRight className="w-4 h-4 text-gray-400 dark:text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-200 transition-colors" />
+                  )}
+                </div>
+              </button>
+
+              {/* QA Diagnostics Trigger: Visible when ?pwa-debug=1 or in dev */}
+              {(isPwaDebug || import.meta.env.DEV) && (
+                <button
+                  type="button"
+                  onClick={() => setIsDiagnosticsOpen(true)}
+                  className="w-full flex items-center justify-between py-2.5 px-2 hover:bg-gray-100/60 dark:hover:bg-white/[0.04] rounded-xl transition-colors cursor-pointer text-left group"
+                >
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div className="w-9 h-9 rounded-full bg-purple-50 dark:bg-purple-950/50 text-[#9747FF] flex items-center justify-center shrink-0">
+                      <Activity className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <span className="text-xs font-semibold text-[#9747FF] block">
+                        PWA Diagnostics &amp; QA
+                      </span>
+                      <span className="text-[11px] text-gray-500 dark:text-gray-400">
+                        Inspect service worker, manifest, prompt status, and cooldown
+                      </span>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-[#9747FF]/60 shrink-0 ml-2" />
+                </button>
+              )}
 
               {/* Notifications Row */}
               <button
@@ -1479,6 +1561,12 @@ export function Settings() {
         confirmLabel="Sign out"
         cancelLabel="Cancel"
         variant="destructive"
+      />
+
+      {/* 7. PWA Diagnostics & QA Modal */}
+      <PwaDiagnosticsModal
+        isOpen={isDiagnosticsOpen}
+        onClose={() => setIsDiagnosticsOpen(false)}
       />
     </div>
   );

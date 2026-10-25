@@ -27,8 +27,14 @@ const PRECACHE_ASSETS = [
 // Install: Cache offline page and core assets, do NOT force skipWaiting
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(STATIC_CACHE).then((cache) => {
-      return cache.addAll(PRECACHE_ASSETS);
+    caches.open(STATIC_CACHE).then(async (cache) => {
+      for (const asset of PRECACHE_ASSETS) {
+        try {
+          await cache.add(asset);
+        } catch (err) {
+          console.warn('PWA: precache asset skipped:', asset, err);
+        }
+      }
     })
   );
 });

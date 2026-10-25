@@ -25,7 +25,7 @@ import { Legal } from '@/pages/Legal';
 import { PrivacyPolicy } from '@/pages/PrivacyPolicy';
 import { EmptyState, preloadOfflineImage } from '@/components/shared/EmptyState';
 import { Toaster } from '@/components/ui/sonner';
-import { usePwaInstall } from '@/hooks/usePwaInstall';
+import { usePwaInstall, PwaInstallProvider } from '@/hooks/usePwaInstall';
 import { useServiceWorker } from '@/hooks/useServiceWorker';
 import { PwaInstallModal } from '@/components/pwa/PwaInstallModal';
 import './App.css';
@@ -40,7 +40,7 @@ function AppContent() {
 
   // PWA Service Worker & Install Prompt Controller
   useServiceWorker();
-  const { isPromptOpen, isIOS, promptInstall, dismissPrompt } = usePwaInstall();
+  const { isPromptOpen, modalMode, isIOS, promptInstall, dismissPrompt } = usePwaInstall();
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -324,6 +324,7 @@ function AppContent() {
         isOpen={isPromptOpen}
         onClose={dismissPrompt}
         onInstall={promptInstall}
+        mode={modalMode}
         isIOS={isIOS}
       />
       <Toaster theme={isDark ? 'dark' : 'light'} />
@@ -346,7 +347,9 @@ function App() {
     <BrowserRouter>
       <ThemeProvider>
         <AuthProvider>
-          <AppContent />
+          <PwaInstallProvider>
+            <AppContent />
+          </PwaInstallProvider>
         </AuthProvider>
       </ThemeProvider>
     </BrowserRouter>
