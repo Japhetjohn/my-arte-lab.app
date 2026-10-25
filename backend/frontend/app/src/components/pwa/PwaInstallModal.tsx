@@ -31,11 +31,11 @@ export function PwaInstallModal({
       >
         <DialogHeader className="flex flex-col items-center text-center pb-2 border-b-0 space-y-2.5">
           {/* App Brand Icon */}
-          <div className="w-14 h-14 rounded-2xl bg-purple-50 dark:bg-purple-950/40 border border-[#9747FF]/20 flex items-center justify-center p-2 mb-1 shadow-xs">
+          <div className="flex items-center justify-center mb-1">
             <img
               src={PWA_CONFIG.icons.mobileLogo}
               alt={PWA_CONFIG.appName}
-              className="w-full h-full object-contain"
+              className="w-12 h-12 object-contain"
             />
           </div>
 

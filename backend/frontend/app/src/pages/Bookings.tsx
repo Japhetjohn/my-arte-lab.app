@@ -227,163 +227,170 @@ export function Bookings() {
       <article
         key={b._id}
         onClick={() => (window.location.href = `/bookings/${b._id}`)}
-        className="group py-4 border-b border-[#DADDE1] dark:border-[#2f3032] space-y-2 cursor-pointer hover:bg-black/[0.015] dark:hover:bg-white/[0.015] transition-colors rounded-none"
+        className="p-4 sm:p-5 transition-colors hover:bg-gray-50/70 dark:hover:bg-white/[0.02] cursor-pointer group"
       >
-        {/* Row 1: Creator avatar, name, hired indicator, status label, 3-dot context menu */}
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
-            <a
-              href={isClient ? `/creators/${b.creator._id}` : undefined}
-              onClick={(e) => {
-                e.stopPropagation();
-              }}
-              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full overflow-hidden bg-purple-50 dark:bg-purple-950/40 border border-gray-200/80 dark:border-gray-800 shrink-0"
-            >
-              {otherParty.avatar ? (
-                <img
-                  src={getAvatarUrl(otherParty.avatar)}
-                  alt={otherParty.name || 'User'}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center font-bold text-[#9747FF] text-xs sm:text-sm">
-                  {(otherParty.name || 'U')[0]?.toUpperCase()}
-                </div>
-              )}
-            </a>
-
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <a
-                  href={isClient ? `/creators/${b.creator._id}` : undefined}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                  }}
-                  className="font-bold text-sm sm:text-base text-gray-900 dark:text-gray-100 hover:text-[#9747FF] transition-colors truncate"
-                >
-                  {otherParty.name}
-                </a>
-                {otherParty.isVerified && (
-                  <VerifiedBadge className="w-3.5 h-3.5 shrink-0" showTooltip={false} />
-                )}
-                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800/80 shrink-0">
-                  {isClient ? 'Hired Creator' : 'Client'}
-                </span>
+        <div className="flex items-start gap-3 sm:gap-3.5">
+          {/* Avatar on the left */}
+          <a
+            href={isClient ? `/creators/${b.creator._id}` : undefined}
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
+            className="w-10 h-10 sm:w-11 sm:h-11 rounded-full overflow-hidden bg-purple-50 dark:bg-purple-950/40 border border-[#DADDE1] dark:border-[#2f3032] shrink-0 block mt-0.5 focus:outline-none"
+          >
+            {otherParty.avatar ? (
+              <img
+                src={getAvatarUrl(otherParty.avatar)}
+                alt={otherParty.name || 'User'}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center font-bold text-[#9747FF] text-sm">
+                {(otherParty.name || 'U')[0]?.toUpperCase()}
               </div>
-              <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
-                {b.category ? `${b.category} • ` : ''}ID: <span className="font-mono">{b.bookingId || b._id.slice(-8).toUpperCase()}</span>
-              </p>
-            </div>
-          </div>
+            )}
+          </a>
 
-          <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
-            <span
-              className={cn(
-                'text-xs font-semibold tracking-tight text-right',
-                statusInfo.textClassName
+          {/* Right Content Column (takes up the rest of the card) */}
+          <div className="flex-1 min-w-0">
+            {/* Row 1: Name, Verified Badge, Role Tag on left; Status label & 3-dot dropdown on right */}
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5 min-w-0 flex-wrap sm:flex-nowrap">
+                  <a
+                    href={isClient ? `/creators/${b.creator._id}` : undefined}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                    }}
+                    className="font-bold text-sm sm:text-base text-gray-900 dark:text-gray-100 group-hover:text-[#9747FF] transition-colors truncate inline-flex items-center gap-1.5 leading-tight"
+                  >
+                    <span className="truncate">{otherParty.name}</span>
+                    {otherParty.isVerified && (
+                      <VerifiedBadge className="w-4 h-4 shrink-0 inline-block align-middle" showTooltip={false} />
+                    )}
+                  </a>
+                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800/80 shrink-0">
+                    {isClient ? 'Hired Creator' : 'Client'}
+                  </span>
+                </div>
+
+                {/* Subtitle: Category & Booking ID */}
+                <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-1">
+                  {b.category ? `${b.category} • ` : ''}ID: <span className="font-mono text-[11px]">{b.bookingId || b._id.slice(-8).toUpperCase()}</span>
+                </p>
+              </div>
+
+              {/* Status & Options Menu */}
+              <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                <span
+                  className={cn(
+                    'text-xs font-semibold tracking-tight text-right px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800/80 sm:bg-transparent sm:dark:bg-transparent',
+                    statusInfo.textClassName
+                  )}
+                >
+                  {statusInfo.label}
+                </span>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                      }}
+                      className="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors cursor-pointer outline-none"
+                      aria-label="Booking options"
+                    >
+                      <MoreVertical className="w-4 h-4" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="end"
+                    onClick={(e) => e.stopPropagation()}
+                    className="bg-white dark:bg-[#18191a] border border-[#DADDE1] dark:border-[#2f3032] rounded-xl shadow-md p-1 min-w-[150px]"
+                  >
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        window.location.href = `/bookings/${b._id}`;
+                      }}
+                      className="text-xs cursor-pointer"
+                    >
+                      Open booking
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        window.location.href = `/messages?user=${otherParty._id}`;
+                      }}
+                      className="text-xs cursor-pointer"
+                    >
+                      Message {otherParty.name?.split(' ')[0]}
+                    </DropdownMenuItem>
+                    {isClient && (
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.location.href = `/creators/${b.creator._id}`;
+                        }}
+                        className="text-xs cursor-pointer"
+                      >
+                        View creator profile
+                      </DropdownMenuItem>
+                    )}
+                    {b.status !== 'completed' && b.status !== 'cancelled' && (
+                      <DropdownMenuItem
+                        className="text-xs text-rose-600 cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCancelBooking(b._id);
+                        }}
+                      >
+                        Cancel booking
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
+
+            {/* Row 2: Booking title and brief description - cleanly aligned inside the right column */}
+            <div className="mt-2 space-y-0.5">
+              <h4 className="text-sm sm:text-[15px] font-bold text-gray-900 dark:text-gray-100 group-hover:text-[#9747FF] transition-colors leading-snug">
+                {b.serviceTitle}
+              </h4>
+              {b.serviceDescription && (
+                <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2 leading-relaxed mt-0.5">
+                  {b.serviceDescription}
+                </p>
               )}
-            >
-              {statusInfo.label}
-            </span>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                  }}
-                  className="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors cursor-pointer outline-none"
-                  aria-label="Booking options"
-                >
-                  <MoreVertical className="w-4 h-4" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="end"
-                onClick={(e) => e.stopPropagation()}
-                className="bg-white dark:bg-[#18191a] border border-[#DADDE1] dark:border-[#2f3032] rounded-xl shadow-md p-1 min-w-[150px]"
-              >
-                <DropdownMenuItem
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    window.location.href = `/bookings/${b._id}`;
-                  }}
-                  className="text-xs cursor-pointer"
-                >
-                  Open booking
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    window.location.href = `/messages?user=${otherParty._id}`;
-                  }}
-                  className="text-xs cursor-pointer"
-                >
-                  Message {otherParty.name?.split(' ')[0]}
-                </DropdownMenuItem>
-                {isClient && (
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      window.location.href = `/creators/${b.creator._id}`;
-                    }}
-                    className="text-xs cursor-pointer"
-                  >
-                    View creator profile
-                  </DropdownMenuItem>
-                )}
-                {b.status !== 'completed' && b.status !== 'cancelled' && (
-                  <DropdownMenuItem
-                    className="text-xs text-rose-600 cursor-pointer"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleCancelBooking(b._id);
-                    }}
-                  >
-                    Cancel booking
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-
-        {/* Row 2: Booking title and brief description */}
-        <div className="space-y-0.5">
-          <h4 className="text-sm sm:text-base font-bold text-gray-900 dark:text-gray-100 group-hover:text-[#9747FF] transition-colors leading-snug line-clamp-1">
-            {b.serviceTitle}
-          </h4>
-          {b.serviceDescription && (
-            <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2 leading-relaxed">
-              {b.serviceDescription}
-            </p>
-          )}
-        </div>
-
-        {/* Row 3: Agreed price & currency, due date, deliverables count / star rating */}
-        <div className="flex items-center gap-x-4 gap-y-1.5 flex-wrap text-xs text-gray-500 dark:text-gray-400 pt-0.5">
-          <div className="flex items-center gap-1 font-bold text-gray-900 dark:text-gray-100">
-            <DollarSign className="w-3.5 h-3.5 text-[#9747FF]" />
-            <span>{b.amount} {b.currency}</span>
-          </div>
-
-          <div className="flex items-center gap-1">
-            <Calendar className="w-3.5 h-3.5 text-gray-400" />
-            <span>Due {new Date(b.endDate).toLocaleDateString()}</span>
-          </div>
-
-          {b.status === 'completed' && b.review?.rating ? (
-            <div className="flex items-center gap-1 text-amber-500 font-semibold">
-              <Star className="w-3.5 h-3.5 fill-current" />
-              <span>{b.review.rating}.0</span>
             </div>
-          ) : deliverablesCount > 0 ? (
-            <div className="flex items-center gap-1">
-              <Package className="w-3.5 h-3.5 text-gray-400" />
-              <span>{deliverablesCount} {deliverablesCount === 1 ? 'deliverable' : 'deliverables'}</span>
+
+            {/* Row 3: Agreed price & currency, due date, deliverables count / star rating */}
+            <div className="mt-3 flex items-center gap-x-4 gap-y-1.5 flex-wrap text-xs text-gray-500 dark:text-gray-400 pt-1.5 border-t border-gray-100 dark:border-gray-800/60">
+              <div className="flex items-center gap-1 font-bold text-gray-900 dark:text-gray-100">
+                <DollarSign className="w-3.5 h-3.5 text-[#9747FF]" />
+                <span>{b.amount} {b.currency}</span>
+              </div>
+
+              <div className="flex items-center gap-1">
+                <Calendar className="w-3.5 h-3.5 text-gray-400" />
+                <span>Due {new Date(b.endDate).toLocaleDateString()}</span>
+              </div>
+
+              {b.status === 'completed' && b.review?.rating ? (
+                <div className="flex items-center gap-1 text-amber-500 font-semibold">
+                  <Star className="w-3.5 h-3.5 fill-current" />
+                  <span>{b.review.rating}.0</span>
+                </div>
+              ) : deliverablesCount > 0 ? (
+                <div className="flex items-center gap-1">
+                  <Package className="w-3.5 h-3.5 text-gray-400" />
+                  <span>{deliverablesCount} {deliverablesCount === 1 ? 'deliverable' : 'deliverables'}</span>
+                </div>
+              ) : null}
             </div>
-          ) : null}
+          </div>
         </div>
       </article>
     );
@@ -504,13 +511,13 @@ export function Bookings() {
            ========================================================================= */}
         <main className="col-span-1 lg:col-span-6 w-full max-w-xl mx-auto flex flex-col pb-16">
           {/* Header */}
-          <div className="px-4 pt-2 pb-3 flex items-center justify-between border-b border-[#DADDE1] dark:border-[#2f3032]">
+          <div className="px-4 pt-2 pb-3.5 flex items-center justify-between bg-white dark:bg-[#18191a] border border-[#DADDE1] dark:border-[#2f3032] border-b-0 rounded-t-2xl">
             <div className="flex items-center gap-2.5">
               <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
                 Bookings
               </h1>
               {bookings.length > 0 && (
-                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/50 text-[#9747FF]">
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/40 text-[#9747FF]">
                   {bookings.length}
                 </span>
               )}
@@ -518,28 +525,26 @@ export function Bookings() {
           </div>
 
           {/* Bookings Stream - Clean Continuous List with Thin Ash-Gray Dividers */}
-          <div className="flex flex-col">
-            {isLoading ? (
-              <div className="py-20 flex flex-col items-center justify-center gap-2">
-                <Loader2 className="w-8 h-8 animate-spin text-[#9747FF]" />
-                <span className="text-xs text-gray-500">Loading bookings...</span>
-              </div>
-            ) : sortedBookings.length === 0 ? (
-              <div className="py-14 px-4">
-                <EmptyState
-                  image="/images/empty-bookings.png"
-                  title="No bookings yet"
-                  description="When a client books you or you commission a project, it will appear here."
-                  actionLabel="Explore creators"
-                  onAction={() => (window.location.href = '/creators')}
-                />
-              </div>
-            ) : (
-              <div className="px-4">
-                {sortedBookings.map(renderBookingItem)}
-              </div>
-            )}
-          </div>
+          {isLoading ? (
+            <div className="py-24 flex flex-col items-center justify-center gap-3 bg-white dark:bg-[#18191a] border border-[#DADDE1] dark:border-[#2f3032] rounded-b-2xl">
+              <Loader2 className="w-7 h-7 animate-spin text-[#9747FF]" />
+              <span className="text-xs text-gray-500">Loading bookings...</span>
+            </div>
+          ) : sortedBookings.length === 0 ? (
+            <div className="py-16 px-4 bg-white dark:bg-[#18191a] border border-[#DADDE1] dark:border-[#2f3032] rounded-b-2xl">
+              <EmptyState
+                image="/images/empty-bookings.png"
+                title="No bookings yet"
+                description="When a client books you or you commission a project, it will appear here."
+                actionLabel="Explore creators"
+                onAction={() => (window.location.href = '/creators')}
+              />
+            </div>
+          ) : (
+            <div className="flex flex-col divide-y divide-[#DADDE1] dark:divide-[#2f3032] bg-white dark:bg-[#18191a] border border-[#DADDE1] dark:border-[#2f3032] rounded-b-2xl overflow-hidden shadow-2xs">
+              {sortedBookings.map(renderBookingItem)}
+            </div>
+          )}
         </main>
 
         {/* =========================================================================
