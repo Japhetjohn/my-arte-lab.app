@@ -187,7 +187,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
       if (error.response?.status === 404) {
         setNotFound(true);
       } else {
-        toast.error('Failed to load creator profile');
+        toast.error("We couldn't load this profile right now.");
       }
     } finally {
       setIsLoading(false);
@@ -254,14 +254,14 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
       if (isFavorited) {
         await api.delete(`/favorites/${creator.id}`);
         setIsFavorited(false);
-        toast.success('Removed from bookmarks');
+        toast.success('Removed from saved.');
       } else {
         await api.post(`/favorites/${creator.id}`);
         setIsFavorited(true);
-        toast.success('Added to bookmarks');
+        toast.success('Saved.');
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Failed to update bookmark');
+      toast.error(error.response?.data?.error || "Couldn't update saved right now.");
     }
   };
 
@@ -286,9 +286,9 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
     } else {
       try {
         await navigator.clipboard.writeText(shareUrl);
-        toast.success('Profile link copied to clipboard');
+        toast.success('Link copied to clipboard.');
       } catch {
-        toast.error('Failed to copy link');
+        toast.error("Couldn't copy link.");
       }
     }
   };
@@ -299,9 +299,9 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
       await api.put('/auth/update-profile', profileForm);
       setCreator(prev => prev ? { ...prev, ...profileForm } : null);
       setIsEditProfileOpen(false);
-      toast.success('Profile updated successfully');
+      toast.success('Profile updated.');
     } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Failed to update profile');
+      toast.error(error.response?.data?.error || "We couldn't update your profile right now.");
     }
   };
 
@@ -317,7 +317,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
 
       return response.data.data.url;
     } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Failed to upload image');
+      toast.error(error.response?.data?.error || "Couldn't upload photo.");
       return null;
     }
   };
@@ -326,9 +326,9 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
     return (
       <EmptyState
         image="/images/error.png"
-        title="Creator Not Found"
-        description="The creator you are looking for does not exist"
-        actionLabel="Browse Creators"
+        title="Creator not found"
+        description="We couldn't find the creator you're looking for."
+        actionLabel="Explore creators"
         onAction={() => (window.location.href = '/creators')}
       />
     );
@@ -402,7 +402,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                           if (url) {
                             await api.put('/auth/update-profile', { avatar: url });
                             setCreator((prev) => (prev ? { ...prev, avatar: url } : null));
-                            toast.success('Avatar updated successfully');
+                            toast.success('Profile photo updated.');
                           }
                         }
                       }}
@@ -475,7 +475,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                       className="w-full h-8 rounded-full border border-[#9747FF] text-[#9747FF] bg-white dark:bg-transparent hover:bg-[#9747FF]/10 text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
                     >
                       <Pencil className="mr-1.5 h-3.5 w-3.5 text-[#9747FF]" />
-                      Edit Profile
+                      Edit profile
                     </Button>
                     {!isVerifiedLive && (
                       <Button
@@ -483,7 +483,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                         className="w-full h-8 rounded-full bg-[#9747FF] text-white hover:bg-[#8534f0] text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
                       >
                         <ShieldCheck className="mr-1.5 h-3.5 w-3.5" />
-                        Get Verified
+                        Get verified
                       </Button>
                     )}
                   </>
@@ -500,7 +500,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                       className="w-full h-8 rounded-full bg-[#9747FF] text-white hover:bg-[#8534f0] text-xs font-semibold shadow-2xs transition-colors cursor-pointer inline-flex items-center justify-center gap-1.5"
                     >
                       <Calendar className="h-3.5 w-3.5" />
-                      <span>Book Creator</span>
+                      <span>Book creator</span>
                     </Button>
                     <div className="flex items-center gap-2 w-full">
                       <Button
@@ -517,7 +517,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                         variant="outline"
                         size="icon"
                         onClick={handleToggleFavorite}
-                        title={isFavorited ? 'Remove bookmark' : 'Bookmark creator'}
+                        title={isFavorited ? 'Remove saved' : 'Save creator'}
                         className={`h-8 w-8 rounded-full border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:text-[#9747FF] hover:border-[#9747FF] dark:hover:border-[#9747FF] cursor-pointer shrink-0 ${
                           isFavorited ? 'text-amber-500 border-amber-300 dark:border-amber-500/50' : ''
                         }`}
@@ -559,7 +559,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] dark:hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-[#1e1f20] transition-colors"
               >
                 <Users className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                <span>Browse Creators</span>
+                <span>Creators</span>
               </a>
 
               {currentUser && (
@@ -569,7 +569,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                     className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] dark:hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-[#1e1f20] transition-colors"
                   >
                     <Calendar className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                    <span>My Bookings</span>
+                    <span>Bookings</span>
                   </a>
 
                   <a
@@ -577,7 +577,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                     className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] dark:hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-[#1e1f20] transition-colors"
                   >
                     <Wallet className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                    <span>Wallet &amp; Earnings</span>
+                    <span>Wallet</span>
                   </a>
                 </>
               )}
@@ -633,7 +633,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                     className="h-8 px-5 rounded-full border border-[#9747FF] text-[#9747FF] bg-white dark:bg-transparent hover:bg-[#9747FF]/10 text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
                   >
                     <Pencil className="mr-1.5 h-3.5 w-3.5 text-[#9747FF]" />
-                    Edit Profile
+                    Edit profile
                   </Button>
                 ) : (
                   <>
@@ -642,7 +642,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                       className="h-8 px-5 rounded-full bg-[#9747FF] text-white hover:bg-[#8534f0] text-xs font-semibold shadow-2xs transition-colors cursor-pointer inline-flex items-center gap-1.5"
                     >
                       <Calendar className="h-3.5 w-3.5" />
-                      <span>Book Creator</span>
+                      <span>Book creator</span>
                     </Button>
                     <Button
                       variant="outline"
@@ -673,7 +673,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
           <section className="pt-2 pb-4">
             <div className="flex items-center justify-between pb-3 px-1 sm:px-0">
               <h2 className="text-base font-bold text-gray-950 dark:text-gray-100 tracking-tight">
-                Creative Work
+                Creative work
               </h2>
               <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
                 {posts.length} {posts.length === 1 ? 'post' : 'posts'}
@@ -686,18 +686,18 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
               </div>
             ) : posts.length === 0 ? (
               <div className="py-12 px-4 text-center text-gray-500 dark:text-gray-400 text-xs sm:text-sm">
-                <p className="font-semibold text-gray-800 dark:text-gray-200">No creative work shared yet.</p>
+                <p className="font-semibold text-gray-800 dark:text-gray-200">No work shared yet.</p>
                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                   {isOwner
-                    ? 'Publish your first artwork or creative service to showcase your talent!'
-                    : 'This creator has not published any posts to the feed yet.'}
+                    ? 'Share your first piece to showcase your work.'
+                    : "This creator hasn't published any work to their feed yet."}
                 </p>
                 {isOwner && (
                   <Button
                     onClick={() => (window.location.href = '/home')}
                     className="mt-4 bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs rounded-full px-5 h-8 font-semibold shadow-2xs cursor-pointer"
                   >
-                    Create a Post on Home Feed
+                    Create post
                   </Button>
                 )}
               </div>
@@ -732,13 +732,13 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
             <div className="pb-2.5 mb-3">
               <h4 className="font-bold text-sm text-gray-900 dark:text-gray-100 tracking-tight flex items-center gap-2">
                 <Briefcase className="w-4 h-4 text-[#9747FF]" />
-                <span>Services &amp; Pricing</span>
+                <span>Services &amp; pricing</span>
               </h4>
             </div>
 
             <div className="space-y-3 text-xs text-gray-600 dark:text-gray-400">
               <div className="flex items-center justify-between py-1">
-                <span className="text-gray-500 dark:text-gray-400">Starting Price</span>
+                <span className="text-gray-500 dark:text-gray-400">Starting price</span>
                 <span className="font-bold text-gray-950 dark:text-gray-100 text-sm">
                   ${creator.startingPrice || 50} USDC
                 </span>
@@ -752,7 +752,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
               </div>
 
               <div className="flex items-center justify-between py-1">
-                <span className="text-gray-500 dark:text-gray-400">Completed Orders</span>
+                <span className="text-gray-500 dark:text-gray-400">Completed bookings</span>
                 <span className="font-semibold text-gray-900 dark:text-gray-100">
                   {(creator as any).completedBookings || 0}
                 </span>
@@ -770,7 +770,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                     }}
                     className="w-full bg-[#9747FF] hover:bg-[#8534f0] text-white font-semibold rounded-xl text-xs py-2 shadow-xs cursor-pointer"
                   >
-                    Book This Creator
+                    Book creator
                   </Button>
                 ) : (
                   <div className="text-xs text-gray-400 dark:text-gray-500 italic text-center py-1">
@@ -811,7 +811,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
           {reviews.length > 0 && (
             <div className="pb-4">
               <div className="flex items-center justify-between pb-2 mb-2.5">
-                <h4 className="font-bold text-sm text-gray-900 dark:text-gray-100 tracking-tight">Recent Feedback</h4>
+                <h4 className="font-bold text-sm text-gray-900 dark:text-gray-100 tracking-tight">Recent reviews</h4>
                 <div className="flex items-center gap-1 text-xs font-semibold text-amber-500">
                   <Star className="w-3.5 h-3.5 fill-current" />
                   <span>{ratingAverage.toFixed(1)}</span>
@@ -847,7 +847,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
       <Dialog open={isEditProfileOpen} onOpenChange={setIsEditProfileOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Edit Creator Profile</DialogTitle>
+            <DialogTitle>Edit creator profile</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-2">
             <div>
@@ -856,7 +856,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                 variant="line"
                 value={profileForm.bio}
                 onChange={(e) => setProfileForm((prev) => ({ ...prev, bio: e.target.value }))}
-                placeholder="Tell clients about your creative background..."
+                placeholder="A few words about your background, tools, and specialty..."
                 className="mt-1 resize-none"
                 rows={3}
               />
@@ -898,7 +898,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                 onClick={handleUpdateProfile}
                 className="bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold rounded-xl"
               >
-                Save Changes
+                Save changes
               </Button>
             </div>
           </div>
@@ -911,12 +911,12 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <BadgeCheck className="w-5 h-5 text-[#9747FF]" />
-              Get Verified Creator Badge
+              Creator verification
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-2 text-xs text-gray-600 dark:text-gray-300">
             <div className="space-y-2 pb-4 border-b border-[#DADDE1] dark:border-[#2f3032]">
-              <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">Verified Creator Benefits</p>
+              <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">Verified creator benefits</p>
               <ul className="space-y-1.5 text-gray-600 dark:text-gray-400 list-disc list-inside">
                 <li>Distinct verification badge next to your name</li>
                 <li>Increased visibility and ranking across the platform</li>
@@ -924,7 +924,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
               </ul>
             </div>
             <div className="flex justify-between items-center py-1">
-              <span className="text-gray-500 dark:text-gray-400">Monthly Subscription</span>
+              <span className="text-gray-500 dark:text-gray-400">Monthly subscription</span>
               <span className="font-bold text-gray-900 dark:text-gray-100 text-sm">$1.00 USDC / month</span>
             </div>
             <div className="flex justify-end gap-2 pt-3 border-t border-[#DADDE1] dark:border-[#2f3032]">
@@ -957,10 +957,10 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                           }
                         : null
                     );
-                    toast.success('You are now verified!');
+                    toast.success('Your profile is now verified.');
                     setShowVerifyDialog(false);
                   } catch (error: any) {
-                    toast.error(error.response?.data?.error || 'Failed to subscribe');
+                    toast.error(error.response?.data?.error || "We couldn't activate verification right now.");
                   } finally {
                     setIsVerifying(false);
                   }
@@ -969,7 +969,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                 {isVerifying ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
-                  'Pay 1.00 USDC & Verify'
+                  'Pay 1.00 USDC and verify'
                 )}
               </Button>
             </div>
@@ -988,18 +988,18 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
             setCreator((prev) =>
               prev ? { ...prev, isVerified: false, verificationSubscription: undefined } : null
             );
-            toast.success('Verification cancelled');
+            toast.success('Verification cancelled.');
             setShowCancelVerifyDialog(false);
           } catch (error: any) {
-            toast.error(error.response?.data?.error || 'Failed to cancel');
+            toast.error(error.response?.data?.error || "Couldn't cancel verification right now.");
           } finally {
             setIsVerifying(false);
           }
         }}
-        title="Remove Verified Badge?"
-        description="Your verified badge will be removed upon cancellation. You can re-subscribe anytime."
-        confirmLabel="Cancel Subscription"
-        cancelLabel="Keep Badge"
+        title="Cancel verification?"
+        description="Your verification badge will be removed upon cancellation. You can subscribe again anytime."
+        confirmLabel="Cancel verification"
+        cancelLabel="Keep verified"
         variant="destructive"
         isLoading={isVerifying}
       />

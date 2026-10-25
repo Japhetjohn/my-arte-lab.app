@@ -26,24 +26,24 @@ interface TransactionStatusModalProps {
 const statusConfig = {
   pending: {
     illustration: '/images/transaction-pending.png',
-    title: 'Processing Transaction',
-    message: 'Please wait while we process your transaction...',
+    title: 'Processing transaction',
+    message: 'Please wait while we process your transaction.',
     icon: Loader2,
     iconClass: 'animate-spin text-amber-500',
     bgClass: 'bg-amber-50',
   },
   completed: {
     illustration: '/images/success-confetti.png',
-    title: 'Transaction Successful!',
-    message: 'Your transaction has been completed successfully.',
+    title: 'Transaction completed',
+    message: 'Your transaction has settled.',
     icon: CheckCircle2,
     iconClass: 'text-green-500',
     bgClass: 'bg-green-50',
   },
   failed: {
     illustration: '/images/transaction-failed.png',
-    title: 'Transaction Failed',
-    message: 'We were unable to complete your transaction. Please try again.',
+    title: 'Transaction failed',
+    message: "We couldn't complete this transaction. Please try again.",
     icon: XCircle,
     iconClass: 'text-red-500',
     bgClass: 'bg-red-50',
@@ -108,7 +108,7 @@ export function TransactionStatusModal({
               className="w-full gap-2 rounded-xl dark:border-[#2f3032] dark:text-gray-300 dark:hover:bg-gray-800"
             >
               <RefreshCw className="w-4 h-4" />
-              Try Again
+              Try again
             </Button>
           )}
           {status === 'completed' && onViewDetails && (
@@ -117,7 +117,7 @@ export function TransactionStatusModal({
               variant="outline"
               className="w-full rounded-xl dark:border-[#2f3032] dark:text-gray-300 dark:hover:bg-gray-800"
             >
-              View Details
+              View details
             </Button>
           )}
           <Button

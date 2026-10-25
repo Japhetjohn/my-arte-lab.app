@@ -69,7 +69,7 @@ export function ForgotPassword() {
         onVerify={handleVerifyResetCode}
         onResend={handleResendCode}
         onBack={() => setStep('request')}
-        submitButtonText="Submit"
+        submitButtonText="Verify code"
       />
     );
   }
@@ -77,14 +77,14 @@ export function ForgotPassword() {
   // Step 1: Enter email address
   return (
     <AuthLayout
-      title="Forgot Password?"
-      subtitle="Enter your email to receive a 6-digit verification code"
+      title="Forgot your password?"
+      subtitle="Enter your email and we'll send you a 6-digit reset code."
       illustration="/images/undraw_opened_47gd.svg"
     >
       <form onSubmit={handleSubmit(onRequestSubmit)} className="space-y-5">
         <div className="space-y-2">
           <Label htmlFor="email" className="text-sm font-medium text-gray-700">
-            Email Address
+            Email address
           </Label>
           <div className="relative">
             <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -109,7 +109,7 @@ export function ForgotPassword() {
           {isLoading ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Sending Code...
+              Sending code...
             </>
           ) : (
             'Continue'
@@ -122,7 +122,7 @@ export function ForgotPassword() {
             className="inline-flex items-center text-[#9747FF] hover:underline font-medium"
           >
             <ArrowLeft className="w-4 h-4 mr-1.5" />
-            Back to Login
+            Back to sign in
           </Link>
         </p>
       </form>

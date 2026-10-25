@@ -126,9 +126,9 @@ export function Notifications() {
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
       setUnreadCount(0);
       broadcastUnreadCount(0);
-      toast.success('All notifications marked as read');
+      toast.success('All notifications marked as read.');
     } catch (error) {
-      toast.error('Failed to mark all as read');
+      toast.error("We couldn't mark notifications as read.");
     }
   };
 
@@ -144,9 +144,9 @@ export function Notifications() {
         });
       }
       setNotifications(prev => prev.filter(n => n._id !== notificationId));
-      toast.success('Notification deleted');
+      toast.success('Notification removed.');
     } catch (error) {
-      toast.error('Failed to delete notification');
+      toast.error("We couldn't remove this notification.");
     }
   };
 
@@ -154,9 +154,9 @@ export function Notifications() {
     try {
       await api.delete('/notifications/read');
       setNotifications(prev => prev.filter(n => !n.read));
-      toast.success('Read notifications cleared');
+      toast.success('Read notifications cleared.');
     } catch (error) {
-      toast.error('Failed to clear notifications');
+      toast.error("We couldn't clear notifications.");
     }
   };
 
@@ -171,10 +171,10 @@ export function Notifications() {
       setNotifications([]);
       setUnreadCount(0);
       broadcastUnreadCount(0);
-      toast.success('All notifications cleared');
+      toast.success('All notifications cleared.');
       setIsClearModalOpen(false);
     } catch (error) {
-      toast.error('Failed to clear notifications');
+      toast.error("We couldn't clear notifications.");
     } finally {
       setIsClearing(false);
     }
@@ -287,7 +287,7 @@ export function Notifications() {
               <div className="text-center py-4">
                 <p className="text-sm text-gray-600 dark:text-gray-400">Join the MyArteLab community</p>
                 <Button asChild size="sm" className="mt-2 rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white">
-                  <a href="/login">Log In</a>
+                  <a href="/login">Sign in</a>
                 </Button>
               </div>
             )}
@@ -304,7 +304,7 @@ export function Notifications() {
                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] dark:hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-[#1e1f20] transition-colors"
               >
                 <Sparkles className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                <span>Creative Feed</span>
+                <span>Creative feed</span>
               </a>
 
               <a
@@ -351,7 +351,7 @@ export function Notifications() {
                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] dark:hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-[#1e1f20] transition-colors"
               >
                 <SettingsIcon className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                <span>Profile & Settings</span>
+                <span>Settings</span>
               </a>
             </nav>
           </div>
@@ -384,7 +384,7 @@ export function Notifications() {
                   title="Mark all as read"
                 >
                   <CheckCheck className="w-3.5 h-3.5 mr-1 text-[#9747FF]" />
-                  <span>Mark read</span>
+                  <span>Mark all read</span>
                 </Button>
               )}
               {notifications.some(n => n.read) && notifications.some(n => !n.read) && (
@@ -547,10 +547,10 @@ export function Notifications() {
                     title="No notifications"
                     description={
                       activeTab === 'unread'
-                        ? "You're all caught up! No unread notifications."
-                        : "You don't have any notifications in this section yet."
+                        ? "You're all caught up. No unread notifications."
+                        : "Nothing here yet. New activity will show up in this tab."
                     }
-                    actionLabel="Browse Creators"
+                    actionLabel="Browse creators"
                     onAction={() => (window.location.href = '/creators')}
                   />
                 </div>
@@ -567,11 +567,11 @@ export function Notifications() {
           {/* Notifications summary info */}
           <div className="pb-5 border-b border-[#DADDE1] dark:border-[#2f3032]">
             <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400 mb-2">
-              Activity Overview
+              Activity overview
             </h4>
             <div className="space-y-3">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600 dark:text-gray-400">Total Notifications</span>
+                <span className="text-gray-600 dark:text-gray-400">Total notifications</span>
                 <span className="font-semibold text-gray-900 dark:text-gray-100">{notifications.length}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
@@ -579,11 +579,11 @@ export function Notifications() {
                 <span className="font-semibold text-[#9747FF]">{unreadCount}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600 dark:text-gray-400">Artwork Activity</span>
+                <span className="text-gray-600 dark:text-gray-400">Posts & comments</span>
                 <span className="font-semibold text-gray-900 dark:text-gray-100">{artworkCount}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600 dark:text-gray-400">Bookings & Orders</span>
+                <span className="text-gray-600 dark:text-gray-400">Bookings</span>
                 <span className="font-semibold text-gray-900 dark:text-gray-100">{bookingsCount}</span>
               </div>
             </div>
@@ -601,7 +601,7 @@ export function Notifications() {
               >
                 <div className="flex items-center gap-2.5">
                   <Users className="w-4 h-4 text-[#9747FF]" />
-                  <span className="text-sm font-medium text-gray-800 dark:text-gray-200">Browse Creators</span>
+                  <span className="text-sm font-medium text-gray-800 dark:text-gray-200">Browse creators</span>
                 </div>
                 <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-[#9747FF] transition-colors" />
               </a>
@@ -612,7 +612,7 @@ export function Notifications() {
               >
                 <div className="flex items-center gap-2.5">
                   <Sparkles className="w-4 h-4 text-[#9747FF]" />
-                  <span className="text-sm font-medium text-gray-800 dark:text-gray-200">View Creative Feed</span>
+                  <span className="text-sm font-medium text-gray-800 dark:text-gray-200">Explore feed</span>
                 </div>
                 <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-[#9747FF] transition-colors" />
               </a>
@@ -622,7 +622,7 @@ export function Notifications() {
           {/* Footer copyright */}
           <div className="px-1 text-xs text-gray-600 dark:text-gray-400">
             <p>© {new Date().getFullYear()} MyArteLab Inc.</p>
-            <p className="mt-1">Continuous Borderless Design System</p>
+            <p className="mt-1">Portfolio & creative booking platform</p>
           </div>
         </aside>
 
@@ -633,9 +633,9 @@ export function Notifications() {
         isOpen={isClearModalOpen}
         onClose={() => !isClearing && setIsClearModalOpen(false)}
         onConfirm={handleConfirmClearAll}
-        title="Clear All Notifications?"
-        description="Are you sure you want to clear all notifications? This action cannot be undone."
-        confirmLabel="Clear All"
+        title="Clear all notifications?"
+        description="This will remove all notifications from your inbox. This action cannot be undone."
+        confirmLabel="Clear all"
         cancelLabel="Cancel"
         variant="destructive"
         isLoading={isClearing}

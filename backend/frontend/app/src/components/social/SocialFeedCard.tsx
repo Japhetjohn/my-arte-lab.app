@@ -160,7 +160,7 @@ export function SocialFeedCard({
     setIsDeleting(true);
     try {
       await socialService.deletePost(serviceId);
-      toast.success('Post deleted successfully');
+      toast.success('Post deleted.');
       setIsDeleted(true);
       if (onPostDeleted) {
         onPostDeleted();
@@ -172,7 +172,7 @@ export function SocialFeedCard({
       }
     } catch (error: any) {
       console.error('Failed to delete post:', error);
-      toast.error(error.response?.data?.message || 'Failed to delete post');
+      toast.error(error.response?.data?.message || "We couldn't delete this post right now.");
     } finally {
       setIsDeleting(false);
       setShowDeleteDialog(false);
@@ -399,7 +399,7 @@ export function SocialFeedCard({
       // Revert optimistic update
       setIsLiked(isLiked);
       setLikesCount(likesCount);
-      toast.error('Could not update like status');
+      toast.error("Couldn't update like right now.");
     } finally {
       setIsLiking(false);
     }
@@ -431,7 +431,7 @@ export function SocialFeedCard({
     }
 
     if (copied) {
-      toast.success('Post link copied');
+      toast.success('Link copied to clipboard.');
     } else {
       window.prompt('Copy post link:', postUrl);
     }
@@ -543,7 +543,7 @@ export function SocialFeedCard({
               <div className="py-1">
                 <DropdownMenuItem onClick={handleShare} className="cursor-pointer text-xs dark:text-gray-200 dark:focus:bg-gray-800">
                   <Copy className="w-3.5 h-3.5 mr-2 text-gray-500" />
-                  <span>Copy artwork link</span>
+                  <span>Copy link</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => (window.location.href = `/creators/${post.creator._id}`)}
@@ -566,7 +566,7 @@ export function SocialFeedCard({
                     onClick={() => window.open(post.directLink, '_blank')}
                     className="cursor-pointer text-xs text-[#9747FF] dark:focus:bg-gray-800"
                   >
-                    <span>Visit website link</span>
+                    <span>Visit link</span>
                   </DropdownMenuItem>
                 </div>
               )}
@@ -827,8 +827,8 @@ export function SocialFeedCard({
         isOpen={showDeleteDialog}
         onClose={() => !isDeleting && setShowDeleteDialog(false)}
         onConfirm={handleDeletePost}
-        title="Delete Post?"
-        description="Are you sure you want to delete this post? This action will permanently remove this creative work from your profile and the feed."
+        title="Delete this post?"
+        description="This will permanently remove the post from your profile and the feed."
         confirmLabel="Delete"
         cancelLabel="Cancel"
         variant="destructive"

@@ -92,22 +92,22 @@ export function TransactionDetailsModal({
     switch (currentTx.type) {
       case 'deposit':
         return currentTx.paymentMethod === 'solana_direct' || currentTx.blockchainNetwork === 'SOLANA'
-          ? 'Solana USDC Deposit'
-          : 'Wallet Deposit';
+          ? 'Solana USDC deposit'
+          : 'Wallet deposit';
       case 'withdrawal':
         return currentTx.paymentMethod === 'bank_transfer'
-          ? 'Bank Withdrawal'
-          : 'Wallet Withdrawal';
+          ? 'Bank withdrawal'
+          : 'Wallet withdrawal';
       case 'transfer_in':
-        return 'Transfer Received';
+        return 'Transfer received';
       case 'transfer_out':
-        return 'Transfer Sent';
+        return 'Transfer sent';
       case 'payment':
         return 'Payment';
       case 'earning':
-        return 'Creator Earning';
+        return 'Creator earnings';
       case 'escrow':
-        return 'Escrow Hold';
+        return 'Escrow hold';
       case 'refund':
         return 'Refund';
       default:
@@ -168,7 +168,7 @@ export function TransactionDetailsModal({
       <div className="shrink-0 flex items-center justify-between pb-3.5 pt-1 border-b border-[#DADDE1] dark:border-[#2f3032] bg-white dark:bg-[#1a1b1c]">
         <div className="flex items-center gap-2">
           <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100 tracking-tight">
-            Transaction Details
+            Transaction details
           </h2>
         </div>
         <button
@@ -259,7 +259,7 @@ export function TransactionDetailsModal({
           {/* Date & Time */}
           {formattedDate && (
             <div className="flex items-center justify-between px-4 py-3.5 gap-2">
-              <span className="text-gray-500 font-medium shrink-0">Date & Time</span>
+              <span className="text-gray-500 font-medium shrink-0">Date & time</span>
               <span className="text-gray-900 font-semibold text-right">
                 {formattedDate}
               </span>
@@ -269,12 +269,12 @@ export function TransactionDetailsModal({
           {/* Payment Method / Channel */}
           {currentTx.paymentMethod && (
             <div className="flex items-center justify-between px-4 py-3.5 gap-2">
-              <span className="text-gray-500 font-medium shrink-0">Payment Method</span>
+              <span className="text-gray-500 font-medium shrink-0">Payment method</span>
               <span className="text-gray-900 font-semibold text-right">
                 {currentTx.paymentMethod === 'bank_transfer'
-                  ? 'Bank Transfer'
+                  ? 'Bank transfer'
                   : currentTx.paymentMethod === 'solana_direct'
-                  ? 'Solana Mainnet (Direct)'
+                  ? 'Solana (direct)'
                   : currentTx.paymentMethod.replace(/_/g, ' ')}
               </span>
             </div>
@@ -283,7 +283,7 @@ export function TransactionDetailsModal({
           {/* Destination Bank Name (for bank withdrawals) */}
           {currentTx.beneficiary?.bankName && (
             <div className="flex items-center justify-between px-4 py-3.5 gap-2">
-              <span className="text-gray-500 font-medium shrink-0">Destination Bank</span>
+              <span className="text-gray-500 font-medium shrink-0">Destination bank</span>
               <span className="text-gray-900 font-semibold text-right">
                 {currentTx.beneficiary.bankName}
               </span>
@@ -293,7 +293,7 @@ export function TransactionDetailsModal({
           {/* Masked Account Number (for bank withdrawals) */}
           {currentTx.beneficiary?.accountNumberMasked && (
             <div className="flex items-center justify-between px-4 py-3.5 gap-2">
-              <span className="text-gray-500 font-medium shrink-0">Account Number</span>
+              <span className="text-gray-500 font-medium shrink-0">Account number</span>
               <span className="font-mono text-gray-900 font-bold text-right tracking-wider">
                 {currentTx.beneficiary.accountNumberMasked}
               </span>
@@ -303,7 +303,7 @@ export function TransactionDetailsModal({
           {/* Account Holder Name (for bank withdrawals) */}
           {currentTx.beneficiary?.accountName && (
             <div className="flex items-center justify-between px-4 py-3.5 gap-2">
-              <span className="text-gray-500 font-medium shrink-0">Account Name</span>
+              <span className="text-gray-500 font-medium shrink-0">Account name</span>
               <span className="text-gray-900 font-semibold text-right truncate max-w-[180px] sm:max-w-[220px]">
                 {currentTx.beneficiary.accountName}
               </span>
@@ -313,7 +313,7 @@ export function TransactionDetailsModal({
           {/* Destination Payout Amount (fiat payout) */}
           {currentTx.destinationAmount !== undefined && currentTx.destinationAmount > 0 && (
             <div className="flex items-center justify-between px-4 py-3.5 gap-2">
-              <span className="text-gray-500 font-medium shrink-0">Payout Amount</span>
+              <span className="text-gray-500 font-medium shrink-0">Payout amount</span>
               <span className="text-gray-900 font-semibold text-right">
                 {currentTx.destinationCurrency === 'NGN' ? '₦' : ''}
                 {Number(currentTx.destinationAmount).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{' '}
@@ -325,7 +325,7 @@ export function TransactionDetailsModal({
           {/* Exchange Rate */}
           {currentTx.exchangeRate !== undefined && currentTx.exchangeRate > 0 && (
             <div className="flex items-center justify-between px-4 py-3.5 gap-2">
-              <span className="text-gray-500 font-medium shrink-0">Exchange Rate</span>
+              <span className="text-gray-500 font-medium shrink-0">Exchange rate</span>
               <span className="text-gray-900 font-semibold text-right">
                 1 USDC ≈ ₦{Number(currentTx.exchangeRate).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} NGN
               </span>
@@ -367,7 +367,7 @@ export function TransactionDetailsModal({
           {/* Solana Block Explorer Link (only if valid on-chain signature exists) */}
           {solanaSignature && (
             <div className="flex items-center justify-between px-4 py-3.5 gap-2">
-              <span className="text-gray-500 font-medium shrink-0">Blockchain Record</span>
+              <span className="text-gray-500 font-medium shrink-0">Blockchain record</span>
               <a
                 href={`https://solscan.io/tx/${solanaSignature}`}
                 target="_blank"
@@ -405,7 +405,7 @@ export function TransactionDetailsModal({
         repositionInputs={false}
       >
         <DrawerContent className="bg-white dark:bg-[#1a1b1c] text-gray-900 dark:text-gray-100 rounded-t-2xl max-h-[90dvh] flex flex-col p-5 pb-0 border-t border-[#DADDE1] dark:border-[#2f3032] shadow-2xl focus:outline-none z-[150]">
-          <DrawerTitle className="sr-only">Transaction Details</DrawerTitle>
+          <DrawerTitle className="sr-only">Transaction details</DrawerTitle>
           <DrawerDescription className="sr-only">
             View transaction details and receipt
           </DrawerDescription>
@@ -421,7 +421,7 @@ export function TransactionDetailsModal({
         showCloseButton={false}
         className="bg-white dark:bg-[#1a1b1c] text-gray-900 dark:text-gray-100 rounded-2xl max-h-[85vh] sm:max-w-[460px] flex flex-col p-6 pb-0 border border-[#DADDE1] dark:border-[#2f3032] shadow-xl focus:outline-none z-[150]"
       >
-        <DialogTitle className="sr-only">Transaction Details</DialogTitle>
+        <DialogTitle className="sr-only">Transaction details</DialogTitle>
         <DialogDescription className="sr-only">
           View transaction details and receipt
         </DialogDescription>

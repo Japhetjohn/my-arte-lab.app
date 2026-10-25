@@ -89,12 +89,12 @@ export function PostComposer({ onPostCreated, className, autoOpenImageUploader }
     }
 
     if (!description.trim()) {
-      toast.error('Please enter a caption or description for your artwork');
+      toast.error('Add a caption to your post before sharing.');
       return;
     }
 
     if (isOverLimit) {
-      toast.error(`Your post exceeds the limit by ${Math.abs(charsRemaining)} characters`);
+      toast.error(`Your post is ${Math.abs(charsRemaining)} characters over the limit.`);
       return;
     }
 
@@ -131,7 +131,7 @@ export function PostComposer({ onPostCreated, className, autoOpenImageUploader }
       const res = await socialService.createPost(payload);
       const createdService = res.data?.data?.service;
 
-      toast.success('Your creative work has been published!');
+      toast.success('Published to your feed.');
       setDescription('');
       setDirectLink('');
       setShowDirectLink(false);
@@ -167,7 +167,7 @@ export function PostComposer({ onPostCreated, className, autoOpenImageUploader }
       }
     } catch (err: any) {
       console.error('Error creating post:', err);
-      const msg = err.response?.data?.message || 'Failed to publish post. Please try again.';
+      const msg = err.response?.data?.message || "We couldn't share your post right now. Try again.";
       toast.error(msg);
     } finally {
       setIsSubmitting(false);
@@ -211,7 +211,7 @@ export function PostComposer({ onPostCreated, className, autoOpenImageUploader }
                   window.location.href = `/login?redirect=${encodeURIComponent('/home')}`;
                 }
               }}
-              placeholder="Share your latest creative work..."
+              placeholder="What are you working on?"
               rows={2}
               className="w-full resize-none border-none bg-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 text-sm sm:text-base leading-relaxed focus:outline-none focus:ring-0 p-0"
             />
@@ -224,7 +224,7 @@ export function PostComposer({ onPostCreated, className, autoOpenImageUploader }
                   type="url"
                   value={directLink}
                   onChange={(e) => setDirectLink(e.target.value)}
-                  placeholder="https://yourportfolio.com or booking link"
+                  placeholder="https://example.com or project link"
                   className="flex-1 bg-transparent border-none text-xs sm:text-sm text-gray-800 dark:text-gray-200 focus:outline-none placeholder-gray-400 dark:placeholder-gray-500"
                 />
               </div>
@@ -264,7 +264,7 @@ export function PostComposer({ onPostCreated, className, autoOpenImageUploader }
               onClick={() => setShowInlineUploader(true)}
               className="text-xs text-[#9747FF] hover:underline font-medium px-2 py-1"
             >
-              Edit images ({images.length})
+              Edit photos ({images.length})
             </button>
           </div>
         )}
@@ -282,7 +282,7 @@ export function PostComposer({ onPostCreated, className, autoOpenImageUploader }
                   ? 'bg-purple-100 dark:bg-purple-950/60 text-[#9747FF]'
                   : 'text-gray-600 dark:text-gray-300 hover:text-[#9747FF] hover:bg-purple-50/70 dark:hover:bg-purple-950/40'
               )}
-              title="Attach Images"
+              title="Attach photos"
             >
               <ImageIcon className="w-4 h-4 text-[#9747FF]" />
               <span>{images.length > 0 ? `${images.length}/5` : 'Media'}</span>
@@ -297,7 +297,7 @@ export function PostComposer({ onPostCreated, className, autoOpenImageUploader }
                   ? 'bg-purple-100 dark:bg-purple-950/60 text-[#9747FF]'
                   : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
               )}
-              title="Add Direct Link"
+              title="Add link"
             >
               <Link2 className="w-4 h-4" />
               <span className="hidden sm:inline">Link</span>
@@ -370,12 +370,12 @@ export function PostComposer({ onPostCreated, className, autoOpenImageUploader }
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
-                  <span>Publishing...</span>
+                  <span>Posting...</span>
                 </>
               ) : (
                 <>
                   <Sparkles className="w-3.5 h-3.5 mr-1 hidden sm:inline" />
-                  <span>Publish</span>
+                  <span>Post</span>
                 </>
               )}
             </Button>

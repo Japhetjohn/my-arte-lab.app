@@ -200,30 +200,30 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
   const handleNextStep = () => {
     if (currentStep === 1) {
       if (!form.serviceTitle.trim()) {
-        toast.error('Please enter a project title');
+        toast.error('Please enter a project title.');
         return;
       }
       if (!form.serviceDescription.trim()) {
-        toast.error('Please provide a project description');
+        toast.error('Please add a project description.');
         return;
       }
       const validDeliverables = deliverables.filter((d) => d.title.trim().length > 0);
       if (validDeliverables.length === 0) {
-        toast.error('Please add at least one expected deliverable item');
+        toast.error('Please add at least one deliverable.');
         return;
       }
       setCurrentStep(2);
     } else if (currentStep === 2) {
       if (!form.amount || parsedAmount < 1) {
-        toast.error('Please enter a valid budget of at least $1 USDC');
+        toast.error('Please enter a budget of at least 1 USDC.');
         return;
       }
       if (!form.endDate) {
-        toast.error('Please select an expected completion date');
+        toast.error('Please choose a completion date.');
         return;
       }
       if (new Date(form.endDate) < new Date(form.startDate)) {
-        toast.error('Completion date cannot be earlier than start date');
+        toast.error('The completion date cannot be earlier than the start date.');
         return;
       }
       setCurrentStep(3);
@@ -260,12 +260,12 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
         },
       });
 
-      toast.success('Booking request sent successfully!');
+      toast.success('Booking request sent.');
       handleClose();
       onSuccess?.();
       window.location.href = '/bookings';
     } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Failed to submit booking request');
+      toast.error(error.response?.data?.error || "We couldn't send your booking request. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -275,9 +275,9 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
   const renderStepper = () => (
     <div className="flex items-center justify-between px-1 py-3 border-b border-[#DADDE1] dark:border-[#2f3032] mb-4">
       {[
-        { step: 1, label: 'Scope & Deliverables' },
-        { step: 2, label: 'Timeline & Budget' },
-        { step: 3, label: 'Review & Submit' },
+        { step: 1, label: 'Scope & deliverables' },
+        { step: 2, label: 'Timeline & budget' },
+        { step: 3, label: 'Review & send' },
       ].map((item, idx) => {
         const isDone = currentStep > item.step;
         const isCurrent = currentStep === item.step;
@@ -317,12 +317,12 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
             {/* Project Title */}
             <div className="space-y-1.5">
               <Label htmlFor="serviceTitle" className="text-xs font-semibold text-gray-800 dark:text-gray-200">
-                Project Title <span className="text-[#9747FF]">*</span>
+                Project title <span className="text-[#9747FF]">*</span>
               </Label>
               <Input
                 id="serviceTitle"
                 variant="line"
-                placeholder="e.g. Brand Identity & UI Design System"
+                placeholder="e.g. Brand identity and design system"
                 value={form.serviceTitle}
                 onChange={(e) => setForm({ ...form, serviceTitle: e.target.value })}
                 className="h-10 text-sm"
@@ -332,14 +332,14 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
             {/* Category */}
             <div className="space-y-1.5">
               <Label htmlFor="category" className="text-xs font-semibold text-gray-800 dark:text-gray-200">
-                Service Category
+                Service category
               </Label>
               <Input
                 id="category"
                 variant="line"
                 value={form.category}
                 onChange={(e) => setForm({ ...form, category: e.target.value })}
-                placeholder="e.g. Graphic Design, 3D Art, Video"
+                placeholder="e.g. Graphic design, 3D art, video"
                 className="h-10 text-sm"
               />
             </div>
@@ -347,13 +347,13 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
             {/* Description */}
             <div className="space-y-1.5">
               <Label htmlFor="serviceDescription" className="text-xs font-semibold text-gray-800 dark:text-gray-200">
-                Project Scope &amp; Brief <span className="text-[#9747FF]">*</span>
+                Project brief <span className="text-[#9747FF]">*</span>
               </Label>
               <Textarea
                 id="serviceDescription"
                 variant="line"
                 rows={3}
-                placeholder="Detail your goals, visual style, key constraints, references, and what you expect from the creator..."
+                placeholder="Describe your goals, visual style, key requirements, references, and what you expect from the creator..."
                 value={form.serviceDescription}
                 onChange={(e) => setForm({ ...form, serviceDescription: e.target.value })}
                 className="text-sm resize-none"
@@ -365,10 +365,10 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
               <div className="flex items-center justify-between pb-1.5 border-b border-[#DADDE1] dark:border-[#2f3032]">
                 <div>
                   <h4 className="text-xs font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wider">
-                    Expected Deliverables <span className="text-[#9747FF]">*</span>
+                    Expected deliverables <span className="text-[#9747FF]">*</span>
                   </h4>
                   <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                    Define individual items the creator must submit for approval.
+                    List the specific deliverables the creator will submit for review.
                   </p>
                 </div>
                 <Button
@@ -379,7 +379,7 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
                   className="h-7 text-xs rounded-full border-[#DADDE1] dark:border-[#2f3032] text-[#9747FF] hover:bg-purple-50 dark:hover:bg-purple-950/40"
                 >
                   <Plus className="w-3.5 h-3.5 mr-1" />
-                  Add Item
+                  Add item
                 </Button>
               </div>
 
@@ -391,7 +391,7 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-[11px] font-semibold text-[#9747FF] uppercase tracking-wider">
-                        Item #{index + 1}
+                        Item {index + 1}
                       </span>
                       {deliverables.length > 1 && (
                         <button
@@ -409,7 +409,7 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
                       <div>
                         <Input
                           variant="line"
-                          placeholder="Deliverable title (e.g. Logo Vector)"
+                          placeholder="Deliverable title (e.g. Primary logo vector)"
                           value={item.title}
                           onChange={(e) => handleDeliverableChange(index, 'title', e.target.value)}
                           className="h-8 text-xs"
@@ -432,7 +432,7 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
 
                     <Input
                       variant="line"
-                      placeholder="Requirements / Acceptance criteria (optional)"
+                      placeholder="Requirements or acceptance criteria (optional)"
                       value={item.description}
                       onChange={(e) => handleDeliverableChange(index, 'description', e.target.value)}
                       className="h-8 text-xs"
@@ -450,11 +450,11 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
             {/* Timeline */}
             <div className="space-y-2">
               <Label className="text-xs font-semibold text-gray-800 dark:text-gray-200">
-                Project Timeline <span className="text-[#9747FF]">*</span>
+                Project timeline <span className="text-[#9747FF]">*</span>
               </Label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <span className="text-[11px] text-gray-500 dark:text-gray-400">Target Start Date</span>
+                  <span className="text-[11px] text-gray-500 dark:text-gray-400">Target start date</span>
                   <div className="relative">
                     <Calendar className="w-4 h-4 text-gray-400 absolute left-0 top-1/2 -translate-y-1/2 pointer-events-none" />
                     <Input
@@ -468,7 +468,7 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
                 </div>
 
                 <div className="space-y-1">
-                  <span className="text-[11px] text-gray-500 dark:text-gray-400">Expected Delivery Deadline</span>
+                  <span className="text-[11px] text-gray-500 dark:text-gray-400">Target completion date</span>
                   <div className="relative">
                     <Clock className="w-4 h-4 text-gray-400 absolute left-0 top-1/2 -translate-y-1/2 pointer-events-none" />
                     <Input
@@ -486,7 +486,7 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
             {/* Budget / Price */}
             <div className="space-y-2 pt-2 border-t border-[#DADDE1] dark:border-[#2f3032]">
               <Label htmlFor="amount" className="text-xs font-semibold text-gray-800 dark:text-gray-200">
-                Proposed Budget (USDC) <span className="text-[#9747FF]">*</span>
+                Proposed budget (USDC) <span className="text-[#9747FF]">*</span>
               </Label>
               <div className="relative">
                 <DollarSign className="w-4 h-4 text-gray-400 absolute left-0 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -506,15 +506,15 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
               {parsedAmount > 0 && (
                 <div className="py-2.5 border-t border-b border-[#DADDE1]/60 dark:border-[#2f3032]/60 text-xs space-y-1.5 mt-2">
                   <div className="flex justify-between text-gray-600 dark:text-gray-300">
-                    <span>Proposed Project Budget:</span>
+                    <span>Proposed budget:</span>
                     <span className="font-semibold text-gray-900 dark:text-gray-100">{parsedAmount} USDC</span>
                   </div>
                   <div className="flex justify-between text-gray-500 dark:text-gray-400 text-[11px]">
-                    <span>Platform Commission (10%):</span>
+                    <span>Platform fee (10%):</span>
                     <span>{platformFee} USDC</span>
                   </div>
                   <div className="flex justify-between text-[#9747FF] font-semibold pt-1 border-t border-[#DADDE1]/40 dark:border-[#2f3032]/40">
-                    <span>Creator Net Earnings:</span>
+                    <span>Creator earnings:</span>
                     <span>{creatorEarnings} USDC</span>
                   </div>
                 </div>
@@ -526,10 +526,10 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
               <div className="flex items-center justify-between">
                 <div>
                   <h4 className="text-xs font-semibold text-gray-800 dark:text-gray-200">
-                    Reference Files &amp; Moodboards
+                    Reference files &amp; moodboards
                   </h4>
                   <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                    Attach design briefs, style inspirations, or mockups (Optional).
+                    Attach briefs, style references, or mockups (optional).
                   </p>
                 </div>
                 <input
@@ -553,7 +553,7 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
                   ) : (
                     <UploadCloud className="w-3.5 h-3.5 mr-1" />
                   )}
-                  Upload Files
+                  Upload files
                 </Button>
               </div>
 
@@ -592,13 +592,13 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
             {/* Additional Notes */}
             <div className="space-y-1.5 pt-2 border-t border-[#DADDE1] dark:border-[#2f3032]">
               <Label htmlFor="notes" className="text-xs font-semibold text-gray-800 dark:text-gray-200">
-                Additional Notes &amp; Communication Preferences
+                Additional notes &amp; communication preferences
               </Label>
               <Textarea
                 id="notes"
                 variant="line"
                 rows={2}
-                placeholder="Preferred communication channels, revision preferences, or other important notes..."
+                placeholder="Preferred communication channels, revision preferences, or other notes..."
                 value={form.notes}
                 onChange={(e) => setForm({ ...form, notes: e.target.value })}
                 className="text-xs resize-none"
@@ -618,7 +618,7 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
                   Ready to send your booking request
                 </p>
                 <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-                  Review your project scope below. {creator.name} will review and accept your request. Once accepted, you will deposit the agreed budget into MyArteLab escrow to initiate production.
+                  Review your project scope below. {creator.name} will review your request. Once accepted, you will fund the project into escrow before work begins.
                 </p>
               </div>
             </div>
@@ -662,7 +662,7 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
 
               <div className="py-3 space-y-2">
                 <span className="text-[11px] uppercase tracking-wider text-gray-400 font-semibold">
-                  Deliverables Checklist ({validDeliverables.length})
+                  Deliverables checklist ({validDeliverables.length})
                 </span>
                 <div className="space-y-1.5 divide-y divide-[#DADDE1]/40 dark:divide-[#2f3032]/40">
                   {validDeliverables.map((del, idx) => (
@@ -684,7 +684,7 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
               {referenceFiles.length > 0 && (
                 <div className="py-3 space-y-2">
                   <span className="text-[11px] uppercase tracking-wider text-gray-400 font-semibold">
-                    Attached References ({referenceFiles.length})
+                    Attached references ({referenceFiles.length})
                   </span>
                   <div className="flex gap-2 overflow-x-auto pb-1">
                     {referenceFiles.map((file, idx) => (
@@ -760,10 +760,10 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
           {isLoading ? (
             <>
               <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
-              Submitting...
+              Sending...
             </>
           ) : (
-            'Submit Project'
+            'Send booking request'
           )}
         </Button>
       )}

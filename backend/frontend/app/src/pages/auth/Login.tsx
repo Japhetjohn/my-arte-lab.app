@@ -87,7 +87,7 @@ export function Login() {
       if (response?.code === 'EMAIL_NOT_VERIFIED') {
         setVerifyEmail(response.email || data.email);
         setShowVerifyModal(true);
-        toast.error(response.error || 'Please verify your email');
+        toast.error(response.error || 'Please verify your email to continue');
       }
       // Other errors are handled by the login function
     } finally {
@@ -120,18 +120,18 @@ export function Login() {
   const handleVerify = async () => {
     const code = verifyCode.join('');
     if (code.length !== 6) {
-      toast.error('Please enter all 6 digits');
+      toast.error('Enter all 6 digits of your verification code');
       return;
     }
 
     setIsVerifying(true);
     try {
       await api.post('/auth/verify-email', { code });
-      toast.success('Email verified! You can now log in.');
+      toast.success('Email verified. You can now sign in.');
       setShowVerifyModal(false);
       setVerifyCode(['', '', '', '', '', '']);
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Invalid code');
+      toast.error(error.response?.data?.message || 'Invalid verification code');
     } finally {
       setIsVerifying(false);
     }
@@ -142,9 +142,9 @@ export function Login() {
     setIsResending(true);
     try {
       await api.post('/auth/resend-verification', { email: verifyEmail });
-      toast.success('Code resent!');
+      toast.success('A new verification code has been sent.');
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to resend');
+      toast.error(error.response?.data?.message || 'Could not resend code. Try again in a moment.');
     } finally {
       setIsResending(false);
     }
@@ -152,8 +152,8 @@ export function Login() {
 
   return (
     <AuthLayout
-      title="Welcome back"
-      subtitle="Log in to continue to MyArteLab."
+      title="Good to see you"
+      subtitle="Sign in to pick up where you left off."
       illustration="/images/auth-illustration.svg"
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -186,7 +186,7 @@ export function Login() {
           <PasswordInput
             id="password"
             autoComplete="current-password"
-            placeholder="Enter your password"
+            placeholder="Your password"
             leftIcon={<Lock className="w-4 h-4" />}
             className="h-11 sm:h-12 bg-white border-gray-200 focus-visible:border-[#9747FF] focus-visible:ring-[#9747FF]/20 rounded-xl text-sm"
             {...register('password')}
@@ -206,7 +206,7 @@ export function Login() {
           </div>
         </div>
 
-        {/* Full-width purple Login button */}
+        {/* Full-width purple Sign in button */}
         <button
           type="submit"
           disabled={isLoading}
@@ -215,10 +215,10 @@ export function Login() {
           {isLoading ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin text-white" />
-              <span>Logging in...</span>
+              <span>Signing in...</span>
             </>
           ) : (
-            <span>Log in</span>
+            <span>Sign in</span>
           )}
         </button>
 
@@ -246,7 +246,7 @@ export function Login() {
             }
             className="text-[#9747FF] hover:text-[#8534f0] font-semibold hover:underline transition-colors ml-0.5"
           >
-            Sign up
+            Create account
           </Link>
         </p>
       </form>
@@ -256,7 +256,7 @@ export function Login() {
         <DialogContent className="sm:max-w-md" showCloseButton={false}>
           <DialogHeader className="text-center sm:text-center">
             <DialogTitle className="text-center text-xl font-bold text-gray-900 dark:text-gray-100">
-              Verify Your Email
+              Verify your email
             </DialogTitle>
           </DialogHeader>
           

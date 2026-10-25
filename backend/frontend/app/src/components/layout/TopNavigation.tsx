@@ -296,7 +296,7 @@ export function TopNavigation({
                       onClick={handleLogout}
                       className="w-full text-center text-sm font-semibold text-red-600 dark:text-red-400 hover:text-red-700 transition-colors cursor-pointer py-1.5 outline-none focus:outline-none"
                     >
-                      Logout
+                      Sign out
                     </button>
                   ) : (
                     <button
@@ -304,7 +304,7 @@ export function TopNavigation({
                       onClick={() => handleNavClick('/login')}
                       className="w-full text-center text-sm font-semibold text-[#9747FF] hover:text-[#8534f0] transition-colors cursor-pointer py-1.5 outline-none focus:outline-none"
                     >
-                      Log in
+                      Sign in
                     </button>
                   )}
                 </div>
@@ -494,25 +494,25 @@ export function TopNavigation({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-52">
-                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                    <DropdownMenuLabel>Account</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => handleNavClick('/profile')} className="cursor-pointer">
                       <User className="w-4 h-4 mr-2" />
-                      Profile &amp; Settings
+                      Profile &amp; settings
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
             )}
 
-            {/* Outlined Rounded Authentication Button: Login when logged out, Logout when logged in */}
+            {/* Outlined Rounded Authentication Button: Sign in when logged out, Sign out when logged in */}
             {user ? (
               <button
                 type="button"
                 onClick={handleLogout}
                 className="rounded-full border border-gray-800 dark:border-gray-600 hover:border-black dark:hover:border-gray-400 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-white/10 px-6 py-2 text-sm font-medium transition-colors cursor-pointer"
               >
-                Logout
+                Sign out
               </button>
             ) : (
               <button
@@ -520,7 +520,7 @@ export function TopNavigation({
                 onClick={() => handleNavClick('/login')}
                 className="rounded-full border border-gray-800 dark:border-gray-600 hover:border-black dark:hover:border-gray-400 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-white/10 px-6 py-2 text-sm font-medium transition-colors cursor-pointer"
               >
-                Login
+                Sign in
               </button>
             )}
           </div>

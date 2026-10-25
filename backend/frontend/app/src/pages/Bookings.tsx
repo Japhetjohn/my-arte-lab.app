@@ -90,7 +90,7 @@ export function Bookings() {
         setIsBookingModalOpen(true);
       }
     } catch {
-      toast.error('Failed to load creator details');
+      toast.error("We couldn't load creator details right now.");
     }
   };
 
@@ -100,7 +100,7 @@ export function Bookings() {
       const list = await bookingWorkflowService.getMyBookings();
       setBookings(list);
     } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Failed to fetch bookings');
+      toast.error(error.response?.data?.error || "We couldn't load your bookings right now.");
     } finally {
       setIsLoading(false);
     }
@@ -116,11 +116,11 @@ export function Bookings() {
     try {
       setIsCancelling(true);
       await bookingWorkflowService.cancelBooking(cancellingBookingId, cancelReason.trim() || 'Cancelled by user');
-      toast.success('Booking cancelled');
+      toast.success('Booking cancelled.');
       setCancellingBookingId(null);
       fetchBookings();
     } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Failed to cancel booking');
+      toast.error(error.response?.data?.error || "Couldn't cancel booking right now.");
     } finally {
       setIsCancelling(false);
     }
@@ -160,14 +160,14 @@ export function Bookings() {
     if (hasActiveCounter) {
       const isClient = user?.id === b.client._id;
       return {
-        label: isClient ? 'Counter Offer Received' : 'Counter Offer Pending',
+        label: isClient ? 'Counter offer received' : 'Counter offer pending',
         textClassName: 'text-[#9747FF]',
       };
     }
 
     if (isRevision) {
       return {
-        label: 'Revision Requested',
+        label: 'Revision requested',
         textClassName: 'text-amber-600 dark:text-amber-400',
       };
     }
@@ -175,23 +175,23 @@ export function Bookings() {
     switch (b.status) {
       case 'pending':
         return {
-          label: 'Pending Response',
+          label: 'Pending response',
           textClassName: 'text-blue-600 dark:text-blue-400',
         };
       case 'awaiting_payment':
         return {
-          label: 'Awaiting Escrow Deposit',
+          label: 'Awaiting escrow deposit',
           textClassName: 'text-[#9747FF]',
         };
       case 'confirmed':
       case 'in_progress':
         return {
-          label: 'In Progress',
+          label: 'In progress',
           textClassName: 'text-indigo-600 dark:text-indigo-400',
         };
       case 'delivered':
         return {
-          label: 'Delivered / In Review',
+          label: 'Delivered — in review',
           textClassName: 'text-emerald-600 dark:text-emerald-400',
         };
       case 'completed':
@@ -311,7 +311,7 @@ export function Bookings() {
                   }}
                   className="text-xs cursor-pointer"
                 >
-                  Open Workspace
+                  Open booking
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={(e) => {
@@ -330,7 +330,7 @@ export function Bookings() {
                     }}
                     className="text-xs cursor-pointer"
                   >
-                    View Creator Profile
+                    View creator profile
                   </DropdownMenuItem>
                 )}
                 {b.status !== 'completed' && b.status !== 'cancelled' && (
@@ -341,7 +341,7 @@ export function Bookings() {
                       handleCancelBooking(b._id);
                     }}
                   >
-                    Cancel Booking
+                    Cancel booking
                   </DropdownMenuItem>
                 )}
               </DropdownMenuContent>
@@ -389,7 +389,7 @@ export function Bookings() {
     );
   };
 
-  const userDisplayName = user?.name || `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Creative Member';
+  const userDisplayName = user?.name || `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Client';
   const userUsername = user?.email ? user.email.split('@')[0] : 'creator';
 
   return (
@@ -428,14 +428,14 @@ export function Bookings() {
                 </p>
                 <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/50 text-[#9747FF] text-xs font-semibold mt-2.5">
                   <Sparkles className="w-3 h-3" />
-                  <span>{user.category || 'Creative Member'}</span>
+                  <span>{user.category || (user.role === 'creator' ? 'Creator' : 'Client')}</span>
                 </div>
               </div>
             ) : (
               <div className="text-center py-4">
-                <p className="text-sm text-gray-600 dark:text-gray-400">Join the MyArteLab community</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Your creative headquarters</p>
                 <Button asChild size="sm" className="mt-2 rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white">
-                  <a href="/login">Log In</a>
+                  <a href="/login">Sign in</a>
                 </Button>
               </div>
             )}
@@ -452,7 +452,7 @@ export function Bookings() {
                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] dark:hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-[#1e1f20] transition-colors"
               >
                 <Sparkles className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                <span>Creative Feed</span>
+                <span>Feed</span>
               </a>
 
               <a
@@ -492,7 +492,7 @@ export function Bookings() {
                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] dark:hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-[#1e1f20] transition-colors"
               >
                 <SettingsIcon className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                <span>Profile &amp; Settings</span>
+                <span>Profile &amp; settings</span>
               </a>
             </nav>
           </div>
@@ -528,9 +528,9 @@ export function Bookings() {
               <div className="py-14 px-4">
                 <EmptyState
                   image="/images/empty-bookings.png"
-                  title="No bookings found"
-                  description="You haven't initiated or received any bookings yet."
-                  actionLabel="Browse Creators"
+                  title="No bookings yet"
+                  description="When a client books you or you commission a project, it will appear here."
+                  actionLabel="Explore creators"
                   onAction={() => (window.location.href = '/creators')}
                 />
               </div>
@@ -552,24 +552,24 @@ export function Bookings() {
             <div className="flex items-center gap-2 text-gray-900 dark:text-gray-100 mb-2">
               <ShieldCheck className="w-4 h-4 text-[#9747FF]" />
               <h4 className="text-xs font-semibold uppercase tracking-wider">
-                MyArteLab Escrow Protection
+                Escrow protection
               </h4>
             </div>
             <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed mb-3">
-              Funds are safely locked in smart escrow and only released to the creator once you review and approve the agreed deliverables.
+              Project funds stay safely in escrow until you review and approve the finished work.
             </p>
             <div className="space-y-2 text-xs text-gray-600 dark:text-gray-400">
               <div className="flex items-start gap-2">
                 <CheckCircle2 className="w-3.5 h-3.5 text-[#9747FF] shrink-0 mt-0.5" />
-                <span>Zero financial release before deliverable inspection</span>
+                <span>No funds released until deliverables are approved</span>
               </div>
               <div className="flex items-start gap-2">
                 <CheckCircle2 className="w-3.5 h-3.5 text-[#9747FF] shrink-0 mt-0.5" />
-                <span>Clear deliverable checklists &amp; revision rounds</span>
+                <span>Clear milestone checklists and revision rounds</span>
               </div>
               <div className="flex items-start gap-2">
                 <CheckCircle2 className="w-3.5 h-3.5 text-[#9747FF] shrink-0 mt-0.5" />
-                <span>Full refund rights if project is unfulfilled</span>
+                <span>Refund rights if a project is not fulfilled</span>
               </div>
             </div>
           </div>
@@ -577,19 +577,19 @@ export function Bookings() {
           {/* Quick Metrics */}
           <div className="pb-5 border-b border-[#DADDE1] dark:border-[#2f3032]">
             <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-3">
-              Portfolio Overview
+              Bookings overview
             </h4>
             <div className="space-y-3">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600 dark:text-gray-400">Active Bookings</span>
+                <span className="text-gray-600 dark:text-gray-400">Active bookings</span>
                 <span className="font-semibold text-gray-900 dark:text-gray-100">{activeCount}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600 dark:text-gray-400">Completed Bookings</span>
+                <span className="text-gray-600 dark:text-gray-400">Completed bookings</span>
                 <span className="font-semibold text-gray-900 dark:text-gray-100">{completedCount}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600 dark:text-gray-400">Total Volume</span>
+                <span className="text-gray-600 dark:text-gray-400">Total volume</span>
                 <span className="font-bold text-[#9747FF]">{totalValue} USDC</span>
               </div>
             </div>
@@ -603,7 +603,7 @@ export function Bookings() {
             >
               <div className="flex items-center gap-2.5">
                 <Users className="w-4 h-4 text-[#9747FF]" />
-                <span className="text-sm font-medium text-gray-800 dark:text-gray-200">Browse Creators</span>
+                <span className="text-sm font-medium text-gray-800 dark:text-gray-200">Explore creators</span>
               </div>
               <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-[#9747FF] transition-colors" />
             </a>
@@ -638,23 +638,23 @@ export function Bookings() {
         isOpen={!!cancellingBookingId}
         onClose={() => !isCancelling && setCancellingBookingId(null)}
         onConfirm={handleConfirmCancel}
-        title="Cancel Booking?"
+        title="Cancel this booking?"
         description={
           <div className="space-y-3 pt-1 text-left">
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              Are you sure you want to cancel this booking? This action cannot be undone.
+              Cancelling will stop this project and notify the other party.
             </p>
             <input
               type="text"
               value={cancelReason}
               onChange={(e) => setCancelReason(e.target.value)}
-              placeholder="Reason for cancellation (Optional)"
+              placeholder="Reason for cancellation (optional)"
               className="w-full text-xs px-0 py-2 border-0 border-b border-[#DADDE1] dark:border-[#2f3032] rounded-none bg-transparent text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-0 focus:border-[#9747FF] transition-colors"
             />
           </div>
         }
-        confirmLabel="Cancel Booking"
-        cancelLabel="Keep Booking"
+        confirmLabel="Cancel booking"
+        cancelLabel="Keep booking"
         variant="destructive"
         isLoading={isCancelling}
       />

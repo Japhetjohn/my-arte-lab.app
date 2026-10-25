@@ -351,7 +351,7 @@ export function Home() {
                 </p>
                 <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/50 text-[#9747FF] text-xs font-semibold mt-2.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#9747FF]"></span>
-                  {user.role === 'creator' ? 'Verified Creator' : 'Creative Member'}
+                  {user.role === 'creator' ? 'Creator' : 'Client'}
                 </div>
               </div>
             ) : (
@@ -359,16 +359,16 @@ export function Home() {
                 <div className="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-950/40 text-[#9747FF] flex items-center justify-center mx-auto mb-3">
                   <Sparkles className="w-6 h-6" />
                 </div>
-                <h3 className="font-bold text-gray-900 dark:text-gray-100 text-base">Join the Creative Space</h3>
+                <h3 className="font-bold text-gray-900 dark:text-gray-100 text-base">Your creative headquarters</h3>
                 <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 mb-4 leading-relaxed">
-                  Publish artwork, connect with top African creators, and book services.
+                  Showcase your work, connect with other creators, and collaborate.
                 </p>
                 <Button
                   type="button"
                   onClick={() => (window.location.href = '/login')}
                   className="w-full bg-[#9747FF] hover:bg-[#8534f0] text-white font-semibold rounded-xl text-xs py-2 shadow-xs"
                 >
-                  Log In / Sign Up
+                  Sign in or join
                 </Button>
               </div>
             )}
@@ -390,7 +390,7 @@ export function Home() {
                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] dark:hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-white/[0.04] transition-colors"
               >
                 <Users className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                <span>Browse Creators</span>
+                <span>Creators</span>
               </a>
 
               {user && (
@@ -400,7 +400,7 @@ export function Home() {
                     className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] dark:hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-white/[0.04] transition-colors"
                   >
                     <Calendar className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                    <span>My Bookings</span>
+                    <span>Bookings</span>
                   </a>
 
                   <a
@@ -408,7 +408,7 @@ export function Home() {
                     className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] dark:hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-white/[0.04] transition-colors"
                   >
                     <Wallet className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                    <span>Wallet &amp; Earnings</span>
+                    <span>Wallet</span>
                   </a>
                 </>
               )}
@@ -444,7 +444,7 @@ export function Home() {
             <div className="flex items-center justify-center py-1 animate-in fade-in slide-in-from-top-1 duration-200">
               <div className="flex items-center gap-2 py-1 px-4 bg-purple-50 dark:bg-purple-950/50 text-[#9747FF] rounded-full border border-purple-200/60 dark:border-purple-800/40 shadow-2xs text-xs font-semibold">
                 <Loader2 className="w-3.5 h-3.5 animate-spin text-[#9747FF]" />
-                <span>Refreshing creative feed...</span>
+                <span>Refreshing feed...</span>
               </div>
             </div>
           )}
@@ -458,7 +458,7 @@ export function Home() {
                 className="px-4 py-2 bg-[#9747FF] text-white text-xs font-semibold rounded-full shadow-lg shadow-purple-500/25 flex items-center gap-2 hover:bg-[#8534f0] transition-transform active:scale-95 cursor-pointer"
               >
                 <ArrowUp className="w-3.5 h-3.5" />
-                <span>{newPostsCount} new {newPostsCount === 1 ? 'post' : 'posts'} available</span>
+                <span>{newPostsCount} new {newPostsCount === 1 ? 'post' : 'posts'}</span>
               </button>
             </div>
           )}
@@ -485,22 +485,22 @@ export function Home() {
               type="button"
               onClick={() => handleOpenMobileComposer(false)}
               className="flex-1 min-w-0 bg-gray-100/90 dark:bg-gray-800 hover:bg-gray-200/70 dark:hover:bg-gray-700 active:bg-gray-200 text-left px-4 py-2.5 rounded-full text-xs sm:text-sm text-gray-500 dark:text-gray-400 transition-colors cursor-pointer select-none truncate focus:outline-none focus:ring-1 focus:ring-[#9747FF]"
-              aria-label="Share your latest work"
+              aria-label="What are you working on?"
             >
-              Share your latest work...
+              What are you working on?
             </button>
 
-            {/* Right: Artwork Attachment Shortcut */}
+            {/* Right: Media Attachment Shortcut */}
             <button
               type="button"
               onClick={() => handleOpenMobileComposer(true)}
               className="flex flex-col items-center justify-center gap-0.5 px-1.5 py-0.5 text-gray-700 dark:text-gray-300 hover:text-[#9747FF] transition-colors cursor-pointer shrink-0 outline-none focus:outline-none group"
-              aria-label="Attach artwork"
-              title="Artwork"
+              aria-label="Attach photo"
+              title="Photo"
             >
               <ImageIcon className="w-5 h-5 text-emerald-500 group-hover:scale-105 transition-transform" />
               <span className="text-[11px] font-medium text-gray-600 dark:text-gray-400 group-hover:text-[#9747FF] leading-none">
-                Artwork
+                Photo
               </span>
             </button>
           </div>
@@ -514,23 +514,23 @@ export function Home() {
           {isLoading ? (
             <div className="bg-white dark:bg-[#18191a] border-b border-[#DADDE1] dark:border-[#2f3032] p-12 flex flex-col items-center justify-center gap-3">
               <Loader2 className="w-6 h-6 animate-spin text-[#9747FF]" />
-              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Loading creative artwork feed...</p>
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Loading your feed...</p>
             </div>
           ) : posts.length === 0 ? (
             <div className="bg-white dark:bg-[#18191a] border-b border-[#DADDE1] dark:border-[#2f3032] p-12 text-center flex flex-col items-center">
               <div className="w-14 h-14 rounded-full bg-purple-50 dark:bg-purple-950/40 text-[#9747FF] flex items-center justify-center mb-3">
                 <Sparkles className="w-7 h-7" />
               </div>
-              <h3 className="font-bold text-gray-900 dark:text-gray-100 text-base mb-1">No artwork yet</h3>
+              <h3 className="font-bold text-gray-900 dark:text-gray-100 text-base mb-1">Nothing here yet</h3>
               <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 max-w-sm mb-4">
-                Be the first creator to share your work with the MyArteLab community!
+                Share your latest piece to get the community feed started.
               </p>
               <Button
                 type="button"
                 onClick={() => (window.location.href = '/creators')}
                 className="bg-[#9747FF] hover:bg-[#8534f0] text-white rounded-xl text-xs font-semibold px-4 py-2"
               >
-                Browse Creators
+                Explore creators
               </Button>
             </div>
           ) : (
@@ -563,7 +563,7 @@ export function Home() {
                         <span>Loading more...</span>
                       </>
                     ) : (
-                      <span>Load More Artwork</span>
+                      <span>Load more</span>
                     )}
                   </Button>
                 </div>
@@ -580,7 +580,7 @@ export function Home() {
           {/* Top Creators */}
           <div className="pb-4">
             <div className="flex items-center justify-between pb-2.5 border-b border-[#DADDE1] dark:border-[#2f3032] mb-3.5">
-              <h4 className="font-bold text-sm text-gray-900 dark:text-gray-100 tracking-tight">Top Creators</h4>
+              <h4 className="font-bold text-sm text-gray-900 dark:text-gray-100 tracking-tight">Featured creators</h4>
               <a href="/creators" className="text-xs font-semibold text-[#9747FF] hover:underline">
                 View all
               </a>
@@ -645,7 +645,7 @@ export function Home() {
           type="button"
           onClick={() => handleOpenMobileComposer(false)}
           className="w-13 h-13 rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white flex items-center justify-center shadow-lg shadow-purple-600/35 transition-transform active:scale-90 cursor-pointer focus:outline-none"
-          aria-label="Create new creative post"
+          aria-label="Create post"
         >
           <Plus className="w-6 h-6 stroke-[2.5]" />
         </button>
@@ -662,9 +662,9 @@ export function Home() {
         }}
       >
         <DrawerContent className="bg-white dark:bg-[#1a1b1c] rounded-t-2xl max-h-[92dvh] flex flex-col p-4 pb-8 border-t border-[#DADDE1] dark:border-[#2f3032] shadow-2xl focus:outline-none z-[150]">
-          <DrawerTitle className="sr-only">Create New Post</DrawerTitle>
+          <DrawerTitle className="sr-only">Create post</DrawerTitle>
           <DrawerDescription className="sr-only">
-            Publish artwork and updates to the creative feed
+            Share an update or piece of work
           </DrawerDescription>
           <div className="flex-1 overflow-y-auto pt-2">
             <PostComposer 

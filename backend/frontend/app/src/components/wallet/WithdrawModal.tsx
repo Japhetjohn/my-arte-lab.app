@@ -584,17 +584,17 @@ export function WithdrawModal({
       case 'select-method':
         return 'Withdraw';
       case 'bank-amount':
-        return 'Withdraw to Bank';
+        return 'Withdraw to bank';
       case 'bank-details':
-        return 'Bank Account Details';
+        return 'Bank account details';
       case 'bank-review':
-        return 'Review Withdrawal';
+        return 'Review withdrawal';
       case 'bank-status':
-        return 'Withdrawal Status';
+        return 'Withdrawal status';
       case 'wallet-amount':
-        return 'Send to External Wallet';
+        return 'Withdraw to Solana wallet';
       case 'wallet-review':
-        return 'Review Transfer';
+        return 'Review transfer';
       default:
         return 'Withdraw';
     }
@@ -941,12 +941,12 @@ export function WithdrawModal({
             {isLoadingQuote ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Getting Quote...</span>
+                <span>Getting quote...</span>
               </>
             ) : isVerifyingAccount ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Verifying Account...</span>
+                <span>Verifying account...</span>
               </>
             ) : (
               <span>Continue</span>
@@ -966,10 +966,10 @@ export function WithdrawModal({
             {isSubmitting ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Confirming Withdrawal...</span>
+                <span>Confirming withdrawal...</span>
               </>
             ) : (
-              <span>Confirm Withdrawal</span>
+              <span>Confirm withdrawal</span>
             )}
           </button>
         );
@@ -1019,7 +1019,7 @@ export function WithdrawModal({
                 <span>Sending...</span>
               </>
             ) : (
-              <span>Confirm Send</span>
+              <span>Confirm transfer</span>
             )}
           </button>
         );
@@ -1092,7 +1092,7 @@ export function WithdrawModal({
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
-                  <span className="text-base font-semibold text-gray-900">Withdraw to Bank</span>
+                  <span className="text-base font-semibold text-gray-900">Bank transfer</span>
                   {!isBankSupported && (
                     <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2.5 py-0.5 rounded-full">
                       {isLoadingCorridors ? 'Loading...' : 'Unavailable'}
@@ -1100,7 +1100,7 @@ export function WithdrawModal({
                   )}
                 </div>
                 <p className="text-sm text-gray-500 mt-0.5 leading-relaxed">
-                  Payout directly to your registered local bank account.
+                  Withdraw directly to your local bank account.
                 </p>
               </div>
               <div className="shrink-0 pl-1">
@@ -1133,10 +1133,10 @@ export function WithdrawModal({
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
-                  <span className="text-base font-semibold text-gray-900">Withdraw to External Wallet</span>
+                  <span className="text-base font-semibold text-gray-900">Solana wallet (USDC)</span>
                 </div>
                 <p className="text-sm text-gray-500 mt-0.5 leading-relaxed">
-                  Send USDC directly to an external Solana wallet address.
+                  Transfer USDC to any external Solana wallet address.
                 </p>
               </div>
               <div className="shrink-0 pl-1">
@@ -1180,7 +1180,7 @@ export function WithdrawModal({
 
             <div className="py-6 text-center bg-gray-50/60 rounded-2xl border border-gray-100">
               <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">
-                Withdrawal Amount
+                Withdrawal amount
               </p>
               <div className="inline-flex items-baseline justify-center">
                 <span className="text-3xl font-light text-gray-400 mr-1.5">$</span>
@@ -1203,7 +1203,7 @@ export function WithdrawModal({
             </div>
 
             <div className="p-3 bg-gray-50/70 border border-gray-100 rounded-xl text-xs text-gray-500 flex items-center justify-between">
-              <span>Payout Destination</span>
+              <span>Payout destination</span>
               <span className="font-semibold text-gray-700">{selectedCountry === 'NG' ? 'Nigerian Bank (NGN)' : `${selectedCountry} Bank`}</span>
             </div>
 
@@ -1336,7 +1336,7 @@ export function WithdrawModal({
                         {topBanks.length > 0 && (
                           <div>
                             <div className="px-3.5 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider bg-gray-50/80 sticky top-0 z-10 border-b border-gray-100">
-                              Popular Banks
+                              Popular banks
                             </div>
                             {topBanks.map((inst) => (
                               <button
@@ -1372,7 +1372,7 @@ export function WithdrawModal({
 
                         <div>
                           <div className="px-3.5 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider bg-gray-50/80 sticky top-0 z-10 border-b border-gray-100">
-                            All Supported Banks
+                            All supported banks
                           </div>
                           {otherBanks.map((inst) => (
                             <button
@@ -1505,7 +1505,7 @@ export function WithdrawModal({
             {/* Prominent Net Payout Card */}
             <div className="text-center py-5 bg-gray-50/60 rounded-2xl border border-gray-100">
               <p className="text-xs text-gray-400 uppercase tracking-wider font-medium">
-                You Will Receive
+                You will receive
               </p>
               <div className="flex items-baseline justify-center mt-1">
                 <span className="text-2xl font-light text-gray-400 mr-1">
@@ -1524,19 +1524,19 @@ export function WithdrawModal({
             {/* Breakdown Card */}
             <div className="p-4 bg-white border border-gray-200/80 rounded-2xl space-y-2.5 text-xs sm:text-sm">
               <div className="flex justify-between items-center py-1">
-                <span className="text-gray-500 font-medium">Withdrawal Amount</span>
+                <span className="text-gray-500 font-medium">Withdrawal amount</span>
                 <span className="font-semibold text-gray-900">${quote.source.amount.toFixed(2)} USDC</span>
               </div>
 
               <div className="flex justify-between items-center py-1 border-t border-gray-100 pt-2">
-                <span className="text-gray-500 font-medium">Exchange Rate</span>
+                <span className="text-gray-500 font-medium">Exchange rate</span>
                 <span className="font-semibold text-gray-900">
                   1 USDC ≈ {quote.rate.toLocaleString('en-US', { maximumFractionDigits: 2 })} {quote.destination.currency}
                 </span>
               </div>
 
               <div className="flex justify-between items-center py-1 border-t border-gray-100 pt-2">
-                <span className="text-gray-500 font-medium">Processing Time</span>
+                <span className="text-gray-500 font-medium">Processing time</span>
                 <span className="font-semibold text-gray-900">Instant to 15 minutes</span>
               </div>
 
@@ -1548,14 +1548,14 @@ export function WithdrawModal({
               </div>
 
               <div className="flex justify-between items-center py-1 border-t border-gray-100 pt-2">
-                <span className="text-gray-500 font-medium">Account Number</span>
+                <span className="text-gray-500 font-medium">Account number</span>
                 <span className="font-mono font-semibold text-gray-900">
                   {accountNumber.length > 4 ? `••••${accountNumber.slice(-4)}` : accountNumber}
                 </span>
               </div>
 
               <div className="flex justify-between items-center py-1 border-t border-gray-100 pt-2">
-                <span className="text-gray-500 font-medium">Account Name</span>
+                <span className="text-gray-500 font-medium">Account name</span>
                 <span className="font-semibold text-gray-900 uppercase truncate max-w-[200px] text-right">
                   {verifiedName || accountName}
                 </span>
@@ -1602,10 +1602,10 @@ export function WithdrawModal({
             <div className="space-y-1">
               <h3 className="text-xl font-bold text-gray-900 tracking-tight">
                 {activeWithdrawal.status === 'completed'
-                  ? 'Withdrawal Completed'
+                  ? 'Withdrawal completed'
                   : activeWithdrawal.status === 'failed' || activeWithdrawal.status === 'reversed'
-                  ? 'Withdrawal Failed'
-                  : 'Withdrawal Processing'}
+                  ? 'Withdrawal failed'
+                  : 'Processing withdrawal'}
               </h3>
               <p className="text-xs sm:text-sm text-gray-500 max-w-sm mx-auto leading-relaxed">
                 {activeWithdrawal.status === 'completed'
@@ -1643,7 +1643,7 @@ export function WithdrawModal({
 
               {activeWithdrawal.fiatAmount > 0 && (
                 <div className="flex justify-between items-center px-4 py-3">
-                  <span className="text-gray-500 font-medium">Local Payout</span>
+                  <span className="text-gray-500 font-medium">Local payout</span>
                   <span className="font-bold text-gray-900">
                     {getCurrencySymbol(activeWithdrawal.fiatCurrency)}
                     {activeWithdrawal.fiatAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {activeWithdrawal.fiatCurrency}
@@ -1687,7 +1687,7 @@ export function WithdrawModal({
             {/* Prominent Amount Card */}
             <div className="py-6 text-center bg-gray-50/60 rounded-2xl border border-gray-100">
               <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">
-                Withdrawal Amount
+                Withdrawal amount
               </p>
               <div className="inline-flex items-baseline justify-center">
                 <span className="text-3xl font-light text-gray-400 mr-1.5">$</span>
@@ -1713,9 +1713,9 @@ export function WithdrawModal({
             {/* Destination Solana Wallet Address Input */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-semibold text-gray-700">Destination Solana Address</label>
+                <label className="text-xs font-semibold text-gray-700">Destination Solana address</label>
                 <span className="text-[11px] font-medium text-purple-700 bg-purple-50 border border-purple-200/60 px-2 py-0.5 rounded-full">
-                  Solana Mainnet
+                  Solana
                 </span>
               </div>
               <div className="relative">
@@ -1783,7 +1783,7 @@ export function WithdrawModal({
             <div className="p-3 bg-amber-50/80 border border-amber-200/80 rounded-xl flex items-start gap-2.5 text-xs text-amber-800">
               <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
               <div className="leading-relaxed">
-                Only send to a <strong className="font-semibold">Solana</strong> address supporting SPL USDC. Transfers sent through other networks will be permanently lost.
+                Only send to a <strong className="font-semibold">Solana</strong> address that supports SPL USDC. Transfers sent through other networks cannot be recovered.
               </div>
             </div>
 
@@ -1802,7 +1802,7 @@ export function WithdrawModal({
           <div className="space-y-4">
             <div className="text-center py-5 bg-gray-50/60 rounded-2xl border border-gray-100">
               <p className="text-xs text-gray-400 uppercase tracking-wider font-medium">
-                Total Transfer
+                Transfer amount
               </p>
               <div className="flex items-baseline justify-center mt-1">
                 <span className="text-2xl font-light text-gray-400 mr-1">$</span>
@@ -1813,7 +1813,7 @@ export function WithdrawModal({
                   USDC
                 </span>
               </div>
-              <p className="text-xs text-gray-500 mt-1">Settles on Solana Mainnet</p>
+              <p className="text-xs text-gray-500 mt-1">Settles on Solana</p>
             </div>
 
             <div className="p-4 bg-white border border-gray-200/80 rounded-2xl space-y-2.5 text-xs sm:text-sm">
@@ -1824,11 +1824,11 @@ export function WithdrawModal({
 
               <div className="flex justify-between items-center py-1 border-t border-gray-100 pt-2">
                 <span className="text-gray-500 font-medium">Network</span>
-                <span className="font-semibold text-gray-900">Solana Mainnet</span>
+                <span className="font-semibold text-gray-900">Solana</span>
               </div>
 
               <div className="flex justify-between items-center py-1 border-t border-gray-100 pt-2">
-                <span className="text-gray-500 font-medium">Network Fee</span>
+                <span className="text-gray-500 font-medium">Network fee</span>
                 <span className="font-semibold text-emerald-600">Covered by wallet</span>
               </div>
 
@@ -1856,7 +1856,7 @@ export function WithdrawModal({
               </div>
 
               <div className="flex justify-between items-center py-1 border-t border-gray-100 pt-2">
-                <span className="text-gray-500 font-medium">Recipient Receives</span>
+                <span className="text-gray-500 font-medium">Recipient receives</span>
                 <span className="font-bold text-gray-900">${parseFloat(walletAmount || '0').toFixed(2)} USDC</span>
               </div>
             </div>
@@ -1864,7 +1864,7 @@ export function WithdrawModal({
             <div className="p-3 bg-amber-50/80 border border-amber-200/80 rounded-xl flex items-start gap-2.5 text-xs text-amber-800">
               <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
               <div className="leading-relaxed">
-                Transfers on Solana are permanent and irreversible. Please ensure the destination wallet supports SPL USDC.
+                Transfers on Solana are permanent and irreversible. Ensure the destination wallet supports SPL USDC.
               </div>
             </div>
 
@@ -1896,7 +1896,7 @@ export function WithdrawModal({
         repositionInputs={false}
       >
         <DrawerContent className="bg-white dark:bg-[#1a1b1c] text-gray-900 dark:text-gray-100 rounded-t-2xl max-h-[90dvh] flex flex-col p-5 pb-0 border-t border-[#DADDE1] dark:border-[#2f3032] shadow-2xl focus:outline-none z-[150]">
-          <DrawerTitle className="sr-only">Withdraw Funds</DrawerTitle>
+          <DrawerTitle className="sr-only">Withdraw funds</DrawerTitle>
           <DrawerDescription className="sr-only">
             Withdraw from your MyArteLab wallet
           </DrawerDescription>
@@ -1912,7 +1912,7 @@ export function WithdrawModal({
         showCloseButton={false}
         className="bg-white dark:bg-[#1a1b1c] text-gray-900 dark:text-gray-100 rounded-2xl max-h-[85vh] sm:max-w-[460px] flex flex-col p-6 pb-0 border border-[#DADDE1] dark:border-[#2f3032] shadow-xl focus:outline-none z-[150]"
       >
-        <DialogTitle className="sr-only">Withdraw Funds</DialogTitle>
+        <DialogTitle className="sr-only">Withdraw funds</DialogTitle>
         <DialogDescription className="sr-only">
           Withdraw from your MyArteLab wallet
         </DialogDescription>

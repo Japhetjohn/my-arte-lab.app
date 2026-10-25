@@ -161,14 +161,14 @@ export function Register() {
   const handleVerify = async () => {
     const code = verifyCode.join('');
     if (code.length !== 6) {
-      toast.error('Please enter all 6 digits');
+      toast.error('Enter all 6 digits of your verification code');
       return;
     }
 
     setIsVerifying(true);
     try {
       await api.post('/auth/verify-email', { code });
-      toast.success('Email verified! Logging you in...');
+      toast.success('Email verified. Signing you in...');
       
       // Auto-login after verification
       await login(registeredEmail, registeredPassword);
@@ -187,9 +187,9 @@ export function Register() {
     setIsResending(true);
     try {
       await api.post('/auth/resend-verification', { email: registeredEmail });
-      toast.success('New verification code sent!');
+      toast.success('A new verification code has been sent.');
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to resend code');
+      toast.error(error.response?.data?.message || 'Could not resend code. Try again in a moment.');
     } finally {
       setIsResending(false);
     }
@@ -198,7 +198,7 @@ export function Register() {
   return (
     <AuthLayout
       title="Create your account"
-      subtitle="Join MyArteLab and connect with creative opportunities."
+      subtitle="Set up your space to share work and get booked."
       illustration="/images/auth-illustration.svg"
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -215,7 +215,7 @@ export function Register() {
                   : 'text-gray-500 hover:text-gray-800'
               )}
             >
-              Client (Hire creators)
+              Client (hire talent)
             </button>
             <button
               type="button"
@@ -227,7 +227,7 @@ export function Register() {
                   : 'text-gray-500 hover:text-gray-800'
               )}
             >
-              Creator (Offer services)
+              Creator (showcase &amp; get booked)
             </button>
           </div>
         </div>
@@ -283,7 +283,7 @@ export function Register() {
               className="w-full h-11 sm:h-12 bg-white border border-gray-200 focus:border-[#9747FF] focus:ring-2 focus:ring-[#9747FF]/20 rounded-xl text-sm px-3 text-gray-800 outline-none transition-all cursor-pointer"
               {...register('category')}
             >
-              <option value="">Select your primary specialty...</option>
+              <option value="">Choose your creative field...</option>
               {CREATOR_CATEGORIES.map((cat) => (
                 <option key={cat.id} value={cat.name}>
                   {cat.name}
@@ -380,7 +380,7 @@ export function Register() {
             }
             className="text-[#9747FF] hover:text-[#8534f0] font-semibold hover:underline transition-colors ml-0.5"
           >
-            Log in
+            Sign in
           </Link>
         </p>
       </form>
@@ -390,7 +390,7 @@ export function Register() {
         <DialogContent className="sm:max-w-md" showCloseButton={false}>
           <DialogHeader className="text-center sm:text-center">
             <DialogTitle className="text-center text-xl font-bold text-gray-900 dark:text-gray-100">
-              Verify Your Email
+              Verify your email
             </DialogTitle>
           </DialogHeader>
           
@@ -430,10 +430,10 @@ export function Register() {
               {isVerifying ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Verifying...
+                  Verifying code...
                 </>
               ) : (
-                'Verify Email'
+                'Verify email'
               )}
             </Button>
 
@@ -445,7 +445,7 @@ export function Register() {
                 disabled={isResending}
                 className="text-[#9747FF] hover:text-[#8534f0] hover:underline font-semibold disabled:opacity-50 cursor-pointer ml-1"
               >
-                {isResending ? 'Sending...' : 'Resend'}
+                {isResending ? 'Sending...' : 'Resend code'}
               </button>
             </p>
           </div>

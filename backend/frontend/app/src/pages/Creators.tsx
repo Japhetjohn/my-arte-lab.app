@@ -45,7 +45,7 @@ export function Creators() {
       setCreators(results);
     } catch (error: any) {
       console.error('Error fetching creators:', error);
-      toast.error('Failed to load creators');
+      toast.error("We couldn't load creators right now.");
     } finally {
       setIsLoading(false);
     }
@@ -144,7 +144,7 @@ export function Creators() {
   };
 
   const userDisplayName =
-    user?.name || `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Creative Member';
+    user?.name || `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Client';
 
   return (
     <div className="w-full relative">
@@ -181,7 +181,7 @@ export function Creators() {
                 </p>
                 <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/50 text-[#9747FF] text-xs font-semibold mt-2.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#9747FF]" />
-                  {user.role === 'creator' ? 'Verified Creator' : 'Creative Member'}
+                  {user.role === 'creator' ? 'Creator' : 'Client'}
                 </div>
               </div>
             ) : (
@@ -190,17 +190,17 @@ export function Creators() {
                   <Sparkles className="w-6 h-6" />
                 </div>
                 <h3 className="font-bold text-gray-900 dark:text-gray-100 text-base">
-                  Join the Creative Space
+                  Your creative headquarters
                 </h3>
                 <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 mb-4 leading-relaxed">
-                  Connect with top African creators, explore artwork, and book services with escrow.
+                  Showcase your work, connect with other creators, and collaborate.
                 </p>
                 <Button
                   type="button"
                   onClick={() => (window.location.href = '/login')}
                   className="w-full bg-[#9747FF] hover:bg-[#8534f0] text-white font-semibold rounded-xl text-xs py-2 shadow-xs cursor-pointer"
                 >
-                  Log In / Sign Up
+                  Sign in or join
                 </Button>
               </div>
             )}
@@ -223,7 +223,7 @@ export function Creators() {
                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-sm bg-purple-50 dark:bg-purple-950/50 text-[#9747FF] transition-colors"
               >
                 <Users className="w-4 h-4 text-[#9747FF]" />
-                <span>Browse Creators</span>
+                <span>Creators</span>
               </a>
 
               {user && (
@@ -233,7 +233,7 @@ export function Creators() {
                     className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] dark:hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-[#1e1f20] transition-colors"
                   >
                     <Calendar className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                    <span>My Bookings</span>
+                    <span>Bookings</span>
                   </a>
 
                   <a
@@ -241,7 +241,7 @@ export function Creators() {
                     className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] dark:hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-[#1e1f20] transition-colors"
                   >
                     <Wallet className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                    <span>Wallet &amp; Earnings</span>
+                    <span>Wallet</span>
                   </a>
 
                   <a
@@ -249,7 +249,7 @@ export function Creators() {
                     className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] dark:hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-[#1e1f20] transition-colors"
                   >
                     <SettingsIcon className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                    <span>Profile &amp; Settings</span>
+                    <span>Profile &amp; settings</span>
                   </a>
                 </>
               )}
@@ -289,8 +289,8 @@ export function Creators() {
               <EmptyState
                 image="/images/empty-search.png"
                 title="No creators found"
-                description="There are no creators registered yet. Check back soon!"
-                actionLabel="View Creative Feed"
+                description="We couldn't find any creators matching your view right now."
+                actionLabel="Back to feed"
                 onAction={() => (window.location.href = '/home')}
               />
             </div>
@@ -438,24 +438,24 @@ export function Creators() {
             <div className="flex items-center gap-2 text-gray-900 dark:text-gray-100 mb-2">
               <ShieldCheck className="w-4 h-4 text-[#9747FF]" />
               <h4 className="text-xs font-semibold uppercase tracking-wider">
-                MyArteLab Escrow Protection
+                Escrow protection
               </h4>
             </div>
             <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed mb-3">
-              Funds are safely locked in smart escrow and only released to the creator once you review and approve the agreed deliverables.
+              Project funds stay safely in escrow until you review and approve the finished work.
             </p>
             <div className="space-y-1.5 text-xs text-gray-700 dark:text-gray-300">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                <span>100% Guaranteed milestone delivery</span>
+                <span>Milestone-based deliverable inspections</span>
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                <span>Transparent USDC pricing &amp; timeline</span>
+                <span>Clear project pricing and milestones</span>
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                <span>Dispute protection &amp; mediation</span>
+                <span>Dispute mediation if needed</span>
               </div>
             </div>
           </div>
@@ -463,7 +463,7 @@ export function Creators() {
           {/* Quick links */}
           <div className="pb-5 border-b border-[#DADDE1] dark:border-[#2f3032]">
             <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400 mb-2">
-              Explore Platform
+              Explore
             </h4>
             <div className="space-y-2">
               <a
@@ -473,7 +473,7 @@ export function Creators() {
                 <div className="flex items-center gap-2.5">
                   <Sparkles className="w-4 h-4 text-[#9747FF]" />
                   <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                    Creative Feed
+                    Feed
                   </span>
                 </div>
                 <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-[#9747FF] transition-colors" />
@@ -484,7 +484,7 @@ export function Creators() {
           {/* Footer copyright */}
           <div className="px-1 text-xs text-gray-400">
             <p>© {new Date().getFullYear()} MyArteLab Inc.</p>
-            <p className="mt-1">Continuous Borderless Design System</p>
+            <p className="mt-1">Built for African creators</p>
           </div>
         </aside>
 
@@ -502,7 +502,7 @@ export function Creators() {
           onSuccess={() => {
             setIsBookingModalOpen(false);
             setSelectedCreatorForBooking(null);
-            toast.success('Booking request sent successfully!');
+            toast.success('Booking request sent.');
           }}
         />
       )}

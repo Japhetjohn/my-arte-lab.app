@@ -30,7 +30,7 @@ export function Onboarding() {
     e.preventDefault();
 
     if (role === 'creator' && !category) {
-      toast.error('Please select your primary creative category');
+      toast.error('Choose your primary creative field');
       return;
     }
 
@@ -59,7 +59,7 @@ export function Onboarding() {
   return (
     <AuthLayout
       title="Complete your profile"
-      subtitle="Set up your account preferences to unlock the full MyArteLab experience."
+      subtitle="Tell us a bit about your work so we can personalize your space."
       illustration="/images/auth-illustration.svg"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -84,10 +84,10 @@ export function Onboarding() {
             >
               <div className="flex items-center gap-1.5 text-xs font-bold text-gray-900 dark:text-gray-100">
                 <UserIcon className="w-3.5 h-3.5 text-[#9747FF]" />
-                <span>Client / Buyer</span>
+                <span>Client</span>
               </div>
               <span className="text-[11px] text-gray-500 dark:text-gray-400 leading-snug">
-                Hire top creative talent and commission custom projects.
+                Find African creators and commission creative projects.
               </span>
             </button>
 
@@ -103,10 +103,10 @@ export function Onboarding() {
             >
               <div className="flex items-center gap-1.5 text-xs font-bold text-gray-900 dark:text-gray-100">
                 <Sparkles className="w-3.5 h-3.5 text-[#9747FF]" />
-                <span>Creator / Artist</span>
+                <span>Creator</span>
               </div>
               <span className="text-[11px] text-gray-500 dark:text-gray-400 leading-snug">
-                Offer creative services, showcase your work, and get booked.
+                Showcase your portfolio, offer services, and get booked directly.
               </span>
             </button>
           </div>
@@ -116,7 +116,7 @@ export function Onboarding() {
         {role === 'creator' && (
           <div className="space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-150">
             <Label htmlFor="category" className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-              Primary creative category <span className="text-red-500">*</span>
+              Creative field <span className="text-red-500">*</span>
             </Label>
             <div className="relative">
               <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
@@ -127,7 +127,7 @@ export function Onboarding() {
                 className="w-full pl-9 h-11 sm:h-12 bg-white dark:bg-[#18191a] border border-gray-200 dark:border-[#2f3032] focus:border-[#9747FF] focus:ring-2 focus:ring-[#9747FF]/20 rounded-xl text-sm px-3 text-gray-800 dark:text-gray-200 outline-none transition-all cursor-pointer"
                 required
               >
-                <option value="">Select your primary specialty...</option>
+                <option value="">Choose your creative field...</option>
                 {CREATOR_CATEGORIES.map((cat) => (
                   <option key={cat.id} value={cat.name}>
                     {cat.name}
@@ -159,7 +159,7 @@ export function Onboarding() {
 
           <div className="space-y-1.5">
             <Label htmlFor="state" className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-              State / City
+              State or city
             </Label>
             <Input
               id="state"
@@ -174,7 +174,7 @@ export function Onboarding() {
 
         <div className="space-y-1.5">
           <Label htmlFor="localArea" className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-            Neighborhood / Area
+            Neighborhood or area
           </Label>
           <Input
             id="localArea"
@@ -204,15 +204,15 @@ export function Onboarding() {
         {/* 4. Bio / Tagline */}
         <div className="space-y-1.5">
           <Label htmlFor="bio" className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-            Short bio or introduction (optional)
+            Bio (optional)
           </Label>
           <Textarea
             id="bio"
             rows={3}
             placeholder={
               role === 'creator'
-                ? 'Tell potential clients about your creative style, experience, and services...'
-                : 'Share a bit about what projects you are looking to hire for...'
+                ? 'Share what you make, your style, or the kind of work you love taking on...'
+                : "Describe the projects or talent you're looking to collaborate with..."
             }
             value={bio}
             onChange={(e) => setBio(e.target.value)}
@@ -229,10 +229,10 @@ export function Onboarding() {
           {isLoading ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin text-white" />
-              <span>Saving profile...</span>
+              <span>Setting up your profile...</span>
             </>
           ) : (
-            <span>Complete Setup &amp; Continue</span>
+            <span>Save and continue</span>
           )}
         </Button>
       </form>

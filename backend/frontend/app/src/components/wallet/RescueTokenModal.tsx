@@ -193,7 +193,7 @@ export function RescueTokenModal({
           </div>
           <div>
             <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 tracking-tight">
-              Token Rescue
+              Token rescue
             </h2>
             <p className="text-xs text-gray-500 dark:text-gray-400">
               Recover unsupported tokens to an external wallet
@@ -223,7 +223,7 @@ export function RescueTokenModal({
               : 'text-gray-600 hover:bg-gray-100'
           )}
         >
-          Rescue Token
+          Rescue token
         </button>
         <button
           type="button"
@@ -235,7 +235,7 @@ export function RescueTokenModal({
               : 'text-gray-600 hover:bg-gray-100'
           )}
         >
-          Rescue History
+          Rescue history
         </button>
       </div>
 
@@ -313,7 +313,7 @@ export function RescueTokenModal({
 
             <div className="space-y-1">
               <h3 className="text-base font-bold text-gray-900">
-                Token Rescue Initiated
+                Token rescue initiated
               </h3>
               <p className="text-xs text-gray-500 max-w-xs mx-auto">
                 OnSwitch is processing the rescue transfer to your specified external wallet.
@@ -347,7 +347,7 @@ export function RescueTokenModal({
                 onClick={handleResetForm}
                 className="flex-1 h-11 bg-gray-100 hover:bg-gray-200 text-gray-900 font-medium rounded-xl text-xs sm:text-sm transition-all cursor-pointer"
               >
-                Rescue Another Token
+                Rescue another token
               </button>
               <button
                 type="button"
@@ -365,7 +365,7 @@ export function RescueTokenModal({
             <div className="p-3 bg-purple-50/70 border border-purple-200/60 rounded-xl flex items-start gap-2.5 text-xs text-purple-900">
               <ShieldAlert className="w-4 h-4 text-[#9747FF] shrink-0 mt-0.5" />
               <div className="space-y-1 leading-relaxed">
-                <p className="font-semibold">Unified Balance vs Unsupported Tokens</p>
+                <p className="font-semibold">Unified balance & unsupported tokens</p>
                 <p className="text-purple-800/90">
                   Only <strong>USDC and USDT</strong> accumulate toward your spendable balance.
                   If any other token (alternate ERC-20, SPL token, or airdropped asset) was sent
@@ -385,7 +385,7 @@ export function RescueTokenModal({
             {/* Blockchain Selector */}
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-gray-700">
-                Blockchain Network
+                Blockchain network
               </label>
               <div className="relative">
                 <select
@@ -412,10 +412,10 @@ export function RescueTokenModal({
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                  Token Contract / Mint Address
+                  Token contract or mint address
                 </label>
                 <span className="text-[11px] text-gray-400">
-                  {selectedChain.format === 'base58' ? 'Base58 Address' : '0x Hex Address'}
+                  {selectedChain.format === 'base58' ? 'Base58 address' : 'Hex address'}
                 </span>
               </div>
               <input
@@ -443,7 +443,7 @@ export function RescueTokenModal({
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                  External Destination Address
+                  External destination address
                 </label>
                 <span className="text-[11px] text-gray-400">Must be your external wallet</span>
               </div>
@@ -502,10 +502,10 @@ export function RescueTokenModal({
             {isSubmitting ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Submitting Rescue Request...</span>
+                <span>Submitting rescue request...</span>
               </>
             ) : (
-              <span>Initiate Token Rescue</span>
+              <span>Rescue token</span>
             )}
           </button>
         </div>
@@ -521,7 +521,7 @@ export function RescueTokenModal({
         repositionInputs={false}
       >
         <DrawerContent className="bg-white dark:bg-[#1a1b1c] text-gray-900 dark:text-gray-100 rounded-t-2xl max-h-[90dvh] flex flex-col p-5 pb-0 border-t border-[#DADDE1] dark:border-[#2f3032] shadow-2xl focus:outline-none z-[150]">
-          <DrawerTitle className="sr-only">Token Rescue</DrawerTitle>
+          <DrawerTitle className="sr-only">Token rescue</DrawerTitle>
           <DrawerDescription className="sr-only">
             Recover unsupported tokens to an external wallet
           </DrawerDescription>
@@ -537,7 +537,7 @@ export function RescueTokenModal({
         showCloseButton={false}
         className="bg-white dark:bg-[#1a1b1c] text-gray-900 dark:text-gray-100 rounded-2xl max-h-[85vh] sm:max-w-[480px] flex flex-col p-6 pb-0 border border-[#DADDE1] dark:border-[#2f3032] shadow-xl focus:outline-none z-[150]"
       >
-        <DialogTitle className="sr-only">Token Rescue</DialogTitle>
+        <DialogTitle className="sr-only">Token rescue</DialogTitle>
         <DialogDescription className="sr-only">
           Recover unsupported tokens to an external wallet
         </DialogDescription>

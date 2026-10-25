@@ -372,7 +372,7 @@ export function AddFundsModal({
 
     const parsedAmount = parseFloat(amount);
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
-      setErrorMessage('Please enter a valid deposit amount greater than 0');
+      setErrorMessage('Please enter a deposit amount greater than 0.');
       return;
     }
 
@@ -392,11 +392,11 @@ export function AddFundsModal({
         setQuote(quoteData);
         setStep('bank-quote');
       } else {
-        setErrorMessage('Unable to retrieve guaranteed quote. Please try again.');
+        setErrorMessage("We couldn't get a quote right now. Please try again.");
       }
     } catch (err: any) {
       const errorMsg =
-        err.response?.data?.error || err.message || 'Failed to fetch quote from payment provider';
+        err.response?.data?.error || err.message || "We couldn't get a quote right now. Please try again.";
       setErrorMessage(errorMsg);
     } finally {
       setIsLoadingQuote(false);
@@ -414,7 +414,7 @@ export function AddFundsModal({
 
     const parsedAmount = parseFloat(amount);
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
-      setErrorMessage('Please enter a valid deposit amount');
+      setErrorMessage('Please enter a valid deposit amount.');
       return;
     }
 
@@ -433,11 +433,11 @@ export function AddFundsModal({
       if (fundingData) {
         setActiveFunding(fundingData);
         setStep('bank-instructions');
-        toast.success('Payment instructions generated');
+        toast.success('Payment instructions generated.');
       }
     } catch (err: any) {
       const errorMsg =
-        err.response?.data?.error || err.message || 'Failed to generate payment instructions';
+        err.response?.data?.error || err.message || "We couldn't generate payment instructions. Please try again.";
       setErrorMessage(errorMsg);
     } finally {
       setIsInitiating(false);
@@ -485,17 +485,17 @@ export function AddFundsModal({
   const getHeaderTitle = () => {
     switch (step) {
       case 'select-method':
-        return 'Add Funds';
+        return 'Add funds';
       case 'bank-amount':
-        return 'Bank Transfer';
+        return 'Bank transfer';
       case 'bank-quote':
-        return 'Confirm Deposit';
+        return 'Confirm deposit';
       case 'bank-instructions':
-        return 'Payment Instructions';
+        return 'Payment instructions';
       case 'crypto-transfer':
         return 'Deposit USDC';
       default:
-        return 'Add Funds';
+        return 'Add funds';
     }
   };
 
@@ -528,7 +528,7 @@ export function AddFundsModal({
             {isLoadingQuote ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Getting Quote...</span>
+                <span>Getting quote...</span>
               </>
             ) : (
               <span>Continue</span>
@@ -547,10 +547,10 @@ export function AddFundsModal({
             {isInitiating ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Generating Payment Instructions...</span>
+                <span>Generating payment instructions...</span>
               </>
             ) : (
-              <span>Proceed to Payment</span>
+              <span>Proceed to payment</span>
             )}
           </button>
         );
@@ -569,7 +569,7 @@ export function AddFundsModal({
                 <span>Processing...</span>
               </>
             ) : (
-              <span>I Have Paid</span>
+              <span>I have sent the payment</span>
             )}
           </button>
         );
@@ -645,7 +645,7 @@ export function AddFundsModal({
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
-                  <span className="text-base font-semibold text-gray-900">Bank Transfer</span>
+                  <span className="text-base font-semibold text-gray-900">Bank transfer</span>
                   {!isBankSupported && (
                     <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2.5 py-0.5 rounded-full">
                       {isLoadingCorridors ? 'Loading...' : 'Unavailable'}
@@ -653,7 +653,7 @@ export function AddFundsModal({
                   )}
                 </div>
                 <p className="text-sm text-gray-500 mt-0.5 leading-relaxed">
-                  Fund your wallet using a supported local payment method.
+                  Deposit funds using local bank transfer or mobile money.
                 </p>
               </div>
               <div className="shrink-0 pl-1">
@@ -687,11 +687,11 @@ export function AddFundsModal({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
                   <span className="text-base font-semibold text-gray-900">
-                    Transfer from Another Wallet
+                    Deposit crypto (USDC)
                   </span>
                 </div>
                 <p className="text-sm text-gray-500 mt-0.5 leading-relaxed">
-                  Send supported crypto to your MyArteLab wallet.
+                  Send USDC on Solana directly to your wallet address.
                 </p>
               </div>
               <div className="shrink-0 pl-1">
@@ -715,7 +715,7 @@ export function AddFundsModal({
           <form onSubmit={handleFetchQuote} className="space-y-6">
             <div className="py-6 text-center bg-gray-50/60 rounded-2xl border border-gray-100">
               <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">
-                Deposit Amount
+                Deposit amount
               </p>
               <div className="inline-flex items-baseline justify-center">
                 <span className="text-3xl font-light text-gray-400 mr-1.5">
@@ -758,7 +758,7 @@ export function AddFundsModal({
           <div className="space-y-5">
             <div className="text-center py-4 bg-gray-50/60 rounded-2xl border border-gray-100">
               <p className="text-xs text-gray-400 uppercase tracking-wider font-medium">
-                Estimated Credit
+                Estimated credit
               </p>
               <div className="flex items-baseline justify-center mt-1">
                 <span className="text-3xl font-light text-gray-400 mr-1">$</span>
@@ -769,18 +769,18 @@ export function AddFundsModal({
                   USDC
                 </span>
               </div>
-              <p className="text-xs sm:text-sm text-gray-500 mt-1.5">Settles on Solana Mainnet</p>
+              <p className="text-xs sm:text-sm text-gray-500 mt-1.5">Settles on Solana</p>
             </div>
 
             <div className="p-4 bg-white border border-gray-200/80 rounded-2xl space-y-3 text-sm">
               <div className="flex justify-between items-center py-1">
-                <span className="text-gray-500 font-medium">You Pay</span>
+                <span className="text-gray-500 font-medium">You pay</span>
                 <span className="text-sm sm:text-base font-semibold text-gray-900">
                   {quote.source.amount.toLocaleString()} {quote.source.currency}
                 </span>
               </div>
               <div className="flex justify-between items-center py-1 border-t border-gray-100 pt-2">
-                <span className="text-gray-500 font-medium">Exchange Rate</span>
+                <span className="text-gray-500 font-medium">Exchange rate</span>
                 <span className="text-sm sm:text-base font-semibold text-gray-900">
                   1 USDC ≈{' '}
                   {quote.rate.toLocaleString('en-US', { maximumFractionDigits: 2 })}{' '}
@@ -788,13 +788,13 @@ export function AddFundsModal({
                 </span>
               </div>
               <div className="flex justify-between items-center py-1 border-t border-gray-100 pt-2">
-                <span className="text-gray-500 font-medium">Settlement Speed</span>
+                <span className="text-gray-500 font-medium">Settlement time</span>
                 <span className="text-sm sm:text-base font-semibold text-gray-900">{quote.settlement || 'Instant'}</span>
               </div>
               <div className="flex justify-between items-center py-1 border-t border-gray-100 pt-2">
-                <span className="text-gray-500 font-medium">Payment Method</span>
+                <span className="text-gray-500 font-medium">Payment method</span>
                 <span className="text-sm sm:text-base font-semibold text-gray-900">
-                  {quote.channel === 'MOBILEMONEY' ? 'Mobile Money' : 'Bank Transfer'}
+                  {quote.channel === 'MOBILEMONEY' ? 'Mobile money' : 'Bank transfer'}
                 </span>
               </div>
             </div>
@@ -840,7 +840,7 @@ export function AddFundsModal({
               <div className="bg-white border border-gray-150 rounded-2xl shadow-2xs divide-y divide-gray-100 overflow-hidden text-sm">
                 {/* Bank Name */}
                 <div className="flex items-center justify-between px-4 py-3.5">
-                  <span className="text-gray-500 font-medium">Bank Name</span>
+                  <span className="text-gray-500 font-medium">Bank name</span>
                   <span className="text-gray-900 font-semibold text-right">
                     {activeFunding.deposit.bankName || 'Partner Bank'}
                   </span>
@@ -848,7 +848,7 @@ export function AddFundsModal({
 
                 {/* Account Number */}
                 <div className="flex items-center justify-between px-4 py-3.5">
-                  <span className="text-gray-500 font-medium">Account Number</span>
+                  <span className="text-gray-500 font-medium">Account number</span>
                   <div className="flex items-center gap-2">
                     <span className="font-mono text-base font-bold text-gray-900 tracking-wider">
                       {activeFunding.deposit.accountNumber}
@@ -873,7 +873,7 @@ export function AddFundsModal({
 
                 {/* Account Name */}
                 <div className="flex items-center justify-between px-4 py-3.5">
-                  <span className="text-gray-500 font-medium">Account Name</span>
+                  <span className="text-gray-500 font-medium">Account name</span>
                   <span className="text-gray-900 font-semibold text-right truncate max-w-[180px] sm:max-w-[240px]">
                     {activeFunding.deposit.accountName || 'Switch Checkout'}
                   </span>
@@ -888,7 +888,7 @@ export function AddFundsModal({
           <div className="flex flex-col items-center text-center space-y-4 py-1">
             {/* 3. Short network warning or deposit instruction */}
             <div className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl text-xs sm:text-sm text-gray-600 leading-relaxed text-center">
-              Send USDC using the <strong className="font-semibold text-gray-900">Solana</strong> network. Deposits sent through an unsupported network may not be credited.
+              Send USDC using the <strong className="font-semibold text-gray-900">Solana</strong> network. Deposits sent through other networks cannot be recovered.
             </div>
 
             {/* 4. Large, centered QR code */}
@@ -936,7 +936,7 @@ export function AddFundsModal({
 
             {/* 6. Concise supporting description */}
             <p className="text-xs text-gray-400 max-w-xs leading-normal">
-              Only send SPL USDC on Solana to this address. Minimum deposit 1 USDC.
+              Only send SPL USDC on Solana to this address. Minimum deposit is 1 USDC.
             </p>
           </div>
         )}
@@ -958,7 +958,7 @@ export function AddFundsModal({
         repositionInputs={false}
       >
         <DrawerContent className="bg-white dark:bg-[#1a1b1c] text-gray-900 dark:text-gray-100 rounded-t-2xl max-h-[90dvh] flex flex-col p-5 pb-0 border-t border-[#DADDE1] dark:border-[#2f3032] shadow-2xl focus:outline-none z-[150]">
-          <DrawerTitle className="sr-only">Add Funds</DrawerTitle>
+          <DrawerTitle className="sr-only">Add funds</DrawerTitle>
           <DrawerDescription className="sr-only">
             Fund your MyArteLab wallet balance
           </DrawerDescription>
@@ -974,7 +974,7 @@ export function AddFundsModal({
         showCloseButton={false}
         className="bg-white dark:bg-[#1a1b1c] text-gray-900 dark:text-gray-100 rounded-2xl max-h-[85vh] sm:max-w-[460px] flex flex-col p-6 pb-0 border border-[#DADDE1] dark:border-[#2f3032] shadow-xl focus:outline-none z-[150]"
       >
-        <DialogTitle className="sr-only">Add Funds</DialogTitle>
+        <DialogTitle className="sr-only">Add funds</DialogTitle>
         <DialogDescription className="sr-only">
           Fund your MyArteLab wallet balance
         </DialogDescription>

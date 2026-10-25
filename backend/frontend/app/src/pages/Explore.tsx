@@ -111,7 +111,7 @@ export function Explore() {
 
       setCreators(all);
     } catch {
-      toast.error('Failed to load creators');
+      toast.error("We couldn't load creators right now.");
     } finally {
       setIsLoading(false);
     }
@@ -183,7 +183,7 @@ export function Explore() {
   return (
     <div className="space-y-6 pb-20 lg:pb-8">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold text-gray-900">Explore Creators</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Explore creators</h1>
         <div className="flex items-center gap-2">
           <Button variant={viewMode === 'grid' ? 'default' : 'outline'} size="icon" onClick={() => setViewMode('grid')}
             className={`h-10 w-10 sm:h-9 sm:w-9 ${viewMode === 'grid' ? 'bg-[#8A2BE2]' : ''}`}>
@@ -231,7 +231,7 @@ export function Explore() {
             <div className="p-3">
               <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
                 <Clock className="w-3 h-3" />
-                <span>Recent Searches</span>
+                <span>Recent searches</span>
               </div>
               <div className="flex flex-wrap gap-2">
                 {searchHistory.map((query, idx) => (
@@ -254,7 +254,7 @@ export function Explore() {
       {/* Categories */}
       {!selectedCategory && !searchQuery && (
         <div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Browse Categories</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Browse categories</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
             {categories.map((cat) => (
               <CategoryCard key={cat.id} category={cat} onClick={handleCategoryClick} />
@@ -270,7 +270,7 @@ export function Explore() {
           <span className="px-3 py-1 bg-[#8A2BE2] text-white text-sm rounded-full font-medium capitalize">
             {getSelectedCategoryName()}
           </span>
-          <Button variant="ghost" size="sm" className="ml-auto" onClick={clearFilters}>Remove Filter</Button>
+          <Button variant="ghost" size="sm" className="ml-auto" onClick={clearFilters}>Remove filter</Button>
         </div>
       )}
 
@@ -280,7 +280,7 @@ export function Explore() {
           <TabsTrigger value="all" className="flex-shrink-0">All</TabsTrigger>
           <TabsTrigger value="verified" className="flex-shrink-0">Verified</TabsTrigger>
           <TabsTrigger value="available" className="flex-shrink-0">Available</TabsTrigger>
-          <TabsTrigger value="top-rated" className="flex-shrink-0">Top Rated</TabsTrigger>
+          <TabsTrigger value="top-rated" className="flex-shrink-0">Top rated</TabsTrigger>
         </TabsList>
 
         <TabsContent value={activeTab} className="mt-6">
@@ -294,8 +294,8 @@ export function Explore() {
             <EmptyState
               image="/images/empty-search.png"
               title="No creators found"
-              description={searchQuery ? `No creators match "${searchQuery}". Try different keywords.` : selectedCategory ? `No creators found in ${getSelectedCategoryName()} category.` : "No creators available right now"}
-              actionLabel={searchQuery || selectedCategory ? 'Clear Filters' : undefined}
+              description={searchQuery ? "No matches this time. Try another search and see who's out there." : selectedCategory ? `No creators found in ${getSelectedCategoryName()} right now.` : "No creators found right now."}
+              actionLabel={searchQuery || selectedCategory ? 'Clear filters' : undefined}
               onAction={searchQuery || selectedCategory ? clearFilters : undefined}
             />
           )}

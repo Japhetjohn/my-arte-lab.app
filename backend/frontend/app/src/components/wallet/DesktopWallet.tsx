@@ -294,9 +294,9 @@ export function DesktopWallet({
               </div>
             ) : (
               <div className="text-center py-4">
-                <p className="text-sm text-gray-600 dark:text-gray-400">Join the MyArteLab community</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Join MyArteLab</p>
                 <Button asChild size="sm" className="mt-2 rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white">
-                  <a href="/login">Log In</a>
+                  <a href="/login">Sign in</a>
                 </Button>
               </div>
             )}
@@ -321,7 +321,7 @@ export function DesktopWallet({
                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] dark:hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-[#1e1f20] transition-colors"
               >
                 <Users className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                <span>Browse Creators</span>
+                <span>Browse creators</span>
               </a>
 
               <a
@@ -329,7 +329,7 @@ export function DesktopWallet({
                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] dark:hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-[#1e1f20] transition-colors"
               >
                 <Calendar className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                <span>My Bookings</span>
+                <span>Bookings</span>
               </a>
 
               <a
@@ -381,7 +381,7 @@ export function DesktopWallet({
               <div>
                 <div className="flex items-center gap-2 mb-1.5">
                   <span className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
-                    Available Balance
+                    Available balance
                   </span>
                   {isWalletLoading && <Loader2 className="w-3 h-3 animate-spin text-[#9747FF]" />}
                   {onRefresh && (
@@ -429,7 +429,7 @@ export function DesktopWallet({
                   className="h-11 px-5 rounded-xl bg-gray-100 hover:bg-gray-200/80 dark:bg-[#1e1f20] dark:hover:bg-[#252627] active:scale-[0.98] border border-gray-200/70 dark:border-gray-800 text-gray-900 dark:text-gray-100 font-semibold text-sm flex items-center justify-center gap-2 shadow-2xs transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#9747FF]/20"
                 >
                   <ArrowDownLeft className="w-4 h-4 text-gray-700 dark:text-gray-300" />
-                  <span>Add Funds</span>
+                  <span>Add funds</span>
                 </button>
 
                 <button
@@ -448,7 +448,7 @@ export function DesktopWallet({
           <div className="pt-6 space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-[#DADDE1] dark:border-[#2f3032]">
               <div className="flex items-center gap-2">
-                <h2 className="text-sm font-bold text-gray-900 dark:text-gray-100 tracking-tight">Recent Transactions</h2>
+                <h2 className="text-sm font-bold text-gray-900 dark:text-gray-100 tracking-tight">Recent transactions</h2>
                 {isTransactionsLoading && (
                   <Loader2 className="w-3.5 h-3.5 animate-spin text-[#9747FF]" />
                 )}
@@ -621,7 +621,7 @@ export function DesktopWallet({
                 </div>
                 <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">No transactions yet</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-xs mx-auto">
-                  Your deposit, withdrawal, and booking transactions will appear here.
+                  Deposits, withdrawals, and project payments will appear here.
                 </p>
               </div>
             )}
@@ -637,23 +637,23 @@ export function DesktopWallet({
           <div className="pb-5 border-b border-[#DADDE1] dark:border-[#2f3032]">
             <div className="flex items-center gap-2 mb-2">
               <ShieldCheck className="w-4 h-4 text-[#9747FF]" />
-              <h4 className="font-bold text-sm text-gray-900 dark:text-gray-100">Escrow Protected</h4>
+              <h4 className="font-bold text-sm text-gray-900 dark:text-gray-100">Escrow protection</h4>
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed mb-3">
-              Funds are held safely in escrow. Payments are released only when deliverables are completed and approved.
+              Funds are held safely in escrow and released only after you review and approve deliverables.
             </p>
             <div className="space-y-2 text-xs text-gray-600 dark:text-gray-400">
               <div className="flex items-start gap-2">
                 <CheckCircle2 className="w-3.5 h-3.5 text-[#9747FF] shrink-0 mt-0.5" />
-                <span>Zero funds released without client approval</span>
+                <span>Funds are never released without your approval</span>
               </div>
               <div className="flex items-start gap-2">
                 <CheckCircle2 className="w-3.5 h-3.5 text-[#9747FF] shrink-0 mt-0.5" />
-                <span>Verified bank payouts and USDC on-chain</span>
+                <span>Direct bank deposits and on-chain USDC payouts</span>
               </div>
               <div className="flex items-start gap-2">
                 <CheckCircle2 className="w-3.5 h-3.5 text-[#9747FF] shrink-0 mt-0.5" />
-                <span>Full refund rights if project is unfulfilled</span>
+                <span>Unreleased escrow funds return to your wallet if a project is cancelled</span>
               </div>
             </div>
           </div>
@@ -661,12 +661,12 @@ export function DesktopWallet({
           {/* Account Financial Overview */}
           <div className="pb-5 border-b border-[#DADDE1] dark:border-[#2f3032]">
             <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-3">
-              Account Overview
+              Account overview
             </h4>
             <div className="space-y-3">
               {escrowBalance > 0 && (
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600 dark:text-gray-400">In Escrow</span>
+                  <span className="text-gray-600 dark:text-gray-400">In escrow</span>
                   <span className="font-semibold text-gray-900 dark:text-gray-100">${escrowBalance.toFixed(2)} USDC</span>
                 </div>
               )}
@@ -678,12 +678,12 @@ export function DesktopWallet({
               )}
               {hasPendingWithdrawal && (
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600 dark:text-gray-400">Pending Payout</span>
+                  <span className="text-gray-600 dark:text-gray-400">Pending withdrawal</span>
                   <span className="font-semibold text-amber-600">${pendingWithdrawal.toFixed(2)} USDC</span>
                 </div>
               )}
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600 dark:text-gray-400">Total Transactions</span>
+                <span className="text-gray-600 dark:text-gray-400">Total transactions</span>
                 <span className="font-semibold text-gray-900 dark:text-gray-100">{transactions.length}</span>
               </div>
             </div>
@@ -698,7 +698,7 @@ export function DesktopWallet({
               >
                 <div className="flex items-center gap-2.5">
                   <Calendar className="w-4 h-4 text-[#9747FF]" />
-                  <span className="text-sm font-medium text-gray-800 dark:text-gray-200">My Bookings</span>
+                  <span className="text-sm font-medium text-gray-800 dark:text-gray-200">Bookings</span>
                 </div>
                 <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-[#9747FF] transition-colors" />
               </a>
@@ -709,7 +709,7 @@ export function DesktopWallet({
               >
                 <div className="flex items-center gap-2.5">
                   <Users className="w-4 h-4 text-[#9747FF]" />
-                  <span className="text-sm font-medium text-gray-800 dark:text-gray-200">Browse Creators</span>
+                  <span className="text-sm font-medium text-gray-800 dark:text-gray-200">Browse creators</span>
                 </div>
                 <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-[#9747FF] transition-colors" />
               </a>

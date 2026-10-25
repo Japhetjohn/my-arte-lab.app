@@ -181,11 +181,11 @@ export function Messages() {
               setConversations((prev) => [newConv, ...prev]);
               handleSelectConversation(newConv);
             } else {
-              toast.error('User not found');
+              toast.error('Creator not found.');
             }
           } catch (err) {
             console.error('Error fetching user for messaging:', err);
-            toast.error('Could not start conversation');
+            toast.error("We couldn't open this conversation.");
           }
         }
 
@@ -196,7 +196,7 @@ export function Messages() {
       }
     } catch (error: any) {
       console.error('Error fetching conversations:', error);
-      toast.error('Failed to load conversations');
+      toast.error("We couldn't load your conversations.");
     } finally {
       setIsLoading(false);
     }
@@ -356,13 +356,13 @@ export function Messages() {
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      toast.error('Please select a valid image file (JPEG, PNG, WebP)');
+      toast.error('Select an image in JPEG, PNG, or WebP format.');
       return;
     }
 
     // 20MB limit
     if (file.size > 20 * 1024 * 1024) {
-      toast.error('Image size must be less than 20MB');
+      toast.error('Image must be under 20MB.');
       return;
     }
 
@@ -409,7 +409,7 @@ export function Messages() {
     if ((!trimmed && !selectedImageFile) || !selectedConversation || isSending) return;
 
     if (isBlocked) {
-      toast.error('You have blocked this user. Unblock them to send messages.');
+      toast.error('You have blocked this user. Unblock them to message.');
       return;
     }
 
@@ -508,7 +508,7 @@ export function Messages() {
       setSelectedImageFile(pendingImageFile);
       setSelectedImagePreview(pendingImagePreview);
 
-      toast.error(error.response?.data?.message || 'Failed to send message. Please retry.');
+      toast.error(error.response?.data?.message || "We couldn't send your message. Please try again.");
     } finally {
       setIsSending(false);
       setUploadProgress(0);
@@ -568,7 +568,7 @@ export function Messages() {
       }
     } catch (err: any) {
       console.error('Failed to toggle reaction:', err);
-      toast.error('Could not update reaction');
+      toast.error("We couldn't update this reaction.");
       if (selectedConversation) fetchMessages(selectedConversation);
     }
   };
@@ -608,7 +608,7 @@ export function Messages() {
       setIsBlocking(true);
       await api.post(`/blocks/${otherUserId}`);
       setIsBlocked(true);
-      toast.success(`${otherUserName} has been blocked`);
+      toast.success(`${otherUserName} has been blocked.`);
 
       setConversations((prev) =>
         prev.filter((c) => {
@@ -619,7 +619,7 @@ export function Messages() {
       setIsBlockModalOpen(false);
       handleBackToList();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to block user');
+      toast.error(error.response?.data?.message || "We couldn't block this user.");
     } finally {
       setIsBlocking(false);
     }
@@ -634,9 +634,9 @@ export function Messages() {
     try {
       await api.delete(`/blocks/${otherUserId}`);
       setIsBlocked(false);
-      toast.success(`${otherUserName} unblocked`);
+      toast.success(`${otherUserName} unblocked.`);
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to unblock user');
+      toast.error(error.response?.data?.message || "We couldn't unblock this user.");
     }
   };
 
@@ -787,7 +787,7 @@ export function Messages() {
                 </p>
                 <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/50 text-[#9747FF] text-xs font-semibold mt-2.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#9747FF]"></span>
-                  {currentUser.role === 'creator' ? 'Verified Creator' : 'Creative Member'}
+                  {currentUser.role === 'creator' ? 'Creator' : 'Client'}
                 </div>
               </div>
             ) : (
@@ -796,7 +796,7 @@ export function Messages() {
                   <Sparkles className="w-6 h-6" />
                 </div>
                 <h3 className="font-bold text-gray-900 dark:text-gray-100 text-base">
-                  Direct Messages
+                  Messages
                 </h3>
                 <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 mb-4 leading-relaxed">
                   Sign in to connect, collaborate, and chat directly with creators and clients.
@@ -806,7 +806,7 @@ export function Messages() {
                   onClick={() => (window.location.href = '/login?redirect=/messages')}
                   className="w-full bg-[#9747FF] hover:bg-[#8534f0] text-white font-semibold rounded-xl text-xs py-2 shadow-xs cursor-pointer"
                 >
-                  Log In / Sign Up
+                  Sign in
                 </Button>
               </div>
             )}
@@ -828,7 +828,7 @@ export function Messages() {
                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] dark:hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-white/[0.04] transition-colors"
               >
                 <Users className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                <span>Browse Creators</span>
+                <span>Browse creators</span>
               </a>
 
               {currentUser && (
@@ -838,7 +838,7 @@ export function Messages() {
                     className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] dark:hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-white/[0.04] transition-colors"
                   >
                     <Calendar className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                    <span>My Bookings</span>
+                    <span>Bookings</span>
                   </a>
 
                   <a
@@ -846,7 +846,7 @@ export function Messages() {
                     className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] dark:hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-white/[0.04] transition-colors"
                   >
                     <Wallet className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                    <span>Wallet &amp; Earnings</span>
+                    <span>Wallet</span>
                   </a>
 
                   <a
@@ -908,7 +908,7 @@ export function Messages() {
                     <input
                       ref={searchInputRef}
                       type="text"
-                      placeholder="Search messages..."
+                      placeholder="Search conversations..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="w-full bg-transparent text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 text-xs border-none outline-none py-1"
@@ -1009,9 +1009,9 @@ export function Messages() {
                       description={
                         searchQuery
                           ? `No conversation matches "${searchQuery}"`
-                          : 'Connect with creators to start a conversation.'
+                          : 'When you message a creator or client, your conversation will appear here.'
                       }
-                      actionLabel={searchQuery ? 'Clear Search' : 'Browse Creators'}
+                      actionLabel={searchQuery ? 'Clear search' : 'Browse creators'}
                       onAction={() => {
                         if (searchQuery) setSearchQuery('');
                         else window.location.href = '/creators';
@@ -1102,7 +1102,7 @@ export function Messages() {
                             className="cursor-pointer text-xs font-medium py-2 rounded-lg"
                           >
                             <ExternalLink className="w-4 h-4 mr-2 text-gray-500" />
-                            View Profile
+                            View profile
                           </DropdownMenuItem>
 
                           {isBlocked ? (
@@ -1111,7 +1111,7 @@ export function Messages() {
                               className="cursor-pointer text-xs font-medium text-[#9747FF] focus:text-[#9747FF] py-2 rounded-lg"
                             >
                               <Ban className="w-4 h-4 mr-2 text-[#9747FF]" />
-                              Unblock User
+                              Unblock user
                             </DropdownMenuItem>
                           ) : (
                             <DropdownMenuItem
@@ -1119,7 +1119,7 @@ export function Messages() {
                               className="cursor-pointer text-xs font-medium text-red-600 focus:text-red-600 py-2 rounded-lg"
                             >
                               <Ban className="w-4 h-4 mr-2 text-red-600" />
-                              Block User
+                              Block user
                             </DropdownMenuItem>
                           )}
                         </DropdownMenuContent>
@@ -1413,17 +1413,17 @@ export function Messages() {
                     <MessageSquare className="w-8 h-8" />
                   </div>
                   <h3 className="font-bold text-gray-950 dark:text-gray-100 text-base mb-1">
-                    Your Messages
+                    Your messages
                   </h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400 max-w-sm mb-5 leading-relaxed">
-                    Select a conversation from the list to start chatting, or browse creators to connect and collaborate.
+                    Select a conversation to start chatting, or reach out to a creator to collaborate.
                   </p>
                   <Button
                     type="button"
                     onClick={() => (window.location.href = '/creators')}
                     className="bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold rounded-xl px-4 py-2 shadow-xs cursor-pointer"
                   >
-                    Browse Creators
+                    Browse creators
                   </Button>
                 </div>
               )}
@@ -1441,24 +1441,24 @@ export function Messages() {
             <div className="flex items-center gap-2 text-gray-900 dark:text-gray-100 mb-2">
               <ShieldCheck className="w-4 h-4 text-[#9747FF]" />
               <h4 className="text-xs font-semibold uppercase tracking-wider">
-                Safe Messaging &amp; Escrow
+                Escrow protection
               </h4>
             </div>
             <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed mb-3">
-              Keep communication and payments on MyArteLab for 100% escrow protection, verified deliverables, and dispute mediation.
+              Keep communication and payments on MyArteLab to protect funds in escrow until deliverables are reviewed and approved.
             </p>
             <div className="space-y-2 text-xs text-gray-600 dark:text-gray-400">
               <div className="flex items-start gap-2">
                 <CheckCircle2 className="w-3.5 h-3.5 text-[#9747FF] shrink-0 mt-0.5" />
-                <span>Zero financial release before deliverable inspection</span>
+                <span>Funds stay held until you approve deliverables</span>
               </div>
               <div className="flex items-start gap-2">
                 <CheckCircle2 className="w-3.5 h-3.5 text-[#9747FF] shrink-0 mt-0.5" />
-                <span>Encrypted conversations &amp; contract trail</span>
+                <span>Complete message record and project terms</span>
               </div>
               <div className="flex items-start gap-2">
                 <CheckCircle2 className="w-3.5 h-3.5 text-[#9747FF] shrink-0 mt-0.5" />
-                <span>Full refund rights if agreements are unfulfilled</span>
+                <span>Protected refunds if project terms are not met</span>
               </div>
             </div>
           </div>
@@ -1467,7 +1467,7 @@ export function Messages() {
           <div className="pb-4">
             <div className="flex items-center justify-between pb-2.5 border-b border-[#DADDE1] dark:border-[#2f3032] mb-3.5">
               <h4 className="font-bold text-sm text-gray-900 dark:text-gray-100 tracking-tight">
-                Top Creators
+                Featured creators
               </h4>
               <a
                 href="/creators"
@@ -1595,7 +1595,7 @@ export function Messages() {
         onConfirm={handleConfirmBlock}
         title={`Block ${selectedConversation ? getParticipantName(selectedConversation.otherUser) : 'User'}?`}
         description="They will no longer be able to send you direct messages or view your profile."
-        confirmLabel="Block User"
+        confirmLabel="Block user"
         cancelLabel="Cancel"
         variant="destructive"
         isLoading={isBlocking}

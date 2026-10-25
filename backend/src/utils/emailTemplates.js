@@ -308,13 +308,13 @@ const emailTemplates = {
 
     return baseTemplate({
       title: 'Welcome to MyArteLab',
-      preheader: `Your MyArteLab verification code is ${verificationCode}. Activate your account now!`,
+      preheader: `Your MyArteLab verification code is ${verificationCode}.`,
       illustrationUrl: ASSETS.openedIllustrationPng,
       illustrationAlt: 'Email Verification Illustration',
       heading: 'Verify your email address',
-      subtitle: 'Confirm your email to activate your account and start exploring.',
+      subtitle: 'Confirm your email to get started on MyArteLab.',
       contentHtml,
-      ctaText: 'Verify on MyArteLab',
+      ctaText: 'Verify email',
       ctaUrl: `${BASE_APP_URL}/verify-email`,
       noticeText: "If you didn't create an account with MyArteLab, you can safely disregard this email.",
       noticeType: 'info',
@@ -350,7 +350,7 @@ const emailTemplates = {
       heading: 'Verify your email address',
       subtitle: 'Your new verification code is ready.',
       contentHtml,
-      ctaText: 'Go to Verification Screen',
+      ctaText: 'Enter verification code',
       ctaUrl: `${BASE_APP_URL}/verify-email`,
       noticeText: "If you didn't request a new verification code, please ignore this email or reach out to support.",
       noticeType: 'info',
@@ -410,7 +410,7 @@ const emailTemplates = {
       heading: 'Reset your password',
       subtitle: 'Follow the instructions below to choose a new password.',
       contentHtml,
-      ctaText: 'Reset Password',
+      ctaText: 'Reset password',
       ctaUrl: resetUrl || `${BASE_APP_URL}/forgot-password`,
       noticeText: "If you did not request a password reset, please ignore this email. Your password will remain unchanged and your account is secure.",
       noticeType: 'warning',
@@ -437,15 +437,15 @@ const emailTemplates = {
 
     return baseTemplate({
       title: 'Email Verified',
-      preheader: 'Your MyArteLab account is verified and ready to use!',
+      preheader: 'Your MyArteLab account is verified and ready to use.',
       illustrationUrl: ASSETS.openedIllustrationPng,
       illustrationAlt: 'Account Verified Illustration',
-      heading: 'Email verified successfully! 🎉',
+      heading: 'Email verified',
       subtitle: 'Your account is ready. Welcome to MyArteLab.',
       contentHtml,
-      ctaText: 'Go to Dashboard',
+      ctaText: 'Explore MyArteLab',
       ctaUrl: `${BASE_APP_URL}/home`,
-      noticeText: 'Need help getting started? Check out our explore page or contact our support team anytime.',
+      noticeText: 'Need help? Reach out to support@myartelab.com anytime.',
       noticeType: 'success',
       isSecurityEmail: false,
     });
@@ -462,7 +462,7 @@ const emailTemplates = {
 
     const contentHtml = `
       <p style="margin: 0 0 16px 0; font-size: 16px; color: ${COLORS.textHeading}; font-weight: 600;">
-        Booking Request Sent!
+        Booking Request Sent
       </p>
       <p style="margin: 0 0 16px 0;">
         Your booking request with <strong>${creatorName}</strong> has been received and is awaiting their confirmation.
@@ -491,10 +491,10 @@ const emailTemplates = {
     return baseTemplate({
       title: 'Booking Confirmed',
       preheader: `Your booking with ${creatorName} has been created.`,
-      heading: 'Booking Submitted 🎉',
+      heading: 'Booking request sent',
       subtitle: `Booking #${bookingId}`,
       contentHtml,
-      ctaText: 'View Booking Details',
+      ctaText: 'View booking',
       ctaUrl: `${BASE_APP_URL}/bookings/${booking._id}`,
       noticeText: 'The creator will review your request. You will be notified as soon as they respond.',
       noticeType: 'info',
@@ -513,7 +513,7 @@ const emailTemplates = {
 
     const contentHtml = `
       <p style="margin: 0 0 16px 0; font-size: 16px; color: ${COLORS.textHeading}; font-weight: 600;">
-        New Project Opportunity!
+        New Project Opportunity
       </p>
       <p style="margin: 0 0 16px 0;">
         <strong>${clientName}</strong> sent you a new booking request. Review the project scope and accept to begin collaboration.
@@ -546,12 +546,12 @@ const emailTemplates = {
     return baseTemplate({
       title: 'New Booking Request',
       preheader: `New booking request from ${clientName} for ${amountStr}.`,
-      heading: 'New Booking Request 🔔',
+      heading: 'New booking request',
       subtitle: `Booking #${bookingId}`,
       contentHtml,
-      ctaText: 'Review Booking',
+      ctaText: 'Review booking',
       ctaUrl: `${BASE_APP_URL}/bookings/${booking._id}`,
-      noticeText: 'Payment is secured in escrow before you begin work, ensuring guaranteed payout upon completion.',
+      noticeText: 'Funds are held in escrow before work begins and released when the client approves deliverables.',
       noticeType: 'success',
     });
   },
@@ -590,12 +590,12 @@ const emailTemplates = {
     return baseTemplate({
       title: 'Payment Received',
       preheader: `Payment of ${amountStr} has been secured in escrow.`,
-      heading: 'Payment Secured! 💰',
+      heading: 'Escrow funded',
       subtitle: `Booking #${bookingId}`,
       contentHtml,
-      ctaText: 'View Booking',
+      ctaText: 'View booking',
       ctaUrl: `${BASE_APP_URL}/bookings/${booking._id}`,
-      noticeText: 'Funds are securely held in escrow and will be released upon project approval.',
+      noticeText: 'Funds are held safely in escrow and released when the client approves deliverables.',
       noticeType: 'success',
     });
   },
@@ -618,10 +618,10 @@ const emailTemplates = {
     return baseTemplate({
       title: 'Work Delivered',
       preheader: `Work delivered for booking #${bookingId}. Please review and approve.`,
-      heading: 'Work Delivered! 📦',
+      heading: 'Deliverables submitted',
       subtitle: `Booking #${bookingId}`,
       contentHtml,
-      ctaText: 'Review & Approve Work',
+      ctaText: 'Review deliverables',
       ctaUrl: `${BASE_APP_URL}/bookings/${booking._id}`,
       noticeText: 'Please review deliverables within 7 days. If no action is taken, payment will release automatically.',
       noticeType: 'warning',
@@ -647,10 +647,10 @@ const emailTemplates = {
     return baseTemplate({
       title: 'Payment Released',
       preheader: `Payment of ${amountStr} has been credited to your wallet.`,
-      heading: 'Payment Released! 💸',
+      heading: 'Payment released',
       subtitle: `Booking #${bookingId}`,
       contentHtml,
-      ctaText: 'Go to Wallet',
+      ctaText: 'View wallet',
       ctaUrl: `${BASE_APP_URL}/wallet`,
       noticeText: 'Funds are available immediately for withdrawal to your external wallet.',
       noticeType: 'success',
@@ -676,10 +676,10 @@ const emailTemplates = {
     return baseTemplate({
       title: 'Withdrawal Initiated',
       preheader: `Your withdrawal of ${amountStr} has been initiated.`,
-      heading: 'Withdrawal Processing ⚡',
+      heading: 'Withdrawal processing',
       subtitle: 'Transfer initiated from your wallet.',
       contentHtml,
-      ctaText: 'View Wallet',
+      ctaText: 'View wallet',
       ctaUrl: `${BASE_APP_URL}/wallet`,
       noticeText: 'You will receive another notification once the transaction has confirmed on-chain.',
       noticeType: 'info',
@@ -707,10 +707,10 @@ const emailTemplates = {
     return baseTemplate({
       title: 'Withdrawal Completed',
       preheader: `Your withdrawal of ${amountStr} has completed.`,
-      heading: 'Withdrawal Completed! ✅',
+      heading: 'Withdrawal completed',
       subtitle: 'Your funds have been transferred.',
       contentHtml,
-      ctaText: 'View Wallet',
+      ctaText: 'View wallet',
       ctaUrl: `${BASE_APP_URL}/wallet`,
       noticeText: 'The funds should now be reflected in your receiving wallet.',
       noticeType: 'success',

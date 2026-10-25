@@ -44,15 +44,15 @@ export function VerifyEmail() {
         onVerify={handleVerify}
         onResend={handleResend}
         onBack={() => navigate('/login')}
-        submitButtonText="Submit"
+        submitButtonText="Verify code"
       />
 
       <SuccessModal
         isOpen={showSuccess}
         onClose={handleSuccessClose}
-        title="Email Verified!"
-        message="Your email has been successfully verified. You now have full access to all features of MyArteLab."
-        actionLabel="Go to Dashboard"
+        title="Email verified"
+        message="Your email is confirmed. Welcome to MyArteLab."
+        actionLabel="Continue to home"
         onAction={handleSuccessClose}
         illustration="/images/undraw_opened_47gd.svg"
       />

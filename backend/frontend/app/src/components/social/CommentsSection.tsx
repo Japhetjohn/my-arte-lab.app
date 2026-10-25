@@ -93,7 +93,7 @@ export function CommentsSection({
             : c
         )
       );
-      toast.error(err.response?.data?.message || 'Could not update comment like');
+      toast.error(err.response?.data?.message || "Couldn't update like right now.");
     } finally {
       setLikingIds((prev) => {
         const next = new Set(prev);
@@ -151,10 +151,10 @@ export function CommentsSection({
 
       setCommentText('');
       setReplyingTo(null);
-      toast.success('Comment posted');
+      toast.success('Comment added.');
     } catch (err: any) {
       console.error('Error submitting comment:', err);
-      toast.error(err.response?.data?.message || 'Failed to post comment');
+      toast.error(err.response?.data?.message || "We couldn't post your comment right now.");
     } finally {
       setIsSubmitting(false);
     }
@@ -294,7 +294,7 @@ export function CommentsSection({
                 ) : (
                   <>
                     <Send className="w-3 h-3 mr-1" />
-                    <span>Send</span>
+                    <span>Post</span>
                   </>
                 )}
               </Button>
@@ -311,7 +311,7 @@ export function CommentsSection({
         </div>
       ) : comments.length === 0 ? (
         <div className="py-6 text-center text-xs text-gray-400">
-          No comments yet. Be the first to share your thoughts!
+          No comments yet. Start the conversation.
         </div>
       ) : (
         <div className="divide-y divide-[#DADDE1]/60 dark:divide-[#2f3032]">
@@ -335,7 +335,7 @@ export function CommentsSection({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100 inline-flex items-center gap-1">
-                      {comment.userName || 'Creator Community Member'}
+                      {comment.userName || 'Community member'}
                       {comment.isVerified && (
                         <VerifiedBadge className="w-3.5 h-3.5 shrink-0 inline-block align-middle" showTooltip={false} />
                       )}

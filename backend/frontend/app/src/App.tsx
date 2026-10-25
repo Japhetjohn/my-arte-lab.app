@@ -215,9 +215,9 @@ function AppContent() {
       return (
         <EmptyState
           image="/images/offline.png"
-          title="You are offline"
-          description="Please check your internet connection and try again"
-          actionLabel="Retry"
+          title="You're offline"
+          description="Reconnect to continue where you left off."
+          actionLabel="Try again"
           onAction={() => window.location.reload()}
         />
       );
@@ -285,9 +285,9 @@ function AppContent() {
         return (
           <EmptyState
             image="/images/error.png"
-            title="Page Not Found"
-            description="The page you are looking for does not exist"
-            actionLabel="Go Home"
+            title="Page not found"
+            description="The page you're looking for doesn't exist or has moved."
+            actionLabel="Back to home"
             onAction={() => navigate('/home')}
           />
         );

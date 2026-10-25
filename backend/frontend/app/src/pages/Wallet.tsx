@@ -77,7 +77,7 @@ export function Wallet() {
           className="px-4 py-2 bg-[#9747FF] text-white rounded-xl text-sm font-medium hover:bg-[#8534f0] transition-colors inline-flex items-center gap-2 cursor-pointer"
         >
           <RefreshCw className="w-4 h-4" />
-          <span>Try Again</span>
+          <span>Try again</span>
         </button>
       </div>
     );

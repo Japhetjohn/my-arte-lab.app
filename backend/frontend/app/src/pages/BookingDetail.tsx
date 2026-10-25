@@ -139,8 +139,8 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
       setBooking(item);
     } catch (err: any) {
       console.error('Error loading booking:', err);
-      setError(err.response?.data?.error || err.message || 'Failed to load booking');
-      toast.error('Could not load booking details');
+      setError(err.response?.data?.error || err.message || 'Booking could not be loaded');
+      toast.error("We couldn't load booking details.");
     } finally {
       setIsLoading(false);
     }
@@ -169,11 +169,11 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
     try {
       setIsSubmittingFunding(true);
       await bookingWorkflowService.payBooking(booking._id);
-      toast.success('Funds locked in escrow! The creator has been notified to begin work.');
+      toast.success('Funds deposited into escrow. The creator has been notified to begin work.');
       setIsFundingModalOpen(false);
       fetchBookingDetails();
     } catch (err: any) {
-      const msg = err.response?.data?.error || err.response?.data?.message || 'Failed to fund escrow';
+      const msg = err.response?.data?.error || err.response?.data?.message || "We couldn't fund escrow. Please try again.";
       toast.error(msg);
     } finally {
       setIsSubmittingFunding(false);
@@ -186,10 +186,10 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
     try {
       setIsProcessingAction(true);
       await bookingWorkflowService.acceptBooking(booking._id);
-      toast.success('Booking accepted! Client has been notified to deposit funds into escrow.');
+      toast.success('Booking accepted. The client has been notified to fund escrow.');
       fetchBookingDetails();
     } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to accept booking');
+      toast.error(err.response?.data?.error || "We couldn't accept this booking.");
     } finally {
       setIsProcessingAction(false);
     }
@@ -207,11 +207,11 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
     try {
       setIsProcessingAction(true);
       await bookingWorkflowService.rejectBooking(booking._id, declineReason.trim() || 'Declined by creator');
-      toast.success('Booking declined');
+      toast.success('Booking request declined.');
       setIsDeclineModalOpen(false);
       fetchBookingDetails();
     } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to decline booking');
+      toast.error(err.response?.data?.error || "We couldn't decline this booking.");
     } finally {
       setIsProcessingAction(false);
     }
@@ -223,10 +223,10 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
     try {
       setIsProcessingAction(true);
       await bookingWorkflowService.acceptCounterProposal(booking._id);
-      toast.success('Counter offer accepted! Ready for escrow funding.');
+      toast.success('Counter offer accepted. You can now fund the project.');
       fetchBookingDetails();
     } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to accept counter offer');
+      toast.error(err.response?.data?.error || "We couldn't accept the counter offer.");
     } finally {
       setIsProcessingAction(false);
     }
@@ -238,10 +238,10 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
     try {
       setIsProcessingAction(true);
       await bookingWorkflowService.rejectCounterProposal(booking._id);
-      toast.success('Counter offer declined');
+      toast.success('Counter offer declined.');
       fetchBookingDetails();
     } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to decline counter offer');
+      toast.error(err.response?.data?.error || "We couldn't decline the counter offer.");
     } finally {
       setIsProcessingAction(false);
     }
@@ -252,17 +252,17 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
     if (!booking) return;
     const amountNum = parseFloat(counterAmount);
     if (isNaN(amountNum) || amountNum <= 0) {
-      toast.error('Please enter a valid amount');
+      toast.error('Please enter a valid amount.');
       return;
     }
     try {
       setIsSubmittingCounter(true);
       await bookingWorkflowService.counterProposal(booking._id, amountNum);
-      toast.success(`Counter offer of ${amountNum} USDC sent!`);
+      toast.success(`Counter offer of ${amountNum} USDC sent.`);
       setIsCounterModalOpen(false);
       fetchBookingDetails();
     } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to send counter proposal');
+      toast.error(err.response?.data?.error || "We couldn't send your counter offer.");
     } finally {
       setIsSubmittingCounter(false);
     }
@@ -296,7 +296,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
   const handleSubmitWork = async () => {
     if (!booking) return;
     if (!submissionTitle.trim()) {
-      toast.error('Please provide a title for this delivery');
+      toast.error('Please enter a title for this delivery.');
       return;
     }
 
@@ -315,7 +315,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
         links: linksArray,
       });
 
-      toast.success('Work submitted successfully! Client has been notified for review.');
+      toast.success('Work submitted. The client has been notified for review.');
       setIsSubmitModalOpen(false);
       setSubmissionTitle('');
       setSubmissionDesc('');
@@ -323,7 +323,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
       setSubmissionFiles([]);
       fetchBookingDetails();
     } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to submit deliverables');
+      toast.error(err.response?.data?.error || "We couldn't submit your deliverables.");
     } finally {
       setIsSubmittingWork(false);
     }
@@ -333,19 +333,19 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
   const handleRequestRevision = async () => {
     if (!booking) return;
     if (!revisionNotes.trim()) {
-      toast.error('Please describe what revisions or modifications are required');
+      toast.error('Please describe what changes are needed.');
       return;
     }
 
     try {
       setIsSubmittingRevision(true);
       await bookingWorkflowService.requestRevision(booking._id, revisionNotes.trim());
-      toast.success('Revision requested. Creator has been notified.');
+      toast.success('Revision requested. The creator has been notified.');
       setIsRevisionModalOpen(false);
       setRevisionNotes('');
       fetchBookingDetails();
     } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to request revision');
+      toast.error(err.response?.data?.error || "We couldn't submit your revision request.");
     } finally {
       setIsSubmittingRevision(false);
     }
@@ -361,11 +361,11 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
         comment: reviewComment.trim(),
       });
 
-      toast.success('Deliverables approved! Escrow funds released to creator.');
+      toast.success('Deliverables approved. Funds released to the creator.');
       setIsApprovalModalOpen(false);
       fetchBookingDetails();
     } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to approve project');
+      toast.error(err.response?.data?.error || "We couldn't approve the project.");
     } finally {
       setIsSubmittingApproval(false);
     }
@@ -375,7 +375,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
     return (
       <div className="flex flex-col items-center justify-center py-28 text-gray-400 space-y-3">
         <Loader2 className="w-8 h-8 animate-spin text-[#9747FF]" />
-        <p className="text-xs">Loading booking workspace...</p>
+        <p className="text-xs">Loading project details...</p>
       </div>
     );
   }
@@ -384,13 +384,13 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
     return (
       <div className="max-w-xl mx-auto py-16 text-center space-y-4">
         <AlertCircle className="w-12 h-12 text-red-500 mx-auto" />
-        <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Booking Workspace Unavailable</h2>
-        <p className="text-xs text-gray-500">{error || 'Booking could not be found'}</p>
+        <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Project not available</h2>
+        <p className="text-xs text-gray-500">{error || 'This project could not be found.'}</p>
         <Button
           onClick={() => (window.location.href = '/bookings')}
           className="rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold px-5"
         >
-          Return to My Bookings
+          Back to bookings
         </Button>
       </div>
     );
@@ -405,7 +405,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
     return [
       {
         id: 'submitted',
-        label: 'Request Sent',
+        label: 'Request sent',
         active: true,
         done: true,
       },
@@ -417,13 +417,13 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
       },
       {
         id: 'funded',
-        label: 'Escrow Funded',
+        label: 'Escrow funded',
         active: isFundedOrBeyond || booking.status === 'awaiting_payment',
         done: isFundedOrBeyond,
       },
       {
         id: 'in_progress',
-        label: isRevision ? 'Revision Underway' : 'In Production',
+        label: isRevision ? 'Revision in progress' : 'In production',
         active: isFundedOrBeyond,
         done: isDeliveredOrDone,
       },
@@ -461,36 +461,36 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
     const isRevision = !!(booking.revisionRequests && booking.revisionRequests.length > 0) && booking.status === 'in_progress';
     if (hasActiveCounterOffer) {
       return {
-        label: isClient ? 'Counter Offer Received' : 'Counter Offer Sent',
+        label: isClient ? 'Counter offer received' : 'Counter offer sent',
         className: 'bg-purple-100 text-[#9747FF] dark:bg-purple-950/60 dark:text-purple-300',
       };
     }
     if (isRevision) {
       return {
-        label: 'Revision Requested',
+        label: 'Revision requested',
         className: 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300',
       };
     }
     switch (booking.status) {
       case 'pending':
         return {
-          label: 'Pending Response',
+          label: 'Pending response',
           className: 'bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300',
         };
       case 'awaiting_payment':
         return {
-          label: 'Awaiting Escrow Deposit',
+          label: 'Awaiting escrow funding',
           className: 'bg-purple-100 text-[#9747FF] dark:bg-purple-950/60 dark:text-purple-300',
         };
       case 'confirmed':
       case 'in_progress':
         return {
-          label: 'In Progress',
+          label: 'In progress',
           className: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300',
         };
       case 'delivered':
         return {
-          label: 'Delivered / In Review',
+          label: 'Delivered — in review',
           className: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300',
         };
       case 'completed':
@@ -524,7 +524,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
       return (
         <div className="pt-2 flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-200/60 dark:border-purple-800/40">
           <div className="text-xs text-gray-700 dark:text-gray-300">
-            <span className="font-semibold text-gray-900 dark:text-gray-100">{booking.client.name}</span> requested your creative services for <strong className="text-[#9747FF]">{booking.amount} {booking.currency}</strong>.
+            <span className="font-semibold text-gray-900 dark:text-gray-100">{booking.client.name}</span> sent you a project proposal for <strong className="text-[#9747FF]">{booking.amount} {booking.currency}</strong>.
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <Button
@@ -534,7 +534,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
               className="h-8 px-4 text-xs font-semibold rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white shadow-2xs cursor-pointer"
             >
               {isProcessingAction ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : null}
-              Accept Booking
+              Accept booking
             </Button>
             <Button
               size="sm"
@@ -546,7 +546,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
               disabled={isProcessingAction}
               className="h-8 px-3 text-xs font-semibold rounded-full border border-[#DADDE1] dark:border-[#2f3032] text-[#9747FF] hover:bg-purple-50 dark:hover:bg-purple-950/30 cursor-pointer"
             >
-              Counter Offer
+              Counter offer
             </Button>
             <Button
               size="sm"
@@ -577,7 +577,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
               className="h-8 px-4 text-xs font-semibold rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white shadow-2xs cursor-pointer"
             >
               {isProcessingAction ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : null}
-              Accept Counter
+              Accept offer
             </Button>
             <Button
               size="sm"
@@ -598,7 +598,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
       return (
         <div className="pt-2 flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-200/60 dark:border-purple-800/40">
           <div className="text-xs text-gray-700 dark:text-gray-300">
-            Creator accepted! Deposit <strong className="text-gray-900 dark:text-gray-100">{booking.amount} {booking.currency}</strong> into smart escrow to initiate production.
+            Proposal accepted. Deposit <strong className="text-gray-900 dark:text-gray-100">{booking.amount} {booking.currency}</strong> into escrow to begin production.
           </div>
           <Button
             size="sm"
@@ -609,7 +609,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
             className="h-8 px-4 text-xs font-semibold rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white shadow-2xs flex items-center gap-1.5 cursor-pointer"
           >
             <Lock className="w-3.5 h-3.5" />
-            <span>Deposit &amp; Fund Escrow</span>
+            <span>Fund escrow</span>
           </Button>
         </div>
       );
@@ -620,7 +620,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
       return (
         <div className="pt-2 p-3 rounded-xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-800/40 text-xs text-amber-800 dark:text-amber-300 flex items-center gap-2">
           <ShieldCheck className="w-4 h-4 shrink-0" />
-          <span>Accepted! Awaiting client escrow deposit of {booking.amount} {booking.currency} before work begins.</span>
+          <span>Accepted. Awaiting client deposit of {booking.amount} {booking.currency} into escrow before work begins.</span>
         </div>
       );
     }
@@ -632,7 +632,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5 font-semibold text-amber-800 dark:text-amber-300">
               <RotateCcw className="w-3.5 h-3.5" />
-              <span>Revision Requested by {booking.client.name}</span>
+              <span>Revision requested by {booking.client.name}</span>
             </div>
             {isCreator && (
               <Button
@@ -640,7 +640,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                 onClick={() => setIsSubmitModalOpen(true)}
                 className="h-7 px-3 text-xs font-semibold rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white shadow-2xs cursor-pointer"
               >
-                Submit Revised Work
+                Submit revised work
               </Button>
             )}
           </div>
@@ -656,7 +656,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
       return (
         <div className="pt-2 flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-800/40">
           <div className="text-xs text-gray-700 dark:text-gray-300">
-            Deliverables ready for your inspection! Review files below, then approve or request revisions.
+            Deliverables are ready for your review. Inspect the files below, then approve or request revisions.
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <Button
@@ -664,7 +664,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
               onClick={() => setIsApprovalModalOpen(true)}
               className="h-8 px-4 text-xs font-semibold rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white shadow-2xs cursor-pointer"
             >
-              Approve &amp; Release Funds
+              Approve &amp; release funds
             </Button>
             <Button
               size="sm"
@@ -673,7 +673,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
               className="h-8 px-3 text-xs font-semibold rounded-full border border-[#DADDE1] dark:border-[#2f3032] text-gray-700 dark:text-gray-300 cursor-pointer"
             >
               <RotateCcw className="w-3.5 h-3.5 mr-1" />
-              Request Revision
+              Request revision
             </Button>
           </div>
         </div>
@@ -685,7 +685,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
       return (
         <div className="pt-2 flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-800/40">
           <div className="text-xs text-gray-700 dark:text-gray-300">
-            Project completed! Rate your experience with {booking.creator.name}.
+            Project completed. Leave a review for {booking.creator.name}.
           </div>
           <Button
             size="sm"
@@ -693,7 +693,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
             className="h-8 px-4 text-xs font-semibold rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white shadow-2xs cursor-pointer"
           >
             <Star className="w-3.5 h-3.5 mr-1 fill-current" />
-            Rate Creator
+            Leave a review
           </Button>
         </div>
       );
@@ -753,7 +753,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-white/[0.04] transition-colors"
               >
                 <Users className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                <span>Browse Creators</span>
+                <span>Browse creators</span>
               </a>
 
               <a
@@ -761,7 +761,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-sm bg-purple-50 dark:bg-purple-950/50 text-[#9747FF] transition-colors"
               >
                 <Calendar className="w-4 h-4 text-[#9747FF]" />
-                <span>My Bookings</span>
+                <span>Bookings</span>
               </a>
 
               <a
@@ -769,7 +769,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-white/[0.04] transition-colors"
               >
                 <Wallet className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                <span>Wallet &amp; Earnings</span>
+                <span>Wallet</span>
               </a>
 
               <a
@@ -777,7 +777,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-white/[0.04] transition-colors"
               >
                 <Settings className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                <span>Settings &amp; Profile</span>
+                <span>Settings</span>
               </a>
             </nav>
           </div>
@@ -796,7 +796,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
               className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-600 dark:text-gray-400 hover:text-[#9747FF] transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span>Back to Bookings</span>
+              <span>Back to bookings</span>
             </a>
 
             <div className="flex items-center gap-2">
@@ -810,7 +810,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                 className="h-7 text-xs rounded-full border-[#DADDE1] dark:border-[#2f3032] text-gray-700 dark:text-gray-200"
               >
                 <MessageSquare className="w-3.5 h-3.5 mr-1" />
-                Message {otherParty?.name?.split(' ')[0]}
+                Message {otherParty?.name?.split(' ')[0] || ''}
               </Button>
             </div>
           </div>
@@ -843,7 +843,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                   </a>
                   {booking.creator.isVerified && <VerifiedBadge className="w-4 h-4" showTooltip={false} />}
                   <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/40 text-[#9747FF] border border-purple-200/50 dark:border-purple-800/40">
-                    Hired Creator
+                    Creator
                   </span>
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -871,13 +871,13 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                 </span>
               </div>
               <div>
-                <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 block">Agreed Budget</span>
+                <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 block">Agreed budget</span>
                 <span className="text-sm font-bold text-gray-900 dark:text-gray-100 mt-0.5 block">
                   {booking.amount} {booking.currency}
                 </span>
               </div>
               <div>
-                <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 block">Due Date</span>
+                <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 block">Target completion</span>
                 <span className="text-xs font-semibold text-gray-800 dark:text-gray-200 mt-0.5 block">
                   {new Date(booking.endDate).toLocaleDateString()}
                 </span>
@@ -895,12 +895,12 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 flex-wrap">
                   <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                    Project Milestones
+                    Project milestones
                   </h4>
                   <span className="text-gray-300 dark:text-gray-700">•</span>
                   <span className="text-xs font-semibold text-[#9747FF]">
                     {booking.status === 'completed'
-                      ? 'All Milestones Completed'
+                      ? 'All milestones completed'
                       : `Step ${activeStepIdx + 1} of ${timelineSteps.length}: ${currentStep?.label}`}
                   </span>
                 </div>
@@ -969,8 +969,8 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
               <ShieldCheck className="w-4 h-4 text-[#9747FF] shrink-0" />
               <span className="text-gray-600 dark:text-gray-400 font-medium">
                 {booking.paymentStatus === 'paid'
-                  ? (booking.status === 'completed' ? 'Escrow Released to Creator' : 'Escrow Protected: Funds locked securely')
-                  : (booking.status === 'awaiting_payment' ? 'Deposit Required to Fund Escrow' : 'Escrow Deposit Pending Acceptance')}
+                  ? (booking.status === 'completed' ? 'Escrow released to creator' : 'Escrow funded: payment held securely')
+                  : (booking.status === 'awaiting_payment' ? 'Escrow deposit required' : 'Escrow pending proposal acceptance')}
               </span>
             </div>
           </div>
@@ -980,7 +980,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
              ========================================================================= */}
           <div className="space-y-3 pb-5 border-b border-[#DADDE1] dark:border-[#2f3032]">
             <h3 className="font-bold text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">
-              Project Brief &amp; Scope
+              Project brief &amp; scope
             </h3>
 
             {/* Description with Show More / Show Less */}
@@ -1017,7 +1017,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
             {/* Special Client Instructions / Notes */}
             {booking.metadata?.notes && (
               <div className="p-3 rounded-xl border-l-2 border-[#9747FF] bg-purple-50/40 dark:bg-purple-950/20 text-xs">
-                <span className="font-semibold text-gray-900 dark:text-gray-100 block mb-0.5">Special Instructions:</span>
+                <span className="font-semibold text-gray-900 dark:text-gray-100 block mb-0.5">Special instructions:</span>
                 <p className="italic text-gray-600 dark:text-gray-400">{booking.metadata.notes}</p>
               </div>
             )}
@@ -1026,7 +1026,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
             {referenceImages.length > 0 && (
               <div className="space-y-2 pt-2">
                 <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider block">
-                  Reference Files &amp; Moodboards ({referenceImages.length})
+                  Reference files &amp; moodboards ({referenceImages.length})
                 </span>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                   {referenceImages.map((imgUrl, i) => (
@@ -1056,7 +1056,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
           <div className="space-y-4 pb-5 border-b border-[#DADDE1] dark:border-[#2f3032]">
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                Deliverables &amp; Submissions ({deliverablesCount})
+                Deliverables &amp; submissions ({deliverablesCount})
               </h3>
               {isCreator && ['in_progress', 'confirmed', 'delivered'].includes(booking.status) && (
                 <Button
@@ -1065,7 +1065,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                   className="h-8 px-4 text-xs font-semibold rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white shadow-2xs flex items-center gap-1.5 cursor-pointer"
                 >
                   <UploadCloud className="w-3.5 h-3.5" />
-                  <span>Submit Work</span>
+                  <span>Submit work</span>
                 </Button>
               )}
             </div>
@@ -1108,7 +1108,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
             {submissions.length > 0 ? (
               <div className="pt-2 space-y-3">
                 <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider block">
-                  Work Submissions ({submissions.length})
+                  Work submissions ({submissions.length})
                 </span>
 
                 <div className="divide-y divide-[#DADDE1] dark:divide-[#2f3032]">
@@ -1146,7 +1146,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                               className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white dark:bg-gray-800 border border-[#DADDE1] dark:border-[#2f3032] text-xs font-medium text-gray-800 dark:text-gray-200 hover:text-[#9747FF] transition-colors"
                             >
                               <Download className="w-3.5 h-3.5 text-[#9747FF]" />
-                              <span>Deliverable File #{fIdx + 1}</span>
+                              <span>Deliverable file {fIdx + 1}</span>
                             </a>
                           ))}
                         </div>
@@ -1176,7 +1176,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
             ) : (
               <div className="py-4 text-center">
                 <p className="text-xs text-gray-500 dark:text-gray-400 italic">
-                  No work submitted yet. Uploaded deliverables and files will appear here once submitted by the creator.
+                  No work submitted yet. Uploaded deliverables and files will appear here once shared by the creator.
                 </p>
               </div>
             )}
@@ -1191,7 +1191,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                   <h4 className="font-bold text-xs uppercase tracking-wider text-emerald-800 dark:text-emerald-300">
-                    Project Completed &amp; Reviewed
+                    Project completed &amp; reviewed
                   </h4>
                 </div>
                 <div className="flex items-center gap-1 text-amber-500 font-bold text-xs">
@@ -1226,7 +1226,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
           {/* Client & Creator Profile Strip */}
           <div className="pb-5 border-b border-[#DADDE1] dark:border-[#2f3032] space-y-4">
             <h4 className="font-bold text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">
-              Project Participants
+              Project participants
             </h4>
 
             {/* Creator */}
@@ -1269,7 +1269,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                 <span className="font-bold text-xs text-gray-900 dark:text-gray-100 truncate block">
                   {booking.client.name}
                 </span>
-                <p className="text-[11px] text-gray-500">Client / Buyer</p>
+                <p className="text-[11px] text-gray-500">Client</p>
               </div>
             </div>
           </div>
@@ -1277,24 +1277,24 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
           {/* Financial & Escrow Summary */}
           <div className="pb-5 border-b border-[#DADDE1] dark:border-[#2f3032] space-y-3 text-xs">
             <h4 className="font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-              Financial &amp; Escrow
+              Financial &amp; escrow
             </h4>
 
             <div className="space-y-2">
               <div className="flex justify-between text-gray-600 dark:text-gray-300">
-                <span>Agreed Budget:</span>
+                <span>Agreed budget:</span>
                 <span className="font-bold text-gray-900 dark:text-gray-100">
                   {booking.amount} {booking.currency}
                 </span>
               </div>
 
               <div className="flex justify-between text-gray-400 text-[11px]">
-                <span>Platform Commission (10%):</span>
+                <span>Platform fee (10%):</span>
                 <span>{booking.platformFee || (booking.amount * 0.1).toFixed(2)} {booking.currency}</span>
               </div>
 
               <div className="flex justify-between text-[#9747FF] font-semibold pt-1 border-t border-[#DADDE1] dark:border-[#2f3032]">
-                <span>Creator Earnings:</span>
+                <span>Creator earnings:</span>
                 <span>{booking.creatorAmount || (booking.amount * 0.9).toFixed(2)} {booking.currency}</span>
               </div>
 
@@ -1305,8 +1305,8 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                   booking.paymentStatus === 'paid' ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-500'
                 )}>
                   {booking.paymentStatus === 'paid'
-                    ? (booking.status === 'completed' ? 'Escrow Released to Creator' : 'Funds Safely Locked in Escrow')
-                    : (booking.status === 'awaiting_payment' ? 'Deposit Required to Fund Escrow' : 'Escrow Deposit Pending Acceptance')}
+                    ? (booking.status === 'completed' ? 'Escrow released to creator' : 'Payment held securely in escrow')
+                    : (booking.status === 'awaiting_payment' ? 'Escrow deposit required' : 'Escrow pending proposal acceptance')}
                 </span>
               </div>
             </div>
@@ -1315,24 +1315,24 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
           {/* Key Dates Summary */}
           <div className="pb-5 border-b border-[#DADDE1] dark:border-[#2f3032] space-y-2 text-xs">
             <h4 className="font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-              Key Dates
+              Key dates
             </h4>
             <div className="space-y-1.5 text-gray-600 dark:text-gray-300">
               <div className="flex justify-between">
-                <span>Start Date:</span>
+                <span>Start date:</span>
                 <span className="font-medium text-gray-900 dark:text-gray-100">
                   {new Date(booking.startDate).toLocaleDateString()}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span>Due Date:</span>
+                <span>Target completion:</span>
                 <span className="font-medium text-gray-900 dark:text-gray-100">
                   {new Date(booking.endDate).toLocaleDateString()}
                 </span>
               </div>
               {booking.completedAt && (
                 <div className="flex justify-between text-emerald-600">
-                  <span>Completed At:</span>
+                  <span>Completed on:</span>
                   <span className="font-medium">{new Date(booking.completedAt).toLocaleDateString()}</span>
                 </div>
               )}
@@ -1352,10 +1352,10 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
             <DrawerHeader className="text-left pb-3 border-b border-[#DADDE1] dark:border-[#2f3032]">
               <DrawerTitle className="text-base font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                 <Lock className="w-4 h-4 text-[#9747FF]" />
-                <span>Fund Escrow Deposit</span>
+                <span>Fund escrow</span>
               </DrawerTitle>
               <DrawerDescription className="text-xs text-gray-500">
-                Lock payment for "{booking.serviceTitle}" in secure escrow.
+                Deposit payment for "{booking.serviceTitle}" into escrow.
               </DrawerDescription>
             </DrawerHeader>
 
@@ -1366,11 +1366,11 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                   <span className="font-semibold text-gray-900 dark:text-gray-100">{booking.creator.name}</span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-[#DADDE1]/60 dark:border-[#2f3032]">
-                  <span className="text-gray-500">Escrow Deposit:</span>
+                  <span className="text-gray-500">Escrow deposit:</span>
                   <span className="font-bold text-gray-900 dark:text-gray-100">{booking.amount} {booking.currency}</span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-[#DADDE1]/60 dark:border-[#2f3032]">
-                  <span className="text-gray-500">Available Wallet Balance:</span>
+                  <span className="text-gray-500">Available wallet balance:</span>
                   <span className="font-semibold text-[#9747FF]">
                     {isLoadingWallet ? 'Checking...' : `${walletAvailableBalance ?? 0} ${booking.currency}`}
                   </span>
@@ -1379,18 +1379,18 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
 
               {walletAvailableBalance !== null && walletAvailableBalance < booking.amount ? (
                 <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 text-xs space-y-2">
-                  <p>Your wallet balance is lower than the required {booking.amount} {booking.currency}.</p>
+                  <p>Your available wallet balance is less than the required {booking.amount} {booking.currency}.</p>
                   <Button
                     size="sm"
                     onClick={() => (window.location.href = '/wallet')}
                     className="w-full rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold"
                   >
-                    Deposit Funds into Wallet
+                    Add funds to wallet
                   </Button>
                 </div>
               ) : (
                 <p className="text-xs text-gray-500 leading-relaxed">
-                  Funds will be deducted from your wallet and held in MyArteLab smart escrow. Funds are only transferred to the creator after you approve the final deliverables.
+                  Funds will be moved from your wallet to escrow and only released to the creator when you approve the final deliverables.
                 </p>
               )}
 
@@ -1409,7 +1409,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                   className="flex-1 rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold"
                 >
                   {isSubmittingFunding ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <Lock className="w-3.5 h-3.5 mr-1" />}
-                  Confirm &amp; Lock
+                  Deposit into escrow
                 </Button>
               </div>
             </div>
@@ -1421,11 +1421,11 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
             <DialogHeader className="pb-3 border-b border-[#DADDE1] dark:border-[#2f3032]">
               <DialogTitle className="text-base font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                 <Lock className="w-4 h-4 text-[#9747FF]" />
-                <span>Fund Escrow Deposit</span>
+                <span>Fund escrow</span>
               </DialogTitle>
-              <DialogDescription className="text-xs text-gray-500">
-                Lock payment for "{booking.serviceTitle}" in secure escrow.
-              </DialogDescription>
+              <DrawerDescription className="text-xs text-gray-500">
+                Deposit payment for "{booking.serviceTitle}" into escrow.
+              </DrawerDescription>
             </DialogHeader>
 
             <div className="py-4 space-y-4">
@@ -1435,11 +1435,11 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                   <span className="font-semibold text-gray-900 dark:text-gray-100">{booking.creator.name}</span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-[#DADDE1]/60 dark:border-[#2f3032]">
-                  <span className="text-gray-500">Escrow Deposit:</span>
+                  <span className="text-gray-500">Escrow deposit:</span>
                   <span className="font-bold text-gray-900 dark:text-gray-100">{booking.amount} {booking.currency}</span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-[#DADDE1]/60 dark:border-[#2f3032]">
-                  <span className="text-gray-500">Your Available Balance:</span>
+                  <span className="text-gray-500">Available wallet balance:</span>
                   <span className="font-semibold text-[#9747FF]">
                     {isLoadingWallet ? 'Checking...' : `${walletAvailableBalance ?? 0} ${booking.currency}`}
                   </span>
@@ -1448,18 +1448,18 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
 
               {walletAvailableBalance !== null && walletAvailableBalance < booking.amount ? (
                 <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 text-xs space-y-2">
-                  <p>Your wallet balance is lower than the required {booking.amount} {booking.currency}.</p>
+                  <p>Your available wallet balance is less than the required {booking.amount} {booking.currency}.</p>
                   <Button
                     size="sm"
                     onClick={() => (window.location.href = '/wallet')}
                     className="w-full rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold"
                   >
-                    Deposit Funds into Wallet
+                    Add funds to wallet
                   </Button>
                 </div>
               ) : (
                 <p className="text-xs text-gray-500 leading-relaxed">
-                  Funds will be deducted from your wallet and held securely in escrow. Funds are only transferred to the creator after you inspect and approve the completed deliverables.
+                  Funds will be moved from your wallet to escrow and only released to the creator when you approve the final deliverables.
                 </p>
               )}
 
@@ -1478,7 +1478,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                   className="rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold px-5"
                 >
                   {isSubmittingFunding ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <Lock className="w-3.5 h-3.5 mr-1" />}
-                  Confirm &amp; Lock in Escrow
+                  Deposit into escrow
                 </Button>
               </div>
             </div>
@@ -1491,17 +1491,17 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
         <DialogContent className="max-w-lg rounded-2xl bg-white dark:bg-[#18191a] border border-[#DADDE1] dark:border-[#2f3032] p-5">
           <DialogHeader className="pb-3 border-b border-[#DADDE1] dark:border-[#2f3032]">
             <DialogTitle className="text-base font-bold text-gray-900 dark:text-gray-100">
-              Submit Deliverables
+              Submit deliverables
             </DialogTitle>
             <DialogDescription className="text-xs text-gray-500">
-              Deliver completed files, design assets, and external links for client review.
+              Share completed files, design assets, or project links for client review.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-3">
             <div className="space-y-1">
               <label className="text-xs font-semibold text-gray-800 dark:text-gray-200">
-                Delivery Title <span className="text-[#9747FF]">*</span>
+                Delivery title <span className="text-[#9747FF]">*</span>
               </label>
               <Input
                 variant="line"
@@ -1514,12 +1514,12 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
 
             <div className="space-y-1">
               <label className="text-xs font-semibold text-gray-800 dark:text-gray-200">
-                Delivery Notes / Instructions
+                Notes or instructions
               </label>
               <Textarea
                 variant="line"
                 rows={3}
-                placeholder="Explain the changes made, file structure, or how to inspect the deliverables..."
+                placeholder="Explain the updates made, file structure, or how to inspect the work..."
                 value={submissionDesc}
                 onChange={(e) => setSubmissionDesc(e.target.value)}
                 className="text-xs resize-none"
@@ -1529,7 +1529,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
             {/* File Upload */}
             <div className="space-y-1">
               <label className="text-xs font-semibold text-gray-800 dark:text-gray-200">
-                Upload Assets / Images / Files
+                Upload assets or files
               </label>
               <div className="flex items-center gap-2">
                 <input
@@ -1550,7 +1550,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
             {/* Links */}
             <div className="space-y-1">
               <label className="text-xs font-semibold text-gray-800 dark:text-gray-200">
-                External Asset Links (One per line)
+                External links (one per line)
               </label>
               <Textarea
                 variant="line"
@@ -1579,7 +1579,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                 className="rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold px-5"
               >
                 {isSubmittingWork ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <Send className="w-3.5 h-3.5 mr-1" />}
-                Submit Work Package
+                Submit work
               </Button>
             </div>
           </div>
@@ -1591,22 +1591,22 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
         <DialogContent className="max-w-md rounded-2xl bg-white dark:bg-[#18191a] border border-[#DADDE1] dark:border-[#2f3032] p-5">
           <DialogHeader className="pb-3 border-b border-[#DADDE1] dark:border-[#2f3032]">
             <DialogTitle className="text-base font-bold text-gray-900 dark:text-gray-100">
-              Request Project Revision
+              Request revision
             </DialogTitle>
             <DialogDescription className="text-xs text-gray-500">
-              Specify changes or refinements you would like {booking.creator.name} to make.
+              Describe the changes or refinements you would like {booking.creator.name} to make.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-3">
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-gray-800 dark:text-gray-200">
-                Revision Details &amp; Feedback <span className="text-[#9747FF]">*</span>
+                Revision details <span className="text-[#9747FF]">*</span>
               </label>
               <Textarea
                 variant="line"
                 rows={4}
-                placeholder="Clearly describe what needs adjustment (e.g. color adjustments, missing asset format, revised copy)..."
+                placeholder="Describe what needs adjustment (e.g., color tweaks, missing asset formats, copy changes)..."
                 value={revisionNotes}
                 onChange={(e) => setRevisionNotes(e.target.value)}
                 className="text-xs resize-none"
@@ -1630,7 +1630,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                 className="rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold px-5"
               >
                 {isSubmittingRevision ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <RotateCcw className="w-3.5 h-3.5 mr-1" />}
-                Send Revision Request
+                Send revision request
               </Button>
             </div>
           </div>
@@ -1642,10 +1642,10 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
         <DialogContent className="max-w-md rounded-2xl bg-white dark:bg-[#18191a] border border-[#DADDE1] dark:border-[#2f3032] p-5">
           <DialogHeader className="pb-3 border-b border-[#DADDE1] dark:border-[#2f3032]">
             <DialogTitle className="text-base font-bold text-gray-900 dark:text-gray-100">
-              Approve Deliverables &amp; Release Escrow
+              Approve deliverables &amp; release payment
             </DialogTitle>
             <DialogDescription className="text-xs text-gray-500">
-              Confirm your satisfaction with deliverables. Funds will be released from escrow to {booking.creator.name}.
+              Confirm that the deliverables meet your requirements. Escrow funds will be released to {booking.creator.name}.
             </DialogDescription>
           </DialogHeader>
 
@@ -1653,7 +1653,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
             {/* Interactive Stars */}
             <div className="space-y-2 text-center py-2">
               <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                Rate Creator Performance:
+                Rate your experience:
               </span>
               <div className="flex items-center justify-center gap-2">
                 {[1, 2, 3, 4, 5].map((star) => (
@@ -1684,12 +1684,12 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
 
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-gray-800 dark:text-gray-200">
-                Review &amp; Testimonial (Optional)
+                Review (optional)
               </label>
               <Textarea
                 variant="line"
                 rows={3}
-                placeholder="Share your thoughts on the quality, turnaround time, and collaboration..."
+                placeholder="Share a few words about the quality, communication, and overall experience..."
                 value={reviewComment}
                 onChange={(e) => setReviewComment(e.target.value)}
                 className="text-xs resize-none"
@@ -1713,7 +1713,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                 className="rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold px-5"
               >
                 {isSubmittingApproval ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <CheckCircle2 className="w-3.5 h-3.5 mr-1" />}
-                Confirm &amp; Release Funds
+                Approve and release payment
               </Button>
             </div>
           </div>
@@ -1726,16 +1726,16 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
           <DialogHeader className="pb-3 border-b border-[#DADDE1] dark:border-[#2f3032]">
             <DialogTitle className="text-base font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
               <RotateCcw className="w-4 h-4 text-[#9747FF]" />
-              <span>Send Counter Offer</span>
+              <span>Send counter offer</span>
             </DialogTitle>
             <DialogDescription className="text-xs text-gray-500">
-              Propose revised budget terms for this project.
+              Propose a revised budget for this project.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-3">
             <div className="flex justify-between text-xs py-1 border-b border-[#DADDE1]/60 dark:border-[#2f3032]">
-              <span className="text-gray-500">Original Proposed Budget:</span>
+              <span className="text-gray-500">Original budget:</span>
               <span className="font-semibold text-gray-900 dark:text-gray-100">
                 {booking.amount} {booking.currency}
               </span>
@@ -1743,7 +1743,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
 
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-gray-700 dark:text-gray-300">
-                Your Proposed Amount ({booking.currency})
+                Your proposed budget ({booking.currency})
               </label>
               <div className="relative">
                 <DollarSign className="absolute left-0 top-2.5 h-4 w-4 text-gray-400 pointer-events-none" />
@@ -1777,7 +1777,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                 className="rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold px-5"
               >
                 {isSubmittingCounter ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <Send className="w-3.5 h-3.5 mr-1" />}
-                Submit Counter Offer
+                Send counter offer
               </Button>
             </div>
           </div>
@@ -1789,21 +1789,21 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
         <DialogContent className="w-full max-w-[calc(100%-2rem)] sm:max-w-md rounded-2xl bg-white dark:bg-[#18191a] border border-[#DADDE1] dark:border-[#2f3032] p-5">
           <DialogHeader className="pb-3 border-b border-[#DADDE1] dark:border-[#2f3032]">
             <DialogTitle className="text-base font-bold text-gray-900 dark:text-gray-100">
-              Decline Booking Request
+              Decline booking request
             </DialogTitle>
             <DialogDescription className="text-xs text-gray-500">
-              Let the client know why you are unable to accept this booking request.
+              Let the client know why you cannot take on this project.
             </DialogDescription>
           </DialogHeader>
           <div className="py-3">
             <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 block mb-1.5">
-              Reason for declining (Optional)
+              Reason for declining (optional)
             </label>
             <Textarea
               variant="line"
               value={declineReason}
               onChange={(e) => setDeclineReason(e.target.value)}
-              placeholder="e.g., Currently unavailable for new bookings, schedule conflict..."
+              placeholder="e.g. Schedule conflict, project scope outside current focus..."
               rows={3}
               className="w-full text-xs resize-none"
             />
@@ -1825,7 +1825,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
               className="bg-red-600 hover:bg-red-700 text-white font-semibold text-xs h-9 px-4 rounded-xl cursor-pointer"
             >
               {isProcessingAction ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : null}
-              Decline Booking
+              Decline booking
             </Button>
           </div>
         </DialogContent>

@@ -260,7 +260,7 @@ export function MobileWallet({
           <div className="mt-3 p-3 rounded-xl bg-red-50/90 dark:bg-red-950/40 border border-red-200/80 dark:border-red-900/50 text-center max-w-sm mx-auto">
             <div className="flex items-center justify-center gap-1.5 text-red-700 dark:text-red-400 text-xs sm:text-sm font-semibold mb-1">
               <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-              <span>Failed to load wallet data</span>
+              <span>We couldn't load your wallet data</span>
             </div>
             <p className="text-xs text-red-600 dark:text-red-300 mb-2">{walletError}</p>
             {onRefresh && (
@@ -296,7 +296,7 @@ export function MobileWallet({
           className="h-12 px-4 rounded-xl bg-gray-100 hover:bg-gray-200/80 dark:bg-[#1e1f20] dark:hover:bg-[#252627] active:scale-[0.98] border border-gray-200/70 dark:border-gray-800 text-gray-900 dark:text-gray-100 font-semibold text-sm sm:text-base flex items-center justify-center gap-2 shadow-2xs transition-all cursor-pointer"
         >
           <ArrowDownLeft className="w-4 h-4 text-gray-700 dark:text-gray-300" />
-          <span>Add Funds</span>
+          <span>Add funds</span>
         </button>
 
         <button
@@ -315,10 +315,10 @@ export function MobileWallet({
           <div className="flex items-center gap-1.5">
             <ShieldCheck className="w-4 h-4 text-[#9747FF]" />
             <h2 className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400">
-              Escrow Activity
+              Escrow activity
             </h2>
           </div>
-          <span className="text-xs font-medium text-gray-400 dark:text-gray-500">Protected Funds</span>
+          <span className="text-xs font-medium text-gray-400 dark:text-gray-500">Protected funds</span>
         </div>
 
         {hasEscrowActivity ? (
@@ -331,8 +331,8 @@ export function MobileWallet({
                     <Lock className="w-4 h-4" />
                   </div>
                   <div>
-                    <p className="font-semibold text-sm text-gray-900 dark:text-gray-100">Held in Escrow</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Released to creator upon delivery</p>
+                    <p className="font-semibold text-sm text-gray-900 dark:text-gray-100">Held in escrow</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Released to creator upon deliverable approval</p>
                   </div>
                 </div>
                 <div className="text-right">
@@ -341,7 +341,7 @@ export function MobileWallet({
                     <span className="text-xs text-gray-400 dark:text-gray-500 font-normal">USDC</span>
                   </p>
                   <span className="inline-block text-xs text-purple-700 dark:text-purple-300 font-semibold bg-purple-50 dark:bg-[#9747FF]/20 border border-purple-200/60 dark:border-purple-800/60 px-2 py-0.5 rounded-md mt-0.5">
-                    In Escrow
+                    In escrow
                   </span>
                 </div>
               </div>
@@ -355,8 +355,8 @@ export function MobileWallet({
                     <TrendingUp className="w-4 h-4" />
                   </div>
                   <div>
-                    <p className="font-semibold text-sm text-gray-900 dark:text-gray-100">Incoming Earnings</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Paid out when client approves work</p>
+                    <p className="font-semibold text-sm text-gray-900 dark:text-gray-100">Incoming earnings</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Paid out when the client approves deliverables</p>
                   </div>
                 </div>
                 <div className="text-right">
@@ -375,13 +375,13 @@ export function MobileWallet({
           <div className="bg-gray-50/70 dark:bg-[#18191a]/70 border border-dashed border-gray-200/80 dark:border-gray-800 rounded-xl p-3.5 text-center">
             <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">No active escrow funds</p>
             <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Funds for bookings are securely held in escrow until milestones are completed.
+              Project funds are held in escrow until deliverables are completed and approved.
             </p>
             <a
               href="/bookings"
               className="inline-flex items-center gap-1 text-xs sm:text-sm font-semibold text-[#9747FF] hover:underline mt-2"
             >
-              <span>View Bookings</span>
+              <span>View bookings</span>
               <ArrowRight className="w-3.5 h-3.5 ml-0.5" />
             </a>
           </div>
@@ -392,7 +392,7 @@ export function MobileWallet({
       <section className="max-w-md mx-auto">
         <div className="flex items-center justify-between mb-3 px-1">
           <div className="flex items-center gap-2">
-            <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 tracking-tight">Recent Transactions</h2>
+            <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 tracking-tight">Recent transactions</h2>
             {isTransactionsLoading && (
               <Loader2 className="w-3.5 h-3.5 animate-spin text-[#9747FF]" />
             )}
@@ -404,7 +404,7 @@ export function MobileWallet({
           <div className="mb-3 p-3 rounded-xl bg-red-50/90 dark:bg-red-950/40 border border-red-200/80 dark:border-red-900/50 text-center">
             <div className="flex items-center justify-center gap-1.5 text-red-700 dark:text-red-400 text-xs sm:text-sm font-semibold mb-1">
               <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-              <span>Failed to load transactions</span>
+              <span>We couldn't load your transactions</span>
             </div>
             <p className="text-xs text-red-600 dark:text-red-300 mb-2">{transactionsError}</p>
             {onRefresh && (
@@ -552,9 +552,9 @@ export function MobileWallet({
             <div className="w-10 h-10 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center mx-auto mb-2.5 text-gray-400 dark:text-gray-300 shadow-2xs border border-gray-100 dark:border-gray-700">
               <FolderOpen className="w-5 h-5 stroke-[1.5]" />
             </div>
-            <p className="font-semibold text-gray-900 dark:text-gray-100 text-base">No transactions found</p>
+            <p className="font-semibold text-gray-900 dark:text-gray-100 text-base">No transactions yet</p>
             <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-xs mx-auto">
-              Your transaction history will appear here
+              Deposits, withdrawals, and project payments will appear here.
             </p>
           </div>
         )}

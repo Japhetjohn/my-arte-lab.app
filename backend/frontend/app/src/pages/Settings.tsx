@@ -606,7 +606,7 @@ export function Settings() {
                     checked={isDark}
                     onCheckedChange={(checked) => {
                       setTheme(checked ? 'dark' : 'light');
-                      toast.info(checked ? 'Dark theme activated' : 'Light theme activated');
+                      toast.info(checked ? 'Dark theme enabled.' : 'Light theme enabled.');
                     }}
                   />
                 </div>
@@ -645,7 +645,7 @@ export function Settings() {
                     <Lock className="w-4 h-4" />
                   </div>
                   <span className="text-sm font-medium text-gray-900 dark:text-gray-100 group-hover:text-[#9747FF] transition-colors truncate">
-                    Security &amp; Password
+                    Security &amp; password
                   </span>
                 </div>
                 <ChevronRight className="w-4 h-4 text-gray-400 dark:text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-200 transition-colors shrink-0 ml-2" />
@@ -662,7 +662,7 @@ export function Settings() {
                     <Shield className="w-4 h-4" />
                   </div>
                   <span className="text-sm font-medium text-gray-900 dark:text-gray-100 group-hover:text-[#9747FF] transition-colors truncate">
-                    Privacy Preferences
+                    Privacy preferences
                   </span>
                 </div>
                 <ChevronRight className="w-4 h-4 text-gray-400 dark:text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-200 transition-colors shrink-0 ml-2" />
@@ -692,7 +692,7 @@ export function Settings() {
           {/* SECTION C: Creator Studio / Client Section */}
           <section className="py-5 border-b border-[#DADDE1] dark:border-[#2f3032]">
             <h2 className="text-sm font-bold text-gray-900 dark:text-gray-100 tracking-tight mb-2 px-1">
-              {isCreator ? 'Creator Studio' : 'Client Account'}
+              {isCreator ? 'Creator account' : 'Client account'}
             </h2>
 
             <div className="divide-y divide-[#DADDE1] dark:divide-[#2f3032]">
@@ -709,7 +709,7 @@ export function Settings() {
                       </div>
                       <div className="min-w-0">
                         <div className="text-sm font-medium text-gray-900 dark:text-gray-100 group-hover:text-[#9747FF] transition-colors truncate">
-                          View Public Profile
+                          View public profile
                         </div>
                         <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
                           See your portfolio and services as clients see them
@@ -730,10 +730,10 @@ export function Settings() {
                       </div>
                       <div className="min-w-0">
                         <div className="text-sm font-medium text-gray-900 dark:text-gray-100 group-hover:text-[#9747FF] transition-colors truncate">
-                          My Bookings &amp; Orders
+                          Bookings
                         </div>
                         <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                          Manage milestones, deliverables and active contracts
+                          Track milestones, deliverables, and projects
                         </div>
                       </div>
                     </div>
@@ -970,7 +970,7 @@ export function Settings() {
               href="mailto:support@myartelab.com"
               className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#9747FF] hover:underline"
             >
-              <span>Email Support Team</span>
+              <span>Contact support</span>
               <ChevronRight className="w-3.5 h-3.5" />
             </a>
           </div>
@@ -987,8 +987,8 @@ export function Settings() {
       <SettingsSheetModal
         isOpen={isEditProfileOpen}
         onClose={() => setIsEditProfileOpen(false)}
-        title="Edit Profile"
-        description="Update your public display name, personal bio, skills, and contact details."
+        title="Edit profile"
+        description="Update your display name, bio, skills, and details."
         maxWidth="sm:max-w-lg"
         footer={
           <div className="flex items-center justify-end gap-2.5">
@@ -1012,7 +1012,7 @@ export function Settings() {
                   Saving...
                 </>
               ) : (
-                'Save Changes'
+                'Save changes'
               )}
             </Button>
           </div>
@@ -1184,8 +1184,8 @@ export function Settings() {
       <SettingsSheetModal
         isOpen={isPasswordDialogOpen}
         onClose={() => setIsPasswordDialogOpen(false)}
-        title="Change Password"
-        description="Ensure your account is using a strong password with letters, numbers, and symbols."
+        title="Change password"
+        description="Choose a secure password that you don't use elsewhere."
         maxWidth="sm:max-w-md"
         footer={
           <div className="flex items-center justify-end gap-2.5">
@@ -1209,7 +1209,7 @@ export function Settings() {
                   Updating...
                 </>
               ) : (
-                'Change Password'
+                'Update password'
               )}
             </Button>
           </div>
@@ -1217,7 +1217,7 @@ export function Settings() {
       >
         <div className="space-y-3.5">
           <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-gray-700 dark:text-gray-300">Current Password</Label>
+            <Label className="text-xs font-medium text-gray-700 dark:text-gray-300">Current password</Label>
             <Input
               type="password"
               variant="line"
@@ -1267,15 +1267,15 @@ export function Settings() {
       <SettingsSheetModal
         isOpen={isNotificationsModalOpen}
         onClose={() => setIsNotificationsModalOpen(false)}
-        title="Notification Preferences"
-        description="Select how and when you want to receive updates from MyArteLab."
+        title="Notification preferences"
+        description="Choose how and when you want to hear from us."
         maxWidth="sm:max-w-md"
         footer={
           <div className="flex justify-end">
             <Button
               type="button"
               onClick={() => {
-                toast.success('Notification preferences updated');
+                toast.success('Notification preferences updated.');
                 setIsNotificationsModalOpen(false);
               }}
               className="bg-[#9747FF] hover:bg-[#8534f0] text-white font-semibold text-xs h-9 px-5 rounded-xl shadow-xs cursor-pointer"
@@ -1288,7 +1288,7 @@ export function Settings() {
         <div className="divide-y divide-[#DADDE1] dark:divide-[#2f3032]">
           <div className="flex items-center justify-between py-3">
             <div>
-              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Email Notifications</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Email notifications</p>
               <p className="text-xs text-gray-500 dark:text-gray-400">Get booking updates &amp; messages via email</p>
             </div>
             <Switch
@@ -1301,7 +1301,7 @@ export function Settings() {
 
           <div className="flex items-center justify-between py-3">
             <div>
-              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Push Notifications</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Push notifications</p>
               <p className="text-xs text-gray-500 dark:text-gray-400">Real-time alerts on your device</p>
             </div>
             <Switch
@@ -1314,7 +1314,7 @@ export function Settings() {
 
           <div className="flex items-center justify-between py-3">
             <div>
-              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">SMS Alerts</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">SMS alerts</p>
               <p className="text-xs text-gray-500 dark:text-gray-400">Important security &amp; payment alerts</p>
             </div>
             <Switch
@@ -1327,7 +1327,7 @@ export function Settings() {
 
           <div className="flex items-center justify-between py-3">
             <div>
-              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Marketing &amp; Discoveries</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Product updates &amp; creator highlights</p>
               <p className="text-xs text-gray-500 dark:text-gray-400">Promotional creator spotlights &amp; newsletters</p>
             </div>
             <Switch
@@ -1344,8 +1344,8 @@ export function Settings() {
       <SettingsSheetModal
         isOpen={isPrivacyModalOpen}
         onClose={() => setIsPrivacyModalOpen(false)}
-        title="Privacy Preferences"
-        description="Manage your visibility and messaging access across the creative marketplace."
+        title="Privacy preferences"
+        description="Manage your profile visibility and messaging settings."
         maxWidth="sm:max-w-md"
         footer={
           <div className="flex items-center justify-end gap-2.5">
@@ -1369,7 +1369,7 @@ export function Settings() {
                   Saving...
                 </>
               ) : (
-                'Save Privacy Settings'
+                'Save privacy settings'
               )}
             </Button>
           </div>
@@ -1378,7 +1378,7 @@ export function Settings() {
         <div className="divide-y divide-[#DADDE1] dark:divide-[#2f3032]">
           <div className="flex items-center justify-between py-3">
             <div>
-              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Public Profile</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Public profile</p>
               <p className="text-xs text-gray-500 dark:text-gray-400">Make your profile visible in search &amp; discovery</p>
             </div>
             <Switch
@@ -1391,7 +1391,7 @@ export function Settings() {
 
           <div className="flex items-center justify-between py-3">
             <div>
-              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Activity Status</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Activity status</p>
               <p className="text-xs text-gray-500 dark:text-gray-400">Show when you are actively on MyArteLab</p>
             </div>
             <Switch
@@ -1404,7 +1404,7 @@ export function Settings() {
 
           <div className="flex items-center justify-between py-3">
             <div>
-              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Direct Messages</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Direct messages</p>
               <p className="text-xs text-gray-500 dark:text-gray-400">Allow other verified users to message you</p>
             </div>
             <Switch
@@ -1421,8 +1421,8 @@ export function Settings() {
       <SettingsSheetModal
         isOpen={isBecomeCreatorOpen}
         onClose={() => setIsBecomeCreatorOpen(false)}
-        title="Become a Verified Creator"
-        description="Join Africa's leading creative marketplace to showcase your portfolio, reach clients, and get paid securely."
+        title="Become a creator"
+        description="Set up your space to showcase your work, take on client bookings, and get paid securely."
         maxWidth="sm:max-w-md"
         footer={
           <div className="flex items-center justify-end gap-2.5">
@@ -1442,7 +1442,7 @@ export function Settings() {
               }}
               className="bg-[#9747FF] hover:bg-[#8534f0] text-white font-semibold text-xs h-9 px-5 rounded-xl shadow-xs cursor-pointer"
             >
-              Apply as Creator
+              Get started as a creator
             </Button>
           </div>
         }
@@ -1451,19 +1451,19 @@ export function Settings() {
           <div className="flex items-start gap-3">
             <CheckCircle2 className="w-4 h-4 text-[#9747FF] shrink-0 mt-0.5" />
             <span className="leading-relaxed">
-              Publish artwork, audio, and stories directly to the community feed.
+              Share your work directly to the community feed.
             </span>
           </div>
           <div className="flex items-start gap-3">
             <CheckCircle2 className="w-4 h-4 text-[#9747FF] shrink-0 mt-0.5" />
             <span className="leading-relaxed">
-              Offer custom creative packages and receive client booking requests.
+              Offer services and receive project booking requests.
             </span>
           </div>
           <div className="flex items-start gap-3">
             <CheckCircle2 className="w-4 h-4 text-[#9747FF] shrink-0 mt-0.5" />
             <span className="leading-relaxed">
-              Non-custodial instant payouts in USDC / USDT directly to your wallet.
+              Fast escrow payouts in USDC directly to your wallet.
             </span>
           </div>
         </div>
@@ -1474,9 +1474,9 @@ export function Settings() {
         isOpen={isLogoutDialogOpen}
         onClose={() => setIsLogoutDialogOpen(false)}
         onConfirm={handleLogout}
-        title="Sign Out"
-        description="Are you sure you want to log out of your MyArteLab account? You will need to sign in again to access your account, creator dashboard, and messages."
-        confirmLabel="Log Out"
+        title="Sign out?"
+        description="You'll need to sign in again to view your bookings and messages."
+        confirmLabel="Sign out"
         cancelLabel="Cancel"
         variant="destructive"
       />

@@ -21,7 +21,7 @@ export function VerificationCodeScreen({
   onVerify,
   onResend,
   onBack,
-  submitButtonText = 'Submit',
+  submitButtonText = 'Verify code',
   initialCooldown = 30,
 }: VerificationCodeScreenProps) {
   const [code, setCode] = useState<string[]>(['', '', '', '', '', '']);
