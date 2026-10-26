@@ -46,7 +46,6 @@ import {
   Users,
   Wallet,
   Settings,
-  Loader2,
   Send,
   Eye,
   Lock,
@@ -55,6 +54,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 
 interface BookingDetailProps {
   bookingId?: string;
@@ -374,7 +374,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-28 text-gray-400 space-y-3">
-        <Loader2 className="w-8 h-8 animate-spin text-[#9747FF]" />
+        <Spinner size="lg" variant="primary" />
         <p className="text-xs">Loading project details...</p>
       </div>
     );
@@ -533,7 +533,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
               disabled={isProcessingAction}
               className="h-8 px-4 text-xs font-semibold rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white shadow-2xs cursor-pointer"
             >
-              {isProcessingAction ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : null}
+              {isProcessingAction ? <Spinner size="sm" variant="white" className="mr-1" /> : null}
               Accept booking
             </Button>
             <Button
@@ -576,7 +576,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
               disabled={isProcessingAction}
               className="h-8 px-4 text-xs font-semibold rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white shadow-2xs cursor-pointer"
             >
-              {isProcessingAction ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : null}
+              {isProcessingAction ? <Spinner size="sm" variant="white" className="mr-1" /> : null}
               Accept offer
             </Button>
             <Button
@@ -1408,7 +1408,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                   disabled={isSubmittingFunding || (walletAvailableBalance !== null && walletAvailableBalance < booking.amount)}
                   className="flex-1 rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold"
                 >
-                  {isSubmittingFunding ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <Lock className="w-3.5 h-3.5 mr-1" />}
+                  {isSubmittingFunding ? <Spinner size="sm" variant="white" className="mr-1" /> : <Lock className="w-3.5 h-3.5 mr-1" />}
                   Deposit into escrow
                 </Button>
               </div>
@@ -1477,7 +1477,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                   disabled={isSubmittingFunding || (walletAvailableBalance !== null && walletAvailableBalance < booking.amount)}
                   className="rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold px-5"
                 >
-                  {isSubmittingFunding ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <Lock className="w-3.5 h-3.5 mr-1" />}
+                  {isSubmittingFunding ? <Spinner size="sm" variant="white" className="mr-1" /> : <Lock className="w-3.5 h-3.5 mr-1" />}
                   Deposit into escrow
                 </Button>
               </div>
@@ -1538,7 +1538,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                   onChange={handleFileUpload}
                   className="text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:bg-purple-50 file:text-[#9747FF] hover:file:bg-purple-100"
                 />
-                {isUploadingFile && <Loader2 className="w-4 h-4 animate-spin text-[#9747FF]" />}
+                {isUploadingFile && <Spinner size="sm" variant="primary" />}
               </div>
               {submissionFiles.length > 0 && (
                 <p className="text-[11px] text-emerald-600 font-medium">
@@ -1578,7 +1578,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                 disabled={isSubmittingWork}
                 className="rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold px-5"
               >
-                {isSubmittingWork ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <Send className="w-3.5 h-3.5 mr-1" />}
+                {isSubmittingWork ? <Spinner size="sm" variant="white" className="mr-1" /> : <Send className="w-3.5 h-3.5 mr-1" />}
                 Submit work
               </Button>
             </div>
@@ -1629,7 +1629,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                 disabled={isSubmittingRevision}
                 className="rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold px-5"
               >
-                {isSubmittingRevision ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <RotateCcw className="w-3.5 h-3.5 mr-1" />}
+                {isSubmittingRevision ? <Spinner size="sm" variant="white" className="mr-1" /> : <RotateCcw className="w-3.5 h-3.5 mr-1" />}
                 Send revision request
               </Button>
             </div>
@@ -1712,7 +1712,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                 disabled={isSubmittingApproval}
                 className="rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold px-5"
               >
-                {isSubmittingApproval ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <CheckCircle2 className="w-3.5 h-3.5 mr-1" />}
+                {isSubmittingApproval ? <Spinner size="sm" variant="white" className="mr-1" /> : <CheckCircle2 className="w-3.5 h-3.5 mr-1" />}
                 Approve and release payment
               </Button>
             </div>
@@ -1776,7 +1776,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
                 disabled={isSubmittingCounter}
                 className="rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold px-5"
               >
-                {isSubmittingCounter ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <Send className="w-3.5 h-3.5 mr-1" />}
+                {isSubmittingCounter ? <Spinner size="sm" variant="white" className="mr-1" /> : <Send className="w-3.5 h-3.5 mr-1" />}
                 Send counter offer
               </Button>
             </div>
@@ -1824,7 +1824,7 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
               disabled={isProcessingAction}
               className="bg-red-600 hover:bg-red-700 text-white font-semibold text-xs h-9 px-4 rounded-xl cursor-pointer"
             >
-              {isProcessingAction ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : null}
+              {isProcessingAction ? <Spinner size="sm" variant="white" className="mr-1" /> : null}
               Decline booking
             </Button>
           </div>

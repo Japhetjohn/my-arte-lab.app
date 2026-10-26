@@ -23,7 +23,6 @@ import { toast } from '@/components/ui/sonner';
 import {
   Calendar,
   DollarSign,
-  Loader2,
   Star,
   Sparkles,
   Users,
@@ -37,6 +36,7 @@ import {
   MessageSquare,
   CheckCircle2,
 } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 
 interface CreatorInfo {
   id: string;
@@ -539,7 +539,7 @@ export function Bookings() {
           {/* Bookings Stream - Clean Continuous List with Thin Ash-Gray Dividers */}
           {isLoading ? (
             <div className="py-24 flex flex-col items-center justify-center gap-3 bg-white dark:bg-[#18191a] border border-[#DADDE1] dark:border-[#2f3032] rounded-b-2xl">
-              <Loader2 className="w-7 h-7 animate-spin text-[#9747FF]" />
+              <Spinner size="lg" variant="primary" />
               <span className="text-xs text-gray-500">Loading bookings...</span>
             </div>
           ) : sortedBookings.length === 0 ? (

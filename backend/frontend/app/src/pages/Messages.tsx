@@ -7,7 +7,6 @@ import {
   Send,
   ChevronLeft,
   Ban,
-  Loader2,
   Info,
   MessageSquare,
   Home as HomeIcon,
@@ -23,6 +22,7 @@ import {
   CheckCheck,
   Download,
 } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
 import { getAvatarUrl, getImageUrl } from '@/lib/imageUrl';
 import { toast } from '@/components/ui/sonner';
@@ -732,7 +732,7 @@ export function Messages() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="w-8 h-8 animate-spin text-[#9747FF]" />
+        <Spinner size="lg" variant="primary" />
       </div>
     );
   }
@@ -1291,7 +1291,7 @@ export function Messages() {
                                       <span>•</span>
                                       {message.isPending ? (
                                         <span className="text-gray-400 dark:text-gray-500 flex items-center gap-1">
-                                          <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                                          <Spinner size="xs" variant="muted" />
                                           Sending...
                                         </span>
                                       ) : message.read ? (
@@ -1404,7 +1404,7 @@ export function Messages() {
                             aria-label="Send message"
                           >
                             {isSending ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
+                              <Spinner size="sm" variant="white" />
                             ) : (
                               <Send className="w-4 h-4 -ml-0.5" />
                             )}

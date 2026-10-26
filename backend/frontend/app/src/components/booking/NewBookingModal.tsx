@@ -23,7 +23,6 @@ import { uploadService } from '@/lib/api';
 import { toast } from '@/components/ui/sonner';
 import { cn } from '@/lib/utils';
 import {
-  Loader2,
   Calendar,
   DollarSign,
   Plus,
@@ -37,6 +36,7 @@ import {
   ShieldCheck,
   PackageCheck,
 } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 
 interface Creator {
   id: string;
@@ -549,7 +549,7 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
                   className="h-7 text-xs rounded-full border-[#DADDE1] dark:border-[#2f3032] text-[#9747FF]"
                 >
                   {isUploading ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" />
+                    <Spinner size="sm" variant="primary" className="mr-1" />
                   ) : (
                     <UploadCloud className="w-3.5 h-3.5 mr-1" />
                   )}
@@ -759,7 +759,7 @@ export function NewBookingModal({ isOpen, onClose, creator, onSuccess }: NewBook
         >
           {isLoading ? (
             <>
-              <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
+              <Spinner size="sm" variant="white" className="mr-1.5" />
               Sending...
             </>
           ) : (

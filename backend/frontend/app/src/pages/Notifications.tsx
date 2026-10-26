@@ -8,11 +8,11 @@ import { api, useAuth } from '@/contexts/AuthContext';
 import { getAvatarUrl } from '@/lib/imageUrl';
 import { VerifiedBadge } from '@/components/shared/VerifiedBadge';
 import { ConfirmationModal } from '@/components/modals/ConfirmationModal';
+import { Spinner } from '@/components/ui/spinner';
 import { 
   Bell, 
   CheckCircle, 
   Trash2, 
-  Loader2,
   DollarSign,
   MessageSquare,
   Briefcase,
@@ -236,7 +236,7 @@ export function Notifications() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-24">
-        <Loader2 className="w-8 h-8 animate-spin text-[#9747FF]" />
+        <Spinner size="lg" variant="primary" />
       </div>
     );
   }
