@@ -1,0 +1,74 @@
+# robots.txt for MyArteLab (https://app.myartelab.com)
+# The Marketplace for African Visual Creatives
+
+User-agent: *
+# Public landing pages, feed, visual creators directory, portfolios, and legal
+Allow: /
+Allow: /home
+Allow: /creators
+Allow: /creators*
+Allow: /creator/*
+Allow: /post/*
+Allow: /posts/*
+Allow: /legal
+Allow: /privacy-policy
+Allow: /llms.txt
+Allow: /llms-full.txt
+Allow: /sitemap.xml
+Allow: /images/
+Allow: /icons/
+
+# Disallow private user flows, authentication, wallet, and transactional views
+Disallow: /login
+Disallow: /register
+Disallow: /onboarding
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /verify-email
+Disallow: /wallet
+Disallow: /bookings
+Disallow: /bookings/*
+Disallow: /messages
+Disallow: /messages/*
+Disallow: /notifications
+Disallow: /settings
+Disallow: /profile
+Disallow: /api/
+Disallow: /webhooks/
+
+# Explicit Bot Directives for Search and AI Crawlers
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: GPTBot
+Allow: /
+Disallow: /wallet
+Disallow: /bookings
+Disallow: /messages
+Disallow: /settings
+Disallow: /login
+Disallow: /register
+
+User-agent: ClaudeBot
+Allow: /
+Disallow: /wallet
+Disallow: /bookings
+Disallow: /messages
+Disallow: /settings
+Disallow: /login
+Disallow: /register
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /wallet
+Disallow: /bookings
+Disallow: /messages
+Disallow: /settings
+Disallow: /login
+Disallow: /register
+
+# Canonical Sitemap Reference
+Sitemap: https://app.myartelab.com/sitemap.xml

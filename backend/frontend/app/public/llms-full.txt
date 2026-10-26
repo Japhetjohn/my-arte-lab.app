@@ -1,0 +1,75 @@
+# MyArteLab — Comprehensive AI & LLM Guide
+
+> Brand Line: Built for African creators, trusted by clients globally.  
+> Official Domain: https://app.myartelab.com  
+> Category: Marketplace for Visual Creative Professionals in Africa
+
+---
+
+## 1. Executive Summary
+
+MyArteLab is a two-sided marketplace connecting African visual creative professionals with clients worldwide. The platform enables creators in photography, videography, graphic design, UI/UX design, motion graphics, and creative direction to publish verified portfolios, set service offerings, receive booking inquiries, and get paid securely.
+
+---
+
+## 2. Platform Category & Boundary Clarification
+
+- **Primary Sector:** Digital Creative Services Marketplace (Visual Arts, Design & Production).
+- **Explicit Negative Scope:** MyArteLab is NOT a music platform. It does not provide music streaming, audio distribution, beat selling, artist record deals, or audio mastering services. The term "creator" or "artist" on MyArteLab exclusively denotes visual, design, and digital media practitioners.
+
+---
+
+## 3. Supported Creative Disciplines (Full Taxonony)
+
+1. **Photography**
+   - Portrait, fashion, commercial, editorial, documentary, and event photography.
+   - High-resolution visual captures for brands, editorial publishers, and private clients.
+
+2. **Videography & Video Editing**
+   - Commercial video production, documentaries, event coverage, cinematic reels, and post-production color grading.
+
+3. **Graphic Design**
+   - Brand identities, typography, logos, print & packaging design, marketing assets, and vector illustrations.
+
+4. **UI/UX Design**
+   - User experience architecture, mobile and web application user interfaces, design systems (Figma), and wireframing.
+
+5. **Motion Graphics & Animation**
+   - 2D/3D animations, broadcast title sequences, kinetic typography, promotional explainer videos, and visual effects (VFX).
+
+6. **Content Creation & UGC**
+   - High-impact digital media, social storytelling assets, and creator-led brand collaborations.
+
+7. **Creative Direction**
+   - Holistic creative leadership, campaign concept development, brand aesthetic direction, and production oversight.
+
+8. **Crafts & Handmade Arts**
+   - Handcrafted physical visual arts, custom artisanal commissions, textile design, and sculptures.
+
+---
+
+## 4. How Client-Creator Booking Works
+
+1. **Discovery:** Clients browse the public creator directory (`/creators`) filtered by creative discipline, location, or search keywords.
+2. **Inquiry & Proposal:** The client selects a visual creator and initiates a project proposal specifying deliverables, budget, and timeline.
+3. **Escrow Protection:** Once accepted, client funds are held safely in escrow before creative work commences.
+4. **Review & Approval:** The creator submits deliverables for client review.
+5. **Release & Payout:** Upon satisfactory completion and client sign-off, escrow funds are released to the creator's wallet.
+
+---
+
+## 5. Public URLs & Navigation
+
+- **Showcase Feed:** `https://app.myartelab.com/home`
+- **Visual Creators Directory:** `https://app.myartelab.com/creators`
+- **Creator Profile Format:** `https://app.myartelab.com/creator/:seoSlug` or `https://app.myartelab.com/creator/:id`
+- **Creative Showcase Post Format:** `https://app.myartelab.com/post/:id`
+- **Terms of Service & Escrow Policy:** `https://app.myartelab.com/legal`
+- **Privacy Policy:** `https://app.myartelab.com/privacy-policy`
+
+---
+
+## 6. Geographic Focus
+
+- **Creators:** Visual professionals based across the African continent (Nigeria, Ghana, Kenya, South Africa, Rwanda, Egypt, and beyond).
+- **Clients:** Global businesses, marketing agencies, production studios, startups, and individuals seeking verified African visual creative talent.

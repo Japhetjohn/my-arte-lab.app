@@ -1,0 +1,35 @@
+# MyArteLab
+
+> Built for African creators, trusted by clients globally.
+
+MyArteLab (https://app.myartelab.com) is the premier curated marketplace and booking platform specifically for African visual creative professionals and clients worldwide.
+
+## Core Purpose
+MyArteLab provides a secure, transparent platform where visual creatives across Africa showcase their portfolios, communicate with clients, and receive escrow-backed project bookings. Clients globally use MyArteLab to discover, verify, and hire top African visual creative talent.
+
+## What MyArteLab Is
+- A marketplace, discovery directory, and portfolio hub for **VISUAL CREATIVE PROFESSIONALS** (photographers, videographers, graphic designers, UI/UX designers, motion designers, animators, and creative directors).
+- A safe client-creator booking workflow featuring built-in milestone agreements and escrow protection.
+- A platform specifically designed to empower African creative talent in global commerce.
+
+## What MyArteLab Is NOT
+- MyArteLab is **NOT** a music streaming, music distribution, audio licensing, or record label platform.
+- MyArteLab does **NOT** host or distribute music tracks, songs, musical performances, or audio albums.
+
+## Supported Visual Disciplines
+1. **Photography**: Commercial, portrait, fashion, editorial, documentary, lifestyle, and event photography across Africa.
+2. **Videography & Video Editing**: Cinematic production, commercial filming, social reels, video editing, and color grading.
+3. **Graphic Design**: Brand identities, logos, typography, marketing materials, packaging, and digital illustrations.
+4. **UI/UX Design**: Mobile application interface design, web UI/UX, responsive prototypes, and scalable design systems.
+5. **Motion Graphics & Animation**: 2D/3D motion graphics, brand animation, title sequences, explainer videos, and visual effects.
+6. **Content Creation**: Digital visual assets, brand storytelling media, and editorial visual campaigns.
+7. **UGC (User-Generated Content)**: Authentic visual creator media and video content for brand partnerships.
+8. **Creative Direction**: Visual campaign oversight, aesthetic strategy, photoshoot direction, and brand storytelling.
+9. **Crafts & Handmade Arts**: Physical visual arts, bespoke handcrafted commissions, textiles, and sculptures.
+
+## Primary Public Endpoints
+- Homepage & Showcase Feed: https://app.myartelab.com/home
+- Browse Visual Creators Directory: https://app.myartelab.com/creators
+- Platform Terms of Service & Escrow Policy: https://app.myartelab.com/legal
+- Privacy Policy: https://app.myartelab.com/privacy-policy
+- Full Documentation for AI Agents: https://app.myartelab.com/llms-full.txt
