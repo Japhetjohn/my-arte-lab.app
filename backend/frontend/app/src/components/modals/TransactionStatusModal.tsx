@@ -7,7 +7,8 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Loader2, CheckCircle2, XCircle, RefreshCw } from 'lucide-react';
+import { CheckCircle2, XCircle, RefreshCw } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
 
 type TransactionStatus = 'pending' | 'completed' | 'failed';
@@ -25,28 +26,23 @@ interface TransactionStatusModalProps {
 
 const statusConfig = {
   pending: {
-    illustration: '/images/transaction-pending.png',
     title: 'Processing transaction',
     message: 'Please wait while we process your transaction.',
-    icon: Loader2,
-    iconClass: 'animate-spin text-amber-500',
-    bgClass: 'bg-amber-50',
+    bgClass: 'bg-purple-50 dark:bg-purple-950/40',
   },
   completed: {
-    illustration: '/images/success-confetti.png',
     title: 'Transaction completed',
     message: 'Your transaction has settled.',
     icon: CheckCircle2,
     iconClass: 'text-green-500',
-    bgClass: 'bg-green-50',
+    bgClass: 'bg-green-50 dark:bg-green-950/40',
   },
   failed: {
-    illustration: '/images/transaction-failed.png',
     title: 'Transaction failed',
     message: "We couldn't complete this transaction. Please try again.",
     icon: XCircle,
     iconClass: 'text-red-500',
-    bgClass: 'bg-red-50',
+    bgClass: 'bg-red-50 dark:bg-red-950/40',
   },
 };
 
@@ -62,7 +58,7 @@ export function TransactionStatusModal({
 }: TransactionStatusModalProps) {
   const [, setShowConfetti] = useState(false);
   const config = statusConfig[status];
-  const Icon = config.icon;
+  const Icon = 'icon' in config ? config.icon : null;
 
   useEffect(() => {
     if (status === 'completed') {
@@ -78,14 +74,10 @@ export function TransactionStatusModal({
         <DialogHeader className="space-y-3 pb-0 border-b-0 text-center sm:text-center">
           <div className={cn('mx-auto w-20 h-20 rounded-full flex items-center justify-center', config.bgClass)}>
             {status === 'pending' ? (
-              <img
-                src={config.illustration}
-                alt={config.title}
-                className="w-16 h-16 object-contain"
-              />
-            ) : (
-              <Icon className={cn('w-10 h-10', config.iconClass)} />
-            )}
+              <Spinner size="lg" />
+            ) : Icon ? (
+              <Icon className={cn('w-10 h-10', 'iconClass' in config ? config.iconClass : undefined)} />
+            ) : null}
           </div>
           <DialogTitle className="text-xl font-bold text-gray-900 dark:text-gray-100 text-center">
             {title || config.title}

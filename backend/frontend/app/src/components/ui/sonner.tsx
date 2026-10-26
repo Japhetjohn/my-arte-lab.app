@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useSyncExternalStore } from 'react';
-import { Check, X, Zap, Loader2 } from 'lucide-react';
+import { Check, X, Zap } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
 
 // ============================================================================
@@ -391,8 +392,8 @@ const ToastCard = React.memo(function ToastCard({ toast: item, onDismiss }: Toas
         );
       case 'loading':
         return (
-          <div className="w-5 h-5 flex items-center justify-center shrink-0 text-[#9747FF]">
-            <Loader2 className="w-4 h-4 animate-spin text-[#9747FF]" />
+          <div className="w-5 h-5 flex items-center justify-center shrink-0">
+            <Spinner size="sm" variant="primary" />
           </div>
         );
       case 'warning':

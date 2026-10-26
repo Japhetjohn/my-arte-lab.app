@@ -28,6 +28,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { usePwaInstall, PwaInstallProvider } from '@/hooks/usePwaInstall';
 import { useServiceWorker } from '@/hooks/useServiceWorker';
 import { PwaInstallModal } from '@/components/pwa/PwaInstallModal';
+import { Spinner } from '@/components/ui/spinner';
 import './App.css';
 
 // Main App Content Component
@@ -159,7 +160,7 @@ function AppContent() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-[#9747FF] border-t-transparent rounded-full animate-spin"></div>
+        <Spinner size="lg" />
       </div>
     );
   }
@@ -212,7 +213,7 @@ function AppContent() {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#8A2BE2]"></div>
+        <Spinner size="lg" />
       </div>
     );
   }
