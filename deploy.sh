@@ -44,7 +44,19 @@ ssh -F /dev/null -o StrictHostKeyChecking=no ${VPS_USER}@${VPS_IP} << 'REMOTE_SC
   echo "📂 Copying build files to web root..."
   cp -r dist/* /var/www/myartelab/backend/frontend/
   cp -r dist/assets /var/www/myartelab/backend/frontend/
-  
+
+  echo ""
+  echo "🗺️ Generating production sitemap with live creators..."
+  cd /var/www/myartelab
+  node backend/scripts/generate-sitemap.js || true
+
+  echo ""
+  echo "⚙️ Updating Nginx configuration..."
+  if [ -f /var/www/myartelab/nginx-myartelab.conf ]; then
+    cp /var/www/myartelab/nginx-myartelab.conf /etc/nginx/sites-available/myartelab 2>/dev/null || true
+    nginx -t 2>/dev/null && systemctl reload nginx 2>/dev/null || true
+  fi
+
   echo ""
   echo "🔄 Restarting backend server..."
   pm2 restart myartelab

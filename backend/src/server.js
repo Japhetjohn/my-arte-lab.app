@@ -453,20 +453,21 @@ function injectCreatorMeta(req, creator) {
   const origin = `https://${host}`;
   const profilePath = `/creator/${creator.seoSlug || creator._id.toString()}`;
   const profileUrl = `${origin}${profilePath}`;
-  const name = creator.name || `${creator.firstName || ''} ${creator.lastName || ''}`.trim();
-  const description = creator.bio || `Check out ${name}'s profile on MyArteLab`;
+  const name = creator.name || `${creator.firstName || ''} ${creator.lastName || ''}`.trim() || 'Visual Creator';
+  const categories = Array.isArray(creator.category) ? creator.category.join(', ') : (creator.category || 'Visual Creative');
+  const description = creator.bio || `Explore ${name}'s portfolio and visual creative services on MyArteLab. Built for African creators, trusted by clients globally.`;
   const image = toAbsoluteUrl(req, creator.avatar) || `${origin}/images/myartelab-logo.png`;
 
   let html = indexHtmlTemplate;
-  html = replaceMetaTag(html, /<title>.*?<\/title>/, `<title>${escapeHtmlMeta(`${name} - MyArteLab Profile`)}</title>`);
+  html = replaceMetaTag(html, /<title>.*?<\/title>/, `<title>${escapeHtmlMeta(`${name} — ${categories} | MyArteLab`)}</title>`);
   html = replaceMetaTag(html, /<meta name="description" content="[^"]*">/, `<meta name="description" content="${escapeHtmlMeta(description)}">`);
   html = replaceMetaTag(html, /<meta property="og:type" content="[^"]*">/, `<meta property="og:type" content="profile">`);
   html = replaceMetaTag(html, /<meta property="og:url" content="[^"]*">/, `<meta property="og:url" content="${escapeHtmlMeta(profileUrl)}">`);
-  html = replaceMetaTag(html, /<meta property="og:title" content="[^"]*">/, `<meta property="og:title" content="${escapeHtmlMeta(`${name} - MyArteLab Profile`)}">`);
+  html = replaceMetaTag(html, /<meta property="og:title" content="[^"]*">/, `<meta property="og:title" content="${escapeHtmlMeta(`${name} — ${categories} | MyArteLab`)}">`);
   html = replaceMetaTag(html, /<meta property="og:description" content="[^"]*">/, `<meta property="og:description" content="${escapeHtmlMeta(description)}">`);
   html = replaceMetaTag(html, /<meta property="og:image" content="[^"]*">/, `<meta property="og:image" content="${escapeHtmlMeta(image)}">`);
   html = replaceMetaTag(html, /<meta name="twitter:card" content="[^"]*">/, `<meta name="twitter:card" content="summary_large_image">`);
-  html = replaceMetaTag(html, /<meta name="twitter:title" content="[^"]*">/, `<meta name="twitter:title" content="${escapeHtmlMeta(`${name} - MyArteLab Profile`)}">`);
+  html = replaceMetaTag(html, /<meta name="twitter:title" content="[^"]*">/, `<meta name="twitter:title" content="${escapeHtmlMeta(`${name} — ${categories} | MyArteLab`)}">`);
   html = replaceMetaTag(html, /<meta name="twitter:description" content="[^"]*">/, `<meta name="twitter:description" content="${escapeHtmlMeta(description)}">`);
   html = replaceMetaTag(html, /<meta name="twitter:image" content="[^"]*">/, `<meta name="twitter:image" content="${escapeHtmlMeta(image)}">`);
 
@@ -474,6 +475,27 @@ function injectCreatorMeta(req, creator) {
 }
 
 const OBJECT_ID_REGEX = /^[0-9a-fA-F]{24}$/;
+
+// SEO & AI Crawlers text files
+app.get('/robots.txt', (req, res) => {
+  res.type('text/plain');
+  res.sendFile(path.join(__dirname, '../frontend/robots.txt'));
+});
+
+app.get('/sitemap.xml', (req, res) => {
+  res.type('application/xml');
+  res.sendFile(path.join(__dirname, '../frontend/sitemap.xml'));
+});
+
+app.get('/llms.txt', (req, res) => {
+  res.type('text/plain');
+  res.sendFile(path.join(__dirname, '../frontend/llms.txt'));
+});
+
+app.get('/llms-full.txt', (req, res) => {
+  res.type('text/plain');
+  res.sendFile(path.join(__dirname, '../frontend/llms-full.txt'));
+});
 
 // Creator profile pages get dynamic OG meta tags for social sharing
 app.get('/creator/:identifier', async (req, res, next) => {
@@ -500,6 +522,60 @@ app.get('/creator/:identifier', async (req, res, next) => {
     }
 
     const html = injectCreatorMeta(req, creator);
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    return res.send(html);
+  } catch (error) {
+    return next(error);
+  }
+});
+
+// Showcase post pages get dynamic OG meta tags for social sharing
+app.get('/post/:identifier', async (req, res, next) => {
+  try {
+    const { identifier } = req.params;
+    if (!OBJECT_ID_REGEX.test(identifier)) {
+      return res.sendFile(indexHtmlPath);
+    }
+
+    const creator = await User.findOne({
+      'services._id': identifier,
+      isActive: true
+    }).select('name firstName lastName services avatar');
+
+    if (!creator || !Array.isArray(creator.services)) {
+      return res.sendFile(indexHtmlPath);
+    }
+
+    const service = creator.services.find(s => s._id.toString() === identifier);
+    if (!service) {
+      return res.sendFile(indexHtmlPath);
+    }
+
+    const host = req.get('host');
+    const origin = `https://${host}`;
+    const authorName = creator.name || `${creator.firstName || ''} ${creator.lastName || ''}`.trim() || 'Visual Creator';
+    const postTitle = service.title || 'Visual Creative Showcase';
+    const postSnippet = service.description
+      ? (service.description.length > 150 ? `${service.description.slice(0, 147)}...` : service.description)
+      : 'Explore visual creative projects on MyArteLab';
+    const postUrl = `${origin}/post/${identifier}`;
+    const image = (service.images && service.images[0])
+      ? toAbsoluteUrl(req, service.images[0])
+      : (toAbsoluteUrl(req, creator.avatar) || `${origin}/images/myartelab-logo.png`);
+
+    let html = indexHtmlTemplate;
+    html = replaceMetaTag(html, /<title>.*?<\/title>/, `<title>${escapeHtmlMeta(`${postTitle} by ${authorName} | MyArteLab`)}</title>`);
+    html = replaceMetaTag(html, /<meta name="description" content="[^"]*">/, `<meta name="description" content="${escapeHtmlMeta(postSnippet)}">`);
+    html = replaceMetaTag(html, /<meta property="og:type" content="[^"]*">/, `<meta property="og:type" content="article">`);
+    html = replaceMetaTag(html, /<meta property="og:url" content="[^"]*">/, `<meta property="og:url" content="${escapeHtmlMeta(postUrl)}">`);
+    html = replaceMetaTag(html, /<meta property="og:title" content="[^"]*">/, `<meta property="og:title" content="${escapeHtmlMeta(`${postTitle} by ${authorName} | MyArteLab`)}">`);
+    html = replaceMetaTag(html, /<meta property="og:description" content="[^"]*">/, `<meta property="og:description" content="${escapeHtmlMeta(postSnippet)}">`);
+    html = replaceMetaTag(html, /<meta property="og:image" content="[^"]*">/, `<meta property="og:image" content="${escapeHtmlMeta(image)}">`);
+    html = replaceMetaTag(html, /<meta name="twitter:card" content="[^"]*">/, `<meta name="twitter:card" content="summary_large_image">`);
+    html = replaceMetaTag(html, /<meta name="twitter:title" content="[^"]*">/, `<meta name="twitter:title" content="${escapeHtmlMeta(`${postTitle} by ${authorName} | MyArteLab`)}">`);
+    html = replaceMetaTag(html, /<meta name="twitter:description" content="[^"]*">/, `<meta name="twitter:description" content="${escapeHtmlMeta(postSnippet)}">`);
+    html = replaceMetaTag(html, /<meta name="twitter:image" content="[^"]*">/, `<meta name="twitter:image" content="${escapeHtmlMeta(image)}">`);
+
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     return res.send(html);
   } catch (error) {
@@ -572,6 +648,14 @@ const server = app.listen(PORT, () => {
       }
       if (count > 0) {
         console.log(`✅ Generated SEO slugs for ${count} existing creators`);
+      }
+
+      // Generate up-to-date sitemap with live creators
+      try {
+        const { generate: generateSitemap } = require('../scripts/generate-sitemap');
+        await generateSitemap();
+      } catch (sitemapErr) {
+        console.warn('⚠️ Could not auto-generate sitemap on startup:', sitemapErr.message);
       }
     } catch (error) {
       console.error('❌ Error generating missing creator slugs:', error.message);
