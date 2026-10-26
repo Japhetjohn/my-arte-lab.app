@@ -26,9 +26,9 @@ export const PWA_CONFIG = {
   },
   cache: {
     // Unique namespace ensuring MyArteLab never conflicts with other domains or LagosLife
-    namespace: 'myartelab-pwa-v2',
-    staticCache: 'myartelab-pwa-static-v2',
-    runtimeCache: 'myartelab-pwa-runtime-v2',
+    namespace: 'myartelab-pwa-v3',
+    staticCache: 'myartelab-pwa-static-v3',
+    runtimeCache: 'myartelab-pwa-runtime-v3',
   },
   storageKeys: {
     installed: 'myartelab_pwa_installed',

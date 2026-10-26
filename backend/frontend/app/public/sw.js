@@ -12,7 +12,7 @@
  * 6. Isolated cache namespace: "myartelab-static-v1" (safe from other sites and LagosLife).
  */
 
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 const STATIC_CACHE = `myartelab-static-${CACHE_VERSION}`;
 const OFFLINE_FALLBACK = '/offline.html';
 
