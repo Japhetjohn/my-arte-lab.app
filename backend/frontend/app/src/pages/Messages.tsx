@@ -1070,7 +1070,8 @@ export function Messages() {
                         <div className="flex items-center gap-1.5 min-w-0 leading-tight">
                           <a
                             href={`/creators/${selectedConversation.otherUser?._id || selectedConversation._id}`}
-                            className="font-bold text-sm sm:text-base text-gray-950 dark:text-gray-100 leading-tight hover:underline truncate inline-block min-h-0 min-w-0"
+                            style={{ minHeight: 'unset', minWidth: 'unset' }}
+                            className="font-bold text-sm sm:text-base text-gray-950 dark:text-gray-100 leading-tight hover:underline truncate inline-block"
                           >
                             {getParticipantName(selectedConversation.otherUser)}
                           </a>

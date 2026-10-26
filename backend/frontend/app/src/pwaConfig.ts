@@ -18,11 +18,11 @@ export const PWA_CONFIG = {
   swPath: '/sw.js',
   offlinePath: '/offline.html',
   icons: {
-    icon192: '/icons/icon-192.png',
-    icon512: '/icons/icon-512.png',
-    iconMaskable: '/icons/icon-maskable-512.png',
-    appleTouchIcon: '/icons/apple-touch-icon.png',
-    mobileLogo: '/icons/icon-192.png',
+    icon192: '/icons/icon-192-v3.png',
+    icon512: '/icons/icon-512-v3.png',
+    iconMaskable: '/icons/icon-maskable-512-v3.png',
+    appleTouchIcon: '/icons/apple-touch-icon-v3.png',
+    mobileLogo: '/icons/icon-192-v3.png',
   },
   cache: {
     // Unique namespace ensuring MyArteLab never conflicts with other domains or LagosLife

@@ -19,9 +19,11 @@ const OFFLINE_FALLBACK = '/offline.html';
 const PRECACHE_ASSETS = [
   OFFLINE_FALLBACK,
   '/manifest.webmanifest',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png',
-  '/icons/icon-maskable-512.png',
+  '/icons/icon-192-v3.png',
+  '/icons/icon-maskable-192-v3.png',
+  '/icons/icon-512-v3.png',
+  '/icons/icon-maskable-512-v3.png',
+  '/icons/apple-touch-icon-v3.png',
   '/favicon.ico',
 ];
 
