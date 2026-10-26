@@ -19,10 +19,10 @@ import {
   ShieldCheck,
   Star,
   MapPin,
-  Loader2,
   ArrowRight,
   CheckCircle2,
 } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 
 export function Creators() {
   const { user } = useAuth();
@@ -291,7 +291,7 @@ export function Creators() {
           {/* List Content */}
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-24 gap-3 bg-white dark:bg-[#18191a]">
-              <Loader2 className="w-6 h-6 animate-spin text-[#9747FF]" />
+              <Spinner size="md" variant="primary" />
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
                 Loading creators...
               </p>

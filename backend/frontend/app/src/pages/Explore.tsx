@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Grid3X3, List, Loader2, X, Clock } from 'lucide-react';
+import { Search, Grid3X3, List, X, Clock } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 import { CreatorCard } from '@/components/shared/CreatorCard';
 import { CategoryCard } from '@/components/shared/CategoryCard';
 import { EmptyState } from '@/components/shared/EmptyState';
@@ -180,7 +181,7 @@ export function Explore() {
   if (isLoading && displayedCreators.length === 0) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-8 h-8 animate-spin text-[#9747FF]" />
+        <Spinner size="lg" variant="primary" />
       </div>
     );
   }
@@ -215,7 +216,7 @@ export function Explore() {
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => setShowHistory(true)}
             />
-            {isLoading && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 animate-spin" />}
+            {isLoading && <Spinner size="sm" variant="muted" className="absolute right-3 top-1/2 -translate-y-1/2" />}
             {!isLoading && searchQuery && (
               <button type="button" onClick={() => { setSearchQuery(''); setShowHistory(true); }}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">

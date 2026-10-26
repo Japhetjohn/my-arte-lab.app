@@ -24,12 +24,12 @@ import {
   ShieldCheck,
   Pencil,
   Calendar,
-  Loader2,
   Sparkles,
   Users,
   Wallet,
   Briefcase,
 } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 import { toast } from '@/components/ui/sonner';
 import type { Creator } from '@/types';
 import {
@@ -334,7 +334,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
   if (isLoading || !creator) {
     return (
       <div className="flex items-center justify-center py-24">
-        <Loader2 className="w-8 h-8 animate-spin text-[#9747FF]" />
+        <Spinner size="lg" variant="primary" />
       </div>
     );
   }
@@ -679,7 +679,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
 
             {isLoadingPosts ? (
               <div className="py-16 flex justify-center items-center">
-                <Loader2 className="w-6 h-6 animate-spin text-[#9747FF]" />
+                <Spinner size="md" variant="primary" />
               </div>
             ) : posts.length === 0 ? (
               <div className="py-12 px-4 text-center text-gray-500 dark:text-gray-400 text-xs sm:text-sm">
@@ -964,7 +964,7 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
                 }}
               >
                 {isVerifying ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Spinner size="sm" variant="white" />
                 ) : (
                   'Pay 1.00 USDC and verify'
                 )}

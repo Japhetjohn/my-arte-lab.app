@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, type FormEvent } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Image as ImageIcon, Loader2, Link2, Sparkles } from 'lucide-react';
+import { Image as ImageIcon, Link2, Sparkles } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/sonner';
 import { ImageUploader, type ImageUploadItem } from './ImageUploader';
@@ -369,7 +370,7 @@ export function PostComposer({ onPostCreated, className, autoOpenImageUploader }
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
+                  <Spinner size="sm" variant="white" className="mr-1.5" />
                   <span>Posting...</span>
                 </>
               ) : (

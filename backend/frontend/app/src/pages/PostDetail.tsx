@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { ArrowLeft, Loader2, Home as HomeIcon, Users, Calendar, Wallet, Settings } from 'lucide-react';
+import { ArrowLeft, Home as HomeIcon, Users, Calendar, Wallet, Settings } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 import { Button } from '@/components/ui/button';
 import { SocialFeedCard, type FeedPost } from '@/components/social/SocialFeedCard';
 import { VerifiedBadge } from '@/components/shared/VerifiedBadge';
@@ -151,7 +152,7 @@ export function PostDetail({ postId: propPostId }: PostDetailProps) {
 
           {isLoading ? (
             <div className="py-24 flex flex-col items-center justify-center gap-2">
-              <Loader2 className="w-8 h-8 animate-spin text-[#9747FF]" />
+              <Spinner size="lg" variant="primary" />
               <span className="text-xs text-gray-500">Loading artwork post...</span>
             </div>
           ) : error || !post ? (

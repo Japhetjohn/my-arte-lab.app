@@ -7,13 +7,13 @@ import {
   Users,
   Calendar,
   Wallet,
-  Loader2,
   RefreshCw,
   Plus,
   ArrowUp,
   Image as ImageIcon,
   Download,
 } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 import { Button } from '@/components/ui/button';
 import { usePwaInstall } from '@/hooks/usePwaInstall';
 import { PostComposer } from '@/components/social/PostComposer';
@@ -452,7 +452,7 @@ export function Home() {
           {isRefreshing && (
             <div className="flex items-center justify-center py-1 animate-in fade-in slide-in-from-top-1 duration-200">
               <div className="flex items-center gap-2 py-1 px-4 bg-purple-50 dark:bg-purple-950/50 text-[#9747FF] rounded-full border border-purple-200/60 dark:border-purple-800/40 shadow-2xs text-xs font-semibold">
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-[#9747FF]" />
+                <Spinner size="xs" variant="primary" />
                 <span>Refreshing feed...</span>
               </div>
             </div>
@@ -557,7 +557,7 @@ export function Home() {
           {/* Social Feed Post Stream — Clean Continuous Stream (No Rectangular Cards) */}
           {isLoading ? (
             <div className="bg-white dark:bg-[#18191a] border-b border-[#DADDE1] dark:border-[#2f3032] p-12 flex flex-col items-center justify-center gap-3">
-              <Loader2 className="w-6 h-6 animate-spin text-[#9747FF]" />
+              <Spinner size="md" variant="primary" />
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Loading your feed...</p>
             </div>
           ) : posts.length === 0 ? (
@@ -603,7 +603,7 @@ export function Home() {
                   >
                     {isLoadingMore ? (
                       <>
-                        <Loader2 className="w-3.5 h-3.5 animate-spin mr-2 text-[#9747FF]" />
+                        <Spinner size="sm" variant="primary" className="mr-2" />
                         <span>Loading more...</span>
                       </>
                     ) : (

@@ -1,6 +1,7 @@
 import { useState, useEffect, type FormEvent } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Send, Heart, Reply, MoreHorizontal, AtSign, Loader2 } from 'lucide-react';
+import { Send, Heart, Reply, MoreHorizontal, AtSign } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/sonner';
 import { socialService } from '@/lib/api';
@@ -290,7 +291,7 @@ export function CommentsSection({
                 className="bg-[#9747FF] hover:bg-[#8534f0] text-white rounded-lg px-3 py-1 text-xs font-semibold h-auto shadow-2xs disabled:opacity-50"
               >
                 {isSubmitting ? (
-                  <Loader2 className="w-3 h-3 animate-spin" />
+                  <Spinner size="xs" variant="white" />
                 ) : (
                   <>
                     <Send className="w-3 h-3 mr-1" />
@@ -306,7 +307,7 @@ export function CommentsSection({
       {/* Comments List */}
       {isLoading ? (
         <div className="py-6 flex items-center justify-center text-gray-400 gap-2 text-xs">
-          <Loader2 className="w-4 h-4 animate-spin text-[#9747FF]" />
+          <Spinner size="sm" variant="primary" />
           <span>Loading comments...</span>
         </div>
       ) : comments.length === 0 ? (
