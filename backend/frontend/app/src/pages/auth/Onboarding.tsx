@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { CREATOR_CATEGORIES } from '@/lib/validations/authSchemas';
-import { Loader2, Sparkles, Briefcase, MapPin, User as UserIcon } from 'lucide-react';
+import { Sparkles, Briefcase, MapPin, User as UserIcon } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
 import { toast } from '@/components/ui/sonner';
 
@@ -228,7 +229,7 @@ export function Onboarding() {
         >
           {isLoading ? (
             <>
-              <Loader2 className="w-4 h-4 animate-spin text-white" />
+              <Spinner size="sm" variant="white" />
               <span>Setting up your profile...</span>
             </>
           ) : (

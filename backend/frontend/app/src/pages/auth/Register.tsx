@@ -15,7 +15,8 @@ import {
   CREATOR_CATEGORIES,
   type SignUpFormData,
 } from '@/lib/validations/authSchemas';
-import { Loader2, User, Mail, Lock } from 'lucide-react';
+import { User, Mail, Lock } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
 import { toast } from '@/components/ui/sonner';
 
@@ -343,7 +344,7 @@ export function Register() {
         >
           {isLoading ? (
             <>
-              <Loader2 className="w-4 h-4 animate-spin text-white" />
+              <Spinner size="sm" variant="white" />
               <span>Creating account...</span>
             </>
           ) : (
@@ -429,7 +430,7 @@ export function Register() {
             >
               {isVerifying ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  <Spinner size="sm" variant="white" className="mr-2" />
                   Verifying code...
                 </>
               ) : (

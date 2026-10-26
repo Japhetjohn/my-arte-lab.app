@@ -11,7 +11,8 @@ import { GoogleAuthButton } from '@/components/auth/GoogleAuthButton';
 import { AuthLayout } from '@/layouts/AuthLayout';
 import { useAuth, api } from '@/contexts/AuthContext';
 import { loginSchema, type LoginFormData } from '@/lib/validations/authSchemas';
-import { Loader2, Mail, Lock } from 'lucide-react';
+import { Mail, Lock } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 import { toast } from '@/components/ui/sonner';
 
 import {
@@ -214,7 +215,7 @@ export function Login() {
         >
           {isLoading ? (
             <>
-              <Loader2 className="w-4 h-4 animate-spin text-white" />
+              <Spinner size="sm" variant="white" />
               <span>Signing in...</span>
             </>
           ) : (
@@ -295,7 +296,7 @@ export function Login() {
             >
               {isVerifying ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  <Spinner size="sm" variant="white" className="mr-2" />
                   Verifying...
                 </>
               ) : (

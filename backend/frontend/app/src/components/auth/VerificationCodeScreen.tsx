@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 
 export interface VerificationCodeScreenProps {
   email: string;
@@ -274,7 +275,7 @@ export function VerificationCodeScreen({
           >
             {isLoading ? (
               <>
-                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                <Spinner size="sm" variant="white" className="mr-2" />
                 <span>Verifying...</span>
               </>
             ) : (

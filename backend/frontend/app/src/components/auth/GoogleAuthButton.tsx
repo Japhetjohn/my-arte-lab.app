@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Loader2 } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 import { toast } from '@/components/ui/sonner';
 import { useAuth, api } from '@/contexts/AuthContext';
 
@@ -200,7 +200,7 @@ export function GoogleAuthButton({
       aria-label={text}
     >
       {isLoading ? (
-        <Loader2 className="w-4 h-4 animate-spin text-[#9747FF]" />
+        <Spinner size="sm" variant="primary" />
       ) : (
         <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
           <path

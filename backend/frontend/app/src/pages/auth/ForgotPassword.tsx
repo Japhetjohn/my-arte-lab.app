@@ -8,7 +8,8 @@ import { Label } from '@/components/ui/label';
 import { AuthLayout } from '@/layouts/AuthLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { forgotPasswordSchema, type ForgotPasswordFormData } from '@/lib/validations/authSchemas';
-import { Mail, Loader2, ArrowLeft } from 'lucide-react';
+import { Mail, ArrowLeft } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 import { VerificationCodeScreen } from '@/components/auth/VerificationCodeScreen';
 
 export function ForgotPassword() {
@@ -108,7 +109,7 @@ export function ForgotPassword() {
         >
           {isLoading ? (
             <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              <Spinner size="sm" variant="white" className="mr-2" />
               Sending code...
             </>
           ) : (

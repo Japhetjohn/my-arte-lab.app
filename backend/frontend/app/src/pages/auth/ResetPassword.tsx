@@ -7,7 +7,8 @@ import { PasswordInput } from '@/components/shared/PasswordInput';
 import { AuthLayout } from '@/layouts/AuthLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { resetPasswordSchema, type ResetPasswordFormData } from '@/lib/validations/authSchemas';
-import { Loader2, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { CheckCircle2, ArrowLeft } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 import { toast } from '@/components/ui/sonner';
 
 export function ResetPassword() {
@@ -150,7 +151,7 @@ export function ResetPassword() {
         >
           {isLoading ? (
             <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              <Spinner size="sm" variant="white" className="mr-2" />
               Updating password...
             </>
           ) : (
