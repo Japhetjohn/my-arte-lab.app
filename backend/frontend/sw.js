@@ -12,18 +12,18 @@
  * 6. Isolated cache namespace: "myartelab-static-v1" (safe from other sites and LagosLife).
  */
 
-const CACHE_VERSION = 'v5';
+const CACHE_VERSION = 'v6';
 const STATIC_CACHE = `myartelab-static-${CACHE_VERSION}`;
 const OFFLINE_FALLBACK = '/offline.html';
 
 const PRECACHE_ASSETS = [
   OFFLINE_FALLBACK,
   '/manifest.webmanifest',
-  '/icons/icon-192-v5.png',
-  '/icons/icon-maskable-192-v5.png',
-  '/icons/icon-512-v5.png',
-  '/icons/icon-maskable-512-v5.png',
-  '/icons/apple-touch-icon-v5.png',
+  '/icons/icon-192-v6.png',
+  '/icons/icon-maskable-192-v6.png',
+  '/icons/icon-512-v6.png',
+  '/icons/icon-maskable-512-v6.png',
+  '/icons/apple-touch-icon-v6.png',
   '/favicon.ico',
 ];
 
