@@ -1035,22 +1035,22 @@ export function Messages() {
               {selectedConversation ? (
                 <>
                   {/* Active Conversation Header */}
-                  <div className="px-3.5 sm:px-4 py-2.5 sm:py-3 border-b border-[#DADDE1] dark:border-[#2f3032] flex items-center justify-between bg-white dark:bg-[#18191a] shrink-0 sticky top-0 z-10 pt-[max(0.625rem,env(safe-area-inset-top,0.625rem))]">
-                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+                  <div className="h-14 sm:h-16 px-3 sm:px-4 border-b border-[#DADDE1] dark:border-[#2f3032] flex items-center justify-between bg-white dark:bg-[#18191a] shrink-0 sticky top-0 z-10 pt-[env(safe-area-inset-top,0px)] box-content sm:box-border">
+                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1 h-full">
                       {/* Back button (Mobile view only) */}
                       <button
                         type="button"
                         onClick={handleBackToList}
-                        className="p-1.5 -ml-1 text-gray-700 dark:text-gray-200 hover:text-gray-950 dark:hover:text-white rounded-full hover:bg-gray-100 dark:hover:bg-[#252628] transition-colors lg:hidden cursor-pointer shrink-0"
+                        className="w-9 h-9 flex items-center justify-center text-gray-700 dark:text-gray-200 hover:text-gray-950 dark:hover:text-white rounded-full hover:bg-gray-100 dark:hover:bg-[#252628] transition-colors lg:hidden cursor-pointer shrink-0 -ml-1 min-h-0 min-w-0"
                         aria-label="Back to conversations"
                       >
-                        <ChevronLeft className="w-6 h-6" />
+                        <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
                       </button>
 
                       {/* Recipient Avatar */}
                       <a
                         href={`/creators/${selectedConversation.otherUser?._id || selectedConversation._id}`}
-                        className="shrink-0 rounded-full focus:outline-none focus:ring-2 focus:ring-[#9747FF]/40"
+                        className="shrink-0 rounded-full focus:outline-none focus:ring-2 focus:ring-[#9747FF]/40 inline-flex items-center justify-center min-h-0 min-w-0"
                       >
                         {selectedConversation.otherUser?.avatar ? (
                           <img
@@ -1066,22 +1066,22 @@ export function Messages() {
                       </a>
 
                       {/* Recipient Identity: Display Name on Line 1, @username on Line 2 */}
-                      <div className="min-w-0 flex-1 flex flex-col justify-center">
-                        <div className="flex items-center gap-1.5 min-w-0">
+                      <div className="min-w-0 flex-1 flex flex-col justify-center min-h-0 py-0.5">
+                        <div className="flex items-center gap-1.5 min-w-0 leading-tight">
                           <a
                             href={`/creators/${selectedConversation.otherUser?._id || selectedConversation._id}`}
-                            className="font-bold text-sm sm:text-base text-gray-950 dark:text-gray-100 leading-tight hover:underline truncate"
+                            className="font-bold text-sm sm:text-base text-gray-950 dark:text-gray-100 leading-tight hover:underline truncate inline-block min-h-0 min-w-0"
                           >
                             {getParticipantName(selectedConversation.otherUser)}
                           </a>
                           {selectedConversation.otherUser?.isVerified && (
-                            <VerifiedBadge className="w-4 h-4 shrink-0 inline-block align-middle" showTooltip={false} />
+                            <VerifiedBadge className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 inline-block align-middle" showTooltip={false} />
                           )}
                         </div>
                         {getParticipantUsername(selectedConversation.otherUser) && (
-                          <span className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 font-normal truncate mt-0.5 leading-tight">
+                          <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 font-normal truncate leading-tight mt-0.5 m-0 min-h-0">
                             @{getParticipantUsername(selectedConversation.otherUser)}
-                          </span>
+                          </p>
                         )}
                       </div>
                     </div>
@@ -1092,7 +1092,7 @@ export function Messages() {
                         <DropdownMenuTrigger asChild>
                           <button
                             type="button"
-                            className="w-8 h-8 rounded-full flex items-center justify-center text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-[#252628] transition-colors cursor-pointer"
+                            className="w-9 h-9 rounded-full flex items-center justify-center text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-[#252628] transition-colors cursor-pointer min-h-0 min-w-0"
                             aria-label="Conversation options"
                           >
                             <Info className="w-5 h-5" />

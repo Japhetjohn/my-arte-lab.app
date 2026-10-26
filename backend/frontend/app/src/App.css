@@ -112,7 +112,9 @@ html {
 
 /* Touch-friendly tap targets */
 @media (pointer: coarse) {
-  button, a {
+  /* Exclude inline text links, compact controls, and elements with explicit sizing */
+  button:not([class*="h-"]):not([class*="min-h-"]):not(.tap-target-exempt),
+  a[role="button"]:not([class*="h-"]):not([class*="min-h-"]) {
     min-height: 44px;
     min-width: 44px;
   }
