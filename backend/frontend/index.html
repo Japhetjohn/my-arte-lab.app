@@ -3,8 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>MyArteLab - Creator Marketplace</title>
-    <meta name="description" content="Discover and book top African creators. Built for African creators, trusted by clients globally.">
+    <title>MyArteLab - African Visual Creatives Marketplace</title>
+    <meta name="description" content="Discover and book top African visual creatives: photographers, videographers, graphic designers, UI/UX designers, and animators. Built for African creators, trusted by clients globally.">
+    <meta name="keywords" content="African visual creatives, hire African photographers, videography Africa, graphic design Africa, UI/UX designers Africa, motion graphics Africa, book visual creators, MyArteLab">
+    <link rel="canonical" href="https://app.myartelab.com/">
 
     <!-- Web App Manifest & PWA Configuration -->
     <link rel="manifest" href="/manifest.webmanifest?v=6">
@@ -19,17 +21,77 @@
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://app.myartelab.com">
-    <meta property="og:title" content="MyArteLab - Creator Marketplace">
-    <meta property="og:description" content="Discover and book top African creators. Built for African creators, trusted by clients globally.">
+    <meta property="og:url" content="https://app.myartelab.com/">
+    <meta property="og:title" content="MyArteLab - African Visual Creatives Marketplace">
+    <meta property="og:description" content="Discover and book top African visual creatives: photographers, videographers, graphic designers, UI/UX designers, and animators. Built for African creators, trusted by clients globally.">
     <meta property="og:image" content="https://app.myartelab.com/images/myartelab-logo.png">
     <meta property="og:site_name" content="MyArteLab">
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="MyArteLab - Creator Marketplace">
-    <meta name="twitter:description" content="Discover and book top African creators. Built for African creators, trusted by clients globally.">
+    <meta name="twitter:title" content="MyArteLab - African Visual Creatives Marketplace">
+    <meta name="twitter:description" content="Discover and book top African visual creatives: photographers, videographers, graphic designers, UI/UX designers, and animators. Built for African creators, trusted by clients globally.">
     <meta name="twitter:image" content="https://app.myartelab.com/images/myartelab-logo.png">
+
+    <!-- Structured Data: Organization & ProfessionalService for Visual Creatives -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://app.myartelab.com/#organization",
+          "name": "MyArteLab",
+          "url": "https://app.myartelab.com",
+          "logo": "https://app.myartelab.com/icons/icon-512-v6.png",
+          "description": "Marketplace for African visual creatives to showcase portfolios, connect, and receive bookings. Built for African creators, trusted by clients globally.",
+          "slogan": "Built for African creators"
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://app.myartelab.com/#website",
+          "url": "https://app.myartelab.com",
+          "name": "MyArteLab",
+          "publisher": {
+            "@id": "https://app.myartelab.com/#organization"
+          },
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": {
+              "@type": "EntryPoint",
+              "urlTemplate": "https://app.myartelab.com/creators?q={search_term_string}"
+            },
+            "query-input": "required name=search_term_string"
+          }
+        },
+        {
+          "@type": "ProfessionalService",
+          "@id": "https://app.myartelab.com/#service",
+          "name": "MyArteLab Visual Creatives Marketplace",
+          "url": "https://app.myartelab.com",
+          "description": "Online marketplace to discover, hire, and book top African visual creatives including photographers, videographers, graphic designers, UI/UX designers, motion designers, and creative directors.",
+          "provider": {
+            "@id": "https://app.myartelab.com/#organization"
+          },
+          "areaServed": {
+            "@type": "Continent",
+            "name": "Africa"
+          },
+          "serviceType": [
+            "Photography",
+            "Videography & Video Editing",
+            "Graphic Design",
+            "UI/UX Design",
+            "Content Creation",
+            "UGC Creation",
+            "Creative Direction",
+            "Motion Graphics & Animation",
+            "Crafts & Handmade Arts"
+          ]
+        }
+      ]
+    }
+    </script>
 
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
@@ -77,10 +139,42 @@
 
     <!-- Google Identity Services -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script type="module" crossorigin src="/assets/index-BcBvSvWi.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-nOS8m0PB.css">
+    <script type="module" crossorigin src="/assets/index-BMT2FmZ0.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-C-DACFE8.css">
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Semantic crawlable fallback for search engines and AI crawlers (replaced cleanly when React mounts) -->
+      <header style="padding: 24px 16px; text-align: center; max-width: 800px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+        <h1 style="font-size: 24px; font-weight: 700; color: #111827; margin: 0 0 8px;">MyArteLab — The Marketplace for African Visual Creatives</h1>
+        <p style="font-size: 15px; line-height: 1.5; color: #4B5563; margin: 0 0 16px;">
+          Discover, review portfolios, and book top African visual creatives: photographers, videographers, graphic designers, UI/UX designers, motion designers, and creative directors. Built for African creators, trusted by clients globally.
+        </p>
+        <nav style="display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-bottom: 24px; font-size: 14px;">
+          <a href="/creators" style="color: #9842FD; font-weight: 600; text-decoration: none;">Explore Visual Creators</a>
+          <a href="/home" style="color: #9842FD; font-weight: 600; text-decoration: none;">Showcase Feed</a>
+          <a href="/legal" style="color: #6B7280; text-decoration: none;">Terms &amp; Escrow</a>
+          <a href="/privacy-policy" style="color: #6B7280; text-decoration: none;">Privacy Policy</a>
+        </nav>
+      </header>
+      <main style="max-width: 800px; margin: 0 auto; padding: 0 16px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+        <h2 style="font-size: 18px; font-weight: 700; color: #1F2937; margin: 0 0 12px;">Visual Creative Disciplines on MyArteLab</h2>
+        <ul style="line-height: 1.8; color: #374151; padding-left: 20px; margin: 0 0 24px; font-size: 14px;">
+          <li><strong>Photography:</strong> Portrait, fashion, commercial, editorial, documentary, and event photographers across Africa.</li>
+          <li><strong>Videography &amp; Video Editing:</strong> Commercial video production, cinematic reels, video editors, and colorists.</li>
+          <li><strong>Graphic Design:</strong> Visual brand identity, logo design, marketing collateral, packaging, and digital illustration.</li>
+          <li><strong>UI/UX Design:</strong> Product designers, mobile app interfaces, web UI design, and responsive design systems.</li>
+          <li><strong>Motion Graphics &amp; Animation:</strong> 2D &amp; 3D animators, kinetic typography, title sequences, and explainer animations.</li>
+          <li><strong>Content Creation &amp; UGC:</strong> Professional visual creators producing high-engagement brand media and photography.</li>
+          <li><strong>Creative Direction:</strong> Experienced creative leads guiding campaign aesthetics, visual concepts, and production.</li>
+          <li><strong>Crafts &amp; Handmade Arts:</strong> Visual artisans specializing in bespoke physical art, sculptures, and custom creations.</li>
+        </ul>
+      </main>
+    </div>
+    <noscript>
+      <div style="padding: 24px; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #374151;">
+        <p>JavaScript is required to use all interactive features on MyArteLab. Please enable JavaScript in your browser to browse and book visual creators.</p>
+      </div>
+    </noscript>
   </body>
 </html>
