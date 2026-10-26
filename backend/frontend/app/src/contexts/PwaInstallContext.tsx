@@ -155,8 +155,9 @@ export function PwaInstallProvider({ children }: { children: React.ReactNode }) 
     }
 
     if ('serviceWorker' in navigator) {
-      setStatus('instructions');
-      setModalMode('instructions-browser');
+      // Modern Chromium/browser with service worker support: ready for install flow
+      setStatus('installable');
+      setModalMode('native');
       return;
     }
 
@@ -220,13 +221,13 @@ export function PwaInstallProvider({ children }: { children: React.ReactNode }) 
   const promptInstall = useCallback(async () => {
     if (promptAttemptInProgressRef.current) return;
 
-    const currentPrompt = globalDeferredPrompt || (window as any).__MYARTELAB_PWA_PROMPT__;
-
-    if (isIOS) {
+    if (detectIsIOS()) {
       setModalMode('instructions-ios');
       setIsPromptOpen(true);
       return;
     }
+
+    const currentPrompt = globalDeferredPrompt || (window as any).__MYARTELAB_PWA_PROMPT__;
 
     if (!currentPrompt) {
       setModalMode('instructions-browser');
@@ -245,6 +246,7 @@ export function PwaInstallProvider({ children }: { children: React.ReactNode }) 
         } catch {}
         setIsStandalone(true);
         setStatus('installed');
+        setModalMode('installed');
         setIsPromptOpen(false);
       } else {
         try {
@@ -258,11 +260,13 @@ export function PwaInstallProvider({ children }: { children: React.ReactNode }) 
       setIsPromptOpen(true);
     } finally {
       globalDeferredPrompt = null;
-      (window as any).__MYARTELAB_PWA_PROMPT__ = null;
+      if (typeof window !== 'undefined') {
+        (window as any).__MYARTELAB_PWA_PROMPT__ = null;
+      }
       promptAttemptInProgressRef.current = false;
       evaluateState();
     }
-  }, [isIOS, evaluateState]);
+  }, [evaluateState]);
 
   const openInstallFlow = useCallback(() => {
     evaluateState();
@@ -273,20 +277,14 @@ export function PwaInstallProvider({ children }: { children: React.ReactNode }) 
       return;
     }
 
-    const currentPrompt = globalDeferredPrompt || (window as any).__MYARTELAB_PWA_PROMPT__;
-    if (currentPrompt) {
-      setModalMode('native');
-      setIsPromptOpen(true);
-      return;
-    }
-
     if (detectIsIOS()) {
       setModalMode('instructions-ios');
       setIsPromptOpen(true);
       return;
     }
 
-    setModalMode('instructions-browser');
+    // Modern browser: open install modal in native mode so user can trigger direct installation
+    setModalMode('native');
     setIsPromptOpen(true);
   }, [evaluateState]);
 

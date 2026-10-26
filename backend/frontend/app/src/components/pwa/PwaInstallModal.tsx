@@ -35,12 +35,12 @@ export function PwaInstallModal({
         showCloseButton={true}
       >
         <DialogHeader className="flex flex-col items-center text-center pb-2 border-b-0 space-y-2.5">
-          {/* App Brand Icon — directly on modal background with zero box container */}
+          {/* App Brand Icon — clean full-bleed icon with smooth modern app corner rounding, no artificial boxes */}
           <div className="flex items-center justify-center mb-1">
             <img
               src={PWA_CONFIG.icons.mobileLogo}
               alt={PWA_CONFIG.appName}
-              className="w-12 h-12 object-contain"
+              className="w-14 h-14 rounded-2xl shadow-sm object-cover"
             />
           </div>
 

@@ -12,7 +12,7 @@
  * 6. Isolated cache namespace: "myartelab-static-v1" (safe from other sites and LagosLife).
  */
 
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const STATIC_CACHE = `myartelab-static-${CACHE_VERSION}`;
 const OFFLINE_FALLBACK = '/offline.html';
 
@@ -21,11 +21,13 @@ const PRECACHE_ASSETS = [
   '/manifest.webmanifest',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
+  '/icons/icon-maskable-512.png',
   '/favicon.ico',
 ];
 
-// Install: Cache offline page and core assets, do NOT force skipWaiting
+// Install: Cache offline page and core assets, activate immediately
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(STATIC_CACHE).then(async (cache) => {
       for (const asset of PRECACHE_ASSETS) {

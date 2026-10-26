@@ -22,13 +22,13 @@ export const PWA_CONFIG = {
     icon512: '/icons/icon-512.png',
     iconMaskable: '/icons/icon-maskable-512.png',
     appleTouchIcon: '/icons/apple-touch-icon.png',
-    mobileLogo: '/mobile-logo.png',
+    mobileLogo: '/icons/icon-192.png',
   },
   cache: {
     // Unique namespace ensuring MyArteLab never conflicts with other domains or LagosLife
-    namespace: 'myartelab-pwa-v1',
-    staticCache: 'myartelab-pwa-static-v1',
-    runtimeCache: 'myartelab-pwa-runtime-v1',
+    namespace: 'myartelab-pwa-v2',
+    staticCache: 'myartelab-pwa-static-v2',
+    runtimeCache: 'myartelab-pwa-runtime-v2',
   },
   storageKeys: {
     installed: 'myartelab_pwa_installed',
