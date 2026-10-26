@@ -90,6 +90,16 @@ html {
   }
 }
 
+/* Keyframes for shrinking timer progress bar (reused by toasts and modals) */
+@keyframes toast-shrink {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}
+
 .skeleton {
   background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
   background-size: 200% 100%;

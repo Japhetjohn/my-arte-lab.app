@@ -20,7 +20,6 @@ export type PwaInstallStatus =
 export type PwaModalMode =
   | 'native'
   | 'instructions-ios'
-  | 'instructions-browser'
   | 'installed';
 
 export interface PwaDiagnostics {
@@ -169,11 +168,17 @@ export function PwaInstallProvider({ children }: { children: React.ReactNode }) 
 
     evaluateState();
 
+    const isAlreadyInstalled = () => {
+      const standalone = detectIsStandalone();
+      const marker = typeof localStorage !== 'undefined' && localStorage.getItem(PWA_CONFIG.storageKeys.installed) === 'true';
+      return standalone || marker;
+    };
+
     const handleBeforePrompt = () => {
       evaluateState();
-      if (!detectIsStandalone() && !isDismissCooldownActive()) {
+      if (!isAlreadyInstalled() && !isDismissCooldownActive()) {
         const timer = setTimeout(() => {
-          if (!detectIsStandalone()) {
+          if (!isAlreadyInstalled()) {
             setModalMode('native');
             setIsPromptOpen(true);
           }
@@ -192,11 +197,10 @@ export function PwaInstallProvider({ children }: { children: React.ReactNode }) 
     window.addEventListener('myartelab:beforeinstallprompt', handleBeforePrompt);
     window.addEventListener('myartelab:appinstalled', handleInstalled);
 
-    const standalone = detectIsStandalone();
     const ios = detectIsIOS();
-    if (ios && !standalone && !isDismissCooldownActive()) {
+    if (ios && !isAlreadyInstalled() && !isDismissCooldownActive()) {
       const timer = setTimeout(() => {
-        if (!detectIsStandalone()) {
+        if (!isAlreadyInstalled()) {
           setModalMode('instructions-ios');
           setIsPromptOpen(true);
         }
@@ -230,8 +234,8 @@ export function PwaInstallProvider({ children }: { children: React.ReactNode }) 
     const currentPrompt = globalDeferredPrompt || (window as any).__MYARTELAB_PWA_PROMPT__;
 
     if (!currentPrompt) {
-      setModalMode('instructions-browser');
-      setIsPromptOpen(true);
+      // Manual instructions deleted. Close modal quietly if browser prompt is unavailable.
+      setIsPromptOpen(false);
       return;
     }
 
@@ -256,8 +260,8 @@ export function PwaInstallProvider({ children }: { children: React.ReactNode }) 
       }
     } catch (err) {
       console.warn('PWA: native installation prompt encountered an issue:', err);
-      setModalMode('instructions-browser');
-      setIsPromptOpen(true);
+      // Close modal quietly on error; never show manual browser instructions.
+      setIsPromptOpen(false);
     } finally {
       globalDeferredPrompt = null;
       if (typeof window !== 'undefined') {

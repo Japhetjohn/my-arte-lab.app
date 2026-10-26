@@ -34,8 +34,8 @@ export const PWA_CONFIG = {
     installed: 'myartelab_pwa_installed',
     dismissedTimestamp: 'myartelab_pwa_install_dismissed_at',
   },
-  // Number of hours to wait before showing prompt again after user dismisses with "Not now"
-  dismissCooldownHours: 72,
+  // Number of hours to wait before showing prompt again after user dismisses with "Not now" or auto-close
+  dismissCooldownHours: 168, // 7 days cooldown
 } as const;
 
 export type PwaConfig = typeof PWA_CONFIG;
