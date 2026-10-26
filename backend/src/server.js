@@ -434,44 +434,83 @@ function escapeHtmlMeta(text) {
     .replace(/>/g, '&gt;');
 }
 
+function getPublicOrigin(req) {
+  const forwardedHost = req.headers['x-forwarded-host'];
+  const rawHost = forwardedHost || req.get('host') || 'app.myartelab.com';
+  const cleanHost = String(rawHost).split(':')[0].trim();
+  if (!cleanHost || cleanHost === 'localhost' || cleanHost === '127.0.0.1') {
+    return 'https://app.myartelab.com';
+  }
+  const proto = req.headers['x-forwarded-proto'] || req.protocol || 'https';
+  return `${proto}://${cleanHost}`;
+}
+
 function toAbsoluteUrl(req, urlPath) {
   if (!urlPath) return null;
   if (urlPath.startsWith('http://') || urlPath.startsWith('https://')) {
-    return urlPath;
+    return urlPath.replace(/^https?:\/\/localhost(:5000)?/, 'https://app.myartelab.com');
   }
-  const host = req.get('host');
+  const origin = getPublicOrigin(req);
   const normalized = urlPath.startsWith('/') ? urlPath : `/${urlPath}`;
-  return `https://${host}${normalized}`;
+  return `${origin}${normalized}`;
+}
+
+function getMimeTypeFromUrl(url) {
+  if (!url) return 'image/png';
+  const cleanUrl = url.split('?')[0].toLowerCase();
+  if (cleanUrl.endsWith('.jpg') || cleanUrl.endsWith('.jpeg')) return 'image/jpeg';
+  if (cleanUrl.endsWith('.png')) return 'image/png';
+  if (cleanUrl.endsWith('.webp')) return 'image/webp';
+  if (cleanUrl.endsWith('.gif')) return 'image/gif';
+  if (cleanUrl.endsWith('.svg')) return 'image/svg+xml';
+  return 'image/jpeg';
 }
 
 function replaceMetaTag(html, tagPattern, newTag) {
   return html.replace(tagPattern, newTag);
 }
 
-function injectCreatorMeta(req, creator) {
-  const host = req.get('host');
-  const origin = `https://${host}`;
-  const profilePath = `/creator/${creator.seoSlug || creator._id.toString()}`;
-  const profileUrl = `${origin}${profilePath}`;
-  const name = creator.name || `${creator.firstName || ''} ${creator.lastName || ''}`.trim() || 'Visual Creator';
-  const categories = Array.isArray(creator.category) ? creator.category.join(', ') : (creator.category || 'Visual Creative');
-  const description = creator.bio || `Explore ${name}'s portfolio and visual creative services on MyArteLab. Built for African creators, trusted by clients globally.`;
-  const image = toAbsoluteUrl(req, creator.avatar) || `${origin}/images/myartelab-logo.png`;
+function setOrInjectMeta(html, tagPattern, fullTag) {
+  if (tagPattern.test(html)) {
+    return html.replace(tagPattern, fullTag);
+  }
+  return html.replace('</head>', `    ${fullTag}\n  </head>`);
+}
 
-  let html = indexHtmlTemplate;
-  html = replaceMetaTag(html, /<title>.*?<\/title>/, `<title>${escapeHtmlMeta(`${name} — ${categories} | MyArteLab`)}</title>`);
-  html = replaceMetaTag(html, /<meta name="description" content="[^"]*">/, `<meta name="description" content="${escapeHtmlMeta(description)}">`);
-  html = replaceMetaTag(html, /<meta property="og:type" content="[^"]*">/, `<meta property="og:type" content="profile">`);
-  html = replaceMetaTag(html, /<meta property="og:url" content="[^"]*">/, `<meta property="og:url" content="${escapeHtmlMeta(profileUrl)}">`);
-  html = replaceMetaTag(html, /<meta property="og:title" content="[^"]*">/, `<meta property="og:title" content="${escapeHtmlMeta(`${name} — ${categories} | MyArteLab`)}">`);
-  html = replaceMetaTag(html, /<meta property="og:description" content="[^"]*">/, `<meta property="og:description" content="${escapeHtmlMeta(description)}">`);
-  html = replaceMetaTag(html, /<meta property="og:image" content="[^"]*">/, `<meta property="og:image" content="${escapeHtmlMeta(image)}">`);
-  html = replaceMetaTag(html, /<meta name="twitter:card" content="[^"]*">/, `<meta name="twitter:card" content="summary_large_image">`);
-  html = replaceMetaTag(html, /<meta name="twitter:title" content="[^"]*">/, `<meta name="twitter:title" content="${escapeHtmlMeta(`${name} — ${categories} | MyArteLab`)}">`);
-  html = replaceMetaTag(html, /<meta name="twitter:description" content="[^"]*">/, `<meta name="twitter:description" content="${escapeHtmlMeta(description)}">`);
-  html = replaceMetaTag(html, /<meta name="twitter:image" content="[^"]*">/, `<meta name="twitter:image" content="${escapeHtmlMeta(image)}">`);
-
-  return html;
+function injectSocialMeta(html, {
+  title,
+  description,
+  url,
+  type = 'website',
+  image,
+  imageType = 'image/png',
+  imageWidth = 1200,
+  imageHeight = 630,
+  imageAlt = 'MyArteLab',
+  twitterCard = 'summary_large_image'
+}) {
+  let output = html;
+  output = setOrInjectMeta(output, /<title>.*?<\/title>/, `<title>${escapeHtmlMeta(title)}</title>`);
+  output = setOrInjectMeta(output, /<meta name="description" content="[^"]*">/, `<meta name="description" content="${escapeHtmlMeta(description)}">`);
+  output = setOrInjectMeta(output, /<link rel="canonical" href="[^"]*">/, `<link rel="canonical" href="${escapeHtmlMeta(url)}">`);
+  output = setOrInjectMeta(output, /<meta property="og:type" content="[^"]*">/, `<meta property="og:type" content="${escapeHtmlMeta(type)}">`);
+  output = setOrInjectMeta(output, /<meta property="og:url" content="[^"]*">/, `<meta property="og:url" content="${escapeHtmlMeta(url)}">`);
+  output = setOrInjectMeta(output, /<meta property="og:title" content="[^"]*">/, `<meta property="og:title" content="${escapeHtmlMeta(title)}">`);
+  output = setOrInjectMeta(output, /<meta property="og:description" content="[^"]*">/, `<meta property="og:description" content="${escapeHtmlMeta(description)}">`);
+  output = setOrInjectMeta(output, /<meta property="og:image" content="[^"]*">/, `<meta property="og:image" content="${escapeHtmlMeta(image)}">`);
+  output = setOrInjectMeta(output, /<meta property="og:image:secure_url" content="[^"]*">/, `<meta property="og:image:secure_url" content="${escapeHtmlMeta(image)}">`);
+  output = setOrInjectMeta(output, /<meta property="og:image:type" content="[^"]*">/, `<meta property="og:image:type" content="${escapeHtmlMeta(imageType)}">`);
+  output = setOrInjectMeta(output, /<meta property="og:image:width" content="[^"]*">/, `<meta property="og:image:width" content="${escapeHtmlMeta(imageWidth)}">`);
+  output = setOrInjectMeta(output, /<meta property="og:image:height" content="[^"]*">/, `<meta property="og:image:height" content="${escapeHtmlMeta(imageHeight)}">`);
+  output = setOrInjectMeta(output, /<meta property="og:image:alt" content="[^"]*">/, `<meta property="og:image:alt" content="${escapeHtmlMeta(imageAlt)}">`);
+  output = setOrInjectMeta(output, /<meta property="og:site_name" content="[^"]*">/, '<meta property="og:site_name" content="MyArteLab">');
+  output = setOrInjectMeta(output, /<meta property="og:locale" content="[^"]*">/, '<meta property="og:locale" content="en_US">');
+  output = setOrInjectMeta(output, /<meta name="twitter:card" content="[^"]*">/, `<meta name="twitter:card" content="${escapeHtmlMeta(twitterCard)}">`);
+  output = setOrInjectMeta(output, /<meta name="twitter:title" content="[^"]*">/, `<meta name="twitter:title" content="${escapeHtmlMeta(title)}">`);
+  output = setOrInjectMeta(output, /<meta name="twitter:description" content="[^"]*">/, `<meta name="twitter:description" content="${escapeHtmlMeta(description)}">`);
+  output = setOrInjectMeta(output, /<meta name="twitter:image" content="[^"]*">/, `<meta name="twitter:image" content="${escapeHtmlMeta(image)}">`);
+  output = setOrInjectMeta(output, /<meta name="twitter:image:alt" content="[^"]*">/, `<meta name="twitter:image:alt" content="${escapeHtmlMeta(imageAlt)}">`);
+  return output;
 }
 
 const OBJECT_ID_REGEX = /^[0-9a-fA-F]{24}$/;
@@ -517,11 +556,69 @@ app.get('/creator/:identifier', async (req, res, next) => {
       }).select('-password');
     }
 
+    const origin = getPublicOrigin(req);
+
     if (!creator) {
-      return res.sendFile(indexHtmlPath);
+      const notFoundTitle = 'Creator Not Found | MyArteLab';
+      const notFoundDesc = 'The requested creator profile could not be found on MyArteLab. Built for African creators, trusted by clients globally.';
+      const notFoundImage = `${origin}/images/myartelab-og-1200x630.png`;
+      let notFoundHtml = injectSocialMeta(indexHtmlTemplate, {
+        title: notFoundTitle,
+        description: notFoundDesc,
+        url: `${origin}/creator/${identifier}`,
+        type: 'profile',
+        image: notFoundImage,
+        imageType: 'image/png',
+        imageWidth: 1200,
+        imageHeight: 630,
+        imageAlt: 'MyArteLab - African Visual Creatives Marketplace',
+        twitterCard: 'summary_large_image'
+      });
+      notFoundHtml = setOrInjectMeta(notFoundHtml, /<meta name="robots" content="[^"]*">/, '<meta name="robots" content="noindex, nofollow">');
+      res.status(404).setHeader('Content-Type', 'text/html; charset=utf-8');
+      return res.send(notFoundHtml);
     }
 
-    const html = injectCreatorMeta(req, creator);
+    const profilePath = `/creator/${creator.seoSlug || creator._id.toString()}`;
+    const profileUrl = `${origin}${profilePath}`;
+    const name = creator.name || `${creator.firstName || ''} ${creator.lastName || ''}`.trim() || 'Visual Creator';
+    const categories = Array.isArray(creator.category) ? creator.category.join(', ') : (creator.category || 'Visual Creative');
+    const title = `${name} — ${categories} | MyArteLab`;
+    const description = creator.bio || `Explore ${name}'s portfolio and visual creative services on MyArteLab. Built for African creators, trusted by clients globally.`;
+
+    let image;
+    let imageType;
+    let imageWidth;
+    let imageHeight;
+    let twitterCard;
+
+    if (creator.avatar) {
+      image = toAbsoluteUrl(req, creator.avatar);
+      imageType = getMimeTypeFromUrl(image);
+      imageWidth = 400;
+      imageHeight = 400;
+      twitterCard = 'summary';
+    } else {
+      image = `${origin}/images/myartelab-og-1200x630.png`;
+      imageType = 'image/png';
+      imageWidth = 1200;
+      imageHeight = 630;
+      twitterCard = 'summary_large_image';
+    }
+
+    const html = injectSocialMeta(indexHtmlTemplate, {
+      title,
+      description,
+      url: profileUrl,
+      type: 'profile',
+      image,
+      imageType,
+      imageWidth,
+      imageHeight,
+      imageAlt: `${name}'s profile picture on MyArteLab`,
+      twitterCard
+    });
+
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     return res.send(html);
   } catch (error) {
@@ -533,8 +630,31 @@ app.get('/creator/:identifier', async (req, res, next) => {
 app.get('/post/:identifier', async (req, res, next) => {
   try {
     const { identifier } = req.params;
+    const origin = getPublicOrigin(req);
+
+    const sendPostNotFound = () => {
+      const notFoundTitle = 'Post Not Found | MyArteLab';
+      const notFoundDesc = 'The requested showcase post could not be found on MyArteLab. Built for African creators, trusted by clients globally.';
+      const notFoundImage = `${origin}/images/myartelab-og-1200x630.png`;
+      let notFoundHtml = injectSocialMeta(indexHtmlTemplate, {
+        title: notFoundTitle,
+        description: notFoundDesc,
+        url: `${origin}/post/${identifier}`,
+        type: 'article',
+        image: notFoundImage,
+        imageType: 'image/png',
+        imageWidth: 1200,
+        imageHeight: 630,
+        imageAlt: 'MyArteLab - African Visual Creatives Marketplace',
+        twitterCard: 'summary_large_image'
+      });
+      notFoundHtml = setOrInjectMeta(notFoundHtml, /<meta name="robots" content="[^"]*">/, '<meta name="robots" content="noindex, nofollow">');
+      res.status(404).setHeader('Content-Type', 'text/html; charset=utf-8');
+      return res.send(notFoundHtml);
+    };
+
     if (!OBJECT_ID_REGEX.test(identifier)) {
-      return res.sendFile(indexHtmlPath);
+      return sendPostNotFound();
     }
 
     const creator = await User.findOne({
@@ -543,38 +663,60 @@ app.get('/post/:identifier', async (req, res, next) => {
     }).select('name firstName lastName services avatar');
 
     if (!creator || !Array.isArray(creator.services)) {
-      return res.sendFile(indexHtmlPath);
+      return sendPostNotFound();
     }
 
     const service = creator.services.find(s => s._id.toString() === identifier);
     if (!service) {
-      return res.sendFile(indexHtmlPath);
+      return sendPostNotFound();
     }
 
-    const host = req.get('host');
-    const origin = `https://${host}`;
     const authorName = creator.name || `${creator.firstName || ''} ${creator.lastName || ''}`.trim() || 'Visual Creator';
     const postTitle = service.title || 'Visual Creative Showcase';
+    const title = `${postTitle} by ${authorName} | MyArteLab`;
     const postSnippet = service.description
       ? (service.description.length > 150 ? `${service.description.slice(0, 147)}...` : service.description)
-      : 'Explore visual creative projects on MyArteLab';
+      : 'Explore visual creative projects on MyArteLab. Built for African creators, trusted by clients globally.';
     const postUrl = `${origin}/post/${identifier}`;
-    const image = (service.images && service.images[0])
-      ? toAbsoluteUrl(req, service.images[0])
-      : (toAbsoluteUrl(req, creator.avatar) || `${origin}/images/myartelab-logo.png`);
 
-    let html = indexHtmlTemplate;
-    html = replaceMetaTag(html, /<title>.*?<\/title>/, `<title>${escapeHtmlMeta(`${postTitle} by ${authorName} | MyArteLab`)}</title>`);
-    html = replaceMetaTag(html, /<meta name="description" content="[^"]*">/, `<meta name="description" content="${escapeHtmlMeta(postSnippet)}">`);
-    html = replaceMetaTag(html, /<meta property="og:type" content="[^"]*">/, `<meta property="og:type" content="article">`);
-    html = replaceMetaTag(html, /<meta property="og:url" content="[^"]*">/, `<meta property="og:url" content="${escapeHtmlMeta(postUrl)}">`);
-    html = replaceMetaTag(html, /<meta property="og:title" content="[^"]*">/, `<meta property="og:title" content="${escapeHtmlMeta(`${postTitle} by ${authorName} | MyArteLab`)}">`);
-    html = replaceMetaTag(html, /<meta property="og:description" content="[^"]*">/, `<meta property="og:description" content="${escapeHtmlMeta(postSnippet)}">`);
-    html = replaceMetaTag(html, /<meta property="og:image" content="[^"]*">/, `<meta property="og:image" content="${escapeHtmlMeta(image)}">`);
-    html = replaceMetaTag(html, /<meta name="twitter:card" content="[^"]*">/, `<meta name="twitter:card" content="summary_large_image">`);
-    html = replaceMetaTag(html, /<meta name="twitter:title" content="[^"]*">/, `<meta name="twitter:title" content="${escapeHtmlMeta(`${postTitle} by ${authorName} | MyArteLab`)}">`);
-    html = replaceMetaTag(html, /<meta name="twitter:description" content="[^"]*">/, `<meta name="twitter:description" content="${escapeHtmlMeta(postSnippet)}">`);
-    html = replaceMetaTag(html, /<meta name="twitter:image" content="[^"]*">/, `<meta name="twitter:image" content="${escapeHtmlMeta(image)}">`);
+    let image;
+    let imageType;
+    let imageWidth = 1200;
+    let imageHeight = 630;
+    let twitterCard = 'summary_large_image';
+
+    if (service.images && service.images[0]) {
+      image = toAbsoluteUrl(req, service.images[0]);
+      imageType = getMimeTypeFromUrl(image);
+      imageWidth = 800;
+      imageHeight = 533;
+      twitterCard = 'summary_large_image';
+    } else if (creator.avatar) {
+      image = toAbsoluteUrl(req, creator.avatar);
+      imageType = getMimeTypeFromUrl(image);
+      imageWidth = 400;
+      imageHeight = 400;
+      twitterCard = 'summary';
+    } else {
+      image = `${origin}/images/myartelab-og-1200x630.png`;
+      imageType = 'image/png';
+      imageWidth = 1200;
+      imageHeight = 630;
+      twitterCard = 'summary_large_image';
+    }
+
+    const html = injectSocialMeta(indexHtmlTemplate, {
+      title,
+      description: postSnippet,
+      url: postUrl,
+      type: 'article',
+      image,
+      imageType,
+      imageWidth,
+      imageHeight,
+      imageAlt: `${postTitle} by ${authorName} on MyArteLab`,
+      twitterCard
+    });
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     return res.send(html);

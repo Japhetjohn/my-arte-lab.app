@@ -13,7 +13,7 @@ export interface SEOProps {
 const DEFAULT_TITLE = 'MyArteLab - African Visual Creatives Marketplace';
 const DEFAULT_DESCRIPTION =
   'Discover and book top African visual creatives: photographers, videographers, graphic designers, UI/UX designers, and animators. Built for African creators, trusted by clients globally.';
-const DEFAULT_IMAGE = 'https://app.myartelab.com/images/myartelab-logo.png';
+const DEFAULT_IMAGE = 'https://app.myartelab.com/images/myartelab-og-1200x630.png';
 const BASE_URL = 'https://app.myartelab.com';
 
 function setMetaTag(selector: string, attribute: string, value: string) {
@@ -72,15 +72,22 @@ export function useSEO({
     setCanonicalTag(finalCanonical);
 
     // 6. Open Graph Tags
+    const finalImage = ogImage || DEFAULT_IMAGE;
     setMetaTag('meta[property="og:title"]', 'content', finalTitle);
     setMetaTag('meta[property="og:description"]', 'content', finalDescription);
     setMetaTag('meta[property="og:type"]', 'content', ogType);
     setMetaTag('meta[property="og:url"]', 'content', finalCanonical);
-    setMetaTag('meta[property="og:image"]', 'content', ogImage || DEFAULT_IMAGE);
+    setMetaTag('meta[property="og:image"]', 'content', finalImage);
+    setMetaTag('meta[property="og:image:secure_url"]', 'content', finalImage);
+    setMetaTag('meta[property="og:image:alt"]', 'content', finalTitle);
+    setMetaTag('meta[property="og:site_name"]', 'content', 'MyArteLab');
+    setMetaTag('meta[property="og:locale"]', 'content', 'en_US');
 
     // 7. Twitter Card Tags
+    setMetaTag('meta[name="twitter:card"]', 'content', ogType === 'profile' ? 'summary' : 'summary_large_image');
     setMetaTag('meta[name="twitter:title"]', 'content', finalTitle);
     setMetaTag('meta[name="twitter:description"]', 'content', finalDescription);
-    setMetaTag('meta[name="twitter:image"]', 'content', ogImage || DEFAULT_IMAGE);
+    setMetaTag('meta[name="twitter:image"]', 'content', finalImage);
+    setMetaTag('meta[name="twitter:image:alt"]', 'content', finalTitle);
   }, [title, description, keywords, canonical, ogType, ogImage, noindex]);
 }
