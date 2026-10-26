@@ -12,8 +12,10 @@ import {
   Plus,
   ArrowUp,
   Image as ImageIcon,
+  Download,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { usePwaInstall } from '@/hooks/usePwaInstall';
 import { PostComposer } from '@/components/social/PostComposer';
 import { SocialFeedCard, type FeedPost } from '@/components/social/SocialFeedCard';
 import { VerifiedBadge } from '@/components/shared/VerifiedBadge';
@@ -30,6 +32,7 @@ import type { Creator } from '@/types';
 
 export function Home() {
   const { user } = useAuth();
+  const { isStandalone, openInstallFlow } = usePwaInstall();
   const activeTab = 'for-you';
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [suggestedCreators, setSuggestedCreators] = useState<Creator[]>([]);
@@ -516,6 +519,41 @@ export function Home() {
             <PostComposer onPostCreated={handlePostCreated} />
           </div>
 
+          {/* Mobile Download MyArteLab Section (Thin straight green separator line & clean rounded container) */}
+          {!isStandalone && (
+            <div className="sm:hidden -mx-3 mb-2 px-3 pt-2">
+              <div className="bg-white dark:bg-[#18191a] rounded-2xl border border-[#DADDE1] dark:border-[#2f3032] overflow-hidden shadow-xs">
+                {/* Thin, straight green separator line (Not rounded at ends) */}
+                <div className="h-[2px] w-full bg-emerald-500" />
+
+                <div className="p-3.5 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-9 h-9 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-[#9747FF] flex items-center justify-center shrink-0">
+                      <Download className="w-4 h-4 text-[#9747FF]" />
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="font-bold text-xs sm:text-sm text-gray-900 dark:text-gray-100 tracking-tight truncate">
+                        Download MyArteLab
+                      </h4>
+                      <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
+                        Fast access & offline support
+                      </p>
+                    </div>
+                  </div>
+
+                  <Button
+                    type="button"
+                    onClick={openInstallFlow}
+                    className="shrink-0 h-8 px-3 rounded-xl bg-[#9747FF] hover:bg-[#8534f0] text-white text-[11px] font-semibold shadow-xs transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                  >
+                    <Download className="w-3 h-3" />
+                    <span>Download</span>
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Social Feed Post Stream — Clean Continuous Stream (No Rectangular Cards) */}
           {isLoading ? (
             <div className="bg-white dark:bg-[#18191a] border-b border-[#DADDE1] dark:border-[#2f3032] p-12 flex flex-col items-center justify-center gap-3">
@@ -638,6 +676,43 @@ export function Home() {
               ))}
             </div>
           </div>
+
+          {/* Download MyArteLab Section (Desktop Sidebar) */}
+          {!isStandalone && (
+            <div className="pt-1">
+              <div className="bg-white dark:bg-[#18191a] rounded-2xl border border-[#DADDE1] dark:border-[#2f3032] overflow-hidden shadow-xs">
+                {/* Thin, straight green separator line (Not rounded at ends) */}
+                <div className="h-[2px] w-full bg-emerald-500" />
+                
+                <div className="p-4 flex flex-col gap-3">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-[#9747FF] flex items-center justify-center shrink-0">
+                      <Download className="w-5 h-5 text-[#9747FF]" />
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="font-bold text-sm text-gray-900 dark:text-gray-100 tracking-tight leading-snug">
+                        Download MyArteLab
+                      </h4>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">
+                        Add to home screen for fast access and full-screen experience.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-[#DADDE1] dark:border-[#2f3032]">
+                    <Button
+                      type="button"
+                      onClick={openInstallFlow}
+                      className="w-full h-9 rounded-xl bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold shadow-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>Download Now</span>
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </aside>
       </div>
 

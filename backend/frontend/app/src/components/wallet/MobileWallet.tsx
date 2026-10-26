@@ -292,7 +292,7 @@ export function MobileWallet({
           <button
             type="button"
             onClick={onAddFunds}
-            className="flex-1 h-10 px-4 rounded-full bg-[#9747FF] hover:bg-[#8534f0] active:scale-[0.98] text-white font-semibold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer focus:outline-none"
+            className="flex-1 h-10 px-4 rounded-full bg-transparent hover:bg-gray-50 dark:hover:bg-white/[0.04] border border-[#DADDE1] dark:border-[#2f3032] active:scale-[0.98] text-gray-800 dark:text-gray-200 hover:border-[#9747FF] hover:text-[#9747FF] font-semibold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all cursor-pointer focus:outline-none"
           >
             <ArrowDownLeft className="w-3.5 h-3.5" />
             <span>Add funds</span>
