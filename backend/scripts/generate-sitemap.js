@@ -54,15 +54,18 @@ async function fetchDynamicEntries() {
   const creatorEntries = [];
   const postEntries = [];
 
-  try {
-    const mongoUri = process.env.MONGODB_URI;
-    if (!mongoUri) {
-      console.log('ℹ️ No MONGODB_URI in environment; building base sitemap.');
-      return { creatorEntries, postEntries };
-    }
+  const wasAlreadyConnected = mongoose.connection.readyState === 1;
 
-    await mongoose.connect(mongoUri, { serverSelectionTimeoutMS: 3000 });
-    console.log('✅ Connected to MongoDB for dynamic sitemap extraction');
+  try {
+    if (!wasAlreadyConnected) {
+      const mongoUri = process.env.MONGODB_URI;
+      if (!mongoUri) {
+        console.log('ℹ️ No MONGODB_URI in environment; building base sitemap.');
+        return { creatorEntries, postEntries };
+      }
+      await mongoose.connect(mongoUri, { serverSelectionTimeoutMS: 3000 });
+      console.log('✅ Connected to MongoDB for dynamic sitemap extraction');
+    }
 
     const User = require('../src/models/User');
     const creators = await User.find({
@@ -92,9 +95,12 @@ async function fetchDynamicEntries() {
       }
     }
 
-    await mongoose.disconnect();
+    // Only disconnect if this script was executed standalone
+    if (!wasAlreadyConnected && require.main === module) {
+      await mongoose.disconnect();
+    }
   } catch (err) {
-    console.log(`ℹ️ MongoDB connection not available in current environment (${err.message}). Using base sitemap generation.`);
+    console.log(`ℹ️ MongoDB connection error in sitemap (${err.message}). Using base sitemap generation.`);
   }
 
   return { creatorEntries, postEntries };
