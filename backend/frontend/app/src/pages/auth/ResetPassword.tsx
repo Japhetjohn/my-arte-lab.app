@@ -10,8 +10,10 @@ import { resetPasswordSchema, type ResetPasswordFormData } from '@/lib/validatio
 import { CheckCircle2, ArrowLeft } from 'lucide-react';
 import { Spinner } from '@/components/ui/spinner';
 import { toast } from '@/components/ui/sonner';
+import { useSEO } from '@/hooks/useSEO';
 
 export function ResetPassword() {
+  useSEO({ title: 'Reset Password', noindex: true });
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { resetPassword } = useAuth();

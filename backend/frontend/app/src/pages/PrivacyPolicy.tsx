@@ -1,8 +1,16 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Shield, Mail, CheckCircle2 } from 'lucide-react';
+import { useSEO } from '@/hooks/useSEO';
 
 export function PrivacyPolicy() {
   const navigate = useNavigate();
+
+  useSEO({
+    title: 'Privacy Policy',
+    description:
+      'MyArteLab privacy policy and data governance practices. Built for African creators, trusted by clients globally.',
+    canonical: '/privacy-policy',
+  });
 
   return (
     <div className="min-h-screen bg-gray-50/60 text-gray-800">

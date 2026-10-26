@@ -2,10 +2,18 @@ import { ArrowLeft, FileText, Shield, Cookie } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import { useSEO } from '@/hooks/useSEO';
 
 export function Legal() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'privacy' | 'terms' | 'cookies'>('privacy');
+
+  useSEO({
+    title: 'Terms of Service & Platform Policies',
+    description:
+      'MyArteLab terms of service, payment escrow rules, and policies for African visual creatives and clients.',
+    canonical: '/legal',
+  });
 
   const PrivacyPolicy = () => (
     <div className="space-y-8">

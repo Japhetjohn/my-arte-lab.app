@@ -19,6 +19,7 @@ import { User, Mail, Lock } from 'lucide-react';
 import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
 import { toast } from '@/components/ui/sonner';
+import { useSEO } from '@/hooks/useSEO';
 
 import {
   Dialog,
@@ -30,6 +31,7 @@ import {
 export function Register() {
   const navigate = useNavigate();
   const { register: registerUser, login, loginWithGoogle } = useAuth();
+  useSEO({ title: 'Join MyArteLab', noindex: true });
   const [isLoading, setIsLoading] = useState(false);
   const [selectedRole, setSelectedRole] = useState<'client' | 'creator'>('client');
   

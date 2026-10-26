@@ -8,6 +8,7 @@ import { isSameAccount } from '@/lib/ownership';
 import { getAvatarUrl } from '@/lib/imageUrl';
 import { getCreatorProfileUrl } from '@/lib/utils';
 import { toast } from '@/components/ui/sonner';
+import { useSEO } from '@/hooks/useSEO';
 import type { Creator } from '@/types';
 import {
   Users,
@@ -26,6 +27,15 @@ import { Spinner } from '@/components/ui/spinner';
 
 export function Creators() {
   const { user } = useAuth();
+
+  useSEO({
+    title: 'Visual Creators in Africa - Directory & Portfolios',
+    description:
+      'Explore verified African visual creators: photographers, videographers, graphic designers, UI/UX designers, and animators. Transparent rates and escrow-protected bookings.',
+    keywords:
+      'African creators directory, hire African photographers, videography Africa, graphic design Africa, UI/UX designers Africa, book visual creators, MyArteLab',
+    canonical: '/creators',
+  });
   const [creators, setCreators] = useState<Creator[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -278,7 +288,7 @@ export function Creators() {
           <div className="px-4 pt-2 pb-3.5 flex items-center justify-between bg-white dark:bg-[#18191a] border-b border-[#DADDE1] dark:border-[#2f3032]">
             <div className="flex items-center gap-2.5">
               <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
-                Creators
+                Visual Creators
               </h1>
               {displayedCreators.length > 0 && (
                 <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/40 text-[#9747FF]">

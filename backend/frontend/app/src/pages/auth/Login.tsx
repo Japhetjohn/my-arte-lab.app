@@ -14,6 +14,7 @@ import { loginSchema, type LoginFormData } from '@/lib/validations/authSchemas';
 import { Mail, Lock } from 'lucide-react';
 import { Spinner } from '@/components/ui/spinner';
 import { toast } from '@/components/ui/sonner';
+import { useSEO } from '@/hooks/useSEO';
 
 import {
   Dialog,
@@ -24,6 +25,7 @@ import {
 
 export function Login() {
   const { login, loginWithGoogle } = useAuth();
+  useSEO({ title: 'Sign In', noindex: true });
   const [isLoading, setIsLoading] = useState(false);
   
   // Verification modal state

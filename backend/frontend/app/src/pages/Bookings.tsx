@@ -20,6 +20,7 @@ import {
 } from '@/lib/bookingWorkflow';
 import { cn } from '@/lib/utils';
 import { toast } from '@/components/ui/sonner';
+import { useSEO } from '@/hooks/useSEO';
 import {
   Calendar,
   DollarSign,
@@ -48,6 +49,7 @@ interface CreatorInfo {
 
 export function Bookings() {
   const { user } = useAuth();
+  useSEO({ title: 'Bookings', noindex: true });
   const [bookings, setBookings] = useState<BookingWorkflowItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 

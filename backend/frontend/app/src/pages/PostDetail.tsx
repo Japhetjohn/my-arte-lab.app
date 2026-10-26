@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { socialService } from '@/lib/api';
 import { getAvatarUrl } from '@/lib/imageUrl';
 import { isPostAuthor } from '@/lib/ownership';
+import { useSEO } from '@/hooks/useSEO';
 
 interface PostDetailProps {
   postId?: string;
@@ -22,6 +23,17 @@ export function PostDetail({ postId: propPostId }: PostDetailProps) {
   const [post, setPost] = useState<FeedPost | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const authorName = post?.creator?.name || 'Visual Creator';
+  const postSnippet = post?.description ? (post.description.length > 150 ? `${post.description.slice(0, 147)}...` : post.description) : 'Showcase work on MyArteLab';
+
+  useSEO({
+    title: post ? `${authorName} Showcase` : 'Visual Creative Showcase',
+    description: postSnippet,
+    ogType: 'article',
+    ogImage: post?.images?.[0] || undefined,
+    canonical: postId ? `/post/${postId}` : undefined,
+  });
 
   useEffect(() => {
     if (!postId) return;

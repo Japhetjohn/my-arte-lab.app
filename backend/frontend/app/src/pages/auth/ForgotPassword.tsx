@@ -11,8 +11,10 @@ import { forgotPasswordSchema, type ForgotPasswordFormData } from '@/lib/validat
 import { Mail, ArrowLeft } from 'lucide-react';
 import { Spinner } from '@/components/ui/spinner';
 import { VerificationCodeScreen } from '@/components/auth/VerificationCodeScreen';
+import { useSEO } from '@/hooks/useSEO';
 
 export function ForgotPassword() {
+  useSEO({ title: 'Forgot Password', noindex: true });
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { forgotPassword, verifyResetCode } = useAuth();

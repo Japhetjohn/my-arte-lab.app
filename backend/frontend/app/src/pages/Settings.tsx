@@ -14,6 +14,7 @@ import { VerifiedBadge } from '@/components/shared/VerifiedBadge';
 import { ConfirmationModal } from '@/components/modals/ConfirmationModal';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { usePwaInstall } from '@/hooks/usePwaInstall';
+import { useSEO } from '@/hooks/useSEO';
 import {
   Dialog,
   DialogContent,
@@ -143,6 +144,7 @@ function SettingsSheetModal({
 
 export function Settings() {
   const { user: currentUser, updateUser, logout } = useAuth();
+  useSEO({ title: 'Settings', noindex: true });
   const [searchParams] = useSearchParams();
   const tabParam = searchParams.get('tab');
 

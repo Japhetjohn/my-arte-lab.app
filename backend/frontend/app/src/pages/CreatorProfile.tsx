@@ -44,6 +44,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { getAvatarUrl, getImageUrl } from '@/lib/imageUrl';
 import { getCreatorProfileUrl } from '@/lib/utils';
 import { verificationService } from '@/lib/verificationApi';
+import { useSEO } from '@/hooks/useSEO';
 
 interface CreatorProfileProps {
   creatorId?: string;
@@ -87,6 +88,29 @@ export function CreatorProfile({ creatorId, isOwnProfile: propIsOwnProfile }: Cr
 
   // Modals state
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+
+  // Dynamic SEO & Open Graph for Creator Profile
+  const creatorDisplayName =
+    creator?.name || `${creator?.firstName || ''} ${creator?.lastName || ''}`.trim() || 'Visual Creator';
+  const creatorCategories = Array.isArray(creator?.category)
+    ? creator.category.join(', ')
+    : creator?.category || 'Visual Creative';
+  const creatorLocation =
+    typeof creator?.location === 'string'
+      ? creator.location
+      : creator?.location?.state && creator?.location?.country
+      ? `${creator.location.state}, ${creator.location.country}`
+      : creator?.location?.country || 'Africa';
+
+  useSEO({
+    title: creator ? `${creatorDisplayName} — ${creatorCategories}` : 'Visual Creator Profile',
+    description:
+      creator?.bio ||
+      `View ${creatorDisplayName}'s visual creative portfolio, services, and client reviews on MyArteLab. Based in ${creatorLocation}. Built for African creators.`,
+    ogType: 'profile',
+    ogImage: creator?.avatar ? getAvatarUrl(creator.avatar) : undefined,
+    canonical: creatorId ? `/creator/${creatorId}` : undefined,
+  });
 
   // Form states
   const [profileForm, setProfileForm] = useState({

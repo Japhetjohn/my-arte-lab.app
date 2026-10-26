@@ -9,9 +9,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 import { Spinner } from '@/components/ui/spinner';
 import { toast } from '@/components/ui/sonner';
+import { useSEO } from '@/hooks/useSEO';
 import type { Transaction } from '@/types';
 
 export function Wallet() {
+  useSEO({ title: 'Wallet', noindex: true });
   const {
     transactions,
     isWalletLoading,

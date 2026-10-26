@@ -26,6 +26,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
 import { getAvatarUrl, getImageUrl } from '@/lib/imageUrl';
 import { toast } from '@/components/ui/sonner';
+import { useSEO } from '@/hooks/useSEO';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -83,6 +84,7 @@ const QUICK_REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🔥', '👏
 
 export function Messages() {
   const { user: currentUser } = useAuth();
+  useSEO({ title: 'Messages', noindex: true });
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);

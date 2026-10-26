@@ -11,8 +11,10 @@ import { Sparkles, Briefcase, MapPin, User as UserIcon } from 'lucide-react';
 import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
 import { toast } from '@/components/ui/sonner';
+import { useSEO } from '@/hooks/useSEO';
 
 export function Onboarding() {
+  useSEO({ title: 'Onboarding', noindex: true });
   const navigate = useNavigate();
   const { user, completeOnboarding } = useAuth();
 

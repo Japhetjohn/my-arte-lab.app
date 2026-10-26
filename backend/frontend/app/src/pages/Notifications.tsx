@@ -27,6 +27,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { toast } from '@/components/ui/sonner';
+import { useSEO } from '@/hooks/useSEO';
 import { cn } from '@/lib/utils';
 
 interface Notification {
@@ -71,6 +72,7 @@ const notificationIcons: Record<string, React.ReactNode> = {
 
 export function Notifications() {
   const { user } = useAuth();
+  useSEO({ title: 'Notifications', noindex: true });
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);

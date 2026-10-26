@@ -16,6 +16,7 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { Button } from '@/components/ui/button';
 import { usePwaInstall } from '@/hooks/usePwaInstall';
+import { useSEO } from '@/hooks/useSEO';
 import { PostComposer } from '@/components/social/PostComposer';
 import { SocialFeedCard, type FeedPost } from '@/components/social/SocialFeedCard';
 import { VerifiedBadge } from '@/components/shared/VerifiedBadge';
@@ -33,6 +34,15 @@ import type { Creator } from '@/types';
 export function Home() {
   const { user } = useAuth();
   const { isStandalone, openInstallFlow } = usePwaInstall();
+
+  useSEO({
+    title: 'African Visual Creatives Marketplace',
+    description:
+      'Discover and book top African visual creatives: photographers, videographers, graphic designers, UI/UX designers, and animators. Built for African creators, trusted by clients globally.',
+    keywords:
+      'African visual creatives, hire African photographers, videography Africa, graphic design Africa, UI/UX designers Africa, motion graphics Africa, book visual creators, MyArteLab',
+    canonical: '/home',
+  });
   const activeTab = 'for-you';
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [suggestedCreators, setSuggestedCreators] = useState<Creator[]>([]);

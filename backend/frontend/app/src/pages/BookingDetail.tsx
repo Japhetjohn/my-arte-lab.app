@@ -28,6 +28,7 @@ import { uploadService } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { toast } from '@/components/ui/sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useSEO } from '@/hooks/useSEO';
 import {
   ArrowLeft,
   Calendar,
@@ -62,6 +63,7 @@ interface BookingDetailProps {
 
 export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps = {}) {
   const { user } = useAuth();
+  useSEO({ title: 'Booking Details', noindex: true });
   const isMobile = useIsMobile();
   const urlMatch = typeof window !== 'undefined' ? window.location.pathname.match(/\/bookings\/(.+)/) : null;
   const id = propBookingId || urlMatch?.[1];

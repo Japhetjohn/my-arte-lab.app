@@ -3,8 +3,10 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { VerificationCodeScreen } from '@/components/auth/VerificationCodeScreen';
 import { SuccessModal } from '@/components/modals/SuccessModal';
+import { useSEO } from '@/hooks/useSEO';
 
 export function VerifyEmail() {
+  useSEO({ title: 'Verify Email', noindex: true });
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { verifyEmail, resendVerification, user } = useAuth();
