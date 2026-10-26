@@ -6,7 +6,8 @@ import { MobileWallet } from '@/components/wallet/MobileWallet';
 import { DesktopWallet } from '@/components/wallet/DesktopWallet';
 import { useWallet } from '@/hooks/useWallet';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import { AlertCircle, RefreshCw } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 import { toast } from '@/components/ui/sonner';
 import type { Transaction } from '@/types';
 
@@ -87,7 +88,7 @@ export function Wallet() {
   if (isInitialLoad) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="w-8 h-8 animate-spin text-[#9747FF]" />
+        <Spinner size="lg" variant="primary" />
       </div>
     );
   }

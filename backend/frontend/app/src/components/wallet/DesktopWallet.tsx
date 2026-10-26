@@ -6,7 +6,6 @@ import {
   ShieldCheck,
   ArrowRight,
   RefreshCw,
-  Loader2,
   AlertCircle,
   ChevronRight,
   Sparkles,
@@ -16,6 +15,7 @@ import {
   Settings as SettingsIcon,
   CheckCircle2,
 } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 import { Button } from '@/components/ui/button';
 import { getAvatarUrl } from '@/lib/imageUrl';
 import { VerifiedBadge } from '@/components/shared/VerifiedBadge';
@@ -383,7 +383,7 @@ export function DesktopWallet({
                   <span className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
                     Available balance
                   </span>
-                  {isWalletLoading && <Loader2 className="w-3 h-3 animate-spin text-[#9747FF]" />}
+                  {isWalletLoading && <Spinner size="xs" variant="primary" />}
                   {onRefresh && (
                     <button
                       type="button"
@@ -450,7 +450,7 @@ export function DesktopWallet({
               <div className="flex items-center gap-2">
                 <h2 className="text-sm font-bold text-gray-900 dark:text-gray-100 tracking-tight">Recent transactions</h2>
                 {isTransactionsLoading && (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin text-[#9747FF]" />
+                  <Spinner size="sm" variant="primary" />
                 )}
               </div>
               <span className="text-xs text-gray-400 dark:text-gray-500">
@@ -477,7 +477,7 @@ export function DesktopWallet({
             {/* Transaction Rows */}
             {isTransactionsLoading && transactions.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16">
-                <Loader2 className="w-6 h-6 animate-spin text-[#9747FF] mb-2" />
+                <Spinner size="md" variant="primary" className="mb-2" />
                 <p className="text-sm text-gray-500 dark:text-gray-400">Loading transactions...</p>
               </div>
             ) : groupedTransactions.length > 0 ? (
@@ -604,7 +604,7 @@ export function DesktopWallet({
                     >
                       {isLoadingMore ? (
                         <>
-                          <Loader2 className="w-3.5 h-3.5 animate-spin mr-2 text-[#9747FF]" />
+                          <Spinner size="sm" variant="primary" className="mr-2" />
                           <span>Loading older transactions...</span>
                         </>
                       ) : (

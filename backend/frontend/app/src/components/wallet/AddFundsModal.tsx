@@ -16,7 +16,6 @@ import { walletService } from '@/lib/api';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import {
-  Loader2,
   AlertCircle,
   Copy,
   CheckCircle2,
@@ -25,6 +24,7 @@ import {
   Landmark,
   Wallet,
 } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 import { toast } from '@/components/ui/sonner';
 
 interface FundingCorridor {
@@ -527,7 +527,7 @@ export function AddFundsModal({
           >
             {isLoadingQuote ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Spinner size="sm" variant="white" />
                 <span>Getting quote...</span>
               </>
             ) : (
@@ -546,7 +546,7 @@ export function AddFundsModal({
           >
             {isInitiating ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Spinner size="sm" variant="white" />
                 <span>Generating payment instructions...</span>
               </>
             ) : (
@@ -565,7 +565,7 @@ export function AddFundsModal({
           >
             {isSubmittingPaid ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Spinner size="sm" variant="white" />
                 <span>Processing...</span>
               </>
             ) : (
@@ -895,7 +895,7 @@ export function AddFundsModal({
             <div className="bg-white p-3.5 rounded-2xl border border-gray-200/90 shadow-2xs flex items-center justify-center">
               {isLoadingSolana || (!depositAddress && !qrCodeUrl) ? (
                 <div className="w-[180px] h-[180px] sm:w-[200px] sm:h-[200px] flex flex-col items-center justify-center gap-2 text-xs text-gray-400">
-                  <Loader2 className="w-5 h-5 animate-spin text-[#9747FF]" />
+                  <Spinner size="md" variant="primary" />
                   <span>Loading deposit address...</span>
                 </div>
               ) : qrCodeUrl ? (

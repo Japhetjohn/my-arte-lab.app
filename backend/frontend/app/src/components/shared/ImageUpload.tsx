@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Upload, X, Camera } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
 import { toast } from '@/components/ui/sonner';
 
@@ -197,7 +198,7 @@ export function ImageUpload({
 
         {isUploading && (
           <div className="absolute inset-0 bg-white/90 flex flex-col items-center justify-center p-4">
-            <Loader2 className="w-8 h-8 text-[#8A2BE2] animate-spin mb-3" />
+            <Spinner size="lg" variant="primary" className="mb-3" />
             <Progress value={uploadProgress} className="w-full max-w-[200px]" />
             <p className="text-sm text-gray-600 mt-2">Uploading... {uploadProgress}%</p>
           </div>
@@ -214,6 +215,3 @@ export function ImageUpload({
     </div>
   );
 }
-
-// Import Loader2 for the upload state
-import { Loader2 } from 'lucide-react';

@@ -15,7 +15,6 @@ import { walletService } from '@/lib/api';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import {
-  Loader2,
   AlertCircle,
   CheckCircle2,
   ChevronDown,
@@ -23,6 +22,7 @@ import {
   ShieldAlert,
   LifeBuoy,
 } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 import { toast } from '@/components/ui/sonner';
 
 interface SupportedChain {
@@ -246,7 +246,7 @@ export function RescueTokenModal({
           <div className="space-y-3">
             {isLoadingHistory ? (
               <div className="flex flex-col items-center justify-center py-12">
-                <Loader2 className="w-5 h-5 animate-spin text-[#9747FF] mb-2" />
+                <Spinner size="md" variant="primary" className="mb-2" />
                 <p className="text-xs text-gray-500">Loading rescue history...</p>
               </div>
             ) : rescueHistory.length > 0 ? (
@@ -501,7 +501,7 @@ export function RescueTokenModal({
           >
             {isSubmitting ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Spinner size="sm" variant="white" />
                 <span>Submitting rescue request...</span>
               </>
             ) : (

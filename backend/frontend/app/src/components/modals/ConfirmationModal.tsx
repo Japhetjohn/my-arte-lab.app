@@ -8,7 +8,8 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Loader2, AlertTriangle, AlertCircle } from 'lucide-react';
+import { AlertTriangle, AlertCircle } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
 
 export interface ConfirmationModalProps {
@@ -115,7 +116,7 @@ export function ConfirmationModal({
           >
             {isLoading ? (
               <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <Spinner size="sm" variant="current" />
                 <span>Processing...</span>
               </>
             ) : (

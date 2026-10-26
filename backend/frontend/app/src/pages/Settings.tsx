@@ -32,7 +32,6 @@ import {
   Shield,
   Moon,
   Camera,
-  Loader2,
   Lock,
   Wallet,
   ChevronRight,
@@ -48,6 +47,7 @@ import {
   Activity,
   X,
 } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 import { PwaDiagnosticsModal } from '@/components/pwa/PwaDiagnosticsModal';
 import { cn } from '@/lib/utils';
 
@@ -557,7 +557,7 @@ export function Settings() {
                 aria-label="Upload photo"
               >
                 {isLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Spinner size="sm" variant="white" />
                 ) : (
                   <Camera className="w-4 h-4" />
                 )}
@@ -955,7 +955,7 @@ export function Settings() {
 
             {isLoadingPosts ? (
               <div className="py-12 flex justify-center items-center">
-                <Loader2 className="w-5 h-5 animate-spin text-[#9747FF]" />
+                <Spinner size="md" variant="primary" />
               </div>
             ) : myPosts.length === 0 ? (
               <div className="py-8 px-4 text-center text-gray-500 dark:text-gray-400 text-xs">
@@ -1090,7 +1090,7 @@ export function Settings() {
             >
               {isSaving ? (
                 <>
-                  <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
+                  <Spinner size="sm" variant="white" className="mr-2" />
                   Saving...
                 </>
               ) : (
@@ -1118,7 +1118,7 @@ export function Settings() {
                 className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-[#9747FF] text-white flex items-center justify-center border border-white dark:border-[#1a1b1c] hover:bg-[#8534f0] transition-colors cursor-pointer"
               >
                 {isLoading ? (
-                  <Loader2 className="w-3 h-3 animate-spin" />
+                  <Spinner size="xs" variant="white" />
                 ) : (
                   <Camera className="w-3 h-3" />
                 )}
@@ -1287,7 +1287,7 @@ export function Settings() {
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
+                  <Spinner size="sm" variant="white" className="mr-2" />
                   Updating...
                 </>
               ) : (
@@ -1447,7 +1447,7 @@ export function Settings() {
             >
               {isSaving ? (
                 <>
-                  <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
+                  <Spinner size="sm" variant="white" className="mr-2" />
                   Saving...
                 </>
               ) : (

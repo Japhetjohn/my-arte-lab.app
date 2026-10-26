@@ -15,7 +15,6 @@ import { walletService } from '@/lib/api';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import {
-  Loader2,
   AlertCircle,
   Copy,
   CheckCircle2,
@@ -30,6 +29,7 @@ import {
   Clock,
   ShieldAlert,
 } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 import { toast } from '@/components/ui/sonner';
 
 interface WithdrawCorridor {
@@ -940,12 +940,12 @@ export function WithdrawModal({
           >
             {isLoadingQuote ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Spinner size="sm" variant="white" />
                 <span>Getting quote...</span>
               </>
             ) : isVerifyingAccount ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Spinner size="sm" variant="white" />
                 <span>Verifying account...</span>
               </>
             ) : (
@@ -965,7 +965,7 @@ export function WithdrawModal({
           >
             {isSubmitting ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Spinner size="sm" variant="white" />
                 <span>Confirming withdrawal...</span>
               </>
             ) : (
@@ -1015,7 +1015,7 @@ export function WithdrawModal({
           >
             {isSubmittingSolana ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Spinner size="sm" variant="white" />
                 <span>Sending...</span>
               </>
             ) : (
@@ -1289,7 +1289,7 @@ export function WithdrawModal({
                   >
                     {isLoadingInstitutions ? (
                       <div className="py-8 text-center text-gray-400">
-                        <Loader2 className="w-5 h-5 animate-spin mx-auto mb-2 text-[#9747FF]" />
+                        <Spinner size="md" variant="primary" className="mx-auto mb-2" />
                         <span>Loading supported banks...</span>
                       </div>
                     ) : bankSearch.trim() ? (
@@ -1476,7 +1476,7 @@ export function WithdrawModal({
                 />
                 <div className="absolute right-3.5 top-1/2 -translate-y-1/2 flex items-center pointer-events-none">
                   {isVerifyingAccount ? (
-                    <Loader2 className="w-4 h-4 animate-spin text-[#9747FF]" />
+                    <Spinner size="sm" variant="primary" />
                   ) : verifiedName ? (
                     <Check className="w-4 h-4 text-emerald-600" />
                   ) : null}

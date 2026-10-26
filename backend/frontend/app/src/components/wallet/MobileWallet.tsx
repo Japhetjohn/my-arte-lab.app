@@ -8,10 +8,10 @@ import {
   FolderOpen,
   ArrowRight,
   RefreshCw,
-  Loader2,
   AlertCircle,
   ChevronRight,
 } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 import type { Transaction } from '@/types';
 import { cn } from '@/lib/utils';
 
@@ -244,7 +244,7 @@ export function MobileWallet({
       <section className="text-center pt-2 pb-5 border-b border-[#DADDE1] dark:border-[#2f3032]">
         <div className="flex items-center justify-center gap-1.5 mb-1.5">
           <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Available balance</p>
-          {isWalletLoading && <Loader2 className="w-3.5 h-3.5 animate-spin text-[#9747FF]" />}
+          {isWalletLoading && <Spinner size="xs" variant="primary" />}
         </div>
         <div className="flex items-baseline justify-center">
           <span className="text-2xl sm:text-3xl font-light text-gray-400 dark:text-gray-500 mr-0.5 align-baseline">$</span>
@@ -391,7 +391,7 @@ export function MobileWallet({
           <div className="flex items-center gap-2">
             <h2 className="text-sm font-bold text-gray-900 dark:text-gray-100 tracking-tight">Recent transactions</h2>
             {isTransactionsLoading && (
-              <Loader2 className="w-3.5 h-3.5 animate-spin text-[#9747FF]" />
+              <Spinner size="sm" variant="primary" />
             )}
           </div>
         </div>
@@ -421,7 +421,7 @@ export function MobileWallet({
         {/* Grouped Chronological List */}
         {isTransactionsLoading && transactions.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12">
-            <Loader2 className="w-6 h-6 animate-spin text-[#9747FF] mb-2" />
+            <Spinner size="md" variant="primary" className="mb-2" />
             <p className="text-sm text-gray-500 dark:text-gray-400">Loading transactions...</p>
           </div>
         ) : groupedTransactions.length > 0 ? (
@@ -538,7 +538,7 @@ export function MobileWallet({
                   disabled={isLoadingMore}
                   className="px-4 py-2 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 rounded-xl text-xs sm:text-sm font-medium transition-all inline-flex items-center gap-2 cursor-pointer disabled:opacity-50"
                 >
-                  {isLoadingMore && <Loader2 className="w-3.5 h-3.5 animate-spin text-[#9747FF]" />}
+                  {isLoadingMore && <Spinner size="sm" variant="primary" />}
                   <span>{isLoadingMore ? 'Loading older transactions...' : 'Load older transactions'}</span>
                 </button>
               </div>
