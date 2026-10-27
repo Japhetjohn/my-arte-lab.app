@@ -24,7 +24,6 @@ import {
   Plus,
   Trash2,
   X,
-  ShieldCheck,
   Image as ImageIcon,
 } from 'lucide-react';
 import { Spinner } from '@/components/ui/spinner';
@@ -209,7 +208,7 @@ export function PostOpportunityModal({ isOpen, onClose, onSuccess }: PostOpportu
               Post a Creative Opportunity
             </h2>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              Commission verified African talent with milestone escrow
+              Describe the creative work you need done
             </p>
           </div>
         </div>
@@ -437,14 +436,6 @@ export function PostOpportunityModal({ isOpen, onClose, onSuccess }: PostOpportu
             onChange={(e) => setSkillsInput(e.target.value)}
             className="rounded-xl border border-[#DADDE1] dark:border-[#2f3032] bg-white dark:bg-[#18191a] text-xs"
           />
-        </div>
-
-        {/* Subtle Escrow Guarantee Note - Thin Straight Divider (No Box) */}
-        <div className="pt-3 border-t border-[#DADDE1] dark:border-[#2f3032] flex items-center justify-between text-xs text-gray-500">
-          <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-medium">
-            <ShieldCheck className="w-4 h-4 shrink-0" />
-            <span>Escrow Protected &bull; Funds released only after milestone approval</span>
-          </div>
         </div>
       </div>
 

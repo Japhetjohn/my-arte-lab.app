@@ -13,7 +13,6 @@ import {
   ArrowUp,
   Image as ImageIcon,
   Download,
-  ShieldCheck,
 } from 'lucide-react';
 import { Spinner } from '@/components/ui/spinner';
 import { Button } from '@/components/ui/button';
@@ -612,10 +611,6 @@ export function Home() {
                   {/* Toolbar Row - Straight divider, blends naturally */}
                   <div className="flex items-center justify-between mt-3 pt-3 border-t border-[#DADDE1] dark:border-[#2f3032]">
                     <div className="flex items-center gap-4 text-xs text-gray-500">
-                      <span className="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-medium">
-                        <ShieldCheck className="w-3.5 h-3.5" />
-                        <span>Escrow Protected</span>
-                      </span>
                       <a
                         href="/projects"
                         className="text-gray-600 dark:text-gray-400 hover:text-[#9747FF] font-medium transition-colors"

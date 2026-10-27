@@ -308,7 +308,7 @@ export function Projects() {
                 </h1>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                   {isClient
-                    ? 'Publish creative projects, receive proposals, and hire with escrow security.'
+                    ? 'Publish creative projects, receive proposals, and hire African visual creators.'
                     : 'Discover paid projects from clients looking for African visual talent.'}
                 </p>
               </div>
