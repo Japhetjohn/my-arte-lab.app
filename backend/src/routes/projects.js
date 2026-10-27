@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const { protect, optionalAuth } = require('../middleware/auth');
 const Project = require('../models/Project');
 const Application = require('../models/Application');
@@ -49,9 +50,191 @@ router.get('/', optionalAuth, async (req, res) => {
   }
 });
 
+// Get my projects (projects I posted AND projects where I'm the creator)
+router.get('/my/posted', protect, async (req, res) => {
+  try {
+    // Get projects I posted OR projects where I'm the selected creator
+    const projects = await Project.find({
+      $or: [
+        { clientId: req.user._id },
+        { selectedCreatorId: req.user._id }
+      ]
+    })
+      .populate('clientId', 'firstName lastName avatar email')
+      .populate('selectedCreatorId', 'firstName lastName avatar')
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      data: { projects }
+    });
+  } catch (error) {
+    console.error('Error fetching my projects:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch projects'
+    });
+  }
+});
+
+// Get my applications (applications I submitted)
+router.get('/my/applications', protect, async (req, res) => {
+  try {
+    const applications = await Application.findByCreator(req.user._id);
+
+    res.json({
+      success: true,
+      data: { applications }
+    });
+  } catch (error) {
+    console.error('Error fetching applications:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch applications'
+    });
+  }
+});
+
+// Accept/reject application (project owner only)
+router.patch('/applications/:id', protect, async (req, res) => {
+  try {
+    const { status, reviewNotes } = req.body;
+
+    if (!['accepted', 'rejected'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid status'
+      });
+    }
+
+    if (status === 'accepted') {
+      // Use projectService for payment/escrow transaction
+      try {
+        const result = await projectService.acceptApplicationWithTransaction(
+          req.params.id,
+          req.user._id
+        );
+
+        const { application, project } = result;
+
+        // Populate creator details for notifications
+        await application.populate('creatorId', 'firstName lastName email name');
+
+        // Notify creator of acceptance
+        await Notification.createNotification({
+          recipient: application.creatorId._id,
+          sender: req.user._id,
+          type: 'proposal_accepted',
+          title: 'Proposal Accepted!',
+          message: `Your proposal for "${project.title}" has been accepted! Escrow payment has been funded.`,
+          data: {
+            projectId: project._id,
+            applicationId: application._id,
+            actionUrl: `/projects?tab=my`
+          }
+        });
+
+        // Notify other applicants that project is closed
+        const otherApplications = await Application.find({
+          projectId: project._id,
+          _id: { $ne: application._id }
+        });
+
+        for (const app of otherApplications) {
+          app.status = 'rejected';
+          await app.save();
+
+          await Notification.createNotification({
+            recipient: app.creatorId,
+            sender: req.user._id,
+            type: 'proposal_rejected',
+            title: 'Project Update',
+            message: `Another creator was selected for "${project.title}".`,
+            data: {
+              projectId: project._id,
+              applicationId: app._id,
+              actionUrl: `/projects`
+            }
+          });
+        }
+
+        res.json({
+          success: true,
+          message: 'Application accepted and escrow funded successfully',
+          data: { application, project }
+        });
+      } catch (serviceError) {
+        console.error('Error in acceptApplicationWithTransaction:', serviceError);
+        return res.status(400).json({
+          success: false,
+          message: serviceError.message || 'Failed to accept application'
+        });
+      }
+    } else {
+      // Handle rejection
+      const application = await Application.findById(req.params.id)
+        .populate('projectId');
+
+      if (!application) {
+        return res.status(404).json({
+          success: false,
+          message: 'Application not found'
+        });
+      }
+
+      // Check ownership
+      const project = application.projectId;
+      const clientId = project.clientId._id ? project.clientId._id.toString() : project.clientId.toString();
+      if (clientId !== req.user._id.toString()) {
+        return res.status(403).json({
+          success: false,
+          message: 'Unauthorized'
+        });
+      }
+
+      application.status = 'rejected';
+      if (reviewNotes) application.reviewNotes = reviewNotes;
+      await application.save();
+
+      // Notify creator
+      await Notification.createNotification({
+        recipient: application.creatorId,
+        sender: req.user._id,
+        type: 'proposal_rejected',
+        title: 'Proposal Update',
+        message: `Your proposal for "${project.title}" was not selected.`,
+        data: {
+          projectId: project._id,
+          applicationId: application._id,
+          actionUrl: `/projects`
+        }
+      });
+
+      res.json({
+        success: true,
+        message: 'Application rejected',
+        data: { application }
+      });
+    }
+  } catch (error) {
+    console.error('Error updating application:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update application'
+    });
+  }
+});
+
 // Get single project by ID
 router.get('/:id', optionalAuth, async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(404).json({
+        success: false,
+        message: 'Project not found'
+      });
+    }
+
     const project = await Project.findById(req.params.id)
       .populate('clientId', 'firstName lastName avatar')
       .populate('selectedCreatorId', 'firstName lastName avatar category');
@@ -191,33 +374,6 @@ router.patch('/:id', protect, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to update project'
-    });
-  }
-});
-
-// Get my projects (projects I posted AND projects where I'm the creator)
-router.get('/my/posted', protect, async (req, res) => {
-  try {
-    // Get projects I posted OR projects where I'm the selected creator
-    const projects = await Project.find({
-      $or: [
-        { clientId: req.user._id },
-        { selectedCreatorId: req.user._id }
-      ]
-    })
-      .populate('clientId', 'firstName lastName avatar email')
-      .populate('selectedCreatorId', 'firstName lastName avatar')
-      .sort({ createdAt: -1 });
-
-    res.json({
-      success: true,
-      data: { projects }
-    });
-  } catch (error) {
-    console.error('Error fetching my projects:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch projects'
     });
   }
 });
@@ -362,163 +518,6 @@ router.post('/:id/apply', protect, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to submit application'
-    });
-  }
-});
-
-// Get my applications (applications I submitted)
-router.get('/my/applications', protect, async (req, res) => {
-  try {
-    const applications = await Application.findByCreator(req.user._id);
-
-    res.json({
-      success: true,
-      data: { applications }
-    });
-  } catch (error) {
-    console.error('Error fetching applications:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch applications'
-    });
-  }
-});
-
-// Accept/reject application (project owner only)
-router.patch('/applications/:id', protect, async (req, res) => {
-  try {
-    const { status, reviewNotes } = req.body;
-
-    if (!['accepted', 'rejected'].includes(status)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid status'
-      });
-    }
-
-    if (status === 'accepted') {
-      // Use projectService for payment/escrow transaction
-      try {
-        const result = await projectService.acceptApplicationWithTransaction(
-          req.params.id,
-          req.user._id
-        );
-
-        const { application, project } = result;
-
-        // Populate creator details for notifications
-        await application.populate('creatorId', 'firstName lastName email name');
-
-        // Notify creator of acceptance
-        await Notification.createNotification({
-          recipient: application.creatorId._id,
-          sender: req.user._id,
-          type: 'project_application_accepted',
-          title: 'Application Accepted!',
-          message: `Congratulations! Your application for "${project.title}" has been accepted. The project has started.`,
-          link: `/projects`,
-          project: project._id,
-          metadata: {
-            projectId: project._id,
-            projectTitle: project.title,
-            proposedBudget: application.proposedBudget.amount,
-            currency: application.proposedBudget.currency,
-            reviewNotes
-          }
-        });
-
-        // Notify client that project has started
-        await Notification.createNotification({
-          recipient: project.clientId,
-          sender: application.creatorId._id,
-          type: 'project_started',
-          title: 'Project Started',
-          message: `Your project "${project.title}" has started with ${application.creatorId.name}. Payment has been held in escrow.`,
-          link: `/projects`,
-          project: project._id,
-          metadata: {
-            projectId: project._id,
-            projectTitle: project.title,
-            creatorName: application.creatorId.name,
-            amount: application.proposedBudget.amount
-          }
-        });
-
-        res.json({
-          success: true,
-          message: 'Application accepted successfully. Please proceed to payment to start the project.',
-          data: { application, project }
-        });
-      } catch (error) {
-        console.error('Error accepting application:', error);
-
-        // Handle specific errors
-        if (error.statusCode === 400 && error.message.includes('Insufficient balance')) {
-          return res.status(400).json({
-            success: false,
-            message: error.message
-          });
-        }
-
-        return res.status(error.statusCode || 500).json({
-          success: false,
-          message: error.message || 'Failed to accept application'
-        });
-      }
-    } else {
-      // Rejection flow (no payment involved)
-      const application = await Application.findById(req.params.id).populate('projectId');
-
-      if (!application) {
-        return res.status(404).json({
-          success: false,
-          message: 'Application not found'
-        });
-      }
-
-      const project = application.projectId;
-
-      // Check if user owns the project (handle both populated and unpopulated cases)
-      const clientId = project.clientId._id ? project.clientId._id.toString() : project.clientId.toString();
-      if (clientId !== req.user._id.toString()) {
-        return res.status(403).json({
-          success: false,
-          message: 'Unauthorized'
-        });
-      }
-
-      // Populate creator details for notification
-      await application.populate('creatorId', 'firstName lastName email name');
-
-      await application.reject(reviewNotes);
-
-      // Notify creator of rejection
-      await Notification.createNotification({
-        recipient: application.creatorId._id,
-        sender: req.user._id,
-        type: 'project_application_rejected',
-        title: 'Application Not Selected',
-        message: `Your application for "${project.title}" was not selected.${reviewNotes ? ` Feedback: ${reviewNotes}` : ''}`,
-        link: `/projects`,
-        project: project._id,
-        metadata: {
-          projectId: project._id,
-          projectTitle: project.title,
-          reviewNotes
-        }
-      });
-
-      res.json({
-        success: true,
-        message: 'Application rejected successfully',
-        data: { application }
-      });
-    }
-  } catch (error) {
-    console.error('Error updating application:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to update application'
     });
   }
 });
