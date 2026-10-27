@@ -18,6 +18,7 @@ echo '$SSH_PASS'
 EOF
   export SSH_ASKPASS="$ASKPASS_TMP"
   export SSH_ASKPASS_REQUIRE=force
+  export DISPLAY="${DISPLAY:-:0}"
 fi
 
 ssh -F /dev/null -o StrictHostKeyChecking=no ${VPS_USER}@${VPS_IP} << 'REMOTE_SCRIPT'
