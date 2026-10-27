@@ -283,32 +283,30 @@ exports.recordImpression = catchAsync(async (req, res, next) => {
     return next(new ErrorHandler('Post not found', 404));
   }
 
-  if (!Array.isArray(service.impressions)) {
-    service.impressions = [];
-  }
-
-  let incremented = false;
+  // Atomic update to avoid full-document save locks and unbounded array growth
   if (req.user) {
-    const userId = req.user._id.toString();
-    const alreadyViewed = service.impressions.some(id => id.toString() === userId);
-    if (!alreadyViewed) {
-      service.impressions.push(req.user._id);
-      service.impressionsCount = (service.impressionsCount || 0) + 1;
-      incremented = true;
-    }
+    const userId = req.user._id;
+    // Cap recent viewer IDs to latest 100 to prevent document bloat while tracking impressions
+    await User.updateOne(
+      { 'services._id': serviceId, 'services.impressions': { $ne: userId } },
+      {
+        $inc: { 'services.$.impressionsCount': 1 },
+        $push: { 'services.$.impressions': { $each: [userId], $slice: -100 } }
+      }
+    );
   } else {
-    // Increment anonymous impression
-    service.impressionsCount = (service.impressionsCount || 0) + 1;
-    incremented = true;
+    await User.updateOne(
+      { 'services._id': serviceId },
+      { $inc: { 'services.$.impressionsCount': 1 } }
+    );
   }
 
-  if (incremented) {
-    await creator.save({ validateBeforeSave: false });
-  }
+  const updatedCreator = await User.findOne({ 'services._id': serviceId }).select('services.$');
+  const currentCount = updatedCreator?.services?.[0]?.impressionsCount || (service.impressionsCount || 0) + 1;
 
   successResponse(res, 200, 'Impression recorded', {
     serviceId,
-    impressionsCount: service.impressionsCount || service.impressions.length
+    impressionsCount: currentCount
   });
 });
 

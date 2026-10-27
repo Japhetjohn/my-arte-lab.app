@@ -23,6 +23,7 @@ import { toast } from '@/components/ui/sonner';
 import { useSEO } from '@/hooks/useSEO';
 import {
   Calendar,
+  Briefcase,
   DollarSign,
   Star,
   Sparkles,
@@ -493,6 +494,14 @@ export function Bookings() {
               </a>
 
               <a
+                href="/projects"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] dark:hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-[#1e1f20] transition-colors"
+              >
+                <Briefcase className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                <span>Opportunities</span>
+              </a>
+
+              <a
                 href="/bookings"
                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-sm text-[#9747FF] bg-purple-50/80 dark:bg-purple-950/30 transition-colors"
               >
@@ -540,9 +549,8 @@ export function Bookings() {
 
           {/* Bookings Stream - Clean Continuous List with Thin Ash-Gray Dividers */}
           {isLoading ? (
-            <div className="py-24 flex flex-col items-center justify-center gap-3 bg-white dark:bg-[#18191a] border border-[#DADDE1] dark:border-[#2f3032] rounded-b-2xl">
+            <div className="py-24 flex items-center justify-center bg-white dark:bg-[#18191a] border border-[#DADDE1] dark:border-[#2f3032] rounded-b-2xl">
               <Spinner size="lg" variant="primary" />
-              <span className="text-xs text-gray-500">Loading bookings...</span>
             </div>
           ) : sortedBookings.length === 0 ? (
             <div className="py-16 px-4 bg-white dark:bg-[#18191a] border border-[#DADDE1] dark:border-[#2f3032] rounded-b-2xl">

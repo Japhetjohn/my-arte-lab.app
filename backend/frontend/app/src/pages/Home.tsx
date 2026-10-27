@@ -5,6 +5,7 @@ import {
   Home as HomeIcon,
   Sparkles,
   Users,
+  Briefcase,
   Calendar,
   Wallet,
   RefreshCw,
@@ -12,12 +13,15 @@ import {
   ArrowUp,
   Image as ImageIcon,
   Download,
+  ChevronRight,
+  ShieldCheck,
 } from 'lucide-react';
 import { Spinner } from '@/components/ui/spinner';
 import { Button } from '@/components/ui/button';
 import { usePwaInstall } from '@/hooks/usePwaInstall';
 import { useSEO } from '@/hooks/useSEO';
 import { PostComposer } from '@/components/social/PostComposer';
+import { PostOpportunityModal } from '@/components/opportunities/PostOpportunityModal';
 import { SocialFeedCard, type FeedPost } from '@/components/social/SocialFeedCard';
 import { VerifiedBadge } from '@/components/shared/VerifiedBadge';
 import {
@@ -33,7 +37,9 @@ import type { Creator } from '@/types';
 
 export function Home() {
   const { user } = useAuth();
+  const isClient = user?.role === 'client';
   const { isStandalone, openInstallFlow } = usePwaInstall();
+  const [isClientPostModalOpen, setIsClientPostModalOpen] = useState(false);
 
   useSEO({
     title: 'African Visual Creatives Marketplace',
@@ -412,6 +418,14 @@ export function Home() {
                 <span>Creators</span>
               </a>
 
+              <a
+                href="/projects"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] dark:hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-white/[0.04] transition-colors"
+              >
+                <Briefcase className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                <span>Opportunities</span>
+              </a>
+
               {user && (
                 <>
                   <a
@@ -482,52 +496,146 @@ export function Home() {
             </div>
           )}
 
-          {/* MOBILE FACEBOOK-INSPIRED POST COMPOSER (sm:hidden) */}
-          <div className="sm:hidden -mx-3 sm:mx-0 bg-white dark:bg-[#18191a] border-t border-b border-[#DADDE1] dark:border-[#2f3032] px-4 py-3 flex items-center gap-3">
-            {/* Left: Creator Avatar */}
-            <div className="w-10 h-10 rounded-full overflow-hidden bg-purple-50 dark:bg-purple-950/40 border border-gray-200 dark:border-gray-700 flex items-center justify-center shrink-0">
-              {user?.avatar ? (
-                <img
-                  src={getAvatarUrl(user.avatar)}
-                  alt={user.name || 'Creator'}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <span className="text-sm font-bold text-[#9747FF]">
-                  {(user?.name || user?.firstName || 'C')[0].toUpperCase()}
+          {/* MOBILE POST / OPPORTUNITY COMPOSER (sm:hidden) */}
+          {isClient ? (
+            <div className="sm:hidden -mx-3 sm:mx-0 bg-white dark:bg-[#18191a] border-t border-b border-[#DADDE1] dark:border-[#2f3032] px-4 py-3 flex items-center gap-3">
+              {/* Left: Client Avatar */}
+              <div className="w-10 h-10 rounded-full overflow-hidden bg-purple-50 dark:bg-purple-950/40 border border-gray-200 dark:border-gray-700 flex items-center justify-center shrink-0">
+                {user?.avatar ? (
+                  <img
+                    src={getAvatarUrl(user.avatar)}
+                    alt={user.name || 'Client'}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-sm font-bold text-[#9747FF]">
+                    {(user?.name || user?.firstName || 'C')[0].toUpperCase()}
+                  </span>
+                )}
+              </div>
+
+              {/* Center: Rounded Pill Input Trigger for Opportunities */}
+              <button
+                type="button"
+                onClick={() => setIsClientPostModalOpen(true)}
+                className="flex-1 min-w-0 bg-gray-100/90 dark:bg-gray-800 hover:bg-gray-200/70 dark:hover:bg-gray-700 active:bg-gray-200 text-left px-4 py-2.5 rounded-full text-xs sm:text-sm text-gray-500 dark:text-gray-400 transition-colors cursor-pointer select-none truncate focus:outline-none focus:ring-1 focus:ring-[#9747FF]"
+                aria-label="Describe a project you need done..."
+              >
+                Describe a project you need done...
+              </button>
+
+              {/* Right: Post Action */}
+              <button
+                type="button"
+                onClick={() => setIsClientPostModalOpen(true)}
+                className="flex flex-col items-center justify-center gap-0.5 px-1.5 py-0.5 text-[#9747FF] hover:text-[#8534f0] transition-colors cursor-pointer shrink-0 outline-none focus:outline-none group"
+                aria-label="Post opportunity"
+                title="Post Opportunity"
+              >
+                <Plus className="w-5 h-5 text-[#9747FF] group-hover:scale-105 transition-transform stroke-[2.5]" />
+                <span className="text-[11px] font-semibold text-[#9747FF] leading-none">
+                  Post
                 </span>
-              )}
+              </button>
             </div>
+          ) : (
+            <div className="sm:hidden -mx-3 sm:mx-0 bg-white dark:bg-[#18191a] border-t border-b border-[#DADDE1] dark:border-[#2f3032] px-4 py-3 flex items-center gap-3">
+              {/* Left: Creator Avatar */}
+              <div className="w-10 h-10 rounded-full overflow-hidden bg-purple-50 dark:bg-purple-950/40 border border-gray-200 dark:border-gray-700 flex items-center justify-center shrink-0">
+                {user?.avatar ? (
+                  <img
+                    src={getAvatarUrl(user.avatar)}
+                    alt={user.name || 'Creator'}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-sm font-bold text-[#9747FF]">
+                    {(user?.name || user?.firstName || 'C')[0].toUpperCase()}
+                  </span>
+                )}
+              </div>
 
-            {/* Center: Rounded Pill Input Trigger */}
-            <button
-              type="button"
-              onClick={() => handleOpenMobileComposer(false)}
-              className="flex-1 min-w-0 bg-gray-100/90 dark:bg-gray-800 hover:bg-gray-200/70 dark:hover:bg-gray-700 active:bg-gray-200 text-left px-4 py-2.5 rounded-full text-xs sm:text-sm text-gray-500 dark:text-gray-400 transition-colors cursor-pointer select-none truncate focus:outline-none focus:ring-1 focus:ring-[#9747FF]"
-              aria-label="What are you working on?"
-            >
-              What are you working on?
-            </button>
+              {/* Center: Rounded Pill Input Trigger */}
+              <button
+                type="button"
+                onClick={() => handleOpenMobileComposer(false)}
+                className="flex-1 min-w-0 bg-gray-100/90 dark:bg-gray-800 hover:bg-gray-200/70 dark:hover:bg-gray-700 active:bg-gray-200 text-left px-4 py-2.5 rounded-full text-xs sm:text-sm text-gray-500 dark:text-gray-400 transition-colors cursor-pointer select-none truncate focus:outline-none focus:ring-1 focus:ring-[#9747FF]"
+                aria-label="What are you working on?"
+              >
+                What are you working on?
+              </button>
 
-            {/* Right: Media Attachment Shortcut */}
-            <button
-              type="button"
-              onClick={() => handleOpenMobileComposer(true)}
-              className="flex flex-col items-center justify-center gap-0.5 px-1.5 py-0.5 text-gray-700 dark:text-gray-300 hover:text-[#9747FF] transition-colors cursor-pointer shrink-0 outline-none focus:outline-none group"
-              aria-label="Attach photo"
-              title="Photo"
-            >
-              <ImageIcon className="w-5 h-5 text-emerald-500 group-hover:scale-105 transition-transform" />
-              <span className="text-[11px] font-medium text-gray-600 dark:text-gray-400 group-hover:text-[#9747FF] leading-none">
-                Photo
-              </span>
-            </button>
-          </div>
+              {/* Right: Media Attachment Shortcut */}
+              <button
+                type="button"
+                onClick={() => handleOpenMobileComposer(true)}
+                className="flex flex-col items-center justify-center gap-0.5 px-1.5 py-0.5 text-gray-700 dark:text-gray-300 hover:text-[#9747FF] transition-colors cursor-pointer shrink-0 outline-none focus:outline-none group"
+                aria-label="Attach photo"
+                title="Photo"
+              >
+                <ImageIcon className="w-5 h-5 text-emerald-500 group-hover:scale-105 transition-transform" />
+                <span className="text-[11px] font-medium text-gray-600 dark:text-gray-400 group-hover:text-[#9747FF] leading-none">
+                  Photo
+                </span>
+              </button>
+            </div>
+          )}
 
-          {/* Desktop Post Composer (Border-bottom divider connects directly to feed) */}
-          <div className="hidden sm:block">
-            <PostComposer onPostCreated={handlePostCreated} />
-          </div>
+          {/* Desktop Post Composer / Client Commissioning Banner */}
+          {isClient ? (
+            <div className="hidden sm:block bg-white dark:bg-[#18191a] border border-[#DADDE1] dark:border-[#2f3032] rounded-2xl p-5 mb-3 shadow-xs">
+              <div className="flex items-start justify-between gap-4">
+                <div className="space-y-1.5">
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/50 text-[#9747FF] text-xs font-semibold">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Commission African Creators</span>
+                  </div>
+                  <h2 className="text-base font-bold text-gray-900 dark:text-gray-100 tracking-tight">
+                    Need design, photography, video, or animation work?
+                  </h2>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed max-w-lg">
+                    Post an opportunity describing your creative project to receive competitive proposals from verified African talent, with milestone-based escrow protection.
+                  </p>
+                </div>
+
+                <Button
+                  type="button"
+                  onClick={() => setIsClientPostModalOpen(true)}
+                  className="bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold rounded-full px-5 h-9 shadow-xs cursor-pointer inline-flex items-center gap-2 shrink-0"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Post an Opportunity</span>
+                </Button>
+              </div>
+
+              <div className="mt-4 pt-3 border-t border-[#DADDE1] dark:border-[#2f3032] flex items-center justify-between text-xs text-gray-500">
+                <div className="flex items-center gap-4">
+                  <a
+                    href="/creators"
+                    className="text-gray-700 dark:text-gray-300 hover:text-[#9747FF] font-medium transition-colors inline-flex items-center gap-1"
+                  >
+                    <span>Browse Creator Directory</span>
+                    <ChevronRight className="w-3 h-3" />
+                  </a>
+                  <a
+                    href="/projects"
+                    className="text-gray-700 dark:text-gray-300 hover:text-[#9747FF] font-medium transition-colors inline-flex items-center gap-1"
+                  >
+                    <span>My Opportunities</span>
+                    <ChevronRight className="w-3 h-3" />
+                  </a>
+                </div>
+                <span className="text-emerald-600 dark:text-emerald-400 font-medium inline-flex items-center gap-1">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>Escrow Protected</span>
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className="hidden sm:block">
+              <PostComposer onPostCreated={handlePostCreated} />
+            </div>
+          )}
 
           {/* Mobile Download MyArteLab Section (Thin straight green separator line & clean rounded container) */}
           {!isStandalone && (
@@ -566,9 +674,8 @@ export function Home() {
 
           {/* Social Feed Post Stream — Clean Continuous Stream (No Rectangular Cards) */}
           {isLoading ? (
-            <div className="bg-white dark:bg-[#18191a] border-b border-[#DADDE1] dark:border-[#2f3032] p-12 flex flex-col items-center justify-center gap-3">
+            <div className="bg-white dark:bg-[#18191a] border-b border-[#DADDE1] dark:border-[#2f3032] p-12 flex items-center justify-center">
               <Spinner size="md" variant="primary" />
-              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Loading your feed...</p>
             </div>
           ) : posts.length === 0 ? (
             <div className="bg-white dark:bg-[#18191a] border-b border-[#DADDE1] dark:border-[#2f3032] p-12 text-center flex flex-col items-center">
@@ -729,18 +836,33 @@ export function Home() {
       {/* =========================================================================
           MOBILE FLOATING PLUS BUTTON (Part 4)
           Positioned near the bottom above the bottom navigation bar.
-          Taps open the mobile post composer bottom drawer.
+          Taps open the appropriate creation flow based on role.
          ========================================================================= */}
       <div className="sm:hidden fixed bottom-20 right-5 z-40">
         <button
           type="button"
-          onClick={() => handleOpenMobileComposer(false)}
+          onClick={() => {
+            if (isClient) {
+              setIsClientPostModalOpen(true);
+            } else {
+              handleOpenMobileComposer(false);
+            }
+          }}
           className="w-13 h-13 rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white flex items-center justify-center shadow-lg shadow-purple-600/35 transition-transform active:scale-90 cursor-pointer focus:outline-none"
-          aria-label="Create post"
+          aria-label={isClient ? 'Post opportunity' : 'Create post'}
         >
           <Plus className="w-6 h-6 stroke-[2.5]" />
         </button>
       </div>
+
+      {/* Client Post Opportunity Modal */}
+      <PostOpportunityModal
+        isOpen={isClientPostModalOpen}
+        onClose={() => setIsClientPostModalOpen(false)}
+        onSuccess={() => {
+          window.location.href = '/projects';
+        }}
+      />
 
       {/* Mobile Post Creation Drawer (Wallet drawer animation pattern) */}
       <Drawer

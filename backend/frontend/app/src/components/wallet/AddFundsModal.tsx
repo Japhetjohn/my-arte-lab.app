@@ -894,9 +894,8 @@ export function AddFundsModal({
             {/* 4. Large, centered QR code */}
             <div className="bg-white p-3.5 rounded-2xl border border-gray-200/90 shadow-2xs flex items-center justify-center">
               {isLoadingSolana || (!depositAddress && !qrCodeUrl) ? (
-                <div className="w-[180px] h-[180px] sm:w-[200px] sm:h-[200px] flex flex-col items-center justify-center gap-2 text-xs text-gray-400">
+                <div className="w-[180px] h-[180px] sm:w-[200px] sm:h-[200px] flex items-center justify-center">
                   <Spinner size="md" variant="primary" />
-                  <span>Loading deposit address...</span>
                 </div>
               ) : qrCodeUrl ? (
                 <img

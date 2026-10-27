@@ -163,9 +163,8 @@ export function PostDetail({ postId: propPostId }: PostDetailProps) {
           </div>
 
           {isLoading ? (
-            <div className="py-24 flex flex-col items-center justify-center gap-2">
+            <div className="py-24 flex items-center justify-center">
               <Spinner size="lg" variant="primary" />
-              <span className="text-xs text-gray-500">Loading artwork post...</span>
             </div>
           ) : error || !post ? (
             <div className="py-12">

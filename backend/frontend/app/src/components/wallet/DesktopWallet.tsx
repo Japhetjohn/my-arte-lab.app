@@ -476,9 +476,8 @@ export function DesktopWallet({
 
             {/* Transaction Rows */}
             {isTransactionsLoading && transactions.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16">
-                <Spinner size="md" variant="primary" className="mb-2" />
-                <p className="text-sm text-gray-500 dark:text-gray-400">Loading transactions...</p>
+              <div className="flex items-center justify-center py-16">
+                <Spinner size="md" variant="primary" />
               </div>
             ) : groupedTransactions.length > 0 ? (
               <div className="space-y-6">

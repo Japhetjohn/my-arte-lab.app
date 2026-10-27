@@ -1,9 +1,9 @@
 #!/bin/bash
 # MyArteLab Full Deploy Script
 
-VPS_IP="72.61.97.210"
-VPS_USER="root"
-SSH_PASS="${SSHPASS:-@Kuulsinim45}"
+VPS_IP="${VPS_IP:-72.61.97.210}"
+VPS_USER="${VPS_USER:-root}"
+SSH_PASS="${SSHPASS:-}"
 
 echo "🚀 Deploying MyArteLab to VPS..."
 

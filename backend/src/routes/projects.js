@@ -32,7 +32,7 @@ router.get('/', optionalAuth, async (req, res) => {
     }
 
     const projects = await Project.find(query)
-      .populate('clientId', 'firstName lastName avatar')
+      .populate('clientId', 'firstName lastName avatar name email')
       .sort({ createdAt: -1 })
       .limit(100);
 
@@ -129,7 +129,7 @@ router.post('/', protect, async (req, res) => {
     await project.save();
 
     const populatedProject = await Project.findById(project._id)
-      .populate('clientId', 'firstName lastName avatar email');
+      .populate('clientId', 'firstName lastName avatar email name');
 
     res.status(201).json({
       success: true,

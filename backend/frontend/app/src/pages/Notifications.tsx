@@ -68,6 +68,15 @@ const notificationIcons: Record<string, React.ReactNode> = {
   counter_proposal: <DollarSign className="w-4 h-4 text-amber-500" />,
   work_delivered: <CheckCircle className="w-4 h-4 text-blue-500" />,
   system: <Bell className="w-4 h-4 text-gray-500" />,
+  project_created: <Briefcase className="w-4 h-4 text-[#9747FF]" />,
+  project_application_received: <Briefcase className="w-4 h-4 text-blue-500" />,
+  project_application_accepted: <CheckCircle className="w-4 h-4 text-emerald-500" />,
+  project_application_rejected: <AlertCircle className="w-4 h-4 text-rose-500" />,
+  project_started: <CheckCircle className="w-4 h-4 text-[#9747FF]" />,
+  project_completed: <CheckCircle className="w-4 h-4 text-emerald-500" />,
+  project_cancelled: <AlertCircle className="w-4 h-4 text-rose-500" />,
+  project_delivered: <CheckCircle className="w-4 h-4 text-blue-500" />,
+  project_message: <MessageSquare className="w-4 h-4 text-[#9747FF]" />,
 };
 
 export function Notifications() {

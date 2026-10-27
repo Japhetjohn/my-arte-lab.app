@@ -48,7 +48,9 @@ const notificationSchema = new mongoose.Schema({
       'project_application_rejected',
       'project_started',
       'project_completed',
-      'project_cancelled'
+      'project_cancelled',
+      'project_delivered',
+      'project_message'
     ],
     required: true
   },

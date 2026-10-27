@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import { Home, Users, Calendar, Wallet } from 'lucide-react';
+import { Home, Users, Briefcase, Calendar, Wallet } from 'lucide-react';
 
 interface BottomNavigationProps {
   currentPath: string;
@@ -8,6 +8,7 @@ interface BottomNavigationProps {
 const navItems = [
   { path: '/home', label: 'Home', icon: Home },
   { path: '/creators', label: 'Creators', icon: Users },
+  { path: '/projects', label: 'Opportunities', icon: Briefcase },
   { path: '/bookings', label: 'Bookings', icon: Calendar },
   { path: '/wallet', label: 'Wallet', icon: Wallet },
 ];
@@ -15,6 +16,9 @@ const navItems = [
 export function BottomNavigation({ currentPath }: BottomNavigationProps) {
   const isActive = (path: string) => {
     if (path === '/home' && (currentPath === '/' || currentPath === '/home')) return true;
+    if (path === '/projects') {
+      return currentPath === '/projects' || currentPath.startsWith('/projects/') || currentPath === '/opportunities' || currentPath.startsWith('/opportunities/');
+    }
     return currentPath === path || currentPath.startsWith(path + '/');
   };
 

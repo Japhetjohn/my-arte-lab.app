@@ -1,6 +1,6 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { LoadingModal } from '@/components/modals/LoadingModal';
+import { Spinner } from '@/components/ui/spinner';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -12,7 +12,11 @@ export function ProtectedRoute({ children, requireVerified = true }: ProtectedRo
   const location = useLocation();
 
   if (isLoading) {
-    return <LoadingModal isOpen={true} message="Checking authentication..." />;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#fafafa] dark:bg-[#121212]">
+        <Spinner size="lg" />
+      </div>
+    );
   }
 
   if (!isAuthenticated) {
@@ -37,7 +41,11 @@ export function PublicRoute({ children }: { children: React.ReactNode }) {
   const from = (location.state as any)?.from?.pathname || '/home';
 
   if (isLoading) {
-    return <LoadingModal isOpen={true} message="Loading..." />;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#fafafa] dark:bg-[#121212]">
+        <Spinner size="lg" />
+      </div>
+    );
   }
 
   if (isAuthenticated) {

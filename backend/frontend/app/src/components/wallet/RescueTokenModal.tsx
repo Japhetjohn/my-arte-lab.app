@@ -245,9 +245,8 @@ export function RescueTokenModal({
           /* History View */
           <div className="space-y-3">
             {isLoadingHistory ? (
-              <div className="flex flex-col items-center justify-center py-12">
-                <Spinner size="md" variant="primary" className="mb-2" />
-                <p className="text-xs text-gray-500">Loading rescue history...</p>
+              <div className="flex items-center justify-center py-12">
+                <Spinner size="md" variant="primary" />
               </div>
             ) : rescueHistory.length > 0 ? (
               <div className="space-y-2.5">

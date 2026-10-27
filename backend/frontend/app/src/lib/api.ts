@@ -268,3 +268,62 @@ export const socialService = {
     api.delete(`/services/${serviceId}`),
 };
 
+// Opportunities & Projects Service
+export const projectService = {
+  getProjects: (params?: { category?: string; minBudget?: number; maxBudget?: number; timeline?: string; search?: string }) =>
+    api.get('/projects', { params }),
+
+  getProject: (id: string) =>
+    api.get(`/projects/${id}`),
+
+  createProject: (data: {
+    title: string;
+    description: string;
+    category: string;
+    budget: { min: number; max: number; currency?: string; negotiable?: boolean };
+    timeline: string;
+    deadline?: string;
+    skillsRequired?: string[];
+    deliverables?: string[];
+    projectType?: string;
+    coverImage?: string;
+  }) =>
+    api.post('/projects', data),
+
+  updateProject: (id: string, data: any) =>
+    api.patch(`/projects/${id}`, data),
+
+  getMyPostedProjects: () =>
+    api.get('/projects/my/posted'),
+
+  getProjectApplications: (projectId: string) =>
+    api.get(`/projects/${projectId}/applications`),
+
+  applyToProject: (projectId: string, data: {
+    coverLetter: string;
+    proposedBudget: { amount: number; currency?: string };
+    proposedTimeline: string;
+    portfolioLinks?: Array<{ url: string; title?: string }>;
+  }) =>
+    api.post(`/projects/${projectId}/apply`, data),
+
+  getMyApplications: () =>
+    api.get('/projects/my/applications'),
+
+  updateApplicationStatus: (applicationId: string, data: { status: 'accepted' | 'rejected'; reviewNotes?: string }) =>
+    api.patch(`/projects/applications/${applicationId}`, data),
+
+  payProject: (projectId: string) =>
+    api.post(`/projects/${projectId}/pay`),
+
+  submitDeliverable: (projectId: string, data: { url: string; message?: string }) =>
+    api.post(`/projects/${projectId}/submit`, data),
+
+  releaseProjectFunds: (projectId: string) =>
+    api.post(`/projects/${projectId}/release-funds`),
+
+  sendProjectMessage: (projectId: string, message: string) =>
+    api.post(`/projects/${projectId}/messages`, { message }),
+};
+
+

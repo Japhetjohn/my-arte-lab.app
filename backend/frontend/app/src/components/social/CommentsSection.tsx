@@ -306,9 +306,8 @@ export function CommentsSection({
 
       {/* Comments List */}
       {isLoading ? (
-        <div className="py-6 flex items-center justify-center text-gray-400 gap-2 text-xs">
+        <div className="py-6 flex items-center justify-center">
           <Spinner size="sm" variant="primary" />
-          <span>Loading comments...</span>
         </div>
       ) : comments.length === 0 ? (
         <div className="py-6 text-center text-xs text-gray-400">

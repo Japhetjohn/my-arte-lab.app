@@ -21,6 +21,7 @@ import { Settings } from '@/pages/Settings';
 import { CreatorProfile } from '@/pages/CreatorProfile';
 import { PostDetail } from '@/pages/PostDetail';
 import { Creators } from '@/pages/Creators';
+import { Projects } from '@/pages/Projects';
 import { Legal } from '@/pages/Legal';
 import { PrivacyPolicy } from '@/pages/PrivacyPolicy';
 import { EmptyState, preloadOfflineImage } from '@/components/shared/EmptyState';
@@ -159,7 +160,7 @@ function AppContent() {
   // Show clean lightweight loading while auth state is initializing
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-[#fafafa] dark:bg-[#121212]">
         <Spinner size="lg" />
       </div>
     );
@@ -194,28 +195,21 @@ function AppContent() {
   }
 
   // Public browsing pages: visible to guests and logged-in users
-  const publicBrowsingRoutes = ['/', '/home', '/creators', '/explore', '/legal', '/privacy-policy'];
+  const publicBrowsingRoutes = ['/', '/home', '/creators', '/explore', '/projects', '/opportunities', '/legal', '/privacy-policy'];
   const isPublicBrowsingRoute =
     publicBrowsingRoutes.includes(normalizedPath) ||
     normalizedPath.startsWith('/creator/') ||
     normalizedPath.startsWith('/creators/') ||
     normalizedPath.startsWith('/post/') ||
-    normalizedPath.startsWith('/posts/');
+    normalizedPath.startsWith('/posts/') ||
+    normalizedPath.startsWith('/projects/') ||
+    normalizedPath.startsWith('/opportunities/');
 
   // Protected routes require authentication
   if (!isPublicBrowsingRoute && !isAuthenticated && !isLoading) {
     const targetUrl = window.location.pathname + window.location.search;
     window.location.href = `/login?redirect=${encodeURIComponent(targetUrl)}`;
     return null;
-  }
-
-  // Show loading state
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Spinner size="lg" />
-      </div>
-    );
   }
 
   const renderPage = () => {
@@ -255,12 +249,10 @@ function AppContent() {
       return null;
     }
 
-    // Redirect obsolete Discover & Project routes cleanly to Home
+    // Redirect obsolete Discover routes cleanly to Home
     if (
       normalizedPath === '/discover' ||
-      normalizedPath.startsWith('/discover/') ||
-      normalizedPath === '/projects' ||
-      normalizedPath.startsWith('/projects/')
+      normalizedPath.startsWith('/discover/')
     ) {
       return <NavigateToHome />;
     }
@@ -269,6 +261,9 @@ function AppContent() {
       case '/':
       case '/home':
         return <Home />;
+      case '/projects':
+      case '/opportunities':
+        return <Projects />;
       case '/bookings':
         return <Bookings />;
       case '/wallet':

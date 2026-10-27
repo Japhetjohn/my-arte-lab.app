@@ -82,6 +82,13 @@ class SwitchService {
    * @returns {Promise<object>} JSON response object
    */
   async _request(endpoint, options = {}, retries = 2) {
+    if (typeof global.__SWITCH_MOCK_HANDLER__ === 'function') {
+      const mockRes = await global.__SWITCH_MOCK_HANDLER__(endpoint, options);
+      if (mockRes !== undefined) {
+        return mockRes;
+      }
+    }
+
     const serviceKey = this._getServiceKey();
     const url = `${this.baseUrl}${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`;
 

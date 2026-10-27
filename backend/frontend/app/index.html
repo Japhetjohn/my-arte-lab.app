@@ -144,37 +144,44 @@
       })();
     </script>
 
+    <!-- Immediate Inline Styles for Initial Loader (Prevents FOUC, layout shifts, and flickering) -->
+    <style id="initial-loader-css">
+      #initial-loader {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #fafafa;
+        z-index: 99999;
+      }
+      .dark #initial-loader {
+        background-color: #121212;
+      }
+      .initial-spinner {
+        width: 32px;
+        height: 32px;
+        border-radius: 9999px;
+        border: 2px solid #9747FF;
+        border-top-color: transparent;
+        animation: initial-spin 0.8s linear infinite;
+        box-sizing: border-box;
+      }
+      @keyframes initial-spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+
     <!-- Google Identity Services -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
   </head>
   <body>
     <div id="root">
-      <!-- Semantic crawlable fallback for search engines and AI crawlers (replaced cleanly when React mounts) -->
-      <header style="padding: 24px 16px; text-align: center; max-width: 800px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-        <h1 style="font-size: 24px; font-weight: 700; color: #111827; margin: 0 0 8px;">MyArteLab — The Marketplace for African Visual Creatives</h1>
-        <p style="font-size: 15px; line-height: 1.5; color: #4B5563; margin: 0 0 16px;">
-          Discover, review portfolios, and book top African visual creatives: photographers, videographers, graphic designers, UI/UX designers, motion designers, and creative directors. Built for African creators, trusted by clients globally.
-        </p>
-        <nav style="display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-bottom: 24px; font-size: 14px;">
-          <a href="/creators" style="color: #9842FD; font-weight: 600; text-decoration: none;">Explore Visual Creators</a>
-          <a href="/home" style="color: #9842FD; font-weight: 600; text-decoration: none;">Showcase Feed</a>
-          <a href="/legal" style="color: #6B7280; text-decoration: none;">Terms &amp; Escrow</a>
-          <a href="/privacy-policy" style="color: #6B7280; text-decoration: none;">Privacy Policy</a>
-        </nav>
-      </header>
-      <main style="max-width: 800px; margin: 0 auto; padding: 0 16px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-        <h2 style="font-size: 18px; font-weight: 700; color: #1F2937; margin: 0 0 12px;">Visual Creative Disciplines on MyArteLab</h2>
-        <ul style="line-height: 1.8; color: #374151; padding-left: 20px; margin: 0 0 24px; font-size: 14px;">
-          <li><strong>Photography:</strong> Portrait, fashion, commercial, editorial, documentary, and event photographers across Africa.</li>
-          <li><strong>Videography &amp; Video Editing:</strong> Commercial video production, cinematic reels, video editors, and colorists.</li>
-          <li><strong>Graphic Design:</strong> Visual brand identity, logo design, marketing collateral, packaging, and digital illustration.</li>
-          <li><strong>UI/UX Design:</strong> Product designers, mobile app interfaces, web UI design, and responsive design systems.</li>
-          <li><strong>Motion Graphics &amp; Animation:</strong> 2D &amp; 3D animators, kinetic typography, title sequences, and explainer animations.</li>
-          <li><strong>Content Creation &amp; UGC:</strong> Professional visual creators producing high-engagement brand media and photography.</li>
-          <li><strong>Creative Direction:</strong> Experienced creative leads guiding campaign aesthetics, visual concepts, and production.</li>
-          <li><strong>Crafts &amp; Handmade Arts:</strong> Visual artisans specializing in bespoke physical art, sculptures, and custom creations.</li>
-        </ul>
-      </main>
+      <div id="initial-loader" aria-hidden="true">
+        <div class="initial-spinner" role="status" aria-label="Loading"></div>
+      </div>
     </div>
     <noscript>
       <div style="padding: 24px; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #374151;">

@@ -170,3 +170,93 @@ export interface Category {
   description: string;
   creatorCount: number;
 }
+
+export interface ProjectApplication {
+  _id: string;
+  projectId: string | Project;
+  creatorId: {
+    _id: string;
+    id?: string;
+    name?: string;
+    firstName?: string;
+    lastName?: string;
+    avatar?: string;
+    category?: string | string[];
+    isVerified?: boolean;
+    rating?: number;
+    email?: string;
+  };
+  coverLetter: string;
+  proposedBudget: {
+    amount: number;
+    currency: string;
+  };
+  proposedTimeline: string;
+  portfolioLinks?: Array<{
+    url: string;
+    title?: string;
+  }>;
+  attachments?: Array<{
+    url: string;
+    filename?: string;
+    uploadedAt?: string;
+  }>;
+  status: 'pending' | 'accepted' | 'rejected' | 'withdrawn';
+  reviewedAt?: string;
+  reviewNotes?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface Project {
+  _id: string;
+  title: string;
+  description: string;
+  category: string;
+  budget: {
+    min: number;
+    max: number;
+    currency: string;
+    negotiable?: boolean;
+  };
+  timeline: string;
+  deadline?: string;
+  skillsRequired?: string[];
+  deliverables?: string[];
+  projectType?: 'one-time' | 'ongoing' | 'contract';
+  coverImage?: string;
+  clientId: {
+    _id: string;
+    id?: string;
+    firstName?: string;
+    lastName?: string;
+    name?: string;
+    avatar?: string;
+    email?: string;
+  };
+  selectedCreatorId?: {
+    _id: string;
+    id?: string;
+    firstName?: string;
+    lastName?: string;
+    name?: string;
+    avatar?: string;
+    category?: string | string[];
+  };
+  status: 'open' | 'in_review' | 'awaiting_payment' | 'in_progress' | 'delivered' | 'completed' | 'cancelled';
+  paymentStatus: 'unpaid' | 'paid' | 'escrow' | 'released' | 'refunded';
+  acceptedAmount?: number;
+  platformCommission?: number;
+  platformFee?: number;
+  creatorAmount?: number;
+  views?: number;
+  applicantCount?: number;
+  attachments?: Array<{
+    url: string;
+    filename?: string;
+    uploadedAt?: string;
+  }>;
+  createdAt: string;
+  updatedAt?: string;
+}
+

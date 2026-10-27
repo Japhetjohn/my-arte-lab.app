@@ -13,6 +13,7 @@ import type { Creator } from '@/types';
 import {
   Users,
   Home,
+  Briefcase,
   Sparkles,
   Calendar,
   Wallet,
@@ -248,6 +249,14 @@ export function Creators() {
                 <span>Creators</span>
               </a>
 
+              <a
+                href="/projects"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-[#9747FF] dark:hover:text-[#9747FF] hover:bg-gray-100/70 dark:hover:bg-[#1e1f20] transition-colors"
+              >
+                <Briefcase className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                <span>Opportunities</span>
+              </a>
+
               {user && (
                 <>
                   <a
@@ -300,11 +309,8 @@ export function Creators() {
 
           {/* List Content */}
           {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-24 gap-3 bg-white dark:bg-[#18191a]">
+            <div className="flex items-center justify-center py-24 bg-white dark:bg-[#18191a]">
               <Spinner size="md" variant="primary" />
-              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                Loading creators...
-              </p>
             </div>
           ) : displayedCreators.length === 0 ? (
             <div className="py-16 px-4 bg-white dark:bg-[#18191a]">

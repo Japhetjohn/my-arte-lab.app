@@ -80,14 +80,14 @@ exports.createBooking = catchAsync(async (req, res, next) => {
     console.log('[BookingController] Step 5: Sending email...');
     emailConfig.sendEmail({
       to: booking.creator.email,
-      subject: 'New Booking Request! ',
+      subject: 'New Booking Request!',
       html: `
         <h1>New Booking!</h1>
-        <p>Hi ${booking.creator.name},</p>
-        <p>You have received a new booking request from ${req.user.name}.</p>
-        <p><strong>Service:</strong> ${serviceTitle}</p>
-        <p><strong>Amount:</strong> ${amount} ${currency || 'USDC'}</p>
-        <p><strong>Your Earnings:</strong> ${booking.creatorAmount} ${booking.currency} (after ${booking.platformCommission}% platform fee)</p>
+        <p>Hi ${escapeHtml(booking.creator.name)},</p>
+        <p>You have received a new booking request from ${escapeHtml(req.user.name)}.</p>
+        <p><strong>Service:</strong> ${escapeHtml(serviceTitle)}</p>
+        <p><strong>Amount:</strong> ${escapeHtml(String(amount))} ${escapeHtml(currency || 'USDC')}</p>
+        <p><strong>Your Earnings:</strong> ${escapeHtml(String(booking.creatorAmount))} ${escapeHtml(booking.currency)} (after ${escapeHtml(String(booking.platformCommission))}% platform fee)</p>
         <p>Login to your account to view details.</p>
       `
     }).catch(err => console.error('Email failed:', err));
@@ -331,9 +331,9 @@ exports.completeBooking = catchAsync(async (req, res, next) => {
     subject: 'Work Submitted for Review',
     html: `
       <h1>Work Submitted!</h1>
-      <p>Hi ${client.name},</p>
-      <p>${req.user.name} has submitted work for your booking.</p>
-      <p><strong>Service:</strong> ${booking.serviceTitle}</p>
+      <p>Hi ${escapeHtml(client.name)},</p>
+      <p>${escapeHtml(req.user.name)} has submitted work for your booking.</p>
+      <p><strong>Service:</strong> ${escapeHtml(booking.serviceTitle)}</p>
       <p>Please review the deliverables and release payment if satisfied.</p>
     `
   }).catch(err => console.error('Email failed:', err));
@@ -888,13 +888,15 @@ exports.disputeBooking = catchAsync(async (req, res, next) => {
 });
 
 exports.refundBooking = catchAsync(async (req, res, next) => {
-  const { reason, adminEmail } = req.body;
+  const { reason } = req.body;
   
-  // Only allow admin to process refunds
-  const ADMIN_EMAILS = ADMIN_CONFIG.NOTIFICATION_EMAILS;
+  // Strict authorization: verify authenticated user's session role/email, never client-sent email
+  const ADMIN_EMAILS = (ADMIN_CONFIG.NOTIFICATION_EMAILS || []).map(e => e.toLowerCase());
+  const userEmail = req.user?.email ? req.user.email.toLowerCase() : '';
+  const isAdmin = req.user?.role === 'admin' || (userEmail && ADMIN_EMAILS.includes(userEmail));
   
-  if (!ADMIN_EMAILS.includes(adminEmail)) {
-    return next(new ErrorHandler('Unauthorized - Admin access required', 403));
+  if (!isAdmin) {
+    return next(new ErrorHandler('Unauthorized - Admin access required to process refunds', 403));
   }
   
   const booking = await Booking.findById(req.params.id);

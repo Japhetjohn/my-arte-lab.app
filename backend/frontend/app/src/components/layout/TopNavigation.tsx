@@ -19,6 +19,7 @@ import {
   Menu,
   Home,
   Users,
+  Briefcase,
   Calendar,
   Wallet
 } from 'lucide-react';
@@ -42,6 +43,7 @@ interface NavItem {
 const mobileNavItems: NavItem[] = [
   { path: '/home', label: 'Home', icon: Home },
   { path: '/creators', label: 'Creators', icon: Users },
+  { path: '/projects', label: 'Opportunities', icon: Briefcase },
   { path: '/bookings', label: 'Bookings', icon: Calendar, authOnly: true },
   { path: '/messages', label: 'Messages', icon: MessageSquare, authOnly: true },
   { path: '/notifications', label: 'Notifications', icon: Bell, authOnly: true },
@@ -145,6 +147,9 @@ export function TopNavigation({
     }
     if (path === '/creators') {
       return currentPath === '/creators' || currentPath.startsWith('/creators/') || currentPath.startsWith('/creator/');
+    }
+    if (path === '/projects') {
+      return currentPath === '/projects' || currentPath.startsWith('/projects/') || currentPath === '/opportunities' || currentPath.startsWith('/opportunities/');
     }
     return currentPath === path || currentPath.startsWith(path + '/');
   };
@@ -422,6 +427,15 @@ export function TopNavigation({
                 }`}
               >
                 Creators
+              </button>
+              <button 
+                type="button" 
+                onClick={() => handleNavClick('/projects')} 
+                className={`transition-colors hover:text-[#9747FF] cursor-pointer ${
+                  isCurrentActive('/projects') ? 'text-[#9747FF] font-semibold' : 'text-gray-700 dark:text-gray-300'
+                }`}
+              >
+                Opportunities
               </button>
 
               {/* Authenticated navigation options (Visible only when logged in) */}

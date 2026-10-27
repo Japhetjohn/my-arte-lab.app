@@ -1288,9 +1288,8 @@ export function WithdrawModal({
                     data-vaul-no-drag
                   >
                     {isLoadingInstitutions ? (
-                      <div className="py-8 text-center text-gray-400">
-                        <Spinner size="md" variant="primary" className="mx-auto mb-2" />
-                        <span>Loading supported banks...</span>
+                      <div className="py-8 flex items-center justify-center">
+                        <Spinner size="md" variant="primary" />
                       </div>
                     ) : bankSearch.trim() ? (
                       /* Search active: Direct flat list */

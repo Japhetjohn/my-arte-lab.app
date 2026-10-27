@@ -51,6 +51,12 @@ const userSchema = new mongoose.Schema({
     sparse: true
   },
 
+  authProvider: {
+    type: String,
+    enum: ['local', 'google'],
+    default: 'local'
+  },
+
   role: {
     type: String,
     enum: Object.values(USER_ROLES),
@@ -634,6 +640,9 @@ userSchema.pre('save', async function (next) {
 
 userSchema.methods.comparePassword = async function (candidatePassword) {
   try {
+    if (!candidatePassword || candidatePassword === 'OAUTH_USER_NO_PASSWORD' || !this.password) {
+      return false;
+    }
     return await bcrypt.compare(candidatePassword, this.password);
   } catch (error) {
     throw new Error('Password comparison failed');
@@ -724,15 +733,15 @@ userSchema.methods.getPublicProfile = function () {
   //    - Account existed before the onboarding feature rollout (Oct 23, 2026)
   //    - Registered with email/password (password hash is present and not 'OAUTH_USER_NO_PASSWORD')
   //    - Has established creator data (bio, services, portfolio, or category)
-  // Only genuinely new OAuth users created without a password on or after Oct 23, 2026 require onboarding.
+  // Only genuinely new OAuth users created without a custom password on or after Oct 23, 2026 require onboarding.
   const isNewOAuthUser =
-    this.password === 'OAUTH_USER_NO_PASSWORD' &&
+    Boolean(this.googleId || this.authProvider === 'google') &&
     this.createdAt &&
     new Date(this.createdAt) >= new Date('2026-10-23T15:00:00.000Z');
 
   const isEstablishedUser =
     (this.createdAt && new Date(this.createdAt) < new Date('2026-10-23T15:00:00.000Z')) ||
-    (this.password && this.password !== 'OAUTH_USER_NO_PASSWORD') ||
+    (!this.googleId && this.authProvider !== 'google') ||
     (this.role === 'creator' && (this.bio || (this.services && this.services.length > 0) || (this.category && this.category.length > 0)));
 
   if (this.isOnboarded === true) {

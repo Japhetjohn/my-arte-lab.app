@@ -375,9 +375,8 @@ export function BookingDetail({ bookingId: propBookingId }: BookingDetailProps =
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center py-28 text-gray-400 space-y-3">
+      <div className="flex items-center justify-center py-28 text-gray-400">
         <Spinner size="lg" variant="primary" />
-        <p className="text-xs">Loading project details...</p>
       </div>
     );
   }
