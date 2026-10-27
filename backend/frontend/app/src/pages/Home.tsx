@@ -13,7 +13,6 @@ import {
   ArrowUp,
   Image as ImageIcon,
   Download,
-  ChevronRight,
   ShieldCheck,
 } from 'lucide-react';
 import { Spinner } from '@/components/ui/spinner';
@@ -581,54 +580,66 @@ export function Home() {
             </div>
           )}
 
-          {/* Desktop Post Composer / Client Commissioning Banner */}
+          {/* Desktop Post Composer (Client Commissioning / Creator Post Composer) */}
           {isClient ? (
-            <div className="hidden sm:block bg-white dark:bg-[#18191a] border border-[#DADDE1] dark:border-[#2f3032] rounded-2xl p-5 mb-3 shadow-xs">
-              <div className="flex items-start justify-between gap-4">
-                <div className="space-y-1.5">
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/50 text-[#9747FF] text-xs font-semibold">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>Commission African Creators</span>
+            <div className="hidden sm:block bg-white dark:bg-[#18191a] border-b border-[#DADDE1] dark:border-[#2f3032] p-4 sm:p-5 transition-colors">
+              <div className="flex gap-3 sm:gap-4 items-start">
+                {/* Client Avatar */}
+                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full overflow-hidden bg-purple-100 dark:bg-purple-950/40 flex items-center justify-center shrink-0 border border-purple-200/60 dark:border-purple-800/40 shadow-xs">
+                  {user?.avatar ? (
+                    <img
+                      src={getAvatarUrl(user.avatar)}
+                      alt={user.name || 'User'}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-[#9747FF] font-bold text-sm sm:text-base">
+                      {user?.firstName?.[0] || user?.name?.[0] || 'C'}
+                    </span>
+                  )}
+                </div>
+
+                {/* Composer Prompt (Click to open full opportunity composer) */}
+                <div className="flex-1 min-w-0">
+                  <button
+                    type="button"
+                    onClick={() => setIsClientPostModalOpen(true)}
+                    className="w-full text-left py-2.5 px-3.5 rounded-xl bg-gray-50 dark:bg-[#242526] hover:bg-gray-100 dark:hover:bg-[#2f3032] text-gray-500 dark:text-gray-400 text-sm transition-colors cursor-pointer"
+                  >
+                    Need creative work done? Post an opportunity for verified African talent...
+                  </button>
+
+                  {/* Toolbar Row - Straight divider, blends naturally */}
+                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-[#DADDE1] dark:border-[#2f3032]">
+                    <div className="flex items-center gap-4 text-xs text-gray-500">
+                      <span className="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-medium">
+                        <ShieldCheck className="w-3.5 h-3.5" />
+                        <span>Escrow Protected</span>
+                      </span>
+                      <a
+                        href="/projects"
+                        className="text-gray-600 dark:text-gray-400 hover:text-[#9747FF] font-medium transition-colors"
+                      >
+                        My Opportunities
+                      </a>
+                      <a
+                        href="/creators"
+                        className="text-gray-600 dark:text-gray-400 hover:text-[#9747FF] font-medium transition-colors hidden md:inline"
+                      >
+                        Browse Directory
+                      </a>
+                    </div>
+
+                    <Button
+                      type="button"
+                      onClick={() => setIsClientPostModalOpen(true)}
+                      className="rounded-full bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold h-9 px-5 shadow-xs cursor-pointer inline-flex items-center gap-1.5 shrink-0"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Post Opportunity</span>
+                    </Button>
                   </div>
-                  <h2 className="text-base font-bold text-gray-900 dark:text-gray-100 tracking-tight">
-                    Need design, photography, video, or animation work?
-                  </h2>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed max-w-lg">
-                    Post an opportunity describing your creative project to receive competitive proposals from verified African talent, with milestone-based escrow protection.
-                  </p>
                 </div>
-
-                <Button
-                  type="button"
-                  onClick={() => setIsClientPostModalOpen(true)}
-                  className="bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold rounded-full px-5 h-9 shadow-xs cursor-pointer inline-flex items-center gap-2 shrink-0"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Post an Opportunity</span>
-                </Button>
-              </div>
-
-              <div className="mt-4 pt-3 border-t border-[#DADDE1] dark:border-[#2f3032] flex items-center justify-between text-xs text-gray-500">
-                <div className="flex items-center gap-4">
-                  <a
-                    href="/creators"
-                    className="text-gray-700 dark:text-gray-300 hover:text-[#9747FF] font-medium transition-colors inline-flex items-center gap-1"
-                  >
-                    <span>Browse Creator Directory</span>
-                    <ChevronRight className="w-3 h-3" />
-                  </a>
-                  <a
-                    href="/projects"
-                    className="text-gray-700 dark:text-gray-300 hover:text-[#9747FF] font-medium transition-colors inline-flex items-center gap-1"
-                  >
-                    <span>My Opportunities</span>
-                    <ChevronRight className="w-3 h-3" />
-                  </a>
-                </div>
-                <span className="text-emerald-600 dark:text-emerald-400 font-medium inline-flex items-center gap-1">
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                  <span>Escrow Protected</span>
-                </span>
               </div>
             </div>
           ) : (

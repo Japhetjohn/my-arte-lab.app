@@ -287,6 +287,7 @@ export const projectService = {
     deliverables?: string[];
     projectType?: string;
     coverImage?: string;
+    attachments?: Array<{ url: string; name?: string }> | string[];
   }) =>
     api.post('/projects', data),
 

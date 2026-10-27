@@ -19,7 +19,6 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { projectService } from '@/lib/api';
 import { toast } from '@/components/ui/sonner';
 import {
-  Briefcase,
   Plus,
   Trash2,
   X,
@@ -109,17 +108,13 @@ export function ApplyOpportunityModal({ isOpen, onClose, project, onSuccess }: A
   const modalBody = (
     <form onSubmit={handleSubmit} className="flex flex-col h-full max-h-[85vh]">
       {/* Header */}
-      <div className="shrink-0 flex items-start justify-between pb-4 border-b border-[#DADDE1] dark:border-[#2f3032] px-6 pt-5">
+      <div className="shrink-0 flex items-start justify-between pb-3.5 border-b border-[#DADDE1] dark:border-[#2f3032] px-5 sm:px-6 pt-5">
         <div>
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/50 text-[#9747FF] text-xs font-semibold mb-1.5">
-            <Briefcase className="w-3.5 h-3.5" />
-            <span>Submit Proposal</span>
-          </div>
-          <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 tracking-tight line-clamp-1">
-            {project.title}
+          <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 tracking-tight leading-tight line-clamp-1">
+            Submit Proposal: {project.title}
           </h2>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-            Budget guide: {project.budget?.min} - {project.budget?.max} {project.budget?.currency || 'USDC'}
+            Client budget: {project.budget?.min} - {project.budget?.max} {project.budget?.currency || 'USDC'} &bull; {project.timeline}
           </p>
         </div>
         <button
@@ -132,13 +127,13 @@ export function ApplyOpportunityModal({ isOpen, onClose, project, onSuccess }: A
         </button>
       </div>
 
-      {/* Form Content */}
-      <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+      {/* Form Content - Clean ash-divider rhythm */}
+      <div className="flex-1 overflow-y-auto px-5 sm:px-6 py-4 space-y-4">
         {/* Proposed Budget & Timeline */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             <Label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-              Proposed Price (USDC) <span className="text-red-500">*</span>
+              Your Quote (USDC) <span className="text-red-500">*</span>
             </Label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">
@@ -150,13 +145,13 @@ export function ApplyOpportunityModal({ isOpen, onClose, project, onSuccess }: A
                 step="5"
                 value={proposedAmount}
                 onChange={(e) => setProposedAmount(e.target.value)}
-                className="pl-14 rounded-xl border-gray-200 dark:border-[#2f3032] text-xs font-semibold"
+                className="pl-14 rounded-xl border border-[#DADDE1] dark:border-[#2f3032] bg-white dark:bg-[#18191a] text-xs font-semibold"
                 required
               />
             </div>
           </div>
 
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             <Label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
               Turnaround Timeline <span className="text-red-500">*</span>
             </Label>
@@ -165,33 +160,33 @@ export function ApplyOpportunityModal({ isOpen, onClose, project, onSuccess }: A
               placeholder="e.g. 5 days, 2 weeks"
               value={proposedTimeline}
               onChange={(e) => setProposedTimeline(e.target.value)}
-              className="rounded-xl border-gray-200 dark:border-[#2f3032] text-xs"
+              className="rounded-xl border border-[#DADDE1] dark:border-[#2f3032] bg-white dark:bg-[#18191a] text-xs"
               required
             />
           </div>
         </div>
 
         {/* Cover Letter / Pitch */}
-        <div className="space-y-1.5">
+        <div className="space-y-1">
           <div className="flex items-center justify-between">
             <Label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-              Your Proposal &amp; Approach <span className="text-red-500">*</span>
+              Proposal &amp; Creative Approach <span className="text-red-500">*</span>
             </Label>
             <span className="text-[11px] text-gray-400">{coverLetter.length}/2000</span>
           </div>
           <Textarea
             rows={4}
             maxLength={2000}
-            placeholder="Introduce yourself, explain how you'll approach their goals, and cite relevant visual experience..."
+            placeholder="Introduce yourself, explain how you will approach their goals, and cite relevant visual experience..."
             value={coverLetter}
             onChange={(e) => setCoverLetter(e.target.value)}
-            className="rounded-xl border-gray-200 dark:border-[#2f3032] text-xs resize-none"
+            className="rounded-xl border border-[#DADDE1] dark:border-[#2f3032] bg-white dark:bg-[#18191a] text-xs resize-none leading-relaxed"
             required
           />
         </div>
 
         {/* Portfolio Samples / Links */}
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <Label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
             Relevant Portfolio Link(s)
           </Label>
@@ -201,7 +196,7 @@ export function ApplyOpportunityModal({ isOpen, onClose, project, onSuccess }: A
               placeholder="https://myartelab.com/post/... or your site"
               value={portfolioLink}
               onChange={(e) => setPortfolioLink(e.target.value)}
-              className="rounded-xl border-gray-200 dark:border-[#2f3032] text-xs"
+              className="rounded-xl border border-[#DADDE1] dark:border-[#2f3032] bg-white dark:bg-[#18191a] text-xs"
             />
             <Button
               type="button"
@@ -216,17 +211,18 @@ export function ApplyOpportunityModal({ isOpen, onClose, project, onSuccess }: A
           </div>
 
           {portfolioLinks.length > 0 && (
-            <div className="space-y-1.5 mt-2">
+            <div className="divide-y divide-[#DADDE1]/60 dark:divide-[#2f3032] border-t border-b border-[#DADDE1]/60 dark:border-[#2f3032] mt-2">
               {portfolioLinks.map((item, idx) => (
                 <div
                   key={idx}
-                  className="flex items-center justify-between py-1.5 px-3 rounded-lg bg-gray-50 dark:bg-gray-800/50 border border-gray-200/60 dark:border-gray-700/60 text-xs text-gray-800 dark:text-gray-200"
+                  className="flex items-center justify-between py-2 px-1 text-xs text-gray-800 dark:text-gray-200"
                 >
                   <span className="truncate pr-2 font-mono text-[11px]">{item.url}</span>
                   <button
                     type="button"
                     onClick={() => handleRemoveLink(idx)}
                     className="text-gray-400 hover:text-red-500 transition-colors p-1 cursor-pointer shrink-0"
+                    title="Remove link"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -238,7 +234,7 @@ export function ApplyOpportunityModal({ isOpen, onClose, project, onSuccess }: A
       </div>
 
       {/* Footer Actions */}
-      <div className="shrink-0 flex items-center justify-end gap-3 p-4 border-t border-[#DADDE1] dark:border-[#2f3032] bg-gray-50/50 dark:bg-[#18191a]">
+      <div className="shrink-0 flex items-center justify-end gap-3 p-4 border-t border-[#DADDE1] dark:border-[#2f3032] bg-white dark:bg-[#18191a]">
         <Button
           type="button"
           variant="outline"
@@ -272,7 +268,7 @@ export function ApplyOpportunityModal({ isOpen, onClose, project, onSuccess }: A
   if (isMobile) {
     return (
       <Drawer open={isOpen} onOpenChange={(open) => !open && onClose()}>
-        <DrawerContent className="p-0 bg-white dark:bg-[#18191a] max-h-[90vh]">
+        <DrawerContent className="p-0 bg-white dark:bg-[#1a1b1c] rounded-t-2xl max-h-[92dvh] flex flex-col border-t border-[#DADDE1] dark:border-[#2f3032] shadow-2xl focus:outline-none z-[150]">
           <DrawerTitle className="sr-only">Submit Proposal</DrawerTitle>
           <DrawerDescription className="sr-only">
             Submit a proposal for this project
@@ -285,7 +281,7 @@ export function ApplyOpportunityModal({ isOpen, onClose, project, onSuccess }: A
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-lg p-0 bg-white dark:bg-[#18191a] border border-[#DADDE1] dark:border-[#2f3032] overflow-hidden">
+      <DialogContent className="sm:max-w-lg p-0 bg-white dark:bg-[#18191a] border border-[#DADDE1] dark:border-[#2f3032] rounded-2xl shadow-xl overflow-hidden">
         <DialogTitle className="sr-only">Submit Proposal</DialogTitle>
         <DialogDescription className="sr-only">
           Submit a proposal for this project

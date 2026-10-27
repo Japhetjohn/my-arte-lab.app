@@ -21,6 +21,7 @@ import {
   Users,
   MessageSquare,
   ShieldCheck,
+  CheckCircle2,
   ExternalLink,
   ChevronDown,
   ChevronUp,
@@ -297,9 +298,9 @@ export function Projects() {
             CENTER COLUMN (lg:col-span-6, full width on mobile)
             Opportunities List, Tabs & Proposal Reviews
            ========================================================================= */}
-        <section className="col-span-1 lg:col-span-6 flex flex-col gap-4">
+        <section className="col-span-1 lg:col-span-6 flex flex-col pb-16">
           {/* Header Action Banner */}
-          <div className="bg-white dark:bg-[#18191a] border border-[#DADDE1] dark:border-[#2f3032] rounded-2xl p-4 sm:p-5 shadow-xs">
+          <div className="bg-white dark:bg-[#18191a] border border-[#DADDE1] dark:border-[#2f3032] border-b-0 rounded-t-2xl p-4 sm:p-5">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
@@ -336,9 +337,9 @@ export function Projects() {
                   type="button"
                   onClick={() => setActiveTab('my')}
                   className={cn(
-                    'px-4 py-2 rounded-xl text-xs font-semibold transition-colors cursor-pointer',
+                    'px-3.5 py-1.5 rounded-full text-xs font-semibold transition-colors cursor-pointer',
                     activeTab === 'my'
-                      ? 'bg-purple-50 dark:bg-purple-950/50 text-[#9747FF]'
+                      ? 'bg-[#9747FF] text-white'
                       : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800'
                   )}
                 >
@@ -349,9 +350,9 @@ export function Projects() {
                 type="button"
                 onClick={() => setActiveTab('explore')}
                 className={cn(
-                  'px-4 py-2 rounded-xl text-xs font-semibold transition-colors cursor-pointer',
+                  'px-3.5 py-1.5 rounded-full text-xs font-semibold transition-colors cursor-pointer',
                   activeTab === 'explore'
-                    ? 'bg-purple-50 dark:bg-purple-950/50 text-[#9747FF]'
+                    ? 'bg-[#9747FF] text-white'
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800'
                 )}
               >
@@ -362,7 +363,7 @@ export function Projects() {
 
           {/* Search & Filters for Explore Tab */}
           {activeTab === 'explore' && (
-            <div className="bg-white dark:bg-[#18191a] border border-[#DADDE1] dark:border-[#2f3032] rounded-2xl p-3.5 shadow-xs space-y-3">
+            <div className="bg-white dark:bg-[#18191a] border-x border-t border-[#DADDE1] dark:border-[#2f3032] p-3.5 space-y-2.5">
               <div className="relative">
                 <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
                 <Input
@@ -370,7 +371,7 @@ export function Projects() {
                   placeholder="Search opportunities by title, scope, or skill..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 h-9 rounded-xl border-gray-200 dark:border-[#2f3032] text-xs"
+                  className="pl-10 h-9 rounded-full border-[#DADDE1] dark:border-[#2f3032] text-xs bg-gray-50/50 dark:bg-black/20"
                 />
               </div>
 
@@ -383,7 +384,7 @@ export function Projects() {
                     'px-3 py-1 rounded-full text-xs font-medium shrink-0 transition-colors cursor-pointer',
                     selectedCategory === 'all'
                       ? 'bg-[#9747FF] text-white'
-                      : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200'
+                      : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                   )}
                 >
                   All Fields
@@ -397,7 +398,7 @@ export function Projects() {
                       'px-3 py-1 rounded-full text-xs font-medium shrink-0 transition-colors cursor-pointer',
                       selectedCategory === cat.id
                         ? 'bg-[#9747FF] text-white'
-                        : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200'
+                        : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                     )}
                   >
                     {cat.name}
@@ -407,24 +408,24 @@ export function Projects() {
             </div>
           )}
 
-          {/* Loading State */}
-          {isLoading ? (
-            <div className="flex items-center justify-center py-16">
-              <Spinner size="lg" variant="primary" />
-            </div>
-          ) : activeTab === 'my' ? (
-            /* TAB 1: My Posted Opportunities (Client) or My Proposals (Creator) */
-            <div className="space-y-4">
-              {isClient ? (
+          {/* Opportunities Stream Container */}
+          <div className="bg-white dark:bg-[#18191a] border border-[#DADDE1] dark:border-[#2f3032] rounded-b-2xl overflow-hidden">
+            {isLoading ? (
+              <div className="flex items-center justify-center py-20">
+                <Spinner size="lg" variant="primary" />
+              </div>
+            ) : activeTab === 'my' ? (
+              /* TAB 1: My Posted Opportunities (Client) or My Proposals (Creator) */
+              isClient ? (
                 myProjects.length === 0 ? (
-                  <div className="bg-white dark:bg-[#18191a] border border-[#DADDE1] dark:border-[#2f3032] rounded-2xl p-8 text-center">
+                  <div className="py-16 px-4 text-center">
                     <div className="w-12 h-12 rounded-full bg-purple-50 dark:bg-purple-950/40 text-[#9747FF] flex items-center justify-center mx-auto mb-3">
                       <Briefcase className="w-6 h-6" />
                     </div>
                     <h3 className="font-bold text-gray-900 dark:text-gray-100 text-sm">
                       No opportunities posted yet
                     </h3>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 mb-4 max-w-sm mx-auto">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 mb-4 max-w-sm mx-auto leading-relaxed">
                       Publish what you need done. Verified African creators will review your requirements and submit bids.
                     </p>
                     <Button
@@ -436,232 +437,236 @@ export function Projects() {
                     </Button>
                   </div>
                 ) : (
-                  myProjects.map((project) => {
-                    const isExpanded = expandedProjectId === project._id;
-                    const apps = projectApplications[project._id] || [];
-                    const isLoadingApps = loadingApplicationsFor === project._id;
+                  <div className="divide-y divide-[#DADDE1] dark:divide-[#2f3032]">
+                    {myProjects.map((project) => {
+                      const isExpanded = expandedProjectId === project._id;
+                      const apps = projectApplications[project._id] || [];
+                      const isLoadingApps = loadingApplicationsFor === project._id;
 
-                    return (
-                      <article
-                        key={project._id}
-                        className="bg-white dark:bg-[#18191a] border border-[#DADDE1] dark:border-[#2f3032] rounded-2xl p-4 sm:p-5 shadow-xs transition-shadow hover:shadow-md"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-[11px] font-semibold uppercase tracking-wider text-[#9747FF] bg-purple-50 dark:bg-purple-950/50 px-2 py-0.5 rounded-full">
-                                {project.category.replace('_', ' ')}
+                      return (
+                        <article
+                          key={project._id}
+                          className="p-4 sm:p-5 transition-colors hover:bg-gray-50/60 dark:hover:bg-white/[0.015]"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-[11px] font-semibold uppercase tracking-wider text-[#9747FF] bg-purple-50 dark:bg-purple-950/50 px-2 py-0.5 rounded-full">
+                                  {project.category.replace('_', ' ')}
+                                </span>
+                                <span
+                                  className={cn(
+                                    'text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full',
+                                    project.status === 'open' && 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400',
+                                    project.status === 'awaiting_payment' && 'bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400',
+                                    project.status === 'in_progress' && 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400',
+                                    project.status === 'delivered' && 'bg-purple-50 text-[#9747FF] dark:bg-purple-950/50',
+                                    project.status === 'completed' && 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+                                  )}
+                                >
+                                  {project.status.replace('_', ' ')}
+                                </span>
+                              </div>
+                              <h3 className="font-bold text-gray-900 dark:text-gray-100 text-base mt-2 line-clamp-2">
+                                {project.title}
+                              </h3>
+                              <p className="text-xs text-gray-600 dark:text-gray-300 mt-1 line-clamp-2 leading-relaxed">
+                                {project.description}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Meta info: Budget, Timeline, Applicants */}
+                          <div className="mt-4 pt-3 border-t border-[#DADDE1] dark:border-[#2f3032] flex items-center justify-between flex-wrap gap-3 text-xs">
+                            <div className="flex items-center gap-4 text-gray-600 dark:text-gray-400">
+                              <span className="font-bold text-gray-900 dark:text-gray-100">
+                                {project.budget?.min} - {project.budget?.max} {project.budget?.currency || 'USDC'}
                               </span>
-                              <span
-                                className={cn(
-                                  'text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full',
-                                  project.status === 'open' && 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400',
-                                  project.status === 'awaiting_payment' && 'bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400',
-                                  project.status === 'in_progress' && 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400',
-                                  project.status === 'delivered' && 'bg-purple-50 text-[#9747FF] dark:bg-purple-950/50',
-                                  project.status === 'completed' && 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
-                                )}
-                              >
-                                {project.status.replace('_', ' ')}
+                              <span className="flex items-center gap-1">
+                                <Clock className="w-3.5 h-3.5 text-gray-400" />
+                                <span>{project.timeline}</span>
                               </span>
                             </div>
-                            <h3 className="font-bold text-gray-900 dark:text-gray-100 text-base mt-2 line-clamp-2">
-                              {project.title}
-                            </h3>
-                            <p className="text-xs text-gray-600 dark:text-gray-300 mt-1 line-clamp-2 leading-relaxed">
-                              {project.description}
-                            </p>
-                          </div>
-                        </div>
 
-                        {/* Meta info: Budget, Timeline, Applicants */}
-                        <div className="mt-4 pt-3 border-t border-[#DADDE1] dark:border-[#2f3032] flex items-center justify-between flex-wrap gap-3 text-xs">
-                          <div className="flex items-center gap-4 text-gray-600 dark:text-gray-400">
-                            <span className="font-bold text-gray-900 dark:text-gray-100">
-                              {project.budget?.min} - {project.budget?.max} {project.budget?.currency || 'USDC'}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Clock className="w-3.5 h-3.5 text-gray-400" />
-                              <span>{project.timeline}</span>
-                            </span>
-                          </div>
-
-                          {/* Quick Lifecycle Action Buttons */}
-                          <div className="flex items-center gap-2">
-                            {/* Awaiting Escrow Payment Action */}
-                            {project.status === 'awaiting_payment' && (
-                              <Button
-                                type="button"
-                                size="sm"
-                                disabled={payingProjectId === project._id}
-                                onClick={() => handlePayEscrow(project._id)}
-                                className="bg-[#9747FF] hover:bg-[#8534f0] text-white rounded-full text-xs font-semibold px-4 cursor-pointer"
-                              >
-                                {payingProjectId === project._id ? (
-                                  <Spinner size="xs" variant="white" />
-                                ) : (
-                                  <span>Deposit Escrow ({project.acceptedAmount || project.budget?.min} USDC)</span>
-                                )}
-                              </Button>
-                            )}
-
-                            {/* Delivered - Approve & Release Funds Action */}
-                            {project.status === 'delivered' && (
-                              <Button
-                                type="button"
-                                size="sm"
-                                disabled={releasingProjectId === project._id}
-                                onClick={() => handleReleaseFunds(project._id)}
-                                className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-full text-xs font-semibold px-4 cursor-pointer"
-                              >
-                                {releasingProjectId === project._id ? (
-                                  <Spinner size="xs" variant="white" />
-                                ) : (
-                                  <span>Approve &amp; Release Funds</span>
-                                )}
-                              </Button>
-                            )}
-
-                            {/* Toggle Proposals Button */}
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => toggleViewApplications(project._id)}
-                              className="rounded-full text-xs font-semibold border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:text-[#9747FF] cursor-pointer inline-flex items-center gap-1.5"
-                            >
-                              <Users className="w-3.5 h-3.5" />
-                              <span>Proposals ({project.applicantCount || 0})</span>
-                              {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                            </Button>
-                          </div>
-                        </div>
-
-                        {/* Collapsible Proposals Drawer */}
-                        {isExpanded && (
-                          <div className="mt-4 pt-4 border-t border-[#DADDE1] dark:border-[#2f3032] space-y-3">
-                            <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                              Creator Proposals &amp; Quotes
-                            </h4>
-
-                            {isLoadingApps ? (
-                              <div className="py-6 flex justify-center">
-                                <Spinner size="sm" variant="primary" />
-                              </div>
-                            ) : apps.length === 0 ? (
-                              <p className="text-xs text-gray-500 py-3 text-center">
-                                No proposals submitted yet. Verified creators are being notified.
-                              </p>
-                            ) : (
-                              apps.map((app) => (
-                                <div
-                                  key={app._id}
-                                  className="p-3.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/40 space-y-2.5"
+                            {/* Quick Lifecycle Action Buttons */}
+                            <div className="flex items-center gap-2">
+                              {/* Awaiting Escrow Payment Action */}
+                              {project.status === 'awaiting_payment' && (
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  disabled={payingProjectId === project._id}
+                                  onClick={() => handlePayEscrow(project._id)}
+                                  className="bg-[#9747FF] hover:bg-[#8534f0] text-white rounded-full text-xs font-semibold px-4 cursor-pointer"
                                 >
-                                  {/* Creator Header */}
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2.5">
-                                      <img
-                                        src={getAvatarUrl(app.creatorId?.avatar)}
-                                        alt={app.creatorId?.name || 'Creator'}
-                                        className="w-8 h-8 rounded-full object-cover border border-gray-200 dark:border-gray-700"
-                                      />
-                                      <div>
-                                        <div className="flex items-center gap-1 text-xs font-bold text-gray-900 dark:text-gray-100">
-                                          <span>{app.creatorId?.name || `${app.creatorId?.firstName || ''} ${app.creatorId?.lastName || ''}`}</span>
-                                          {app.creatorId?.isVerified && <VerifiedBadge className="w-3.5 h-3.5" />}
+                                  {payingProjectId === project._id ? (
+                                    <Spinner size="xs" variant="white" />
+                                  ) : (
+                                    <span>Deposit Escrow ({project.acceptedAmount || project.budget?.min} USDC)</span>
+                                  )}
+                                </Button>
+                              )}
+
+                              {/* Delivered - Approve & Release Funds Action */}
+                              {project.status === 'delivered' && (
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  disabled={releasingProjectId === project._id}
+                                  onClick={() => handleReleaseFunds(project._id)}
+                                  className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-full text-xs font-semibold px-4 cursor-pointer"
+                                >
+                                  {releasingProjectId === project._id ? (
+                                    <Spinner size="xs" variant="white" />
+                                  ) : (
+                                    <span>Approve &amp; Release Funds</span>
+                                  )}
+                                </Button>
+                              )}
+
+                              {/* Toggle Proposals Button */}
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => toggleViewApplications(project._id)}
+                                className="rounded-full text-xs font-semibold border-[#DADDE1] dark:border-[#2f3032] text-gray-700 dark:text-gray-300 hover:text-[#9747FF] cursor-pointer inline-flex items-center gap-1.5"
+                              >
+                                <Users className="w-3.5 h-3.5" />
+                                <span>Proposals ({project.applicantCount || 0})</span>
+                                {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                              </Button>
+                            </div>
+                          </div>
+
+                          {/* Collapsible Proposals Section */}
+                          {isExpanded && (
+                            <div className="mt-4 pt-3.5 border-t border-[#DADDE1] dark:border-[#2f3032]">
+                              <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
+                                Creator Proposals &amp; Quotes
+                              </h4>
+
+                              {isLoadingApps ? (
+                                <div className="py-6 flex justify-center">
+                                  <Spinner size="sm" variant="primary" />
+                                </div>
+                              ) : apps.length === 0 ? (
+                                <p className="text-xs text-gray-500 py-3 text-center">
+                                  No proposals submitted yet. Verified creators are being notified.
+                                </p>
+                              ) : (
+                                <div className="divide-y divide-[#DADDE1]/60 dark:divide-[#2f3032]">
+                                  {apps.map((app) => (
+                                    <div
+                                      key={app._id}
+                                      className="py-3.5 space-y-2"
+                                    >
+                                      {/* Creator Header */}
+                                      <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2.5">
+                                          <img
+                                            src={getAvatarUrl(app.creatorId?.avatar)}
+                                            alt={app.creatorId?.name || 'Creator'}
+                                            className="w-8 h-8 rounded-full object-cover border border-[#DADDE1] dark:border-[#2f3032]"
+                                          />
+                                          <div>
+                                            <div className="flex items-center gap-1 text-xs font-bold text-gray-900 dark:text-gray-100">
+                                              <span>{app.creatorId?.name || `${app.creatorId?.firstName || ''} ${app.creatorId?.lastName || ''}`}</span>
+                                              {app.creatorId?.isVerified && <VerifiedBadge className="w-3.5 h-3.5" />}
+                                            </div>
+                                            <span className="text-[10px] text-gray-500 dark:text-gray-400">
+                                              Proposed Quote: <strong className="text-gray-900 dark:text-gray-100 font-bold">{app.proposedBudget?.amount} {app.proposedBudget?.currency}</strong> in {app.proposedTimeline}
+                                            </span>
+                                          </div>
                                         </div>
-                                        <span className="text-[10px] text-gray-500 dark:text-gray-400">
-                                          Proposed Quote: <strong className="text-gray-900 dark:text-gray-100 font-bold">{app.proposedBudget?.amount} {app.proposedBudget?.currency}</strong> in {app.proposedTimeline}
+
+                                        <span
+                                          className={cn(
+                                            'text-[10px] font-bold uppercase px-2 py-0.5 rounded-full',
+                                            app.status === 'accepted' && 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400',
+                                            app.status === 'pending' && 'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400',
+                                            app.status === 'rejected' && 'bg-rose-50 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400'
+                                          )}
+                                        >
+                                          {app.status}
                                         </span>
                                       </div>
-                                    </div>
 
-                                    <span
-                                      className={cn(
-                                        'text-[10px] font-bold uppercase px-2 py-0.5 rounded-full',
-                                        app.status === 'accepted' && 'bg-emerald-50 text-emerald-600',
-                                        app.status === 'pending' && 'bg-blue-50 text-blue-600',
-                                        app.status === 'rejected' && 'bg-rose-50 text-rose-600'
+                                      {/* Pitch / Cover letter */}
+                                      <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">
+                                        {app.coverLetter}
+                                      </p>
+
+                                      {/* Portfolio Links */}
+                                      {app.portfolioLinks && app.portfolioLinks.length > 0 && (
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                          <span className="text-[11px] text-gray-500">Portfolio:</span>
+                                          {app.portfolioLinks.map((link, lIdx) => (
+                                            <a
+                                              key={lIdx}
+                                              href={link.url}
+                                              target="_blank"
+                                              rel="noreferrer"
+                                              className="text-[11px] text-[#9747FF] hover:underline font-medium inline-flex items-center gap-0.5"
+                                            >
+                                              <span>Sample {lIdx + 1}</span>
+                                              <ExternalLink className="w-2.5 h-2.5" />
+                                            </a>
+                                          ))}
+                                        </div>
                                       )}
-                                    >
-                                      {app.status}
-                                    </span>
-                                  </div>
 
-                                  {/* Pitch / Cover letter */}
-                                  <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed bg-white dark:bg-[#18191a] p-2.5 rounded-lg border border-gray-150 dark:border-gray-800">
-                                    {app.coverLetter}
-                                  </p>
-
-                                  {/* Portfolio Links */}
-                                  {app.portfolioLinks && app.portfolioLinks.length > 0 && (
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                      <span className="text-[11px] text-gray-500">Portfolio:</span>
-                                      {app.portfolioLinks.map((link, lIdx) => (
-                                        <a
-                                          key={lIdx}
-                                          href={link.url}
-                                          target="_blank"
-                                          rel="noreferrer"
-                                          className="text-[11px] text-[#9747FF] hover:underline font-medium inline-flex items-center gap-0.5"
+                                      {/* Actions: Message & Accept */}
+                                      <div className="flex items-center justify-end gap-2 pt-1">
+                                        <Button
+                                          type="button"
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => (window.location.href = `/messages?user=${app.creatorId?._id || app.creatorId?.id}`)}
+                                          className="text-xs text-gray-600 dark:text-gray-300 hover:text-[#9747FF] cursor-pointer"
                                         >
-                                          <span>Sample {lIdx + 1}</span>
-                                          <ExternalLink className="w-2.5 h-2.5" />
-                                        </a>
-                                      ))}
-                                    </div>
-                                  )}
+                                          <MessageSquare className="w-3.5 h-3.5 mr-1" />
+                                          Message
+                                        </Button>
 
-                                  {/* Actions: Message & Accept */}
-                                  <div className="flex items-center justify-end gap-2 pt-1">
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => (window.location.href = `/messages?user=${app.creatorId?._id || app.creatorId?.id}`)}
-                                      className="text-xs text-gray-600 dark:text-gray-300 hover:text-[#9747FF] cursor-pointer"
-                                    >
-                                      <MessageSquare className="w-3.5 h-3.5 mr-1" />
-                                      Message
-                                    </Button>
-
-                                    {app.status === 'pending' && project.status === 'open' && (
-                                      <Button
-                                        type="button"
-                                        size="sm"
-                                        disabled={acceptingApplicationId === app._id}
-                                        onClick={() => handleAcceptProposal(app._id, project._id)}
-                                        className="bg-[#9747FF] hover:bg-[#8534f0] text-white rounded-full text-xs font-semibold px-4 cursor-pointer"
-                                      >
-                                        {acceptingApplicationId === app._id ? (
-                                          <Spinner size="xs" variant="white" />
-                                        ) : (
-                                          <span>Accept Proposal</span>
+                                        {app.status === 'pending' && project.status === 'open' && (
+                                          <Button
+                                            type="button"
+                                            size="sm"
+                                            disabled={acceptingApplicationId === app._id}
+                                            onClick={() => handleAcceptProposal(app._id, project._id)}
+                                            className="bg-[#9747FF] hover:bg-[#8534f0] text-white rounded-full text-xs font-semibold px-4 cursor-pointer"
+                                          >
+                                            {acceptingApplicationId === app._id ? (
+                                              <Spinner size="xs" variant="white" />
+                                            ) : (
+                                              <span>Accept Proposal</span>
+                                            )}
+                                          </Button>
                                         )}
-                                      </Button>
-                                    )}
-                                  </div>
+                                      </div>
+                                    </div>
+                                  ))}
                                 </div>
-                              ))
-                            )}
-                          </div>
-                        )}
-                      </article>
-                    );
-                  })
+                              )}
+                            </div>
+                          )}
+                        </article>
+                      );
+                    })}
+                  </div>
                 )
               ) : (
                 /* Creator Applications List */
                 myApplications.length === 0 ? (
-                  <div className="bg-white dark:bg-[#18191a] border border-[#DADDE1] dark:border-[#2f3032] rounded-2xl p-8 text-center">
+                  <div className="py-16 px-4 text-center">
                     <div className="w-12 h-12 rounded-full bg-purple-50 dark:bg-purple-950/40 text-[#9747FF] flex items-center justify-center mx-auto mb-3">
                       <Briefcase className="w-6 h-6" />
                     </div>
                     <h3 className="font-bold text-gray-900 dark:text-gray-100 text-sm">
                       No proposals submitted yet
                     </h3>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 mb-4 max-w-sm mx-auto">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 mb-4 max-w-sm mx-auto leading-relaxed">
                       Explore active opportunities posted by clients looking for your creative skills and submit quotes.
                     </p>
                     <Button
@@ -673,146 +678,148 @@ export function Projects() {
                     </Button>
                   </div>
                 ) : (
-                  myApplications.map((app) => {
-                    const proj = typeof app.projectId === 'object' ? app.projectId : null;
-                    return (
-                      <article
-                        key={app._id}
-                        className="bg-white dark:bg-[#18191a] border border-[#DADDE1] dark:border-[#2f3032] rounded-2xl p-4 sm:p-5 shadow-xs"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <span
-                              className={cn(
-                                'text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full',
-                                app.status === 'accepted' && 'bg-emerald-50 text-emerald-600',
-                                app.status === 'pending' && 'bg-blue-50 text-blue-600',
-                                app.status === 'rejected' && 'bg-rose-50 text-rose-600'
-                              )}
-                            >
-                              {app.status}
-                            </span>
-                            <h3 className="font-bold text-gray-900 dark:text-gray-100 text-base mt-2">
-                              {proj?.title || 'Creative Project Opportunity'}
-                            </h3>
-                            <p className="text-xs text-gray-500 mt-0.5">
-                              Submitted quote: <strong>{app.proposedBudget?.amount} {app.proposedBudget?.currency}</strong> &bull; {app.proposedTimeline}
-                            </p>
+                  <div className="divide-y divide-[#DADDE1] dark:divide-[#2f3032]">
+                    {myApplications.map((app) => {
+                      const proj = typeof app.projectId === 'object' ? app.projectId : null;
+                      return (
+                        <article
+                          key={app._id}
+                          className="p-4 sm:p-5 transition-colors hover:bg-gray-50/60 dark:hover:bg-white/[0.015]"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <span
+                                className={cn(
+                                  'text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full',
+                                  app.status === 'accepted' && 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400',
+                                  app.status === 'pending' && 'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400',
+                                  app.status === 'rejected' && 'bg-rose-50 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400'
+                                )}
+                              >
+                                {app.status}
+                              </span>
+                              <h3 className="font-bold text-gray-900 dark:text-gray-100 text-base mt-2">
+                                {proj?.title || 'Creative Project Opportunity'}
+                              </h3>
+                              <p className="text-xs text-gray-500 mt-0.5">
+                                Submitted quote: <strong>{app.proposedBudget?.amount} {app.proposedBudget?.currency}</strong> &bull; {app.proposedTimeline}
+                              </p>
+                            </div>
                           </div>
-                        </div>
 
-                        <div className="mt-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-800/40 text-xs text-gray-700 dark:text-gray-300 leading-relaxed">
-                          {app.coverLetter}
-                        </div>
-                      </article>
-                    );
-                  })
+                          <p className="mt-2.5 text-xs text-gray-700 dark:text-gray-300 leading-relaxed">
+                            {app.coverLetter}
+                          </p>
+                        </article>
+                      );
+                    })}
+                  </div>
                 )
-              )}
-            </div>
-          ) : (
-            /* TAB 2: Explore Public Opportunities */
-            exploreProjects.length === 0 ? (
-              <div className="bg-white dark:bg-[#18191a] border border-[#DADDE1] dark:border-[#2f3032] rounded-2xl p-8 text-center">
-                <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 flex items-center justify-center mx-auto mb-3">
-                  <Briefcase className="w-6 h-6" />
-                </div>
-                <h3 className="font-bold text-gray-900 dark:text-gray-100 text-sm">
-                  No opportunities match your filter
-                </h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 mb-4">
-                  Try selecting another creative field or clearing your search.
-                </p>
-                <Button
-                  type="button"
-                  onClick={() => {
-                    setSelectedCategory('all');
-                    setSearchQuery('');
-                  }}
-                  variant="outline"
-                  className="rounded-full text-xs font-semibold cursor-pointer"
-                >
-                  Clear Filters
-                </Button>
-              </div>
+              )
             ) : (
-              <div className="space-y-4">
-                {exploreProjects.map((project) => (
-                  <article
-                    key={project._id}
-                    className="bg-white dark:bg-[#18191a] border border-[#DADDE1] dark:border-[#2f3032] rounded-2xl p-4 sm:p-5 shadow-xs transition-shadow hover:shadow-md"
+              /* TAB 2: Explore Public Opportunities */
+              exploreProjects.length === 0 ? (
+                <div className="py-16 px-4 text-center">
+                  <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 flex items-center justify-center mx-auto mb-3">
+                    <Briefcase className="w-6 h-6" />
+                  </div>
+                  <h3 className="font-bold text-gray-900 dark:text-gray-100 text-sm">
+                    No opportunities match your filter
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 mb-4">
+                    Try selecting another creative field or clearing your search.
+                  </p>
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      setSelectedCategory('all');
+                      setSearchQuery('');
+                    }}
+                    variant="outline"
+                    className="rounded-full text-xs font-semibold cursor-pointer border-[#DADDE1] dark:border-[#2f3032]"
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-[11px] font-semibold uppercase tracking-wider text-[#9747FF] bg-purple-50 dark:bg-purple-950/50 px-2 py-0.5 rounded-full">
-                            {project.category.replace('_', ' ')}
-                          </span>
-                          <span className="text-[11px] text-gray-400">
-                            Posted {new Date(project.createdAt).toLocaleDateString()}
-                          </span>
-                        </div>
-                        <h3 className="font-bold text-gray-900 dark:text-gray-100 text-base sm:text-lg mt-2 leading-snug">
-                          {project.title}
-                        </h3>
-                        <p className="text-xs text-gray-600 dark:text-gray-300 mt-1 leading-relaxed">
-                          {project.description}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Deliverables tags */}
-                    {project.deliverables && project.deliverables.length > 0 && (
-                      <div className="mt-3 flex items-center gap-1.5 flex-wrap">
-                        <span className="text-[11px] font-semibold text-gray-400">Deliverables:</span>
-                        {project.deliverables.map((d, dIdx) => (
-                          <span
-                            key={dIdx}
-                            className="text-[11px] px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300"
-                          >
-                            {d}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Footer: Client, Budget & Apply Button */}
-                    <div className="mt-4 pt-3.5 border-t border-[#DADDE1] dark:border-[#2f3032] flex items-center justify-between flex-wrap gap-3">
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={getAvatarUrl(project.clientId?.avatar)}
-                          alt={project.clientId?.name || 'Client'}
-                          className="w-7 h-7 rounded-full object-cover border border-gray-200"
-                        />
-                        <div className="text-xs">
-                          <div className="font-bold text-gray-900 dark:text-gray-100">
-                            {project.budget?.min} - {project.budget?.max} {project.budget?.currency || 'USDC'}
+                    Clear Filters
+                  </Button>
+                </div>
+              ) : (
+                <div className="divide-y divide-[#DADDE1] dark:divide-[#2f3032]">
+                  {exploreProjects.map((project) => (
+                    <article
+                      key={project._id}
+                      className="p-4 sm:p-5 transition-colors hover:bg-gray-50/60 dark:hover:bg-white/[0.015]"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-[11px] font-semibold uppercase tracking-wider text-[#9747FF] bg-purple-50 dark:bg-purple-950/50 px-2.5 py-0.5 rounded-full">
+                              {project.category.replace('_', ' ')}
+                            </span>
+                            <span className="text-[11px] text-gray-400">
+                              Posted {new Date(project.createdAt).toLocaleDateString()}
+                            </span>
                           </div>
-                          <span className="text-[11px] text-gray-500">{project.timeline}</span>
+                          <h3 className="font-bold text-gray-900 dark:text-gray-100 text-base sm:text-lg mt-2 leading-snug">
+                            {project.title}
+                          </h3>
+                          <p className="text-xs text-gray-600 dark:text-gray-300 mt-1 leading-relaxed">
+                            {project.description}
+                          </p>
                         </div>
                       </div>
 
-                      {/* Action: Apply for Project */}
-                      <Button
-                        type="button"
-                        onClick={() => {
-                          if (!user) {
-                            window.location.href = `/login?redirect=${encodeURIComponent('/projects')}`;
-                            return;
-                          }
-                          setSelectedProjectForApply(project);
-                        }}
-                        className="bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold rounded-full px-5 h-8.5 shadow-xs cursor-pointer inline-flex items-center gap-1.5"
-                      >
-                        <Briefcase className="w-3.5 h-3.5" />
-                        <span>Submit Proposal</span>
-                      </Button>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            )
-          )}
+                      {/* Deliverables tags */}
+                      {project.deliverables && project.deliverables.length > 0 && (
+                        <div className="mt-3 flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[11px] font-semibold text-gray-400">Deliverables:</span>
+                          {project.deliverables.map((d, dIdx) => (
+                            <span
+                              key={dIdx}
+                              className="text-[11px] px-2.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+                            >
+                              {d}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Footer: Client, Budget & Apply Button */}
+                      <div className="mt-4 pt-3.5 border-t border-[#DADDE1] dark:border-[#2f3032] flex items-center justify-between flex-wrap gap-3">
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={getAvatarUrl(project.clientId?.avatar)}
+                            alt={project.clientId?.name || 'Client'}
+                            className="w-7 h-7 rounded-full object-cover border border-[#DADDE1] dark:border-[#2f3032]"
+                          />
+                          <div className="text-xs">
+                            <div className="font-bold text-gray-900 dark:text-gray-100">
+                              {project.budget?.min} - {project.budget?.max} {project.budget?.currency || 'USDC'}
+                            </div>
+                            <span className="text-[11px] text-gray-500">{project.timeline}</span>
+                          </div>
+                        </div>
+
+                        {/* Action: Apply for Project */}
+                        <Button
+                          type="button"
+                          onClick={() => {
+                            if (!user) {
+                              window.location.href = `/login?redirect=${encodeURIComponent('/projects')}`;
+                              return;
+                            }
+                            setSelectedProjectForApply(project);
+                          }}
+                          className="bg-[#9747FF] hover:bg-[#8534f0] text-white text-xs font-semibold rounded-full px-5 h-8.5 shadow-xs cursor-pointer inline-flex items-center gap-1.5"
+                        >
+                          <Briefcase className="w-3.5 h-3.5" />
+                          <span>Submit Proposal</span>
+                        </Button>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )
+            )}
+          </div>
         </section>
 
         {/* =========================================================================
@@ -820,43 +827,35 @@ export function Projects() {
             Client Tips & Escrow Guarantee
            ========================================================================= */}
         <aside className="hidden lg:flex flex-col gap-6 lg:col-span-3 sticky top-20">
-          <div className="bg-white dark:bg-[#18191a] border border-[#DADDE1] dark:border-[#2f3032] rounded-2xl p-5 shadow-xs space-y-4">
-            <div className="flex items-center gap-2.5 text-[#9747FF]">
-              <ShieldCheck className="w-5 h-5" />
-              <h3 className="font-bold text-sm text-gray-900 dark:text-gray-100">
+          <div className="pb-5 border-b border-[#DADDE1] dark:border-[#2f3032]">
+            <div className="flex items-center gap-2 text-gray-900 dark:text-gray-100 mb-2">
+              <ShieldCheck className="w-4 h-4 text-[#9747FF]" />
+              <h4 className="text-xs font-semibold uppercase tracking-wider">
                 Safe Hiring on MyArteLab
-              </h3>
+              </h4>
             </div>
-            <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+            <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed mb-3">
               Every creative project on MyArteLab is protected by smart escrow. Your deposit is safely reserved and only released once you inspect and approve submitted deliverables.
             </p>
 
-            <div className="space-y-3 pt-2 border-t border-[#DADDE1] dark:border-[#2f3032] text-xs">
-              <div className="flex items-start gap-2.5">
-                <span className="w-5 h-5 rounded-full bg-purple-50 dark:bg-purple-950/40 text-[#9747FF] flex items-center justify-center font-bold text-[11px] shrink-0">
-                  1
-                </span>
-                <span className="text-gray-700 dark:text-gray-300">
-                  Publish project details &amp; receive competitive bids from verified creators.
-                </span>
+            <div className="space-y-2.5 text-xs text-gray-600 dark:text-gray-400">
+              <div className="flex items-start gap-2">
+                <CheckCircle2 className="w-3.5 h-3.5 text-[#9747FF] shrink-0 mt-0.5" />
+                <span>Publish project details &amp; receive competitive bids from verified creators.</span>
               </div>
-              <div className="flex items-start gap-2.5">
-                <span className="w-5 h-5 rounded-full bg-purple-50 dark:bg-purple-950/40 text-[#9747FF] flex items-center justify-center font-bold text-[11px] shrink-0">
-                  2
-                </span>
-                <span className="text-gray-700 dark:text-gray-300">
-                  Select a proposal and lock payment in escrow. Creator starts immediately.
-                </span>
+              <div className="flex items-start gap-2">
+                <CheckCircle2 className="w-3.5 h-3.5 text-[#9747FF] shrink-0 mt-0.5" />
+                <span>Select a proposal and lock payment in escrow. Creator starts immediately.</span>
               </div>
-              <div className="flex items-start gap-2.5">
-                <span className="w-5 h-5 rounded-full bg-purple-50 dark:bg-purple-950/40 text-[#9747FF] flex items-center justify-center font-bold text-[11px] shrink-0">
-                  3
-                </span>
-                <span className="text-gray-700 dark:text-gray-300">
-                  Review deliverables, request revisions, or approve to release payout.
-                </span>
+              <div className="flex items-start gap-2">
+                <CheckCircle2 className="w-3.5 h-3.5 text-[#9747FF] shrink-0 mt-0.5" />
+                <span>Review deliverables, request revisions, or approve to release payout.</span>
               </div>
             </div>
+          </div>
+
+          <div className="px-1 text-xs text-gray-400">
+            <p>© {new Date().getFullYear()} MyArteLab Inc.</p>
           </div>
         </aside>
       </div>
