@@ -399,7 +399,7 @@ export function TopNavigation({
             <img 
               src="/images/myartelab-logo.png" 
               alt="MyArteLab" 
-              className="h-11 sm:h-12 md:h-13 w-auto object-contain shrink-0 transition-transform group-hover:scale-105" 
+              className="h-10 sm:h-11 md:h-12 w-auto object-contain shrink-0 transition-transform group-hover:scale-105" 
             />
             <span className="font-bold text-xl sm:text-2xl tracking-[-0.015em] text-gray-900 dark:text-gray-100 antialiased leading-none">
               MyArteLab
